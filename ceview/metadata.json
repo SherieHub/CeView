@@ -1,0 +1,8 @@
+{
+  "name": "CeView",
+  "description": "The AI-Driven Demand Stabilization Engine for Cebu Tourism. Connects local MSMEs to international markets using predictive AI and generative localization.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
