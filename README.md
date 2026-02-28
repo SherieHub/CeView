@@ -3,6 +3,10 @@
 > **Stabilizing tourism through predictive intelligence.** An AI-powered proactive marketing engine designed to solve seasonality and connect local MSMEs to the global stage.
 
 ---
+## ⚠️ Disclaimer
+> **This project does not include the backend source code or core algorithms. Certain technical components are intentionally withheld for intellectual property and trademark protection. The system’s internal logic and implementation details remain confidential.**
+
+---
 
 ## 🚀 Overview
 
