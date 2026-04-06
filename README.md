@@ -27,3 +27,11 @@ Instead of relying on passive, reactive marketing strategies, CeView empowers lo
 ## 🎯 The Mission
 
 Tourism in Cebu often suffers from heavy seasonality, leaving local businesses struggling during off-peak months. CeView was built to level the playing field. By giving MSMEs the exact same data-driven foresight used by massive travel agencies, we can proactively stimulate demand, combat the off-season slump, and foster a more resilient local economy.
+
+---
+
+## 🌐 Live Prototype
+
+Experience the frontend prototype deployed on Vercel:  
+**[View CeView Live ↗](https://ce-view-xi.vercel.app/)**
+
