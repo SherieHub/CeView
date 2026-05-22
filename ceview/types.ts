@@ -1,10 +1,50 @@
 
+export enum MarketId {
+  KOREA = 'korea',
+  JAPAN = 'japan',
+  USA = 'usa',
+  GLOBAL = 'global',
+}
 
-export enum Market {
-  KOREA = 'South Korea',
-  JAPAN = 'Japan',
-  USA = 'USA',
-  GLOBAL = 'Global'
+export interface ChartDataPoint {
+  week: string;
+  history: number | null;
+  forecast: number | null;
+  seasonality: number;
+  forex: number;
+  gdp: number;
+  spike: number;
+}
+
+export interface Airline {
+  name: string;
+  code: string;
+  frequency: string;
+  direct: boolean;
+  duration: string;
+  tier: string;
+}
+
+export interface Market {
+  id: string;
+  rank: number;
+  name: string;
+  city: string;
+  matchScore: number;
+  directive: string;
+  directFlight: boolean;
+  flightHours: string;
+  distanceKm: number;
+  nearestAirport: string;
+  destinationAirport: string;
+  accessibilityScore: number;
+  flightFrequency: number;
+  avgFlightPrice: string;
+  airlines: Airline[];
+  peakMonths: string[];
+  economyInsight: string;
+  seasonalityInsight: string;
+  chartData: ChartDataPoint[];
 }
 
 export interface SellingPoint {
@@ -14,7 +54,7 @@ export interface SellingPoint {
 
 export interface AnalysisResult {
   sellingPoints: SellingPoint[];
-  suggestedMarket: Market;
+  suggestedMarket: MarketId;
   marketReasoning: string;
   risingTrend: string; // e.g., "Healing Travel"
 }
@@ -31,7 +71,7 @@ export interface CalendarEvent {
   title: string;
   date: string;
   type: 'peak' | 'micro-season' | 'opportunity' | 'trend' | 'post';
-  market: string;
+  market: MarketId;
 }
 
 export interface KeywordTrend {

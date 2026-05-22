@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Settings, LogOut, UserCircle, Bell, BarChart2, Share2 } from 'lucide-react';
+import { Calendar, Settings, LogOut, UserCircle, Bell, BarChart2, TrendingUp } from 'lucide-react';
 import { COLORS } from '../constants';
 
 interface SidebarProps {
@@ -9,19 +9,20 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
-    { id: 'landing', label: 'Home / Updates', icon: Bell },
-    { id: 'reports', label: 'Performance Reports', icon: BarChart2 },
-    // Removed 'integrations' (Social Connections) as it is merged into Business Profile
+    { id: 'home', label: 'Home / Notification', icon: Bell },
+    { id: 'reports', label: 'Campaign Analytics', icon: BarChart2 },
     { id: 'profile', label: 'Business Profile', icon: UserCircle }, 
     { id: 'calendar', label: 'Experience Calendar', icon: Calendar },
   ];
 
   return (
-    <div className="h-screen w-64 fixed left-0 top-0 flex flex-col shadow-xl z-50" style={{ backgroundColor: COLORS.TEAL }}>
+    // Applied COLORS.navy to the main background
+    <div className="h-screen w-64 fixed left-0 top-0 flex flex-col shadow-xl z-50" style={{ backgroundColor: COLORS.NAVY }}>
+      
       {/* Logo Area */}
       <div className="p-6 border-b border-white/10">
         <h1 className="text-3xl font-bold text-white tracking-tight">
-          Ce<span style={{ color: COLORS.CYAN }}>View</span>
+          Ce<span style={{ color: COLORS.LIGHT_GOLD }}>View</span> {/* Updated accent to Gold */}
         </h1>
         <p className="text-xs text-white/70 mt-1">Demand Stabilization Engine</p>
       </div>
@@ -37,11 +38,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                 isActive 
-                  ? 'bg-white/10 text-white font-medium' 
+                  ? 'bg-white/10 text-white font-medium shadow-inner' // Added subtle shadow-inner for active state
                   : 'text-white/60 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <Icon size={20} color={isActive ? COLORS.CYAN : 'currentColor'} />
+              {/* Active icon uses the new Gold color to pop against the Navy */}
+              <Icon size={20} color={isActive ? COLORS.GOLD : 'currentColor'} />
               <span>{item.label}</span>
             </button>
           );
@@ -50,10 +52,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
 
       {/* Footer */}
       <div className="p-4 border-t border-white/10">
-        <button className="flex items-center space-x-3 text-white/60 hover:text-white transition-colors w-full px-4 py-2">
-          <Settings size={18} />
-          <span className="text-sm">Calibration</span>
-        </button>
         <button className="flex items-center space-x-3 text-white/60 hover:text-white transition-colors w-full px-4 py-2 mt-1">
           <LogOut size={18} />
           <span className="text-sm">Sign Out</span>

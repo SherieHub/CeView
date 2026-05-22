@@ -1,15 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Sparkles, RefreshCw, Save, CheckCircle, Facebook, Instagram, Video, Linkedin, Youtube, Link2, Shield, X as XIcon, Edit2 } from 'lucide-react';
+import { 
+  Upload, Sparkles, RefreshCw, CheckCircle, 
+  Shield, X as XIcon, Edit2, Info 
+} from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES, PLACEHOLDER_IMAGE } from '../constants';
 import { generateOptimizedKeywords } from '../services/geminiService';
-
-// X (Twitter) Logo
-const XLogo = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 4l11.733 16h4.267l-11.733 -16z" />
-    <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />
-  </svg>
-);
 
 interface Platform {
   id: string;
@@ -39,15 +34,14 @@ const BusinessProfile: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Social Connect State
+  // Unified Local Image Assets for Social Connection Hooks
   const [platforms, setPlatforms] = useState<Platform[]>([
-    { id: 'instagram', name: 'Instagram', icon: <Instagram size={32} />, color: '#E1306C', isConnected: true },
-    { id: 'facebook', name: 'Facebook Page', icon: <Facebook size={32} />, color: '#1877F2', isConnected: false },
-    { id: 'tiktok', name: 'TikTok', icon: <Video size={32} />, color: '#000000', isConnected: false },
-    { id: 'twitter', name: 'X (Twitter)', icon: <XLogo />, color: '#14171A', isConnected: false },
-    { id: 'linkedin', name: 'LinkedIn', icon: <Linkedin size={32} />, color: '#0A66C2', isConnected: false },
-    { id: 'youtube', name: 'YouTube', icon: <Youtube size={32} />, color: '#FF0000', isConnected: false },
+    { id: 'instagram', name: 'Instagram', icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-8 h-8 block mx-auto object-contain" />, color: '#0F2854', isConnected: true },
+    { id: 'facebook', name: 'Facebook Page', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-8 h-8 block mx-auto object-contain" />, color: '#0F2854', isConnected: false },
+    { id: 'tiktok', name: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-8 h-8 block mx-auto object-contain" />, color: '#0F2854', isConnected: false },
+    { id: 'naver', name: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-8 h-8 block mx-auto object-contain" />, color: '#0F2854', isConnected: false },
   ]);
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [activePlatform, setActivePlatform] = useState<Platform | null>(null);
   const [authStep, setAuthStep] = useState<'loading' | 'permission'>('loading');
@@ -100,7 +94,6 @@ const BusinessProfile: React.FC = () => {
     }
   };
 
-  // Social Connect Handlers
   const handleConnectClick = (platform: Platform) => {
     if (platform.isConnected) {
       setPlatforms(prev => prev.map(p => p.id === platform.id ? { ...p, isConnected: false } : p));
@@ -123,352 +116,344 @@ const BusinessProfile: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-12">
-      <div className="flex justify-between items-end mb-4">
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6" style={{ backgroundColor: COLORS.CREAM, minHeight: '100vh' }}>
+      
+      {/* ══ CORE HEADER BLOCK ══ */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-           <h2 className="text-2xl font-bold text-[#007892]">Business Profile</h2>
-           <p className="text-slate-500 mt-1">Setup your digital twin and connect social accounts to allow CeView to calibrate opportunities.</p>
+           <h1 className="text-3xl font-black tracking-tight leading-none" style={{ color: COLORS.NAVY }}>Business Profile</h1>
+           <p className="text-sm font-medium mt-1.5" style={{ color: COLORS.TEXT_MUTED }}>
+             Setup your digital twin and connect social accounts to allow CeView to calibrate target opportunities.
+           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
             {isSaved && (
-                <div className="flex items-center gap-2 text-[#506E53] font-bold bg-[#E6EEF1] px-4 py-2 rounded-full animate-fade-in">
-                    <CheckCircle size={18} />
-                    Saved Successfully
+                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border animate-fade-in" style={{ backgroundColor: COLORS.GREEN_LIGHT, borderColor: `${COLORS.GREEN}30`, color: COLORS.GREEN }}>
+                    <CheckCircle size={14} />
+                    Changes Saved Successfully
                 </div>
             )}
             <button 
                 onClick={openEditModal}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#007892] text-white rounded-lg font-bold shadow-sm hover:bg-[#006075] transition-colors"
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-105 shadow-md hover:opacity-90"
+                style={{ backgroundColor: COLORS.NAVY, color: COLORS.WHITE }}
             >
-                <Edit2 size={18} />
+                <Edit2 size={14} />
                 Edit Profile
             </button>
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#F5E5D1]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* ══ PROFILE DATA BOX ══ */}
+      <div className="rounded-2xl shadow-sm border overflow-hidden p-6 md:p-8" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* Left Column: Visuals (Read-Only) */}
-            <div className="space-y-4">
-              <label className="block text-sm font-semibold text-slate-700">Cover Photo</label>
-              <div 
-                className="h-64 rounded-xl overflow-hidden border border-[#F5E5D1] bg-[#FDFBF7]"
-              >
+            {/* Left Frame: Cover Art Visuals */}
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-wider block" style={{ color: COLORS.TEXT_MUTED }}>Cover Photo / Identity Asset</label>
+              <div className="h-72 rounded-2xl overflow-hidden border shadow-inner bg-slate-50" style={{ borderColor: COLORS.LIGHT_GREY }}>
                 {imagePreview ? (
-                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover block" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    No Image
+                  <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
+                    <p className="text-sm font-bold" style={{ color: COLORS.TEXT_MUTED }}>No Image Attached</p>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Right Column: Business Details (Read-Only) */}
+            {/* Right Frame: Active Parameters */}
             <div className="space-y-5">
-              
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Business Name</label>
-                <div className="w-full p-3 rounded-lg border border-transparent bg-[#FDFBF7] text-slate-800 font-medium text-lg">
+                <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Business Name</label>
+                <div className="w-full p-4 rounded-xl font-black text-lg border" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY, color: COLORS.NAVY }}>
                     {businessName}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Categories</label>
-                <div className="w-full p-3 rounded-lg border border-transparent bg-[#FDFBF7] text-slate-800 flex flex-wrap gap-2">
+                <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Active Operational Categories</label>
+                <div className="w-full p-3.5 rounded-xl border flex flex-wrap gap-2" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
                     {categories.length > 0 ? (
                         categories.map(cat => (
-                            <span key={cat} className="px-2 py-1 bg-white border border-[#F5E5D1] rounded-md text-sm font-medium text-[#007892]">
+                            <span key={cat} className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEAL }}>
                                 {cat}
                             </span>
                         ))
                     ) : (
-                        <span className="text-slate-400 italic">No categories selected</span>
+                        <span className="text-xs font-bold italic" style={{ color: COLORS.TEXT_MUTED }}>No operational domains specified</span>
                     )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">What do you offer?</label>
-                <div 
-                  className="w-full p-4 rounded-xl border border-transparent bg-[#FDFBF7] text-slate-700 leading-relaxed min-h-[128px]"
-                >
+                <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Core Service Offerings & Taglines</label>
+                <div className="w-full p-4 rounded-xl border text-sm font-medium leading-relaxed min-h-[120px]" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}>
                     {description}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* AI Keywords Section */}
-          <div className="mt-8 pt-6 border-t border-[#F5E5D1]">
-             <div className="flex justify-between items-center mb-4">
+          {/* 🧠 ASSOCIATED AI KEYWORDS LAYER */}
+          <div className="mt-8 pt-6 border-t" style={{ borderColor: COLORS.LIGHT_GREY }}>
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
-                   <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                       <Sparkles size={16} color={COLORS.GOLD} />
-                       Associated Keywords (AI Generated)
+                   <label className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5" style={{ color: COLORS.NAVY }}>
+                       <Sparkles size={14} style={{ color: COLORS.GOLD, fill: COLORS.GOLD }} />
+                       Associated Search Keywords (AI Generated)
                    </label>
-                   <p className="text-xs text-slate-500 mt-1">We align your profile with real-time Google Trends.</p>
+                   <p className="text-xs font-medium mt-0.5" style={{ color: COLORS.TEXT_MUTED }}>These identifiers sync your profile data directly with regional market demand vectors.</p>
                 </div>
                 <button 
                   onClick={handleGenerateKeywords}
                   disabled={!description || isLoading}
-                  className="text-sm font-bold text-[#007892] hover:text-[#62D2E0] flex items-center gap-1 disabled:opacity-50"
+                  className="text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 disabled:opacity-40 shrink-0 self-start sm:self-center"
+                  style={{ color: COLORS.TEAL }}
                 >
-                  {isLoading ? <RefreshCw className="animate-spin" size={16}/> : 'Generate Keywords'}
+                  {isLoading ? <RefreshCw className="animate-spin" size={14}/> : <><RefreshCw size={14} /> Recalibrate Keywords</>}
                 </button>
              </div>
 
-             <div className="p-4 rounded-xl bg-[#FDFBF7] border border-[#F5E5D1] min-h-[80px] flex flex-wrap gap-2 items-center">
+             <div className="p-4 rounded-xl border min-h-[76px] flex flex-wrap gap-2 items-center" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
                  {keywords.length === 0 && !isLoading && (
-                     <span className="text-slate-400 text-sm italic">Enter a description and click generate to see aligned keywords...</span>
+                     <span className="text-xs font-bold italic" style={{ color: COLORS.TEXT_MUTED }}>Input descriptive parameters and execute keyword assignment above...</span>
                  )}
                  {keywords.map((kw, i) => (
-                     <span key={i} className="px-3 py-1 bg-white border border-[#62D2E0] text-[#007892] rounded-full text-sm font-medium shadow-sm animate-fade-in">
-                         {kw}
+                     <span key={i} className="px-3 py-1.5 bg-white border rounded-full text-xs font-black uppercase tracking-wider shadow-2xs animate-fade-in" style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.NAVY }}>
+                         #{kw}
                      </span>
                  ))}
              </div>
           </div>
-
-          {/* SOCIAL CONNECTIONS SECTION - Merged Here */}
-          <div className="mt-12 pt-8 border-t border-[#F5E5D1]">
-             <div className="mb-6">
-                <h3 className="text-lg font-bold text-[#007892]">Social Connections</h3>
-                <p className="text-slate-500 text-sm mt-1">Connect your brand's accounts to enable automated posting and AI aggregation.</p>
-             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {platforms.map(platform => (
-                  <div 
-                    key={platform.id} 
-                    className={`p-6 rounded-2xl border transition-all duration-300 relative group ${
-                      platform.isConnected 
-                        ? 'bg-white border-[#506E53] shadow-md' 
-                        : 'bg-white border-slate-200 hover:border-[#62D2E0] hover:shadow-sm'
-                    }`}
-                  >
-                     {platform.isConnected && (
-                       <div className="absolute top-4 right-4 text-[#506E53] animate-fade-in">
-                         <CheckCircle size={20} fill="#E6F4EA" />
-                       </div>
-                     )}
-
-                     <div className="mb-6 inline-flex p-4 rounded-full bg-slate-50" style={{ color: platform.color }}>
-                        {platform.icon}
-                     </div>
-                     
-                     <h3 className="text-lg font-bold text-slate-800 mb-1">{platform.name}</h3>
-                     <p className="text-xs text-slate-400 mb-6">
-                       {platform.isConnected ? 'Active & Syncing' : 'Not Connected'}
-                     </p>
-
-                     <button
-                       onClick={() => handleConnectClick(platform)}
-                       className={`w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
-                         platform.isConnected 
-                           ? 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500' 
-                           : 'bg-slate-800 text-white hover:opacity-90'
-               }`}
-                     >
-                       {platform.isConnected ? 'Disconnect' : 'Connect'}
-                     </button>
-                  </div>
-                ))}
-             </div>
-
-             {/* Safety Note */}
-             <div className="mt-8 bg-[#E0F7FA] border border-[#007892]/20 rounded-xl p-6 flex items-start gap-4">
-                <div className="p-2 bg-white rounded-full text-[#007892]">
-                  <Shield size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-[#007892] text-sm uppercase tracking-wide mb-1">Transparency & Safety</h4>
-                  <p className="text-slate-700 text-sm leading-relaxed">
-                    We only post content you explicitly approve in the campaign wizard. We do not read your private messages or access personal data. You can disconnect any platform at any time.
-                  </p>
-                </div>
-             </div>
-          </div>
-          
       </div>
 
-      {/* EDIT MODAL */}
+      {/* ══ SOCIAL NETWORK HUB ══ */}
+      <div className="rounded-2xl shadow-sm border overflow-hidden p-6 md:p-8" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY }}>
+         <div className="mb-6">
+            <h2 className="text-base font-black leading-tight" style={{ color: COLORS.NAVY }}>Social Platform Connections</h2>
+            <p className="text-xs font-bold uppercase tracking-wider mt-0.5" style={{ color: COLORS.TEXT_MUTED }}>OAuth Authorization Matrix</p>
+         </div>
+
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {platforms.map(platform => (
+              <div 
+                key={platform.id} 
+                className="p-5 rounded-2xl border text-center transition-all duration-300 relative flex flex-col items-center min-h-[220px]"
+                style={{
+                  borderColor: platform.isConnected ? COLORS.NAVY : COLORS.LIGHT_GREY,
+                  backgroundColor: platform.isConnected ? 'rgba(15,40,84,0.03)' : COLORS.CREAM,
+                  boxShadow: platform.isConnected ? `0 4px 16px ${COLORS.NAVY}15` : 'none',
+                }}
+              >
+                 {platform.isConnected && (
+                   <div className="absolute top-3 right-3 text-[#506E53] animate-fade-in">
+                     <CheckCircle size={18} style={{ fill: COLORS.GREEN, color: COLORS.WHITE }} />
+                   </div>
+                 )}
+
+                 <div className="mb-4 p-4 rounded-xl bg-white border flex items-center justify-center h-16 w-16" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                    {platform.icon}
+                 </div>
+                 
+                 <p className="text-sm font-black mb-0.5" style={{ color: COLORS.NAVY }}>{platform.name}</p>
+                 <p className="text-[10px] font-black uppercase tracking-wider mb-5" style={{ color: platform.isConnected ? COLORS.GREEN : COLORS.TEXT_MUTED }}>
+                   {platform.isConnected ? 'Sync Active' : 'Disconnected'}
+                 </p>
+
+                 <button
+                   onClick={() => handleConnectClick(platform)}
+                   className="w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all mt-auto"
+                   style={{ 
+                     backgroundColor: platform.isConnected ? COLORS.CREAM : COLORS.NAVY, 
+                     color: platform.isConnected ? COLORS.TEXT_DARK : COLORS.WHITE,
+                     border: platform.isConnected ? `1.5px solid ${COLORS.LIGHT_GREY}` : 'none'
+                   }}
+                 >
+                   {platform.isConnected ? 'Disconnect' : 'Authorize Link'}
+                 </button>
+              </div>
+            ))}
+         </div>
+
+         {/* Security Architecture Box */}
+         <div className="mt-6 p-4 rounded-xl border flex items-start gap-3.5" style={{ backgroundColor: COLORS.GOLD_LIGHT, borderColor: `${COLORS.GOLD}30` }}>
+            <div className="p-2 bg-white rounded-xl shadow-2xs shrink-0" style={{ color: COLORS.NAVY }}>
+              <Shield size={18} />
+            </div>
+            <div>
+              <h4 className="font-black text-xs uppercase tracking-wider mb-1" style={{ color: COLORS.TEXT_MAIN }}>Secure API Ingestion & Guardrails</h4>
+              <p className="text-xs font-medium leading-relaxed" style={{ color: COLORS.TEXT_MUTED }}>
+                CeView aggregates high-level platform analytics logs via strict read/write authorization bounds. Automated posts are queued strictly within manual confirmation flows. Opaque data profiling and third-party consumer exposure matrices are completely blocked.
+              </p>
+            </div>
+         </div>
+      </div>
+
+      {/* ══ BACKSTAGE INTERACTION MODAL (EDIT MODAL) ══ */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border" style={{ borderColor: COLORS.LIGHT_GREY }}>
             
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-               <div className="flex items-center gap-2 font-bold text-slate-700 text-lg">
-                  <Edit2 size={20} className="text-[#007892]" />
-                  Edit Profile
+            {/* Header */}
+            <div className="p-5 border-b flex justify-between items-center bg-slate-50" style={{ borderColor: COLORS.LIGHT_GREY }}>
+               <div className="flex items-center gap-2 font-black text-base" style={{ color: COLORS.NAVY }}>
+                  <Edit2 size={16} />
+                  Modify Profile Framework
                </div>
                <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                 <XIcon size={24} />
+                 <XIcon size={20} />
                </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-8 overflow-y-auto">
-               <div className="space-y-6">
-                  {/* Image Upload in Modal */}
+            {/* Content Core */}
+            <div className="p-6 md:p-8 overflow-y-auto space-y-6">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">Cover Photo</label>
+                    <label className="text-xs font-black uppercase tracking-wider block mb-2" style={{ color: COLORS.TEXT_MUTED }}>Identity Cover Asset</label>
                     <div 
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#62D2E0] transition-all overflow-hidden group relative"
-                      style={{ backgroundColor: '#FDFBF7', borderColor: COLORS.GOLD }}
+                      className="h-44 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group"
+                      style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}
                     >
                       {tempImagePreview ? (
                         <>
-                           <img src={tempImagePreview} alt="Preview" className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" />
+                           <img src={tempImagePreview} alt="Preview" className="w-full h-full object-cover opacity-70 group-hover:opacity-40 transition-opacity" />
                            <div className="absolute inset-0 flex items-center justify-center">
-                             <span className="bg-white/80 px-4 py-2 rounded-full font-bold text-slate-700 shadow-sm">Change Photo</span>
+                             <span className="bg-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm" style={{ color: COLORS.NAVY }}>Change Resource Photo</span>
                            </div>
                         </>
                       ) : (
                         <>
-                          <div className="p-3 bg-white rounded-full mb-3 shadow-md">
-                            <Upload size={24} color={COLORS.TEAL} />
+                          <div className="p-3 bg-white rounded-xl mb-2 shadow-2xs">
+                            <Upload size={18} style={{ color: COLORS.TEAL }} />
                           </div>
-                          <p className="text-[#007892] font-medium">Upload Cover Photo</p>
+                          <p className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.TEAL }}>Stream Asset Stream</p>
                         </>
                       )}
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                      />
+                      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Business Name</label>
+                        <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Business Entity Label</label>
                         <input 
                           type="text" 
                           value={tempBusinessName}
                           onChange={(e) => setTempBusinessName(e.target.value)}
-                          placeholder="e.g. Serenity Dive Resort"
-                          className="w-full p-3 rounded-lg border border-[#F5E5D1] focus:ring-2 focus:ring-[#007892] focus:outline-none bg-white"
+                          className="w-full p-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                          style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">Categories (Can select multiple)</label>
-                        <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-[#F5E5D1] bg-white min-h-[50px]">
-                           {BUSINESS_CATEGORIES.map(cat => (
-                               <button
-                                  key={cat}
-                                  onClick={() => toggleCategory(cat)}
-                                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                                     tempCategories.includes(cat)
-                                       ? 'bg-[#007892] text-white border-[#007892] shadow-sm'
-                                       : 'bg-white text-slate-500 border-slate-200 hover:border-[#007892] hover:text-[#007892]'
-                                  }`}
-                               >
-                                  {cat}
-                               </button>
-                           ))}
+                        <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Domain Classifications</label>
+                        <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border bg-white min-h-[46px]" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                           {BUSINESS_CATEGORIES.map(cat => {
+                               const active = tempCategories.includes(cat);
+                               return (
+                                 <button
+                                    key={cat}
+                                    onClick={() => toggleCategory(cat)}
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all border"
+                                    style={{
+                                       backgroundColor: active ? COLORS.NAVY : COLORS.WHITE,
+                                       color: active ? COLORS.WHITE : COLORS.TEXT_MUTED,
+                                       borderColor: active ? COLORS.NAVY : COLORS.LIGHT_GREY
+                                    }}
+                                 >
+                                    {cat}
+                                 </button>
+                               );
+                           })}
                         </div>
                       </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">What do you offer?</label>
+                    <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label>
                     <textarea 
                       value={tempDescription}
                       onChange={(e) => setTempDescription(e.target.value)}
-                      placeholder="Describe your unique selling points, amenities, and atmosphere..."
-                      className="w-full h-40 p-4 rounded-xl border border-[#F5E5D1] focus:ring-2 focus:ring-[#007892] focus:outline-none resize-none placeholder-slate-400 text-slate-700 text-base bg-white"
+                      className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                      style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                     />
                   </div>
-               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            {/* Footer */}
+            <div className="p-5 border-t bg-slate-50 flex justify-end gap-3" style={{ borderColor: COLORS.LIGHT_GREY }}>
                <button 
                  onClick={() => setIsEditModalOpen(false)}
-                 className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-white transition-colors"
+                 className="px-5 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider bg-white transition-colors"
+                 style={{ color: COLORS.TEXT_MUTED, borderColor: COLORS.LIGHT_GREY }}
                >
-                 Cancel
+                 Dismiss
                </button>
                <button 
                  onClick={handleSaveProfile}
-                 className="px-8 py-2.5 rounded-xl text-white font-bold hover:opacity-90 shadow-md transition-all"
-                 style={{ backgroundColor: COLORS.GOLD }}
+                 className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:opacity-90"
+                 style={{ backgroundColor: COLORS.GOLD, color: COLORS.WHITE }}
                >
-                 Save Changes
+                 Commit Profile Data
                </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Mock OAuth Modal */}
+      {/* ══ SECURE DATA AUTHORIZATION STAGE MODAL (OAUTH PREVIEW) ══ */}
       {modalOpen && activePlatform && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh] border" style={{ borderColor: COLORS.LIGHT_GREY }}>
             
-            {/* Modal Header */}
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-               <div className="flex items-center gap-2 font-semibold text-slate-700">
-                  {authStep === 'permission' ? `Login with ${activePlatform.name}` : 'Connecting...'}
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50" style={{ borderColor: COLORS.LIGHT_GREY }}>
+               <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.TEXT_MUTED }}>
+                  {authStep === 'permission' ? `OAuth 2.0 Client Redirect` : 'Handshaking...'}
                </div>
                <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                 <XIcon size={20} />
+                 <XIcon size={18} />
                </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-8 text-center flex-1 flex flex-col items-center justify-center min-h-[300px]">
+            <div className="p-6 text-center flex-1 flex flex-col items-center justify-center min-h-[260px]">
                {authStep === 'loading' && (
-                 <div className="flex flex-col items-center space-y-4">
-                    <div className="relative">
-                       <div className="w-16 h-16 rounded-full border-4 border-slate-100 animate-spin" style={{ borderTopColor: activePlatform.color }}></div>
-                       <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-                          <Link2 size={24} />
-                       </div>
-                    </div>
-                    <p className="text-slate-500 text-sm font-medium">Contacting {activePlatform.name}...</p>
+                 <div className="space-y-3">
+                    <div className="w-10 h-10 rounded-full border-4 border-slate-100 animate-spin mx-auto" style={{ borderTopColor: COLORS.NAVY }}></div>
+                    <p className="text-xs font-bold" style={{ color: COLORS.TEXT_MUTED }}>Resolving callback token indices...</p>
                  </div>
                )}
 
                {authStep === 'permission' && (
-                 <div className="w-full text-left space-y-6 animate-fade-in">
-                    <div className="flex items-center gap-4 justify-center mb-6">
-                       <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
-                         <Shield size={24} />
+                 <div className="w-full text-left space-y-4 animate-fade-in">
+                    <div className="flex items-center gap-3 justify-center mb-4">
+                       <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 border" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                         <Shield size={18} />
                        </div>
-                       <div className="h-px w-8 bg-slate-300"></div>
-                       <div className="w-12 h-12 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: activePlatform.color }}>
+                       <div className="h-0.5 w-6 bg-slate-200"></div>
+                       <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white border" style={{ borderColor: COLORS.NAVY }}>
                          {activePlatform.icon}
                        </div>
                     </div>
 
-                    <div className="text-center mb-6">
-                       <h3 className="text-xl font-bold text-slate-800">CeView requests access</h3>
-                       <p className="text-sm text-slate-500 mt-1">Review the permissions below.</p>
+                    <div className="text-center mb-4">
+                       <h3 className="text-base font-black" style={{ color: COLORS.NAVY }}>Scope Access Requests</h3>
+                       <p className="text-xs font-medium mt-0.5" style={{ color: COLORS.TEXT_MUTED }}>CeView is asking to negotiate secure tokens.</p>
                     </div>
 
-                    <div className="space-y-3">
-                       <div className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50">
-                          <CheckCircle size={18} className="text-[#506E53] mt-0.5" />
+                    <div className="space-y-2">
+                       <div className="flex items-start gap-2.5 p-3 rounded-xl border bg-slate-50/50">
+                          <CheckCircle size={15} className="mt-0.5 shrink-0" style={{ color: COLORS.GREEN }} />
                           <div>
-                             <p className="text-sm font-bold text-slate-700">Publish content</p>
-                             <p className="text-xs text-slate-500">Create posts, reels, and stories on your behalf.</p>
+                             <p className="text-xs font-black" style={{ color: COLORS.TEXT_MAIN }}>Automated Asset Publishing</p>
+                             <p className="text-[11px] font-medium" style={{ color: COLORS.TEXT_MUTED }}>Enables scheduled layout dispatching to the platform feed.</p>
                           </div>
                        </div>
-                       <div className="flex items-start gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50">
-                          <CheckCircle size={18} className="text-[#506E53] mt-0.5" />
+                       <div className="flex items-start gap-2.5 p-3 rounded-xl border bg-slate-50/50">
+                          <CheckCircle size={15} className="mt-0.5 shrink-0" style={{ color: COLORS.GREEN }} />
                           <div>
-                             <p className="text-sm font-bold text-slate-700">Access media library</p>
-                             <p className="text-xs text-slate-500">Upload photos and videos for campaigns.</p>
+                             <p className="text-xs font-black" style={{ color: COLORS.TEXT_MAIN }}>Telemetry & Metrics Querying</p>
+                             <p className="text-[11px] font-medium" style={{ color: COLORS.TEXT_MUTED }}>Pulls aggregated impression logs for Phase 5 reporting loops.</p>
                           </div>
                        </div>
                     </div>
@@ -476,21 +461,21 @@ const BusinessProfile: React.FC = () => {
                )}
             </div>
 
-            {/* Modal Footer */}
             {authStep === 'permission' && (
-              <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
+              <div className="p-4 border-t bg-slate-50 flex gap-3" style={{ borderColor: COLORS.LIGHT_GREY }}>
                  <button 
                    onClick={() => setModalOpen(false)}
-                   className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-white transition-colors"
+                   className="flex-1 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider bg-white"
+                   style={{ color: COLORS.TEXT_MUTED, borderColor: COLORS.LIGHT_GREY }}
                  >
                    Cancel
                  </button>
                  <button 
                    onClick={confirmConnection}
-                   className="flex-1 py-3 rounded-xl text-white font-bold hover:opacity-90 shadow-md transition-all"
-                   style={{ backgroundColor: activePlatform.color }}
+                   className="flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white transition-all shadow-md hover:opacity-90"
+                   style={{ backgroundColor: COLORS.NAVY }}
                  >
-                   Allow Access
+                   Grant Scope
                  </button>
               </div>
             )}

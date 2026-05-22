@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResult, GeneratedContent, Market, PostPerformance, PerformanceAnalysis } from "../types";
+import { AnalysisResult, GeneratedContent, MarketId, PostPerformance, PerformanceAnalysis } from "../types";
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
@@ -74,7 +74,7 @@ export const analyzeImageAndStrategy = async (base64Image: string, description: 
         { point: "Secluded Nature", description: "Away from the crowds, offering privacy." },
         { point: "Eco-Conscious", description: "Sustainable practices visible in the setting." }
       ],
-      suggestedMarket: Market.KOREA,
+      suggestedMarket: MarketId.KOREA,
       risingTrend: "Healing & Wellness Travel",
       marketReasoning: "South Korean search trends indicate a 40% spike in 'Healing Travel' and 'Quiet Resorts' for the upcoming season."
     }), 2000));
@@ -119,7 +119,7 @@ export const analyzeImageAndStrategy = async (base64Image: string, description: 
                 }
               }
             },
-            suggestedMarket: { type: Type.STRING, enum: [Market.KOREA, Market.JAPAN, Market.USA] },
+            suggestedMarket: { type: Type.STRING, enum: [MarketId.KOREA, MarketId.JAPAN, MarketId.USA] },
             risingTrend: { type: Type.STRING },
             marketReasoning: { type: Type.STRING }
           }
@@ -137,7 +137,7 @@ export const analyzeImageAndStrategy = async (base64Image: string, description: 
   }
 };
 
-export const generateCampaignContent = async (analysis: AnalysisResult, market: Market): Promise<GeneratedContent> => {
+export const generateCampaignContent = async (analysis: AnalysisResult, market: MarketId): Promise<GeneratedContent> => {
   if (!apiKey) {
      return new Promise(resolve => setTimeout(() => resolve({
       caption: "🌿 Escape the noise and find your inner peace. Our rustic villas offer the perfect sanctuary for your healing journey. #Cebu #HealingTravel #Nature",
