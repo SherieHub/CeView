@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Settings, LogOut, UserCircle, Bell, BarChart2, TrendingUp } from 'lucide-react';
+import { Calendar, Settings, LogOut, UserCircle, Bell, BarChart2, TrendingUp, Sparkles } from 'lucide-react';
 import { COLORS } from '../constants';
 
 interface SidebarProps {
@@ -11,7 +11,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'home', label: 'Home / Notification', icon: Bell },
     { id: 'reports', label: 'Campaign Analytics', icon: BarChart2 },
-    { id: 'profile', label: 'Business Profile', icon: UserCircle }, 
+    { id: 'profile', label: 'Business Profile', icon: UserCircle },
+    { id: 'uniqueness', label: 'Uniqueness Score', icon: Sparkles },
     { id: 'calendar', label: 'Experience Calendar', icon: Calendar },
   ];
 

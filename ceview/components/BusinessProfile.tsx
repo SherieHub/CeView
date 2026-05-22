@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { 
-  Upload, Sparkles, RefreshCw, CheckCircle, 
-  Shield, X as XIcon, Edit2, Info 
+import {
+  Upload, Sparkles, RefreshCw, CheckCircle,
+  Shield, X as XIcon, Edit2, Info, Plus
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES, PLACEHOLDER_IMAGE } from '../constants';
 import { generateOptimizedKeywords } from '../services/geminiService';
+import { ProfileData, ProfileSetters } from '../App';
 
 interface Platform {
   id: string;
@@ -14,23 +15,30 @@ interface Platform {
   isConnected: boolean;
 }
 
-const BusinessProfile: React.FC = () => {
+interface BusinessProfileProps {
+  profile: ProfileData;
+  setters: ProfileSetters;
+}
+
+const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Real State (Source of Truth)
-  const [businessName, setBusinessName] = useState('Prime Properties Beach Resort & Spa');
-  const [categories, setCategories] = useState<string[]>(['Beach Resort']);
-  const [description, setDescription] = useState('Experience the epitome of luxury at Prime Properties. Nestled on a pristine white sand beach, our resort features overwater villas, a world-class spa, and breathtaking ocean views. Perfect for romantic getaways and luxury seekers looking for a tropical paradise.');
-  const [imagePreview, setImagePreview] = useState<string | null>(PLACEHOLDER_IMAGE);
-  const [keywords, setKeywords] = useState<string[]>(['Luxury Resort', 'Beachfront', 'Spa Retreat', 'Maldives Style']);
-  
+
+  // Real State (sourced from shared App-level state via props)
+  const { businessName, categories, coreServices, description, uvp, imagePreview } = profile;
+  const { setBusinessName, setCategories, setCoreServices, setDescription, setUvp, setImagePreview } = setters;
+
+  const [keywords, setKeywords] = useState<string[]>([]);
+
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempBusinessName, setTempBusinessName] = useState('');
   const [tempCategories, setTempCategories] = useState<string[]>([]);
+  const [tempCoreServices, setTempCoreServices] = useState<string[]>([]);
   const [tempDescription, setTempDescription] = useState('');
+  const [tempUvp, setTempUvp] = useState('');
   const [tempImagePreview, setTempImagePreview] = useState<string | null>(null);
+  const [coreServiceDraft, setCoreServiceDraft] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,15 +79,20 @@ const BusinessProfile: React.FC = () => {
   const openEditModal = () => {
     setTempBusinessName(businessName);
     setTempCategories([...categories]);
+    setTempCoreServices([...coreServices]);
     setTempDescription(description);
+    setTempUvp(uvp);
     setTempImagePreview(imagePreview);
+    setCoreServiceDraft('');
     setIsEditModalOpen(true);
   };
 
   const handleSaveProfile = () => {
     setBusinessName(tempBusinessName);
     setCategories(tempCategories);
+    setCoreServices(tempCoreServices);
     setDescription(tempDescription);
+    setUvp(tempUvp);
     setImagePreview(tempImagePreview);
     setIsEditModalOpen(false);
     setIsSaved(true);
@@ -92,6 +105,20 @@ const BusinessProfile: React.FC = () => {
     } else {
       setTempCategories(prev => [...prev, cat]);
     }
+  };
+
+  const addCoreService = () => {
+    const value = coreServiceDraft.trim();
+    if (!value || tempCoreServices.includes(value)) {
+      setCoreServiceDraft('');
+      return;
+    }
+    setTempCoreServices(prev => [...prev, value]);
+    setCoreServiceDraft('');
+  };
+
+  const removeCoreService = (svc: string) => {
+    setTempCoreServices(prev => prev.filter(s => s !== svc));
   };
 
   const handleConnectClick = (platform: Platform) => {
@@ -187,10 +214,36 @@ const BusinessProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Core Service Offerings & Taglines</label>
-                <div className="w-full p-4 rounded-xl border text-sm font-medium leading-relaxed min-h-[120px]" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}>
-                    {description}
+                <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Core Service Offerings</label>
+                <div className="w-full p-3.5 rounded-xl border flex flex-wrap gap-2" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
+                    {coreServices.length > 0 ? (
+                        coreServices.map((service, i) => (
+                            <span key={i} className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEAL }}>
+                                • {service}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="text-xs font-bold italic" style={{ color: COLORS.TEXT_MUTED }}>No core services specified</span>
+                    )}
                 </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Full Description + UVP — full-width 2-column row below the top grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 items-stretch">
+            <div className="flex flex-col">
+              <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Full Description</label>
+              <div className="flex-1 w-full p-4 rounded-xl border text-sm font-medium leading-relaxed min-h-[120px]" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}>
+                  {description || <span className="italic" style={{ color: COLORS.TEXT_MUTED }}>No description provided</span>}
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label>
+              <div className="flex-1 w-full p-4 rounded-xl border text-sm font-medium leading-relaxed min-h-[120px]" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}>
+                  {uvp || <span className="italic" style={{ color: COLORS.TEXT_MUTED }}>No value proposition defined</span>}
               </div>
             </div>
           </div>
@@ -371,11 +424,60 @@ const BusinessProfile: React.FC = () => {
                   </div>
 
                   <div>
+                    <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Core Service Offerings</label>
+                    <div className="p-2 rounded-xl border bg-white space-y-2" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                       <div className="flex flex-wrap gap-1.5 min-h-[34px]">
+                          {tempCoreServices.length === 0 && (
+                             <span className="text-xs font-bold italic px-1 py-1" style={{ color: COLORS.TEXT_MUTED }}>No core services added yet</span>
+                          )}
+                          {tempCoreServices.map(svc => (
+                             <span key={svc} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider border" style={{ backgroundColor: COLORS.NAVY, color: COLORS.WHITE, borderColor: COLORS.NAVY }}>
+                                • {svc}
+                                <button type="button" onClick={() => removeCoreService(svc)} className="hover:opacity-70">
+                                   <XIcon size={11} />
+                                </button>
+                             </span>
+                          ))}
+                       </div>
+                       <div className="flex gap-2 pt-1.5 border-t" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                          <input
+                            type="text"
+                            value={coreServiceDraft}
+                            onChange={(e) => setCoreServiceDraft(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCoreService(); } }}
+                            placeholder="Add a service offering..."
+                            className="flex-1 px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none"
+                            style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
+                          />
+                          <button
+                            type="button"
+                            onClick={addCoreService}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-colors"
+                            style={{ backgroundColor: COLORS.TEAL, color: COLORS.WHITE }}
+                          >
+                            <Plus size={12} />
+                            Add
+                          </button>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label>
-                    <textarea 
+                    <textarea
                       value={tempDescription}
                       onChange={(e) => setTempDescription(e.target.value)}
                       className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                      style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label>
+                    <textarea
+                      value={tempUvp}
+                      onChange={(e) => setTempUvp(e.target.value)}
+                      className="w-full h-28 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
                       style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                     />
                   </div>
