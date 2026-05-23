@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CalendarView from './components/CalendarView';
-import CampaignEngagementMetrics from './components/CampaignEngagementMetrics';
 import { COLORS } from './constants';
 import ContentGeneration from './components/ContentGeneration';
 
@@ -11,6 +10,7 @@ import UniquenessCalibrationView from './components/views/module-1/UniquenessCal
 // 2. IMPORT MODULE 2 VIEWS
 import HomeView from './components/views/module-2/HomeView';
 import MarketRadarView from './components/views/module-2/MarketRadarView';
+import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
 
 export interface ProfileData {
   businessName: string;
@@ -69,7 +69,7 @@ const App: React.FC = () => {
             />
           )}
 
-          {activeTab === 'reports' && <CampaignEngagementMetrics />}
+          {activeTab === 'reports' && <CampaignAnalyticsView />}
           
           {/* The Uniqueness Calibration View now acts as the sole Profile Editor and Scorer */}
           {activeTab === 'uniqueness' && <UniquenessCalibrationView />}
