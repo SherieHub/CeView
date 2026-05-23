@@ -10,7 +10,7 @@ interface TextFieldProps {
 
 const TextField: React.FC<TextFieldProps> = ({ label, value, onChange, placeholder }) => (
   <div className="flex flex-col mb-4">
-    <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>
+    <label className="text-xs font-bold uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>
       {label}
     </label>
     <input

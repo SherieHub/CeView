@@ -17,7 +17,7 @@ const StatTypography: React.FC<StatTypographyProps> = ({
       <span className={`${sizeClass} font-black tracking-tight`} style={{ color }}>
         {value}
       </span>
-      <span className="text-lg font-bold" style={{ color: COLORS.TEXT_MUTED }}>
+      <span className="text-xl font-bold" style={{ color: COLORS.TEXT_MUTED }}>
         /100
       </span>
     </div>

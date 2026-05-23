@@ -8,6 +8,7 @@ interface ActionableScoreCardProps {
   color: string; // Dynamic border and text color (Teal or Gold)
   description: string;
   feedbackText: string;
+  className?: string; // Optional additional class for title styling
 }
 
 const ActionableScoreCard: React.FC<ActionableScoreCardProps> = ({ 
@@ -15,16 +16,17 @@ const ActionableScoreCard: React.FC<ActionableScoreCardProps> = ({
   score, 
   color, 
   description, 
-  feedbackText 
+  feedbackText,
+  className
 }) => {
   return (
     <div className="p-6 rounded-2xl border bg-white shadow-sm" style={{ borderColor: color }}>
-      <h4 className="text-xs font-black uppercase tracking-wider mb-2" style={{ color: COLORS.TEXT_MUTED }}>
+      <h4 className={`text-xs font-black uppercase tracking-wider mb-2`} style={{ color: COLORS.TEXT_MUTED }}>
         {title}
       </h4>
       
       <div className="mb-4">
-        <StatTypography value={score} color={color} sizeClass="text-4xl" />
+        <StatTypography value={score} color={color} sizeClass="text-5xl" />
       </div>
       
       <p className="text-xs font-medium mb-3 leading-relaxed" style={{ color: COLORS.TEXT_MUTED }}>
