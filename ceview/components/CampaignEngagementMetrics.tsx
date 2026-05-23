@@ -142,6 +142,11 @@ export default function CampaignEngagementMetrics() {
     
     {/* Interactive Inputs Area */}
     <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-1 border border-slate-100">
+
+      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+          Published:
+        </span>
+
         <input 
           type="date" 
           max={dateRange.end} 
@@ -150,17 +155,17 @@ export default function CampaignEngagementMetrics() {
           className="text-sm font-semibold text-slate-600 bg-transparent border-none focus:bg-white focus:ring-2 focus:ring-slate-200 rounded-md px-2 py-1.5 cursor-pointer transition-colors hover:text-slate-900 outline-none" 
         />
         
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+        {/* <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
           to
-        </span>
+        </span> */}
         
-        <input 
+        {/* <input 
           type="date" 
           min={dateRange.start} 
           value={dateRange.end} 
           onChange={(e) => handleDateChange('end', e.target.value)} 
           className="text-sm font-semibold text-slate-600 bg-transparent border-none focus:bg-white focus:ring-2 focus:ring-slate-200 rounded-md px-2 py-1.5 cursor-pointer transition-colors hover:text-slate-900 outline-none" 
-        />
+        /> */}
       </div>
     </div>
 </div>
@@ -264,7 +269,7 @@ export default function CampaignEngagementMetrics() {
               <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E2E8F0" />
               <XAxis type="number" hide />
               <YAxis dataKey="stage" type="category" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontWeight: 600, fontSize: 14 }} width={100} />
-              <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: number) => value.toLocaleString()} />
+              <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value: any) => typeof value === 'number' ? value.toLocaleString() : value} />
               <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={40}>
                 {mockFunnelData.map((entry, index) => (
                   <Cell 
@@ -272,7 +277,16 @@ export default function CampaignEngagementMetrics() {
                     fill={index === 0 ? COLORS.NAVY : index === 1 ? COLORS.GOLD : index === 2 ? COLORS.RED_ORANGE : COLORS.TEXT_LIGHT} 
                   />
                 ))}
-                <LabelList dataKey="value" position="right" formatter={(val: number) => val.toLocaleString()} style={{ fill: COLORS.TEXT_MAIN, fontWeight: 'bold', fontSize: 14 }} />
+                <LabelList
+                  dataKey="value"
+                  position="right"
+                  // LabelList expects a RenderableText which can be null; accept any and return a string
+                  formatter={(label: any) => {
+                    if (label == null) return '';
+                    return typeof label === 'number' ? label.toLocaleString() : String(label);
+                  }}
+                  style={{ fill: COLORS.TEXT_MAIN, fontWeight: 'bold', fontSize: 14 }}
+                />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -445,7 +459,7 @@ const PESSection = () => {
             <BarChart layout="vertical" data={breakdownData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
               <XAxis type="number" domain={[0, 0.4]} hide />
               <YAxis dataKey="metric" type="category" interval={0} width={90} axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12, fontWeight: 600 }} />
-              <Tooltip cursor={{fill: '#F8FAFC'}} formatter={(val: number) => val.toFixed(2)} labelStyle={{color: COLORS.TEXT_MAIN, fontWeight: 'bold'}} />
+              <Tooltip cursor={{fill: '#F8FAFC'}} formatter={(value) => typeof value === 'number' ? value.toFixed(2) : ''} labelStyle={{color: COLORS.TEXT_MAIN, fontWeight: 'bold'}} />
               <Bar dataKey="contribution" radius={[0, 4, 4, 0]} barSize={20}>
                 {breakdownData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                 <LabelList dataKey="weight" position="right" style={{ fill: COLORS.TEXT_MUTED, fontSize: 12 }} />
@@ -456,7 +470,7 @@ const PESSection = () => {
         {/* PESFormulaFooter */}
         <div className="mt-4 pt-4 border-t border-slate-100 text-center">
           <code className="text-[11px] font-mono bg-slate-50 px-3 py-2 rounded-lg" style={{ color: COLORS.TEXT_MUTED }}>
-            This score heavily prioritizes your Ad Return (35%) and Booking Rate (30%) to ensure maximum profitability.
+            Performance Score = (ROAS × 0.35) + (Conv. Rate × 0.30) + (CAC_inv × 0.15) + (CTR × 0.15) + (CPC_inv × 0.05)
           </code>
         </div>
       </div>

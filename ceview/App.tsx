@@ -7,7 +7,7 @@ import { COLORS } from './constants';
 import MarketPrediction from './components/MarketPrediction';
 import Home_Notification from './components/Home_Notification';
 import ContentGeneration from './components/ContentGeneration';
-import UniquenessScore from './components/UniquenessScore';
+// import UniquenessScore from './components/UniquenessScore';
 
 export interface ProfileData {
   businessName: string;
@@ -75,7 +75,6 @@ const App: React.FC = () => {
           {/* Other standalone system pages */}
           {activeTab === 'reports' && <CampaignEngagementMetrics />}
           {activeTab === 'profile' && <BusinessProfile profile={profile} setters={setters} />}
-          {activeTab === 'uniqueness' && <UniquenessScore profile={profile} setters={setters} />}
           {activeTab === 'calendar' && <CalendarView />}
 
         </div>
