@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Sidebar from './components/Sidebar';
-import CalendarView from './components/CalendarView';
+import Sidebar from './old-components/Sidebar';
+import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 
 // 1. IMPORT MODULE 1 VIEWS
@@ -15,7 +15,7 @@ import ContentStudioView from './components/views/module-3/ContentStudioView';
 
 // 4. IMPORT MODULE 4 VIEWS
 import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
-import ContentGeneration from './components/ContentGeneration';
+import ContentGeneration from './old-components/ContentGeneration';
 
 
 export interface ProfileData {
