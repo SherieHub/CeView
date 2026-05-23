@@ -10,9 +10,7 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
+    "strict": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
