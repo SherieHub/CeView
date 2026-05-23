@@ -73,8 +73,6 @@ const App: React.FC = () => {
           
           {/* The Uniqueness Calibration View now acts as the sole Profile Editor and Scorer */}
           {activeTab === 'uniqueness' && <UniquenessCalibrationView />}
-          {/* Module 1: The Uniqueness Calibration View acts as the sole Profile Editor and Scorer */}
-          {activeTab === 'uniqueness' && <UniquenessCalibrationView profile={profile} setters={setters} />}
           
           {activeTab === 'calendar' && <CalendarView />}
 
