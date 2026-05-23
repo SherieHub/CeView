@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import CalendarView from './components/CalendarView';
 import { COLORS } from './constants';
-import ContentGeneration from './components/ContentGeneration';
 
 // 1. IMPORT MODULE 1 VIEWS
 import UniquenessCalibrationView from './components/views/module-1/UniquenessCalibrationView';
@@ -10,7 +9,14 @@ import UniquenessCalibrationView from './components/views/module-1/UniquenessCal
 // 2. IMPORT MODULE 2 VIEWS
 import HomeView from './components/views/module-2/HomeView';
 import MarketRadarView from './components/views/module-2/MarketRadarView';
+
+// 3. IMPORT MODULE 3 VIEWS
+import ContentStudioView from './components/views/module-3/ContentStudioView';
+
+// 4. IMPORT MODULE 4 VIEWS
 import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
+import ContentGeneration from './components/ContentGeneration';
+
 
 export interface ProfileData {
   businessName: string;
