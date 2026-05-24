@@ -3,8 +3,9 @@ import UniquenessCalibrationForm, { UniquenessPayloadDTO } from '../../modules/m
 import CalibrationResultsDashboard, { DetailedCalibrationResultDTO } from '../../modules/module-1/CalibrationResultsDashboard';
 import { CategoryAllocation } from '../../modules/module-1/InferredCategoryBoard';
 import { COLORS } from '../../../constants';
+import { ProfileData, ProfileSetters } from '../../../App'; // Adjust path if needed
 
-const INITIAL_CATEGORIES: CategoryAllocation[] = [
+const BASE_CATEGORIES: CategoryAllocation[] = [
   { name: "Coastal & Island", percentage: 0 },
   { name: "Adventure & Nature", percentage: 0 },
   { name: "Cultural & Heritage", percentage: 0 },
@@ -14,18 +15,41 @@ const INITIAL_CATEGORIES: CategoryAllocation[] = [
   { name: "Accommodation & Staycation", percentage: 0 },
 ];
 
-const UniquenessCalibrationView: React.FC = () => {
-  const [payload, setPayload] = useState<UniquenessPayloadDTO>({ businessName: '', coreServices: [], description: '', uvp: '' });
+interface UniquenessCalibrationViewProps {
+  profile?: ProfileData;
+  setters?: ProfileSetters;
+  onNavigate?: (tab: string) => void;
+}
+
+const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ profile, setters, onNavigate }) => {
+  // Initialize payload from global profile state if it exists
+  const [payload, setPayload] = useState<UniquenessPayloadDTO>({ 
+    businessName: profile?.businessName || '', 
+    coreServices: profile?.coreServices || [], 
+    description: profile?.description || '', 
+    uvp: profile?.uvp || '' 
+  });
   
+  // Phase 1: Analysis State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
-  const [categories, setCategories] = useState<CategoryAllocation[]>(INITIAL_CATEGORIES);
+  
+  // Pre-fill percentages if categories were already set globally
+  const initialCategories = BASE_CATEGORIES.map(cat => ({
+    ...cat,
+    percentage: profile?.categories.includes(cat.name) && profile.categories.length > 0 
+      ? Math.floor(100 / profile.categories.length) 
+      : 0
+  }));
+  const [categories, setCategories] = useState<CategoryAllocation[]>(initialCategories);
 
+  // Phase 2: Compute State
   const [isComputing, setIsComputing] = useState(false);
   const [calibrationResult, setCalibrationResult] = useState<DetailedCalibrationResultDTO | null>(null);
 
   const handleAnalyzeRequest = async () => {
     setIsAnalyzing(true);
+    // Simulate AI reading the description and allocating percentages
     setTimeout(() => {
       setCategories([
         { name: "Coastal & Island", percentage: 10 },
@@ -60,7 +84,22 @@ const UniquenessCalibrationView: React.FC = () => {
   };
 
   const handleConfirmProfile = () => {
-    alert("Profile Registered! Routing to Business Dashboard...");
+    // 1. Commit everything to Global App State
+    if (setters) {
+      setters.setBusinessName(payload.businessName);
+      setters.setCoreServices(payload.coreServices);
+      setters.setDescription(payload.description);
+      setters.setUvp(payload.uvp);
+      
+      // Extract only active categories (percentage > 0)
+      const activeCats = categories.filter(c => c.percentage > 0).map(c => c.name);
+      setters.setCategories(activeCats);
+    }
+
+    // 2. Redirect to Profile View
+    if (onNavigate) {
+      onNavigate('profile'); 
+    }
   };
 
   return (
@@ -74,7 +113,6 @@ const UniquenessCalibrationView: React.FC = () => {
          </p>
       </div>
 
-      {/* ✨ UPDATED: Vertical Stack instead of Grid Columns */}
       <div className="flex flex-col gap-12 pb-12">
         <UniquenessCalibrationForm 
           payload={payload} setPayload={setPayload}
