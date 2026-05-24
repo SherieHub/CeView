@@ -9,7 +9,17 @@
       "PowerShell(mvn -version 2>&1)",
       "PowerShell(python --version 2>&1)",
       "PowerShell(py --version 2>&1)",
-      "PowerShell(winget --version 2>&1; \\(Get-Command choco -ErrorAction SilentlyContinue\\).Source; \\(Get-Command scoop -ErrorAction SilentlyContinue\\).Source)"
+      "PowerShell(winget --version 2>&1; \\(Get-Command choco -ErrorAction SilentlyContinue\\).Source; \\(Get-Command scoop -ErrorAction SilentlyContinue\\).Source)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" info)",
+      "PowerShell($docker = \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\resources\\\\bin\\\\docker.exe\"; & $docker version --format \"Server: {{.Server.Version}} \\({{.Server.Os}}/{{.Server.Arch}}\\)\" 2>&1)",
+      "Bash(curl -fsS http://localhost:8080/actuator/health)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose ps)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose -f /c/Users/austi/CeView/backend/docker-compose.yml ps)",
+      "Bash(curl -s http://localhost:8080/actuator/health)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" exec ceview-postgres psql -U ceview -d ceview -c \"SELECT category_name FROM tbl_business_category ORDER BY category_name;\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/classification/analyze -H 'Content-Type: application/json' -d '{\"businessName\":\"Sunset Cove\",\"description\":\"Beachfront eco-resort\",\"coreServices\":[\"villas\"],\"uvp\":\"Marine biologist guide\"}')",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose up -d spring-boot)",
+      "Bash(curl -sI http://localhost:3000/)"
     ]
   }
 }
