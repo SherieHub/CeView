@@ -4,7 +4,7 @@ import {
   Shield, X as XIcon, Edit2, Plus, User, Link2
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
-import { generateOptimizedKeywords } from '../../../services/geminiService';
+import { api } from '../../../services/apiClient';
 import { ProfileData, ProfileSetters } from '../../../App';
 
 interface Platform {
@@ -66,7 +66,11 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
     if (!description || categories.length === 0) return;
     setIsLoading(true);
     try {
-        const generated = await generateOptimizedKeywords(description, categories.join(', '), businessName);
+        const generated = await api.generateKeywords({
+          businessName,
+          description,
+          category: categories.join(', '),
+        });
         setKeywords(generated);
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };

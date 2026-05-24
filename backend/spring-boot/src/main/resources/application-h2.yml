@@ -1,0 +1,22 @@
+# H2 profile — runs without Docker or Postgres. Activated by
+# SPRING_PROFILES_ACTIVE=h2. Uses a separate Flyway migration location
+# because the Postgres migration uses pgvector/text[] which H2 can't parse.
+spring:
+  datasource:
+    url: jdbc:h2:mem:ceview;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate.dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: true
+    locations: classpath:db/h2
+    baseline-on-migrate: true
+  h2:
+    console:
+      enabled: true
+      path: /h2

@@ -3,7 +3,8 @@ import UniquenessCalibrationForm, { UniquenessPayloadDTO } from '../../modules/m
 import CalibrationResultsDashboard, { DetailedCalibrationResultDTO } from '../../modules/module-1/CalibrationResultsDashboard';
 import { CategoryAllocation } from '../../modules/module-1/InferredCategoryBoard';
 import { COLORS } from '../../../constants';
-import { ProfileData, ProfileSetters } from '../../../App'; // Adjust path if needed
+import { ProfileData, ProfileSetters } from '../../../App';
+import { api } from '../../../services/apiClient';
 
 const BASE_CATEGORIES: CategoryAllocation[] = [
   { name: "Coastal & Island", percentage: 0 },
@@ -49,20 +50,24 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
 
   const handleAnalyzeRequest = async () => {
     setIsAnalyzing(true);
-    // Simulate AI reading the description and allocating percentages
-    setTimeout(() => {
-      setCategories([
-        { name: "Coastal & Island", percentage: 10 },
-        { name: "Adventure & Nature", percentage: 0 },
-        { name: "Cultural & Heritage", percentage: 0 },
-        { name: "Theme Parks / Entertainment", percentage: 0 },
-        { name: "Urban & City", percentage: 0 },
-        { name: "Culinary & Gastronomy", percentage: 30 },
-        { name: "Accommodation & Staycation", percentage: 60 },
-      ]);
+    try {
+      const { categories: allocs } = await api.classifyAnalyze({
+        businessName: payload.businessName,
+        coreServices: payload.coreServices,
+        description: payload.description,
+        uvp: payload.uvp,
+      });
+      // Backend returns the full canonical list; merge so the UI keeps its ordering
+      setCategories(BASE_CATEGORIES.map(base => {
+        const match = allocs.find(a => a.name === base.name);
+        return { ...base, percentage: match ? Math.round(match.percentage) : 0 };
+      }));
       setHasAnalyzed(true);
+    } catch (e) {
+      console.error('classifyAnalyze failed', e);
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   const handleCategoryChange = (name: string, newPercentage: number) => {
@@ -71,16 +76,20 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
 
   const handleComputeRequest = async () => {
     setIsComputing(true);
-    setTimeout(() => {
-      setCalibrationResult({
-        overallScore: 68,
-        semanticsScore: 72,
-        categoryScore: 61,
-        descriptionFeedback: "Use more sensory, place-specific language to separate your copy from generic resort descriptions.",
-        categoryFeedback: "Your revised category mix shows high uniqueness against local market saturation."
+    try {
+      const result = await api.classifyUniqueness({
+        businessName: payload.businessName,
+        categories: categories.filter(c => c.percentage > 0).map(c => c.name),
+        coreServices: payload.coreServices,
+        description: payload.description,
+        uvp: payload.uvp,
       });
+      setCalibrationResult(result);
+    } catch (e) {
+      console.error('classifyUniqueness failed', e);
+    } finally {
       setIsComputing(false);
-    }, 2000);
+    }
   };
 
   const handleConfirmProfile = () => {

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, MapPin, Navigation, Plane } from 'lucide-react';
 import { COLORS, MOCK_MARKETS } from '../../../constants';
+import { api } from '../../../services/apiClient';
+import type { Market } from '../../../types';
 
 import MarketRankCard from '../../composites/module-2/MarketRankCard';
 import MetricHighlight from '../../composites/module-2/MetricHighlight';
@@ -16,8 +18,16 @@ interface MarketRadarViewProps {
 }
 
 const MarketRadarView: React.FC<MarketRadarViewProps> = ({ onBack, initialMarketId, onNavigateToContent }) => {
+  const [markets, setMarkets] = useState<Market[]>(MOCK_MARKETS);
   const [selectedMarketId, setSelectedMarketId] = useState<string>(initialMarketId ?? MOCK_MARKETS[0].id);
-  const selectedMarket = MOCK_MARKETS.find((m) => m.id === selectedMarketId) || MOCK_MARKETS[0];
+
+  useEffect(() => {
+    api.listMarkets()
+      .then(r => { if (r.markets?.length) setMarkets(r.markets); })
+      .catch(e => console.warn('listMarkets failed, using mock', e));
+  }, []);
+
+  const selectedMarket = markets.find((m) => m.id === selectedMarketId) || markets[0];
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6" style={{ backgroundColor: COLORS.CREAM, minHeight: '100vh' }}>
@@ -41,7 +51,7 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({ onBack, initialMarket
 
       {/* Top Ranked Markets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {MOCK_MARKETS.map((market) => (
+        {markets.map((market) => (
           <MarketRankCard 
             key={market.id}
             market={market}

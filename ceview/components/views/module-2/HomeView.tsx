@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import TrendAlertCard from '../../composites/module-2/TrendAlertCard';
 import MarketRadarView from './MarketRadarView';
 import { MOCK_NOTIFICATIONS, COLORS } from '../../../constants';
 import { Notification } from '../../../types';
+import { api } from '../../../services/apiClient';
 
 interface HomeViewProps {
   onNavigateToContent?: () => void;
@@ -10,6 +11,13 @@ interface HomeViewProps {
 
 const HomeView: React.FC<HomeViewProps> = ({ onNavigateToContent }) => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+
+  useEffect(() => {
+    api.listNotifications()
+      .then(r => { if (r.notifications?.length) setNotifications(r.notifications); })
+      .catch(e => console.warn('listNotifications failed, using mock', e));
+  }, []);
 
   const getMarketId = (market: string): string => {
     const normalized = market.toLowerCase();
@@ -39,7 +47,7 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigateToContent }) => {
       </div>
 
       <div className="space-y-4">
-        {MOCK_NOTIFICATIONS.map((notif) => (
+        {notifications.map((notif) => (
           <TrendAlertCard 
             key={notif.id} 
             notif={notif} 
