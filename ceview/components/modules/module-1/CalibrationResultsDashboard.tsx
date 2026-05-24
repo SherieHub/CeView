@@ -75,7 +75,7 @@ const CalibrationResultsDashboard: React.FC<DashboardProps> = ({ isAwaiting, res
         className="w-full mt-auto px-6 py-4 rounded-xl text-white font-black flex items-center justify-center gap-2 hover:opacity-90 shadow-lg transition-all"
         style={{ backgroundColor: COLORS.NAVY }}
       >
-        Confirm & Register Profile <ArrowRight size={18} />
+        Confirm & Register Profile
       </button>
     </div>
   );

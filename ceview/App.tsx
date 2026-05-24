@@ -3,8 +3,9 @@ import Sidebar from './old-components/Sidebar';
 import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 
-// 1. IMPORT MODULE 1 VIEWS
+// 1. IMPORT MODULE 1 VIEWS & PROFILE
 import UniquenessCalibrationView from './components/views/module-1/UniquenessCalibrationView';
+import BusinessProfile from './components/views/module-1/BusinessProfile'; // ✨ NEW: Import BusinessProfile
 
 // 2. IMPORT MODULE 2 VIEWS
 import HomeView from './components/views/module-2/HomeView';
@@ -15,8 +16,6 @@ import ContentStudioView from './components/views/module-3/ContentStudioView';
 
 // 4. IMPORT MODULE 4 VIEWS
 import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
-import ContentGeneration from './old-components/ContentGeneration';
-
 
 export interface ProfileData {
   businessName: string;
@@ -70,15 +69,26 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'content' && (
-            <ContentGeneration
+            <ContentStudioView
               onBack={() => setActiveTab('radar')}
             />
           )}
 
           {activeTab === 'reports' && <CampaignAnalyticsView />}
           
-          {/* The Uniqueness Calibration View now acts as the sole Profile Editor and Scorer */}
-          {activeTab === 'uniqueness' && <UniquenessCalibrationView />}
+          {/* ✨ NEW: Render the Business Profile Dashboard */}
+          {activeTab === 'profile' && (
+            <BusinessProfile profile={profile} setters={setters} />
+          )}
+          
+          {/* ✨ UPDATED: Pass props to Calibration View to allow data saving & redirection */}
+          {activeTab === 'uniqueness' && (
+            <UniquenessCalibrationView 
+              profile={profile} 
+              setters={setters} 
+              onNavigate={(tab) => setActiveTab(tab)} 
+            />
+          )}
           
           {activeTab === 'calendar' && <CalendarView />}
 
