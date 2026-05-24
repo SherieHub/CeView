@@ -1,9 +1,12 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /build
-COPY pom.xml .
-RUN mvn -B dependency:go-offline
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw
+# Resolve dependencies in a separate layer so source-only changes don't refetch.
+RUN ./mvnw -B -ntp -e dependency:resolve dependency:resolve-plugins || true
 COPY src ./src
-RUN mvn -B package -DskipTests
+RUN ./mvnw -B -ntp -e package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
