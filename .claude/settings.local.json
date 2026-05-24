@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "PowerShell(docker --version)",
+      "PowerShell(docker compose version)",
+      "PowerShell(java -version 2>&1)",
+      "PowerShell(mvn -version 2>&1)",
+      "PowerShell(python --version 2>&1)",
+      "PowerShell(py --version 2>&1)",
+      "PowerShell(winget --version 2>&1; \\(Get-Command choco -ErrorAction SilentlyContinue\\).Source; \\(Get-Command scoop -ErrorAction SilentlyContinue\\).Source)"
+    ]
+  }
+}

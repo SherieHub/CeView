@@ -1,0 +1,51 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-05-25T00:02:10.975+08:00  INFO 8832 --- [ceview-backend] [           main] com.ceview.CeViewApplication             : Starting CeViewApplication v0.1.0 using Java 21.0.11 with PID 8832 (C:\Users\austi\CeView\backend\spring-boot\target\ceview-backend-0.1.0.jar started by austi in C:\Users\austi\CeView\backend\spring-boot)
+2026-05-25T00:02:10.980+08:00  INFO 8832 --- [ceview-backend] [           main] com.ceview.CeViewApplication             : The following 1 profile is active: "h2"
+2026-05-25T00:02:14.644+08:00  INFO 8832 --- [ceview-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-05-25T00:02:15.117+08:00  INFO 8832 --- [ceview-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 444 ms. Found 2 JPA repository interfaces.
+2026-05-25T00:02:19.527+08:00  INFO 8832 --- [ceview-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-05-25T00:02:19.608+08:00  INFO 8832 --- [ceview-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-05-25T00:02:19.610+08:00  INFO 8832 --- [ceview-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-05-25T00:02:19.767+08:00  INFO 8832 --- [ceview-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-05-25T00:02:19.771+08:00  INFO 8832 --- [ceview-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 8677 ms
+2026-05-25T00:02:20.504+08:00  INFO 8832 --- [ceview-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-25T00:02:21.512+08:00  INFO 8832 --- [ceview-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:ceview user=SA
+2026-05-25T00:02:21.517+08:00  INFO 8832 --- [ceview-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-25T00:02:21.543+08:00  INFO 8832 --- [ceview-backend] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2'. Database available at 'jdbc:h2:mem:ceview'
+2026-05-25T00:02:23.180+08:00  INFO 8832 --- [ceview-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:ceview (H2 2.2)
+2026-05-25T00:02:23.207+08:00  WARN 8832 --- [ceview-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-05-25T00:02:23.286+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-05-25T00:02:23.294+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.044s)
+2026-05-25T00:02:23.317+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-05-25T00:02:23.421+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-05-25T00:02:23.479+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - init schema"
+2026-05-25T00:02:23.763+08:00  INFO 8832 --- [ceview-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "PUBLIC", now at version v1 (execution time 00:00.208s)
+2026-05-25T00:02:24.077+08:00  INFO 8832 --- [ceview-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-05-25T00:02:24.449+08:00  INFO 8832 --- [ceview-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-05-25T00:02:24.613+08:00  INFO 8832 --- [ceview-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-05-25T00:02:25.851+08:00  INFO 8832 --- [ceview-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-05-25T00:02:25.961+08:00  WARN 8832 --- [ceview-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-05-25T00:02:28.720+08:00  INFO 8832 --- [ceview-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-05-25T00:02:28.726+08:00  INFO 8832 --- [ceview-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-05-25T00:02:32.116+08:00  WARN 8832 --- [ceview-backend] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: ba38a8d2-b065-41f5-b718-ffc70f981938
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-05-25T00:02:32.188+08:00  INFO 8832 --- [ceview-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-05-25T00:02:34.499+08:00  INFO 8832 --- [ceview-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-05-25T00:02:37.926+08:00  INFO 8832 --- [ceview-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2026-05-25T00:02:37.965+08:00  INFO 8832 --- [ceview-backend] [           main] com.ceview.CeViewApplication             : Started CeViewApplication in 28.203 seconds (process running for 30.132)
+2026-05-25T00:02:38.520+08:00  INFO 8832 --- [ceview-backend] [nio-8080-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-05-25T00:02:38.523+08:00  INFO 8832 --- [ceview-backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-05-25T00:02:38.529+08:00  INFO 8832 --- [ceview-backend] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms

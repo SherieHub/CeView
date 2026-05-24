@@ -4,26 +4,30 @@ import ReportActionBtn from '../../base/module-4/ReportActionBtn';
 import RecommendationItem from '../../composites/module-4/RecommendationItem';
 import PriorityFixCard from '../../composites/module-4/PriorityFixCard';
 import { COLORS } from '../../../constants';
+import { api } from '../../../services/apiClient';
 
 const AIActionPlanReport: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      const r = await api.prescriptiveReport();
       setReportData({
-        executiveSummary: "Over the selected period, the campaign successfully generated high top-of-funnel awareness within the Cebu metropolitan area. However, the overall Promotional Effectiveness Score (PES) indicates a significant efficiency leak mid-funnel. While cost-per-click (CPC) remains highly competitive for local MSME benchmarks, the traffic acquired is not converting into actionable leads at the expected rate.",
-        weakestStage: { name: "Clicks → Conversions", dropoff: "-88.1%", diagnosis: "High traffic volume but low landing page engagement." },
-        secondaryLeaks: [{ name: "Impressions → Clicks", dropoff: "-95.2%" }, { name: "Conversions → Bookings", dropoff: "-78.8%" }],
-        recommendations: [
-          { title: "Realign Ad Copy with Landing Page Intent", explanation: "Ensure the headline on the destination page mirrors the localized Cebu promotional offer." },
-          { title: "Implement High-Intent Audience Filtering", explanation: "Shift 20% of the ad spend away from broad awareness targeting." },
-          { title: "Streamline the Conversion Form", explanation: "Reduce lead capture to Name and Phone Number only." }
-        ]
+        executiveSummary: r.executiveSummary,
+        weakestStage: r.weakestStage,
+        secondaryLeaks: r.secondaryLeaks ?? [],
+        recommendations: (r.recommendations ?? []).map(line => {
+          const [title, ...rest] = line.split(/—|:/);
+          return { title: title.trim(), explanation: rest.join(' ').trim() || line };
+        }),
       });
+    } catch (e) {
+      console.error('prescriptiveReport failed', e);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   return (

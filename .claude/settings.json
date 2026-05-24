@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(winget install --id Docker.DockerDesktop -e --accept-source-agreements --accept-package-agreements --silent)",
+      "PowerShell(winget install --id Docker.DockerDesktop --accept-source-agreements --accept-package-agreements --silent)",
+      "PowerShell($paths = @\\(\"C:\\\\Program Files\\\\Docker\\\\Docker\\\\resources\\\\bin\\\\docker.exe\", \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\"\\); foreach \\($p in $paths\\) { if \\(Test-Path $p\\) { \"FOUND: $p\" } else { \"MISSING: $p\" } }; Get-Process \"Docker Desktop\" -ErrorAction SilentlyContinue | Select-Object Name, Id)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\resources\\\\bin;\" + $env:Path; Start-Process \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe\"; \"Docker Desktop launching...\")",
+      "PowerShell($docker = \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\resources\\\\bin\\\\docker.exe\"; $tries = 0; while \\($tries -lt 60\\) { try { & $docker info 2>$null | Out-Null; if \\($?\\) { \"Docker daemon ready after $tries attempts\"; break } } catch {}; Start-Sleep -Seconds 3; $tries++ }; if \\($tries -eq 60\\) { \"Daemon still not ready after 3 minutes\" })",
+      "PowerShell($docker = \"C:\\\\Program Files\\\\Docker\\\\Docker\\\\resources\\\\bin\\\\docker.exe\"; if \\(Test-Path $docker\\) { & $docker info 2>&1 | Select-Object -First 20 } else { \"docker.exe not found\" })",
+      "PowerShell(winget install --id EclipseAdoptium.Temurin.21.JDK --accept-source-agreements --accept-package-agreements --scope user 2>&1)",
+      "PowerShell(winget install --id Python.Python.3.12 --accept-source-agreements --accept-package-agreements --scope user 2>&1)",
+      "PowerShell(winget install --id EclipseAdoptium.Temurin.21.JDK --accept-source-agreements --accept-package-agreements 2>&1)",
+      "PowerShell(winget install --id Apache.Maven --accept-source-agreements --accept-package-agreements 2>&1)",
+      "PowerShell($candidates = @\\(\"C:\\\\Users\\\\austi\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\", \"C:\\\\Program Files\\\\Python312\\\\python.exe\"\\); foreach \\($p in $candidates\\) { if \\(Test-Path $p\\) { & $p --version 2>&1; \"AT: $p\"; break } }; Get-ChildItem \"C:\\\\Users\\\\austi\\\\AppData\\\\Local\\\\Programs\\\\Python\" -Directory -ErrorAction SilentlyContinue | Select-Object FullName)",
+      "Bash(curl -sSL https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar -o \"/c/Users/austi/CeView/backend/spring-boot/.mvn/wrapper/maven-wrapper.jar\")",
+      "Bash(curl -sSL https://raw.githubusercontent.com/apache/maven-wrapper/maven-wrapper-3.3.2/maven-wrapper-distribution/src/resources/mvnw -o \"/c/Users/austi/CeView/backend/spring-boot/mvnw\")",
+      "Bash(curl -sSL https://raw.githubusercontent.com/apache/maven-wrapper/maven-wrapper-3.3.2/maven-wrapper-distribution/src/resources/mvnw.cmd -o \"/c/Users/austi/CeView/backend/spring-boot/mvnw.cmd\")",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.11.10-hotspot\"; $env:Path = \"$env:JAVA_HOME\\\\bin;$env:Path\"; cd \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\"; .\\\\mvnw.cmd -B -q package -DskipTests 2>&1 | Select-Object -Last 50)"
+    ]
+  }
+}
