@@ -7,4 +7,3 @@ app = FastAPI()
 def start_program():
     return {"status": "successfull", "message": "bert-agent microservice working properly"}
 
-

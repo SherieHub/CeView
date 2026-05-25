@@ -23,8 +23,14 @@ class BertService:
             if decimal_prob >= self.threshold:
                 triggered_labels.append(class_number)
                 
+            self.even_probabilities(percentage_breakdown)
         return {
             "status": "success",
             "triggered_labels": triggered_labels,
             "probabilities": percentage_breakdown
         }
+    
+    def even_probabilities(prob: list) -> list:
+        total = sum(prob)
+        prob = [ round(x / total, 2) for x in prob]
+        return prob
