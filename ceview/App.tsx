@@ -1,23 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import Sidebar from './old-components/Sidebar';
+import { Menu } from 'lucide-react';
+import Sidebar from './layout/Sidebar';
 import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 import { api } from './services/apiClient';
 import { OPERATOR_ID } from './services/identity';
 
-// 1. IMPORT MODULE 1 VIEWS & PROFILE
-import UniquenessCalibrationView from './components/views/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
-import BusinessProfile from './components/views/module-1/1.1-business-input/BusinessProfile'; // ✨ NEW: Import BusinessProfile
-
-// 2. IMPORT MODULE 2 VIEWS
-import HomeView from './components/views/module-2/HomeView';
-import MarketRadarView from './components/views/module-2/MarketRadarView';
-
-// 3. IMPORT MODULE 3 VIEWS
-import ContentStudioView from './components/views/module-3/ContentStudioView';
-
-// 4. IMPORT MODULE 4 VIEWS
-import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
+import BusinessProfile from './components/module-1/1.1-business-input/BusinessProfile';
+import UniquenessCalibrationView from './components/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
+import HomeView from './components/module-2/2.1-home/HomeView';
+import MarketRadarView from './components/module-2/2.2-market-radar/MarketRadarView';
+import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
+import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
 
 export interface ProfileData {
   businessProfileId: string | null;
@@ -43,9 +37,9 @@ export interface ProfileSetters {
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Shared profile state — hydrated from backend on mount, updated by
-  // BusinessProfile edits and UniquenessCalibration confirms.
   const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
@@ -81,9 +75,33 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: COLORS.OFF_WHITE }}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Mobile top bar */}
+      <div className="fixed top-0 left-0 right-0 h-14 flex md:hidden items-center px-4 gap-3 z-30 shadow-sm" style={{ backgroundColor: COLORS.NAVY }}>
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <Menu size={22} />
+        </button>
+        <h1 className="text-xl font-bold text-white tracking-tight">
+          Ce<span style={{ color: COLORS.LIGHT_GOLD }}>View</span>
+        </h1>
+      </div>
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={setIsCollapsed}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+
+      <main
+        className={`flex-1 overflow-y-auto pt-14 md:pt-0 p-4 md:p-8 transition-all duration-300 ${
+          isCollapsed ? 'md:ml-16' : 'md:ml-64'
+        }`}
+      >
         <div className="max-w-6xl mx-auto">
 
           {activeTab === 'home' && (
@@ -111,21 +129,19 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'reports' && <CampaignAnalyticsView />}
-          
-          {/* ✨ NEW: Render the Business Profile Dashboard */}
+
           {activeTab === 'profile' && (
             <BusinessProfile profile={profile} setters={setters} />
           )}
-          
-          {/* ✨ UPDATED: Pass props to Calibration View to allow data saving & redirection */}
+
           {activeTab === 'uniqueness' && (
-            <UniquenessCalibrationView 
-              profile={profile} 
-              setters={setters} 
-              onNavigate={(tab) => setActiveTab(tab)} 
+            <UniquenessCalibrationView
+              profile={profile}
+              setters={setters}
+              onNavigate={(tab) => setActiveTab(tab)}
             />
           )}
-          
+
           {activeTab === 'calendar' && <CalendarView />}
 
         </div>

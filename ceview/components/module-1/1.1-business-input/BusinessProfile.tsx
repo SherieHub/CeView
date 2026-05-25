@@ -7,6 +7,7 @@ import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
 import { api } from '../../../services/apiClient';
 import { OPERATOR_ID } from '../../../services/identity';
 import { ProfileData, ProfileSetters } from '../../../App';
+import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
 interface Platform {
   id: string;
@@ -23,7 +24,7 @@ interface BusinessProfileProps {
 
 const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { businessProfileId, businessName, categories, coreServices, description, uvp, imagePreview, uniquenessScore } = profile;
@@ -74,7 +75,7 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
           category: categories.join(', '),
         });
         setKeywords(generated);
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { console.error(error); setServerError('Keyword generation failed. The AI service may be unavailable.'); } finally { setIsLoading(false); }
   };
 
   const openEditModal = () => {
@@ -97,7 +98,7 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
     setImagePreview(tempImagePreview);
     setIsEditModalOpen(false);
     setIsSaved(true);
-    setSaveError(null);
+    setServerError(null);
     setTimeout(() => setIsSaved(false), 3000);
 
     api.saveProfile(OPERATOR_ID, {
@@ -116,7 +117,7 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
       })
       .catch(e => {
         console.error('saveProfile failed', e);
-        setSaveError('Changes saved locally. Backend sync failed.');
+        setServerError('Profile could not be saved. Backend sync failed.');
       });
   };
 
@@ -133,6 +134,8 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8 animate-fade-in" style={{ backgroundColor: COLORS.CREAM, minHeight: '100vh' }}>
+
+      {serverError && <ServerErrorBanner message={serverError} onDismiss={() => setServerError(null)} />}
 
       {/* ══ HEADER ══ */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -151,11 +154,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
             {isSaved && (
                 <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border animate-fade-in" style={{ backgroundColor: COLORS.GREEN_LIGHT, borderColor: `${COLORS.GREEN}30`, color: COLORS.GREEN }}>
                     <CheckCircle size={14} /> Saved Successfully
-                </div>
-            )}
-            {saveError && (
-                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border animate-fade-in" style={{ backgroundColor: '#FEF2F2', borderColor: '#FCA5A5', color: '#B91C1C' }}>
-                    Save failed
                 </div>
             )}
             <button onClick={openEditModal} className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-90 transition-all" style={{ backgroundColor: COLORS.NAVY, color: COLORS.WHITE }}>
