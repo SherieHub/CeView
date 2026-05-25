@@ -1,0 +1,81 @@
+sequenceDiagram
+    participant Browser
+    participant HomeView
+    participant MRView as MarketRadarView
+    participant AC as apiClient
+    participant NC as NotificationController
+    participant FC as ForecastingController
+    participant AI as AIInferenceGatewayService
+    participant FP as FastAPI
+
+    %% ── 1. App Mount — Notifications Load ───────────────────────────────────
+    Note over Browser,FP: 1 · HomeView Mount — Notifications Load
+
+    Browser->>HomeView: render()
+    HomeView->>AC: listNotifications()
+    AC->>NC: GET /api/v1/notifications
+    NC->>AI: listNotifications()
+    AI->>FP: GET /internal/notifications (WebClient)
+    FP-->>AI: {notifications:[…]}
+    AI-->>NC: Map<String,Object>
+    NC->>NC: mapper.convertValue → NotificationsResponse
+    alt shape mismatch
+        NC-->>AC: 500 UnrecognizedPropertyException
+        AC-->>HomeView: error
+        HomeView->>HomeView: setIsUsingMock(true) — render MOCK_NOTIFICATIONS
+        HomeView->>Browser: show gold "Demo Data" badge
+    else success
+        NC-->>AC: NotificationsResponse {notifications:[…]}
+        AC-->>HomeView: {notifications: Notification[]}
+        HomeView->>HomeView: setNotifications(r.notifications), setIsUsingMock(false)
+        HomeView->>Browser: render TrendAlertCard list
+    end
+
+    %% ── 2. Market Radar Load ────────────────────────────────────────────────
+    Note over Browser,FP: 2 · MarketRadarView Mount — Markets Load
+
+    Browser->>MRView: render() (direct nav or notification click)
+    MRView->>AC: listMarkets(businessProfileId)
+    AC->>FC: GET /api/v1/forecasting/markets?profileId=<uuid>
+    FC->>AI: forecastMarkets({profileId, …})
+    AI->>FP: POST /internal/forecasting/markets (WebClient)
+    FP-->>AI: {markets:[…]}
+    AI-->>FC: Map<String,Object>
+    FC->>FC: mapper.convertValue → MarketsResponse
+    alt shape mismatch
+        FC-->>AC: 500
+        AC-->>MRView: error
+        MRView->>MRView: setIsUsingMock(true) — render MOCK_MARKETS
+        MRView->>Browser: show gold "Demo Data" badge
+    else success
+        FC-->>AC: MarketsResponse {markets:[…]}
+        AC-->>MRView: {markets: Market[]}
+        MRView->>MRView: setMarkets(r.markets), setIsUsingMock(false)
+        MRView->>Browser: render MarketRankCard grid + deep-dive dashboard
+    end
+
+    %% ── 3. Notification Click → Market Deep Dive ────────────────────────────
+    Note over Browser,FP: 3 · HomeView — Notification Click → Market Radar
+
+    Browser->>HomeView: click TrendAlertCard (notif.marketId = "japan")
+    HomeView->>HomeView: setSelectedNotification(notif)
+    HomeView->>Browser: render MarketRadarView with initialMarketId="japan"
+    MRView->>MRView: setSelectedMarketId("japan") from initialMarketId
+    MRView->>Browser: pre-selects Japan MarketRankCard, shows Japan deep-dive
+
+    %% ── 4. Refresh Forecast ─────────────────────────────────────────────────
+    Note over Browser,FP: 4 · MarketRadarView — Refresh Forecast (re-analyze)
+
+    Browser->>MRView: click "Refresh Forecast" button
+    MRView->>MRView: setIsRefreshing(true)
+    MRView->>AC: analyzeMarkets(businessProfileId)
+    AC->>FC: POST /api/v1/forecasting/analyze/<uuid>
+    FC->>AI: forecastMarkets({profileId, refresh: true})
+    AI->>FP: POST /internal/forecasting/markets (WebClient, refresh flag)
+    FP-->>AI: {markets:[…]} (fresh inference)
+    AI-->>FC: Map<String,Object>
+    FC->>FC: mapper.convertValue → MarketsResponse
+    FC-->>AC: MarketsResponse
+    AC-->>MRView: {markets: Market[]}
+    MRView->>MRView: setMarkets(r.markets), setIsUsingMock(false), setIsRefreshing(false)
+    MRView->>Browser: updated MarketRankCard grid

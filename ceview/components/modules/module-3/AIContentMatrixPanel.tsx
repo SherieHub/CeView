@@ -4,8 +4,14 @@ import PlatformTab from '../../base/module-3/PlatformTab';
 import CopywritingOptionCard from '../../composites/module-3/CopywritingOptionCard';
 import { COLORS } from '../../../constants';
 
+interface PlatformDescriptor {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
 interface AIContentMatrixPanelProps {
-  platforms: any[];
+  platforms: PlatformDescriptor[];
   activeTab: string;
   setActiveTab: (id: string) => void;
   options: string[];

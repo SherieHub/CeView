@@ -5,6 +5,9 @@ import ComplianceGauge from '../../composites/module-3/ComplianceGauge';
 import ChecklistIndicator from '../../composites/module-3/ChecklistIndicator';
 import FeedbackList from '../../composites/module-3/FeedbackList';
 import { COLORS } from '../../../constants';
+import type { ComplianceResultDTO } from '../../../types';
+
+interface AuditStep { label: string; at: number }
 
 interface SmartOptimizationBoardProps {
   auditOn: boolean;
@@ -15,12 +18,15 @@ interface SmartOptimizationBoardProps {
   auditProgress: number;
   onRunAudit: () => void;
   onResetAudit: () => void;
-  mockData: any;
-  auditSteps: any[];
+  compliance: ComplianceResultDTO;
+  marketCity: string;
+  isUsingMock?: boolean;
+  auditSteps: AuditStep[];
 }
 
-const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({ 
-  auditOn, setAuditOn, hasFile, auditRunning, auditDone, auditProgress, onRunAudit, onResetAudit, mockData, auditSteps 
+const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
+  auditOn, setAuditOn, hasFile, auditRunning, auditDone, auditProgress, onRunAudit, onResetAudit,
+  compliance, marketCity, isUsingMock, auditSteps,
 }) => {
   const currentStep = auditSteps.find(s => auditProgress < s.at) || auditSteps.at(-1);
 
@@ -49,6 +55,15 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
             <h2 className="text-base font-black leading-tight" style={{ color: COLORS.NAVY }}>Smart Optimization Audit</h2>
             <p className="text-xs font-bold uppercase tracking-wider mt-0.5" style={{ color: COLORS.TEXT_MUTED }}>
               Content Review <span className="ml-2 px-2 py-0.5 rounded text-[9px]" style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.GOLD }}>OPTIONAL</span>
+              {auditDone && isUsingMock && (
+                <span
+                  className="ml-2 px-2 py-0.5 rounded text-[9px] border"
+                  style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
+                  title="Backend unreachable — showing seeded demo compliance result"
+                >
+                  Demo Score
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -87,7 +102,7 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-6 rounded-xl border flex flex-col items-center justify-center text-center" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
-                  <ComplianceGauge score={mockData.compliance.score} />
+                  <ComplianceGauge score={compliance.score} />
                   <div className="mt-4 px-3 py-1 rounded-lg border text-xs font-black" style={{ backgroundColor: COLORS.GREEN_LIGHT, borderColor: `${COLORS.GREEN}40`, color: COLORS.GREEN }}>
                     ✓ Great Content
                   </div>
@@ -96,15 +111,15 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
                   <ChecklistIndicator />
                   <div className="flex-1 p-4 rounded-xl border flex items-center" style={{ backgroundColor: COLORS.OFF_WHITE, borderLeftColor: COLORS.NAVY, borderLeftWidth: 4 }}>
                     <p className="text-sm font-medium leading-relaxed" style={{ color: COLORS.TEXT_MAIN }}>
-                      <strong className="font-black" style={{ color: COLORS.NAVY }}>{mockData.compliance.score}% Marketing Score</strong> — Your content creates the right emotional feeling for travelers from <strong className="font-black">{mockData.market.city}</strong>.
+                      <strong className="font-black" style={{ color: COLORS.NAVY }}>{compliance.score}% Marketing Score</strong> — Your content creates the right emotional feeling for travelers from <strong className="font-black">{marketCity}</strong>.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FeedbackList type="pros" items={mockData.compliance.aligned} />
-                <FeedbackList type="cons" items={mockData.compliance.gaps} />
+                <FeedbackList type="pros" items={compliance.aligned} />
+                <FeedbackList type="cons" items={compliance.gaps} />
               </div>
             </div>
           )}

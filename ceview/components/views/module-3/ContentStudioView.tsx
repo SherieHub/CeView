@@ -1,6 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
-import { COLORS } from '../../../constants';
+import { COLORS, MOCK_MARKETS } from '../../../constants';
+import { api } from '../../../services/apiClient';
+import type { ContentResponseDTO, ContentPlatformId } from '../../../types';
 
 import AIContentMatrixPanel from '../../modules/module-3/AIContentMatrixPanel';
 import VisualDirectionBoard from '../../modules/module-3/VisualDirectionBoard';
@@ -8,7 +10,7 @@ import MediaCaptionManager from '../../modules/module-3/MediaCaptionManager';
 import SmartOptimizationBoard from '../../modules/module-3/SmartOptimizationBoard';
 import DistributionPanel from '../../modules/module-3/DistributionPanel';
 
-const MOCK = {
+const MOCK_CONTENT: ContentResponseDTO = {
   market:    { country: 'South Korea', flag: '🇰🇷', city: 'Seoul' },
   framework: 'SOR — Stimulus-Organism-Response',
   captions: {
@@ -67,20 +69,21 @@ const MOCK = {
       ],
     },
   },
-  compliance: {
-    score: 88,
-    aligned: [
-      "Destination tags are correctly added so travelers can easily find your location.",
-      "Text is clear and very easy to read against the background image.",
-      "Important text is placed exactly where Korean travelers naturally look first.",
-      "Words like 'healing' and 'rest' perfectly match what your target audience wants to see.",
-    ],
-    gaps: [
-      "The background looks a bit too crowded or messy. Try using a cleaner, simpler image.",
-      "Missing words that suggest a 'fresh start' or 'new beginning', which Korean tourists love.",
-      "No people are visible in the photo. Adding a person helps travelers imagine themselves there.",
-    ],
-  },
+};
+
+const MOCK_COMPLIANCE = {
+  score: 88,
+  aligned: [
+    "Destination tags are correctly added so travelers can easily find your location.",
+    "Text is clear and very easy to read against the background image.",
+    "Important text is placed exactly where Korean travelers naturally look first.",
+    "Words like 'healing' and 'rest' perfectly match what your target audience wants to see.",
+  ],
+  gaps: [
+    "The background looks a bit too crowded or messy. Try using a cleaner, simpler image.",
+    "Missing words that suggest a 'fresh start' or 'new beginning', which Korean tourists love.",
+    "No people are visible in the photo. Adding a person helps travelers imagine themselves there.",
+  ],
 };
 
 const PLATFORMS = [
@@ -106,10 +109,27 @@ const AUDIT_STEPS = [
   { label: 'Putting together your simple feedback report...',    at: 100 },
 ];
 
-export default function ContentStudioView({ onBack }: { onBack?: () => void }) {
+interface ContentStudioViewProps {
+  onBack?: () => void;
+  businessProfileId?: string | null;
+  businessName?: string;
+  description?: string;
+  categories?: string[];
+  initialMarketId?: string;
+  initialTrend?: string;
+}
+
+export default function ContentStudioView({
+  onBack, businessProfileId, businessName, description, categories,
+  initialMarketId, initialTrend,
+}: ContentStudioViewProps) {
+  // Backend content state — falls back to MOCK_CONTENT when API fails.
+  const [content, setContent] = useState<ContentResponseDTO>(MOCK_CONTENT);
+  const [isUsingMock, setIsUsingMock] = useState<boolean>(true);
+
   // Global View State
-  const [activeTab, setActiveTab] = useState('instagram');
-  const [stagedCaption, setStagedCaption] = useState<string>(""); 
+  const [activeTab, setActiveTab] = useState<ContentPlatformId>('instagram');
+  const [stagedCaption, setStagedCaption] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -118,9 +138,40 @@ export default function ContentStudioView({ onBack }: { onBack?: () => void }) {
   const [auditRunning, setAuditRunning] = useState(false);
   const [auditDone, setAuditDone] = useState(false);
   const [auditProgress, setAuditProgress] = useState(0);
+  const [compliance, setCompliance] = useState(MOCK_COMPLIANCE);
+  const [isComplianceMock, setIsComplianceMock] = useState<boolean>(true);
   const timerRef = useRef<any>(null);
 
-  const platform = MOCK.captions[activeTab as keyof typeof MOCK.captions] || MOCK.captions.instagram;
+  // Resolve a friendly market label from MOCK_MARKETS for the dark header.
+  const resolvedMarket = initialMarketId
+    ? MOCK_MARKETS.find(m => m.id === initialMarketId)
+    : null;
+  const headerLabel = resolvedMarket
+    ? `${resolvedMarket.name} — ${resolvedMarket.city} Profile`
+    : `${content.market.country} — ${content.market.city} Profile`;
+
+  // Fetch backend content on mount / when context changes.
+  useEffect(() => {
+    api.generateContent({
+      market: initialMarketId ?? 'korea',
+      businessName: businessName ?? '',
+      description: description ?? '',
+      categories: categories ?? [],
+      trend: initialTrend ?? '',
+    })
+      .then(r => {
+        if (r?.captions) {
+          setContent(r);
+          setIsUsingMock(false);
+        }
+      })
+      .catch(e => {
+        console.warn('generateContent failed, using mock', e);
+        setIsUsingMock(true);
+      });
+  }, [initialMarketId, businessName, description, categories, initialTrend]);
+
+  const platform = content.captions[activeTab] || content.captions.instagram;
 
   const ingestFile = (file?: File | null) => {
     if (!file || !file.type.startsWith('image/')) return;
@@ -140,6 +191,25 @@ export default function ContentStudioView({ onBack }: { onBack?: () => void }) {
     setAuditRunning(true);
     setAuditDone(false);
     setAuditProgress(0);
+
+    // Kick off real compliance request in parallel with the progress animation.
+    api.evaluateCompliance({
+      caption: stagedCaption,
+      market: initialMarketId ?? 'korea',
+      mediaName: uploadedFile?.name,
+      mediaSize: uploadedFile?.size,
+    })
+      .then(r => {
+        if (typeof r?.score === 'number') {
+          setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
+          setIsComplianceMock(false);
+        }
+      })
+      .catch(e => {
+        console.warn('evaluateCompliance failed, using mock', e);
+        setIsComplianceMock(true);
+      });
+
     let prog = 0;
     timerRef.current = setInterval(() => {
       prog += Math.random() * 11 + 4;
@@ -166,32 +236,48 @@ export default function ContentStudioView({ onBack }: { onBack?: () => void }) {
         </button>
       )}
 
-      <div className="rounded-2xl shadow-xl overflow-hidden p-6 md:p-8" style={{ backgroundColor: COLORS.NAVY }}>
-        <h2 className="text-sm font-black uppercase tracking-widest mb-2" style={{ color: COLORS.LIGHT_GOLD }}>Content Generation Engine</h2>
-        <h1 className="text-3xl font-black tracking-tight leading-none" style={{ color: COLORS.WHITE }}>
-          {MOCK.market.country} — {MOCK.market.city} Profile
-        </h1>
+      <div className="rounded-2xl shadow-xl overflow-hidden p-6 md:p-8 relative" style={{ backgroundColor: COLORS.NAVY }}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest mb-2" style={{ color: COLORS.LIGHT_GOLD }}>Content Generation Engine</h2>
+            <h1 className="text-3xl font-black tracking-tight leading-none" style={{ color: COLORS.WHITE }}>
+              {headerLabel}
+            </h1>
+          </div>
+          {isUsingMock && (
+            <span
+              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border shrink-0"
+              style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
+              title="Backend unreachable — showing seeded demo content"
+            >
+              Demo Data
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AIContentMatrixPanel 
-          platforms={PLATFORMS} activeTab={activeTab} setActiveTab={setActiveTab} 
-          options={platform.options} onCopyOption={setStagedCaption} 
+        <AIContentMatrixPanel
+          platforms={PLATFORMS} activeTab={activeTab} setActiveTab={(id) => setActiveTab(id as ContentPlatformId)}
+          options={platform.options} onCopyOption={setStagedCaption}
         />
         <VisualDirectionBoard guide={platform.guide} />
       </div>
 
-      <MediaCaptionManager 
+      <MediaCaptionManager
         stagedCaption={stagedCaption} setStagedCaption={setStagedCaption}
-        file={uploadedFile} previewUrl={previewUrl} 
-        onFileIngest={ingestFile} onRemoveFile={removeFile} 
+        file={uploadedFile} previewUrl={previewUrl}
+        onFileIngest={ingestFile} onRemoveFile={removeFile}
       />
 
-      <SmartOptimizationBoard 
+      <SmartOptimizationBoard
         auditOn={auditOn} setAuditOn={setAuditOn} hasFile={!!uploadedFile}
         auditRunning={auditRunning} auditDone={auditDone} auditProgress={auditProgress}
         onRunAudit={runAudit} onResetAudit={resetAudit}
-        mockData={MOCK} auditSteps={AUDIT_STEPS}
+        compliance={compliance}
+        marketCity={resolvedMarket?.city ?? content.market.city}
+        isUsingMock={isComplianceMock}
+        auditSteps={AUDIT_STEPS}
       />
 
       <DistributionPanel channels={CHANNELS} />

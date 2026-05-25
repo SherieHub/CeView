@@ -1,0 +1,88 @@
+erDiagram
+
+    %% ── Auth / Operator (stub — defined in Module 1) ─────────────────────────
+
+    tbl_msme_operator {
+        UUID operator_id PK
+    }
+
+    %% ── Module 1 anchor (stub) ───────────────────────────────────────────────
+
+    tbl_business_profile {
+        UUID business_profile_id PK
+        UUID user_id             FK
+    }
+
+    %% ── Module 2: Market Signals & Forecasting ───────────────────────────────
+
+    tbl_market_signal_record {
+        UUID    signal_record_id    PK
+        UUID    business_profile_id FK
+        string  target_market
+        float   trend_index
+        float   forex_rate
+        float   gdp_growth
+        float   seasonality_score
+        float   rolling_average
+        boolean spike_indicator
+        ts      aggregated_at
+    }
+
+    tbl_orig_weekly_demand_value {
+        UUID    demand_value_id     PK
+        UUID    business_profile_id FK
+        ts      week
+        string  target_market
+        numeric beach_category
+        numeric adventure
+        numeric cultural
+        numeric theme_parks
+        numeric urban
+        numeric culinary
+        numeric accommodation
+        string  connecting_flights
+        numeric market_score
+        string  strategy
+        numeric forex
+        numeric gdp
+        int     rank
+        string  spike_meaning
+        string  current_checklist
+        string  seasonality_meaning
+    }
+
+    tbl_forecast_result {
+        UUID  forecast_result_id  PK
+        UUID  business_profile_id FK
+        string target_market
+        float  predicted_demand
+        float  forecast_confidence
+        float  mape_score
+        ts     generated_at
+    }
+
+    tbl_market_score {
+        UUID    market_score_id   PK
+        UUID    forecast_result_id FK
+        float   market_score
+        float   seasonality_score
+        boolean spike_indicator
+        ts      evaluated_at
+    }
+
+    tbl_demand_alert {
+        UUID   demand_alert_id PK
+        UUID   market_score_id FK
+        string alert_level
+        text   alert_message
+        ts     alert_date
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+
+    tbl_msme_operator            ||--o{ tbl_business_profile         : "owns (user_id)"
+    tbl_business_profile         ||--o{ tbl_market_signal_record     : "has signal records"
+    tbl_business_profile         ||--o{ tbl_orig_weekly_demand_value : "has weekly demand values"
+    tbl_business_profile         ||--o{ tbl_forecast_result          : "has forecast results"
+    tbl_forecast_result          ||--o{ tbl_market_score             : "scored by"
+    tbl_market_score             ||--o{ tbl_demand_alert             : "triggers alerts"

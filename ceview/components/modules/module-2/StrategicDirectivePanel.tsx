@@ -7,6 +7,11 @@ interface StrategicDirectivePanelProps {
   onNavigateToContent?: () => void;
 }
 
+/**
+ * Note: the navigation callback takes no args because the surrounding view
+ * already knows which market is selected and threads `marketId` / `trend`
+ * itself when invoking it.
+ */
 const StrategicDirectivePanel: React.FC<StrategicDirectivePanelProps> = ({ directive, onNavigateToContent }) => (
   <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6" style={{ backgroundColor: COLORS.NAVY }}>
     <div className="flex-1">

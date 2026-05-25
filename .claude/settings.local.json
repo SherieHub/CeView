@@ -27,7 +27,10 @@
       "Bash(./mvnw -q compile)",
       "Bash(cmd.exe /c \"mvnw.cmd -q compile\")",
       "PowerShell(.\\\\mvnw.cmd compile 2>&1)",
-      "PowerShell(.\\\\mvnw.cmd clean compile 2>&1)"
+      "PowerShell(.\\\\mvnw.cmd clean compile 2>&1)",
+      "Bash(xargs grep -l \"Market\\\\|Forecast\\\\|Notification\\\\|Demand\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\austi\\\\CeView\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
