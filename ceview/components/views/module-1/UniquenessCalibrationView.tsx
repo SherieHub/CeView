@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import UniquenessCalibrationForm, { UniquenessPayloadDTO } from '../../modules/module-1/UniquenessCalibrationForm';
 import CalibrationResultsDashboard, { DetailedCalibrationResultDTO } from '../../modules/module-1/CalibrationResultsDashboard';
 import { CategoryAllocation } from '../../modules/module-1/InferredCategoryBoard';
-import { COLORS } from '../../../constants';
+import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
 import { ProfileData, ProfileSetters } from '../../../App';
 import { api } from '../../../services/apiClient';
+import { OPERATOR_ID } from '../../../services/identity';
 
-const BASE_CATEGORIES: CategoryAllocation[] = [
-  { name: "Coastal & Island", percentage: 0 },
-  { name: "Adventure & Nature", percentage: 0 },
-  { name: "Cultural & Heritage", percentage: 0 },
-  { name: "Theme Parks / Entertainment", percentage: 0 },
-  { name: "Urban & City", percentage: 0 },
-  { name: "Culinary & Gastronomy", percentage: 0 },
-  { name: "Accommodation & Staycation", percentage: 0 },
-];
+const BASE_CATEGORIES: CategoryAllocation[] = BUSINESS_CATEGORIES.map(name => ({ name, percentage: 0 }));
 
 interface UniquenessCalibrationViewProps {
   profile?: ProfileData;
@@ -92,22 +85,36 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
     }
   };
 
-  const handleConfirmProfile = () => {
-    // 1. Commit everything to Global App State
-    if (setters) {
-      setters.setBusinessName(payload.businessName);
-      setters.setCoreServices(payload.coreServices);
-      setters.setDescription(payload.description);
-      setters.setUvp(payload.uvp);
-      
-      // Extract only active categories (percentage > 0)
-      const activeCats = categories.filter(c => c.percentage > 0).map(c => c.name);
-      setters.setCategories(activeCats);
-    }
+  const handleConfirmProfile = async () => {
+    const activeCats = categories.filter(c => c.percentage > 0).map(c => c.name);
+    const overallScore = calibrationResult?.overallScore ?? null;
 
-    // 2. Redirect to Profile View
-    if (onNavigate) {
-      onNavigate('profile'); 
+    try {
+      const saved = await api.saveProfile(OPERATOR_ID, {
+        businessProfileId: profile?.businessProfileId ?? null,
+        businessName: payload.businessName,
+        categories: activeCats,
+        coreServices: payload.coreServices,
+        description: payload.description,
+        uvp: payload.uvp,
+        imagePreview: profile?.imagePreview ?? null,
+        uniquenessScore: overallScore,
+      });
+
+      if (setters) {
+        setters.setBusinessProfileId(saved.businessProfileId);
+        setters.setBusinessName(saved.businessName);
+        setters.setCategories(saved.categories);
+        setters.setCoreServices(saved.coreServices);
+        setters.setDescription(saved.description);
+        setters.setUvp(saved.uvp);
+        setters.setImagePreview(saved.imagePreview);
+        setters.setUniquenessScore(saved.uniquenessScore);
+      }
+
+      if (onNavigate) onNavigate('profile');
+    } catch (e) {
+      console.error('saveProfile failed', e);
     }
   };
 

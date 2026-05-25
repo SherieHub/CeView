@@ -39,12 +39,13 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
 ];
 
 export const BUSINESS_CATEGORIES = [
-  "Beach Resort",
-  "Urban Hotel",
-  "Restaurant / Culinary",
-  "Adventure Tour",
-  "Cultural Heritage Site",
-  "Wellness & Spa"
+  "Coastal & Island",
+  "Adventure & Nature",
+  "Cultural & Heritage",
+  "Theme Parks / Entertainment",
+  "Urban & City",
+  "Culinary & Gastronomy",
+  "Accommodation & Staycation"
 ];
 
 // Rich data for the "Market Analyzer" view embedded in notifications

@@ -26,7 +26,27 @@ export interface UniquenessResultDTO {
   categoryFeedback: string;
 }
 
+/** Mirrors backend BusinessProfileDto (com.ceview.module1.dto). */
+export interface BusinessProfileDTO {
+  businessProfileId: string | null;
+  businessName: string;
+  categories: string[];
+  coreServices: string[];
+  description: string;
+  uvp: string;
+  imagePreview: string | null;
+  uniquenessScore: number | null;
+}
+
 export const api = {
+  loadProfile: (operatorId: string) =>
+    req<BusinessProfileDTO>(`/api/v1/business-profile?operatorId=${encodeURIComponent(operatorId)}`),
+
+  saveProfile: (operatorId: string, body: BusinessProfileDTO) =>
+    req<BusinessProfileDTO>(`/api/v1/business-profile?operatorId=${encodeURIComponent(operatorId)}`, {
+      method: 'PUT', body: JSON.stringify(body),
+    }),
+
   classifyAnalyze: (body: {
     businessName: string; coreServices: string[]; description: string; uvp: string;
   }) => req<{ categories: CategoryAllocation[] }>('/api/v1/classification/analyze', {
