@@ -19,6 +19,8 @@ public class ComplianceDtos {
     public record ComplianceResultDto(
         int score,
         List<String> aligned,
-        List<String> gaps
+        List<String> gaps,
+        /** "gemini" | "fallback" — origin of the score. */
+        String source
     ) {}
 }

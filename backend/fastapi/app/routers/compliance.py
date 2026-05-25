@@ -1,28 +1,50 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+import logging
+from typing import Any
+
+from fastapi import APIRouter, HTTPException
+
+from app import errors
+from app.services import gemini_client
 
 router = APIRouter()
+log = logging.getLogger("module3.compliance")
 
 
 @router.post("/evaluate")
-def evaluate(_: dict) -> dict:
-    """SDD §3.3 — multimodal compliance scoring. Returns the shape the
-    SmartOptimizationBoard / Module 3 dashboard renders."""
-    return {
-        "score": 88,
-        "aligned": [
-            "Destination tags are correctly added so travelers can easily find your location.",
-            "Text is clear and very easy to read against the background image.",
-            "Important text is placed exactly where Korean travelers naturally look first.",
-            "Words like 'healing' and 'rest' perfectly match what your target audience wants to see.",
-        ],
-        "gaps": [
-            "The background looks a bit too crowded or messy. Try using a cleaner, simpler image.",
-            "Missing words that suggest a 'fresh start' or 'new beginning', which Korean tourists love.",
-            "No people are visible in the photo. Adding a person helps travelers imagine themselves there.",
-        ],
-        "captionAlignmentScore": 0.91,
-        "visualAlignmentScore": 0.84,
-        "multimodalComplianceScore": 0.88,
-    }
+def evaluate(body: dict[str, Any]) -> dict:
+    """Multimodal compliance scoring. Returns { score, aligned[], gaps[], source }.
+
+    Spring Boot forwards the JSON body from /api/v1/compliance/evaluate-json
+    (and the multipart-stripped /evaluate) here. A missing or blank caption is
+    a 400; everything else short-circuits to a fallback so the dashboard always
+    renders something."""
+    body = body or {}
+    caption = (body.get("caption") or "").strip()
+    market = (body.get("market") or "korea").strip() or "korea"
+    media_name = body.get("mediaName")
+    media_size = body.get("mediaSize")
+
+    log.info(
+        "compliance.evaluate received market=%s caption_len=%s media=%s",
+        market, len(caption), media_name,
+    )
+
+    if not caption:
+        log.warning(
+            "compliance.evaluate rejected — empty caption",
+            extra={"code": errors.MOD3_COMPLIANCE_VALIDATION},
+        )
+        raise HTTPException(status_code=400, detail={
+            "error": "validation_failed",
+            "code": errors.MOD3_COMPLIANCE_VALIDATION,
+            "message": "caption is required",
+        })
+
+    result = gemini_client.evaluate_compliance(caption, market, media_name, media_size)
+    log.info(
+        "compliance.evaluate ok market=%s score=%s source=%s",
+        market, result.get("score"), result.get("source"),
+    )
+    return result

@@ -1,5 +1,7 @@
 package com.ceview.ai;
 
+import com.ceview.common.TraceIdFilter;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -71,7 +73,9 @@ public class AIInferenceGatewayService {
     }
 
     public byte[] generateReportPdf(Map<String, Object> payload) {
+        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
         return client.post().uri("/internal/report/pdf")
+                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(byte[].class)
@@ -79,7 +83,9 @@ public class AIInferenceGatewayService {
     }
 
     private Map<String, Object> post(String path, Map<String, Object> payload) {
+        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
         return client.post().uri(path)
+                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(MAP_TYPE)

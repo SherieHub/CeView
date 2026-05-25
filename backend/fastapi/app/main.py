@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from app.logging_config import configure as configure_logging
+from app.middleware.trace import TraceIdMiddleware
 from app.routers import (
     classification,
     forecasting,
@@ -9,7 +11,10 @@ from app.routers import (
     report,
 )
 
+configure_logging()
+
 app = FastAPI(title="CeView AI Microservice", version="0.1.0")
+app.add_middleware(TraceIdMiddleware)
 
 
 @app.get("/healthz")

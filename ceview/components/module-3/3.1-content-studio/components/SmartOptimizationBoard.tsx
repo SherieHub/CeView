@@ -5,7 +5,7 @@ import ComplianceGauge from './ComplianceGauge';
 import ChecklistIndicator from './ChecklistIndicator';
 import FeedbackList from './FeedbackList';
 import { COLORS } from '../../../../constants';
-import type { ComplianceResultDTO } from '../../../../types';
+import type { ComplianceResultDTO, ResponseSource } from '../../../../types';
 
 interface AuditStep { label: string; at: number }
 
@@ -18,15 +18,16 @@ interface SmartOptimizationBoardProps {
   auditProgress: number;
   onRunAudit: () => void;
   onResetAudit: () => void;
-  compliance: ComplianceResultDTO;
+  compliance: ComplianceResultDTO | null;
   marketCity: string;
-  isUsingMock?: boolean;
+  complianceSource: ResponseSource | null;
+  fallbackPillLabel: string;
   auditSteps: AuditStep[];
 }
 
 const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
   auditOn, setAuditOn, hasFile, auditRunning, auditDone, auditProgress, onRunAudit, onResetAudit,
-  compliance, marketCity, isUsingMock, auditSteps,
+  compliance, marketCity, complianceSource, fallbackPillLabel, auditSteps,
 }) => {
   const currentStep = auditSteps.find(s => auditProgress < s.at) || auditSteps.at(-1);
 
@@ -55,13 +56,13 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
             <h2 className="text-base font-black leading-tight" style={{ color: COLORS.NAVY }}>Smart Optimization Audit</h2>
             <p className="text-xs font-bold uppercase tracking-wider mt-0.5" style={{ color: COLORS.TEXT_MUTED }}>
               Content Review <span className="ml-2 px-2 py-0.5 rounded text-[9px]" style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.GOLD }}>OPTIONAL</span>
-              {auditDone && isUsingMock && (
+              {auditDone && complianceSource === 'fallback' && (
                 <span
                   className="ml-2 px-2 py-0.5 rounded text-[9px] border"
                   style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
-                  title="Backend unreachable — showing seeded demo compliance result"
+                  title="Gemini is offline or disabled — the backend returned its built-in fallback compliance result."
                 >
-                  Demo Score
+                  {fallbackPillLabel}
                 </span>
               )}
             </p>
@@ -98,7 +99,7 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
             </div>
           )}
 
-          {auditDone && (
+          {auditDone && compliance && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-6 rounded-xl border flex flex-col items-center justify-center text-center" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>

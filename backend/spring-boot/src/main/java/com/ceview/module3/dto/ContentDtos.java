@@ -33,6 +33,9 @@ public class ContentDtos {
     public record ContentResponseDto(
         MarketHeaderDto market,
         String framework,
-        CaptionsDto captions
+        CaptionsDto captions,
+        /** "gemini" when LLM produced this payload; "fallback" when FastAPI's
+         *  hardcoded demo content was used instead. Surfaced in the UI. */
+        String source
     ) {}
 }

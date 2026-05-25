@@ -184,11 +184,15 @@ export interface CaptionsByPlatform {
   naver: PlatformContent;
 }
 
+/** Origin of an AI response — Gemini for real, fallback for hardcoded demo. */
+export type ResponseSource = 'gemini' | 'fallback';
+
 /** Mirrors backend ContentDtos.ContentResponseDto. */
 export interface ContentResponseDTO {
   market: MarketHeader;
   framework: string;
   captions: CaptionsByPlatform;
+  source?: ResponseSource;
 }
 
 /** Mirrors backend ComplianceDtos.ComplianceResultDto. */
@@ -196,6 +200,7 @@ export interface ComplianceResultDTO {
   score: number;
   aligned: string[];
   gaps: string[];
+  source?: ResponseSource;
 }
 
 /** Mirrors backend CreativeDirectionDtos.CreativeDirectionDto. */

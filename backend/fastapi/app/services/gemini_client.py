@@ -4,15 +4,18 @@ frontend's `ceview/services/geminiService.ts` so swapping the frontend over
 later changes only the transport, not the behavior.
 
 When ENABLE_GEMINI is false or GEMINI_API_KEY is missing, every function
-returns a deterministic mock matching the frontend's existing data shapes —
-sufficient for offline dev and CI.
+returns a deterministic fallback. Module-3 functions tag the returned dict
+with a `source` field ("gemini" | "fallback") so the UI can label demo data.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
+
+from app import errors
 
 ENABLE_GEMINI = os.getenv("ENABLE_GEMINI", "false").lower() == "true"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -83,15 +86,18 @@ Return JSON: descriptionScore (0-100), categoryScore (0-100), descriptionReasoni
     )
 
 
+# ── Module 3 ────────────────────────────────────────────────────────────────
+
+_content_log = logging.getLogger("module3.content.gemini")
+_compliance_log = logging.getLogger("module3.compliance.gemini")
+
+
 def content_for_market(market: str, business_name: str, description: str,
                        categories: list[str], trend: str) -> dict:
     """
-    Returns the same shape ContentStudioView.tsx assembles in its MOCK constant:
-    { market: {country, flag, city}, framework, captions: { instagram, tiktok, facebook, naver },
-      compliance: { score, aligned[], gaps[] } }
+    Returns: { market: {country, flag, city}, framework, captions: {...}, source }
+    `source` is "gemini" when the LLM response is used, "fallback" otherwise.
     """
-    # Frontend always renders this shape — we keep the mock comprehensive so
-    # the view renders without any None handling on the React side.
     base = {
         "market": {
             "korea": {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"},
@@ -100,23 +106,15 @@ def content_for_market(market: str, business_name: str, description: str,
         }.get(market, {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"}),
         "framework": "SOR — Stimulus-Organism-Response",
         "captions": _mock_captions(),
-        "compliance": {
-            "score": 88,
-            "aligned": [
-                "Destination tags are correctly added so travelers can easily find your location.",
-                "Text is clear and very easy to read against the background image.",
-                "Important text is placed exactly where Korean travelers naturally look first.",
-                "Words like 'healing' and 'rest' perfectly match what your target audience wants to see.",
-            ],
-            "gaps": [
-                "The background looks a bit too crowded or messy. Try using a cleaner, simpler image.",
-                "Missing words that suggest a 'fresh start' or 'new beginning', which Korean tourists love.",
-                "No people are visible in the photo. Adding a person helps travelers imagine themselves there.",
-            ],
-        },
     }
+
     if not _enabled():
-        return base
+        _content_log.info(
+            "Gemini disabled; returning fallback content for market=%s",
+            market,
+            extra={"code": errors.MOD3_CONTENT_GEMINI_DISABLED},
+        )
+        return {**base, "source": "fallback"}
 
     prompt = f"""Generate culturally-localized social media content for Cebu tourism.
 Market: {market}
@@ -128,8 +126,112 @@ Trend: {trend}
 Return JSON with the same shape as: {json.dumps(base)} — fill captions with three Instagram options,
 three TikTok options, two Facebook options, two Naver Blog options (Korean text for Naver).
 """
-    enriched = _generate_json(prompt)
-    return enriched if enriched else base
+    try:
+        enriched = _generate_json(prompt)
+    except Exception as exc:
+        _content_log.exception(
+            "Gemini call failed for market=%s: %s",
+            market, exc,
+            extra={"code": errors.MOD3_CONTENT_GEMINI_EXCEPTION},
+        )
+        return {**base, "source": "fallback"}
+
+    if not enriched or not enriched.get("captions"):
+        _content_log.warning(
+            "Gemini returned empty payload for market=%s",
+            market,
+            extra={"code": errors.MOD3_CONTENT_GEMINI_EMPTY},
+        )
+        return {**base, "source": "fallback"}
+
+    _content_log.info("Gemini content ok market=%s", market)
+    # Preserve fallback `market` header if Gemini omitted it.
+    return {
+        "market": enriched.get("market") or base["market"],
+        "framework": enriched.get("framework") or base["framework"],
+        "captions": enriched.get("captions"),
+        "source": "gemini",
+    }
+
+
+def evaluate_compliance(caption: str, market: str,
+                        media_name: str | None, media_size: int | None) -> dict:
+    """
+    Returns: { score, aligned[], gaps[], source }.
+    Same fallback/source contract as `content_for_market`.
+    """
+    base = {
+        "score": 88,
+        "aligned": [
+            "Destination tags are correctly added so travelers can easily find your location.",
+            "Text is clear and very easy to read against the background image.",
+            "Important text is placed exactly where travelers naturally look first.",
+            "Caption tone matches the target audience's search intent.",
+        ],
+        "gaps": [
+            "The background looks a bit too crowded. Try a cleaner, simpler image.",
+            "Missing words that suggest a 'fresh start' which travelers respond to.",
+            "No people are visible in the photo. Adding one helps travelers project themselves.",
+        ],
+    }
+
+    if not _enabled():
+        _compliance_log.info(
+            "Gemini disabled; returning fallback compliance for market=%s",
+            market,
+            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_DISABLED},
+        )
+        return {**base, "source": "fallback"}
+
+    media_hint = ""
+    if media_name:
+        media_hint = f"\nMedia file: {media_name} ({media_size or 0} bytes)"
+
+    prompt = f"""You are CeView's Multimodal Compliance Auditor for Cebu tourism social media.
+
+Caption to audit:
+\"\"\"{caption}\"\"\"
+
+Target market: {market}{media_hint}
+
+Evaluate the caption (and implied visual) on cultural fit, readability, hashtag strategy,
+destination tagging, emotional resonance, and trigger words for the target market.
+
+Return JSON with exactly:
+- score: integer 0-100 (overall compliance)
+- aligned: array of 3-5 plain-language strings explaining what works well
+- gaps: array of 2-4 plain-language strings explaining what is missing or weak
+"""
+    try:
+        out = _generate_json(prompt)
+    except Exception as exc:
+        _compliance_log.exception(
+            "Gemini compliance call failed market=%s: %s",
+            market, exc,
+            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EXCEPTION},
+        )
+        return {**base, "source": "fallback"}
+
+    if not out or "score" not in out:
+        _compliance_log.warning(
+            "Gemini returned empty compliance payload market=%s",
+            market,
+            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EMPTY},
+        )
+        return {**base, "source": "fallback"}
+
+    try:
+        score = int(out.get("score", 0))
+    except (TypeError, ValueError):
+        score = 0
+
+    _compliance_log.info("Gemini compliance ok market=%s score=%s", market, score)
+    return {
+        "score": max(0, min(100, score)),
+        "aligned": list(out.get("aligned") or [])[:5],
+        "gaps": list(out.get("gaps") or [])[:4],
+        "source": "gemini",
+    }
 
 
 def _mock_captions() -> dict:
