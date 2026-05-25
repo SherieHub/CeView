@@ -4,7 +4,7 @@ from model.model import BertModel
 class BertService:
     threshold: float = 0.5
     def model_input_format(description: str, uvp: str, services: list) -> str:
-        return f"""services: {services.__str__}
+        return f"""services: {services.__str__()}
         \nuvp: {uvp}\ndescription: {description}"""
 
     def predict_text_categories(self, user_text: str) -> dict:
