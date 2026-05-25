@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
-import { COLORS, MOCK_MARKETS } from '../../../constants';
-import { api } from '../../../services/apiClient';
-import type { ContentResponseDTO, ContentPlatformId } from '../../../types';
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { COLORS } from '../../../constants';
+import { api, ApiError } from '../../../services/apiClient';
+import type { ContentResponseDTO, ComplianceResultDTO, ContentPlatformId, ResponseSource } from '../../../types';
 
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 import AIContentMatrixPanel from './components/AIContentMatrixPanel';
@@ -10,82 +10,6 @@ import VisualDirectionBoard from './components/VisualDirectionBoard';
 import MediaCaptionManager from './components/MediaCaptionManager';
 import SmartOptimizationBoard from './components/SmartOptimizationBoard';
 import DistributionPanel from './components/DistributionPanel';
-
-const MOCK_CONTENT: ContentResponseDTO = {
-  market:    { country: 'South Korea', flag: '🇰🇷', city: 'Seoul' },
-  framework: 'SOR — Stimulus-Organism-Response',
-  captions: {
-    instagram: {
-      options: [
-        "Burned out? ☁️ Find your pause button in Cebu. Warm breeze, healing food, and time that moves slower. 🛌✨ You deserve this rest.\n\n#HealingTrip #Cebu #Wellness #RestAndRelax #CebuPhilippines #HealingVacation #TravelAesthetic",
-        "The ultimate 'Me Time' hideaway. 🌿 Discovering Cebu's secret healing spots where the wifi is weak but the connection to nature is strong. 🍃✨\n\n#HealingTrip #Cebu #CebuTravel #NatureRetreat #MindfulTravel",
-        "Nothing but blue skies and private pools. 💧 Escaping the Seoul rush hour for this slice of paradise. Who would you bring here? ✈️\n\n#CebuPhilippines #TravelAesthetic #RestAndRelax #LuxuryCebu #HealingJourney"
-      ],
-      guide: [
-        "Aesthetic Mood Shot — open balcony doors, zero clutter, morning sunlight on tropical fruits beside a plunge pool.",
-        "Apply warm, low-contrast golden filters (lightroom preset LUT recommended: 'Mango Sunrise').",
-        "Recommended ratio: 4:5 portrait — maximizes feed real-estate on Korean Instagram feeds.",
-        "Soft vignette, no text overlay. Let the image breathe completely.",
-        "Cultural nuance: avoid showing other guests — solo 'me-space' framing resonates strongly with Korean healing-travel archetype.",
-      ],
-    },
-    tiktok: {
-      options: [
-        "POV: You just woke up in paradise. 🌊 No alarms, just ocean sounds. This is your sign to book that healing trip. ✈️🇵🇭\n\n#TravelTok #Cebu #HealingVibes #Philippines #HealingTrip #POVTravel",
-        "Stop scrolling and take a deep breath. 🌬️ This is what 6AM in Cebu looks like. Healing energy only. ☁️✨\n\n#HealingVibes #Cebu2025 #TravelTok #MorningRoutine #Philippines",
-        "The Cebu aesthetic you didn't know you needed. 🥥 Wait for the sunset reveal at the end... 🌅\n\n#POVTravel #HealingTrip #Philippines #HiddenGem #Cebu"
-      ],
-      guide: [
-        "Slow-motion first-person POV tracking shot. Start tight on a local delicacy (Pungko-Pungko or mango slicing).",
-        "Pan smoothly upward to reveal a crisp ocean panorama — the 'reveal' moment is the hook.",
-        "Keep ambient sound prominent; sync video rhythm to chill lo-fi acoustic track.",
-        "Duration target: 18–27 seconds — optimal for Korean TikTok algorithm retention window.",
-        "Add Korean subtitle overlay at bottom third. Font: rounded sans, white with soft shadow.",
-      ],
-    },
-    facebook: {
-      options: [
-        "🌅 Imagine waking up to this every morning. Cebu is calling — are you ready to answer?\n\nPerfect for a healing retreat, reconnection journey, or simply the rest you've been postponing. Our Cebu Healing Coast Package is designed for you.\n\n📍 Cebu, Philippines  🌊 3D2N from ₩890,000\n\n#CebuTravel #HealingDestination #VisitCebu #PhilippinesTravel",
-        "Looking for a quiet escape this weekend? 🌴 Swap your busy schedule for a slow morning in Cebu. Tag a friend who desperately needs a healing vacation! 👇\n\n📍 Cebu Healing Coast\n🌊 Book now and save 15% on early bird packages.\n\n#CebuTravel #VisitCebu #HealingDestination #BarkadaTrip",
-      ],
-      guide: [
-        "Wide establishing shot of coastline at golden hour — captures the 'breath of relief' emotional entry point.",
-        "Include a human element (silhouette, hands holding coffee) to trigger empathy and projection.",
-        "Facebook favors horizontal 16:9 frame for organic reach; include destination tag overlay at upper-left.",
-        "Use warm, slightly desaturated tones — not oversaturated tropical clichés.",
-        "CTA text in caption: 'Plan your escape →' — drives link-click micro-conversion on Facebook.",
-      ],
-    },
-    naver: {
-      options: [
-        "세부에서 찾은 나만의 힐링 스팟 🌴\n\n바쁜 일상에서 벗어나, 필리핀 세부에서 진정한 휴식을 경험했어요. 따뜻한 바람, 맑은 바다, 그리고 느린 시간...\n\n세부 여행 완전 정복 가이드는 본문에서 확인하세요! 💙\n\n#세부여행 #필리핀여행 #힐링여행 #세부맛집 #여행스타그램 #세부2025",
-        "직장인 필수 코스! 세부 프라이빗 리조트 3박 4일 힐링 후기 ✈️\n\n매일 야근에 지쳐있다가 드디어 떠난 세부 여행! 시끄러운 관광지 대신 조용히 쉬기 좋은 숨겨진 보석 같은 곳을 발견했습니다. 나만 알고 싶은 세부 힐링 숙소 추천 리스트를 공개합니다. 💙\n\n#세부여행 #세부프라이빗리조트 #필리핀여행 #직장인휴가 #힐링여행"
-      ],
-      guide: [
-        "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
-        "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
-        "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
-        "Write in warm, conversational Korean (반말체 adjusted for blog persona) with clear subheadings.",
-        "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
-      ],
-    },
-  },
-};
-
-const MOCK_COMPLIANCE = {
-  score: 88,
-  aligned: [
-    "Destination tags are correctly added so travelers can easily find your location.",
-    "Text is clear and very easy to read against the background image.",
-    "Important text is placed exactly where Korean travelers naturally look first.",
-    "Words like 'healing' and 'rest' perfectly match what your target audience wants to see.",
-  ],
-  gaps: [
-    "The background looks a bit too crowded or messy. Try using a cleaner, simpler image.",
-    "Missing words that suggest a 'fresh start' or 'new beginning', which Korean tourists love.",
-    "No people are visible in the photo. Adding a person helps travelers imagine themselves there.",
-  ],
-};
 
 const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-[18px] h-[18px] block shrink-0"/> },
@@ -105,10 +29,25 @@ const AUDIT_STEPS = [
   { label: 'Looking at the image background and layout...',    at: 15  },
   { label: 'Checking if the text is easy to read...',          at: 35  },
   { label: 'Reading the words in your image...',               at: 55  },
-  { label: 'Comparing your post to what Korean tourists like...', at: 75  },
-  { label: 'Scoring your post based on our marketing rules...',  at: 90  },
-  { label: 'Putting together your simple feedback report...',    at: 100 },
+  { label: 'Comparing your post to what visitors expect...',   at: 75  },
+  { label: 'Scoring your post based on our marketing rules...', at: 90  },
+  { label: 'Putting together your simple feedback report...',  at: 100 },
 ];
+
+const FALLBACK_PILL_LABEL = 'Demo content (Gemini offline)';
+
+function formatErrorBanner(prefix: string, e: ApiError): string {
+  const trace = e.traceId ? ` · trace ${e.traceId}` : '';
+  return `${prefix} [${e.code}${trace}]`;
+}
+
+function logModule3Error(scope: string, e: unknown): void {
+  if (e instanceof ApiError) {
+    console.warn(`[Module 3] scope=${scope} code=${e.code} trace=${e.traceId ?? 'none'} status=${e.status} :: ${e.message}`);
+  } else {
+    console.warn(`[Module 3] scope=${scope} unexpected`, e);
+  }
+}
 
 interface ContentStudioViewProps {
   onBack?: () => void;
@@ -124,8 +63,9 @@ export default function ContentStudioView({
   onBack, businessProfileId, businessName, description, categories,
   initialMarketId, initialTrend,
 }: ContentStudioViewProps) {
-  const [content, setContent] = useState<ContentResponseDTO>(MOCK_CONTENT);
-  const [isUsingMock, setIsUsingMock] = useState<boolean>(true);
+  const [content, setContent] = useState<ContentResponseDTO | null>(null);
+  const [contentSource, setContentSource] = useState<ResponseSource | null>(null);
+  const [contentLoading, setContentLoading] = useState<boolean>(true);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<ContentPlatformId>('instagram');
@@ -137,18 +77,14 @@ export default function ContentStudioView({
   const [auditRunning, setAuditRunning] = useState(false);
   const [auditDone, setAuditDone] = useState(false);
   const [auditProgress, setAuditProgress] = useState(0);
-  const [compliance, setCompliance] = useState(MOCK_COMPLIANCE);
-  const [isComplianceMock, setIsComplianceMock] = useState<boolean>(true);
+  const [compliance, setCompliance] = useState<ComplianceResultDTO | null>(null);
+  const [complianceSource, setComplianceSource] = useState<ResponseSource | null>(null);
   const timerRef = useRef<any>(null);
 
-  const resolvedMarket = initialMarketId
-    ? MOCK_MARKETS.find(m => m.id === initialMarketId)
-    : null;
-  const headerLabel = resolvedMarket
-    ? `${resolvedMarket.name} — ${resolvedMarket.city} Profile`
-    : `${content.market.country} — ${content.market.city} Profile`;
-
   useEffect(() => {
+    let cancelled = false;
+    setContentLoading(true);
+    setServerError(null);
     api.generateContent({
       market: initialMarketId ?? 'korea',
       businessName: businessName ?? '',
@@ -157,19 +93,25 @@ export default function ContentStudioView({
       trend: initialTrend ?? '',
     })
       .then(r => {
-        if (r?.captions) {
-          setContent(r);
-          setIsUsingMock(false);
-        }
+        if (cancelled) return;
+        setContent(r);
+        setContentSource(r.source ?? 'fallback');
       })
       .catch(e => {
-        console.warn('generateContent failed, using mock', e);
-        setIsUsingMock(true);
-        setServerError('Content generation service unavailable. Showing demo data.');
-      });
+        if (cancelled) return;
+        logModule3Error('generateContent', e);
+        if (e instanceof ApiError) {
+          setServerError(formatErrorBanner('Content generation service unavailable.', e));
+        } else {
+          setServerError('Content generation service unavailable.');
+        }
+      })
+      .finally(() => { if (!cancelled) setContentLoading(false); });
+    return () => { cancelled = true; };
   }, [initialMarketId, businessName, description, categories, initialTrend]);
 
-  const platform = content.captions[activeTab] || content.captions.instagram;
+  const platform = content?.captions[activeTab] ?? null;
+  const headerLabel = content ? `${content.market.country} — ${content.market.city} Profile` : 'Generating content…';
 
   const ingestFile = (file?: File | null) => {
     if (!file || !file.type.startsWith('image/')) return;
@@ -189,6 +131,14 @@ export default function ContentStudioView({
     setAuditRunning(true);
     setAuditDone(false);
     setAuditProgress(0);
+    setCompliance(null);
+    setComplianceSource(null);
+
+    if (!stagedCaption || !stagedCaption.trim()) {
+      setServerError('Add a caption before running the audit. [MOD3_COMPLIANCE_VALIDATION]');
+      setAuditRunning(false);
+      return;
+    }
 
     api.evaluateCompliance({
       caption: stagedCaption,
@@ -197,15 +147,16 @@ export default function ContentStudioView({
       mediaSize: uploadedFile?.size,
     })
       .then(r => {
-        if (typeof r?.score === 'number') {
-          setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
-          setIsComplianceMock(false);
-        }
+        setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
+        setComplianceSource(r.source ?? 'fallback');
       })
       .catch(e => {
-        console.warn('evaluateCompliance failed, using mock', e);
-        setIsComplianceMock(true);
-        setServerError('Compliance evaluation failed. Showing demo results.');
+        logModule3Error('evaluateCompliance', e);
+        if (e instanceof ApiError) {
+          setServerError(formatErrorBanner('Compliance evaluation failed.', e));
+        } else {
+          setServerError('Compliance evaluation failed.');
+        }
       });
 
     let prog = 0;
@@ -226,6 +177,36 @@ export default function ContentStudioView({
     clearInterval(timerRef.current);
   };
 
+  // ── Loading / error empty states ─────────────────────────────────────────
+  if (contentLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 md:p-6 min-h-[60vh] flex flex-col items-center justify-center gap-3" style={{ backgroundColor: COLORS.CREAM }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: COLORS.NAVY }} />
+        <p className="text-sm font-bold" style={{ color: COLORS.TEXT_MUTED }}>Generating content from Gemini…</p>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6" style={{ backgroundColor: COLORS.CREAM, minHeight: '100vh' }}>
+        {onBack && (
+          <button onClick={onBack} className="flex items-center text-slate-500 hover:text-slate-800 mb-2 font-medium transition-colors">
+            <ArrowLeft size={18} className="mr-2" /> Back to Market Radar
+          </button>
+        )}
+        {serverError
+          ? <ServerErrorBanner message={serverError} onDismiss={() => setServerError(null)} />
+          : <ServerErrorBanner message="No content available." onDismiss={() => {}} />}
+        <div className="p-8 rounded-2xl border text-center" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY }}>
+          <p className="text-sm font-medium" style={{ color: COLORS.TEXT_MUTED }}>
+            The content engine is unavailable. Verify the backend is running and reload to retry.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6" style={{ backgroundColor: COLORS.CREAM, minHeight: '100vh' }}>
       {serverError && <ServerErrorBanner message={serverError} onDismiss={() => setServerError(null)} />}
@@ -243,13 +224,13 @@ export default function ContentStudioView({
               {headerLabel}
             </h1>
           </div>
-          {isUsingMock && (
+          {contentSource === 'fallback' && (
             <span
               className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border shrink-0"
               style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
-              title="Backend unreachable — showing seeded demo content"
+              title="Gemini is offline or disabled — the backend returned its built-in fallback content."
             >
-              Demo Data
+              {FALLBACK_PILL_LABEL}
             </span>
           )}
         </div>
@@ -258,9 +239,9 @@ export default function ContentStudioView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AIContentMatrixPanel
           platforms={PLATFORMS} activeTab={activeTab} setActiveTab={(id) => setActiveTab(id as ContentPlatformId)}
-          options={platform.options} onCopyOption={setStagedCaption}
+          options={platform?.options ?? []} onCopyOption={setStagedCaption}
         />
-        <VisualDirectionBoard guide={platform.guide} />
+        <VisualDirectionBoard guide={platform?.guide ?? []} />
       </div>
 
       <MediaCaptionManager
@@ -274,8 +255,9 @@ export default function ContentStudioView({
         auditRunning={auditRunning} auditDone={auditDone} auditProgress={auditProgress}
         onRunAudit={runAudit} onResetAudit={resetAudit}
         compliance={compliance}
-        marketCity={resolvedMarket?.city ?? content.market.city}
-        isUsingMock={isComplianceMock}
+        marketCity={content.market.city}
+        complianceSource={complianceSource}
+        fallbackPillLabel={FALLBACK_PILL_LABEL}
         auditSteps={AUDIT_STEPS}
       />
 

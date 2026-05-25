@@ -1,0 +1,16 @@
+"""Shared error codes. The same constants appear in Spring Boot
+(Module3ErrorCodes.java) and in the frontend banner output so that one
+failure surfaces with the same string everywhere it is logged."""
+
+from __future__ import annotations
+
+# Module 3 — Content
+MOD3_CONTENT_GEMINI_DISABLED = "MOD3_CONTENT_GEMINI_DISABLED"
+MOD3_CONTENT_GEMINI_EMPTY = "MOD3_CONTENT_GEMINI_EMPTY"
+MOD3_CONTENT_GEMINI_EXCEPTION = "MOD3_CONTENT_GEMINI_EXCEPTION"
+
+# Module 3 — Compliance
+MOD3_COMPLIANCE_GEMINI_DISABLED = "MOD3_COMPLIANCE_GEMINI_DISABLED"
+MOD3_COMPLIANCE_GEMINI_EMPTY = "MOD3_COMPLIANCE_GEMINI_EMPTY"
+MOD3_COMPLIANCE_GEMINI_EXCEPTION = "MOD3_COMPLIANCE_GEMINI_EXCEPTION"
+MOD3_COMPLIANCE_VALIDATION = "MOD3_COMPLIANCE_VALIDATION"

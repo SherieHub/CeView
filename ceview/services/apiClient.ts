@@ -1,18 +1,54 @@
 /**
- * Thin fetch wrapper for the CeView backend. Base URL is fixed to localhost
- * during development; production deployment should override via env.
+ * Thin fetch wrapper for the CeView backend. Errors thrown by `req<T>()` are
+ * always instances of {@link ApiError} so callers can read `code` and
+ * `traceId` for log correlation with the Spring Boot / FastAPI backends.
  */
 
 import type { Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
+export class ApiError extends Error {
+  readonly code: string;
+  readonly traceId: string | null;
+  readonly status: number;
+  constructor(opts: { code: string; traceId: string | null; status: number; message: string }) {
+    super(opts.message);
+    this.name = 'ApiError';
+    this.code = opts.code;
+    this.traceId = opts.traceId;
+    this.status = opts.status;
+  }
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-  });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    });
+  } catch (e) {
+    throw new ApiError({
+      code: 'CLIENT_NETWORK_FAIL',
+      traceId: null,
+      status: 0,
+      message: `Backend unreachable: ${(e as Error).message}`,
+    });
+  }
+
+  if (!res.ok) {
+    const traceHeader = res.headers.get('X-Trace-Id');
+    const raw = await res.text();
+    let parsed: any = null;
+    try { parsed = raw ? JSON.parse(raw) : null; } catch { /* not JSON */ }
+    throw new ApiError({
+      code: parsed?.code ?? `HTTP_${res.status}`,
+      traceId: parsed?.traceId ?? traceHeader ?? null,
+      status: res.status,
+      message: parsed?.message ?? parsed?.error ?? `${res.status} ${res.statusText}${raw ? ': ' + raw : ''}`,
+    });
+  }
   return res.json() as Promise<T>;
 }
 

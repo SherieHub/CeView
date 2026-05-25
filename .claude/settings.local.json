@@ -45,7 +45,19 @@
       "PowerShell(Remove-Item -Recurse -Force \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\\\\components\\\\composites\" -Confirm:$false)",
       "PowerShell(Remove-Item -Recurse -Force \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\\\\components\\\\modules\" -Confirm:$false)",
       "PowerShell(Remove-Item -Recurse -Force \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\\\\components\\\\views\" -Confirm:$false)",
-      "PowerShell(cd \"c:\\\\Users\\\\austi\\\\CeView\"; npx tsc --noEmit --project ceview/tsconfig.json 2>&1 | Where-Object { $_ -notmatch \"old-components|services/apiClient|services/identity\" })"
+      "PowerShell(cd \"c:\\\\Users\\\\austi\\\\CeView\"; npx tsc --noEmit --project ceview/tsconfig.json 2>&1 | Where-Object { $_ -notmatch \"old-components|services/apiClient|services/identity\" })",
+      "Bash(grep \"\\\\.tsx$\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\" -Directory)",
+      "Bash(xargs grep -l \"try\\\\|catch\\\\|throw\\\\|@ExceptionHandler\")",
+      "Bash(xargs wc -l)",
+      "Bash(xargs grep -l \"logging\\\\|logger\\\\|import.*log\")",
+      "Bash(xargs grep -l \"try\\\\|except\")",
+      "Bash(wc -l /c/Users/austi/.claude/plans/look-through-both-docs-bubbly-teapot.md)",
+      "Read(//c/Users/austi/.claude/plans/**)",
+      "PowerShell(cd \"c:\\\\Users\\\\austi\\\\CeView\"; npx tsc --noEmit --project ceview/tsconfig.json 2>&1 | Where-Object { $_ -notmatch \"old-components|services/apiClient\\\\.ts\\\\\\(8|services/identity\" })",
+      "PowerShell(cd \"c:\\\\Users\\\\austi\\\\CeView\"; npx tsc --noEmit --project ceview/tsconfig.json 2>&1 | Where-Object { $_ -match \"module-3\" })",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\" -Recurse -Directory)",
+      "Bash(Sort-Object FullName)"
     ]
   }
 }
