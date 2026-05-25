@@ -1,0 +1,72 @@
+erDiagram
+
+    %% ── Auth / Operator ──────────────────────────────────────────────────────
+
+    tbl_msme_operator {
+        UUID   operator_id         PK
+        string first_name
+        string last_name
+        string email               UK
+        string password_hash
+        string contact_number
+        ts     created_at
+    }
+
+    %% ── Module 1 Core ────────────────────────────────────────────────────────
+
+    tbl_business_profile {
+        UUID   business_profile_id PK
+        UUID   user_id             FK
+        string business_name
+        text   business_description
+        text   uvp
+        text   core_services       "comma-joined list"
+        text   image_url
+        text   categories          "comma-joined list (V2)"
+        float  confidence_score
+        float  uniqueness_score
+        ts     created_at
+        ts     updated_at
+    }
+
+    tbl_business_embedding {
+        UUID   embedding_id            PK
+        UUID   business_profile_id     FK
+        text   embedding_vector        "vector(384) in Postgres; VARCHAR(8000) in H2"
+        string embedding_model_version
+        ts     generated_at
+    }
+
+    tbl_business_category {
+        UUID   category_id          PK
+        string category_name        UK
+        text   category_description "Lookup / seed table — no FK to profile"
+    }
+
+    tbl_business_categories_score {
+        UUID    categories_score_id  PK
+        UUID    business_profile_id  FK
+        decimal coastal_island
+        decimal adventure
+        decimal cultural
+        decimal theme_parks
+        decimal urban
+        decimal culinary
+        decimal accommodation
+    }
+
+    tbl_classification_logs {
+        UUID   log_id               PK
+        UUID   business_profile_id  FK
+        string inference_status
+        float  confidence_score
+        ts     execution_time
+        text   error_message
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+
+    tbl_msme_operator        ||--o{ tbl_business_profile         : "owns (user_id)"
+    tbl_business_profile     ||--o{ tbl_business_embedding       : "has embeddings"
+    tbl_business_profile     ||--o{ tbl_business_categories_score : "has category scores"
+    tbl_business_profile     ||--o{ tbl_classification_logs      : "has classification logs"

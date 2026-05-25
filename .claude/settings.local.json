@@ -19,7 +19,15 @@
       "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" exec ceview-postgres psql -U ceview -d ceview -c \"SELECT category_name FROM tbl_business_category ORDER BY category_name;\")",
       "Bash(curl -s -X POST http://localhost:8080/api/v1/classification/analyze -H 'Content-Type: application/json' -d '{\"businessName\":\"Sunset Cove\",\"description\":\"Beachfront eco-resort\",\"coreServices\":[\"villas\"],\"uvp\":\"Marine biologist guide\"}')",
       "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker.exe\" compose up -d spring-boot)",
-      "Bash(curl -sI http://localhost:3000/)"
+      "Bash(curl -sI http://localhost:3000/)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Recurse -Filter \"*module-1*\" -Type File)",
+      "Bash(Select-Object FullName)",
+      "Bash(git -C c:/Users/austi/CeView diff backend/spring-boot/src/main/java/com/ceview/module1/BusinessProfile.java)",
+      "Bash(./mvnw -q -o compile)",
+      "Bash(./mvnw -q compile)",
+      "Bash(cmd.exe /c \"mvnw.cmd -q compile\")",
+      "PowerShell(.\\\\mvnw.cmd compile 2>&1)",
+      "PowerShell(.\\\\mvnw.cmd clean compile 2>&1)"
     ]
   }
 }

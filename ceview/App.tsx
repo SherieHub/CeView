@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Sidebar from './old-components/Sidebar';
 import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
+import { api } from './services/apiClient';
+import { OPERATOR_ID } from './services/identity';
 
 // 1. IMPORT MODULE 1 VIEWS & PROFILE
 import UniquenessCalibrationView from './components/views/module-1/UniquenessCalibrationView';
@@ -18,36 +20,64 @@ import ContentStudioView from './components/views/module-3/ContentStudioView';
 import CampaignAnalyticsView from './components/views/module-4/CampaignAnalyticsView';
 
 export interface ProfileData {
+  businessProfileId: string | null;
   businessName: string;
   categories: string[];
   coreServices: string[];
   description: string;
   uvp: string;
   imagePreview: string | null;
+  uniquenessScore: number | null;
 }
 
 export interface ProfileSetters {
+  setBusinessProfileId: React.Dispatch<React.SetStateAction<string | null>>;
   setBusinessName: React.Dispatch<React.SetStateAction<string>>;
   setCategories: React.Dispatch<React.SetStateAction<string[]>>;
   setCoreServices: React.Dispatch<React.SetStateAction<string[]>>;
   setDescription: React.Dispatch<React.SetStateAction<string>>;
   setUvp: React.Dispatch<React.SetStateAction<string>>;
   setImagePreview: React.Dispatch<React.SetStateAction<string | null>>;
+  setUniquenessScore: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('home');
 
-  // Shared profile state — populated entirely via the Uniqueness Calibration Form
+  // Shared profile state — hydrated from backend on mount, updated by
+  // BusinessProfile edits and UniquenessCalibration confirms.
+  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [coreServices, setCoreServices] = useState<string[]>([]);
   const [description, setDescription] = useState<string>('');
   const [uvp, setUvp] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uniquenessScore, setUniquenessScore] = useState<number | null>(null);
 
-  const profile: ProfileData = { businessName, categories, coreServices, description, uvp, imagePreview };
-  const setters: ProfileSetters = { setBusinessName, setCategories, setCoreServices, setDescription, setUvp, setImagePreview };
+  useEffect(() => {
+    api.loadProfile(OPERATOR_ID)
+      .then(dto => {
+        setBusinessProfileId(dto.businessProfileId);
+        setBusinessName(dto.businessName ?? '');
+        setCategories(dto.categories ?? []);
+        setCoreServices(dto.coreServices ?? []);
+        setDescription(dto.description ?? '');
+        setUvp(dto.uvp ?? '');
+        setImagePreview(dto.imagePreview);
+        setUniquenessScore(dto.uniquenessScore);
+      })
+      .catch(err => console.error('loadProfile failed', err));
+  }, []);
+
+  const profile: ProfileData = {
+    businessProfileId, businessName, categories, coreServices,
+    description, uvp, imagePreview, uniquenessScore,
+  };
+  const setters: ProfileSetters = {
+    setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
+    setDescription, setUvp, setImagePreview, setUniquenessScore,
+  };
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: COLORS.OFF_WHITE }}>

@@ -41,7 +41,7 @@ public class BusinessProfileController {
         p.setUvp(in.uvp());
         p.setCoreServicesList(in.coreServices() == null ? List.of() : in.coreServices());
         p.setImageUrl(in.imagePreview());
-        p.setFinalizedCategory(in.categories() == null || in.categories().isEmpty() ? null : in.categories().get(0));
+        p.setCategoriesList(in.categories() == null ? List.of() : in.categories());
         p.setUniquenessScore(in.uniquenessScore());
         repo.save(p);
         return toDto(p);
@@ -61,17 +61,16 @@ public class BusinessProfileController {
         return new BusinessProfileDto(
             p.getBusinessProfileId(),
             p.getBusinessName(),
-            p.getFinalizedCategory() == null ? List.of() : List.of(p.getFinalizedCategory()),
+            p.categoriesList(),
             p.coreServicesList(),
             p.getBusinessDescription(),
             p.getUvp(),
             p.getImageUrl(),
-            p.getFinalizedCategory(),
             p.getUniquenessScore()
         );
     }
 
     private BusinessProfileDto emptyDto() {
-        return new BusinessProfileDto(null, "", List.of(), List.of(), "", "", null, null, null);
+        return new BusinessProfileDto(null, "", List.of(), List.of(), "", "", null, null);
     }
 }

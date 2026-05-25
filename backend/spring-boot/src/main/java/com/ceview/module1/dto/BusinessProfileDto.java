@@ -15,6 +15,5 @@ public record BusinessProfileDto(
     String description,
     String uvp,
     String imagePreview,
-    String finalizedCategory,
     Float uniquenessScore
 ) {}

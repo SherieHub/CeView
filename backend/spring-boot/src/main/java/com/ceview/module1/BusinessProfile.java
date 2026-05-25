@@ -17,18 +17,21 @@ public class BusinessProfile {
     @Column(name = "business_profile_id")
     private UUID businessProfileId;
 
-    @Column(name = "user_id")            private UUID userId;
-    @Column(name = "business_name")      private String businessName;
-    @Column(name = "business_type")      private String businessType;
-    @Column(name = "business_description") private String businessDescription;
-    @Column(name = "uvp")                 private String uvp;
+    @Column(name = "user_id")                  private UUID userId;
+    @Column(name = "business_name")            private String businessName;
+    @Column(name = "business_description")     private String businessDescription;
+    @Column(name = "uvp")                      private String uvp;
 
     /** Comma-joined list — portable across H2 + Postgres. */
     @Column(name = "core_services", columnDefinition = "TEXT")
     private String coreServices;
 
     @Column(name = "image_url", columnDefinition = "TEXT") private String imageUrl;
-    @Column(name = "finalized_category") private String finalizedCategory;
+
+    /** Comma-joined list of selected category names. */
+    @Column(name = "categories", columnDefinition = "TEXT")
+    private String categories;
+
     @Column(name = "confidence_score")   private Float confidenceScore;
     @Column(name = "uniqueness_score")   private Float uniquenessScore;
     @Column(name = "created_at")         private OffsetDateTime createdAt;
@@ -51,5 +54,14 @@ public class BusinessProfile {
 
     public void setCoreServicesList(List<String> services) {
         this.coreServices = services == null ? null : String.join(",", services);
+    }
+
+    public List<String> categoriesList() {
+        if (categories == null || categories.isBlank()) return List.of();
+        return Arrays.stream(categories.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+    }
+
+    public void setCategoriesList(List<String> cats) {
+        this.categories = cats == null ? null : String.join(",", cats);
     }
 }

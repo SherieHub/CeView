@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
 import { api } from '../../../services/apiClient';
+import { OPERATOR_ID } from '../../../services/identity';
 import { ProfileData, ProfileSetters } from '../../../App';
 
 interface Platform {
@@ -22,11 +23,15 @@ interface BusinessProfileProps {
 
 const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Auto-filled Real State
-  const { businessName, categories, coreServices, description, uvp, imagePreview } = profile;
-  const { setBusinessName, setCategories, setCoreServices, setDescription, setUvp, setImagePreview } = setters;
+  const { businessProfileId, businessName, categories, coreServices, description, uvp, imagePreview, uniquenessScore } = profile;
+  const {
+    setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
+    setDescription, setUvp, setImagePreview, setUniquenessScore,
+  } = setters;
 
   const [keywords, setKeywords] = useState<string[]>([]);
 
@@ -87,6 +92,7 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
   };
 
   const handleSaveProfile = () => {
+    // Optimistic update: commit to local state and close modal immediately.
     setBusinessName(tempBusinessName);
     setCategories(tempCategories);
     setCoreServices(tempCoreServices);
@@ -95,7 +101,28 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
     setImagePreview(tempImagePreview);
     setIsEditModalOpen(false);
     setIsSaved(true);
+    setSaveError(null);
     setTimeout(() => setIsSaved(false), 3000);
+
+    // Persist to backend in the background; patch the id on success.
+    api.saveProfile(OPERATOR_ID, {
+      businessProfileId,
+      businessName: tempBusinessName,
+      categories: tempCategories,
+      coreServices: tempCoreServices,
+      description: tempDescription,
+      uvp: tempUvp,
+      imagePreview: tempImagePreview,
+      uniquenessScore,
+    })
+      .then(saved => {
+        setBusinessProfileId(saved.businessProfileId);
+        setUniquenessScore(saved.uniquenessScore);
+      })
+      .catch(e => {
+        console.error('saveProfile failed', e);
+        setSaveError('Changes saved locally. Backend sync failed.');
+      });
   };
 
   const handleConnectClick = (platform: Platform) => {
@@ -121,9 +148,19 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
            </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+            {uniquenessScore != null && (
+                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border" style={{ backgroundColor: COLORS.GOLD_LIGHT, borderColor: `${COLORS.GOLD}40`, color: COLORS.NAVY }}>
+                    <Sparkles size={14} /> Uniqueness {Math.round(uniquenessScore)}
+                </div>
+            )}
             {isSaved && (
                 <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border animate-fade-in" style={{ backgroundColor: COLORS.GREEN_LIGHT, borderColor: `${COLORS.GREEN}30`, color: COLORS.GREEN }}>
                     <CheckCircle size={14} /> Saved Successfully
+                </div>
+            )}
+            {saveError && (
+                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl border animate-fade-in" style={{ backgroundColor: '#FEF2F2', borderColor: '#FCA5A5', color: '#B91C1C' }}>
+                    Save failed
                 </div>
             )}
             <button onClick={openEditModal} className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:opacity-90 transition-all" style={{ backgroundColor: COLORS.NAVY, color: COLORS.WHITE }}>
