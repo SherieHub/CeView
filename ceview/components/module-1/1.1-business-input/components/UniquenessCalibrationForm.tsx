@@ -21,13 +21,12 @@ interface FormProps {
   isAnalyzing: boolean;
   hasAnalyzed: boolean;
   categories: CategoryAllocation[];
-  onCategoryChange: (name: string, val: number) => void;
   onCompute: () => void;
   isComputing: boolean;
 }
 
 const UniquenessCalibrationForm: React.FC<FormProps> = ({
-  payload, setPayload, onAnalyze, isAnalyzing, hasAnalyzed, categories, onCategoryChange, onCompute, isComputing
+  payload, setPayload, onAnalyze, isAnalyzing, hasAnalyzed, categories, onCompute, isComputing
 }) => {
   const isFormValid = Boolean(payload.businessName && payload.coreServices.length > 0 && payload.description && payload.uvp);
 
@@ -60,7 +59,7 @@ const UniquenessCalibrationForm: React.FC<FormProps> = ({
 
       {hasAnalyzed && (
         <div className="animate-fade-in border-t pt-8 mt-4" style={{ borderColor: COLORS.LIGHT_GREY }}>
-          <InferredCategoryBoard categories={categories} onChangeCategory={onCategoryChange} />
+          <InferredCategoryBoard categories={categories} />
 
           <button
             onClick={onCompute} disabled={isComputing}
