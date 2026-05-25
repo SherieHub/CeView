@@ -54,7 +54,8 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     id: '3',
     date: 'Week of May 19, 2025',
     title: 'Rising Trend: Private Beachfront Escapes & Luxury Resorts',
-    market: 'Japan', 
+    market: 'Japan',
+    marketId: 'japan',
     trend: 'Beachfront Luxury',
     isRead: false,
     details: {
@@ -112,6 +113,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     date: 'Week of May 12, 2025',
     title: 'Surge in "Eco-Tourism" searches from Japan',
     market: 'Japan',
+    marketId: 'japan',
     trend: 'Eco-Tourism',
     isRead: true,
     details: {
@@ -171,6 +173,7 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
     date: 'Week of May 5, 2025',
     title: 'New Opportunity: "Wellness Tourism" (Healing)',
     market: 'South Korea',
+    marketId: 'korea',
     trend: 'Wellness Tourism',
     isRead: true,
     details: {

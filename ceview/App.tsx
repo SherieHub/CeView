@@ -88,12 +88,18 @@ const App: React.FC = () => {
 
           {activeTab === 'home' && (
             <HomeView
+              businessProfileId={businessProfileId}
+              businessName={businessName}
+              categories={categories}
               onNavigateToContent={() => setActiveTab('content')}
             />
           )}
 
           {activeTab === 'radar' && (
             <MarketRadarView
+              businessProfileId={businessProfileId}
+              businessName={businessName}
+              categories={categories}
               onNavigateToContent={() => setActiveTab('content')}
             />
           )}

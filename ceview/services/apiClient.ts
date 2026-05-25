@@ -3,7 +3,7 @@
  * during development; production deployment should override via env.
  */
 
-import type { Market, Notification } from '../types';
+import type { Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
@@ -65,8 +65,15 @@ export const api = {
     }),
 
   // ── Module 2 ──────────────────────────────────────────────────────────────
-  listMarkets: () =>
-    req<{ markets: Market[] }>('/api/v1/forecasting/markets'),
+  listMarkets: (profileId?: string | null) => {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    return req<{ markets: Market[] }>(`/api/v1/forecasting/markets${qs}`);
+  },
+
+  analyzeMarkets: (profileId: string) =>
+    req<{ markets: Market[] }>(`/api/v1/forecasting/analyze/${encodeURIComponent(profileId)}`, {
+      method: 'POST', body: '{}',
+    }),
 
   listNotifications: () =>
     req<{ notifications: Notification[] }>('/api/v1/notifications'),
@@ -75,7 +82,18 @@ export const api = {
   generateContent: (body: {
     market: string; businessName: string; description: string;
     categories: string[]; trend: string;
-  }) => req<any>('/api/v1/content/generate', {
+  }) => req<ContentResponseDTO>('/api/v1/content/generate', {
+    method: 'POST', body: JSON.stringify(body),
+  }),
+
+  generateCreative: (profileId: string, body?: Record<string, unknown>) =>
+    req<CreativeDirectionDTO>(`/api/v1/creative-direction/generate/${encodeURIComponent(profileId)}`, {
+      method: 'POST', body: JSON.stringify(body ?? {}),
+    }),
+
+  evaluateCompliance: (body: {
+    caption: string; market: string; mediaName?: string; mediaSize?: number;
+  }) => req<ComplianceResultDTO>('/api/v1/compliance/evaluate-json', {
     method: 'POST', body: JSON.stringify(body),
   }),
 
