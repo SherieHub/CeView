@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant CC as ClassificationController
+    participant AI as AIInferenceGatewayService
+    participant FP as FastAPI
+
+    Note over Client,FP: Prerequisite — Transaction 1.1 has persisted the business profile with confirmed category allocations.
+
+    %% ── Compute Uniqueness Score ────────────────────────────────────────────
+    Note over Client,FP: Calibration Phase 2 — Compute Uniqueness Score
+
+    Client->>CC: POST /api/v1/classification/uniqueness
+    Note right of Client: UniquenessRequest {businessName, categories(pct>0), coreServices, description, uvp}
+    CC->>AI: computeUniqueness(payload)
+    AI->>FP: POST /internal/classification/uniqueness
+    FP-->>AI: {overallScore, semanticsScore, categoryScore, descriptionFeedback, categoryFeedback}
+    AI-->>CC: Map~String,Object~
+    CC-->>Client: UniquenessResponse {overallScore, semanticsScore, categoryScore, descriptionFeedback, categoryFeedback}

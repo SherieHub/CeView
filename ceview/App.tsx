@@ -6,8 +6,8 @@ import { api } from './services/apiClient';
 import { OPERATOR_ID } from './services/identity';
 
 // 1. IMPORT MODULE 1 VIEWS & PROFILE
-import UniquenessCalibrationView from './components/views/module-1/UniquenessCalibrationView';
-import BusinessProfile from './components/views/module-1/BusinessProfile'; // ✨ NEW: Import BusinessProfile
+import UniquenessCalibrationView from './components/views/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
+import BusinessProfile from './components/views/module-1/1.1-business-input/BusinessProfile'; // ✨ NEW: Import BusinessProfile
 
 // 2. IMPORT MODULE 2 VIEWS
 import HomeView from './components/views/module-2/HomeView';

@@ -30,7 +30,12 @@
       "PowerShell(.\\\\mvnw.cmd clean compile 2>&1)",
       "Bash(xargs grep -l \"Market\\\\|Forecast\\\\|Notification\\\\|Demand\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\austi\\\\CeView\" -Directory)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Read(//c/Users/austi/Downloads/**)",
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\docs\\\\module-2\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Recurse -Include \"tailwind.config.*\", \"index.css\", \"App.css\", \"globals.css\")"
     ]
   }
 }
