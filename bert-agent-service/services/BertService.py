@@ -20,7 +20,7 @@ class BertService:
         raw_probabilities = raw_predictions.tolist() 
         
         # Normalize the native Python list
-        normalized_probs = self.even_probabilities(raw_probabilities)
+        normalized_probs = raw_probabilities
         
         percentage_breakdown = {}
         triggered_labels = []
@@ -33,6 +33,8 @@ class BertService:
             
             if decimal_prob >= self.threshold:
                 triggered_labels.append(class_number)
+        
+        normalized_probs = self.even_probabilities(raw_probabilities)
                 
         return {
             "status": "success",
@@ -46,3 +48,6 @@ class BertService:
         if total == 0: 
             return [0.0 for x in prob]
         return [round(float(x) / total, 4) for x in prob]
+    
+    def change_threshold(self, threshold):
+        self.threshold = threshold
