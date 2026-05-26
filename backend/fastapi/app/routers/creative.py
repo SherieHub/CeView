@@ -1,31 +1,57 @@
+"""Submodule 3.2 — Creative Direction & Visual Recommendation Generation (FR3.11-FR3.19).
+
+Called by Spring Boot CreativeDirectionService after approved captions are available.
+Generates destination-specific visual direction, shot lists, lighting, moodboard,
+and platform-aware recommendations via Gemini.  Falls back to curated templates.
+"""
 from __future__ import annotations
+
+import logging
 
 from fastapi import APIRouter
 
+from app.services import gemini_client
+
 router = APIRouter()
+log = logging.getLogger("module3.creative")
 
 
 @router.post("/generate")
-def generate(_: dict) -> dict:
-    """Static creative-direction stub matching VisualDirectionBoard expectations."""
-    return {
-        "shotListRecommendations": [
-            "Aerial drone shot starting high above the ocean, moving slowly toward a private villa balcony.",
-            "Close-up of a local breakfast tray on the balcony with ocean blur in the background.",
-            "POV walking through lush resort gardens, opening a gate to a private beach.",
-        ],
-        "visualRecommendations": [
-            "Soft, dreamy color grading; avoid oversaturated tropical clichés.",
-            "Use warm, low-contrast golden filters during the first 3 seconds.",
-            "Maintain a 4:5 portrait ratio for Korean Instagram feeds.",
-        ],
-        "lightingSuggestions": [
-            "Golden hour (06:00–07:30 or 16:30–18:00) only — midday light flattens the ocean texture.",
-            "Backlight subjects against the ocean for depth and silhouette warmth.",
-        ],
-        "moodboardReferences": [
-            "Aman Resorts editorial photography",
-            "Wabi-sabi minimal interiors",
-            "Korean 'healing travel' Instagram aesthetic",
-        ],
-    }
+def generate(body: dict) -> dict:
+    """Generate creative direction for a market+profile (FR3.13-FR3.16).
+
+    Request body (from Spring Boot CreativeDirectionService):
+        profileId         — str
+        market            — str  (korea | japan | usa)
+        businessName      — str
+        categories        — list[str]
+        approvedCaptions  — list[str]  (FR3.11 — from approved content rows)
+        uniquenessScore   — int  (FR3.12 — business positioning signal)
+        forecastContext   — dict  (FR3.12 — market score / demand signals)
+
+    Response:
+        visualGuide, shots, moodboard, platformRecommendations, source
+    """
+    market: str = body.get("market", "korea")
+    business_name: str = body.get("businessName", "")
+    categories: list[str] = body.get("categories", [])
+    approved_captions: list[str] = body.get("approvedCaptions", [])
+    uniqueness_score: int = body.get("uniquenessScore", 0)
+    forecast_context: dict = body.get("forecastContext", {})
+
+    log.info(
+        "creative.generate received market=%s captions=%d",
+        market, len(approved_captions),
+    )
+
+    result = gemini_client.generate_creative_direction(
+        market=market,
+        business_name=business_name,
+        categories=categories,
+        approved_captions=approved_captions,
+        uniqueness_score=uniqueness_score,
+        forecast_context=forecast_context,
+    )
+
+    log.info("creative.generate ok market=%s source=%s", market, result.get("source"))
+    return result

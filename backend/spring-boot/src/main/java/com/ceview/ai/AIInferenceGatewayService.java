@@ -56,6 +56,26 @@ public class AIInferenceGatewayService {
         return post("/internal/forecasting/notifications", Map.of());
     }
 
+    /** 2.1 — Fetch Google Trends index via FastAPI PyTrends wrapper (FR2.2). */
+    public Map<String, Object> fetchTrends(Map<String, Object> payload) {
+        return post("/internal/market-data/trends", payload);
+    }
+
+    /** 2.1 — Compute FFT-based seasonality score via FastAPI scipy (FR2.7). */
+    public Map<String, Object> computeSeasonality(Map<String, Object> payload) {
+        return post("/internal/market-data/seasonality", payload);
+    }
+
+    /** 2.2 — Run BiLSTM+Transformer demand forecast inference (FR2.11). */
+    public Map<String, Object> runForecastInference(Map<String, Object> payload) {
+        return post("/internal/forecasting/inference", payload);
+    }
+
+    /** 2.2 — Run XGBoost market scoring model (FR2.13). */
+    public Map<String, Object> runMarketScoring(Map<String, Object> payload) {
+        return post("/internal/forecasting/score", payload);
+    }
+
     public Map<String, Object> generateContent(Map<String, Object> payload) {
         return post("/internal/content/generate", payload);
     }
@@ -66,6 +86,11 @@ public class AIInferenceGatewayService {
 
     public Map<String, Object> evaluateCompliance(Map<String, Object> payload) {
         return post("/internal/compliance/evaluate", payload);
+    }
+
+    /** 3.3 — Full multimodal compliance analysis (FR3.20-FR3.26). */
+    public Map<String, Object> evaluateComplianceFull(Map<String, Object> payload) {
+        return post("/internal/compliance/evaluate-full", payload);
     }
 
     public Map<String, Object> generateReport(Map<String, Object> payload) {

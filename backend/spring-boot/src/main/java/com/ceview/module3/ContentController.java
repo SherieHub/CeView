@@ -1,24 +1,24 @@
 package com.ceview.module3;
 
-import com.ceview.ai.AIInferenceGatewayService;
-import com.ceview.common.TraceIdFilter;
 import com.ceview.module3.dto.ContentDtos.ContentResponseDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ceview.module3.submodule31.ContentApprovalService;
+import com.ceview.module3.submodule31.ContentGenerationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
+import java.util.UUID;
 
 /**
- * SDD §3.1 — Content Studio. Forwards the request to FastAPI (which calls
- * Gemini or returns a labelled fallback) and deserialises into a typed record.
- * Errors are tagged with a MODULE 3 error code in the MDC before being rethrown
- * to {@link com.ceview.common.ApiExceptionHandler} so the same code lands in
- * both the Spring log line and the JSON error body the frontend reads.
+ * Submodule 3.1 — Content Studio API (FR3.1-FR3.10).
+ *
+ * POST /generate — generates market-localised captions and supplementary outputs,
+ *                  retrieves business profile + Module 2 forecast context from DB (FR3.1, FR3.4),
+ *                  persists all generated content rows (FR3.10).
+ * POST /approve  — marks generated content as operator-approved (FR3.10 / UC-3.1 step 14).
  */
 @RestController
 @RequestMapping("/api/v1/content")
@@ -26,56 +26,62 @@ public class ContentController {
 
     private static final Logger log = LoggerFactory.getLogger(ContentController.class);
 
-    private final AIInferenceGatewayService ai;
-    private final ObjectMapper mapper;
+    private final ContentGenerationService generationService;
+    private final ContentApprovalService approvalService;
 
-    public ContentController(AIInferenceGatewayService ai, ObjectMapper mapper) {
-        this.ai = ai;
-        this.mapper = mapper;
+    public ContentController(ContentGenerationService generationService,
+                             ContentApprovalService approvalService) {
+        this.generationService = generationService;
+        this.approvalService   = approvalService;
     }
 
     public record GenerateRequest(
         String market,
         String businessName,
         String description,
-        java.util.List<String> categories,
+        List<String> categories,
         String trend
     ) {}
 
+    /**
+     * FR3.2 — market selection, FR3.3-FR3.6 — generation pipeline.
+     * Accepts an optional profileId query param for DB enrichment (FR3.1, FR3.4).
+     */
     @PostMapping("/generate")
-    public ContentResponseDto generate(@RequestBody GenerateRequest req) {
-        log.info("content.generate received market={} business={}",
-                req.market(), req.businessName());
-        Map<String, Object> raw;
-        try {
-            raw = ai.generateContent(Map.of(
-                "market", req.market() == null ? "korea" : req.market(),
-                "businessName", req.businessName() == null ? "" : req.businessName(),
-                "description", req.description() == null ? "" : req.description(),
-                "categories", req.categories() == null ? java.util.List.of() : req.categories(),
-                "trend", req.trend() == null ? "" : req.trend()
-            ));
-        } catch (WebClientResponseException e) {
-            MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_CONTENT_GATEWAY_5XX);
-            log.warn("content.generate gateway failure status={}", e.getStatusCode().value(), e);
-            throw e;
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof TimeoutException) {
-                MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_CONTENT_GATEWAY_TIMEOUT);
-                log.warn("content.generate gateway timeout", e);
-            }
-            throw e;
-        }
+    public ContentResponseDto generate(
+            @RequestBody GenerateRequest req,
+            @RequestParam(required = false) UUID profileId) {
+        log.info("content.generate received market={} profileId={}", req.market(), profileId);
+        return generationService.generate(
+                profileId,
+                req.market(),
+                req.businessName(),
+                req.description(),
+                req.categories(),
+                req.trend());
+    }
 
-        ContentResponseDto dto;
-        try {
-            dto = mapper.convertValue(raw, ContentResponseDto.class);
-        } catch (IllegalArgumentException e) {
-            MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_CONTENT_DESERIALIZE_FAIL);
-            log.warn("content.generate deserialize failed", e);
-            throw e;
+    /**
+     * FR3.10 / UC-3.1 step 14 — operator approves generated content for a market.
+     * Body: { "market": "korea" }
+     * Returns: { "approvedIds": [...] }
+     */
+    @PostMapping("/approve")
+    public ResponseEntity<Map<String, Object>> approve(
+            @RequestParam UUID profileId,
+            @RequestBody Map<String, String> body) {
+        String market = body.getOrDefault("market", "korea");
+        log.info("content.approve received profileId={} market={}", profileId, market);
+
+        List<UUID> ids = approvalService.approveForMarket(profileId, market);
+
+        if (ids.isEmpty()) {
+            return ResponseEntity.notFound().build();
         }
-        log.info("content.generate ok market={} source={}", req.market(), dto.source());
-        return dto;
+        return ResponseEntity.ok(Map.of(
+                "approvedIds", ids,
+                "market",      market,
+                "count",       ids.size()
+        ));
     }
 }

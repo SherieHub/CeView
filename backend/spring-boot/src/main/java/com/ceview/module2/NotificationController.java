@@ -1,34 +1,28 @@
 package com.ceview.module2;
 
-import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.module2.dto.NotificationDtos.NotificationsResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.ceview.module2.submodule22.NotificationService;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.UUID;
 
 /**
- * HomeView notifications. Backed by FastAPI; response is deserialised into
- * typed records so missing/renamed fields surface here, not as silent
- * `undefined` in the React `TrendAlertCard`.
+ * HomeView notifications (Submodule 2.2, FR2.15).
+ * Reads persisted demand alerts from the DB; falls back to FastAPI stub
+ * when no alerts exist for the profile.
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class NotificationController {
 
-    private final AIInferenceGatewayService ai;
-    private final ObjectMapper mapper;
+    private final NotificationService notificationService;
 
-    public NotificationController(AIInferenceGatewayService ai, ObjectMapper mapper) {
-        this.ai = ai;
-        this.mapper = mapper;
+    public NotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
     @GetMapping
-    public NotificationsResponse list() {
-        Map<String, Object> raw = ai.listNotifications();
-        return mapper.convertValue(raw, NotificationsResponse.class);
+    public NotificationsResponse list(@RequestParam(required = false) UUID profileId) {
+        return notificationService.getNotificationsForProfile(profileId);
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.LinkedHashMap;
@@ -28,6 +29,13 @@ public class ApiExceptionHandler {
     public ResponseEntity<?> downstream(WebClientResponseException e) {
         return ResponseEntity.status(502)
                 .body(body("ai_service_unavailable", e.getStatusCode().value(), e.getMessage()));
+    }
+
+    /** Catches connection-refused / timeout from WebClient when FastAPI is unreachable. */
+    @ExceptionHandler(WebClientRequestException.class)
+    public ResponseEntity<?> unreachable(WebClientRequestException e) {
+        return ResponseEntity.status(503)
+                .body(body("ai_service_unreachable", 503, e.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
