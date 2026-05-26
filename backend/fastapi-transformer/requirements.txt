@@ -1,0 +1,10 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+httpx>=0.27.0
+# Module 2 — market data aggregation + forecasting
+pytrends>=4.9.2
+scipy>=1.13.0
+pandas>=2.2.0
+xgboost>=2.0.0
+numpy>=1.26.0,<2.0
