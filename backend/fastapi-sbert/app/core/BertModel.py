@@ -1,8 +1,10 @@
 import os
 import logging
+from dotenv import load_dotenv
 
 log = logging.getLogger("module1.classifier")
 
+load_dotenv()
 _KERAS_PATH = os.environ.get(
     "KERAS_MODEL_PATH", "/app/models/complete_classifier_head.keras"
 )
