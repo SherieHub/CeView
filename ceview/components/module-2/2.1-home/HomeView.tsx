@@ -20,7 +20,9 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
   const [serverError, setServerError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.listNotifications()
+    // Pass profileId so the backend returns real persisted demand alerts instead
+    // of always falling back to the FastAPI stub path.
+    api.listNotifications(businessProfileId)
       .then(r => {
         if (r.notifications?.length) {
           setNotifications(r.notifications);
@@ -32,7 +34,7 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
         setIsUsingMock(true);
         setServerError('Notification service unavailable. Showing demo data.');
       });
-  }, []);
+  }, [businessProfileId]);
 
   if (selectedNotification) {
     return (

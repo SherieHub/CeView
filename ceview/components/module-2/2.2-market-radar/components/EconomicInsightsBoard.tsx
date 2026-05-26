@@ -11,6 +11,12 @@ interface EconomicInsightsBoardProps {
 const EconomicInsightsBoard: React.FC<EconomicInsightsBoardProps> = ({ market }) => {
   const [activeDriver, setActiveDriver] = useState<'economy' | 'seasonality'>('economy');
 
+  // Dynamically resolve the "Current" chart point rather than assuming it is always
+  // at index 4.  Falls back to the last point in the array for safety.
+  const currentPoint = market.chartData.find((d) => d.week === 'Current')
+    ?? market.chartData[market.chartData.length - 1]
+    ?? { forex: 0, gdp: 0, seasonality: 0 };
+
   return (
     <div style={{ backgroundColor: COLORS.OFF_WHITE }}>
       <div className="p-4 md:p-8">
@@ -44,12 +50,12 @@ const EconomicInsightsBoard: React.FC<EconomicInsightsBoardProps> = ({ market })
                 <div className="flex gap-4 shrink-0">
                   <div className="text-right border-r pr-4" style={{ borderColor: COLORS.LIGHT_GREY }}>
                     <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.GOLD }}>Exchange Rate</div>
-                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{market.chartData[4].forex}</div>
+                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{currentPoint.forex}</div>
                     <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>vs PHP</div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.RED_ORANGE }}>GDP Growth</div>
-                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{market.chartData[4].gdp}%</div>
+                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{currentPoint.gdp}%</div>
                     <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>Annual</div>
                   </div>
                 </div>

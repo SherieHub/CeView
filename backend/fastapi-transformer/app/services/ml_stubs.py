@@ -92,20 +92,30 @@ def forecast_markets() -> list[dict]:
 
 
 def _chart_data(start: int, history: list[int], forecast: list[int], forex: float, gdp: float, market: str) -> list[dict]:
-    weeks = ["Wk 1", "Wk 2", "Wk 3", "Wk 4", "Current", "Wk 6", "Wk 7", "Wk 12"]
-    series = [start] + history + forecast
+    # Labels match the backend buildChartData() contract: Wk -3..Wk -1, Current, Wk +1..Wk +4
+    weeks   = ["Wk -3", "Wk -2", "Wk -1", "Current", "Wk +1", "Wk +2", "Wk +3", "Wk +4"]
+    series  = history[-3:] + [history[-1]] + forecast[:4]   # 3 history + current + 4 forecast
+    # Pad / truncate to exactly 8 so zip is always safe
+    while len(series) < 8:
+        series.append(series[-1])
+    series = series[:8]
+
+    current_idx = weeks.index("Current")
     out = []
     for i, wk in enumerate(weeks):
         is_current = wk == "Current"
-        is_past = i < weeks.index("Current")
+        is_past    = i < current_idx
         out.append({
-            "week": wk,
-            "history": series[i] if (is_past or is_current) else None,
-            "forecast": series[i] if (is_current or i > weeks.index("Current")) else None,
-            "seasonality": series[i] - 4,
-            "forex": forex + i * 0.02,
-            "gdp": gdp + i * 0.05,
-            "spike": 1 if (market == "japan" and wk == "Wk 7") or (market == "korea" and wk == "Current") else 0,
+            "week":        wk,
+            "history":     series[i] if (is_past or is_current) else None,
+            "forecast":    series[i] if (is_current or not is_past) else None,
+            "seasonality": max(0, series[i] - 4),
+            "forex":       round(forex + i * 0.02, 4),
+            "gdp":         round(gdp   + i * 0.05, 4),
+            "spike":       1 if (
+                (market == "japan" and wk == "Wk +2") or
+                (market == "korea" and wk == "Current")
+            ) else 0,
         })
     return out
 

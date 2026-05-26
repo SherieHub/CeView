@@ -7,27 +7,66 @@ import { ChartDataPoint } from '../../../../types';
 const ReferenceAreaTyped = RA as React.ComponentType<any>;
 
 export function generateTimeframeData(data: ChartDataPoint[], timeframe: '4WK' | '12WK'): ChartDataPoint[] {
-   const weeksOut = timeframe === '4WK' ? 4 : 12;
-   const result: ChartDataPoint[] = [];
-   const current = data.find((d) => d.week === 'Current') || data[4];
-   for (let i = -weeksOut; i <= weeksOut; i++) {
-     if (i === 0) {
-       result.push({ ...current, history: current.history !== null ? Math.round(current.history) : null, forecast: current.forecast !== null ? Math.round(current.forecast) : null, seasonality: Math.round(current.seasonality) });
-       continue;
-     }
-     const isPast = i < 0;
-     const label = isPast ? `Wk ${i}` : `Wk +${i}`;
-     let matchedPoint = null;
-     if (i === -4) matchedPoint = data[0]; if (i === -3) matchedPoint = data[1]; if (i === -2) matchedPoint = data[2]; if (i === -1) matchedPoint = data[3]; if (i === 1) matchedPoint = data[5]; if (i === 2) matchedPoint = data[6]; if (i === 12) matchedPoint = data[7];
-     if (matchedPoint) {
-       result.push({ ...matchedPoint, week: label, history: isPast && matchedPoint.history !== null ? Math.round(matchedPoint.history) : null, forecast: !isPast && matchedPoint.forecast !== null ? Math.round(matchedPoint.forecast) : null, seasonality: Math.round(matchedPoint.seasonality), spike: 0 });
-       continue;
-     }
-     const offset = Math.abs(i);
-     const curve = isPast ? Math.sin(offset) * 5 : Math.cos(offset) * 8;
-     result.push({ week: label, history: isPast ? Math.round(Math.max(20, Math.min(100, (current.history || 50) - offset * 1.5 + curve))) : null, forecast: !isPast ? Math.round(Math.max(20, Math.min(100, (current.forecast || 50) + curve - offset * 2))) : null, seasonality: Math.round(Math.max(20, Math.min(100, current.seasonality + Math.sin(i * 0.5) * 8))), forex: current.forex, gdp: current.gdp, spike: 0 });
-   }
-   return result;
+  const weeksOut = timeframe === '4WK' ? 4 : 12;
+  const result: ChartDataPoint[] = [];
+  // Locate the "Current" point by label — never assume a fixed index position.
+  // Falls back to the last element (safe for any array length), then to a neutral stub.
+  const current: ChartDataPoint =
+    data.find((d) => d.week === 'Current') ??
+    data[data.length - 1] ??
+    { week: 'Current', history: 50, forecast: 50, seasonality: 50, forex: 0, gdp: 0, spike: 0 };
+
+  for (let i = -weeksOut; i <= weeksOut; i++) {
+    if (i === 0) {
+      result.push({
+        ...current,
+        history: current.history !== null ? Math.round(current.history) : null,
+        forecast: current.forecast !== null ? Math.round(current.forecast) : null,
+        seasonality: Math.round(current.seasonality),
+      });
+      continue;
+    }
+
+    const isPast = i < 0;
+    const label = isPast ? `Wk ${i}` : `Wk +${i}`;
+
+    // Label-based lookup — works regardless of array length or ordering.
+    // The backend guarantees labels "Wk -3".."Wk -1", "Current", "Wk +1".."Wk +4";
+    // points outside that range (e.g. "Wk -4" or "Wk +5".."Wk +12") fall through
+    // to the synthetic interpolation below.
+    const matchedPoint = data.find((d) => d.week === label) ?? null;
+
+    if (matchedPoint) {
+      result.push({
+        ...matchedPoint,
+        week: label,
+        history: isPast && matchedPoint.history !== null ? Math.round(matchedPoint.history) : null,
+        forecast: !isPast && matchedPoint.forecast !== null ? Math.round(matchedPoint.forecast) : null,
+        seasonality: Math.round(matchedPoint.seasonality),
+        spike: matchedPoint.spike ?? 0,
+      });
+      continue;
+    }
+
+    // Synthetic interpolation for weeks not present in the dataset.
+    const offset = Math.abs(i);
+    const curve = isPast ? Math.sin(offset) * 5 : Math.cos(offset) * 8;
+    result.push({
+      week: label,
+      history: isPast
+        ? Math.round(Math.max(20, Math.min(100, (current.history ?? 50) - offset * 1.5 + curve)))
+        : null,
+      forecast: !isPast
+        ? Math.round(Math.max(20, Math.min(100, (current.forecast ?? 50) + curve - offset * 2)))
+        : null,
+      seasonality: Math.round(Math.max(20, Math.min(100, current.seasonality + Math.sin(i * 0.5) * 8))),
+      forex: current.forex,
+      gdp: current.gdp,
+      spike: 0,
+    });
+  }
+
+  return result;
 }
 
 const MainTooltip = ({ active, payload, label }: any) => {

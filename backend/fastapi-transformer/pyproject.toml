@@ -1,6 +1,6 @@
 [project]
 name = "ceview-fastapi-transformer"
-version = "0.1.0"
+version = "0.2.0"
 description = "CeView Transformer microservice — Module 2 demand forecasting & market intelligence"
 requires-python = ">=3.12"
 dependencies = [
@@ -8,6 +8,14 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.7.0",
     "httpx>=0.27.0",
+    # Module 2 — signal processing, market scoring
+    "numpy>=1.26.0,<2.0",
+    "scipy>=1.13.0",
+    "pandas>=2.2.0",
+    "pytrends>=4.9.2",
+    "xgboost>=2.0.0",
+    # Gemini API — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
+    "google-generativeai>=0.8.0",
 ]
 
 [tool.uv]

@@ -111,8 +111,10 @@ export const api = {
       method: 'POST', body: '{}',
     }),
 
-  listNotifications: () =>
-    req<{ notifications: Notification[] }>('/api/v1/notifications'),
+  listNotifications: (profileId?: string | null) => {
+    const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
+    return req<{ notifications: Notification[] }>(`/api/v1/notifications${qs}`);
+  },
 
   // ── Module 3.1 — Content Generation ─────────────────────────────────────
   generateContent: (body: {

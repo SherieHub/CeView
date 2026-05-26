@@ -13,38 +13,44 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
- * Orchestrates the full Submodule 2.1 ingestion pipeline for a single
- * business profile (FR2.1–FR2.8):
- *   fetch trends + GDP + forex concurrently → normalize → rolling stats
- *   → spike indicator → seasonality score → persist MarketSignalRecord
+ * Orchestrates the Submodule 2.1 ingestion pipeline for a single business
+ * profile (FR2.1–FR2.8):
+ *
+ *   1. Concurrent fetch: PyTrends index (FastAPI) + GDP (World Bank) + forex
+ *   2. Delegate the full Seasonal Shift Detection to FastAPI
+ *      → POST /internal/market-data/seasonality
+ *      Returns: seasonality_score (0–1), rolling_7d_avg, rolling_30d_avg,
+ *               rolling_7d_std, spike_indicator (2σ), yoy_ratio
+ *   3. Persist MarketSignalRecord with all computed fields
+ *
+ * Spike detection formula (Phase 2):
+ *   spike = TRUE iff current_trend > rolling_7d_avg + (2 × rolling_7d_std)
+ *   (Previously: stdDev > 1.5 × mean — replaced per CeView_SeasonalShift_Detection.md)
  */
 @Service
 public class MarketDataIngestionService {
 
     private static final Logger log = LoggerFactory.getLogger(MarketDataIngestionService.class);
 
-    private static final List<String> MARKETS = List.of("korea", "japan", "usa");
-    private static final int ROLLING_WINDOW = 4;
-    private static final int FOREX_ROLLING_WINDOW = 30;
-    private static final int MIN_WEEKS_FOR_SEASONALITY = 52;
-    private static final double SPIKE_MULTIPLIER = 1.5;
+    private static final List<String> MARKETS              = List.of("korea", "japan", "usa");
+    private static final int          FOREX_ROLLING_WINDOW = 30;  // 30-period rolling for forex
 
-    private final AIInferenceGatewayService ai;
-    private final ExternalMarketDataClient externalClient;
+    private final AIInferenceGatewayService    ai;
+    private final ExternalMarketDataClient     externalClient;
     private final MarketSignalRecordRepository signalRepo;
 
     public MarketDataIngestionService(AIInferenceGatewayService ai,
                                       ExternalMarketDataClient externalClient,
                                       MarketSignalRecordRepository signalRepo) {
-        this.ai = ai;
+        this.ai             = ai;
         this.externalClient = externalClient;
-        this.signalRepo = signalRepo;
+        this.signalRepo     = signalRepo;
     }
 
     /**
-     * Run the 2.1 pipeline for a single profile across all three target markets.
+     * Run the 2.1 ingestion pipeline for all three target markets.
      *
-     * @return number of records successfully ingested
+     * @return number of markets successfully ingested
      */
     public int ingestForProfile(BusinessProfile profile) {
         int count = 0;
@@ -65,11 +71,11 @@ public class MarketDataIngestionService {
     // ─── private pipeline ────────────────────────────────────────────────────
 
     private void ingestMarket(BusinessProfile profile, String market) {
-        UUID profileId = profile.getBusinessProfileId();
+        UUID         profileId  = profile.getBusinessProfileId();
         List<String> categories = profile.categoriesList();
 
-        // Concurrent fetch: trends (via FastAPI), GDP, forex
-        CompletableFuture<Map<String, Object>> trendsFuture =
+        // ── Concurrent external fetches ──────────────────────────────────────
+        CompletableFuture<Map<String, Object>>              trendsFuture =
                 CompletableFuture.supplyAsync(() ->
                         ai.fetchTrends(Map.of("market", market, "categories", categories)));
 
@@ -81,68 +87,94 @@ public class MarketDataIngestionService {
 
         CompletableFuture.allOf(trendsFuture, gdpFuture, forexFuture).join();
 
-        Map<String, Object> trendsResult = trendsFuture.join();
-        ExternalMarketDataClient.GdpDataDto gdp = gdpFuture.join();
-        ExternalMarketDataClient.ForexDataDto forex = forexFuture.join();
+        Map<String, Object>                    trendsResult = trendsFuture.join();
+        ExternalMarketDataClient.GdpDataDto    gdp          = gdpFuture.join();
+        ExternalMarketDataClient.ForexDataDto  forex        = forexFuture.join();
 
-        double rawTrend = ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue();
-        double trendIndex = Math.max(0.0, Math.min(100.0, rawTrend));
+        double trendIndex = Math.max(0.0, Math.min(100.0,
+                ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
 
-        // Rolling stats from recent signal records
+        // ── Load existing signal history ──────────────────────────────────────
         List<MarketSignalRecord> history = signalRepo
                 .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
 
-        List<Double> recentTrends = history.stream()
-                .limit(ROLLING_WINDOW)
+        // Build chronological weekly trend series for SeasonalShiftDetector
+        List<Double> weeklyHistory = history.stream()
                 .map(MarketSignalRecord::getTrendIndex)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        Collections.reverse(weeklyHistory);        // oldest first (chronological)
+        weeklyHistory.add(trendIndex);             // append today's fresh observation
 
+        // 30-period rolling average for forex (smooths FX volatility — FR2.4)
         List<Double> recentForex = history.stream()
                 .limit(FOREX_ROLLING_WINDOW)
                 .map(MarketSignalRecord::getForexRate)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+        double forexAvg = recentForex.isEmpty() ? forex.rateVsPhp() : mean(recentForex);
 
-        double rollingMean   = mean(recentTrends);
-        double rollingStdDev = stdDev(recentTrends, rollingMean);
-        double forexAvg      = recentForex.isEmpty() ? forex.rateVsPhp() : mean(recentForex);
-        boolean spike        = rollingMean > 0 && rollingStdDev > SPIKE_MULTIPLIER * rollingMean;
+        // ── Delegate all seasonal shift math to FastAPI ───────────────────────
+        // POST /internal/market-data/seasonality
+        // Returns: seasonality_score, rolling_7d_avg, rolling_30d_avg,
+        //          rolling_7d_std, spike_indicator (2σ test), yoy_ratio
+        double   seasonalityScore = 0.5;
+        double   rolling7d        = trendIndex;    // safe defaults before FastAPI call
+        double   rolling30d       = trendIndex;
+        double   rollingStd7d     = 0.0;
+        boolean  spike            = false;
+        Double   yoyRatio         = null;
 
-        // Seasonality score: delegate FFT to FastAPI when enough history exists
-        double seasonalityScore = 0.5;
-        if (history.size() >= MIN_WEEKS_FOR_SEASONALITY) {
-            List<Double> weeklyHistory = history.stream()
-                    .map(MarketSignalRecord::getTrendIndex)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            Collections.reverse(weeklyHistory); // chronological order for FFT
-            try {
-                Map<String, Object> sResult = ai.computeSeasonality(Map.of(
-                        "profileId", profileId.toString(),
-                        "market", market,
-                        "weekly_history", weeklyHistory));
-                seasonalityScore = ((Number) sResult.getOrDefault("seasonality_score", 0.5)).doubleValue();
-            } catch (Exception e) {
-                log.debug("Seasonality compute failed — using default 0.5: {}", e.getMessage());
+        try {
+            Map<String, Object> sResult = ai.computeSeasonality(Map.of(
+                    "profile_id",     profileId.toString(),
+                    "market",         market,
+                    "weekly_history", weeklyHistory
+            ));
+            seasonalityScore = num(sResult, "seasonality_score", 0.5);
+            rolling7d        = num(sResult, "rolling_7d_avg",    trendIndex);
+            rolling30d       = num(sResult, "rolling_30d_avg",   trendIndex);
+            rollingStd7d     = num(sResult, "rolling_7d_std",    0.0);
+            spike            = Boolean.TRUE.equals(sResult.get("spike_indicator"));
+
+            Object yoyObj = sResult.get("yoy_ratio");
+            if (yoyObj instanceof Number) {
+                yoyRatio = ((Number) yoyObj).doubleValue();
+            }
+
+        } catch (Exception e) {
+            // FastAPI unreachable — apply inline 2σ spike as fallback
+            log.debug("Seasonality compute unavailable, applying local 2σ spike fallback: {}",
+                    e.getMessage());
+            if (weeklyHistory.size() >= 7) {
+                List<Double> w7 = weeklyHistory.subList(
+                        weeklyHistory.size() - 7, weeklyHistory.size());
+                double localMean = mean(w7);
+                double localStd  = stdDev(w7, localMean);
+                spike     = trendIndex > localMean + 2.0 * localStd;
+                rolling7d = localMean;
+                rollingStd7d = localStd;
             }
         }
 
-        // Persist
+        // ── Persist ────────────────────────────────────────────────────────
         MarketSignalRecord record = new MarketSignalRecord();
         record.setBusinessProfileId(profileId);
         record.setTargetMarket(market);
         record.setTrendIndex(trendIndex);
-        record.setForexRate(forexAvg);  // 30-day rolling average per FR2.4
+        record.setForexRate(forexAvg);
         record.setGdpGrowth(gdp.gdpGrowth());
         record.setSeasonalityScore(seasonalityScore);
-        record.setRollingAverage(rollingMean == 0.0 ? trendIndex : rollingMean);
-        record.setRollingStdDev(rollingStdDev);
+        record.setRollingAverage(rolling7d);         // legacy column — kept for backward compat
+        record.setRollingAverage7d(rolling7d);
+        record.setRollingAverage30d(rolling30d);
+        record.setRollingStdDev(rollingStd7d);
         record.setSpikeIndicator(spike);
+        record.setYoyRatio(yoyRatio);
         signalRepo.save(record);
 
-        log.debug("Ingested signal: profile={} market={} trend={} spike={}",
-                profileId, market, trendIndex, spike);
+        log.debug("Ingested: profile={} market={} trend={} spike={} yoy={}",
+                profileId, market, String.format("%.1f", trendIndex), spike, yoyRatio);
     }
 
     // ─── math helpers ─────────────────────────────────────────────────────────
@@ -158,5 +190,10 @@ public class MarketDataIngestionService {
                 .mapToDouble(v -> (v - mean) * (v - mean))
                 .average().orElse(0.0);
         return Math.sqrt(variance);
+    }
+
+    private double num(Map<String, Object> map, String key, double def) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : def;
     }
 }
