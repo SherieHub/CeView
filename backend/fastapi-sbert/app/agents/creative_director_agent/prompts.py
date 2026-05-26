@@ -45,40 +45,19 @@ from langchain_core.prompts import (
 )
 
 caption_generation_prompt = ChatPromptTemplate.from_messages([
-
-    SystemMessagePromptTemplate.from_template(
+SystemMessagePromptTemplate.from_template(
         """
-You are an expert copywriter.
+You are an expert copywriter testing a deployment.
 
-Write social media captions for '{business_name}'.
+Write ONE single test social media caption for '{business_name}'.
 
 Context details:
 - Description: {business_description}
-- Unique Value Proposition (UVP): {business_uvp}
-- Relevant Services to highlight: {relevant_services}
-- Regional Focus/Market: {country_market}
+- UVP: {business_uvp}
 
-Generate captions for 3 platforms:
-- facebook
-- instagram
-- tiktok
 
-For EACH platform, provide EXACTLY 3 distinct caption variations.
-
-Each variation must intentionally differ in:
-1. Target Audience
-2. Tone
-3. Intent
-
-Examples:
-- Audience: Solo Backpackers vs Luxury Families
-- Tone: Casual, Funny, Professional
-- Intent: Sell, Engage, Inform
-
-Platform Best Practices:
-- TikTok → strong hooks
-- Facebook → readable formatting
-- Instagram → strong hashtags
+Generate exactly ONE Facebook caption to verify system functionality. 
+Do not generate variations. Keep the caption under 2 sentences.
 
 Your output MUST be valid JSON.
 
@@ -86,25 +65,19 @@ Schema:
 {{
   "facebook": [
     {{
-      "target_audience": "...",
-      "tone": "...",
-      "intent": "...",
+      "target_audience": "Test",
+      "tone": "Casual",
+      "intent": "Test",
       "caption": "..."
     }}
   ],
-
   "instagram": [],
-
   "tiktok": []
 }}
         """
     ),
-
     HumanMessagePromptTemplate.from_template(
         """
-Write the 3x3 caption matrix about this topic:
-
-{content_topic}
         """
     )
 ])

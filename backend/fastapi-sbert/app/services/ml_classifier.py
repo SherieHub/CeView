@@ -10,7 +10,7 @@ Falls back to ml_stubs when either model is unavailable.
 """
 
 from __future__ import annotations
-from core.BertModel import _BertModel, log
+from app.core.BertModel import _BertModel, log
 
 import numpy as np
 
