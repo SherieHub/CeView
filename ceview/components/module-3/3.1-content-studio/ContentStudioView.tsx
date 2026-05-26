@@ -73,6 +73,15 @@ export default function ContentStudioView({
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  /** Which option index (0/1/2) has been approved per platform (-1 = none). */
+  const [approvedIndices, setApprovedIndices] = useState<Record<ContentPlatformId, number>>({
+    instagram: -1, tiktok: -1, facebook: -1, naver: -1,
+  });
+  /** The approved caption text for each platform — forwarded to compliance audit. */
+  const [approvedCaptions, setApprovedCaptions] = useState<Record<ContentPlatformId, string>>({
+    instagram: '', tiktok: '', facebook: '', naver: '',
+  });
+
   const [auditOn, setAuditOn] = useState(false);
   const [auditRunning, setAuditRunning] = useState(false);
   const [auditDone, setAuditDone] = useState(false);
@@ -177,6 +186,16 @@ export default function ContentStudioView({
     clearInterval(timerRef.current);
   };
 
+  /**
+   * Approve an option card — stores the approved index + text per platform,
+   * and stages it in the Media Caption Manager for the compliance audit.
+   */
+  const handleApproveOption = (idx: number, text: string) => {
+    setApprovedIndices(prev => ({ ...prev, [activeTab]: idx }));
+    setApprovedCaptions(prev => ({ ...prev, [activeTab]: text }));
+    setStagedCaption(text);
+  };
+
   // ── Loading / error empty states ─────────────────────────────────────────
   if (contentLoading) {
     return (
@@ -238,8 +257,15 @@ export default function ContentStudioView({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AIContentMatrixPanel
-          platforms={PLATFORMS} activeTab={activeTab} setActiveTab={(id) => setActiveTab(id as ContentPlatformId)}
-          options={platform?.options ?? []} onCopyOption={setStagedCaption}
+          platforms={PLATFORMS}
+          activeTab={activeTab}
+          setActiveTab={(id) => setActiveTab(id as ContentPlatformId)}
+          options={platform?.options ?? []}
+          optionNames={platform?.optionNames}
+          optionMetadata={platform?.optionMetadata}
+          approvedIndex={approvedIndices[activeTab]}
+          onCopyOption={setStagedCaption}
+          onApproveOption={handleApproveOption}
         />
         <VisualDirectionBoard guide={platform?.guide ?? []} />
       </div>
