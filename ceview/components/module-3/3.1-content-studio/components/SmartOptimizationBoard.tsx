@@ -25,11 +25,59 @@ interface SmartOptimizationBoardProps {
   auditSteps: AuditStep[];
 }
 
+// ── Sub-score chip ─────────────────────────────────────────────────────────────
+interface SubScoreChipProps {
+  label: string;
+  score: number;
+  tooltip: string;
+}
+const SubScoreChip: React.FC<SubScoreChipProps> = ({ label, score, tooltip }) => {
+  const col   = score >= 80 ? COLORS.GREEN  : score >= 60 ? COLORS.GOLD  : COLORS.RED_ORANGE;
+  const bg    = score >= 80 ? '#E8F9EF'     : score >= 60 ? '#FFF8E1'    : '#FFEEEE';
+  const border= score >= 80 ? `${COLORS.GREEN}40` : score >= 60 ? `${COLORS.GOLD}40` : `${COLORS.RED_ORANGE}40`;
+  return (
+    <div
+      className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl border"
+      style={{ backgroundColor: bg, borderColor: border }}
+      title={tooltip}
+    >
+      <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: COLORS.TEXT_MUTED }}>{label}</span>
+      <span className="text-lg font-black leading-none" style={{ color: col }}>{Math.round(score)}</span>
+    </div>
+  );
+};
+
+// ── Interpretation badge ───────────────────────────────────────────────────────
+const InterpretationBadge: React.FC<{ label: string }> = ({ label }) => {
+  let bg   = '#E8F9EF';
+  let col  = COLORS.GREEN;
+  let bdr  = `${COLORS.GREEN}40`;
+  if (label.startsWith('Moderate')) { bg = '#FFF8E1'; col = COLORS.GOLD; bdr = `${COLORS.GOLD}40`; }
+  if (label.startsWith('Significant')) { bg = '#FFEEEE'; col = COLORS.RED_ORANGE; bdr = `${COLORS.RED_ORANGE}40`; }
+  if (label.startsWith('High')) { bg = '#E3F2FD'; col = '#1565C0'; bdr = '#1565C040'; }
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border text-xs font-black"
+      style={{ backgroundColor: bg, borderColor: bdr, color: col }}
+    >
+      {label.startsWith('Excellent') && '✦ '}
+      {label.startsWith('High')      && '✓ '}
+      {label.startsWith('Moderate')  && '⚠ '}
+      {label.startsWith('Significant') && '✕ '}
+      {label}
+    </span>
+  );
+};
+
+
 const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
   auditOn, setAuditOn, hasFile, auditRunning, auditDone, auditProgress, onRunAudit, onResetAudit,
   compliance, marketCity, complianceSource, fallbackPillLabel, auditSteps,
 }) => {
   const currentStep = auditSteps.find(s => auditProgress < s.at) || auditSteps.at(-1);
+  const hasSubScores = compliance != null &&
+    (compliance.casScore != null || compliance.vasScore != null || compliance.hcsScore != null);
 
   const toggleAudit = () => {
     if (!auditOn) {
@@ -47,6 +95,7 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
 
   return (
     <div className="rounded-2xl shadow-sm border overflow-hidden transition-all duration-300" style={{ backgroundColor: COLORS.WHITE, borderColor: auditOn ? COLORS.NAVY : COLORS.LIGHT_GREY }}>
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b" style={{ borderColor: auditOn ? COLORS.LIGHT_GREY : 'transparent' }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0" style={{ backgroundColor: auditOn ? COLORS.GOLD : COLORS.LIGHT_GREY }}>
@@ -78,6 +127,7 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
         <div className="p-4 md:p-6 bg-white">
           {!hasFile && <AuditEmptyBanner />}
 
+          {/* ── Progress bar ────────────────────────────────────────── */}
           {auditRunning && (
             <div className="p-6 rounded-xl border" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
               <div className="flex items-center justify-between mb-4">
@@ -99,17 +149,69 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
             </div>
           )}
 
+          {/* ── Compliance results ──────────────────────────────────── */}
           {auditDone && compliance && (
             <div className="space-y-4">
+
+              {/* Top row: gauge + sub-scores + insight */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-6 rounded-xl border flex flex-col items-center justify-center text-center" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
+
+                {/* Gauge */}
+                <div className="p-6 rounded-xl border flex flex-col items-center justify-center text-center gap-3" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
                   <ComplianceGauge score={compliance.score} />
-                  <div className="mt-4 px-3 py-1 rounded-lg border text-xs font-black" style={{ backgroundColor: COLORS.GREEN_LIGHT, borderColor: `${COLORS.GREEN}40`, color: COLORS.GREEN }}>
-                    ✓ Great Content
-                  </div>
+                  {compliance.interpretation
+                    ? <InterpretationBadge label={compliance.interpretation} />
+                    : (
+                      <div className="px-3 py-1 rounded-lg border text-xs font-black" style={{ backgroundColor: '#E8F9EF', borderColor: `${COLORS.GREEN}40`, color: COLORS.GREEN }}>
+                        ✓ Great Content
+                      </div>
+                    )
+                  }
                 </div>
+
+                {/* Right column: sub-scores (if available) + insight text */}
                 <div className="md:col-span-2 flex flex-col gap-4">
+
+                  {/* Sub-score chips — shown only when full pipeline ran */}
+                  {hasSubScores && (
+                    <div className="p-4 rounded-xl border" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
+                      <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: COLORS.TEXT_MUTED }}>
+                        OMCS Breakdown — FR3.25.4
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {compliance.casScore != null && (
+                          <SubScoreChip
+                            label="CAS"
+                            score={compliance.casScore}
+                            tooltip="Caption Alignment Score — Sentence-BERT cosine similarity vs approved captions (FR3.25.1)"
+                          />
+                        )}
+                        {compliance.vasScore != null && (
+                          <SubScoreChip
+                            label="VAS"
+                            score={compliance.vasScore}
+                            tooltip="Visual Alignment Score — Gemini multimodal evaluation (FR3.25.2)"
+                          />
+                        )}
+                        {compliance.hcsScore != null && (
+                          <SubScoreChip
+                            label="HCS"
+                            score={compliance.hcsScore}
+                            tooltip="Heuristic Compliance Score — deterministic 6-rule checker: category alignment, market consistency, seasonal appropriateness, tone, hashtags, visual coherence (FR3.25.3)"
+                          />
+                        )}
+                      </div>
+                      {compliance.omcsScore != null && (
+                        <p className="text-[10px] font-bold" style={{ color: COLORS.TEXT_MUTED }}>
+                          OMCS = <span className="font-black" style={{ color: COLORS.NAVY }}>{compliance.omcsScore.toFixed(1)}</span>
+                          <span className="ml-1 opacity-60">(0.35 × CAS) + (0.45 × VAS) + (0.20 × HCS)</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <ChecklistIndicator />
+
                   <div className="flex-1 p-4 rounded-xl border flex items-center" style={{ backgroundColor: COLORS.OFF_WHITE, borderLeftColor: COLORS.NAVY, borderLeftWidth: 4 }}>
                     <p className="text-sm font-medium leading-relaxed" style={{ color: COLORS.TEXT_MAIN }}>
                       <strong className="font-black" style={{ color: COLORS.NAVY }}>{compliance.score}% Marketing Score</strong> — Your content creates the right emotional feeling for travelers from <strong className="font-black">{marketCity}</strong>.
@@ -118,10 +220,28 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
                 </div>
               </div>
 
+              {/* Feedback lists */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FeedbackList type="pros" items={compliance.aligned} />
                 <FeedbackList type="cons" items={compliance.gaps} />
               </div>
+
+              {/* Mismatches (full pipeline only) */}
+              {compliance.mismatches && compliance.mismatches.length > 0 && (
+                <div className="p-4 rounded-xl border" style={{ backgroundColor: '#FFF8E1', borderColor: `${COLORS.GOLD}40` }}>
+                  <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.GOLD }}>
+                    ⚠ Detected Mismatches
+                  </p>
+                  <ul className="space-y-1">
+                    {compliance.mismatches.map((m, i) => (
+                      <li key={i} className="text-xs font-medium flex items-start gap-2" style={{ color: COLORS.TEXT_MAIN }}>
+                        <span className="shrink-0 mt-0.5" style={{ color: COLORS.GOLD }}>•</span>
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>

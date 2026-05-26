@@ -39,7 +39,11 @@ public class ComplianceEvaluationResult {
     @Column(name = "vas_score")
     private Double vasScore;
 
-    /** Overall Multimodal Compliance Score: (0.4 × CAS) + (0.6 × VAS) (FR3.25.3). */
+    /** Heuristic Compliance Score (0-100) — deterministic 6-rule checker (FR3.25.3). */
+    @Column(name = "hcs_score")
+    private Double hcsScore;
+
+    /** Overall Multimodal Compliance Score: (0.35×CAS) + (0.45×VAS) + (0.20×HCS) (FR3.25.4). */
     @Column(name = "omcs_score")
     private Double omcsScore;
 

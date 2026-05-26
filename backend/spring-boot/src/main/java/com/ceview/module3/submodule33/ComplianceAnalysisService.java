@@ -2,6 +2,8 @@ package com.ceview.module3.submodule33;
 
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.common.TraceIdFilter;
+import com.ceview.module1.businessinput.BusinessProfile;
+import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module3.Module3ErrorCodes;
 import com.ceview.module3.dto.ComplianceDtos.ComplianceResultDto;
 import com.ceview.module3.submodule31.ContentApprovalService;
@@ -38,6 +40,7 @@ public class ComplianceAnalysisService {
     private final CreativeDirectionOutputRepository creativeRepo;
     private final ComplianceEvaluationResultRepository evalRepo;
     private final ComplianceRevisionHistoryRepository historyRepo;
+    private final BusinessProfileRepository profileRepo;
     private final ObjectMapper mapper;
 
     public ComplianceAnalysisService(
@@ -46,12 +49,14 @@ public class ComplianceAnalysisService {
             CreativeDirectionOutputRepository creativeRepo,
             ComplianceEvaluationResultRepository evalRepo,
             ComplianceRevisionHistoryRepository historyRepo,
+            BusinessProfileRepository profileRepo,
             ObjectMapper mapper) {
         this.ai             = ai;
         this.contentApproval = contentApproval;
         this.creativeRepo   = creativeRepo;
         this.evalRepo       = evalRepo;
         this.historyRepo    = historyRepo;
+        this.profileRepo    = profileRepo;
         this.mapper         = mapper;
     }
 
@@ -74,7 +79,8 @@ public class ComplianceAnalysisService {
 
         // FR3.21 — retrieve 3.1 approved captions and 3.2 creative direction context
         List<String> approvedCaptions = List.of();
-        String visualTone = null;
+        List<String> categories       = List.of();
+        String visualTone      = null;
         String shotListContext = null;
 
         if (profileId != null) {
@@ -83,6 +89,17 @@ public class ComplianceAnalysisService {
             } catch (Exception e) {
                 log.warn("3.3 could not retrieve approved captions profile={} market={}: {}",
                         profileId, market, e.getMessage());
+            }
+
+            // FR3.25.3 HCS rule 1 — inject business categories for tourism alignment check
+            try {
+                Optional<BusinessProfile> profile = profileRepo.findById(profileId);
+                if (profile.isPresent()) {
+                    categories = profile.get().categoriesList();
+                }
+            } catch (Exception e) {
+                log.warn("3.3 could not retrieve business profile categories profile={}: {}",
+                        profileId, e.getMessage());
             }
 
             try {
@@ -103,7 +120,7 @@ public class ComplianceAnalysisService {
 
         ComplianceResultDto result;
         if (hasEnrichedContext) {
-            result = invokeFullPipeline(caption, market, approvedCaptions,
+            result = invokeFullPipeline(caption, market, approvedCaptions, categories,
                     visualTone, shotListContext, mediaName, mediaSize);
         } else {
             // FR3.30 — fallback to basic evaluate when no approved captions available
@@ -123,7 +140,8 @@ public class ComplianceAnalysisService {
     // ── FastAPI invocation ────────────────────────────────────────────────────
 
     private ComplianceResultDto invokeFullPipeline(String caption, String market,
-            List<String> approvedCaptions, String visualTone, String shotListContext,
+            List<String> approvedCaptions, List<String> categories,
+            String visualTone, String shotListContext,
             String mediaName, Long mediaSize) {
 
         // FR3.22 — assemble enriched payload
@@ -131,6 +149,7 @@ public class ComplianceAnalysisService {
         payload.put("caption", caption);
         payload.put("market", market);
         payload.put("approvedCaptions", approvedCaptions);
+        payload.put("categories", categories);          // FR3.25.3 HCS rule 1
         payload.put("visualTone", visualTone);
         payload.put("shotListContext", shotListContext);
         payload.put("mediaName", mediaName);
@@ -193,6 +212,7 @@ public class ComplianceAnalysisService {
             entity.setScore(result.score());
             entity.setCasScore(result.casScore());
             entity.setVasScore(result.vasScore());
+            entity.setHcsScore(result.hcsScore());
             entity.setOmcsScore(result.omcsScore());
             entity.setComplianceThreshold(result.interpretation());
             entity.setComplianceInterpretation(result.interpretation());
