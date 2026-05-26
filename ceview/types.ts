@@ -172,9 +172,62 @@ export interface MarketHeader {
   flag?: string;
 }
 
+/**
+ * AI reasoning metadata for a single caption variation — returned by the
+ * LangGraph caption agent (Submodule 3.1) alongside the caption text.
+ * Surfaced in the UI as a collapsible "AI Reasoning" section.
+ */
+export interface CaptionMetadata {
+  /** The "What" — business attributes, services, UVP, destination signals */
+  core_business_context: string;
+  /** The "Who" — cultural signals, native-language elements, regional expectations */
+  market_cultural_localization: string;
+  /** The "Why" — psychological vectors activated (escapism, FOMO, healing, etc.) */
+  psychological_elements: string;
+  /** The "How" — tone, voice, pacing, emoji density, atmosphere */
+  creative_tone_atmosphere: string;
+  /** The Constraints — char limit, hook window, link policy, hashtag count */
+  algorithmic_platform_architecture: string;
+}
+
 export interface PlatformContent {
   options: string[];
+  /**
+   * Demographic-archetype labels parallel to `options[]`.
+   * Always 3 entries for Instagram / TikTok / Facebook:
+   *   [0] "Witty, Trend-Conscious & High-Energy"  (Gen Z)
+   *   [1] "Formal, Educational & Value-Driven"    (Mature Planners)
+   *   [2] "Storytelling, Immersive & Emotional"   (Aspirational)
+   * Absent on legacy/fallback payloads that pre-date this field.
+   */
+  optionNames?: string[];
+  /**
+   * AI reasoning metadata parallel to `options[]`.
+   * When present, each entry documents the 5 generative decisions behind
+   * the corresponding caption (core_business_context, market_cultural_localization,
+   * psychological_elements, creative_tone_atmosphere, algorithmic_platform_architecture).
+   */
+  optionMetadata?: CaptionMetadata[];
   guide: string[];
+}
+
+/**
+ * Single caption variation entry — shape returned by the LangGraph caption
+ * agent (Submodule 3.1) and stored in `final_captions` state (6-field schema).
+ */
+export interface CaptionVariation {
+  /** The "What" — business attributes, services, UVP, destination signals that drove this caption */
+  core_business_context: string;
+  /** The "Who" — cultural signals, native-language elements, regional expectations applied */
+  market_cultural_localization: string;
+  /** The "Why" — psychological vectors activated (escapism, FOMO, healing, etc.) and how */
+  psychological_elements: string;
+  /** The "How" — tone, voice, pacing, emoji density, atmosphere */
+  creative_tone_atmosphere: string;
+  /** The Constraints — char limit, hook window, link policy, hashtag count for this platform */
+  algorithmic_platform_architecture: string;
+  /** Full caption text */
+  caption: string;
 }
 
 export interface CaptionsByPlatform {

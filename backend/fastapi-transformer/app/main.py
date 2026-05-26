@@ -6,6 +6,7 @@ from app.routers import (
     forecasting,
     market_data,
 )
+from app.api import trends_router
 
 configure_logging()
 
@@ -44,5 +45,6 @@ def healthz_models() -> dict:
     }
 
 
-app.include_router(forecasting.router, prefix="/internal/forecasting", tags=["forecasting"])
-app.include_router(market_data.router, prefix="/internal/market-data",  tags=["market-data"])
+app.include_router(forecasting.router,         prefix="/internal/forecasting",  tags=["forecasting"])
+app.include_router(market_data.router,         prefix="/internal/market-data",   tags=["market-data"])
+app.include_router(trends_router.router,       prefix="/api/v1/trends",           tags=["trends"])
