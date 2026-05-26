@@ -34,7 +34,7 @@ public class DemandAlert {
     @Column(name = "trend")
     private String trend;
 
-    /** Whether the operator has read/dismissed this notification in the HomeView. */
+    /** Whether the operator has read/dismissed this notification in the HomeView . */
     @Column(name = "is_read")
     private Boolean isRead;
 
