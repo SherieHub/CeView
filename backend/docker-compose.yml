@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ceview-postgres
+    environment:
+      POSTGRES_DB: ceview
+      POSTGRES_USER: ceview
+      POSTGRES_PASSWORD: ceview
+    ports:
+      - "5432:5432"
+    volumes:
+      - ceview-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ceview -d ceview"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  fastapi:
+    build: ./fastapi
+    container_name: ceview-fastapi
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ENABLE_GEMINI: ${ENABLE_GEMINI:-false}
+      KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
+    volumes:
+      - ./fastapi/models:/app/models:ro
+    ports:
+      - "8000:8000"
+
+  spring-boot:
+    build: ./spring-boot
+    container_name: ceview-spring
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ceview
+      SPRING_DATASOURCE_USERNAME: ceview
+      SPRING_DATASOURCE_PASSWORD: ceview
+      FASTAPI_BASE_URL: http://fastapi:8000
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    ports:
+      - "8080:8080"
+
+volumes:
+  ceview-pgdata:

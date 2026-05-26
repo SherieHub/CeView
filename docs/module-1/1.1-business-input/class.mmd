@@ -1,0 +1,115 @@
+classDiagram
+    %% ═══════════════════════════════════════════════════════════
+    %% BACKEND — Entities & Records
+    %% ═══════════════════════════════════════════════════════════
+
+    class BusinessProfileEntity {
+        <<entity>>
+        -businessProfileId: UUID
+        -userId: UUID
+        -businessName: String
+        -businessDescription: String
+        -uvp: String
+        -coreServices: String
+        -imageUrl: String
+        -categories: String
+        -confidenceScore: Float
+        -uniquenessScore: Float
+        -createdAt: OffsetDateTime
+        -updatedAt: OffsetDateTime
+        +coreServicesList() List~String~
+        +setCoreServicesList(List~String~)
+        +categoriesList() List~String~
+        +setCategoriesList(List~String~)
+    }
+
+    class BusinessProfileDto {
+        <<record>>
+        +businessProfileId: UUID
+        +businessName: String
+        +categories: List~String~
+        +coreServices: List~String~
+        +description: String
+        +uvp: String
+        +imagePreview: String
+        +uniquenessScore: Float
+    }
+
+    class AnalyzeRequest {
+        <<record>>
+        +businessName: String
+        +coreServices: List~String~
+        +description: String
+        +uvp: String
+    }
+
+    class AnalyzeResponse {
+        <<record>>
+        +categories: List~CategoryAllocationRecord~
+    }
+
+    class CategoryAllocationRecord {
+        <<record>>
+        +name: String
+        +percentage: double
+    }
+
+    class KeywordRequest {
+        <<record>>
+        +businessName: String
+        +description: String
+        +category: String
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% BACKEND — Repository, Controllers & Service
+    %% ═══════════════════════════════════════════════════════════
+
+    class BusinessProfileRepository {
+        <<interface>>
+        +findFirstByUserId(UUID) Optional~BusinessProfileEntity~
+        +findById(UUID) Optional~BusinessProfileEntity~
+        +save(BusinessProfileEntity)
+    }
+
+    class BusinessProfileController {
+        <<controller>>
+        -repo: BusinessProfileRepository
+        -ai: AIInferenceGatewayService
+        +get(operatorId) BusinessProfileDto
+        +save(BusinessProfileDto, operatorId) BusinessProfileDto
+        +keywords(KeywordRequest) List~String~
+        -toDto(BusinessProfileEntity) BusinessProfileDto
+        -emptyDto() BusinessProfileDto
+    }
+
+    class ClassificationController {
+        <<controller>>
+        -ai: AIInferenceGatewayService
+        +analyze(AnalyzeRequest) AnalyzeResponse
+    }
+
+    class AIInferenceGatewayService {
+        <<service>>
+        -client: WebClient
+        -timeout: Duration
+        +classifyCategories(Map) Map
+        +generateKeywords(Map) List~String~
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% RELATIONSHIPS
+    %% ═══════════════════════════════════════════════════════════
+
+    BusinessProfileController --> BusinessProfileRepository : uses
+    BusinessProfileController --> AIInferenceGatewayService : generateKeywords
+    BusinessProfileController ..> BusinessProfileDto : produces/consumes
+    BusinessProfileController ..> BusinessProfileEntity : maps to/from
+    BusinessProfileController ..> KeywordRequest : consumes
+
+    ClassificationController --> AIInferenceGatewayService : classifyCategories
+    ClassificationController ..> AnalyzeRequest : consumes
+    ClassificationController ..> AnalyzeResponse : produces
+
+    AnalyzeResponse *-- CategoryAllocationRecord : contains list
+    BusinessProfileRepository ..> BusinessProfileEntity : manages

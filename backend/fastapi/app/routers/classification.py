@@ -1,0 +1,61 @@
+from __future__ import annotations
+
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+from app.services import gemini_client, ml_classifier, ml_stubs
+
+router = APIRouter()
+
+
+class AnalyzeRequest(BaseModel):
+    businessName: str = ""
+    coreServices: list[str] = []
+    description: str = ""
+    uvp: str = ""
+
+
+@router.post("/analyze")
+def analyze(req: AnalyzeRequest) -> dict:
+    return {"categories": ml_classifier.predict_all(
+        req.businessName, req.coreServices, req.description, req.uvp
+    )}
+
+
+class UniquenessRequest(BaseModel):
+    businessName: str = ""
+    categories: list[str] = []
+    coreServices: list[str] = []
+    description: str = ""
+    uvp: str = ""
+
+
+@router.post("/uniqueness")
+def uniqueness(req: UniquenessRequest) -> dict:
+    gemini_out = gemini_client.uniqueness(
+        req.businessName, req.categories, req.coreServices, req.description, req.uvp
+    )
+    cosine = ml_stubs.cosine_uniqueness(req.description, req.categories)
+    # ML model computes categoryScore; Gemini covers qualitative feedback + semanticsScore.
+    category_score = ml_classifier.compute_category_score(
+        req.businessName, req.coreServices, req.description, req.uvp, req.categories
+    )
+    semantics_score = gemini_out.get("descriptionScore", cosine["descriptionScore"])
+    return {
+        "overallScore": round((category_score + semantics_score) / 2),
+        "semanticsScore": semantics_score,
+        "categoryScore": category_score,
+        "descriptionFeedback": gemini_out.get("descriptionReasoning", cosine["descriptionReasoning"]),
+        "categoryFeedback": gemini_out.get("categoryReasoning", cosine["categoryReasoning"]),
+    }
+
+
+class KeywordRequest(BaseModel):
+    businessName: str = ""
+    description: str = ""
+    category: str = ""
+
+
+@router.post("/keywords")
+def keywords(req: KeywordRequest) -> dict:
+    return {"keywords": gemini_client.keywords(req.businessName, req.description, req.category)}
