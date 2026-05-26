@@ -12,7 +12,7 @@ public class AnalyzeDtos {
         String uvp
     ) {}
 
-    public record CategoryAllocation(String name, double percentage) {}
+    public record CategoryAllocation(String name, int percentage) {}
 
     public record AnalyzeResponse(List<CategoryAllocation> categories) {}
 

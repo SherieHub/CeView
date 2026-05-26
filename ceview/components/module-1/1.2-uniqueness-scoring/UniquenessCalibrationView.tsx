@@ -4,7 +4,7 @@ import CalibrationResultsDashboard, { DetailedCalibrationResultDTO } from './com
 import { CategoryAllocation } from '../1.1-business-input/components/InferredCategoryBoard';
 import { COLORS } from '../../../constants';
 import { ProfileData, ProfileSetters } from '../../../App';
-import { api } from '../../../services/apiClient';
+import { api, ApiError } from '../../../services/apiClient';
 import { OPERATOR_ID } from '../../../services/identity';
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
@@ -40,8 +40,17 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
   const [calibrationResult, setCalibrationResult] = useState<DetailedCalibrationResultDTO | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  const formatError = (prefix: string, e: unknown): string => {
+    if (e instanceof ApiError) {
+      const trace = e.traceId ? ` · trace ${e.traceId}` : '';
+      return `${prefix} [${e.code}${trace}]`;
+    }
+    return prefix;
+  };
+
   const handleAnalyzeRequest = async () => {
     setIsAnalyzing(true);
+    setServerError(null);
     try {
       const { categories: allocs } = await api.classifyAnalyze({
         businessName: payload.businessName,
@@ -50,11 +59,10 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
         uvp: payload.uvp,
       });
       setCategories(allocs);
-      setSelectedCategories(allocs.map(a => a.name));
+      setSelectedCategories([]);
       setHasAnalyzed(true);
     } catch (e) {
-      console.error('classifyAnalyze failed', e);
-      setServerError('Failed to analyze business profile. The AI service may be unavailable.');
+      setServerError(formatError('Failed to analyze business profile. The AI service may be unavailable.', e));
     } finally {
       setIsAnalyzing(false);
     }
@@ -62,6 +70,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
 
   const handleComputeRequest = async () => {
     setIsComputing(true);
+    setServerError(null);
     try {
       const result = await api.classifyUniqueness({
         businessName: payload.businessName,
@@ -72,8 +81,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
       });
       setCalibrationResult(result);
     } catch (e) {
-      console.error('classifyUniqueness failed', e);
-      setServerError('Failed to compute uniqueness score. The AI service may be unavailable.');
+      setServerError(formatError('Failed to compute uniqueness score. The AI service may be unavailable.', e));
     } finally {
       setIsComputing(false);
     }
@@ -108,8 +116,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
 
       if (onNavigate) onNavigate('profile');
     } catch (e) {
-      console.error('saveProfile failed', e);
-      setServerError('Profile could not be saved. Backend sync failed.');
+      setServerError(formatError('Profile could not be saved. Backend sync failed.', e));
     }
   };
 
@@ -130,7 +137,8 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
           payload={payload} setPayload={setPayload}
           onAnalyze={handleAnalyzeRequest} isAnalyzing={isAnalyzing} hasAnalyzed={hasAnalyzed}
           categories={categories}
-          selectedCategories={selectedCategories} onCategoryToggle={toggleCategory}
+          selectedCategories={selectedCategories}
+          onCategoryToggle={toggleCategory}
           onCompute={handleComputeRequest} isComputing={isComputing}
         />
 

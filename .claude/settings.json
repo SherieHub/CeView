@@ -28,7 +28,8 @@
       "PowerShell(head -30)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName.Replace\\('c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\\\\', ''\\) })",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Depth 1)",
-      "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Filter \".env*\" -File)"
+      "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Filter \".env*\" -File)",
+      "PowerShell(New-Item -ItemType Directory -Path \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\.mvn\\\\wrapper\" -Force)"
     ]
   }
 }

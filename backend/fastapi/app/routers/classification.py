@@ -17,7 +17,7 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
-    return {"categories": ml_classifier.predict_top3(
+    return {"categories": ml_classifier.predict_all(
         req.businessName, req.coreServices, req.description, req.uvp
     )}
 

@@ -23,19 +23,24 @@ const AdjustableCategoryItem: React.FC<AdjustableCategoryItemProps> = ({
         borderColor: isSelected ? COLORS.NAVY : COLORS.GOLD,
       }}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         <span
           className="text-xs font-black uppercase tracking-wider truncate"
           style={{ color: isSelected ? COLORS.WHITE : COLORS.TEXT_MUTED }}
         >
           {label}
         </span>
-        {isSelected && percentage !== undefined && (
+
+        {percentage !== undefined && (
           <span
-            className="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0"
-            style={{ backgroundColor: `${COLORS.WHITE}20`, color: COLORS.WHITE }}
+            className="text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ml-auto mr-2"
+            style={
+              isSelected
+                ? { backgroundColor: `${COLORS.WHITE}20`, color: COLORS.WHITE }
+                : { backgroundColor: `${COLORS.GOLD}20`, color: COLORS.GOLD }
+            }
           >
-            {percentage}%
+            {Math.round(percentage)}%
           </span>
         )}
       </div>
@@ -43,7 +48,7 @@ const AdjustableCategoryItem: React.FC<AdjustableCategoryItemProps> = ({
       <button
         onClick={onToggle}
         disabled={disabled}
-        className="ml-2 shrink-0 flex items-center justify-center w-5 h-5 rounded-full transition-all"
+        className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full transition-all"
         style={{
           backgroundColor: isSelected
             ? disabled ? `${COLORS.WHITE}30` : `${COLORS.WHITE}20`

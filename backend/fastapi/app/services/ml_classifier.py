@@ -1,12 +1,12 @@
 """
 ML classifier for Module 1 business category prediction.
 
-Architecture (two-stage):
-  1. intfloat/e5-base-v2  →  768-dim sentence embedding  (sentence-transformers)
-  2. classifier_weights.npz  →  numpy forward pass (no TensorFlow in container)
+Architecture (two-stage) — mirrors bert-agent-service:
+  1. intfloat/multilingual-e5-base  →  768-dim sentence embedding
+  2. complete_classifier_head.keras →  Keras forward pass (Dense 256→128→7 sigmoid)
 
-The classifier head layers: Dense(256, relu) → Dropout → Dense(128, relu) → Dense(7, sigmoid)
-Weights were extracted from complete_classifier_head.keras using extract_weights.py.
+Both models are loaded once at import time via the BertModel singleton.
+Falls back to ml_stubs when either model is unavailable.
 """
 
 from __future__ import annotations
@@ -28,80 +28,82 @@ CATEGORY_LABELS: list[str] = [
     "Accommodation & Staycation",
 ]
 
-_WEIGHTS_PATH = os.path.join(
-    os.path.dirname(os.environ.get("ML_MODEL_PATH", "/app/models/complete_classifier_head.keras")),
-    "classifier_weights.npz",
+_KERAS_PATH = os.environ.get(
+    "KERAS_MODEL_PATH", "/app/models/complete_classifier_head.keras"
 )
-E5_MODEL_ID = "intfloat/e5-base-v2"
-
-# ── Singletons loaded once at import time ────────────────────────────────────
-_weights: dict[str, np.ndarray] | None = None
-_e5_model = None
+E5_MODEL_ID = "intfloat/multilingual-e5-base"
+CATEGORY_THRESHOLD = 0.5
 
 
-def _load() -> None:
-    global _weights, _e5_model
+# ── BertModel singleton ───────────────────────────────────────────────────────
 
-    try:
-        data = np.load(_WEIGHTS_PATH)
-        _weights = {k: data[k] for k in data.files}
-        log.info("ml_classifier: weights loaded from %s (%d arrays)", _WEIGHTS_PATH, len(_weights))
-    except Exception as exc:
-        log.warning("ml_classifier: failed to load weights — %s", exc,
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
-        _weights = None
+class _BertModel:
+    """Singleton holding the encoder and Keras classifier head."""
 
-    try:
-        import importlib
-        sentence_transformers = importlib.import_module("sentence_transformers")
-        SentenceTransformer = sentence_transformers.SentenceTransformer
-        _e5_model = SentenceTransformer(E5_MODEL_ID)
-        log.info("ml_classifier: E5 encoder loaded (%s)", E5_MODEL_ID)
-    except Exception as exc:
-        log.warning("ml_classifier: failed to load E5 model — %s", exc,
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
-        _e5_model = None
+    _instance: "_BertModel | None" = None
 
+    def __init__(self) -> None:
+        from sentence_transformers import SentenceTransformer
+        import tensorflow as tf
 
-_load()
+        log.info("ml_classifier: loading encoder %s", E5_MODEL_ID)
+        self._encoder = SentenceTransformer(E5_MODEL_ID)
 
+        log.info("ml_classifier: loading Keras classifier from %s", _KERAS_PATH)
+        self._classifier = tf.keras.models.load_model(_KERAS_PATH)
 
-# ── Pure-numpy forward pass ───────────────────────────────────────────────────
+        log.info("ml_classifier: both models loaded successfully")
 
-def _relu(x: np.ndarray) -> np.ndarray:
-    return np.maximum(0.0, x)
+    @classmethod
+    def get(cls) -> "_BertModel | None":
+        if cls._instance is None:
+            try:
+                cls._instance = _BertModel()
+            except Exception as exc:
+                log.warning(
+                    "ml_classifier: failed to load models — %s", exc,
+                    extra={"code": "MOD1_ML_LOAD_FAIL"},
+                )
+                cls._instance = None  # type: ignore[assignment]
+        return cls._instance
 
+    @property
+    def encoder(self):
+        return self._encoder
 
-def _sigmoid(x: np.ndarray) -> np.ndarray:
-    return 1.0 / (1.0 + np.exp(-x))
-
-
-def _forward(embedding: np.ndarray) -> np.ndarray:
-    """Run the classifier head; embedding shape: (768,) or (1, 768)."""
-    assert _weights is not None
-    x = embedding.reshape(1, -1).astype(np.float32)
-    x = _relu(x @ _weights["dense_kernel"] + _weights["dense_bias"])
-    x = _relu(x @ _weights["dense_1_kernel"] + _weights["dense_1_bias"])
-    x = _sigmoid(x @ _weights["predictions_kernel"] + _weights["predictions_bias"])
-    return x[0]  # shape (7,)
+    @property
+    def classifier(self):
+        return self._classifier
 
 
-# ── Internal helpers ─────────────────────────────────────────────────────────
+# Load at import time — same pattern as BertModel.get_model() in the reference.
+_bert = _BertModel.get()
+
+# Expose encoder as module-level alias so sentence_bert_scorer.py can reuse it
+# without importing the class directly.
+_e5_model = _bert.encoder if _bert is not None else None
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _build_text(core_services: list[str], uvp: str, description: str) -> str:
+    """Format input text to match the training-time input format."""
     services_str = ", ".join(core_services) if core_services else ""
-    return f"passage: services: {services_str}\nuvp: {uvp}\ndescription: {description}"
+    return f"services: {services_str}\nuvp: {uvp}\ndescription: {description}"
 
 
-def _embed(text: str) -> np.ndarray | None:
-    if _e5_model is None:
+def _predict_probs(text: str) -> np.ndarray | None:
+    """Encode text and run Keras classifier. Returns shape-(7,) sigmoid probabilities."""
+    if _bert is None:
         return None
-    vec = _e5_model.encode(text, normalize_embeddings=True, convert_to_numpy=True)
-    return vec.reshape(1, -1).astype(np.float32)
-
-
-def _predict_probs(embedding: np.ndarray) -> np.ndarray:
-    return _forward(embedding)
+    try:
+        vector = _bert.encoder.encode([text])               # (1, 768)
+        raw = _bert.classifier.predict(vector, verbose=0)[0]  # (7,)
+        return np.array(raw, dtype=np.float32)
+    except Exception as exc:
+        log.warning("ml_classifier: inference error — %s", exc,
+                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
+        return None
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -112,38 +114,75 @@ def predict_top3(
     description: str,
     uvp: str,
 ) -> list[dict]:
+    """Return the top-3 predicted categories with normalized percentages.
+
+    Falls back to ml_stubs when models are unavailable.
     """
-    Returns the top 3 predicted categories as dicts with 'name' and
-    'percentage' keys, where percentages sum to 100 (within rounding).
-    Falls back to ml_stubs if models could not be loaded.
-    """
-    if _weights is None or _e5_model is None:
+    if _bert is None:
         from app.services import ml_stubs
         log.warning("ml_classifier: using stub fallback for predict_top3",
                     extra={"code": "MOD1_ML_LOAD_FAIL"})
         return ml_stubs.classify_categories(description, core_services)
 
     text = _build_text(core_services, uvp, description)
-    embedding = _embed(text)
-    if embedding is None:
+    probs = _predict_probs(text)
+
+    if probs is None:
         from app.services import ml_stubs
         return ml_stubs.classify_categories(description, core_services)
 
-    probs = _predict_probs(embedding)
-
     top3_idx = probs.argsort()[::-1][:3]
     top3_probs = probs[top3_idx]
-    total = top3_probs.sum() or 1.0
+    total = float(top3_probs.sum()) or 1.0
 
     result = []
     remainder = 100
     for rank, (idx, prob) in enumerate(zip(top3_idx, top3_probs)):
-        pct = round(float(prob) / float(total) * 100) if rank < 2 else remainder
+        pct = round(float(prob) / total * 100) if rank < 2 else remainder
         remainder -= pct
         result.append({"name": CATEGORY_LABELS[int(idx)], "percentage": pct})
 
     log.info("ml_classifier: top3=%s probs=%s",
              [r["name"] for r in result], [round(float(p), 3) for p in top3_probs])
+    return result
+
+
+def predict_all(
+    business_name: str,
+    core_services: list[str],
+    description: str,
+    uvp: str,
+) -> list[dict]:
+    """Return all 7 categories sorted by probability descending, percentages normalized to 100.
+
+    Falls back to ml_stubs when models are unavailable.
+    """
+    if _bert is None:
+        from app.services import ml_stubs
+        log.warning("ml_classifier: using stub fallback for predict_all",
+                    extra={"code": "MOD1_ML_LOAD_FAIL"})
+        return ml_stubs.classify_categories(description, core_services)
+
+    text = _build_text(core_services, uvp, description)
+    probs = _predict_probs(text)
+
+    if probs is None:
+        from app.services import ml_stubs
+        return ml_stubs.classify_categories(description, core_services)
+
+    sorted_idx = probs.argsort()[::-1]
+    sorted_probs = probs[sorted_idx]
+    total = float(sorted_probs.sum()) or 1.0
+
+    result = []
+    remainder = 100
+    last = len(CATEGORY_LABELS) - 1
+    for rank, (idx, prob) in enumerate(zip(sorted_idx, sorted_probs)):
+        pct = round(float(prob) / total * 100) if rank < last else remainder
+        remainder -= pct
+        result.append({"name": CATEGORY_LABELS[int(idx)], "percentage": pct})
+
+    log.info("ml_classifier: predict_all top3=%s", [r["name"] for r in result[:3]])
     return result
 
 
@@ -154,24 +193,22 @@ def compute_category_score(
     uvp: str,
     selected_categories: list[str],
 ) -> float:
+    """Return 0-100 score: how confidently the model predicts the operator's chosen categories.
+
+    Falls back to ml_stubs when models are unavailable.
     """
-    Returns a 0–100 score reflecting how confidently the model predicts
-    the user's chosen categories.
-    Falls back to ml_stubs if models could not be loaded.
-    """
-    if _weights is None or _e5_model is None or not selected_categories:
+    if _bert is None or not selected_categories:
         from app.services import ml_stubs
         result = ml_stubs.cosine_uniqueness(description, selected_categories)
         return float(result["categoryScore"])
 
     text = _build_text(core_services, uvp, description)
-    embedding = _embed(text)
-    if embedding is None:
+    probs = _predict_probs(text)
+
+    if probs is None:
         from app.services import ml_stubs
         result = ml_stubs.cosine_uniqueness(description, selected_categories)
         return float(result["categoryScore"])
-
-    probs = _predict_probs(embedding)
 
     selected_indices = [
         i for i, label in enumerate(CATEGORY_LABELS)
@@ -182,8 +219,7 @@ def compute_category_score(
 
     selected_sum = float(probs[selected_indices].sum())
     max_possible = min(len(selected_categories), 7) / 7.0
-    raw = selected_sum / max(max_possible, 0.01)
-    score = round(min(max(raw * 100, 0.0), 100.0), 1)
+    score = round(min(max(selected_sum / max(max_possible, 0.01) * 100, 0.0), 100.0), 1)
 
     log.info("ml_classifier: category_score=%.1f selected=%s", score, selected_categories)
     return score
