@@ -114,24 +114,54 @@ export const api = {
   listNotifications: () =>
     req<{ notifications: Notification[] }>('/api/v1/notifications'),
 
-  // ── Module 3 ──────────────────────────────────────────────────────────────
+  // ── Module 3.1 — Content Generation ─────────────────────────────────────
   generateContent: (body: {
     market: string; businessName: string; description: string;
     categories: string[]; trend: string;
-  }) => req<ContentResponseDTO>('/api/v1/content/generate', {
-    method: 'POST', body: JSON.stringify(body),
-  }),
+  }, profileId?: string | null) =>
+    req<ContentResponseDTO>(
+      `/api/v1/content/generate${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
 
-  generateCreative: (profileId: string, body?: Record<string, unknown>) =>
-    req<CreativeDirectionDTO>(`/api/v1/creative-direction/generate/${encodeURIComponent(profileId)}`, {
-      method: 'POST', body: JSON.stringify(body ?? {}),
-    }),
+  /** FR3.10 / UC-3.1 step 14 — approve generated content for a market. */
+  approveContent: (profileId: string, market: string) =>
+    req<{ approvedIds: string[]; market: string; count: number }>(
+      `/api/v1/content/approve?profileId=${encodeURIComponent(profileId)}`,
+      { method: 'POST', body: JSON.stringify({ market }) },
+    ),
+
+  // ── Module 3.2 — Creative Direction ──────────────────────────────────────
+  /** FR3.11-FR3.16, FR3.19 — generate creative direction (requires approved content). */
+  generateCreative: (profileId: string, market?: string) =>
+    req<CreativeDirectionDTO>(
+      `/api/v1/creative-direction/generate/${encodeURIComponent(profileId)}${market ? `?market=${encodeURIComponent(market)}` : ''}`,
+      { method: 'POST', body: '{}' },
+    ),
+
+  /** FR3.19 / UC-3.2 step 11 — approve the latest creative direction output. */
+  approveCreative: (profileId: string, market: string) =>
+    req<{ approvedId: string; market: string }>(
+      `/api/v1/creative-direction/approve/${encodeURIComponent(profileId)}?market=${encodeURIComponent(market)}`,
+      { method: 'POST', body: '{}' },
+    ),
 
   evaluateCompliance: (body: {
     caption: string; market: string; mediaName?: string; mediaSize?: number;
   }) => req<ComplianceResultDTO>('/api/v1/compliance/evaluate-json', {
     method: 'POST', body: JSON.stringify(body),
   }),
+
+  /** Full multimodal compliance pipeline — FR3.20-FR3.30 (Submodule 3.3).
+   *  Pass profileId to auto-inject approved captions (3.1) and creative context (3.2).
+   *  Returns sub-scores (casScore, vasScore, omcsScore) and explainable AI outputs. */
+  evaluateComplianceFull: (body: {
+    caption: string; market: string; mediaName?: string; mediaSize?: number;
+  }, profileId?: string) =>
+    req<ComplianceResultDTO>(
+      `/api/v1/compliance/evaluate-full-json${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
 
   // ── Module 4 ──────────────────────────────────────────────────────────────
   analyticsMetrics: () =>

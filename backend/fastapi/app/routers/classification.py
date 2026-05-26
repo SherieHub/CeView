@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.services import gemini_client, ml_stubs
+from app.services import gemini_client, ml_classifier, ml_stubs
 
 router = APIRouter()
 
@@ -17,7 +17,9 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
-    return {"categories": ml_stubs.classify_categories(req.description, req.coreServices)}
+    return {"categories": ml_classifier.predict_top3(
+        req.businessName, req.coreServices, req.description, req.uvp
+    )}
 
 
 class UniquenessRequest(BaseModel):
@@ -34,12 +36,15 @@ def uniqueness(req: UniquenessRequest) -> dict:
         req.businessName, req.categories, req.coreServices, req.description, req.uvp
     )
     cosine = ml_stubs.cosine_uniqueness(req.description, req.categories)
-    # Prefer Gemini's qualitative feedback; lean on cosine for the numbers if
-    # Gemini is disabled or omits a field.
+    # ML model computes categoryScore; Gemini covers qualitative feedback + semanticsScore.
+    category_score = ml_classifier.compute_category_score(
+        req.businessName, req.coreServices, req.description, req.uvp, req.categories
+    )
+    semantics_score = gemini_out.get("descriptionScore", cosine["descriptionScore"])
     return {
-        "overallScore": gemini_out.get("overallScore", cosine["overallScore"]),
-        "semanticsScore": gemini_out.get("descriptionScore", cosine["descriptionScore"]),
-        "categoryScore": gemini_out.get("categoryScore", cosine["categoryScore"]),
+        "overallScore": round((category_score + semantics_score) / 2),
+        "semanticsScore": semantics_score,
+        "categoryScore": category_score,
         "descriptionFeedback": gemini_out.get("descriptionReasoning", cosine["descriptionReasoning"]),
         "categoryFeedback": gemini_out.get("categoryReasoning", cosine["categoryReasoning"]),
     }

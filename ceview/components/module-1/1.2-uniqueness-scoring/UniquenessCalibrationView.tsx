@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import UniquenessCalibrationForm, { UniquenessPayloadDTO } from '../1.1-business-input/components/UniquenessCalibrationForm';
 import CalibrationResultsDashboard, { DetailedCalibrationResultDTO } from './components/CalibrationResultsDashboard';
 import { CategoryAllocation } from '../1.1-business-input/components/InferredCategoryBoard';
-import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
+import { COLORS } from '../../../constants';
 import { ProfileData, ProfileSetters } from '../../../App';
 import { api } from '../../../services/apiClient';
 import { OPERATOR_ID } from '../../../services/identity';
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
-const BASE_CATEGORIES: CategoryAllocation[] = BUSINESS_CATEGORIES.map(name => ({ name, percentage: 0 }));
 
 interface UniquenessCalibrationViewProps {
   profile?: ProfileData;
@@ -26,14 +25,16 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [categories, setCategories] = useState<CategoryAllocation[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  const initialCategories = BASE_CATEGORIES.map(cat => ({
-    ...cat,
-    percentage: profile?.categories.includes(cat.name) && profile.categories.length > 0
-      ? Math.floor(100 / profile.categories.length)
-      : 0
-  }));
-  const [categories, setCategories] = useState<CategoryAllocation[]>(initialCategories);
+  const toggleCategory = (name: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(name)
+        ? prev.length > 1 ? prev.filter(n => n !== name) : prev
+        : [...prev, name]
+    );
+  };
 
   const [isComputing, setIsComputing] = useState(false);
   const [calibrationResult, setCalibrationResult] = useState<DetailedCalibrationResultDTO | null>(null);
@@ -48,10 +49,8 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
         description: payload.description,
         uvp: payload.uvp,
       });
-      setCategories(BASE_CATEGORIES.map(base => {
-        const match = allocs.find(a => a.name === base.name);
-        return { ...base, percentage: match ? Math.round(match.percentage) : 0 };
-      }));
+      setCategories(allocs);
+      setSelectedCategories(allocs.map(a => a.name));
       setHasAnalyzed(true);
     } catch (e) {
       console.error('classifyAnalyze failed', e);
@@ -66,7 +65,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
     try {
       const result = await api.classifyUniqueness({
         businessName: payload.businessName,
-        categories: categories.filter(c => c.percentage > 0).map(c => c.name),
+        categories: selectedCategories,
         coreServices: payload.coreServices,
         description: payload.description,
         uvp: payload.uvp,
@@ -81,7 +80,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
   };
 
   const handleConfirmProfile = async () => {
-    const activeCats = categories.filter(c => c.percentage > 0).map(c => c.name);
+    const activeCats = selectedCategories;
     const overallScore = calibrationResult?.overallScore ?? null;
 
     try {
@@ -131,6 +130,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
           payload={payload} setPayload={setPayload}
           onAnalyze={handleAnalyzeRequest} isAnalyzing={isAnalyzing} hasAnalyzed={hasAnalyzed}
           categories={categories}
+          selectedCategories={selectedCategories} onCategoryToggle={toggleCategory}
           onCompute={handleComputeRequest} isComputing={isComputing}
         />
 

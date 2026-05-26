@@ -15,7 +15,20 @@
       "Bash(curl -sSL https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar -o \"/c/Users/austi/CeView/backend/spring-boot/.mvn/wrapper/maven-wrapper.jar\")",
       "Bash(curl -sSL https://raw.githubusercontent.com/apache/maven-wrapper/maven-wrapper-3.3.2/maven-wrapper-distribution/src/resources/mvnw -o \"/c/Users/austi/CeView/backend/spring-boot/mvnw\")",
       "Bash(curl -sSL https://raw.githubusercontent.com/apache/maven-wrapper/maven-wrapper-3.3.2/maven-wrapper-distribution/src/resources/mvnw.cmd -o \"/c/Users/austi/CeView/backend/spring-boot/mvnw.cmd\")",
-      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.11.10-hotspot\"; $env:Path = \"$env:JAVA_HOME\\\\bin;$env:Path\"; cd \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\"; .\\\\mvnw.cmd -B -q package -DskipTests 2>&1 | Select-Object -Last 50)"
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.11.10-hotspot\"; $env:Path = \"$env:JAVA_HOME\\\\bin;$env:Path\"; cd \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\"; .\\\\mvnw.cmd -B -q package -DskipTests 2>&1 | Select-Object -Last 50)",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(curl -s http://localhost:8000/healthz)",
+      "Bash(docker exec *)",
+      "Bash(python -c \"import sys,json; mounts=json.load\\(sys.stdin\\); [print\\(m['Source'],'->',m['Destination']\\) for m in mounts]\")",
+      "Bash(docker restart *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\fastapi\" -Recurse -Directory)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\\\\components\\\\module-2\" -Recurse -File)",
+      "Bash(Sort-Object)",
+      "PowerShell(head -30)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName.Replace\\('c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\\\\', ''\\) })",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Depth 1)",
+      "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Filter \".env*\" -File)"
     ]
   }
 }
