@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
-from app.services import gemini_client, ml_stubs
+from app.services import gemini_client
+from app.services.bert_service import BertService
 
 router = APIRouter()
 
+
+# ── /analyze ─────────────────────────────────────────────────────────────────
 
 class AnalyzeRequest(BaseModel):
     businessName: str = ""
@@ -14,11 +17,34 @@ class AnalyzeRequest(BaseModel):
     description: str = ""
     uvp: str = ""
 
+    @field_validator("description")
+    @classmethod
+    def description_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("description must not be blank")
+        return v
+
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
-    return {"categories": ml_stubs.classify_categories(req.description, req.coreServices)}
+    """
+    Transaction 1.1 — Business Category Classification.
 
+    Uses the trained Keras classifier (via S-BERT embeddings) to predict how
+    the business maps across the 7 Cebu tourism categories.
+
+    Returns:
+        { "categories": [ { "name": str, "percentage": int }, ... ] }
+        One entry per category; percentages are 0-100 raw model probabilities.
+    """
+    categories = BertService.classify_business(
+        description=req.description,
+        services=req.coreServices,
+    )
+    return {"categories": categories}
+
+
+# ── /uniqueness ───────────────────────────────────────────────────────────────
 
 class UniquenessRequest(BaseModel):
     businessName: str = ""
@@ -27,23 +53,67 @@ class UniquenessRequest(BaseModel):
     description: str = ""
     uvp: str = ""
 
+    @field_validator("description")
+    @classmethod
+    def description_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("description must not be blank")
+        return v
+
 
 @router.post("/uniqueness")
 def uniqueness(req: UniquenessRequest) -> dict:
-    gemini_out = gemini_client.uniqueness(
-        req.businessName, req.categories, req.coreServices, req.description, req.uvp
+    """
+    Transaction 1.2 — Uniqueness Scoring.
+
+    Split-source response:
+      • Numerical scores  → BertService (S-BERT cosine similarity)
+      • Text feedback     → Gemini (qualitative reasoning)
+
+    Returns the exact shape that UniquenessScoringController.java and the
+    frontend UniquenessResultDTO both expect:
+        {
+            "overallScore":        int,   # 0-100
+            "semanticsScore":      int,   # 0-100  (UVP ↔ Description alignment)
+            "categoryScore":       int,   # 0-100  (Description ↔ Categories alignment)
+            "descriptionFeedback": str,
+            "categoryFeedback":    str,
+        }
+    """
+    # 1. Quantitative scores from BERT
+    bert = BertService.evaluate_uniqueness(
+        description=req.description,
+        categories=req.categories,
+        uvp=req.uvp,
     )
-    cosine = ml_stubs.cosine_uniqueness(req.description, req.categories)
-    # Prefer Gemini's qualitative feedback; lean on cosine for the numbers if
-    # Gemini is disabled or omits a field.
+
+    # 2. Qualitative text feedback from Gemini (falls back gracefully when disabled)
+    gemini = gemini_client.uniqueness(
+        business_name=req.businessName,
+        categories=req.categories,
+        core_services=req.coreServices,
+        description=req.description,
+        uvp=req.uvp,
+    )
+
     return {
-        "overallScore": gemini_out.get("overallScore", cosine["overallScore"]),
-        "semanticsScore": gemini_out.get("descriptionScore", cosine["descriptionScore"]),
-        "categoryScore": gemini_out.get("categoryScore", cosine["categoryScore"]),
-        "descriptionFeedback": gemini_out.get("descriptionReasoning", cosine["descriptionReasoning"]),
-        "categoryFeedback": gemini_out.get("categoryReasoning", cosine["categoryReasoning"]),
+        # Numerical: from BERT
+        "overallScore":   bert.get("overallScore", 0),
+        "semanticsScore": bert.get("descriptionScore", 0),   # key rename: descriptionScore → semanticsScore
+        "categoryScore":  bert.get("categoryScore", 0),
+        # Text: from Gemini
+        "descriptionFeedback": gemini.get(
+            "descriptionReasoning",
+            "Use more sensory, place-specific language to separate your copy from generic resort descriptions.",
+        ),
+        "categoryFeedback": gemini.get(
+            "categoryReasoning",
+            "Align but diversify your category mix to stand out from nearby competitors.",
+        ),
     }
 
+
+# ── /keywords ─────────────────────────────────────────────────────────────────
 
 class KeywordRequest(BaseModel):
     businessName: str = ""
@@ -53,4 +123,15 @@ class KeywordRequest(BaseModel):
 
 @router.post("/keywords")
 def keywords(req: KeywordRequest) -> dict:
-    return {"keywords": gemini_client.keywords(req.businessName, req.description, req.category)}
+    """
+    Transaction 1.1 (aux) — SEO keyword generation via Gemini.
+
+    Returns:
+        { "keywords": [ str, ... ] }
+    """
+    kws = gemini_client.keywords(
+        business_name=req.businessName,
+        description=req.description,
+        category=req.category,
+    )
+    return {"keywords": kws}

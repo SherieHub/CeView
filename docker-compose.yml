@@ -1,0 +1,47 @@
+services:
+  # 1. The Spring Boot Gateway (Business Logic)
+  spring-boot:
+    build: 
+      context: ./backend/spring-boot
+    ports:
+      - "8080:8080"
+    environment:
+      # 🌟 FIX 1: Restored the internal Docker routing
+      - CEVIEW_FASTAPI_BASE_URL=http://fastapi-ai:8000
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ceviewdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - fastapi-ai
+      - db
+
+ # 2. The FastAPI AI Service (BERT Model)
+  fastapi-ai:
+    build: 
+      context: ./backend/fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - KMP_DUPLICATE_LIB_OK=True
+      - OMP_NUM_THREADS=4 
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ENABLE_GEMINI=${ENABLE_GEMINI}
+      - TOKENIZERS_PARALLELISM=false
+      # 🌟 FIX 2: Disarmed the CPU Segfault
+      - TF_ENABLE_ONEDNN_OPTS=0
+    # 🌟 FIX 3: Removed the 4G deploy block so it can use the full 8GB of WSL memory
+
+  # 3. The PostgreSQL Database
+  db:
+    image: pgvector/pgvector:pg15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=ceviewdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -3,6 +3,8 @@ from model.model import BertModel
 
 class BertService:
     threshold: float = 0.5
+    
+    @staticmethod
     def model_input_format(description: str, uvp: str, services: list) -> str:
         return f"""services: {services.__str__()}
         \nuvp: {uvp}\ndescription: {description} """

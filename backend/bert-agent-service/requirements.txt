@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+fastapi
+uvicorn
+pydantic
+numpy
+tensorflow-cpu
+torch
+sentence-transformers

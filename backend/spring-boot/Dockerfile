@@ -1,13 +1,16 @@
-FROM eclipse-temurin:21-jdk AS build
+# Uses an image that has Maven pre-installed so you don't need .mvn or mvnw
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
-RUN chmod +x mvnw
-# Resolve dependencies in a separate layer so source-only changes don't refetch.
-RUN ./mvnw -B -ntp -e dependency:resolve dependency:resolve-plugins || true
-COPY src ./src
-RUN ./mvnw -B -ntp -e package -DskipTests
 
+# Cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Compile the package
+COPY src ./src
+RUN mvn package -DskipTests
+
+# Run environment
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /build/target/*.jar app.jar

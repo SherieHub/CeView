@@ -7,4 +7,4 @@ app = FastAPI()
 def start_program():
     return {"status": "successfull", "message": "bert-agent microservice working properly"}
 
-app.include_router(bert_router, prefix="/classification")
+app.include_router(bert_router, prefix="/internal/classification")
