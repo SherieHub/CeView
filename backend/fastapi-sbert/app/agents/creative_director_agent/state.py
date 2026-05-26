@@ -9,7 +9,6 @@ class SocialAgentState(TypedDict):
     business_services: List[str]  # Complete list of services
     market_category: str          # Current focus (e.g., "beach", "mountain", "city")
     country_market: str           # Target geographic market (e.g., "Philippines")
-    content_topic: str            # Current post topic
     
     # Derived or Generated States
     relevant_services: List[str]   # Dynamically filtered by the agent

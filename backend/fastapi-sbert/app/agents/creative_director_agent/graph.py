@@ -19,4 +19,4 @@ workflow.add_edge("analyze_services", "generate_platform_captions")
 workflow.add_edge("generate_platform_captions", END)
 
 # Compile the agent
-social_matrix_agent = workflow.compile()
+caption_generation_agent = workflow.compile()
