@@ -11,6 +11,9 @@ from app.routers import (
     caption_generation,
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
 configure_logging()
 
 app = FastAPI(title="CeView SBERT Microservice", version="0.1.0")
@@ -27,4 +30,5 @@ app.include_router(content.router,        prefix="/internal/content",        tag
 app.include_router(creative.router,       prefix="/internal/creative",       tags=["creative"])
 app.include_router(compliance.router,     prefix="/internal/compliance",     tags=["compliance"])
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
+app.include_router(caption_generation.router,         prefix="/internal/generation",         tags=["caption"])
 app.include_router(caption_generation.router,         prefix="/internal/generation",         tags=["caption"])
