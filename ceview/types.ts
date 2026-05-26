@@ -2,6 +2,7 @@
 export enum MarketId {
   KOREA = 'korea',
   JAPAN = 'japan',
+  AUSTRALIA = 'australia',
   USA = 'usa',
   GLOBAL = 'global',
 }
@@ -99,10 +100,12 @@ export interface Notification {
   date: string;
   title: string;
   market: string;
+  /** Canonical market id (matches Market.id). Populated by backend NotificationDto. */
+  marketId: string;
   trend: string;
   isRead: boolean;
-  // Detailed data for the "Market Analyzer" view
-  details: {
+  /** Optional rich payload for a future "Market Analyzer" modal. */
+  details?: {
     projectedArrivals: number;
     arrivalGrowth: number;
     topInterests: { name: string; score: number }[];
@@ -157,4 +160,59 @@ export interface PerformanceReport {
     topPlatform: string;
   };
   data: PostPerformance[];
+}
+
+// ── Module 3 — Content Studio ───────────────────────────────────────────────
+
+export type ContentPlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+
+export interface MarketHeader {
+  country: string;
+  city: string;
+  flag?: string;
+}
+
+export interface PlatformContent {
+  options: string[];
+  guide: string[];
+}
+
+export interface CaptionsByPlatform {
+  instagram: PlatformContent;
+  tiktok: PlatformContent;
+  facebook: PlatformContent;
+  naver: PlatformContent;
+}
+
+/** Origin of an AI response — Gemini for real, fallback for hardcoded demo. */
+export type ResponseSource = 'gemini' | 'fallback';
+
+/** Mirrors backend ContentDtos.ContentResponseDto. */
+export interface ContentResponseDTO {
+  market: MarketHeader;
+  framework: string;
+  captions: CaptionsByPlatform;
+  source?: ResponseSource;
+}
+
+/** Mirrors backend ComplianceDtos.ComplianceResultDto (FR3.25). */
+export interface ComplianceResultDTO {
+  score: number;
+  aligned: string[];
+  gaps: string[];
+  source?: ResponseSource;
+  // FR3.25 sub-scores (present when /evaluate-full pipeline ran)
+  casScore?: number;
+  vasScore?: number;
+  omcsScore?: number;
+  // FR3.25.4 threshold label + FR3.26 explainability
+  interpretation?: string;
+  mismatches?: string[];
+}
+
+/** Mirrors backend CreativeDirectionDtos.CreativeDirectionDto. */
+export interface CreativeDirectionDTO {
+  visualGuide: string[];
+  shots: { label: string; description: string; lighting: string }[];
+  moodboard: { palette: string; references: string[] };
 }

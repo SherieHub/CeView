@@ -1,0 +1,413 @@
+classDiagram
+    %% ═══════════════════════════════════════════════════════════
+    %% FRONTEND — TypeScript interfaces & types
+    %% ═══════════════════════════════════════════════════════════
+
+    class MarketId {
+        <<enumeration>>
+        KOREA
+        JAPAN
+        AUSTRALIA
+        GLOBAL
+    }
+
+    class Airline {
+        <<interface>>
+        +name: string
+        +code: string
+        +frequency: string
+        +direct: boolean
+        +duration: string
+        +tier: string
+    }
+
+    class ChartDataPoint {
+        <<interface>>
+        +week: string
+        +history: number | null
+        +forecast: number | null
+        +seasonality: number
+        +forex: number
+        +gdp: number
+        +spike: number
+    }
+
+    class Market {
+        <<interface>>
+        +id: string
+        +rank: number
+        +name: string
+        +city: string
+        +matchScore: number
+        +directive: string
+        +directFlight: boolean
+        +flightHours: string
+        +distanceKm: number
+        +nearestAirport: string
+        +destinationAirport: string
+        +accessibilityScore: number
+        +flightFrequency: number
+        +avgFlightPrice: string
+        +airlines: Airline[]
+        +peakMonths: string[]
+        +economyInsight: string
+        +seasonalityInsight: string
+        +chartData: ChartDataPoint[]
+    }
+
+    class KeywordTrend {
+        <<interface>>
+        +keyword: string
+        +volume: number
+        +growth: number
+        +market: string
+    }
+
+    class ContentStrategy {
+        <<interface>>
+        +platformRecommendation: string
+        +generatedCaptions: object[]
+        +visualDirections: object[]
+    }
+
+    class NotificationDetails {
+        <<interface>>
+        +projectedArrivals: number
+        +arrivalGrowth: number
+        +topInterests: object[]
+        +segments: string[]
+        +strategicInsights: object
+        +keywordData: KeywordTrend[]
+        +contentStrategy: ContentStrategy
+    }
+
+    class Notification {
+        <<interface>>
+        +id: string
+        +date: string
+        +title: string
+        +market: string
+        +marketId: string
+        +trend: string
+        +isRead: boolean
+        +details?: NotificationDetails
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% FRONTEND — React Components
+    %% ═══════════════════════════════════════════════════════════
+
+    class App {
+        <<component>>
+        -activeTab: string
+        -businessProfileId: string | null
+        +useEffect() loadProfile on mount
+        +render() routes to HomeView, MarketRadarView
+    }
+
+    class apiClient {
+        <<service>>
+        +listNotifications() NotificationsResponse
+        +listMarkets(profileId?) MarketsResponse
+        +analyzeMarkets(profileId) MarketsResponse
+    }
+
+    class HomeView {
+        <<view>>
+        -notifications: Notification[]
+        -selectedNotification: Notification | null
+        -isUsingMock: boolean
+        +useEffect() listNotifications on mount
+        +render() TrendAlertCard list or MarketRadarView
+    }
+
+    class MarketRadarView {
+        <<view>>
+        -markets: Market[]
+        -selectedMarketId: string
+        -isUsingMock: boolean
+        -isRefreshing: boolean
+        +loadMarkets() listMarkets(profileId)
+        +handleRefresh() analyzeMarkets(profileId)
+        +render() MarketRankCard grid + deep-dive
+    }
+
+    class LiveAlertBanner {
+        <<module>>
+        -market: Market
+    }
+
+    class StrategicDirectivePanel {
+        <<module>>
+        -directive: string
+        +onNavigateToContent()
+    }
+
+    class DemandForecastChart {
+        <<module>>
+        -chartData: ChartDataPoint[]
+    }
+
+    class EconomicInsightsBoard {
+        <<module>>
+        -market: Market
+    }
+
+    class TrendAlertCard {
+        <<composite>>
+        -notif: Notification
+        +onClick()
+    }
+
+    class MarketRankCard {
+        <<composite>>
+        -market: Market
+        -isSelected: boolean
+        +onClick()
+    }
+
+    class MetricHighlight {
+        <<composite>>
+        -icon: ReactNode
+        -label: string
+        -value: string
+        -color: string
+    }
+
+    class ProgressBar {
+        <<base>>
+        -value: number
+        -max: number
+        -color: string
+    }
+
+    class SurgeBadge {
+        <<base>>
+        -label: string
+        -color: string
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% BACKEND — Java Records (DTOs)
+    %% ═══════════════════════════════════════════════════════════
+
+    class MarketsResponse {
+        <<record>>
+        +markets: List~MarketDto~
+    }
+
+    class MarketDto {
+        <<record>>
+        +id: String
+        +rank: int
+        +name: String
+        +city: String
+        +matchScore: int
+        +directive: String
+        +directFlight: boolean
+        +flightHours: String
+        +distanceKm: int
+        +nearestAirport: String
+        +destinationAirport: String
+        +accessibilityScore: int
+        +flightFrequency: int
+        +avgFlightPrice: String
+        +airlines: List~AirlineDto~
+        +peakMonths: List~String~
+        +economyInsight: String
+        +seasonalityInsight: String
+        +chartData: List~ChartDataPointDto~
+    }
+
+    class AirlineDto {
+        <<record>>
+        +name: String
+        +code: String
+        +frequency: String
+        +direct: boolean
+        +duration: String
+        +tier: String
+    }
+
+    class ChartDataPointDto {
+        <<record>>
+        +week: String
+        +history: Double
+        +forecast: Double
+        +seasonality: double
+        +forex: double
+        +gdp: double
+        +spike: double
+    }
+
+    class NotificationsResponse {
+        <<record>>
+        +notifications: List~NotificationDto~
+    }
+
+    class NotificationDto {
+        <<record>>
+        +id: String
+        +date: String
+        +title: String
+        +market: String
+        +marketId: String
+        +trend: String
+        +isRead: boolean
+        +details: DetailsDto
+    }
+
+    class DetailsDto {
+        <<record>>
+        +projectedArrivals: int
+        +arrivalGrowth: double
+        +topInterests: List~TopInterestDto~
+        +segments: List~String~
+        +strategicInsights: StrategicInsightsDto
+        +keywordData: List~KeywordTrendDto~
+        +contentStrategy: ContentStrategyDto
+    }
+
+    class ContentStrategyDto {
+        <<record>>
+        +platformRecommendation: String
+        +generatedCaptions: List~GeneratedCaptionDto~
+        +visualDirections: List~VisualDirectionDto~
+    }
+
+    class GeneratedCaptionDto {
+        <<record>>
+        +platform: String
+        +text: String
+        +hashtags: List~String~
+    }
+
+    class VisualDirectionDto {
+        <<record>>
+        +platform: String
+        +direction: String
+    }
+
+    class StrategicInsightsDto {
+        <<record>>
+        +trendAlignment: String
+        +connectivity: String
+        +economicValue: String
+    }
+
+    class TopInterestDto {
+        <<record>>
+        +name: String
+        +score: int
+    }
+
+    class KeywordTrendDto {
+        <<record>>
+        +keyword: String
+        +volume: int
+        +growth: int
+        +market: String
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% BACKEND — Controllers & Service
+    %% ═══════════════════════════════════════════════════════════
+
+    class ForecastingController {
+        <<controller>>
+        -ai: AIInferenceGatewayService
+        -mapper: ObjectMapper
+        +markets(profileId?) MarketsResponse
+        +analyze(profileId) MarketsResponse
+    }
+
+    class NotificationController {
+        <<controller>>
+        -ai: AIInferenceGatewayService
+        -mapper: ObjectMapper
+        +list() NotificationsResponse
+    }
+
+    class AIInferenceGatewayService {
+        <<service>>
+        -client: WebClient
+        -timeout: Duration
+        +forecastMarkets(Map) Map
+        +listNotifications() Map
+    }
+
+    %% ═══════════════════════════════════════════════════════════
+    %% RELATIONSHIPS — Frontend
+    %% ═══════════════════════════════════════════════════════════
+
+    App --> HomeView : renders
+    App --> MarketRadarView : renders
+    App --> apiClient : loadProfile on mount
+
+    HomeView --> apiClient : listNotifications
+    HomeView --> TrendAlertCard : renders per notification
+    HomeView --> MarketRadarView : replaces self on notification click
+    HomeView ..> Notification : uses
+
+    MarketRadarView --> apiClient : listMarkets, analyzeMarkets
+    MarketRadarView --> MarketRankCard : renders per market
+    MarketRadarView --> LiveAlertBanner : renders
+    MarketRadarView --> StrategicDirectivePanel : renders
+    MarketRadarView --> MetricHighlight : renders x2
+    MarketRadarView --> DemandForecastChart : renders
+    MarketRadarView --> EconomicInsightsBoard : renders
+    MarketRadarView ..> Market : uses
+
+    TrendAlertCard ..> Notification : uses
+    MarketRankCard --> ProgressBar : renders matchScore
+    MarketRankCard --> SurgeBadge : renders spike/status
+    MarketRankCard ..> Market : uses
+
+    EconomicInsightsBoard ..> Market : uses
+    DemandForecastChart ..> ChartDataPoint : uses
+
+    Market *-- Airline : contains list
+    Market *-- ChartDataPoint : contains list
+    Notification *-- NotificationDetails : contains (optional)
+    NotificationDetails *-- KeywordTrend : contains list
+    NotificationDetails *-- ContentStrategy : contains
+
+    apiClient ..> Market : produces via listMarkets/analyzeMarkets
+    apiClient ..> Notification : produces via listNotifications
+
+    %% ═══════════════════════════════════════════════════════════
+    %% RELATIONSHIPS — Backend
+    %% ═══════════════════════════════════════════════════════════
+
+    ForecastingController --> AIInferenceGatewayService : forecastMarkets
+    ForecastingController ..> MarketsResponse : produces
+    ForecastingController ..> MarketDto : via MarketsResponse
+
+    NotificationController --> AIInferenceGatewayService : listNotifications
+    NotificationController ..> NotificationsResponse : produces
+    NotificationController ..> NotificationDto : via NotificationsResponse
+
+    MarketsResponse *-- MarketDto : contains list
+    MarketDto *-- AirlineDto : contains list
+    MarketDto *-- ChartDataPointDto : contains list
+
+    NotificationsResponse *-- NotificationDto : contains list
+    NotificationDto *-- DetailsDto : contains
+    DetailsDto *-- ContentStrategyDto : contains
+    DetailsDto *-- StrategicInsightsDto : contains
+    DetailsDto *-- TopInterestDto : contains list
+    DetailsDto *-- KeywordTrendDto : contains list
+    ContentStrategyDto *-- GeneratedCaptionDto : contains list
+    ContentStrategyDto *-- VisualDirectionDto : contains list
+
+    %% ═══════════════════════════════════════════════════════════
+    %% CROSS-LAYER CONTRACT
+    %% ═══════════════════════════════════════════════════════════
+
+    MarketDto .. Market : mirrors over HTTP
+    AirlineDto .. Airline : mirrors over HTTP
+    ChartDataPointDto .. ChartDataPoint : mirrors over HTTP
+    NotificationDto .. Notification : mirrors over HTTP
+    KeywordTrendDto .. KeywordTrend : mirrors over HTTP
+    MarketsResponse .. apiClient : JSON envelope {markets:[]}
+    NotificationsResponse .. apiClient : JSON envelope {notifications:[]}

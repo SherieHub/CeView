@@ -1,0 +1,36 @@
+erDiagram
+
+    %% ── Parent reference (owned by Transaction 1.1) ─────────────────────────
+
+    tbl_business_profile {
+        UUID  business_profile_id PK
+        UUID  user_id             FK
+        float uniqueness_score    "written by Transaction 1.2"
+    }
+
+    %% ── Module 1 — Transaction 1.2 ───────────────────────────────────────────
+
+    tbl_business_embedding {
+        UUID   embedding_id            PK
+        UUID   business_profile_id     FK
+        text   embedding_vector        "vector(384) in Postgres; VARCHAR(8000) in H2"
+        string embedding_model_version
+        ts     generated_at
+    }
+
+    tbl_business_categories_score {
+        UUID    categories_score_id  PK
+        UUID    business_profile_id  FK
+        decimal coastal_island
+        decimal adventure
+        decimal cultural
+        decimal theme_parks
+        decimal urban
+        decimal culinary
+        decimal accommodation
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+
+    tbl_business_profile ||--o{ tbl_business_embedding        : "has embeddings"
+    tbl_business_profile ||--o{ tbl_business_categories_score : "has category scores"
