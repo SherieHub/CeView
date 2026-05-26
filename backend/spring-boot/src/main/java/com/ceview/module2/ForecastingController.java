@@ -8,8 +8,8 @@ import java.util.UUID;
 
 /**
  * SDD §2 — Market Radar + Forecasting (Submodule 2.2).
- * Delegates to ForecastingService which runs the BiLSTM+Transformer pipeline
- * when enriched data exists, or falls back to the FastAPI stub.
+ * Delegates to ForecastingService which runs the Gemini demand forecasting +
+ * XGBoost economic scoring pipeline, or falls back to the FastAPI stub.
  */
 @RestController
 @RequestMapping("/api/v1/forecasting")
