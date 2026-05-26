@@ -1,8 +1,14 @@
-"""Shared error codes. The same constants appear in Spring Boot
-(Module3ErrorCodes.java) and in the frontend banner output so that one
-failure surfaces with the same string everywhere it is logged."""
+"""Shared error codes for the fastapi-sbert service (Modules 1, 3, 4).
+
+The same constants appear in Spring Boot (Module3ErrorCodes.java) and in the
+frontend banner output so that one failure surfaces with the same string
+everywhere it is logged."""
 
 from __future__ import annotations
+
+# ─── Module 1 — Business Input & Classification ──────────────────────────────
+MOD1_ML_LOAD_FAIL       = "MOD1_ML_LOAD_FAIL"
+MOD1_ML_INFERENCE_FAIL  = "MOD1_ML_INFERENCE_FAIL"
 
 # ─── Module 3 — Submodule 3.1: Content Generation ────────────────────────────
 MOD31_CONTENT_PROFILE_NOT_FOUND = "MOD31_CONTENT_PROFILE_NOT_FOUND"
@@ -30,14 +36,3 @@ MOD3_COMPLIANCE_VALIDATION       = "MOD3_COMPLIANCE_VALIDATION"
 MOD3_CREATIVE_GEMINI_DISABLED  = "MOD3_CREATIVE_GEMINI_DISABLED"
 MOD3_CREATIVE_GEMINI_EMPTY     = "MOD3_CREATIVE_GEMINI_EMPTY"
 MOD3_CREATIVE_GEMINI_EXCEPTION = "MOD3_CREATIVE_GEMINI_EXCEPTION"
-
-# ─── Module 2.1 — Market Data Aggregation ────────────────────────────────────
-MOD21_PYTRENDS_UNAVAILABLE   = "MOD21_PYTRENDS_UNAVAILABLE"
-MOD21_EXTERNAL_API_ERROR     = "MOD21_EXTERNAL_API_ERROR"
-MOD21_ENRICHED_DATASET_EMPTY = "MOD21_ENRICHED_DATASET_EMPTY"
-MOD21_INGESTION_JOB_FAILED   = "MOD21_INGESTION_JOB_FAILED"
-
-# ─── Module 2.2 — Forecasting and Market Scoring ─────────────────────────────
-MOD22_FORECAST_MAPE_WARNING  = "MOD22_FORECAST_MAPE_WARNING"
-MOD22_SCORING_FAILED         = "MOD22_SCORING_FAILED"
-MOD22_PROFILE_NOT_READY      = "MOD22_PROFILE_NOT_READY"
