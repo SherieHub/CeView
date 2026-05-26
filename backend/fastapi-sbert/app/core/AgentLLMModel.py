@@ -1,11 +1,22 @@
 import os
+import logging
 import threading
-from langchain_google_genai import ChatGoogleGenerativeAI
+
+logger = logging.getLogger(__name__)
+
 
 class AgentLLMModel:
+    """Singleton wrapper around ChatGoogleGenerativeAI for the LangGraph caption agent.
+
+    Initialisation is deferred and fail-safe: if GOOGLE_API_KEY is absent or
+    langchain_google_genai cannot be imported, the singleton is set to None so
+    the rest of the SBERT server starts normally.  Callers must guard against
+    get_model() returning None.
+    """
+
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         with cls._lock:
             if cls._instance is None:
@@ -14,20 +25,33 @@ class AgentLLMModel:
         return cls._instance
 
     def _initialize(self):
-        if "GOOGLE_API_KEY" not in os.environ:
-            raise ValueError("GOOGLE_API_KEY environment variable is missing.")
-
-        self.model_name = "gemini-2.5-flash"
-        self.temperature = 0.7
-        
-        self.model = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            temperature=self.temperature
-        )
+        self._model = None
+        api_key = os.environ.get("GOOGLE_API_KEY", "")
+        if not api_key:
+            logger.warning(
+                "AgentLLMModel: GOOGLE_API_KEY not set — "
+                "caption generation agent will use fallback stubs."
+            )
+            return
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import]
+            self._model = ChatGoogleGenerativeAI(
+                model="gemini-2.5-flash",
+                temperature=0.7,
+                google_api_key=api_key,
+            )
+            logger.info("AgentLLMModel: ChatGoogleGenerativeAI initialised (gemini-2.5-flash).")
+        except Exception as exc:
+            logger.warning(
+                "AgentLLMModel: could not initialise LangChain Gemini client — "
+                "caption agent will use fallback stubs. Error: %s", exc
+            )
 
     def get_model(self):
-        """Returns the configured LangChain ChatGoogleGenerativeAI instance."""
-        return self.model
+        """Return the configured LLM, or None if unavailable."""
+        return self._model
 
-llm_wrapper = AgentLLMModel() 
-model = llm_wrapper.get_model()
+
+# ── Module-level singleton — safe: never raises, may be None ─────────────────
+_wrapper = AgentLLMModel()
+model = _wrapper.get_model()   # None when GOOGLE_API_KEY absent

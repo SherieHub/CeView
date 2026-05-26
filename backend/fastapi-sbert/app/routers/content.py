@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from app.services import cultural_research, gemini_client
 
@@ -17,29 +18,60 @@ router = APIRouter()
 log = logging.getLogger("module3.content")
 
 
-@router.post("/generate")
-def generate(body: dict) -> dict:
+# ─── Pydantic schema ──────────────────────────────────────────────────────────
+
+class ContentGenerateRequest(BaseModel):
+    """Request payload forwarded by Spring Boot ContentGenerationService.
+
+    All fields except `market` are optional because the service populates them
+    from the BusinessProfile entity; defaults prevent a 422 if any are absent.
+    """
+    market:          str        = Field(default="korea", description="korea | japan | usa")
+    businessName:    str        = Field(default="")
+    description:     str        = Field(default="")
+    categories:      list[str]  = Field(default_factory=list)
+    trend:           str        = Field(default="")
+    uniquenessScore: int        = Field(default=0, ge=0, le=100)
+    forecastContext: dict       = Field(
+        default_factory=dict,
+        description="{ marketScore, predictedDemand, spikeIndicator, seasonalityScore } from Module 2",
+    )
+
+
+class ContentResponse(BaseModel):
+    """Mirrors backend ContentDtos.ContentResponseDto."""
+    market:    dict
+    framework: str
+    captions:  dict
+    source:    str = "fallback"
+
+
+# ─── /generate ────────────────────────────────────────────────────────────────
+
+@router.post("/generate", response_model=ContentResponse)
+def generate(req: ContentGenerateRequest) -> ContentResponse:
     """Generate market-localised promotional content (FR3.5, FR3.6).
 
-    Request body (from Spring Boot ContentGenerationService):
-        market           — str  (korea | japan | usa)
-        businessName     — str  (FR3.1)
-        description      — str  (FR3.1)
-        categories       — list[str]  (FR3.1)
-        trend            — str
-        uniquenessScore  — int  (FR3.4)
-        forecastContext  — dict  { marketScore, predictedDemand, spikeIndicator, seasonalityScore }  (FR3.4)
+    1. FR3.3 — real-time cultural and tourism trend research via SerpAPI (or curated
+       templates when SerpAPI is unavailable).
+    2. FR3.4 / FR3.5 — builds a Gemini prompt enriched with research context, forecast
+       signals and business profile attributes.
+    3. FR3.6 — returns four platform-specific caption sets (Instagram, TikTok, Facebook,
+       Naver Blog) plus a content framework and visual guide per platform.
 
-    Response:
-        market, framework, captions (4 platforms), source
+    Response shape:
+        market           — { country, city, flag }
+        framework        — strategic caption framework string
+        captions         — { instagram, tiktok, facebook, naver } each with options + guide
+        source           — "gemini" | "fallback"
     """
-    market: str = body.get("market") or "korea"
-    business_name: str = body.get("businessName") or ""
-    description: str = body.get("description") or ""
-    categories: list[str] = body.get("categories") or []
-    trend: str = body.get("trend") or ""
-    uniqueness_score: int = int(body.get("uniquenessScore") or 0)
-    forecast_context: dict = body.get("forecastContext") or {}
+    market          = (req.market or "korea").strip() or "korea"
+    business_name   = req.businessName or ""
+    description     = req.description or ""
+    categories      = req.categories or []
+    trend           = req.trend or ""
+    uniqueness_score = int(req.uniquenessScore or 0)
+    forecast_context = req.forecastContext or {}
 
     log.info("content.generate received market=%s business=%s", market, business_name)
 
@@ -49,14 +81,14 @@ def generate(body: dict) -> dict:
 
     # FR3.5 / FR3.6 — generate captions + supplementary outputs via Gemini
     result = gemini_client.content_for_market(
-        market=market,
-        business_name=business_name,
-        description=description,
-        categories=categories,
-        trend=trend,
-        uniqueness_score=uniqueness_score,
-        forecast_context=forecast_context,
-        research_context=research,
+        market           = market,
+        business_name    = business_name,
+        description      = description,
+        categories       = categories,
+        trend            = trend,
+        uniqueness_score = uniqueness_score,
+        forecast_context = forecast_context,
+        research_context = research,
     )
 
     log.info("content.generate ok market=%s source=%s", market, result.get("source"))

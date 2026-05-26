@@ -204,6 +204,7 @@ export interface ComplianceResultDTO {
   // FR3.25 sub-scores (present when /evaluate-full pipeline ran)
   casScore?: number;
   vasScore?: number;
+  hcsScore?: number;
   omcsScore?: number;
   // FR3.25.4 threshold label + FR3.26 explainability
   interpretation?: string;
