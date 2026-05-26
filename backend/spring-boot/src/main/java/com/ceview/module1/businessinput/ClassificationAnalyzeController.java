@@ -29,7 +29,7 @@ public class ClassificationAnalyzeController {
         var allocs = raw.stream()
             .map(m -> new CategoryAllocation(
                 String.valueOf(m.get("name")),
-                ((Number) m.getOrDefault("percentage", 0)).doubleValue()))
+                ((Number) m.getOrDefault("percentage", 0)).intValue()))
             .toList();
         return new AnalyzeResponse(allocs);
     }

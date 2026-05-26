@@ -5,8 +5,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Pre-download E5 model into the image so first inference isn't slow.
 # The || true makes the build succeed even when HuggingFace is unreachable
 # (e.g. air-gapped CI, proxy issues). The model downloads on first inference instead.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/e5-base-v2')" \
-    || echo "WARNING: E5 model pre-download skipped — will download on first inference"
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-base')" \
+    || echo "WARNING: multilingual-e5-base pre-download skipped — will download on first inference"
 COPY models ./models
 COPY app ./app
 EXPOSE 8000

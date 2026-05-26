@@ -22,7 +22,7 @@ services:
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ENABLE_GEMINI: ${ENABLE_GEMINI:-false}
-      ML_MODEL_PATH: /app/models/classifier.keras
+      KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
     volumes:
       - ./fastapi/models:/app/models:ro
     ports:
