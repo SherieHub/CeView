@@ -10,7 +10,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,14 +30,18 @@ public class AIInferenceGatewayService {
     private final WebClient sbertClient;
     private final WebClient transformerClient;
     private final Duration timeout;
+    /** Extended timeout for rank-markets: PyTrends needs up to 75 s (6 batches × 4–12 s jitter). */
+    private final Duration rankMarketsTimeout;
 
     public AIInferenceGatewayService(
             @Qualifier("fastapiSbertClient") WebClient sbertClient,
             @Qualifier("fastapiTransformerClient") WebClient transformerClient,
-            @Value("${ceview.fastapi.timeout-seconds}") long timeoutSec) {
-        this.sbertClient       = sbertClient;
-        this.transformerClient = transformerClient;
-        this.timeout           = Duration.ofSeconds(timeoutSec);
+            @Value("${ceview.fastapi.timeout-seconds}") long timeoutSec,
+            @Value("${ceview.fastapi.rank-markets-timeout-seconds:90}") long rankMarketsTimeoutSec) {
+        this.sbertClient          = sbertClient;
+        this.transformerClient    = transformerClient;
+        this.timeout              = Duration.ofSeconds(timeoutSec);
+        this.rankMarketsTimeout   = Duration.ofSeconds(rankMarketsTimeoutSec);
     }
 
     // ─── Module 1 — SBERT classification (fastapi-sbert) ─────────────────────
@@ -51,11 +54,24 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/classification/uniqueness", payload);
     }
 
-    /** Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2). */
+    /**
+     * Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2).
+     *
+     * <p>Uses {@link #rankMarketsTimeout} (default 90 s) instead of the shared timeout
+     * because PyTrends fetches 6 keyword batches with a 4–12 s jitter sleep each,
+     * totalling up to ~75 s when live.  The shared 30 s timeout would kill the request
+     * before PyTrends responds, causing a silent fallback to stub data.
+     */
     public Map<String, Object> rankMarketsForCategory(String category) {
         var payload = new HashMap<String, Object>();
         payload.put("category", category);
-        return postTransformer("/api/v1/trends/rank-markets", payload);
+        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
+        return transformerClient.post().uri("/api/v1/trends/rank-markets")
+                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(MAP_TYPE)
+                .block(rankMarketsTimeout);
     }
 
     // ─── Module 2.1 — Market data ingestion (fastapi-transformer) ────────────
