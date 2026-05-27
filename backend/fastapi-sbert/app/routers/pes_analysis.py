@@ -97,7 +97,11 @@ async def generate(req: PesAnalysisRequest) -> dict:
     Response shape:
         {
           "report_data": {
-            "metric_conditions":  [ { metric_name, current_status, trend, peak_value, low_value } ],
+            "metric_conditions":  [ { metric_name, current_status, trend, peak_value, low_value, 
+            insights (2 - 3 sentences that explains the current condition of this metric and how 
+            this values means to the bussiness) } ]
+            
+            ,
             "cross_metric_logic": { relationships, insights },
             "ranked_weaknesses":  [ { metric_name, rank, weakness_meaning, recommendation } ]
           },
