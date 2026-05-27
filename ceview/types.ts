@@ -17,6 +17,16 @@ export interface ChartDataPoint {
   spike: number;
 }
 
+export interface GdpTrendPoint {
+  year: number;
+  value: number;
+}
+
+export interface ForexTrendPoint {
+  date: string;
+  value: number;
+}
+
 export interface Airline {
   name: string;
   code: string;
@@ -46,6 +56,8 @@ export interface Market {
   economyInsight: string;
   seasonalityInsight: string;
   chartData: ChartDataPoint[];
+  gdpTrend?: GdpTrendPoint[];
+  forexTrend?: ForexTrendPoint[];
 }
 
 export interface SellingPoint {

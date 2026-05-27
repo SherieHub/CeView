@@ -28,6 +28,9 @@ ceview:
     transformer:
       base-url: ${FASTAPI_TRANSFORMER_BASE_URL:http://localhost:8001}
     timeout-seconds: 30
+    # rank-markets calls PyTrends live (6 batches × 4–12 s jitter = up to 75 s).
+    # This separate timeout prevents the shared 30 s limit from killing live fetches.
+    rank-markets-timeout-seconds: 90
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-me-please-32chars-min}
     expiry-hours: 24

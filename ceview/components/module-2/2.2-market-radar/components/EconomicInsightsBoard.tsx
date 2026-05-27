@@ -4,6 +4,12 @@ import { ComposedChart, LineChart, Line, Area, XAxis, YAxis, CartesianGrid, Tool
 import { Market } from '../../../../types';
 import { COLORS } from '../../../../constants';
 
+const MARKET_CURRENCY: Record<string, { code: string; label: string }> = {
+  korea: { code: 'KRW', label: 'PHP → KRW' },
+  japan: { code: 'JPY', label: 'PHP → JPY' },
+  usa:   { code: 'USD', label: 'PHP → USD' },
+};
+
 interface EconomicInsightsBoardProps {
   market: Market;
 }
@@ -40,45 +46,83 @@ const EconomicInsightsBoard: React.FC<EconomicInsightsBoardProps> = ({ market })
         </div>
 
         <div className="p-4 md:p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY }}>
-          {activeDriver === 'economy' && (
-            <div className="animate-fade-in">
-              <div className="flex flex-col md:flex-row justify-between mb-5 gap-4 items-start">
-                <div>
-                  <h4 className="font-black text-lg" style={{ color: COLORS.NAVY }}>Purchasing Power of {market.name} Visitors</h4>
-                  <p className="text-sm font-medium mt-1" style={{ color: COLORS.TEXT_MUTED }}>Forex & GDP trends show spending capability in Cebu.</p>
-                </div>
-                <div className="flex gap-4 shrink-0">
-                  <div className="text-right border-r pr-4" style={{ borderColor: COLORS.LIGHT_GREY }}>
-                    <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.GOLD }}>Exchange Rate</div>
-                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{currentPoint.forex}</div>
-                    <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>vs PHP</div>
+          {activeDriver === 'economy' && (() => {
+            const currency = MARKET_CURRENCY[market.id] ?? { code: '?', label: 'vs PHP' };
+            // Use rich trend arrays when available, fall back to weekly signal records
+            const forexChartData = market.forexTrend && market.forexTrend.length > 0
+              ? market.forexTrend.map(p => ({ label: p.date.slice(0, 7), value: p.value }))
+              : market.chartData.map(p => ({ label: p.week, value: p.forex }));
+            const gdpChartData = market.gdpTrend && market.gdpTrend.length > 0
+              ? market.gdpTrend.map(p => ({ label: String(p.year), value: p.value }))
+              : market.chartData.map(p => ({ label: p.week, value: p.gdp }));
+            const latestForex = forexChartData[forexChartData.length - 1]?.value ?? currentPoint.forex;
+            const latestGdp   = gdpChartData[gdpChartData.length - 1]?.value ?? currentPoint.gdp;
+            return (
+              <div className="animate-fade-in">
+                <div className="flex flex-col md:flex-row justify-between mb-5 gap-4 items-start">
+                  <div>
+                    <h4 className="font-black text-lg" style={{ color: COLORS.NAVY }}>Purchasing Power of {market.name} Visitors</h4>
+                    <p className="text-sm font-medium mt-1" style={{ color: COLORS.TEXT_MUTED }}>Forex & GDP trends show spending capability in Cebu.</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.RED_ORANGE }}>GDP Growth</div>
-                    <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>{currentPoint.gdp}%</div>
-                    <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>Annual</div>
+                  <div className="flex gap-4 shrink-0">
+                    <div className="text-right border-r pr-4" style={{ borderColor: COLORS.LIGHT_GREY }}>
+                      <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.GOLD }}>Exchange Rate</div>
+                      <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>
+                        {typeof latestForex === 'number' ? latestForex.toFixed(2) : latestForex}
+                      </div>
+                      <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>{currency.label}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-black uppercase tracking-wider" style={{ color: COLORS.RED_ORANGE }}>GDP Growth</div>
+                      <div className="font-black text-xl" style={{ color: COLORS.NAVY }}>
+                        {typeof latestGdp === 'number' ? latestGdp.toFixed(1) : latestGdp}%
+                      </div>
+                      <div className="text-xs" style={{ color: COLORS.TEXT_MUTED }}>Annual</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mb-5 p-4 rounded-xl border-l-4" style={{ backgroundColor: COLORS.GOLD_LIGHT, borderLeftColor: COLORS.GOLD }}>
+                  <p className="text-xs font-black uppercase tracking-wider mb-1" style={{ color: COLORS.GOLD }}>What This Means for Your Business</p>
+                  <p className="text-sm font-medium leading-relaxed" style={{ color: COLORS.TEXT_MAIN }}>{market.economyInsight}</p>
+                </div>
+                {/* Two stacked mini-charts: forex trend (top) + GDP trend (bottom) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2" style={{ color: COLORS.GOLD }}>
+                      {currency.code} Exchange Rate Trend
+                    </p>
+                    <div className="h-[160px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={forexChartData as any[]} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.LIGHT_GREY} />
+                          <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 10 }} dy={8} interval="preserveStartEnd" />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 10 }} tickFormatter={(v: number) => v.toFixed(1)} />
+                          <Tooltip contentStyle={{ borderRadius: '10px', border: `1px solid ${COLORS.LIGHT_GREY}`, fontSize: 12 }} formatter={(v: any) => [`${Number(v).toFixed(2)} ${currency.code}`, 'Rate']} />
+                          <Line type="monotone" dataKey="value" stroke={COLORS.GOLD} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.GOLD }} name={`${currency.code}/PHP`} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2" style={{ color: COLORS.RED_ORANGE }}>
+                      GDP Growth (%)
+                    </p>
+                    <div className="h-[160px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={gdpChartData as any[]} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.LIGHT_GREY} />
+                          <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 10 }} dy={8} interval="preserveStartEnd" />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 10 }} tickFormatter={(v: number) => `${v.toFixed(1)}%`} />
+                          <Tooltip contentStyle={{ borderRadius: '10px', border: `1px solid ${COLORS.LIGHT_GREY}`, fontSize: 12 }} formatter={(v: any) => [`${Number(v).toFixed(2)}%`, 'GDP Growth']} />
+                          <Line type="monotone" dataKey="value" stroke={COLORS.RED_ORANGE} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.RED_ORANGE }} name="GDP Growth" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="mb-5 p-4 rounded-xl border-l-4" style={{ backgroundColor: COLORS.GOLD_LIGHT, borderLeftColor: COLORS.GOLD }}>
-                <p className="text-xs font-black uppercase tracking-wider mb-1" style={{ color: COLORS.GOLD }}>What This Means for Your Business</p>
-                <p className="text-sm font-medium leading-relaxed" style={{ color: COLORS.TEXT_MAIN }}>{market.economyInsight}</p>
-              </div>
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={market.chartData as any[]} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.LIGHT_GREY} />
-                    <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12 }} dy={10} />
-                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12 }} />
-                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${COLORS.LIGHT_GREY}` }} />
-                    <Line yAxisId="left" type="monotone" dataKey="forex" stroke={COLORS.GOLD} strokeWidth={3} dot={{ r: 4 }} name="forex" />
-                    <Line yAxisId="right" type="monotone" dataKey="gdp" stroke={COLORS.RED_ORANGE} strokeWidth={3} dot={{ r: 4 }} name="gdp" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeDriver === 'seasonality' && (
             <div className="animate-fade-in">

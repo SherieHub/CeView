@@ -5,11 +5,13 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -30,14 +32,18 @@ public class AIInferenceGatewayService {
     private final WebClient sbertClient;
     private final WebClient transformerClient;
     private final Duration timeout;
+    /** Extended timeout for rank-markets: PyTrends needs up to 75 s (6 batches × 4–12 s jitter). */
+    private final Duration rankMarketsTimeout;
 
     public AIInferenceGatewayService(
             @Qualifier("fastapiSbertClient") WebClient sbertClient,
             @Qualifier("fastapiTransformerClient") WebClient transformerClient,
-            @Value("${ceview.fastapi.timeout-seconds}") long timeoutSec) {
-        this.sbertClient       = sbertClient;
-        this.transformerClient = transformerClient;
-        this.timeout           = Duration.ofSeconds(timeoutSec);
+            @Value("${ceview.fastapi.timeout-seconds}") long timeoutSec,
+            @Value("${ceview.fastapi.rank-markets-timeout-seconds:90}") long rankMarketsTimeoutSec) {
+        this.sbertClient          = sbertClient;
+        this.transformerClient    = transformerClient;
+        this.timeout              = Duration.ofSeconds(timeoutSec);
+        this.rankMarketsTimeout   = Duration.ofSeconds(rankMarketsTimeoutSec);
     }
 
     // ─── Module 1 — SBERT classification (fastapi-sbert) ─────────────────────
@@ -50,11 +56,24 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/classification/uniqueness", payload);
     }
 
-    /** Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2). */
+    /**
+     * Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2).
+     *
+     * <p>Uses {@link #rankMarketsTimeout} (default 90 s) instead of the shared timeout
+     * because PyTrends fetches 6 keyword batches with a 4–12 s jitter sleep each,
+     * totalling up to ~75 s when live.  The shared 30 s timeout would kill the request
+     * before PyTrends responds, causing a silent fallback to stub data.
+     */
     public Map<String, Object> rankMarketsForCategory(String category) {
         var payload = new HashMap<String, Object>();
         payload.put("category", category);
-        return postTransformer("/api/v1/trends/rank-markets", payload);
+        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
+        return transformerClient.post().uri("/api/v1/trends/rank-markets")
+                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(MAP_TYPE)
+                .block(rankMarketsTimeout);
     }
 
     // ─── Module 2.1 — Market data ingestion (fastapi-transformer) ────────────
@@ -62,6 +81,11 @@ public class AIInferenceGatewayService {
     /** Fetch Google Trends index via FastAPI PyTrends wrapper (FR2.2). */
     public Map<String, Object> fetchTrends(Map<String, Object> payload) {
         return postTransformer("/internal/market-data/trends", payload);
+    }
+
+    /** Fetch N weeks of weekly trend history — used on first ingestion to backfill signal records (FR2.2). */
+    public Map<String, Object> fetchTrendHistory(Map<String, Object> payload) {
+        return postTransformer("/internal/market-data/trends/history", payload);
     }
 
     /** Compute FFT-based seasonality score via FastAPI scipy (FR2.7). */
@@ -165,6 +189,20 @@ public class AIInferenceGatewayService {
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
                 .bodyValue(payload)
                 .retrieve()
+                .onStatus(
+                    status -> status.is4xxClientError() || status.is5xxServerError(),
+                    response -> response.bodyToMono(MAP_TYPE)
+                        .map(body -> {
+                            String code = String.valueOf(body.getOrDefault("code", "FASTAPI_ERROR"));
+                            String msg  = String.valueOf(body.getOrDefault("message", response.statusCode().toString()));
+                            return (Throwable) new ResponseStatusException(
+                                HttpStatus.valueOf(response.statusCode().value()),
+                                code + " :: " + msg);
+                        })
+                        .defaultIfEmpty(new ResponseStatusException(
+                            HttpStatus.valueOf(response.statusCode().value()),
+                            "upstream error from " + path))
+                )
                 .bodyToMono(MAP_TYPE)
                 .block(timeout);
     }
