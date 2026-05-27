@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [uvp, setUvp] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uniquenessScore, setUniquenessScore] = useState<number | null>(null);
+  const [selectedMarketId, setSelectedMarketId] = useState<string>('');
 
   useEffect(() => {
     api.loadProfile(OPERATOR_ID)
@@ -118,13 +119,22 @@ const App: React.FC = () => {
               businessProfileId={businessProfileId}
               businessName={businessName}
               categories={categories}
-              onNavigateToContent={() => setActiveTab('content')}
+              onNavigateToContent={(marketId) => {
+                setSelectedMarketId(marketId);
+                setActiveTab('content');
+              }}
             />
           )}
 
           {activeTab === 'content' && (
             <ContentStudioView
+              key={selectedMarketId}
               onBack={() => setActiveTab('radar')}
+              businessProfileId={businessProfileId}
+              businessName={businessName}
+              description={description}
+              categories={categories}
+              initialMarketId={selectedMarketId || undefined}
             />
           )}
 

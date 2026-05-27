@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app import errors as err_codes
 from app.services import cultural_research, gemini_client
 from app.services.caption_generation import caption_generation_service
 from app.model.CaptionInputClass import CaptionInputClass
@@ -237,9 +238,18 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
         research_context     = research_str,
     )
 
-    agent_result   = await caption_generation_service(agent_input)
+    try:
+        agent_result = await caption_generation_service(agent_input)
+    except Exception as exc:
+        error_code = str(exc) if str(exc).startswith("MOD3") else err_codes.MOD31_CAPTION_AGENT_FAILED
+        log.error("[%s] Content generation failed for market=%s: %s", error_code, market, exc)
+        raise HTTPException(
+            status_code=503,
+            detail={"code": error_code, "message": "Content generation service unavailable."},
+        )
+
     final_captions = agent_result.get("final_captions", {})
-    source         = agent_result.get("source", "fallback")
+    source         = agent_result.get("source", "gemini")
 
     log.info("content.agent ok market=%s source=%s platforms=%s",
              market, source, list(final_captions.keys()))

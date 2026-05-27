@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -75,28 +78,40 @@ public class MarketDataIngestionService {
         List<String> categories = profile.categoriesList();
 
         // ── Concurrent external fetches ──────────────────────────────────────
-        CompletableFuture<Map<String, Object>>              trendsFuture =
-                CompletableFuture.supplyAsync(() ->
-                        ai.fetchTrends(Map.of("market", market, "categories", categories)));
-
         CompletableFuture<ExternalMarketDataClient.GdpDataDto> gdpFuture =
                 CompletableFuture.supplyAsync(() -> externalClient.fetchGdpGrowth(market));
 
         CompletableFuture<ExternalMarketDataClient.ForexDataDto> forexFuture =
                 CompletableFuture.supplyAsync(() -> externalClient.fetchForexRate(market));
 
-        CompletableFuture.allOf(trendsFuture, gdpFuture, forexFuture).join();
+        CompletableFuture.allOf(gdpFuture, forexFuture).join();
 
-        Map<String, Object>                    trendsResult = trendsFuture.join();
-        ExternalMarketDataClient.GdpDataDto    gdp          = gdpFuture.join();
-        ExternalMarketDataClient.ForexDataDto  forex        = forexFuture.join();
-
-        double trendIndex = Math.max(0.0, Math.min(100.0,
-                ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
+        ExternalMarketDataClient.GdpDataDto    gdp   = gdpFuture.join();
+        ExternalMarketDataClient.ForexDataDto  forex = forexFuture.join();
 
         // ── Load existing signal history ──────────────────────────────────────
         List<MarketSignalRecord> history = signalRepo
                 .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+
+        // ── First ingestion: backfill N weeks of real historical trend data ───
+        // On first run for a profile/market there are no signal records, so the
+        // chart would show a flat line.  Fetch 12 weeks of weekly PyTrends data
+        // and persist one MarketSignalRecord per historical week so the chart
+        // shows real week-over-week variance from the very first forecast.
+        double trendIndex;
+        if (history.isEmpty()) {
+            Map<String, Object> historyResult = ai.fetchTrendHistory(
+                    Map.of("market", market, "categories", categories, "weeks", 12));
+            trendIndex = backfillHistory(profileId, market, historyResult, gdp, forex);
+            // Reload history so the seasonality call below has the backfilled series
+            history = signalRepo
+                    .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        } else {
+            Map<String, Object> trendsResult = ai.fetchTrends(
+                    Map.of("market", market, "categories", categories));
+            trendIndex = Math.max(0.0, Math.min(100.0,
+                    ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
+        }
 
         // Build chronological weekly trend series for SeasonalShiftDetector
         List<Double> weeklyHistory = history.stream()
@@ -175,6 +190,74 @@ public class MarketDataIngestionService {
 
         log.debug("Ingested: profile={} market={} trend={} spike={} yoy={}",
                 profileId, market, String.format("%.1f", trendIndex), spike, yoyRatio);
+    }
+
+    // ─── backfill helper ──────────────────────────────────────────────────────
+
+    /**
+     * Persist one MarketSignalRecord per historical week from the PyTrends series.
+     * All-but-the-last entries are stored with past timestamps so the chart
+     * shows real week-over-week variance.
+     *
+     * @return the trend_index of the most-recent (current) week in the series
+     */
+    @SuppressWarnings("unchecked")
+    private double backfillHistory(UUID profileId, String market,
+                                   Map<String, Object> historyResult,
+                                   ExternalMarketDataClient.GdpDataDto gdp,
+                                   ExternalMarketDataClient.ForexDataDto forex) {
+        List<Map<String, Object>> series =
+                (List<Map<String, Object>>) historyResult.get("weekly_series");
+        if (series == null || series.isEmpty()) {
+            return 50.0;  // safe default — normal ingestion will compute the real value
+        }
+
+        // Persist all weeks except the last; the last is returned for the caller
+        // to handle through the normal seasonality pipeline.
+        List<Map<String, Object>> historical = series.size() > 1
+                ? series.subList(0, series.size() - 1)
+                : List.of();
+
+        for (int i = 0; i < historical.size(); i++) {
+            Map<String, Object> point = historical.get(i);
+            double ti = ((Number) point.getOrDefault("trend_index", 50.0)).doubleValue();
+
+            MarketSignalRecord rec = new MarketSignalRecord();
+            rec.setBusinessProfileId(profileId);
+            rec.setTargetMarket(market);
+            rec.setTrendIndex(ti);
+            rec.setForexRate(forex.rateVsPhp());
+            rec.setGdpGrowth(gdp.gdpGrowth());
+            rec.setSeasonalityScore(0.5);
+            rec.setRollingAverage(ti);
+            rec.setRollingAverage7d(ti);
+            rec.setRollingAverage30d(ti);
+            rec.setRollingStdDev(0.0);
+            rec.setSpikeIndicator(false);
+
+            // Set the timestamp to the corresponding past week
+            String dateStr = (String) point.get("date");
+            if (dateStr != null) {
+                try {
+                    rec.setAggregatedAt(
+                            LocalDate.parse(dateStr).atStartOfDay().atOffset(ZoneOffset.UTC));
+                } catch (Exception ignored) {
+                    rec.setAggregatedAt(
+                            OffsetDateTime.now().minusWeeks(historical.size() - i));
+                }
+            } else {
+                rec.setAggregatedAt(OffsetDateTime.now().minusWeeks(historical.size() - i));
+            }
+
+            signalRepo.save(rec);
+        }
+
+        log.info("Backfilled {} historical signal records for profile={} market={}",
+                historical.size(), profileId, market);
+
+        Map<String, Object> last = series.get(series.size() - 1);
+        return Math.max(0.0, Math.min(100.0,
+                ((Number) last.getOrDefault("trend_index", 50.0)).doubleValue()));
     }
 
     // ─── math helpers ─────────────────────────────────────────────────────────
