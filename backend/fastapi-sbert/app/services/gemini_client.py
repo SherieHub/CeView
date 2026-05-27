@@ -710,6 +710,109 @@ def _mock_captions() -> dict:
     }
 
 
+def get_platform_guides(market: str) -> dict[str, list[str]]:
+    """Return curated visual direction guides per platform for a given market.
+
+    Used by content.py when routing caption generation through the LangGraph agent
+    so that visual guides remain available without a second Gemini call.
+
+    Returns: { "instagram": [...], "tiktok": [...], "facebook": [...], "naver": [...] }
+    """
+    _guides: dict[str, dict[str, list[str]]] = {
+        "korea": {
+            "instagram": [
+                "Aesthetic mood shot — open balcony doors, morning sunlight on tropical fruits beside a plunge pool.",
+                "Apply warm, low-contrast golden filters (LUT: 'Mango Sunrise').",
+                "Recommended ratio: 4:5 portrait — maximizes feed real-estate on Korean Instagram feeds.",
+                "Soft vignette, no text overlay. Let the image breathe.",
+                "Cultural nuance: avoid showing other guests — solo 'me-space' framing resonates with Korean healing-travel archetype.",
+            ],
+            "tiktok": [
+                "Slow-motion first-person POV tracking shot — start tight on a local delicacy.",
+                "Pan smoothly upward to reveal a crisp ocean panorama — the 'reveal' moment is the hook.",
+                "Keep ambient sound prominent; sync video rhythm to chill lo-fi acoustic track.",
+                "Duration target: 18–27 seconds — optimal for Korean TikTok algorithm retention window.",
+                "Add Korean subtitle overlay at bottom third. Font: rounded sans, white with soft shadow.",
+            ],
+            "facebook": [
+                "Wide establishing shot of coastline at golden hour — captures the 'breath of relief' emotional entry point.",
+                "Include a human element (silhouette, hands holding coffee) to trigger empathy and projection.",
+                "Facebook favors horizontal 16:9 frame for organic reach; include destination tag overlay.",
+                "Use warm, slightly desaturated tones — not oversaturated tropical clichés.",
+                "CTA text: 'Plan your escape →' — drives link-click micro-conversion on Facebook.",
+            ],
+            "naver": [
+                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
+                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
+                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
+                "Write in warm, conversational Korean with clear subheadings.",
+                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
+            ],
+        },
+        "japan": {
+            "instagram": [
+                "Minimalist composition — single subject (a bowl of tropical fruit, a zen garden corner) with ocean behind.",
+                "Cool-to-neutral colour grading; avoid oversaturation. Japanese Instagram prefers 'wabi-sabi' aesthetics.",
+                "Aspect ratio: 1:1 square for Japanese feed preference.",
+                "Add subtle texture overlay (paper grain) to evoke premium editorial feel.",
+                "Include one culturally relevant prop — a Japanese straw hat, folded fan, or travel journal.",
+            ],
+            "tiktok": [
+                "Slow, deliberate camera movement — Japanese TikTok users respond to calm, cinematic pacing.",
+                "Natural ambient sound (waves, birds, breeze) — no loud electronic music.",
+                "Duration: 30–45 seconds — longer than Korean TikTok; Japanese audiences prefer narrative depth.",
+                "Subtitle overlay in Japanese katakana/kanji. Clean, minimal font.",
+                "End with a peaceful still frame of the ocean — 'ichi-go ichi-e' (once-in-a-lifetime moment) framing.",
+            ],
+            "facebook": [
+                "Clean 16:9 horizontal hero image — resorts, nature paths, cultural sites.",
+                "Japanese Facebook users are older; prioritize information density over emotion.",
+                "Include pricing anchor or package summary as image overlay text.",
+                "Use cool, authoritative colour palette — blues and greens over warm gold.",
+                "CTA: 'View full itinerary →' — Japanese audiences want complete information before deciding.",
+            ],
+            "naver": [
+                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
+                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
+                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
+                "Write in warm, conversational Korean with clear subheadings.",
+                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
+            ],
+        },
+        "usa": {
+            "instagram": [
+                "High-saturation lifestyle shot — vibrant turquoise water, colourful tropical flowers.",
+                "Human-in-frame required — US Instagram audiences respond to people, not just scenery.",
+                "Stories-first vertical 9:16 format — US Instagram Stories outperform feed for US audiences.",
+                "Text overlay with key benefit ('₱ Stronger Than You Think') increases swipe-up engagement.",
+                "Use bright, travel-magazine colour grading — bold and aspirational.",
+            ],
+            "tiktok": [
+                "Fast-cut editing — 3–5 clips in the first 3 seconds to capture the US TikTok scroll reflex.",
+                "Trending audio from the US Billboard chart or viral sound — check TikTok Creative Center weekly.",
+                "Add trending text template ('POV:', 'Tell me you're in Cebu') in the caption and on-screen.",
+                "Duration: 15–30 seconds — US TikTok has the shortest average attention window.",
+                "End with a strong CTA card: 'Link in bio for the full package deal 🌊'.",
+            ],
+            "facebook": [
+                "Facebook Ad-style creative — bold headline overlay, single value statement, strong CTA button.",
+                "US Facebook audiences skew 35+; use 'adventure + comfort' framing (bucket list + luxury).",
+                "Horizontal 1.91:1 ratio for Feed; 1:1 for Marketplace.",
+                "Use social proof element: '500+ American travellers visited this month'.",
+                "CTA: 'Book Now' or 'Get the Deal' — US audiences respond to direct, benefit-led language.",
+            ],
+            "naver": [
+                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
+                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
+                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
+                "Write in warm, conversational Korean with clear subheadings.",
+                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
+            ],
+        },
+    }
+    return _guides.get(market, _guides["korea"])
+
+
 def generate_creative_direction(
         market: str,
         business_name: str,
@@ -1022,34 +1125,89 @@ def _visual_fallback_evaluation(market: str) -> dict:
     return _fallbacks.get(market, _fallbacks["korea"])
 
 
-def performance_report(metrics: dict) -> dict:
-    if not _enabled():
-        return {
-            "executiveSummary": "Over the selected period, the campaign successfully generated high top-of-funnel awareness within the Cebu metropolitan area. However, the overall Promotional Effectiveness Score (PES) indicates a significant efficiency leak mid-funnel. While cost-per-click (CPC) remains highly competitive for local MSME benchmarks, the traffic acquired is not converting into actionable leads at the expected rate.",
-            "lowestMetric": "Conversion Rate",
-            "lowestMetricMeaning": "Most clicks aren't turning into bookings. The traffic shape is right; what happens after the click isn't.",
-            "recommendations": [
-                "Realign Ad Copy with Landing Page Intent — ensure the headline on the destination page mirrors the localized Cebu promotional offer.",
-                "Implement High-Intent Audience Filtering — shift 20% of the ad spend away from broad awareness targeting.",
-                "Streamline the Conversion Form — reduce lead capture to Name and Phone Number only.",
-            ],
-            "otherAreasImprove": [
-                "Impressions → Clicks drop-off",
-                "Conversions → Bookings drop-off",
-            ],
-            "weakestStage": {
-                "name": "Clicks → Conversions",
-                "dropoff": "-88.1%",
-                "diagnosis": "High traffic volume but low landing page engagement.",
-            },
-            "secondaryLeaks": [
-                {"name": "Impressions → Clicks", "dropoff": "-95.2%", "diagnosis": "Ad creative not stopping the scroll."},
-                {"name": "Conversions → Bookings", "dropoff": "-78.8%", "diagnosis": "Form friction and trust gaps at booking."},
-            ],
-        }
-    return _generate_json(
-        f"""You are CeView's Lead Marketing Analyst. Given these campaign metrics: {json.dumps(metrics)},
-identify the lowest-performing PES metric, write a plain-language meaning, list 3+ ranked
-recommendations and a few other areas to improve, plus the weakest funnel stage with diagnosis.
-Return JSON.""",
+def performance_report(
+    metrics: dict,
+    transitions: list[dict] | None = None,
+    weeks: int = 4,
+    market: str = "korea",
+) -> dict:
+    """
+    Generate a prescriptive performance report using the new exhaustive funnel
+    diagnostics schema (Phase 5 / Module 4).
+
+    Args:
+        metrics:     Raw KPI values (impressions, clicks, adSpend, …)
+        transitions: Pre-ranked funnel transitions from Spring Boot
+                     (business-impact order: Clk→Conv, Conv→Book, Imp→Clk)
+        weeks:       Analysis window in weeks (4 or 8)
+        market:      Target market key (e.g. "korea", "japan", "usa")
+
+    Returns:
+        New schema dict:
+          executiveSummary, funnelDiagnostics[], recommendations[], recommendedPlatform
+    """
+    _platform_map = {
+        "korea": "Naver Blog", "kr": "Naver Blog",
+        "japan": "Facebook + Instagram", "jp": "Facebook + Instagram",
+        "usa": "Instagram Reels", "us": "Instagram Reels",
+        "australia": "Instagram Reels",
+        "global": "Instagram Reels",
+    }
+    recommended_platform = _platform_map.get(market.lower(), "Naver Blog")
+
+    # Fallback handled in report.py router — this function only runs when Gemini is enabled
+    if transitions is None:
+        transitions = [
+            {"stage": "Clicks → Conversions",  "dropRate": "88.1%"},
+            {"stage": "Conversions → Bookings", "dropRate": "78.8%"},
+            {"stage": "Impressions → Clicks",   "dropRate": "95.2%"},
+        ]
+
+    # Build the ordered rank/urgency context for Gemini
+    rank_context = "\n".join(
+        f"  {i+1}. \"{t['stage']}\" — {t['dropRate']} absolute drop"
+        for i, t in enumerate(transitions[:3])
     )
+
+    prompt = f"""You are CeView's Senior Marketing Analyst specialising in Philippine tourism MSMEs.
+
+CAMPAIGN DATA ({weeks}-week window, market: {market.upper()}):
+{json.dumps(metrics, indent=2)}
+
+PRE-RANKED FUNNEL TRANSITIONS (business-impact priority order — do NOT re-order):
+{rank_context}
+
+Rank 1 = "Weakest" | Rank 2 = "Moderate" | Rank 3 = "Alright"
+Urgency 1 = "Most Urgent" | Urgency 2 = "Urgent" | Urgency 3 = "Not Very Urgent"
+
+RULES:
+1. Evaluate ALL THREE transitions. Do not skip any stage.
+2. Preserve the pre-ranked order exactly (index 0 = Weakest, index 1 = Moderate, index 2 = Alright).
+3. Each funnelDiagnostics entry MUST have exactly one matching recommendations entry (same "stage" value).
+4. Urgency is strictly derived from the rank — do not deviate.
+5. recommendedPlatform MUST be "{recommended_platform}".
+6. Return ONLY valid JSON — no markdown, no explanation text.
+
+Return this exact JSON structure:
+{{
+  "executiveSummary": "<2–3 sentence overall campaign assessment referencing PES and funnel>",
+  "funnelDiagnostics": [
+    {{
+      "stage": "<transition label>",
+      "rank": "<Weakest|Moderate|Alright>",
+      "dropRate": "<formatted percentage>",
+      "insight": "<one-sentence root-cause diagnosis specific to this stage>"
+    }}
+  ],
+  "recommendations": [
+    {{
+      "stage": "<must match the corresponding funnelDiagnostics stage>",
+      "urgency": "<Most Urgent|Urgent|Not Very Urgent>",
+      "title": "<≤8-word action title>",
+      "action": "<one concrete implementation step — specific and actionable>"
+    }}
+  ],
+  "recommendedPlatform": "{recommended_platform}"
+}}"""
+
+    return _generate_json(prompt)

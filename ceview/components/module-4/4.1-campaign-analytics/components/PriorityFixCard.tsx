@@ -1,62 +1,139 @@
-import React, { useState } from 'react';
-import { AlertTriangle, ArrowRight, ChevronUp, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { AlertTriangle, ArrowRight, TrendingDown, CheckCircle2 } from 'lucide-react';
 import { COLORS } from '../../../../constants';
+import type { FunnelDiagnostic, RankedRecommendation } from '../../../../types';
+
+// ── Rank colour config ───────────────────────────────────────────────────────
+const RANK_CONFIG: Record<
+  FunnelDiagnostic['rank'],
+  { bg: string; border: string; badge: string; badgeText: string; icon: React.ReactNode; label: string }
+> = {
+  Weakest: {
+    bg: '#FEF2F2', border: '#FECACA',
+    badge: '#DC2626', badgeText: '#FFFFFF',
+    icon: <AlertTriangle size={16} />,
+    label: 'Weakest',
+  },
+  Moderate: {
+    bg: '#FFFBEB', border: '#FDE68A',
+    badge: '#D97706', badgeText: '#FFFFFF',
+    icon: <TrendingDown size={16} />,
+    label: 'Moderate',
+  },
+  Alright: {
+    bg: '#F0FDF4', border: '#BBF7D0',
+    badge: '#16A34A', badgeText: '#FFFFFF',
+    icon: <CheckCircle2 size={16} />,
+    label: 'Alright',
+  },
+};
+
+// ── Urgency colour config ────────────────────────────────────────────────────
+const URGENCY_CONFIG: Record<
+  RankedRecommendation['urgency'],
+  { bg: string; text: string; border: string }
+> = {
+  'Most Urgent': { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
+  'Urgent':      { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
+  'Not Very Urgent': { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' },
+};
 
 interface PriorityFixCardProps {
-  weakestStage: any;
-  secondaryLeaks: any[];
+  funnelDiagnostics: FunnelDiagnostic[];
+  recommendations: RankedRecommendation[];
 }
 
-const PriorityFixCard: React.FC<PriorityFixCardProps> = ({ weakestStage, secondaryLeaks }) => {
-  const [showSecondaryLeaks, setShowSecondaryLeaks] = useState(false);
+const PriorityFixCard: React.FC<PriorityFixCardProps> = ({
+  funnelDiagnostics,
+  recommendations,
+}) => {
+  // Build a lookup from stage → recommendation for O(1) pairing
+  const recMap = new Map(recommendations.map(r => [r.stage, r]));
 
   return (
-    <div className="bg-[#FEF2F2] p-6 md:p-8 rounded-2xl shadow-sm border relative overflow-hidden flex flex-col items-center text-center flex-1" style={{ borderColor: COLORS.RED_ORANGE }}>
-      <div className="mb-4 p-3 bg-white rounded-full text-red-500 shadow-sm inline-flex">
-        <AlertTriangle size={32} />
-      </div>
-
-      <div className="relative z-10 w-full flex flex-col items-center flex-1">
-        <h3 className="text-sm font-bold text-red-800 uppercase tracking-wider mb-2">Highest Priority Fix</h3>
-        <p className="text-xl font-black mb-3" style={{ color: COLORS.RED }}>{weakestStage.name}</p>
-
-        <div className="inline-flex items-center gap-1 bg-red-800 px-4 py-1.5 rounded-full border font-bold text-md mb-6 shadow-sm" style={{ borderColor: '#FECACA', color: COLORS.WHITE }}>
-          <ArrowRight size={16} />{weakestStage.dropoff} Drop-off
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
+        <div
+          className="p-2 rounded-lg"
+          style={{ backgroundColor: '#FEE2E2', color: '#DC2626' }}
+        >
+          <AlertTriangle size={20} />
         </div>
-
-        <div className="bg-white/60 p-5 rounded-xl border border-red-100 text-left backdrop-blur-sm w-full mb-2">
-          <h4 className="font-bold text-red-900 text-sm mb-1">What does this mean?</h4>
-          <p className="text-xs text-red-800/80 leading-relaxed mb-1">
-            Out of every 100 potential customers who reach this stage, <strong>{weakestStage.dropoff}</strong> are leaving without taking action.
+        <div>
+          <h3 className="text-base font-bold leading-tight" style={{ color: COLORS.TEXT_MAIN }}>
+            Funnel Diagnostics
+          </h3>
+          <p className="text-xs font-medium" style={{ color: COLORS.TEXT_MUTED }}>
+            All stages ranked by business impact
           </p>
         </div>
+      </div>
 
-        {secondaryLeaks && secondaryLeaks.length > 0 && (
-          <div className="mt-2 w-full border border-red-200 rounded-xl bg-white overflow-hidden shadow-sm transition-all duration-200 text-left">
-            <div onClick={() => setShowSecondaryLeaks(!showSecondaryLeaks)} className="p-4 bg-red-50/50 hover:bg-red-50 border-b border-red-100 flex items-center justify-between cursor-pointer transition-colors">
-              <div className="flex items-center gap-3">
-                <h4 className="text-sm font-bold text-red-900">Other Areas for Improvement</h4>
-                <span className="text-xs font-bold text-red-700 bg-white px-2 py-1 rounded-md border border-red-200 shadow-sm">
-                  {secondaryLeaks.length} Issues
+      {/* ── Ranked stages ───────────────────────────────────────────────── */}
+      <div className="divide-y divide-slate-100 flex-1">
+        {funnelDiagnostics.map((diag) => {
+          const cfg  = RANK_CONFIG[diag.rank] ?? RANK_CONFIG['Alright'];
+          const rec  = recMap.get(diag.stage);
+          const urgCfg = rec ? (URGENCY_CONFIG[rec.urgency] ?? URGENCY_CONFIG['Not Very Urgent']) : null;
+
+          return (
+            <div key={diag.stage} className="p-5" style={{ backgroundColor: cfg.bg }}>
+              {/* Stage header row */}
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  {/* Rank badge */}
+                  <span
+                    className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+                    style={{ backgroundColor: cfg.badge, color: cfg.badgeText }}
+                  >
+                    {cfg.icon}
+                    {cfg.label}
+                  </span>
+                  <span className="text-sm font-bold truncate" style={{ color: COLORS.NAVY }}>
+                    {diag.stage}
+                  </span>
+                </div>
+                {/* Drop rate pill */}
+                <span
+                  className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shrink-0"
+                  style={{ backgroundColor: cfg.border, color: COLORS.NAVY, borderColor: cfg.border }}
+                >
+                  <ArrowRight size={11} />
+                  {diag.dropRate} Drop
                 </span>
               </div>
-              <div className="text-red-400">
-                {showSecondaryLeaks ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-              </div>
-            </div>
 
-            {showSecondaryLeaks && (
-              <div className="divide-y divide-red-50 animate-fade-in bg-white">
-                {secondaryLeaks.map((leak: any, idx: number) => (
-                  <div key={idx} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                    <span className="text-sm font-medium text-red-700">{leak.name}</span>
-                    <span className="text-sm font-bold text-red-800">{leak.dropoff} Drop-off</span>
+              {/* AI insight */}
+              <p className="text-xs leading-relaxed mb-3" style={{ color: '#374151' }}>
+                {diag.insight}
+              </p>
+
+              {/* Paired recommendation */}
+              {rec && urgCfg && (
+                <div
+                  className="rounded-xl border p-3"
+                  style={{ backgroundColor: urgCfg.bg, borderColor: urgCfg.border }}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span
+                      className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: urgCfg.text, color: '#FFFFFF' }}
+                    >
+                      {rec.urgency}
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: urgCfg.text }}>
+                      {rec.title}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <p className="text-xs leading-relaxed" style={{ color: urgCfg.text }}>
+                    {rec.action}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

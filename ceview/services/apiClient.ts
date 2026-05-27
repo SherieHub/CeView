@@ -4,7 +4,10 @@
  * `traceId` for log correlation with the Spring Boot / FastAPI backends.
  */
 
-import type { Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO } from '../types';
+import type {
+  Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
+  MetricsResponse, PesResponse, PrescriptiveReport,
+} from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
@@ -166,24 +169,39 @@ export const api = {
     ),
 
   // ── Module 4 ──────────────────────────────────────────────────────────────
-  analyticsMetrics: () =>
-    req<{ metrics: any; funnel: any[] }>('/api/v1/analytics/metrics'),
 
+  /**
+   * Default campaign metrics for the EngagementMetricsBoard.
+   * @param weeks Analysis window — 4 (default) or 8. Backend scales demo defaults.
+   */
+  analyticsMetrics: (weeks: 4 | 8 = 4) =>
+    req<MetricsResponse>(`/api/v1/analytics/metrics?weeks=${weeks}`),
+
+  /**
+   * Compute metrics from operator-entered raw campaign values.
+   */
   analyticsManual: (body: {
     impressions: number; clicks: number; adSpend: number; revenue: number;
     conversions: number; bookings: number; newCustomers: number;
-  }) => req<{ metrics: any; funnel: any[] }>('/api/v1/analytics/manual', {
+  }) => req<MetricsResponse>('/api/v1/analytics/manual', {
     method: 'POST', body: JSON.stringify(body),
   }),
 
-  prescriptiveReport: () =>
-    req<{
-      executiveSummary: string;
-      lowestMetric: string;
-      lowestMetricMeaning: string;
-      recommendations: string[];
-      otherAreasImprove: string[];
-      weakestStage: { name: string; dropoff: string; diagnosis: string };
-      secondaryLeaks: { name: string; dropoff: string; diagnosis?: string }[];
-    }>('/api/v1/analytics/report', { method: 'POST', body: '{}' }),
+  /**
+   * Promotional Effectiveness Score breakdown for a campaign.
+   * @param campaignId Any campaign identifier (stub — wired to default metrics).
+   * @param weeks      Analysis window passed to metric computation.
+   */
+  analyticsPes: (campaignId: string = 'default', weeks: 4 | 8 = 4) =>
+    req<PesResponse>(`/api/v1/analytics/pes/${encodeURIComponent(campaignId)}?weeks=${weeks}`),
+
+  /**
+   * Generate the prescriptive performance report (exhaustive funnel diagnostics schema).
+   * @param weeks  Analysis window forwarded to Spring Boot for metric scaling.
+   */
+  prescriptiveReport: (weeks: 4 | 8 = 4) =>
+    req<PrescriptiveReport>('/api/v1/analytics/report', {
+      method: 'POST',
+      body: JSON.stringify({ weeks }),
+    }),
 };

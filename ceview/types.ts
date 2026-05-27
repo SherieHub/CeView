@@ -270,3 +270,82 @@ export interface CreativeDirectionDTO {
   shots: { label: string; description: string; lighting: string }[];
   moodboard: { palette: string; references: string[] };
 }
+
+// ── Module 4 — Campaign Analytics ───────────────────────────────────────────
+
+/** Single KPI metric card — mirrors AnalyticsDtos.MetricCard. */
+export interface MetricCard {
+  value: number;
+  unit: string;
+  trend: number;
+  isPositive: boolean;
+}
+
+/** Five-KPI block — mirrors AnalyticsDtos.Metrics. */
+export interface Metrics {
+  ctr: MetricCard;
+  cpc: MetricCard;
+  roas: MetricCard;
+  convRate: MetricCard;
+  cac: MetricCard;
+}
+
+/** Single funnel stage — mirrors AnalyticsDtos.FunnelStage. */
+export interface FunnelStage {
+  stage: string;
+  value: number;
+  dropoff: string | null;
+}
+
+/** Full metrics + funnel response — mirrors AnalyticsDtos.MetricsResponse. */
+export interface MetricsResponse {
+  metrics: Metrics;
+  funnel: FunnelStage[];
+}
+
+/** PES breakdown item — mirrors AnalyticsDtos.PesBreakdownItem. */
+export interface PesBreakdownItem {
+  metric: string;
+  weight: string;
+  contribution: number;
+}
+
+/** Full PES response — mirrors AnalyticsDtos.PesResponse. */
+export interface PesResponse {
+  overallScore: number;
+  label: string;
+  breakdown: PesBreakdownItem[];
+}
+
+/**
+ * One evaluated funnel transition — mirrors AnalyticsDtos.FunnelDiagnostic.
+ * Ranked by business impact: "Weakest" → "Moderate" → "Alright".
+ */
+export interface FunnelDiagnostic {
+  stage: string;
+  rank: 'Weakest' | 'Moderate' | 'Alright';
+  dropRate: string;
+  insight: string;
+}
+
+/**
+ * Urgency-labeled recommendation paired 1-to-1 with a FunnelDiagnostic.
+ * Mirrors AnalyticsDtos.RankedRecommendation.
+ */
+export interface RankedRecommendation {
+  stage: string;
+  urgency: 'Most Urgent' | 'Urgent' | 'Not Very Urgent';
+  title: string;
+  action: string;
+}
+
+/**
+ * Full prescriptive report — mirrors AnalyticsDtos.PrescriptiveReport.
+ * All three funnel stages are always evaluated and paired with recommendations.
+ */
+export interface PrescriptiveReport {
+  executiveSummary: string;
+  funnelDiagnostics: FunnelDiagnostic[];
+  recommendations: RankedRecommendation[];
+  recommendedPlatform: string;
+}
