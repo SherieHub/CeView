@@ -258,3 +258,195 @@ def _stub_result(market: str, category: str, keywords: list[str]) -> dict:
         "fetched_at":        datetime.now(timezone.utc).isoformat(),
         "source":            "stub",
     }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Category volume aggregation — cross-market keyword ranking pipeline
+# ─────────────────────────────────────────────────────────────────────────────
+
+def fetch_category_volume(category: str, market: str) -> dict:
+    """Fetch and sum search volumes for the 10 fixed CATEGORY_KEYWORDS in one market.
+
+    pytrends limits queries to 5 keywords per request, so the 10 keywords are
+    split into two batches.  Within each batch the last 4 weekly values of each
+    keyword are averaged, then ALL 10 averages are summed to produce
+    ``total_volume``.
+
+    NOTE — within-batch normalization:
+        pytrends returns relative interest (0–100) normalized to the highest
+        point *within that request*.  Two batches therefore have independent
+        scales, making cross-batch direct comparison an approximation.  The
+        sum is still a useful proxy for aggregate search intent: higher is
+        consistently more interest.
+
+    Args:
+        category: Must match a key in CATEGORY_KEYWORDS.
+        market:   "korea" | "japan" | "usa"
+
+    Returns:
+        {market, category, total_volume, keyword_volumes, top_keyword,
+         top_volume, source, fetched_at}
+    """
+    from app.config.keyword_mapping import CATEGORY_KEYWORDS
+
+    market_key = market.strip().lower()
+    config = MARKET_CONFIG.get(market_key)
+    if config is None:
+        raise ValueError(
+            f"Unknown market '{market}'. Valid: {list(MARKET_CONFIG.keys())}"
+        )
+
+    keywords = CATEGORY_KEYWORDS.get(category)
+    if not keywords:
+        raise ValueError(
+            f"Unknown category '{category}'. Check CATEGORY_KEYWORDS in keyword_mapping.py."
+        )
+
+    if _TrendReq is None:
+        logger.warning(
+            "pytrends unavailable — stub for fetch_category_volume market=%s category=%s",
+            market_key, category,
+        )
+        return _stub_category_volume(market_key, category, keywords)
+
+    geo_code  = config["geo"]
+    hl        = config["hl"]
+    tz_offset = config["tz"]
+
+    keyword_volumes: dict[str, float] = {}
+    batches = [keywords[i: i + 5] for i in range(0, len(keywords), 5)]
+
+    for batch in batches:
+        try:
+            pt = _TrendReq(hl=hl, tz=tz_offset, timeout=REQUEST_TIMEOUT)
+            pt.build_payload(kw_list=batch, timeframe=TIMEFRAME, geo=geo_code)
+            _jitter_sleep()
+            df = pt.interest_over_time()
+
+            if df is None or df.empty:
+                logger.warning(
+                    "Empty DataFrame for batch market=%s category=%s batch=%s",
+                    market_key, category, batch,
+                )
+                for kw in batch:
+                    keyword_volumes.setdefault(kw, 0.0)
+                continue
+
+            if "isPartial" in df.columns:
+                df = df.drop(columns=["isPartial"])
+
+            for kw in batch:
+                col = kw if kw in df.columns else (df.columns[0] if len(df.columns) else None)
+                keyword_volumes[kw] = float(df[col].tail(4).mean()) if col else 0.0
+
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Batch fetch failed — stub for batch. market=%s category=%s error=%s",
+                market_key, category, exc,
+            )
+            for kw in batch:
+                keyword_volumes.setdefault(kw, 0.0)
+
+    if not keyword_volumes:
+        return _stub_category_volume(market_key, category, keywords)
+
+    total_volume = round(sum(keyword_volumes.values()), 2)
+    top_keyword  = max(keyword_volumes, key=lambda k: keyword_volumes[k])
+    top_volume   = round(keyword_volumes[top_keyword], 2)
+
+    logger.info(
+        "fetch_category_volume ok market=%s category=%s total=%.1f top_kw=%s",
+        market_key, category, total_volume, top_keyword,
+    )
+
+    return {
+        "market":          market_key,
+        "category":        category,
+        "total_volume":    total_volume,
+        "keyword_volumes": keyword_volumes,
+        "top_keyword":     top_keyword,
+        "top_volume":      top_volume,
+        "source":          "pytrends",
+        "fetched_at":      datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def rank_markets_by_category(category: str) -> dict:
+    """Fetch category volume across all 3 markets and rank by total_volume descending.
+
+    Calls ``fetch_category_volume`` for each of KR / JP / US sequentially
+    (with jitter sleeps between batches).  Returns the ranked list plus
+    the overall top market and top keyword for notification purposes.
+
+    Args:
+        category: Must match a key in CATEGORY_KEYWORDS.
+
+    Returns:
+        {category, ranked_markets, top_market, top_keyword,
+         top_market_keywords, fetched_at, source}
+
+    ``top_market_keywords`` is the full {keyword: volume} dict for the winning
+    market — used by Spring Boot to populate ``keywordData`` in notifications.
+    """
+    from app.config.keyword_mapping import CATEGORY_KEYWORDS
+
+    if category not in CATEGORY_KEYWORDS:
+        raise ValueError(
+            f"Unknown category '{category}'. Check CATEGORY_KEYWORDS in keyword_mapping.py."
+        )
+
+    results: list[dict] = []
+    any_live = False
+
+    for market_key in MARKET_CONFIG:
+        result = fetch_category_volume(category, market_key)
+        results.append(result)
+        if result.get("source") == "pytrends":
+            any_live = True
+
+    results.sort(key=lambda r: r["total_volume"], reverse=True)
+
+    top = results[0] if results else {}
+
+    return {
+        "category": category,
+        "ranked_markets": [
+            {
+                "market":       r["market"],
+                "total_volume": r["total_volume"],
+                "top_keyword":  r["top_keyword"],
+                "top_volume":   r["top_volume"],
+            }
+            for r in results
+        ],
+        "top_market":          top.get("market", ""),
+        "top_keyword":         top.get("top_keyword", ""),
+        "top_market_keywords": top.get("keyword_volumes", {}),
+        "fetched_at":          datetime.now(timezone.utc).isoformat(),
+        "source":              "pytrends" if any_live else "stub",
+    }
+
+
+def _stub_category_volume(market: str, category: str, keywords: list[str]) -> dict:
+    """Deterministic stub for fetch_category_volume when pytrends is unavailable."""
+    base = _STUB_BASE.get(market, 50.0)
+
+    keyword_volumes: dict[str, float] = {}
+    for kw in keywords:
+        kw_seed = int(hashlib.md5(f"{market}:{category}:{kw}".encode()).digest()[0])
+        vol = max(0.0, min(100.0, base + (kw_seed % 40) - 20))
+        keyword_volumes[kw] = round(vol, 2)
+
+    total_volume = round(sum(keyword_volumes.values()), 2)
+    top_keyword  = max(keyword_volumes, key=lambda k: keyword_volumes[k])
+    top_volume   = round(keyword_volumes[top_keyword], 2)
+
+    return {
+        "market":          market,
+        "category":        category,
+        "total_volume":    total_volume,
+        "keyword_volumes": keyword_volumes,
+        "top_keyword":     top_keyword,
+        "top_volume":      top_volume,
+        "source":          "stub",
+        "fetched_at":      datetime.now(timezone.utc).isoformat(),
+    }

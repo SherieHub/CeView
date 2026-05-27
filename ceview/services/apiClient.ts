@@ -98,11 +98,6 @@ export const api = {
     method: 'POST', body: JSON.stringify(body),
   }),
 
-  generateKeywords: (body: { businessName: string; description: string; category: string }) =>
-    req<string[]>('/api/v1/business-profile/keywords', {
-      method: 'POST', body: JSON.stringify(body),
-    }),
-
   // ── Module 2 ──────────────────────────────────────────────────────────────
   listMarkets: (profileId?: string | null) => {
     const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';

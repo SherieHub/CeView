@@ -19,50 +19,6 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
   });
 };
 
-export const generateOptimizedKeywords = async (description: string, category: string, businessName: string): Promise<string[]> => {
-    if (!apiKey) {
-        return new Promise(resolve => setTimeout(() => resolve([
-            "Cebu Healing", 
-            "Rustic Resort", 
-            "Wellness Retreat", 
-            "Filipino Cuisine", 
-            "Nature Escape"
-        ]), 1500));
-    }
-
-    try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: `Analyze this tourism business to generate high-value Google Trends keywords.
-            Business: ${businessName}
-            Category: ${category}
-            Description: ${description}
-            
-            Task: Generate 5-7 specific keywords or short phrases that align with current travel search behavior (e.g., 'Cebu healing', 'Sustainable stay').
-            `,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        keywords: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING }
-                        }
-                    }
-                }
-            }
-        });
-        
-        const text = response.text;
-        if (!text) return [];
-        const result = JSON.parse(text);
-        return result.keywords || [];
-    } catch (error) {
-        console.error("Keyword Gen Error", error);
-        return [];
-    }
-}
 
 export interface UniquenessResult {
   descriptionScore: number;

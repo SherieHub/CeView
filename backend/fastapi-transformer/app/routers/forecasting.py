@@ -22,6 +22,18 @@ router = APIRouter()
 
 # ─── Pydantic schemas ─────────────────────────────────────────────────────────
 
+class GdpTrendPoint(BaseModel):
+    """One annual GDP growth data point for MarketRadar trend charts."""
+    year:  int
+    value: float
+
+
+class ForexTrendPoint(BaseModel):
+    """One monthly forex rate data point (foreign-currency units per PHP)."""
+    date:  str    # "YYYY-MM"
+    value: float
+
+
 class GeminiForecastRequest(BaseModel):
     """Payload built by Spring Boot EnrichedSequenceBuilder and sent to Gemini."""
     profileId: str = ""
@@ -39,6 +51,12 @@ class GeminiForecastRequest(BaseModel):
     forexRate:         float = Field(default=1.0, ge=0.0)
     gdpGrowth:         float = 2.0
     holidayFlag:       bool  = False
+    # ── Economic trend context (Phase 3 MarketRadar extension) ────────────────
+    # Optional — absent from early-stage / stub requests.
+    gdpTrendDirection: str   | None = None   # "growing" | "declining" | "flat"
+    gdpTrendDelta:     float | None = None   # newest − oldest GDP growth point
+    gdpTrend:    list[GdpTrendPoint]   = Field(default_factory=list)
+    forexTrend:  list[ForexTrendPoint] = Field(default_factory=list)
 
 
 class ForecastResponse(BaseModel):
@@ -67,6 +85,9 @@ class EconomicScoreRequest(BaseModel):
     direct_flight:      bool  = False
     distance_km:        int   = Field(default=5000, ge=0)
     flight_frequency:   int   = Field(default=3,    ge=0)
+    # ── Economic trend context — optional; forwarded from ForecastingService ──
+    gdp_trend_direction: str  | None = None   # "growing" | "declining" | "flat"
+    gdp_trend_delta:     float | None = None
 
 
 class EconomicScoreResponse(BaseModel):
@@ -90,16 +111,18 @@ def run_inference(body: GeminiForecastRequest) -> ForecastResponse:
       - The API returns an unparseable response after 3 retries
     """
     result = gemini_forecaster.forecast(
-        market          = body.market,
-        trend_series    = body.trendSeries,
-        rolling_7d      = body.rolling7dAvg,
-        rolling_30d     = body.rolling30dAvg,
-        rolling_std_7d  = body.rollingStd7d,
-        spike_indicator = body.spikeIndicator,
-        yoy_ratio       = body.yoyRatio,
-        seasonality_score = body.seasonalityScore,
-        forex_rate      = body.forexRate,
-        gdp_growth      = body.gdpGrowth,
+        market              = body.market,
+        trend_series        = body.trendSeries,
+        rolling_7d          = body.rolling7dAvg,
+        rolling_30d         = body.rolling30dAvg,
+        rolling_std_7d      = body.rollingStd7d,
+        spike_indicator     = body.spikeIndicator,
+        yoy_ratio           = body.yoyRatio,
+        seasonality_score   = body.seasonalityScore,
+        forex_rate          = body.forexRate,
+        gdp_growth          = body.gdpGrowth,
+        gdp_trend_direction = body.gdpTrendDirection,
+        gdp_trend_delta     = body.gdpTrendDelta,
     )
     return ForecastResponse(**result)
 

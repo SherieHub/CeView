@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  Upload, Sparkles, RefreshCw, CheckCircle,
+  Upload, Sparkles, CheckCircle,
   Shield, X as XIcon, Edit2, Plus, User, Link2
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
@@ -31,15 +31,11 @@ const countWords = (text: string): number =>
 const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const { businessProfileId, businessName, categories, coreServices, description, uvp, imagePreview, uniquenessScore } = profile;
   const {
     setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
     setDescription, setUvp, setImagePreview, setUniquenessScore,
   } = setters;
-
-  const [keywords, setKeywords] = useState<string[]>([]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempBusinessName, setTempBusinessName] = useState('');
@@ -69,19 +65,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
       reader.onload = () => setTempImagePreview(reader.result as string);
       reader.readAsDataURL(e.target.files[0]);
     }
-  };
-
-  const handleGenerateKeywords = async () => {
-    if (!description || categories.length === 0) return;
-    setIsLoading(true);
-    try {
-        const generated = await api.generateKeywords({
-          businessName,
-          description,
-          category: categories.join(', '),
-        });
-        setKeywords(generated);
-    } catch (error) { console.error(error); setServerError('Keyword generation failed. The AI service may be unavailable.'); } finally { setIsLoading(false); }
   };
 
   const openEditModal = () => {
@@ -205,20 +188,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
                  </section>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100">
-                 <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-                       <Sparkles size={14} style={{ color: COLORS.TEAL }} /> Search & SEO Keywords
-                     </h3>
-                     <button onClick={handleGenerateKeywords} disabled={!description || isLoading} className="text-[10px] font-black uppercase tracking-wider text-teal-600 hover:text-teal-700 flex items-center gap-1 transition-colors">
-                       {isLoading ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />} Recalibrate
-                     </button>
-                 </div>
-                 <div className="flex flex-wrap gap-2">
-                    {keywords.length === 0 && <span className="text-xs italic text-slate-400">No keywords mapped. Generate to align with market demand.</span>}
-                    {keywords.map((kw, i) => <span key={i} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-2xs">#{kw}</span>)}
-                 </div>
-              </div>
            </div>
         </div>
 
