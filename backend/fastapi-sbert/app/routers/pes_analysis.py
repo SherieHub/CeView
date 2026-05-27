@@ -31,9 +31,8 @@ from app.core.AgentLLMModel import AgentLLMModel
 router = APIRouter()
 log = logging.getLogger("module4.pes_analysis")
 
-# Check LLM availability once at startup — avoids running 3 wasted graph iterations
-# when GOOGLE_API_KEY is absent. The singleton is already initialised by this point.
-_LLM_AVAILABLE: bool = AgentLLMModel().get_model() is not None
+# NOTE: The module-level _LLM_AVAILABLE check was removed from here to prevent 
+# the "Import Order Trap". The check is now done dynamically inside the route.
 
 
 # ─── Pydantic schema ──────────────────────────────────────────────────────────
@@ -93,26 +92,20 @@ async def generate(req: PesAnalysisRequest) -> dict:
     Fallback behaviour:
       - Empty metrics_data → immediate fallback (no agent call)
       - Agent raises / returns no payload → deterministic fallback
-
-    Response shape:
-        {
-          "report_data": {
-            "metric_conditions":  [ { metric_name, current_status, trend, peak_value, low_value, 
-            insights (2 - 3 sentences that explains the current condition of this metric and how 
-            this values means to the bussiness) } ]
-            
-            ,
-            "cross_metric_logic": { relationships, insights },
-            "ranked_weaknesses":  [ { metric_name, rank, weakness_meaning, recommendation } ]
-          },
-          "metadata": {
-            "final_score":        <int 0-100>,
-            "total_iterations":   <int>,
-            "needs_human_review": <bool>,
-            "warning_message":    <str>
-          }
-        }
     """
+    
+    # 1. Evaluate availability dynamically inside the route!
+    llm_available = AgentLLMModel().get_model() is not None
+    
+    # 2. Short-circuit immediately if LLM is unavailable — avoids 3 wasted graph
+    # iterations that all hit the fallback path and return score=0 anyway.
+    if not llm_available:
+        log.warning(
+            "pes_analysis.generate: LLM unavailable "
+            "— returning offline fallback without invoking the graph"
+        )
+        return _FALLBACK_PAYLOAD
+
     if not req.metrics_data:
         log.warning("pes_analysis.generate: empty metrics_data — returning fallback")
         return _FALLBACK_PAYLOAD

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()   # ← MUST be first — before any app import reads os.environ
+
 from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
@@ -10,10 +13,8 @@ from app.routers import (
     report,
     caption_generation,
     pes_analysis,
+    pes_compute,
 )
-
-from dotenv import load_dotenv
-load_dotenv()
 
 configure_logging()
 
@@ -33,3 +34,4 @@ app.include_router(compliance.router,     prefix="/internal/compliance",     tag
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
+app.include_router(pes_compute.router,        prefix="/internal/pes-compute",    tags=["pes-compute"])

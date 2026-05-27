@@ -147,6 +147,51 @@ public class AIInferenceGatewayService {
     }
 
     /**
+     * UC-4.2 / UC-4.3 — Raw campaign data PES computation + AI prescriptive insights.
+     *
+     * <p>Delegates to FastAPI {@code /internal/pes-compute/analyze} which:
+     * <ol>
+     *   <li>Computes CTR, CPC, CR, ROAS, CAC from raw inputs.</li>
+     *   <li>Applies Min-Max normalization and inverts cost metrics.</li>
+     *   <li>Applies the PES weighted-sum formula with edge-case weight recalibration.</li>
+     *   <li>Calls DeepSeek/Gemini to identify the weakest funnel stage and generate
+     *       3 ranked optimisation recommendations + an executive summary.</li>
+     * </ol>
+     *
+     * <p>Payload shape:
+     * <pre>
+     * {
+     *   "impressions":  int,
+     *   "clicks":       int,
+     *   "adSpend":      double,
+     *   "revenue":      double,
+     *   "conversions":  int,
+     *   "bookings":     int,
+     *   "newCustomers": int
+     * }
+     * </pre>
+     *
+     * <p>Response shape (from FastAPI):
+     * <pre>
+     * {
+     *   "base_metrics":       { CTR, CPC, CR, ROAS, CAC },
+     *   "normalized_metrics": { ... },
+     *   "pes_score":          double,
+     *   "pes_label":          string,
+     *   "breakdown":          [ { metric, weight, contribution } ],
+     *   "flagged_metrics":    [ string ],
+     *   "effective_weights":  { ... },
+     *   "ai_report":          { weakest_funnel_stage, recommendations[], executive_summary, source }
+     * }
+     * </pre>
+     *
+     * @see com.ceview.module4.AnalyticsController#manualIngest
+     */
+    public Map<String, Object> computePesFromRaw(Map<String, Object> payload) {
+        return postSbert("/internal/pes-compute/analyze", payload);
+    }
+
+    /**
      * PES time-series deep-analysis via pes_report_agent (LangGraph + Gemini).
      *
      * <p>Payload shape:
