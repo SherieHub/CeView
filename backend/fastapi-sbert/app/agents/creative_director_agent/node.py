@@ -23,7 +23,7 @@ from app.agents.creative_director_agent.prompts import (
     service_analysis_prompt,
 )
 from app.agents.creative_director_agent.state import SocialAgentState
-from app.core.AgentLLMModel import model as llm_with_tools
+from app.core.AgentLLMModel import AgentLLMModel
 
 logger = logging.getLogger(__name__)
 

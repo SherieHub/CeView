@@ -1,0 +1,140 @@
+### ─────────────────────────────────────────────────────────────────────────
+### CeView · Module 4 · FastAPI Test Requests
+### Requires: "REST Client" VS Code extension  (ritwickdey.rest-client)
+### Run each request with the  ▶ Send Request  button that appears above it.
+### ─────────────────────────────────────────────────────────────────────────
+
+@base = http://localhost:8000
+
+# ─── Health check ──────────────────────────────────────────────────────────────
+
+### 1 · Health check — verify FastAPI is running
+GET {{base}}/healthz HTTP/1.1
+
+
+# ─── UC-4.2 / UC-4.3 · PES Compute from Raw Data ─────────────────────────────
+
+### 2 · Happy-path: all metrics computable (no flags)
+# Expected: pes_score ≈ 0.56, pes_label "Good Performance"
+POST {{base}}/internal/pes-compute/analyze HTTP/1.1
+Content-Type: application/json
+
+{
+  "impressions":  150000,
+  "clicks":       7200,
+  "adSpend":      5000.00,
+  "revenue":      16000.00,
+  "conversions":  350,
+  "bookings":     180,
+  "newCustomers": 80
+}
+
+
+### 3 · Edge case: newCustomers = 0  →  CAC flagged & excluded
+# Expected: flagged_metrics contains "CAC (newCustomers = 0)"
+#           effective_weights recalibrated to 4 metrics (sum = 1.0)
+POST {{base}}/internal/pes-compute/analyze HTTP/1.1
+Content-Type: application/json
+
+{
+  "impressions":  150000,
+  "clicks":       7200,
+  "adSpend":      5000.00,
+  "revenue":      16000.00,
+  "conversions":  350,
+  "bookings":     180,
+  "newCustomers": 0
+}
+
+
+### 4 · Edge case: clicks = 0  →  CPC, CR, CTR all flagged
+# Expected: flagged_metrics has 3 entries; effective_weights only ROAS + CAC
+POST {{base}}/internal/pes-compute/analyze HTTP/1.1
+Content-Type: application/json
+
+{
+  "impressions":  100000,
+  "clicks":       0,
+  "adSpend":      3000.00,
+  "revenue":      9000.00,
+  "conversions":  0,
+  "bookings":     0,
+  "newCustomers": 20
+}
+
+
+### 5 · Edge case: all zeros (worst-case input)
+# Expected: all metrics flagged, pes_score = 0.0, pes_label "Poor Performance"
+POST {{base}}/internal/pes-compute/analyze HTTP/1.1
+Content-Type: application/json
+
+{
+  "impressions":  0,
+  "clicks":       0,
+  "adSpend":      0,
+  "revenue":      0,
+  "conversions":  0,
+  "bookings":     0,
+  "newCustomers": 0
+}
+
+
+### 6 · Excellent performance test (high ROAS, high CR, low CPC, low CAC)
+# Expected: pes_score ≥ 0.80, pes_label "Excellent Performance"
+POST {{base}}/internal/pes-compute/analyze HTTP/1.1
+Content-Type: application/json
+
+{
+  "impressions":  500000,
+  "clicks":       50000,
+  "adSpend":      10000.00,
+  "revenue":      80000.00,
+  "conversions":  8000,
+  "bookings":     4000,
+  "newCustomers": 3500
+}
+
+
+# ─── PES Time-Series Deep Analysis (LangGraph agent) ──────────────────────────
+
+### 7 · PES analysis agent — 4-week time-series
+# Expected: report_data with metric_conditions, cross_metric_logic, ranked_weaknesses
+POST {{base}}/internal/pes-analysis/generate HTTP/1.1
+Content-Type: application/json
+
+{
+  "metrics_data": {
+    "CTR":  [4.8, 4.5, 4.2, 3.9],
+    "CPC":  [0.72, 0.75, 0.81, 0.89],
+    "ROAS": [5.4, 5.1, 4.8, 4.3],
+    "CR":   [3.2, 3.0, 2.7, 2.5],
+    "CAC":  [18.5, 19.8, 21.4, 24.0]
+  },
+  "weeks": 4
+}
+
+
+# ─── Prescriptive Report (Gemini / DeepSeek AI) ────────────────────────────────
+
+### 8 · Prescriptive report — full funnel diagnostics
+POST {{base}}/internal/report/generate HTTP/1.1
+Content-Type: application/json
+
+{
+  "metrics": {
+    "impressions":  150000,
+    "clicks":       7200,
+    "adSpend":      5000.00,
+    "revenue":      16000.00,
+    "conversions":  350,
+    "bookings":     180,
+    "newCustomers": 80
+  },
+  "funnelTransitions": [
+    { "stage": "Clicks → Conversions",  "dropRate": "95.1%" },
+    { "stage": "Conversions → Bookings","dropRate": "48.6%" },
+    { "stage": "Impressions → Clicks",  "dropRate": "95.2%" }
+  ],
+  "weeks": 4,
+  "market": "korea"
+}
