@@ -10,6 +10,7 @@ from app.routers import (
     report,
     caption_generation,
     pes_analysis,
+    omcs_analysis,
 )
 
 from dotenv import load_dotenv
@@ -33,3 +34,4 @@ app.include_router(compliance.router,     prefix="/internal/compliance",     tag
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
+app.include_router(omcs_analysis.router,       prefix="/internal/omcs",  tags=["omcs"])
