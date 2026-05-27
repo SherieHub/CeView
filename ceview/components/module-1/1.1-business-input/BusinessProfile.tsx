@@ -22,6 +22,12 @@ interface BusinessProfileProps {
   setters: ProfileSetters;
 }
 
+const DESC_MIN_WORDS = 50;
+const UVP_MIN_WORDS  = 30;
+
+const countWords = (text: string): number =>
+  text.trim() ? text.trim().split(/\s+/).length : 0;
+
 const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -332,13 +338,49 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
                   </div>
                 </div>
 
-                <div><label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label><textarea value={tempDescription} onChange={(e) => setTempDescription(e.target.value)} className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none" style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }} /></div>
-                <div><label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label><textarea value={tempUvp} onChange={(e) => setTempUvp(e.target.value)} className="w-full h-28 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none" style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }} /></div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label>
+                  <textarea
+                    value={tempDescription}
+                    onChange={(e) => setTempDescription(e.target.value)}
+                    className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                    style={{
+                      borderColor: tempDescription.trim() && countWords(tempDescription) < DESC_MIN_WORDS ? '#EF4444' : countWords(tempDescription) >= DESC_MIN_WORDS ? '#10B981' : COLORS.LIGHT_GREY,
+                      color: COLORS.TEXT_MAIN,
+                    }}
+                  />
+                  <p className="text-[11px] font-bold mt-1 text-right" style={{ color: countWords(tempDescription) >= DESC_MIN_WORDS ? '#10B981' : tempDescription.trim() ? '#EF4444' : COLORS.TEXT_MUTED }}>
+                    {countWords(tempDescription)} / {DESC_MIN_WORDS} words {countWords(tempDescription) >= DESC_MIN_WORDS ? '✓' : `(${DESC_MIN_WORDS - countWords(tempDescription)} more needed)`}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label>
+                  <textarea
+                    value={tempUvp}
+                    onChange={(e) => setTempUvp(e.target.value)}
+                    className="w-full h-28 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                    style={{
+                      borderColor: tempUvp.trim() && countWords(tempUvp) < UVP_MIN_WORDS ? '#EF4444' : countWords(tempUvp) >= UVP_MIN_WORDS ? '#10B981' : COLORS.LIGHT_GREY,
+                      color: COLORS.TEXT_MAIN,
+                    }}
+                  />
+                  <p className="text-[11px] font-bold mt-1 text-right" style={{ color: countWords(tempUvp) >= UVP_MIN_WORDS ? '#10B981' : tempUvp.trim() ? '#EF4444' : COLORS.TEXT_MUTED }}>
+                    {countWords(tempUvp)} / {UVP_MIN_WORDS} words {countWords(tempUvp) >= UVP_MIN_WORDS ? '✓' : `(${UVP_MIN_WORDS - countWords(tempUvp)} more needed)`}
+                  </p>
+                </div>
             </div>
 
             <div className="p-5 border-t bg-slate-50 flex justify-end gap-3" style={{ borderColor: COLORS.LIGHT_GREY }}>
                <button onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider bg-white transition-colors" style={{ color: COLORS.TEXT_MUTED, borderColor: COLORS.LIGHT_GREY }}>Dismiss</button>
-               <button onClick={handleSaveProfile} className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:opacity-90" style={{ backgroundColor: COLORS.GOLD, color: COLORS.WHITE }}>Commit Profile Data</button>
+               <button
+                 onClick={handleSaveProfile}
+                 disabled={countWords(tempDescription) < DESC_MIN_WORDS || countWords(tempUvp) < UVP_MIN_WORDS}
+                 title={countWords(tempDescription) < DESC_MIN_WORDS || countWords(tempUvp) < UVP_MIN_WORDS ? `Description needs ${DESC_MIN_WORDS} words and UVP needs ${UVP_MIN_WORDS} words.` : undefined}
+                 className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                 style={{ backgroundColor: COLORS.GOLD, color: COLORS.WHITE }}
+               >
+                 Commit Profile Data
+               </button>
             </div>
           </div>
         </div>
