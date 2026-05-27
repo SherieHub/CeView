@@ -35,7 +35,15 @@
       "PowerShell(cd \"C:\\\\Users\\\\austi\\\\CeView\\\\ceview\"; $output = npx tsc --noEmit 2>&1; $output | Where-Object { $_ -match \"error TS\" } | Where-Object { $_ -notmatch \"old-components|SmartOptimization|apiClient|identity|Dashboard|CampaignWizard|CalendarView\" })",
       "Bash(kill %1)",
       "Bash(curl -s https://generativelanguage.googleapis.com/v1beta/models?key=__TRACKED_VAR__)",
-      "Bash(python3 -c \"import json,sys; models=json.load\\(sys.stdin\\).get\\('models',[]\\); [print\\(m['name'], m.get\\('supportedGenerationMethods',''\\)\\) for m in models if 'generateContent' in m.get\\('supportedGenerationMethods',[]\\)]\")"
+      "Bash(python3 -c \"import json,sys; models=json.load\\(sys.stdin\\).get\\('models',[]\\); [print\\(m['name'], m.get\\('supportedGenerationMethods',''\\)\\) for m in models if 'generateContent' in m.get\\('supportedGenerationMethods',[]\\)]\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8080 -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Get-Process -Id $_ })",
+      "Bash(Remove-Item \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\fastapi-transformer\\\\app\\\\services\\\\ml_stubs.py\" -Force)",
+      "PowerShell(curl -s http://localhost:8001/healthz 2>&1)",
+      "PowerShell(curl -s http://localhost:8080/actuator/health 2>&1)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8001/healthz\" -UseBasicParsing -TimeoutSec 5)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:8080/actuator/health\" -UseBasicParsing -TimeoutSec 5)",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:8080/actuator/health\" -UseBasicParsing -TimeoutSec 5; [System.Text.Encoding]::UTF8.GetString\\($r.Content\\))",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://localhost:8080/api/v1/admin/ingestion/trigger\" -Method POST -UseBasicParsing -TimeoutSec 30; [System.Text.Encoding]::UTF8.GetString\\($r.Content\\))"
     ]
   }
 }

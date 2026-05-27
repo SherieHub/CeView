@@ -16,6 +16,7 @@ public final class Module2ErrorCodes {
     public static final String MOD22_FORECAST_STARTED         = "MOD22_FORECAST_STARTED";
     public static final String MOD22_FORECAST_MAPE_WARNING    = "MOD22_FORECAST_MAPE_WARNING";
     public static final String MOD22_SCORING_FAILED           = "MOD22_SCORING_FAILED";
+    public static final String MOD22_INFERENCE_FAILED         = "MOD22_INFERENCE_FAILED";
     public static final String MOD22_PROFILE_NOT_READY        = "MOD22_PROFILE_NOT_READY";
     public static final String MOD22_ALERT_GENERATED          = "MOD22_ALERT_GENERATED";
 }

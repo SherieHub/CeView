@@ -2,6 +2,8 @@ package com.ceview.module1.businessinput;
 
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.module1.businessinput.dto.BusinessProfileDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,6 +12,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/v1/business-profile")
 public class BusinessProfileController {
+
+    private static final Logger log = LoggerFactory.getLogger(BusinessProfileController.class);
 
     private final BusinessProfileRepository repo;
     private final AIInferenceGatewayService ai;
@@ -43,6 +47,22 @@ public class BusinessProfileController {
         p.setCategoriesList(in.categories() == null ? List.of() : in.categories());
         p.setUniquenessScore(in.uniquenessScore());
         repo.save(p);
+
+        // Fire-and-forget: generate + persist the 768-dim E5 embedding so this
+        // profile joins the uniqueness comparison corpus for all future scorings.
+        // Failures are non-fatal — the corpus will simply be stale until the next save.
+        var embedPayload = new java.util.HashMap<String, Object>();
+        embedPayload.put("businessProfileId", p.getBusinessProfileId().toString());
+        embedPayload.put("coreServices", in.coreServices() != null ? in.coreServices() : java.util.List.of());
+        embedPayload.put("description", in.description() != null ? in.description() : "");
+        embedPayload.put("uvp", in.uvp() != null ? in.uvp() : "");
+        try {
+            ai.embedBusinessProfile(embedPayload);
+        } catch (Exception e) {
+            log.warn("embed call failed for profile {} — uniqueness corpus will be stale: {}",
+                     p.getBusinessProfileId(), e.getMessage());
+        }
+
         return toDto(p);
     }
 

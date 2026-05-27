@@ -125,12 +125,123 @@ def predict_all(
     remainder = 100
     last = len(CATEGORY_LABELS) - 1
     for rank, (idx, prob) in enumerate(zip(sorted_idx, sorted_probs)):
-        pct = round(float(prob) / total * 100) if rank < last else remainder
+        pct = round(float(prob) / total * 100) if rank < last else max(0, remainder)
         remainder -= pct
         result.append({"name": CATEGORY_LABELS[int(idx)], "percentage": pct})
 
     log.info("ml_classifier: predict_all top3=%s", [r["name"] for r in result[:3]])
     return result
+
+
+def embed_business(
+    core_services: list[str],
+    description: str,
+    uvp: str,
+) -> list[float] | None:
+    """Encode the business profile text to a 768-dim L2-normalised vector.
+
+    Uses the same ``_build_text`` format as the classifier so the vector lives
+    in the same embedding space as the training corpus.
+
+    Returns:
+        768-element float list, or None when the E5 model is unavailable.
+    """
+    if _bert is None:
+        log.warning("ml_classifier: embed_business — model unavailable, returning None",
+                    extra={"code": "MOD1_ML_LOAD_FAIL"})
+        return None
+
+    try:
+        text = _build_text(core_services, uvp, description)
+        # normalize_embeddings=True → unit vectors; dot product == cosine similarity
+        vector = _bert.encoder.encode([text], normalize_embeddings=True)[0]  # (768,)
+        return [float(v) for v in vector]
+    except Exception as exc:
+        log.warning("ml_classifier: embed_business error — %s", exc,
+                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
+        return None
+
+
+def compute_semantic_uniqueness(
+    core_services: list[str],
+    description: str,
+    uvp: str,
+    other_embeddings: list[list[float]],
+    min_businesses: int = 3,
+) -> float | None:
+    """Compute semantic uniqueness score (0-100) via cosine distance to corpus.
+
+    Embeds the current business profile and measures its average cosine distance
+    from every other stored embedding.  Higher distance = more unique = higher score.
+
+    Scoring formula::
+
+        cosine_distance_i = 1 − cosine_similarity_i       # range [0, 1] for text
+        mean_distance     = mean(cosine_distance_i)
+        score             = min(mean_distance / 0.5, 1.0) × 100
+
+    A mean distance ≥ 0.5 maps to the maximum score of 100.  This threshold is
+    calibrated for Philippine tourism businesses where descriptions tend to share
+    vocabulary (beach, resort, tropical, etc.) keeping typical distances in the
+    0.10–0.40 range.
+
+    Args:
+        core_services:     list of service tags from the business profile.
+        description:       long-form business description text.
+        uvp:               unique value proposition text.
+        other_embeddings:  list of 768-dim float lists from the corpus DB.
+        min_businesses:    minimum corpus size required to produce a score;
+                           returns None when below threshold so the caller can
+                           fall back to the Gemini/stub path.
+
+    Returns:
+        float 0-100 (one decimal place), or None when corpus is too small or
+        the E5 model is unavailable.
+    """
+    if len(other_embeddings) < min_businesses:
+        log.info(
+            "ml_classifier: semantic_uniqueness — corpus too small (%d < %d), returning None",
+            len(other_embeddings),
+            min_businesses,
+        )
+        return None
+
+    if _bert is None:
+        log.warning("ml_classifier: semantic_uniqueness — model unavailable, returning None",
+                    extra={"code": "MOD1_ML_LOAD_FAIL"})
+        return None
+
+    try:
+        text = _build_text(core_services, uvp, description)
+        current_emb = _bert.encoder.encode([text], normalize_embeddings=True)[0]  # (768,)
+
+        other_matrix = np.array(other_embeddings, dtype=np.float32)  # (n, 768)
+        # L2-normalise corpus rows (stored as normalised but re-normalise for safety)
+        norms = np.linalg.norm(other_matrix, axis=1, keepdims=True)
+        other_matrix = other_matrix / np.maximum(norms, 1e-8)
+
+        # Cosine similarities via dot product (both sides are unit vectors)
+        similarities = other_matrix @ current_emb.astype(np.float32)   # (n,)
+        similarities = np.clip(similarities, -1.0, 1.0)
+
+        distances = 1.0 - similarities                                  # (n,) in [0, 2]
+        mean_dist = float(np.mean(distances))
+
+        # Scale: 0 → same as everyone (score 0); ≥ 0.5 → very different (score 100)
+        score = round(min(mean_dist / 0.5, 1.0) * 100.0, 1)
+
+        log.info(
+            "ml_classifier: semantic_uniqueness=%.1f mean_dist=%.4f corpus_size=%d",
+            score,
+            mean_dist,
+            len(other_embeddings),
+        )
+        return score
+
+    except Exception as exc:
+        log.warning("ml_classifier: semantic_uniqueness error — %s", exc,
+                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
+        return None
 
 
 def compute_category_score(

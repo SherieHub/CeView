@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
@@ -17,7 +18,22 @@ load_dotenv()
 
 configure_logging()
 
-app = FastAPI(title="CeView SBERT Microservice", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Eagerly load the E5 encoder + Keras classifier on startup.
+
+    This runs before /healthz can return 200, so the Docker health check
+    gates Spring Boot until the models are actually ready. Without this,
+    the first incoming classify request would trigger a cold HuggingFace
+    download while Spring Boot is already sending traffic — causing 503s.
+    """
+    from app.core.BertModel import _BertModel
+    _BertModel.get()
+    yield
+
+
+app = FastAPI(title="CeView SBERT Microservice", version="0.1.0", lifespan=lifespan)
 app.add_middleware(TraceIdMiddleware)
 
 
