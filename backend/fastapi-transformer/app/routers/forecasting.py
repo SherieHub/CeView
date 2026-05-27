@@ -62,6 +62,10 @@ class GeminiForecastRequest(BaseModel):
 class ForecastResponse(BaseModel):
     predicted_demand_4w:     float
     predicted_demand_12w:    float
+    # Per-week demand projections: [Wk+1, Wk+2, Wk+3, Wk+4].
+    # weekly_forecasts[-1] == predicted_demand_4w.
+    # Empty only on legacy/stub responses that pre-date this field.
+    weekly_forecasts:        list[float] = Field(default_factory=list)
     mape:                    float
     mae:                     float
     rmse:                    float
