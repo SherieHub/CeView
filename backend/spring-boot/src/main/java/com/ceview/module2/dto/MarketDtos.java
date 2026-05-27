@@ -28,6 +28,25 @@ public class MarketDtos {
         String tier
     ) {}
 
+    // ─── Economic trend-series DTOs ──────────────────────────────────────────
+
+    /**
+     * One year of annual GDP growth for the trend chart.
+     * Maps to {@code ExternalMarketDataClient.GdpTrendPoint}.
+     */
+    public record GdpTrendPointDto(int year, double value) {}
+
+    /**
+     * One month of forex rate (foreign-currency units per PHP) for the trend chart.
+     * Maps to {@code ExternalMarketDataClient.ForexTrendPoint}.
+     *
+     * @param date  ISO month string "YYYY-MM"
+     * @param value foreign-currency units per PHP
+     */
+    public record ForexTrendPointDto(String date, double value) {}
+
+    // ─── Market DTO ──────────────────────────────────────────────────────────
+
     public record MarketDto(
         String id,
         int rank,
@@ -47,7 +66,11 @@ public class MarketDtos {
         List<String> peakMonths,
         String economyInsight,
         String seasonalityInsight,
-        List<ChartDataPointDto> chartData
+        List<ChartDataPointDto> chartData,
+        /** GDP growth time-series (up to 5 years, chronological). Nullable — absent from stub responses. */
+        List<GdpTrendPointDto> gdpTrend,
+        /** Forex rate time-series (up to 12 months, chronological). Nullable — absent from stub responses. */
+        List<ForexTrendPointDto> forexTrend
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

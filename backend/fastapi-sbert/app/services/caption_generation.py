@@ -107,9 +107,9 @@ async def caption_generation_service(input: CaptionInputClass) -> dict:
         result = await caption_generation_agent.ainvoke(input.model_dump())
         captions = result.get("final_captions")
         if not captions:
-            logger.warning("caption_agent returned empty final_captions — using fallback")
+            logger.error("caption_agent returned empty final_captions — using fallback")
             return {"final_captions": _FALLBACK_CAPTIONS, "source": "fallback"}
         return {"final_captions": captions, "source": "gemini"}
     except Exception as exc:
-        logger.warning("caption_agent.ainvoke failed: %s — returning fallback captions", exc)
+        logger.error("caption_agent.ainvoke failed: %s — returning fallback captions", exc)
         return {"final_captions": _FALLBACK_CAPTIONS, "source": "fallback"}

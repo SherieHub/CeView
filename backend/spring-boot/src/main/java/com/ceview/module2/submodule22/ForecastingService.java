@@ -6,6 +6,10 @@ import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.Module2ErrorCodes;
 import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendDto;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendDto;
+import com.ceview.module2.submodule21.MarketEconomicTrend;
+import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,6 +73,7 @@ public class ForecastingService {
     private final BusinessProfileRepository profileRepo;
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
+    private final MarketEconomicTrendRepository economicTrendRepo;
     private final ObjectMapper mapper;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
@@ -79,16 +84,18 @@ public class ForecastingService {
                               BusinessProfileRepository profileRepo,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
+                              MarketEconomicTrendRepository economicTrendRepo,
                               ObjectMapper mapper) {
-        this.sequenceBuilder = sequenceBuilder;
-        this.ai              = ai;
-        this.forecastRepo    = forecastRepo;
-        this.scoreRepo       = scoreRepo;
-        this.alertRepo       = alertRepo;
-        this.profileRepo     = profileRepo;
-        this.externalClient  = externalClient;
-        this.signalRepo      = signalRepo;
-        this.mapper          = mapper;
+        this.sequenceBuilder    = sequenceBuilder;
+        this.ai                 = ai;
+        this.forecastRepo       = forecastRepo;
+        this.scoreRepo          = scoreRepo;
+        this.alertRepo          = alertRepo;
+        this.profileRepo        = profileRepo;
+        this.externalClient     = externalClient;
+        this.signalRepo         = signalRepo;
+        this.economicTrendRepo  = economicTrendRepo;
+        this.mapper             = mapper;
     }
 
     /**
@@ -145,7 +152,21 @@ public class ForecastingService {
         List<MarketResultBundle> bundles = new ArrayList<>();
 
         for (String market : MARKETS) {
+            // ── Fetch economic trend time-series first so the GDP direction can
+            //    be injected into the Gemini prompt context below (FR2.13 extension)
+            GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
+            ForexTrendDto forexTrend = externalClient.fetchForexTrend(market);
+
             Map<String, Object> sequence = sequenceBuilder.buildSequence(profileId, market);
+
+            // Inject GDP trend direction into the Gemini prompt context
+            if (gdpTrend != null && gdpTrend.points().size() >= 2) {
+                double delta = gdpTrend.latest()
+                        - gdpTrend.points().get(0).value();   // newest − oldest
+                String direction = delta > 0.3 ? "growing" : delta < -0.3 ? "declining" : "flat";
+                sequence.put("gdpTrendDirection", direction);
+                sequence.put("gdpTrendDelta", Math.round(delta * 100.0) / 100.0);
+            }
 
             // ── Gemini demand forecasting (FR2.11) ────────────────────────────
             Map<String, Object> inference = ai.runForecastInference(sequence);
@@ -211,7 +232,12 @@ public class ForecastingService {
                 persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
             }
 
-            bundles.add(new MarketResultBundle(market, marketScore, ms, fr4w, history, spike, confidence));
+            // ── Persist economic trend snapshot ───────────────────────────────────
+            persistEconomicTrend(market, gdpTrend, forexTrend);
+
+            bundles.add(new MarketResultBundle(
+                    market, marketScore, ms, fr4w, history, spike, confidence,
+                    gdpTrend, forexTrend));
         }
 
         // Rank markets by score descending (FR2.14)
@@ -312,6 +338,19 @@ public class ForecastingService {
         // avgFlightPrice as a display-friendly range string — matches frontend mock format
         String avgFlightPrice = flight.directFlight() ? "₱8,000 – ₱15,000" : "₱25,000 – ₱40,000";
 
+        // Map economic trend points to DTO records for the frontend charts
+        List<GdpTrendPointDto> gdpTrendDtos = b.gdpTrend() != null
+                ? b.gdpTrend().points().stream()
+                        .map(p -> new GdpTrendPointDto(p.year(), p.value()))
+                        .collect(Collectors.toList())
+                : List.of();
+
+        List<ForexTrendPointDto> forexTrendDtos = b.forexTrend() != null
+                ? b.forexTrend().points().stream()
+                        .map(p -> new ForexTrendPointDto(p.date(), p.value()))
+                        .collect(Collectors.toList())
+                : List.of();
+
         return new MarketDto(
                 market, rank, meta[0], meta[1], matchScore, directive,
                 flight.directFlight(), flight.flightHours(), flight.distanceKm(),
@@ -323,7 +362,9 @@ public class ForecastingService {
                 PEAK_MONTHS.getOrDefault(market, List.of()),
                 buildEconomyInsight(b.ms()),
                 buildSeasonalityInsight(b.ms()),
-                chartData
+                chartData,
+                gdpTrendDtos,
+                forexTrendDtos
         );
     }
 
@@ -508,6 +549,57 @@ public class ForecastingService {
         }
     }
 
+    // ─── economic trend persistence ───────────────────────────────────────────
+
+    /**
+     * Persists the latest GDP and forex trend snapshot for a market.
+     *
+     * <p>Serialises each trend array to JSON manually (no Jackson injection needed
+     * here because the arrays are simple value types).  Uses a compact format
+     * compatible with the Pydantic models on the FastAPI side:
+     * <pre>
+     * gdp:   [{"year":2020,"value":-0.9}, ...]
+     * forex: [{"date":"2025-01","value":23.5}, ...]
+     * </pre>
+     */
+    private void persistEconomicTrend(String market, GdpTrendDto gdp, ForexTrendDto forex) {
+        try {
+            MarketEconomicTrend trend = new MarketEconomicTrend();
+            trend.setMarket(market);
+            trend.setGdpLatest(gdp != null ? gdp.latest() : null);
+            trend.setForexLatest(forex != null ? forex.latest() : null);
+            trend.setCurrencyCode(forex != null ? forex.currencyCode() : null);
+
+            if (gdp != null && !gdp.points().isEmpty()) {
+                StringBuilder sb = new StringBuilder("[");
+                for (int i = 0; i < gdp.points().size(); i++) {
+                    var p = gdp.points().get(i);
+                    if (i > 0) sb.append(",");
+                    sb.append(String.format("{\"year\":%d,\"value\":%.4f}", p.year(), p.value()));
+                }
+                sb.append("]");
+                trend.setGdpTrendJson(sb.toString());
+                trend.setGdpPoints(gdp.points().size());
+            }
+
+            if (forex != null && !forex.points().isEmpty()) {
+                StringBuilder sb = new StringBuilder("[");
+                for (int i = 0; i < forex.points().size(); i++) {
+                    var p = forex.points().get(i);
+                    if (i > 0) sb.append(",");
+                    sb.append(String.format("{\"date\":\"%s\",\"value\":%.4f}", p.date(), p.value()));
+                }
+                sb.append("]");
+                trend.setForexTrendJson(sb.toString());
+                trend.setForexPoints(forex.points().size());
+            }
+
+            economicTrendRepo.save(trend);
+        } catch (Exception e) {
+            log.warn("Failed to persist economic trend for market={}: {}", market, e.getMessage());
+        }
+    }
+
     // ─── utilities ────────────────────────────────────────────────────────────
 
     private double num(Map<String, Object> map, String key, double def) {
@@ -522,5 +614,7 @@ public class ForecastingService {
             ForecastResult fr4w,
             List<MarketSignalRecord> history,
             boolean spike,
-            double confidence) {}
+            double confidence,
+            GdpTrendDto gdpTrend,
+            ForexTrendDto forexTrend) {}
 }

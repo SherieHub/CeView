@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  Upload, Sparkles, RefreshCw, CheckCircle,
+  Upload, Sparkles, CheckCircle,
   Shield, X as XIcon, Edit2, Plus, User, Link2
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
@@ -22,18 +22,20 @@ interface BusinessProfileProps {
   setters: ProfileSetters;
 }
 
+const DESC_MIN_WORDS = 50;
+const UVP_MIN_WORDS  = 30;
+
+const countWords = (text: string): number =>
+  text.trim() ? text.trim().split(/\s+/).length : 0;
+
 const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const { businessProfileId, businessName, categories, coreServices, description, uvp, imagePreview, uniquenessScore } = profile;
   const {
     setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
     setDescription, setUvp, setImagePreview, setUniquenessScore,
   } = setters;
-
-  const [keywords, setKeywords] = useState<string[]>([]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tempBusinessName, setTempBusinessName] = useState('');
@@ -63,19 +65,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
       reader.onload = () => setTempImagePreview(reader.result as string);
       reader.readAsDataURL(e.target.files[0]);
     }
-  };
-
-  const handleGenerateKeywords = async () => {
-    if (!description || categories.length === 0) return;
-    setIsLoading(true);
-    try {
-        const generated = await api.generateKeywords({
-          businessName,
-          description,
-          category: categories.join(', '),
-        });
-        setKeywords(generated);
-    } catch (error) { console.error(error); setServerError('Keyword generation failed. The AI service may be unavailable.'); } finally { setIsLoading(false); }
   };
 
   const openEditModal = () => {
@@ -199,20 +188,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
                  </section>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100">
-                 <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-                       <Sparkles size={14} style={{ color: COLORS.TEAL }} /> Search & SEO Keywords
-                     </h3>
-                     <button onClick={handleGenerateKeywords} disabled={!description || isLoading} className="text-[10px] font-black uppercase tracking-wider text-teal-600 hover:text-teal-700 flex items-center gap-1 transition-colors">
-                       {isLoading ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />} Recalibrate
-                     </button>
-                 </div>
-                 <div className="flex flex-wrap gap-2">
-                    {keywords.length === 0 && <span className="text-xs italic text-slate-400">No keywords mapped. Generate to align with market demand.</span>}
-                    {keywords.map((kw, i) => <span key={i} className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-2xs">#{kw}</span>)}
-                 </div>
-              </div>
            </div>
         </div>
 
@@ -332,13 +307,49 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
                   </div>
                 </div>
 
-                <div><label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label><textarea value={tempDescription} onChange={(e) => setTempDescription(e.target.value)} className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none" style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }} /></div>
-                <div><label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label><textarea value={tempUvp} onChange={(e) => setTempUvp(e.target.value)} className="w-full h-28 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none" style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }} /></div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Marketing Profile Description</label>
+                  <textarea
+                    value={tempDescription}
+                    onChange={(e) => setTempDescription(e.target.value)}
+                    className="w-full h-32 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                    style={{
+                      borderColor: tempDescription.trim() && countWords(tempDescription) < DESC_MIN_WORDS ? '#EF4444' : countWords(tempDescription) >= DESC_MIN_WORDS ? '#10B981' : COLORS.LIGHT_GREY,
+                      color: COLORS.TEXT_MAIN,
+                    }}
+                  />
+                  <p className="text-[11px] font-bold mt-1 text-right" style={{ color: countWords(tempDescription) >= DESC_MIN_WORDS ? '#10B981' : tempDescription.trim() ? '#EF4444' : COLORS.TEXT_MUTED }}>
+                    {countWords(tempDescription)} / {DESC_MIN_WORDS} words {countWords(tempDescription) >= DESC_MIN_WORDS ? '✓' : `(${DESC_MIN_WORDS - countWords(tempDescription)} more needed)`}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider block mb-1.5" style={{ color: COLORS.TEXT_MUTED }}>Unique Value Proposition</label>
+                  <textarea
+                    value={tempUvp}
+                    onChange={(e) => setTempUvp(e.target.value)}
+                    className="w-full h-28 p-4 rounded-xl border font-medium text-sm leading-relaxed resize-none focus:outline-none"
+                    style={{
+                      borderColor: tempUvp.trim() && countWords(tempUvp) < UVP_MIN_WORDS ? '#EF4444' : countWords(tempUvp) >= UVP_MIN_WORDS ? '#10B981' : COLORS.LIGHT_GREY,
+                      color: COLORS.TEXT_MAIN,
+                    }}
+                  />
+                  <p className="text-[11px] font-bold mt-1 text-right" style={{ color: countWords(tempUvp) >= UVP_MIN_WORDS ? '#10B981' : tempUvp.trim() ? '#EF4444' : COLORS.TEXT_MUTED }}>
+                    {countWords(tempUvp)} / {UVP_MIN_WORDS} words {countWords(tempUvp) >= UVP_MIN_WORDS ? '✓' : `(${UVP_MIN_WORDS - countWords(tempUvp)} more needed)`}
+                  </p>
+                </div>
             </div>
 
             <div className="p-5 border-t bg-slate-50 flex justify-end gap-3" style={{ borderColor: COLORS.LIGHT_GREY }}>
                <button onClick={() => setIsEditModalOpen(false)} className="px-5 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider bg-white transition-colors" style={{ color: COLORS.TEXT_MUTED, borderColor: COLORS.LIGHT_GREY }}>Dismiss</button>
-               <button onClick={handleSaveProfile} className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:opacity-90" style={{ backgroundColor: COLORS.GOLD, color: COLORS.WHITE }}>Commit Profile Data</button>
+               <button
+                 onClick={handleSaveProfile}
+                 disabled={countWords(tempDescription) < DESC_MIN_WORDS || countWords(tempUvp) < UVP_MIN_WORDS}
+                 title={countWords(tempDescription) < DESC_MIN_WORDS || countWords(tempUvp) < UVP_MIN_WORDS ? `Description needs ${DESC_MIN_WORDS} words and UVP needs ${UVP_MIN_WORDS} words.` : undefined}
+                 className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                 style={{ backgroundColor: COLORS.GOLD, color: COLORS.WHITE }}
+               >
+                 Commit Profile Data
+               </button>
             </div>
           </div>
         </div>
