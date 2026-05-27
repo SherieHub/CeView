@@ -359,27 +359,29 @@ def analyze_services(state: SocialAgentState) -> dict:
     try:
         chain = service_analysis_prompt | llm_with_tools | JsonOutputParser()
         
-        # Inject the combined 'all_services' into the 'business_services' prompt variable
         filtered = chain.invoke({
             "market_category": state.get("market_category", ""),
             "business_services": all_services,
         })
         
-        # Return the parsed dict if successful, mapping it to state
+        # FIX: Map the LLM's output keys to match SocialAgentState exactly
         if isinstance(filtered, dict):
-            return filtered
+            return {
+                "relevant_priority_services": filtered.get("relevant_services", all_services),
+                "extra_additional_services": filtered.get("unique_differentiators", [])
+            }
         else:
             logger.warning("caption_agent.analyze_services: Unexpected LLM output format. Using fallback.")
             return {
-                "relevant_services": all_services,
-                "unique_differentiators": []
+                "relevant_priority_services": all_services,
+                "extra_additional_services": []
             }
             
     except Exception as exc:
         logger.warning("caption_agent.analyze_services failed: %s", exc)
         return {
-            "relevant_services": all_services,
-            "unique_differentiators": []
+            "relevant_priority_services": all_services,
+            "extra_additional_services": []
         }
 
 
@@ -399,18 +401,21 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
     try:
         chain = caption_generation_prompt | llm_with_tools | JsonOutputParser()
 
-        # Build prompt variables — all must match template placeholders exactly
+        # FIX: Build prompt variables to match template placeholders EXACTLY
         invoke_data = {
-            "business_name":        state.get("business_name", ""),
-            "business_description": state.get("business_description", ""),
-            "business_uvp":         state.get("business_uvp", ""),
-            "business_services":    state.get("business_services", []),
-            "market_category":      state.get("market_category", ""),
-            "target_market":        state.get("target_market", ""),
-            "relevant_services":    state.get("relevant_services", _FALLBACK_SERVICES),
-            "forecast_context":     state.get("forecast_context", ""),
-            "research_context":     state.get("research_context", ""),
-            "market_score":         state.get("market_score", ""),
+            "business_name":              state.get("business_name", ""),
+            "business_description":       state.get("business_description", ""),
+            "business_uvp":               state.get("business_uvp", ""),
+            "business_services":          state.get("business_services", []),
+            "market_category":            state.get("market_category", ""),
+            "target_market":              state.get("target_market", ""),
+            "forecast_context":           state.get("forecast_context", ""),
+            "research_context":           state.get("research_context", ""),
+            "market_score":               state.get("market_score", ""),
+            
+            # These two now match BOTH the State keys and the Prompt Variables
+            "relevant_priority_services": state.get("relevant_priority_services", _FALLBACK_SERVICES),
+            "extra_additional_services":  state.get("extra_additional_services", []),
         }
 
         matrix = chain.invoke(invoke_data)
