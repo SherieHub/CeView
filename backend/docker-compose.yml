@@ -20,8 +20,7 @@ services:
     build: ./fastapi-sbert
     container_name: ceview-fastapi
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      ENABLE_GEMINI: ${ENABLE_GEMINI:-false}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
     volumes:
       - ./fastapi-sbert/models:/app/models:ro
@@ -31,6 +30,8 @@ services:
   fastapi-transformer:
     build: ./fastapi-transformer
     container_name: ceview-fastapi-transformer
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
     ports:
       - "8001:8001"
 

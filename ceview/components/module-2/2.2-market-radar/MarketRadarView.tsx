@@ -18,7 +18,7 @@ interface MarketRadarViewProps {
   categories?: string[];
   onBack?: () => void;
   initialMarketId?: string;
-  onNavigateToContent?: () => void;
+  onNavigateToContent?: (marketId: string) => void;
 }
 
 const MarketRadarView: React.FC<MarketRadarViewProps> = ({
@@ -149,7 +149,7 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
 
         <StrategicDirectivePanel
           directive={selectedMarket.directive}
-          onNavigateToContent={onNavigateToContent}
+          onNavigateToContent={onNavigateToContent ? () => onNavigateToContent(selectedMarketId) : undefined}
         />
 
         <div className="grid grid-cols-2 divide-x border-b" style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: COLORS.OFF_WHITE }}>

@@ -102,12 +102,42 @@ const DemandForecastChart: React.FC<DemandForecastChartProps> = ({ chartData }) 
   const [timeframe, setTimeframe] = useState<'4WK' | '12WK'>('4WK');
   const displayData = useMemo(() => generateTimeframeData(chartData, timeframe), [chartData, timeframe]);
 
+  // Compute Y-axis bounds from actual data values so the chart scales to the data
+  // rather than always showing the full 0-100 range.
+  const { yMin, yMax } = useMemo(() => {
+    const vals = displayData
+      .flatMap(d => [d.history, d.forecast])
+      .filter((v): v is number => v !== null);
+    if (vals.length === 0) return { yMin: 0, yMax: 100 };
+    const raw_min = Math.min(...vals);
+    const raw_max = Math.max(...vals);
+    return {
+      yMin: Math.max(0,   Math.floor(raw_min / 10) * 10 - 10),
+      yMax: Math.min(100, Math.ceil(raw_max  / 10) * 10 + 10),
+    };
+  }, [displayData]);
+
+  // Spike count drives a summary badge
+  const spikeCount = useMemo(
+    () => displayData.filter(d => d.spike === 1).length,
+    [displayData],
+  );
+
   return (
     <div className="p-4 md:p-8 border-b" style={{ borderColor: COLORS.LIGHT_GREY }}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4">
         <div>
           <h3 className="text-lg md:text-xl font-black" style={{ color: COLORS.NAVY }}>Demand Forecasting & Spike Detection</h3>
-          <p className="text-sm font-medium mt-1" style={{ color: COLORS.TEXT_MUTED }}>Track tourist interest levels week by week — past data (solid) and AI projections (dashed).</p>
+          <p className="text-sm font-medium mt-1" style={{ color: COLORS.TEXT_MUTED }}>
+            Track tourist interest levels week by week — past data (solid) and AI projections (dashed).
+          </p>
+          {spikeCount > 0 && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black"
+              style={{ backgroundColor: `${COLORS.RED_ORANGE}18`, color: COLORS.RED_ORANGE, border: `1px solid ${COLORS.RED_ORANGE}40` }}>
+              <Zap size={11} style={{ fill: COLORS.RED_ORANGE }} />
+              {spikeCount} Surge {spikeCount === 1 ? 'Point' : 'Points'} Detected
+            </div>
+          )}
         </div>
         <div className="flex p-1.5 rounded-xl border shrink-0" style={{ backgroundColor: COLORS.CREAM, borderColor: COLORS.LIGHT_GREY }}>
           <button onClick={() => setTimeframe('4WK')} className="px-5 py-2 text-xs font-black rounded-lg transition-all" style={{ backgroundColor: timeframe === '4WK' ? COLORS.WHITE : 'transparent', color: COLORS.TEXT_MAIN }}>4 Weeks</button>
@@ -115,20 +145,50 @@ const DemandForecastChart: React.FC<DemandForecastChartProps> = ({ chartData }) 
         </div>
       </div>
 
+      {/* Demand zone legend */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        {[
+          { label: 'Low Demand', color: COLORS.TEXT_MUTED, bg: COLORS.OFF_WHITE },
+          { label: 'Moderate', color: COLORS.GOLD, bg: COLORS.GOLD_LIGHT },
+          { label: 'High Peak', color: COLORS.RED_ORANGE, bg: `${COLORS.RED_ORANGE}18` },
+        ].map(({ label, color, bg }) => (
+          <span key={label} className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: bg, color }}>
+            <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }} />
+            {label}
+          </span>
+        ))}
+        <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: COLORS.OFF_WHITE, color: COLORS.TEXT_MUTED }}>
+          <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: COLORS.NAVY }} /> Recorded
+        </span>
+        <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: COLORS.OFF_WHITE, color: COLORS.TEXT_MUTED }}>
+          <span className="w-3 h-0.5 inline-block border-t-2 border-dashed" style={{ borderColor: COLORS.GOLD }} /> AI Forecast
+        </span>
+      </div>
+
       <div className="h-[300px] md:h-[380px] w-full relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={displayData as any[]} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={COLORS.LIGHT_GREY} />
             <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 13, fontWeight: 700 }} dy={12} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12, fontWeight: 700 }} domain={[0, 100]} />
+            <YAxis
+              axisLine={false} tickLine={false}
+              tick={{ fill: COLORS.TEXT_MUTED, fontSize: 12, fontWeight: 700 }}
+              domain={[yMin, yMax]}
+              tickCount={6}
+              tickFormatter={(v: number) => `${v}%`}
+            />
             <Tooltip content={<MainTooltip />} cursor={{ stroke: COLORS.NAVY, strokeWidth: 1, strokeDasharray: '4 4' }} />
-            <ReferenceAreaTyped y1={0} y2={30} fill={COLORS.OFF_WHITE || '#FDFBF7'} fillOpacity={0.8} />
-            <ReferenceAreaTyped y1={31} y2={70} fill={COLORS.GOLD_LIGHT || '#fff5dfff'} fillOpacity={0.4} />
-            <ReferenceAreaTyped y1={71} y2={100} fill={COLORS.BEIGE || '#F5E5D1'} fillOpacity={0.4} />
+            {/* Reference areas clipped to visible Y range */}
+            {yMin < 31 && <ReferenceAreaTyped y1={yMin} y2={Math.min(30, yMax)} fill={COLORS.OFF_WHITE} fillOpacity={0.9} />}
+            {yMax > 30 && yMin < 71 && <ReferenceAreaTyped y1={Math.max(31, yMin)} y2={Math.min(70, yMax)} fill={COLORS.GOLD_LIGHT} fillOpacity={0.5} />}
+            {yMax > 70 && <ReferenceAreaTyped y1={Math.max(71, yMin)} y2={yMax} fill={COLORS.BEIGE} fillOpacity={0.6} />}
             <ReferenceLine x="Current" stroke={COLORS.NAVY} strokeDasharray="3 3" label={{ position: 'top', value: '▼ Today', fill: COLORS.NAVY, fontSize: 11, fontWeight: 900 }} />
             <Area type="monotone" dataKey="seasonality" fill={COLORS.SKYBLUE} stroke={COLORS.SKYBLUE} strokeOpacity={0.35} fillOpacity={0.12} strokeWidth={2} />
-            <Line type="monotone" dataKey="history" stroke={COLORS.NAVY} strokeWidth={5} dot={(props: any) => renderCustomDot(props, COLORS.NAVY, false)} name="Recorded Data" />
-            <Line type="monotone" dataKey="forecast" stroke={COLORS.GOLD} strokeWidth={5} strokeDasharray="8 8" dot={(props: any) => renderCustomDot(props, COLORS.GOLD, true)} name="AI Forecast" />
+            <Line type="monotone" dataKey="history" stroke={COLORS.NAVY} strokeWidth={5} connectNulls={false} dot={(props: any) => renderCustomDot(props, COLORS.NAVY, false)} name="Recorded Data" />
+            <Line type="monotone" dataKey="forecast" stroke={COLORS.GOLD} strokeWidth={5} strokeDasharray="8 8" connectNulls={false} dot={(props: any) => renderCustomDot(props, COLORS.GOLD, true)} name="AI Forecast" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
