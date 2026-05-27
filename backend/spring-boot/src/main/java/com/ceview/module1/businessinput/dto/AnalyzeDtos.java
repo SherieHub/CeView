@@ -16,9 +16,4 @@ public class AnalyzeDtos {
 
     public record AnalyzeResponse(List<CategoryAllocation> categories) {}
 
-    public record KeywordRequest(
-        String businessName,
-        String description,
-        String category
-    ) {}
 }

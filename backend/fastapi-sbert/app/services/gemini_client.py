@@ -51,19 +51,6 @@ def _generate_json(prompt: str, schema: dict | None = None) -> dict:
         return {}
 
 
-def keywords(business_name: str, description: str, category: str) -> list[str]:
-    if not _enabled():
-        return ["Cebu Healing", "Rustic Resort", "Wellness Retreat", "Filipino Cuisine", "Nature Escape"]
-    out = _generate_json(
-        f"""Analyze this tourism business to generate high-value Google Trends keywords.
-Business: {business_name}
-Category: {category}
-Description: {description}
-
-Generate 5-7 specific keywords or short phrases. Return JSON {{ "keywords": [...] }}.""",
-    )
-    return out.get("keywords", [])
-
 
 def uniqueness(business_name: str, categories: list[str], core_services: list[str],
                description: str, uvp: str) -> dict:

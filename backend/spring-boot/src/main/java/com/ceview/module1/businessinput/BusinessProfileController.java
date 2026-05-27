@@ -1,7 +1,6 @@
 package com.ceview.module1.businessinput;
 
 import com.ceview.ai.AIInferenceGatewayService;
-import com.ceview.module1.businessinput.dto.AnalyzeDtos.KeywordRequest;
 import com.ceview.module1.businessinput.dto.BusinessProfileDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,16 +44,6 @@ public class BusinessProfileController {
         p.setUniquenessScore(in.uniquenessScore());
         repo.save(p);
         return toDto(p);
-    }
-
-    /** POST /api/v1/business-profile/keywords — replaces frontend generateOptimizedKeywords. */
-    @PostMapping("/keywords")
-    public List<String> keywords(@RequestBody KeywordRequest req) {
-        var payload = new HashMap<String, Object>();
-        payload.put("businessName", req.businessName());
-        payload.put("description", req.description());
-        payload.put("category", req.category());
-        return ai.generateKeywords(payload);
     }
 
     private BusinessProfileDto toDto(BusinessProfile p) {
