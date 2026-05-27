@@ -8,6 +8,7 @@ import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendDto;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendDto;
+import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
@@ -71,6 +72,7 @@ public class ForecastingService {
     private final MarketScoreRepository scoreRepo;
     private final DemandAlertRepository alertRepo;
     private final BusinessProfileRepository profileRepo;
+    private final MarketDataIngestionService ingestionService;
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
@@ -82,6 +84,7 @@ public class ForecastingService {
                               MarketScoreRepository scoreRepo,
                               DemandAlertRepository alertRepo,
                               BusinessProfileRepository profileRepo,
+                              MarketDataIngestionService ingestionService,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
                               MarketEconomicTrendRepository economicTrendRepo,
@@ -92,6 +95,7 @@ public class ForecastingService {
         this.scoreRepo          = scoreRepo;
         this.alertRepo          = alertRepo;
         this.profileRepo        = profileRepo;
+        this.ingestionService   = ingestionService;
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
@@ -115,6 +119,14 @@ public class ForecastingService {
             log.warn("Profile {} has no categories — cannot run forecast", profileId);
             MDC.remove("code");
             throw new IllegalArgumentException("Business profile categories are not set (UC-1.1 incomplete)");
+        }
+
+        // refresh=true → run Submodule 2.1 ingestion first to fetch live pytrends data
+        // and populate tbl_market_signal_record before runPipeline() reads it (FR2.9)
+        if (refresh && profile != null) {
+            log.info("Refresh requested — running 2.1 ingestion for profile={}", profileId);
+            int ingested = ingestionService.ingestForProfile(profile);
+            log.info("Ingestion complete: {} markets ingested for profile={}", ingested, profileId);
         }
 
         try {
