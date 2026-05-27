@@ -100,7 +100,7 @@ export default function ContentStudioView({
       description: description ?? '',
       categories: categories ?? [],
       trend: initialTrend ?? '',
-    })
+    }, businessProfileId)
       .then(r => {
         if (cancelled) return;
         setContent(r);

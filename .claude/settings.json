@@ -29,7 +29,13 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\" -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName.Replace\\('c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\src\\\\main\\\\java\\\\com\\\\ceview\\\\', ''\\) })",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Depth 1)",
       "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\ceview\" -Filter \".env*\" -File)",
-      "PowerShell(New-Item -ItemType Directory -Path \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\.mvn\\\\wrapper\" -Force)"
+      "PowerShell(New-Item -ItemType Directory -Path \"C:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\\\\.mvn\\\\wrapper\" -Force)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\" -Recurse -Name \"index.ts\" | ForEach-Object { \"c:\\\\Users\\\\austi\\\\CeView\\\\$_\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\austi\\\\CeView\\\\ceview\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"market-radar|App\\\\.tsx|ContentStudio|DemandForecast|EconomicInsight\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\austi\\\\CeView\\\\ceview\"; $output = npx tsc --noEmit 2>&1; $output | Where-Object { $_ -match \"error TS\" } | Where-Object { $_ -notmatch \"old-components|SmartOptimization|apiClient|identity|Dashboard|CampaignWizard|CalendarView\" })",
+      "Bash(kill %1)",
+      "Bash(curl -s https://generativelanguage.googleapis.com/v1beta/models?key=__TRACKED_VAR__)",
+      "Bash(python3 -c \"import json,sys; models=json.load\\(sys.stdin\\).get\\('models',[]\\); [print\\(m['name'], m.get\\('supportedGenerationMethods',''\\)\\) for m in models if 'generateContent' in m.get\\('supportedGenerationMethods',[]\\)]\")"
     ]
   }
 }

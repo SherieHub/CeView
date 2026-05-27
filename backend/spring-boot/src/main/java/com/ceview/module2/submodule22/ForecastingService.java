@@ -13,7 +13,6 @@ import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -76,7 +75,6 @@ public class ForecastingService {
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
-    private final ObjectMapper mapper;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -87,8 +85,7 @@ public class ForecastingService {
                               MarketDataIngestionService ingestionService,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
-                              MarketEconomicTrendRepository economicTrendRepo,
-                              ObjectMapper mapper) {
+                              MarketEconomicTrendRepository economicTrendRepo) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -99,7 +96,6 @@ public class ForecastingService {
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
-        this.mapper             = mapper;
     }
 
     /**
@@ -107,9 +103,9 @@ public class ForecastingService {
      * Falls back to the legacy stub when enriched data is absent.
      */
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
-        // No profileId → anonymous user, go straight to stub
         if (profileId == null) {
-            return toMarketsResponse(ai.forecastMarkets(Map.of("profileId", "")));
+            log.error("forecastForProfile called with null profileId — profileId is required");
+            throw new IllegalArgumentException("profileId is required");
         }
 
         // Validate profile categories are set (FR2.9 — UC-1.1 must be completed)
@@ -134,9 +130,11 @@ public class ForecastingService {
         } catch (IllegalStateException e) {
             if ("enriched_dataset_empty".equals(e.getMessage())) {
                 MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
-                log.info("No enriched data for profile={} — using stub fallback", profileId);
+                log.error("No enriched market data for profile={} — ingestion has not run yet", profileId);
                 MDC.remove("code");
-                return toMarketsResponse(ai.forecastMarkets(Map.of("profileId", profileId.toString())));
+                throw new IllegalStateException(
+                        "No market signal data available for profile " + profileId
+                        + ". Run the ingestion job first.");
             }
             throw e;
         }
@@ -548,17 +546,6 @@ public class ForecastingService {
                  + "Consistent year-round demand — focus campaign timing on the identified peak months.";
         return "Low seasonality score — demand is relatively flat throughout the year. "
              + "Maintain a steady always-on content cadence and react quickly to any emerging trend spikes.";
-    }
-
-    // ─── fallback deserialization ──────────────────────────────────────────────
-
-    private MarketsResponse toMarketsResponse(Map<String, Object> raw) {
-        try {
-            return mapper.convertValue(raw, MarketsResponse.class);
-        } catch (Exception e) {
-            log.warn("Failed to deserialize stub MarketsResponse: {}", e.getMessage());
-            return new MarketsResponse(List.of());
-        }
     }
 
     // ─── economic trend persistence ───────────────────────────────────────────

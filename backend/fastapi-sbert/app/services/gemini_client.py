@@ -1,11 +1,11 @@
 """
-Server-side Gemini wrapper. Mirrors the five prompts currently in the
+Server-side AI wrapper (DeepSeek). Mirrors the five prompts currently in the
 frontend's `ceview/services/geminiService.ts` so swapping the frontend over
 later changes only the transport, not the behavior.
 
-When ENABLE_GEMINI is false or GEMINI_API_KEY is missing, every function
-returns a deterministic fallback. Module-3 functions tag the returned dict
-with a `source` field ("gemini" | "fallback") so the UI can label demo data.
+When DEEPSEEK_API_KEY is missing, every function returns a deterministic
+fallback. Module-3 functions tag the returned dict with a `source` field
+("deepseek" | "fallback") so the UI can label demo data.
 """
 
 from __future__ import annotations
@@ -13,18 +13,16 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any
 
 from app import errors
 
-ENABLE_GEMINI = os.getenv("ENABLE_GEMINI", "false").lower() == "true"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 
 _client = None
-if ENABLE_GEMINI and GEMINI_API_KEY:
+if DEEPSEEK_API_KEY:
     try:
-        from google import genai
-        _client = genai.Client(api_key=GEMINI_API_KEY)
+        from openai import OpenAI as _OpenAI
+        _client = _OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com/v1")
     except Exception:
         _client = None
 
@@ -36,18 +34,15 @@ def _enabled() -> bool:
 def _generate_json(prompt: str, schema: dict | None = None) -> dict:
     if not _enabled():
         return {}
-    cfg: dict[str, Any] = {"response_mime_type": "application/json"}
-    if schema:
-        cfg["response_schema"] = schema
     try:
-        resp = _client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=cfg,
+        resp = _client.chat.completions.create(
+            model="deepseek-chat",
+            response_format={"type": "json_object"},
+            messages=[{"role": "user", "content": prompt}],
         )
-        return json.loads(resp.text or "{}")
+        return json.loads(resp.choices[0].message.content or "{}")
     except Exception as exc:
-        logging.getLogger("gemini_client").warning("Gemini API call failed: %s", exc)
+        logging.getLogger("deepseek_client").warning("DeepSeek API call failed: %s", exc)
         return {}
 
 

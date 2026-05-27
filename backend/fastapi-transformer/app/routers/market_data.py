@@ -37,6 +37,25 @@ class TrendsResponse(BaseModel):
     source: str = "live"
 
 
+class TrendHistoryRequest(BaseModel):
+    market: str
+    categories: list[str] = Field(default_factory=list)
+    weeks: int = Field(default=12, ge=4, le=52)
+
+
+class TrendWeekPoint(BaseModel):
+    date: str
+    trend_index: float = Field(ge=0.0, le=100.0)
+
+
+class TrendHistoryResponse(BaseModel):
+    market: str
+    weekly_series: list[TrendWeekPoint]
+    keywords_used: list[str] = Field(default_factory=list)
+    fetched_at: str
+    source: str = "live"
+
+
 class SeasonalityRequest(BaseModel):
     profile_id: str = ""
     market: str
@@ -79,6 +98,33 @@ def fetch_trends(body: TrendsRequest) -> TrendsResponse:
     return TrendsResponse(
         market        = raw["market"],
         trend_index   = trend_index,
+        keywords_used = raw.get("keywords_used", []),
+        fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
+        source        = raw.get("source", "live"),
+    )
+
+
+# ─── Weekly trend history — used on first ingestion to backfill signal records ──
+
+@router.post("/trends/history", response_model=TrendHistoryResponse)
+def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
+    """Fetch N weeks of weekly Google Trends history for a market (FR2.2).
+
+    Called once per profile/market on first ingestion to backfill historical
+    MarketSignalRecord rows so the demand chart shows real week-over-week
+    variance rather than a flat repeated value.
+    """
+    raw = pytrends_client.fetch_trend_history(body.market, body.categories, body.weeks)
+    series = [
+        TrendWeekPoint(
+            date=point["date"],
+            trend_index=market_data_processor.normalize_trend_index(float(point["trend_index"])),
+        )
+        for point in raw.get("weekly_series", [])
+    ]
+    return TrendHistoryResponse(
+        market        = raw["market"],
+        weekly_series = series,
         keywords_used = raw.get("keywords_used", []),
         fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
         source        = raw.get("source", "live"),
