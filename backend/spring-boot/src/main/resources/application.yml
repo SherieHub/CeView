@@ -27,7 +27,7 @@ ceview:
     # fastapi-transformer — Module 2 (Gemini demand forecasting + XGBoost economic scoring, port 8001)
     transformer:
       base-url: ${FASTAPI_TRANSFORMER_BASE_URL:http://localhost:8001}
-    timeout-seconds: 30
+    timeout-seconds: 120
   jwt:
     secret: ${JWT_SECRET:dev-secret-change-me-please-32chars-min}
     expiry-hours: 24
