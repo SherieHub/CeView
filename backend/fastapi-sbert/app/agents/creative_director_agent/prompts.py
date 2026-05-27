@@ -54,20 +54,27 @@ from langchain_core.prompts import (
 
 # ── Node 1: Relevant-service filter ──────────────────────────────────────────
 
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+
 service_analysis_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(
         """You are an analytical brand strategist for a Cebu, Philippines tourism business.
 
-Task: filter the business services list.  Keep ONLY the services that are
-directly relevant to, or meaningfully enhance, the stated market category.
+Task: Analyze the provided list of business services and sort them into two distinct categories based on the stated market category.
+
+Categories:
+1. "relevant_services": Services directly related to, or that conventionally enhance, the specific market category.
+2. "unique_differentiators": Remaining services that do not fit the standard market category, but can be leveraged as unexpected, unique selling points to make the business stand out.
 
 Rules:
-- Remove services that have nothing to do with the market category context.
-- Preserve services that support the traveller experience in that category.
-- Return output strictly as a JSON array of strings.
+- Every service from the input list must be placed into exactly one of these two categories. Do not drop any services.
+- Return the output STRICTLY as a valid JSON object containing two arrays of strings.
 
-Example:
-["private beach access", "spa treatments", "guided island hopping"]
+Example Output:
+{{
+  "relevant_services": ["private beach access", "spa treatments", "guided island hopping"],
+  "unique_differentiators": ["on-site organic farming workshop", "crypto-payment setup"]
+}}
 """
     ),
     HumanMessagePromptTemplate.from_template(
@@ -76,7 +83,7 @@ Example:
 All Business Services:
 {business_services}
 
-Return ONLY the relevant services as a JSON array of strings.
+Return ONLY the categorized JSON object.
 """
     ),
 ])
@@ -93,9 +100,10 @@ Cebu, Philippines tourism businesses, specialising in the **{target_market}** ma
 BUSINESS CONTEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Business:           {business_name}
-Target market:      {target_market} ({country_market})
+Target market:      {target_market} 
 Tourism category:   {market_category}
-Relevant services:  {relevant_services}
+Relevant services:  {relevant_priority_services}
+Extra Additional servies: {extra_additional_services}
 Description:        {business_description}
 Unique value prop:  {business_uvp}
 
@@ -107,10 +115,15 @@ Unique value prop:  {business_uvp}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 FACTOR 1 — CORE BUSINESS CONTEXT
-  Deploy {market_category} metadata, the business's unique services ({relevant_services}),
-  its UVP, and Cebu's destination-specific appeal in every caption.
+  Deploy {market_category} metadata, the business's unique services ({relevant_priority_services}),
+  its UVP, and Cebu's destination-specific appeal in every caption. 
   Use uniqueness signals (from forecast context if available) to frame exclusivity.
 
+  also mention its extra services a little that is not related to the targeted trend just make it so that 
+  it could make the bussiness unique and stand out.
+
+  extra services: ({extra_additional_services})
+  
 FACTOR 2 — MARKET & CULTURAL LOCALISATION
   Adapt tone, vocabulary, and emotional register to the {target_market} traveller.
   • South Korea: Weave in Hangul naturally where it amplifies emotional resonance
@@ -131,6 +144,14 @@ FACTOR 3 — PSYCHOLOGICAL & EMOTIONAL VECTORS
 FACTOR 4 — PLATFORM MECHANICS
   Strictly enforce every character limit, truncation window, link policy,
   and engagement-style rule listed in the MANDATORY PLATFORM RULES below.
+
+Furthermore, promotional caption where the narrative strategy directly leverages the destination's 
+economic freedom tier, using higher scores (70–100) to market seamless travel infrastructure, safety, 
+open markets, and an effortless environment for luxury travelers or digital nomads. For mid-tier 
+destinations like the Philippines (62.9), command the LLM to highlight vibrant local commerce, 
+entrepreneurial culture, and incredible economic value, while for lower-tier scores (below 60), 
+pivot the angle to promote raw, untouched natural beauty or exclusive sanctuary resorts that shield 
+travelers from local regulatory friction.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 3 DEMOGRAPHIC VARIATION ARCHETYPES — GENERATE ALL THREE PER PLATFORM
