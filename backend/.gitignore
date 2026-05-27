@@ -8,3 +8,5 @@ fastapi/.venv/
 fastapi/app/__pycache__/
 fastapi/app/**/__pycache__/
 **/.DS_Store
+gemini/*
+node_modules

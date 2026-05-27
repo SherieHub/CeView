@@ -34,27 +34,55 @@ _FALLBACK_SERVICES = ["resort stay", "beach activities", "local tours"]
 
 def analyze_services(state: SocialAgentState) -> dict:
     """Node 1 — Filter business services to those relevant to the market category."""
+    
+    # Safely extract both standard and extra services from the state
+    base_services = state.get("business_services") or []
+    extra_services = state.get("extra_additional_services") or []
+    
+    # Combine them so the LLM evaluates the full offering
+    all_services = base_services + extra_services
+    
+    # If both were empty, use the fallback
+    if not all_services:
+        all_services = _FALLBACK_SERVICES
+
     if llm_with_tools is None:
         logger.error(
             "[%s] caption_agent.analyze_services: LLM unavailable — GOOGLE_API_KEY may be unset or invalid.",
             errors.MOD31_LLM_UNAVAILABLE,
         )
-        raise RuntimeError(errors.MOD31_LLM_UNAVAILABLE)
+        return {
+            "relevant_services": all_services,
+            "unique_differentiators": []
+        }
 
     try:
         chain = service_analysis_prompt | llm_with_tools | JsonOutputParser()
+        
         filtered = chain.invoke({
             "market_category": state.get("market_category", ""),
-            "business_services": state.get("business_services", []),
+            "business_services": all_services,
         })
-        return {"relevant_services": filtered if isinstance(filtered, list) else state.get("business_services", _FALLBACK_SERVICES)}
+        
+        # FIX: Map the LLM's output keys to match SocialAgentState exactly
+        if isinstance(filtered, dict):
+            return {
+                "relevant_priority_services": filtered.get("relevant_services", all_services),
+                "extra_additional_services": filtered.get("unique_differentiators", [])
+            }
+        else:
+            logger.warning("caption_agent.analyze_services: Unexpected LLM output format. Using fallback.")
+            return {
+                "relevant_priority_services": all_services,
+                "extra_additional_services": []
+            }
+            
     except Exception as exc:
-        logger.error(
-            "[%s] caption_agent.analyze_services failed: %s",
-            errors.MOD31_CAPTION_AGENT_FAILED,
-            exc,
-        )
-        raise RuntimeError(errors.MOD31_CAPTION_AGENT_FAILED) from exc
+        logger.warning("caption_agent.analyze_services failed: %s", exc)
+        return {
+            "relevant_priority_services": all_services,
+            "extra_additional_services": []
+        }
 
 
 def generate_platform_captions(state: SocialAgentState) -> dict:
@@ -74,17 +102,21 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
     try:
         chain = caption_generation_prompt | llm_with_tools | JsonOutputParser()
 
+        # FIX: Build prompt variables to match template placeholders EXACTLY
         invoke_data = {
-            "business_name":        state.get("business_name", ""),
-            "business_description": state.get("business_description", ""),
-            "business_uvp":         state.get("business_uvp", ""),
-            "business_services":    state.get("business_services", []),
-            "market_category":      state.get("market_category", ""),
-            "country_market":       state.get("country_market", "Philippines"),
-            "target_market":        state.get("target_market", ""),
-            "relevant_services":    state.get("relevant_services", _FALLBACK_SERVICES),
-            "forecast_context":     state.get("forecast_context", ""),
-            "research_context":     state.get("research_context", ""),
+            "business_name":              state.get("business_name", ""),
+            "business_description":       state.get("business_description", ""),
+            "business_uvp":               state.get("business_uvp", ""),
+            "business_services":          state.get("business_services", []),
+            "market_category":            state.get("market_category", ""),
+            "target_market":              state.get("target_market", ""),
+            "forecast_context":           state.get("forecast_context", ""),
+            "research_context":           state.get("research_context", ""),
+            "market_score":               state.get("market_score", ""),
+            
+            # These two now match BOTH the State keys and the Prompt Variables
+            "relevant_priority_services": state.get("relevant_priority_services", _FALLBACK_SERVICES),
+            "extra_additional_services":  state.get("extra_additional_services", []),
         }
 
         matrix = chain.invoke(invoke_data)
