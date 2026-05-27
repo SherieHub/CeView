@@ -121,7 +121,7 @@ def _gemini_forecast(
                 prompt,
                 generation_config=_genai.GenerationConfig(
                     temperature=0.10,         # deterministic numerical output
-                    max_output_tokens=64,
+                    max_output_tokens=128,    # increased: weekly_forecasts array needs more tokens
                     response_mime_type="application/json",
                 ),
             )
@@ -198,7 +198,10 @@ def _build_prompt(
         "  6. If GDP multi-year trend is DECLINING, apply a mild demand dampener (~-2%) to "
         "the 12-week forecast — sustained economic weakness reduces outbound travel budgets.\n\n"
         "OUTPUT FORMAT: Respond with ONLY valid JSON — no markdown, no explanation.\n"
-        '{"predicted_demand_4w": <float 0-100>, "predicted_demand_12w": <float 0-100>}'
+        '{"predicted_demand_4w": <float 0-100>, "predicted_demand_12w": <float 0-100>, '
+        '"weekly_forecasts": [<wk1 float 0-100>, <wk2 float 0-100>, <wk3 float 0-100>, <wk4 float 0-100>]}\n'
+        "weekly_forecasts must show the week-by-week demand progression leading to predicted_demand_4w "
+        "(wk4 ≈ predicted_demand_4w). Each value reflects the slope/reversion rules above."
     )
 
 
@@ -209,6 +212,16 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
         data = json.loads(cleaned)
         demand_4w  = float(max(0.0, min(100.0, data["predicted_demand_4w"])))
         demand_12w = float(max(0.0, min(100.0, data["predicted_demand_12w"])))
+
+        # Extract per-week forecasts from Gemini; fall back to linear interpolation
+        # if the model omitted the field or returned the wrong length.
+        raw_weekly = data.get("weekly_forecasts", [])
+        if isinstance(raw_weekly, list) and len(raw_weekly) == 4:
+            weekly_forecasts = [float(max(0.0, min(100.0, v))) for v in raw_weekly]
+        else:
+            current = trend_series[-1] if trend_series else 50.0
+            weekly_forecasts = _interpolate_weekly(current, demand_4w)
+
     except Exception as exc:
         logger.warning("Failed to parse Gemini response '%s': %s", raw[:120], exc)
         return _stub_forecast("unknown", trend_series, False, 0.5)
@@ -220,6 +233,7 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
     return {
         "predicted_demand_4w":  round(demand_4w,  2),
         "predicted_demand_12w": round(demand_12w, 2),
+        "weekly_forecasts":     weekly_forecasts,
         "mape":       mape,
         "mae":        round(mape * 0.60, 2),
         "rmse":       round(mape * 0.85, 2),
@@ -229,44 +243,75 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
 
 # ─── deterministic stub ───────────────────────────────────────────────────────
 
+def _interpolate_weekly(current: float, demand_4w: float) -> list[float]:
+    """Linear interpolation of 4 weekly steps from current to demand_4w.
+
+    Used as a fallback when Gemini omits or returns an invalid weekly_forecasts
+    array.  The result is a smooth ramp so the chart never shows a flat line.
+    """
+    return [
+        round(current + (demand_4w - current) * (w / 4.0), 2)
+        for w in range(1, 5)
+    ]
+
+
 def _stub_forecast(
     market: str,
     trend_series: list[float],
     spike_indicator: bool,
     seasonality_score: float,
 ) -> dict:
-    """Linear-extrapolation stub — always satisfies MAPE ≤ 15% (FR2.12)."""
+    """Linear-extrapolation stub — always satisfies MAPE ≤ 15% (FR2.12).
+
+    Produces a ``weekly_forecasts`` list (Wk+1 … Wk+4) from the historical
+    trend series so the chart shows a real slope instead of a flat line.
+    The same linear-regression slope used for the aggregate ``predicted_demand_4w``
+    is applied week-by-week, matching the final week-4 value exactly.
+    """
     if len(trend_series) >= 4:
         recent = trend_series[-4:]
         xs = list(range(len(recent)))
         x_mean = sum(xs) / len(xs)
         y_mean = sum(recent) / len(recent)
-        num = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, recent))
-        den = sum((x - x_mean) ** 2 for x in xs)
-        slope = (num / den) if den != 0 else 0.0
+        num_lr = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, recent))
+        den_lr = sum((x - x_mean) ** 2 for x in xs)
+        slope = (num_lr / den_lr) if den_lr != 0 else 0.0
         current = recent[-1]
     else:
         current = trend_series[-1] if trend_series else 50.0
         slope = 0.0
 
-    # Spike causes partial mean reversion
+    mean_val = sum(trend_series[-7:]) / 7.0 if len(trend_series) >= 7 else current
+    uplift   = 1.0 + (seasonality_score * 0.08)
+
+    # ── Per-week forecast (Wk+1 … Wk+4) ─────────────────────────────────────
+    # Uses the same spike-reversion formula as the aggregate 4w target so that
+    # weekly_forecasts[-1] exactly equals predicted_demand_4w (pre-clamp).
+    weekly_forecasts: list[float] = []
+    for w in range(1, 5):
+        if spike_indicator and len(trend_series) >= 7:
+            # Reversion toward 7-period mean grows each week (w=1 → 7.5 %, w=4 → 30 %)
+            rev_weight = (w / 4.0) * 0.30
+            raw_w = current * (1 - rev_weight) + mean_val * rev_weight + slope * w
+        else:
+            raw_w = current + slope * w
+        weekly_forecasts.append(round(max(5.0, min(100.0, raw_w * uplift)), 2))
+
+    # ── Aggregate 4w / 12w targets ────────────────────────────────────────────
+    demand_4w  = weekly_forecasts[-1]   # week-4 value == predicted_demand_4w
+
     if spike_indicator and len(trend_series) >= 7:
-        mean_val = sum(trend_series[-7:]) / 7.0
-        raw_4w  = current * 0.70 + mean_val * 0.30 + slope * 4.0
         raw_12w = current * 0.55 + mean_val * 0.45 + slope * 4.0 * 0.4
     else:
-        raw_4w  = current + slope * 4.0
         raw_12w = current + slope * 4.0 + (slope * 8.0 * 0.4)   # dampened
 
-    # Seasonal uplift from seasonality score
-    uplift = 1.0 + (seasonality_score * 0.08)
-    demand_4w  = round(max(5.0, min(100.0, raw_4w  * uplift)), 2)
     demand_12w = round(max(5.0, min(100.0, raw_12w * uplift)), 2)
 
     mape = round(min(14.9, 8.0 + abs(slope) * 0.5), 2)
     return {
         "predicted_demand_4w":  demand_4w,
         "predicted_demand_12w": demand_12w,
+        "weekly_forecasts":     weekly_forecasts,
         "mape":       mape,
         "mae":        round(mape * 0.60, 2),
         "rmse":       round(mape * 0.85, 2),
