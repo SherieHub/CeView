@@ -11,9 +11,9 @@
 -- value) for backward compatibility; downstream code should prefer rolling_average_7d.
 
 ALTER TABLE tbl_market_signal_record
-    ADD COLUMN IF NOT EXISTS rolling_average_7d  DECIMAL(8, 4),
-    ADD COLUMN IF NOT EXISTS rolling_average_30d DECIMAL(8, 4),
-    ADD COLUMN IF NOT EXISTS yoy_ratio           DECIMAL(8, 4);
+    ADD COLUMN IF NOT EXISTS rolling_average_7d  FLOAT,
+    ADD COLUMN IF NOT EXISTS rolling_average_30d FLOAT,
+    ADD COLUMN IF NOT EXISTS yoy_ratio           FLOAT;
 
 -- ─── Covering index for the Gemini trend-series query ─────────────────────────
 -- Supports: SELECT trend_index … ORDER BY aggregated_at ASC (build chronological series)
