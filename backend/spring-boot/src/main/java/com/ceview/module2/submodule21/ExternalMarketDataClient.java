@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -132,6 +135,156 @@ public class ExternalMarketDataClient {
                 new FlightReferenceDto(marketId, false, "unknown", 0, 0, List.of()));
     }
 
+    // ─── GDP time-series (last 5 annual data points) ─────────────────────────
+
+    /**
+     * Fetches up to 5 years of annual GDP growth (World Bank NY.GDP.MKTP.KD.ZG).
+     *
+     * <p>The existing {@link #fetchGdpGrowth} returns only the most-recent value;
+     * this method returns all available years ordered chronologically (oldest → newest)
+     * so the frontend can render a trend line on the MarketRadar page.
+     *
+     * <p>Falls back to a 5-year flat series at the market default if the API is
+     * unavailable, keeping the pipeline non-blocking.
+     */
+    public GdpTrendDto fetchGdpTrend(String marketId) {
+        String countryCode = COUNTRY_CODE.getOrDefault(marketId, "US");
+        try {
+            List<Object> response = worldBankClient.get()
+                    .uri("/country/{code}/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrv=5", countryCode)
+                    .retrieve()
+                    .bodyToMono(LIST_TYPE)
+                    .block(TIMEOUT);
+
+            if (response != null && response.size() >= 2) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> records = (List<Map<String, Object>>) response.get(1);
+                if (records != null) {
+                    List<GdpTrendPoint> points = new ArrayList<>();
+                    for (Map<String, Object> rec : records) {
+                        Object val  = rec.get("value");
+                        Object date = rec.get("date");
+                        if (val != null && date != null) {
+                            points.add(new GdpTrendPoint(
+                                    Integer.parseInt(date.toString()),
+                                    ((Number) val).doubleValue()));
+                        }
+                    }
+                    if (!points.isEmpty()) {
+                        // World Bank returns newest-first → reverse to chronological order
+                        points.sort((a, b) -> Integer.compare(a.year(), b.year()));
+                        double latest = points.get(points.size() - 1).value();
+                        return new GdpTrendDto(countryCode, points, latest);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            MDC.put("code", Module2ErrorCodes.MOD21_EXTERNAL_API_ERROR);
+            log.warn("World Bank GDP trend fetch failed for {} — using defaults: {}", countryCode, e.getMessage());
+            MDC.remove("code");
+        }
+        return gdpTrendFallback(countryCode);
+    }
+
+    // ─── Forex time-series (12 monthly data points) ──────────────────────────
+
+    /**
+     * Fetches 12 months of historical forex rates (foreign-currency units per PHP).
+     *
+     * <p>Calls the configured forex API's date-range endpoint
+     * ({@code /{startDate}..{today}?from=PHP&to={currency}}).
+     * The full daily series is sampled to one value per calendar month (first
+     * available date in each month) so the frontend receives exactly 12 points.
+     *
+     * <p>Falls back to a flat 12-month series at the market default when the
+     * historical endpoint is not supported or the API is unavailable.
+     */
+    public ForexTrendDto fetchForexTrend(String marketId) {
+        String currencyCode = CURRENCY_CODE.getOrDefault(marketId, "USD");
+        LocalDate today     = LocalDate.now();
+        LocalDate startDate = today.minusMonths(12).withDayOfMonth(1);
+        DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
+        try {
+            Map<String, Object> response = forexClient.get()
+                    .uri("/{start}..{end}?from=PHP&to={code}",
+                            startDate.format(iso), today.format(iso), currencyCode)
+                    .retrieve()
+                    .bodyToMono(MAP_TYPE)
+                    .block(TIMEOUT);
+
+            if (response != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> ratesMap =
+                        (Map<String, Object>) response.get("rates");
+                if (ratesMap != null && !ratesMap.isEmpty()) {
+                    List<ForexTrendPoint> monthly = sampleMonthly(ratesMap, currencyCode);
+                    if (!monthly.isEmpty()) {
+                        double latest = monthly.get(monthly.size() - 1).value();
+                        return new ForexTrendDto(currencyCode, monthly, latest);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            MDC.put("code", Module2ErrorCodes.MOD21_EXTERNAL_API_ERROR);
+            log.warn("Forex trend fetch failed for {} — using defaults: {}", currencyCode, e.getMessage());
+            MDC.remove("code");
+        }
+        return forexTrendFallback(currencyCode, today);
+    }
+
+    // ─── helpers ─────────────────────────────────────────────────────────────
+
+    /**
+     * Samples a daily forex response map to one entry per calendar month
+     * (earliest date in each YYYY-MM bucket) and returns them chronologically.
+     *
+     * <p>The Frankfurter API returns:
+     * <pre>{"rates": {"2025-01-02": {"KRW": 23.5}, "2025-01-03": {"KRW": 23.6}, ...}}</pre>
+     */
+    @SuppressWarnings("unchecked")
+    private List<ForexTrendPoint> sampleMonthly(Map<String, Object> ratesMap, String currencyCode) {
+        // Bucket daily dates → (YYYY-MM → earliest rate)
+        Map<String, Double> monthBucket = new java.util.TreeMap<>();
+        for (Map.Entry<String, Object> entry : ratesMap.entrySet()) {
+            String dateStr = entry.getKey();            // "YYYY-MM-DD"
+            String monthKey = dateStr.substring(0, 7);  // "YYYY-MM"
+            Object dayRates = entry.getValue();
+            if (dayRates instanceof Map) {
+                Object rateObj = ((Map<String, Object>) dayRates).get(currencyCode);
+                if (rateObj instanceof Number && !monthBucket.containsKey(monthKey)) {
+                    monthBucket.put(monthKey, ((Number) rateObj).doubleValue());
+                }
+            }
+        }
+        List<ForexTrendPoint> points = new ArrayList<>();
+        for (Map.Entry<String, Double> e : monthBucket.entrySet()) {
+            points.add(new ForexTrendPoint(e.getKey(), e.getValue()));
+        }
+        return points;
+    }
+
+    /** Synthetic 5-year GDP trend at the market's static default (straight-line fallback). */
+    private GdpTrendDto gdpTrendFallback(String countryCode) {
+        double def  = GDP_DEFAULTS.getOrDefault(countryCode, 2.0);
+        int    year = LocalDate.now().getYear();
+        List<GdpTrendPoint> points = new ArrayList<>();
+        for (int i = 4; i >= 0; i--) {
+            points.add(new GdpTrendPoint(year - i, def));
+        }
+        return new GdpTrendDto(countryCode, points, def);
+    }
+
+    /** Synthetic 12-month forex trend at the market's static default (flat-line fallback). */
+    private ForexTrendDto forexTrendFallback(String currencyCode, LocalDate today) {
+        double def = FOREX_DEFAULTS.getOrDefault(currencyCode, 1.0);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        List<ForexTrendPoint> points = new ArrayList<>();
+        for (int i = 11; i >= 0; i--) {
+            points.add(new ForexTrendPoint(today.minusMonths(i).format(fmt), def));
+        }
+        return new ForexTrendDto(currencyCode, points, def);
+    }
+
     // ─── DTOs ────────────────────────────────────────────────────────────────
 
     public record GdpDataDto(String countryCode, double gdpGrowth, int year) {}
@@ -145,4 +298,23 @@ public class ExternalMarketDataClient {
             int distanceKm,
             int flightFrequency,
             List<Map<String, String>> airlines) {}
+
+    // ─── Trend-series DTOs ────────────────────────────────────────────────────
+
+    /** One annual GDP growth data point for a trend chart. */
+    public record GdpTrendPoint(int year, double value) {}
+
+    /**
+     * One monthly forex rate data point for a trend chart.
+     *
+     * @param date  ISO month string "YYYY-MM"
+     * @param value foreign-currency units per PHP
+     */
+    public record ForexTrendPoint(String date, double value) {}
+
+    /** Multi-year GDP growth time-series for a single market. */
+    public record GdpTrendDto(String countryCode, List<GdpTrendPoint> points, double latest) {}
+
+    /** 12-month forex rate time-series for a single market. */
+    public record ForexTrendDto(String currencyCode, List<ForexTrendPoint> points, double latest) {}
 }

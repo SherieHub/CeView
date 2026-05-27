@@ -34,11 +34,34 @@ const SkeletonBox: React.FC<{ className?: string; style?: React.CSSProperties }>
   />
 );
 
+const DESC_MIN_WORDS = 50;
+const UVP_MIN_WORDS = 30;
+
+const countWords = (text: string): number =>
+  text.trim() ? text.trim().split(/\s+/).length : 0;
+
 const UniquenessCalibrationForm: React.FC<FormProps> = ({
   payload, setPayload, onAnalyze, isAnalyzing, hasAnalyzed,
   categories, selectedCategories, onCategoryToggle, onCompute, isComputing,
 }) => {
-  const isFormValid = Boolean(payload.businessName && payload.coreServices.length > 0 && payload.description && payload.uvp);
+  const descWordCount = countWords(payload.description);
+  const uvpWordCount  = countWords(payload.uvp);
+
+  const validationErrors: string[] = [];
+  if (!payload.businessName) validationErrors.push('Business name is required.');
+  if (payload.coreServices.length === 0) validationErrors.push('At least one core service is required.');
+  if (!payload.description) {
+    validationErrors.push('Full description is required.');
+  } else if (descWordCount < DESC_MIN_WORDS) {
+    validationErrors.push(`Description must be at least ${DESC_MIN_WORDS} words (currently ${descWordCount}).`);
+  }
+  if (!payload.uvp) {
+    validationErrors.push('Unique Value Proposition is required.');
+  } else if (uvpWordCount < UVP_MIN_WORDS) {
+    validationErrors.push(`UVP must be at least ${UVP_MIN_WORDS} words (currently ${uvpWordCount}).`);
+  }
+
+  const isFormValid = validationErrors.length === 0;
 
   return (
     <div className="p-6 md:p-8 rounded-2xl border bg-white shadow-sm" style={{ borderColor: COLORS.LIGHT_GREY }}>
@@ -46,15 +69,15 @@ const UniquenessCalibrationForm: React.FC<FormProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2 mb-2">
         <div className="classname">
           <TextField label="Business Name" value={payload.businessName} onChange={(val) => setPayload({ ...payload, businessName: val })} placeholder="e.g. Sunset Cove Beach Resort" />
-          <TextAreaField label="Full Description" guideText="Provide a detailed overview of your property or business experience." value={payload.description} onChange={(val) => setPayload({ ...payload, description: val })} placeholder="e.g., A serene beachfront property in Moalboal offering direct access to the sardine run..." className="h-52"/>
+          <TextAreaField label="Full Description" guideText="Provide a detailed overview of your property or business experience." value={payload.description} onChange={(val) => setPayload({ ...payload, description: val })} placeholder="e.g., A serene beachfront property in Moalboal offering direct access to the sardine run..." className="h-52" minWords={DESC_MIN_WORDS} />
         </div>
         <div className="classname">
           <DynamicListManager guideText="List the specific amenities and core services your business provides to guests." items={payload.coreServices} onChange={(services) => setPayload({ ...payload, coreServices: services })} />
-          <TextAreaField label="Unique Value Proposition" guideText="What makes your business stand out from nearby competitors?" value={payload.uvp} onChange={(val) => setPayload({ ...payload, uvp: val })} placeholder="e.g., We are the only eco-resort in the area with a certified on-site marine biologist..." />
+          <TextAreaField label="Unique Value Proposition" guideText="What makes your business stand out from nearby competitors?" value={payload.uvp} onChange={(val) => setPayload({ ...payload, uvp: val })} placeholder="e.g., We are the only eco-resort in the area with a certified on-site marine biologist..." minWords={UVP_MIN_WORDS} />
         </div>
       </div>
 
-      <ValidationBanner isValid={isFormValid} />
+      <ValidationBanner isValid={isFormValid} errors={validationErrors} />
 
       {!hasAnalyzed && !isAnalyzing && (
         <button

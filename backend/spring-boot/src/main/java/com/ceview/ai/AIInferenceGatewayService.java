@@ -50,11 +50,11 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/classification/uniqueness", payload);
     }
 
-    public List<String> generateKeywords(Map<String, Object> payload) {
-        var resp = postSbert("/internal/classification/keywords", payload);
-        @SuppressWarnings("unchecked")
-        List<String> kws = (List<String>) resp.getOrDefault("keywords", List.of());
-        return kws;
+    /** Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2). */
+    public Map<String, Object> rankMarketsForCategory(String category) {
+        var payload = new HashMap<String, Object>();
+        payload.put("category", category);
+        return postTransformer("/api/v1/trends/rank-markets", payload);
     }
 
     // ─── Module 2.1 — Market data ingestion (fastapi-transformer) ────────────
