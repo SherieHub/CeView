@@ -1,6 +1,7 @@
 package com.ceview.module2.submodule22;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.NotificationDtos.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -31,22 +32,41 @@ public class NotificationService {
     private final ForecastResultRepository forecastRepo;
     private final AIInferenceGatewayService ai;
     private final ObjectMapper mapper;
+    private final BusinessProfileRepository profileRepo;
+    private final CategoryRankNotificationService categoryRankService;
 
     public NotificationService(DemandAlertRepository alertRepo,
                                 MarketScoreRepository scoreRepo,
                                 ForecastResultRepository forecastRepo,
                                 AIInferenceGatewayService ai,
-                                ObjectMapper mapper) {
-        this.alertRepo    = alertRepo;
-        this.scoreRepo    = scoreRepo;
-        this.forecastRepo = forecastRepo;
-        this.ai           = ai;
-        this.mapper       = mapper;
+                                ObjectMapper mapper,
+                                BusinessProfileRepository profileRepo,
+                                CategoryRankNotificationService categoryRankService) {
+        this.alertRepo           = alertRepo;
+        this.scoreRepo           = scoreRepo;
+        this.forecastRepo        = forecastRepo;
+        this.ai                  = ai;
+        this.mapper              = mapper;
+        this.profileRepo         = profileRepo;
+        this.categoryRankService = categoryRankService;
     }
 
     public NotificationsResponse getNotificationsForProfile(UUID profileId) {
+        // Fetch keyword-trend notifications regardless of whether demand alerts exist
+        List<String> profileCategories = (profileId != null)
+                ? profileRepo.findById(profileId)
+                        .map(p -> p.categoriesList())
+                        .orElse(List.of())
+                : List.of();
+
+        List<NotificationDto> keywordNotifications =
+                categoryRankService.buildForCategories(profileCategories);
+
         if (profileId == null) {
-            return fromStub();
+            NotificationsResponse stub = fromStub();
+            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
+            merged.addAll(stub.notifications());
+            return new NotificationsResponse(merged);
         }
 
         // Gather latest ForecastResult per market → join to MarketScore → DemandAlert
@@ -57,7 +77,10 @@ public class NotificationService {
         }
 
         if (forecasts.isEmpty()) {
-            return fromStub();
+            NotificationsResponse stub = fromStub();
+            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
+            merged.addAll(stub.notifications());
+            return new NotificationsResponse(merged);
         }
 
         List<UUID> forecastIds = forecasts.stream()
@@ -66,7 +89,10 @@ public class NotificationService {
 
         List<MarketScore> scores = scoreRepo.findByForecastResultIdIn(forecastIds);
         if (scores.isEmpty()) {
-            return fromStub();
+            NotificationsResponse stub = fromStub();
+            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
+            merged.addAll(stub.notifications());
+            return new NotificationsResponse(merged);
         }
 
         List<UUID> scoreIds = scores.stream()
@@ -74,9 +100,6 @@ public class NotificationService {
                 .collect(Collectors.toList());
 
         List<DemandAlert> alerts = alertRepo.findByMarketScoreIdInOrderByAlertDateDesc(scoreIds);
-        if (alerts.isEmpty()) {
-            return fromStub();
-        }
 
         // Index scores and forecasts for O(1) lookup
         Map<UUID, MarketScore> scoreById = scores.stream()
@@ -84,11 +107,20 @@ public class NotificationService {
         Map<UUID, ForecastResult> forecastById = forecasts.stream()
                 .collect(Collectors.toMap(ForecastResult::getForecastResultId, f -> f));
 
-        List<NotificationDto> notifications = alerts.stream()
+        List<NotificationDto> demandNotifications = alerts.stream()
                 .map(a -> toNotificationDto(a, scoreById, forecastById))
                 .collect(Collectors.toList());
 
-        return new NotificationsResponse(notifications);
+        // Keyword trend notifications appear first (most recent signal), then demand alerts
+        List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
+        merged.addAll(demandNotifications);
+
+        // Fallback to stub if both pipelines returned nothing
+        if (merged.isEmpty()) {
+            return fromStub();
+        }
+
+        return new NotificationsResponse(merged);
     }
 
     // ─── mapping helpers ─────────────────────────────────────────────────────
