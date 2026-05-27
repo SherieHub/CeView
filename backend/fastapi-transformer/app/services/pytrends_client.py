@@ -1,34 +1,27 @@
 """PyTrends wrapper for Module 2.1 Google Trends data ingestion (FR2.2).
 
-Follows the same singleton + fallback pattern as ml_classifier.py:
-  - attempt to import pytrends at module load
-  - if unavailable, all calls return deterministic stub values
-  - rate limiting handled with sleep between requests
+Requires pytrends to be installed and Google Trends to be reachable.
+Raises RuntimeError at import time if pytrends is unavailable.
 """
 from __future__ import annotations
 
-import hashlib
 import logging
-import random
 import time
-from datetime import datetime, date, timedelta, timezone
+from datetime import datetime, timezone
 
 from app.errors import MOD21_PYTRENDS_UNAVAILABLE
 from app.middleware.trace import get_trace_id
 
 logger = logging.getLogger(__name__)
 
-_TrendReq = None  # loaded once at import time
-
 try:
-    from pytrends.request import TrendReq as _TrendReqClass
-    _TrendReq = _TrendReqClass
+    from pytrends.request import TrendReq as _TrendReq
     logger.info("pytrends loaded successfully")
 except Exception as exc:  # noqa: BLE001
-    logger.warning(
-        "pytrends unavailable — using stub values",
-        extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE, "detail": str(exc)},
-    )
+    raise RuntimeError(
+        f"pytrends is required for Module 2.1 market data ingestion but could not be imported: {exc}. "
+        "Install it with: pip install pytrends"
+    ) from exc
 
 # Market → representative search keywords (Cebu inbound tourism context)
 _MARKET_KEYWORDS: dict[str, list[str]] = {
@@ -37,23 +30,16 @@ _MARKET_KEYWORDS: dict[str, list[str]] = {
     "usa":    ["Cebu Philippines travel", "Cebu vacation"],
 }
 
-# Deterministic stub base trend indices per market (0-100 scale)
-_STUB_BASE: dict[str, float] = {
-    "korea": 72.0,
-    "japan": 58.0,
-    "usa":   44.0,
-}
-
 
 def fetch_trends(market: str, categories: list[str]) -> dict:
     """Fetch current Google Trends index for a market-category pair.
 
     Returns:
         {market, trend_index, keywords_used, fetched_at, source}
-    """
-    if _TrendReq is None:
-        return _stub_trends(market)
 
+    Raises:
+        RuntimeError: if the PyTrends request fails or returns no data.
+    """
     keywords = _build_keywords(market, categories)
     try:
         pt = _TrendReq(hl="en-US", tz=0, timeout=(10, 25))
@@ -62,15 +48,17 @@ def fetch_trends(market: str, categories: list[str]) -> dict:
         time.sleep(5)  # avoid Google rate limiting between calls
 
         if df.empty:
-            logger.warning(
-                "PyTrends returned empty dataframe",
-                extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE, "market": market},
+            raise RuntimeError(
+                f"PyTrends returned an empty dataframe for market={market}. "
+                "Google Trends may be rate-limiting or the keywords returned no data."
             )
-            return _stub_trends(market)
 
         primary_col = keywords[0]
         if primary_col not in df.columns:
-            return _stub_trends(market)
+            raise RuntimeError(
+                f"Primary keyword '{primary_col}' not found in PyTrends response columns "
+                f"for market={market}. Available columns: {list(df.columns)}"
+            )
 
         trend_index = float(df[primary_col].tail(4).mean())
         return {
@@ -81,12 +69,17 @@ def fetch_trends(market: str, categories: list[str]) -> dict:
             "source": "live",
         }
 
+    except RuntimeError:
+        raise
     except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "PyTrends request failed — using stub",
+        logger.error(
+            "PyTrends request failed for market=%s: %s",
+            market, exc,
             extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE, "detail": str(exc)},
         )
-        return _stub_trends(market)
+        raise RuntimeError(
+            f"PyTrends request failed for market={market}: {exc}"
+        ) from exc
 
 
 def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> dict:
@@ -98,10 +91,10 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
     Returns:
         {market, weekly_series: [{date, trend_index}], keywords_used, fetched_at, source}
         weekly_series is chronological (oldest first).
-    """
-    if _TrendReq is None:
-        return _stub_trend_history(market, weeks)
 
+    Raises:
+        RuntimeError: if the PyTrends request fails or returns no data.
+    """
     keywords = _build_keywords(market, categories)
     try:
         pt = _TrendReq(hl="en-US", tz=0, timeout=(10, 25))
@@ -111,15 +104,18 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
         time.sleep(5)
 
         if df.empty:
-            logger.warning(
-                "PyTrends history returned empty dataframe for market=%s", market,
-                extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE},
+            raise RuntimeError(
+                f"PyTrends history returned an empty dataframe for market={market} "
+                f"(timeframe={timeframe}). "
+                "Google Trends may be rate-limiting or the keywords returned no data."
             )
-            return _stub_trend_history(market, weeks)
 
         primary_col = keywords[0]
         if primary_col not in df.columns:
-            return _stub_trend_history(market, weeks)
+            raise RuntimeError(
+                f"Primary keyword '{primary_col}' not found in PyTrends history response "
+                f"for market={market}. Available columns: {list(df.columns)}"
+            )
 
         series = [
             {"date": str(idx.date()), "trend_index": max(0.0, min(100.0, float(val)))}
@@ -139,12 +135,16 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
             "source": "live",
         }
 
+    except RuntimeError:
+        raise
     except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "PyTrends history failed for market=%s — using stub: %s", market, exc,
-            extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE},
+        logger.error(
+            "PyTrends history failed for market=%s: %s", market, exc,
+            extra={"trace_id": get_trace_id(), "code": MOD21_PYTRENDS_UNAVAILABLE, "detail": str(exc)},
         )
-        return _stub_trend_history(market, weeks)
+        raise RuntimeError(
+            f"PyTrends history request failed for market={market}: {exc}"
+        ) from exc
 
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
@@ -153,45 +153,3 @@ def _build_keywords(market: str, categories: list[str]) -> list[str]:
     base = _MARKET_KEYWORDS.get(market, ["Cebu Philippines"])
     category_terms = [f"Cebu {c}" for c in (categories or [])[:2]]
     return (base + category_terms)[:5]
-
-
-def _stub_trends(market: str) -> dict:
-    seed = int(hashlib.md5(market.encode()).digest()[0])
-    jitter = (seed % 20) - 10  # ±10
-    trend_index = max(0.0, min(100.0, _STUB_BASE.get(market, 50.0) + jitter))
-    return {
-        "market": market,
-        "trend_index": trend_index,
-        "keywords_used": [],
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "source": "stub",
-    }
-
-
-def _stub_trend_history(market: str, weeks: int) -> dict:
-    """Generate a realistic random-walk trend series for stub/offline mode.
-
-    Uses a seeded RNG so the same market always produces the same base shape,
-    but with meaningful week-over-week variance (±8 per step).
-    """
-    base = _STUB_BASE.get(market, 50.0)
-    seed = int(hashlib.md5(market.encode()).digest()[0])
-    rng = random.Random(seed)
-
-    today = date.today()
-    series: list[dict] = []
-    current = base
-
-    for i in range(weeks):
-        week_date = today - timedelta(weeks=(weeks - 1 - i))
-        step = rng.uniform(-8.0, 8.0)
-        current = max(10.0, min(95.0, current + step))
-        series.append({"date": str(week_date), "trend_index": round(current, 1)})
-
-    return {
-        "market": market,
-        "weekly_series": series,
-        "keywords_used": [],
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "source": "stub",
-    }

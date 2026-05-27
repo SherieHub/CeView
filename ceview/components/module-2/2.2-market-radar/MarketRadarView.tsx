@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, MapPin, Navigation, Plane, RefreshCw } from 'lucide-react';
-import { COLORS, MOCK_MARKETS } from '../../../constants';
-import { api } from '../../../services/apiClient';
+import { COLORS } from '../../../constants';
+import { api, ApiError } from '../../../services/apiClient';
 import type { Market } from '../../../types';
 
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
+import SkeletonBox from '../../shared/SkeletonBox';
 import MarketRankCard from './components/MarketRankCard';
+import MarketRankCardSkeleton from './components/MarketRankCardSkeleton';
 import MetricHighlight from './components/MetricHighlight';
 import LiveAlertBanner from './components/LiveAlertBanner';
 import StrategicDirectivePanel from './components/StrategicDirectivePanel';
@@ -19,10 +21,12 @@ interface MarketRadarViewProps {
   onBack?: () => void;
   initialMarketId?: string;
   onNavigateToContent?: (marketId: string) => void;
+  /** When true, automatically runs the full forecast pipeline on mount (e.g. from a notification click). */
+  autoAnalyze?: boolean;
 }
 
 const MarketRadarView: React.FC<MarketRadarViewProps> = ({
-  businessProfileId, businessName, categories, onBack, initialMarketId, onNavigateToContent,
+  businessProfileId, businessName, categories, onBack, initialMarketId, onNavigateToContent, autoAnalyze,
 }) => {
   const hasBusinessName = !!businessName?.trim();
   const hasCategories = (categories?.length ?? 0) > 0;
@@ -33,28 +37,29 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
   const pillLabel = hasCategories
     ? `Profile: ${categories!.join(' · ')}`
     : 'Profile: Eco-Tourism / Beach';
-  const [markets, setMarkets] = useState<Market[]>(MOCK_MARKETS);
-  const [selectedMarketId, setSelectedMarketId] = useState<string>(initialMarketId ?? MOCK_MARKETS[0].id);
-  const [isUsingMock, setIsUsingMock] = useState<boolean>(true);
+
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [selectedMarketId, setSelectedMarketId] = useState<string>(initialMarketId ?? '');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const loadMarkets = useCallback(() => {
+    setIsLoading(true);
     api.listMarkets(businessProfileId ?? undefined)
       .then(r => {
         if (r.markets?.length) {
           setMarkets(r.markets);
-          setIsUsingMock(false);
+          if (!selectedMarketId) setSelectedMarketId(r.markets[0].id);
         }
       })
-      .catch(e => {
-        console.warn('listMarkets failed, using mock', e);
-        setIsUsingMock(true);
-        setServerError('Market data service unavailable. Showing demo data.');
-      });
-  }, [businessProfileId]);
-
-  useEffect(() => { loadMarkets(); }, [loadMarkets]);
+      .catch((err) => {
+        const ae = err instanceof ApiError ? err : null;
+        const detail = ae?.message ?? 'Please try again later.';
+        setServerError(`Market data unavailable: ${detail}`);
+      })
+      .finally(() => setIsLoading(false));
+  }, [businessProfileId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => {
     if (!businessProfileId) return;
@@ -63,15 +68,25 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
       const r = await api.analyzeMarkets(businessProfileId);
       if (r.markets?.length) {
         setMarkets(r.markets);
-        setIsUsingMock(false);
+        if (!selectedMarketId) setSelectedMarketId(r.markets[0].id);
       }
-    } catch (e) {
-      console.warn('analyzeMarkets failed', e);
-      setServerError('Market analysis failed. The AI service may be unavailable.');
+    } catch (err) {
+      const ae = err instanceof ApiError ? err : null;
+      const detail = ae?.code && !ae.code.startsWith('HTTP_')
+        ? ae.message
+        : ae?.message ?? 'The AI service may be unavailable.';
+      setServerError(`Market analysis failed: ${detail}`);
     } finally {
       setIsRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    loadMarkets();
+    if (autoAnalyze && businessProfileId) {
+      handleRefresh();
+    }
+  }, [loadMarkets]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedMarket = markets.find((m) => m.id === selectedMarketId) || markets[0];
 
@@ -110,15 +125,6 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {isUsingMock && (
-            <span
-              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border"
-              style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
-              title="Backend unreachable — showing seeded demo data"
-            >
-              Demo Data
-            </span>
-          )}
           <button
             onClick={handleRefresh}
             disabled={!businessProfileId || isRefreshing}
@@ -132,35 +138,44 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
         </div>
       </div>
 
+      {/* Market rank cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {markets.map((market) => (
-          <MarketRankCard
-            key={market.id}
-            market={market}
-            isSelected={market.id === selectedMarketId}
-            onClick={() => setSelectedMarketId(market.id)}
-          />
-        ))}
+        {isLoading
+          ? [0, 1, 2].map(i => <MarketRankCardSkeleton key={i} />)
+          : markets.map((market) => (
+              <MarketRankCard
+                key={market.id}
+                market={market}
+                isSelected={market.id === selectedMarketId}
+                onClick={() => setSelectedMarketId(market.id)}
+              />
+            ))
+        }
       </div>
 
-      <LiveAlertBanner market={selectedMarket} />
+      {/* Detail panel */}
+      {isLoading || !selectedMarket ? (
+        <SkeletonBox style={{ height: 420, borderRadius: 16 }} />
+      ) : (
+        <>
+          <LiveAlertBanner market={selectedMarket} />
 
-      <div className="rounded-2xl shadow-xl overflow-hidden" style={{ backgroundColor: COLORS.WHITE, border: `1px solid ${COLORS.LIGHT_GREY}` }}>
+          <div className="rounded-2xl shadow-xl overflow-hidden" style={{ backgroundColor: COLORS.WHITE, border: `1px solid ${COLORS.LIGHT_GREY}` }}>
+            <StrategicDirectivePanel
+              directive={selectedMarket.directive}
+              onNavigateToContent={onNavigateToContent ? () => onNavigateToContent(selectedMarketId) : undefined}
+            />
 
-        <StrategicDirectivePanel
-          directive={selectedMarket.directive}
-          onNavigateToContent={onNavigateToContent ? () => onNavigateToContent(selectedMarketId) : undefined}
-        />
+            <div className="grid grid-cols-2 divide-x border-b" style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: COLORS.OFF_WHITE }}>
+              <MetricHighlight icon={<Navigation size={16} />} label="Distance to Cebu" value={`${selectedMarket.distanceKm.toLocaleString()} km`} color={COLORS.SKYBLUE} />
+              <MetricHighlight icon={<Plane size={16} />} label="Route Type" value={selectedMarket.directFlight ? 'Direct Flights' : 'Via Manila'} color={selectedMarket.directFlight ? COLORS.GREEN : COLORS.GOLD} />
+            </div>
 
-        <div className="grid grid-cols-2 divide-x border-b" style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: COLORS.OFF_WHITE }}>
-          <MetricHighlight icon={<Navigation size={16} />} label="Distance to Cebu" value={`${selectedMarket.distanceKm.toLocaleString()} km`} color={COLORS.SKYBLUE} />
-          <MetricHighlight icon={<Plane size={16} />} label="Route Type" value={selectedMarket.directFlight ? 'Direct Flights' : 'Via Manila'} color={selectedMarket.directFlight ? COLORS.GREEN : COLORS.GOLD} />
-        </div>
-
-        <DemandForecastChart chartData={selectedMarket.chartData} />
-        <EconomicInsightsBoard market={selectedMarket} />
-
-      </div>
+            <DemandForecastChart chartData={selectedMarket.chartData} />
+            <EconomicInsightsBoard market={selectedMarket} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -1,11 +1,14 @@
 """
-Server-side AI wrapper (DeepSeek). Mirrors the five prompts currently in the
+Server-side AI wrapper (Gemini). Mirrors the five prompts currently in the
 frontend's `ceview/services/geminiService.ts` so swapping the frontend over
 later changes only the transport, not the behavior.
 
-When DEEPSEEK_API_KEY is missing, every function returns a deterministic
+When GEMINI_API_KEY is missing, every function returns a deterministic
 fallback. Module-3 functions tag the returned dict with a `source` field
-("deepseek" | "fallback") so the UI can label demo data.
+("gemini" | "fallback") so the UI can label demo data.
+
+Follows the same initialisation pattern as fastapi-transformer/gemini_forecaster.py:
+  google.generativeai → genai.configure(api_key) → GenerativeModel.generate_content()
 """
 
 from __future__ import annotations
@@ -16,33 +19,52 @@ import os
 
 from app import errors
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+_log = logging.getLogger("gemini_client")
 
-_client = None
-if DEEPSEEK_API_KEY:
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+_genai = None
+if GEMINI_API_KEY:
     try:
-        from openai import OpenAI as _OpenAI
-        _client = _OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com/v1")
-    except Exception:
-        _client = None
+        import google.generativeai as _google_genai  # type: ignore[import]
+        _google_genai.configure(api_key=GEMINI_API_KEY)
+        _genai = _google_genai
+        _log.info("Gemini API initialised — model=%s", GEMINI_MODEL)
+    except Exception as _init_exc:
+        _log.error("Failed to initialise Gemini API: %s", _init_exc)
+        _genai = None
+else:
+    _log.warning(
+        "GEMINI_API_KEY not set — all AI calls will return deterministic fallback data."
+    )
 
 
 def _enabled() -> bool:
-    return _client is not None
+    return _genai is not None
 
 
-def _generate_json(prompt: str, schema: dict | None = None) -> dict:
+def _generate_json(prompt: str) -> dict:
+    """Call Gemini and return the parsed JSON response dict.
+
+    Uses ``response_mime_type="application/json"`` so the model returns a
+    clean JSON string without markdown fences.  Returns ``{}`` on any failure
+    so callers' ``gemini_out.get(key, fallback)`` pattern is always safe.
+    """
     if not _enabled():
         return {}
     try:
-        resp = _client.chat.completions.create(
-            model="deepseek-chat",
-            response_format={"type": "json_object"},
-            messages=[{"role": "user", "content": prompt}],
+        model = _genai.GenerativeModel(
+            GEMINI_MODEL,
+            generation_config=_genai.GenerationConfig(
+                temperature=0.4,
+                response_mime_type="application/json",
+            ),
         )
-        return json.loads(resp.choices[0].message.content or "{}")
+        response = model.generate_content(prompt)
+        return json.loads(response.text.strip())
     except Exception as exc:
-        logging.getLogger("deepseek_client").warning("DeepSeek API call failed: %s", exc)
+        _log.warning("Gemini API call failed: %s", exc)
         return {}
 
 

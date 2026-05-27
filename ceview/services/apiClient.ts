@@ -93,7 +93,7 @@ export const api = {
   }),
 
   classifyUniqueness: (body: {
-    businessName: string; categories: string[]; coreServices: string[]; description: string; uvp: string;
+    businessProfileId?: string; businessName: string; categories: string[]; coreServices: string[]; description: string; uvp: string;
   }) => req<UniquenessResultDTO>('/api/v1/classification/uniqueness', {
     method: 'POST', body: JSON.stringify(body),
   }),

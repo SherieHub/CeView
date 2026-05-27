@@ -75,6 +75,7 @@ class ContentGenerateRequest(BaseModel):
     market:          str        = Field(default="korea", description="korea | japan | usa")
     businessName:    str        = Field(default="")
     description:     str        = Field(default="")
+    uvp:             str        = Field(default="", description="Unique Value Proposition from business profile")
     categories:      list[str]  = Field(default_factory=list)
     trend:           str        = Field(default="")
     uniquenessScore: int        = Field(default=0, ge=0, le=100)
@@ -207,6 +208,7 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
     market           = (req.market or "korea").strip() or "korea"
     business_name    = req.businessName or ""
     description      = req.description or ""
+    uvp              = req.uvp or ""
     categories       = req.categories or []
     trend            = req.trend or ""
     uniqueness_score = int(req.uniquenessScore or 0)
@@ -229,10 +231,9 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
     agent_input = CaptionInputClass(
         business_name        = business_name,
         business_description = description,
-        business_uvp         = "",   # not yet in ContentGenerationService payload; Node 2 handles absence gracefully
-        business_services    = categories,  # use categories as service proxies until profile enrichment
+        business_uvp         = uvp,
+        business_services    = categories,
         market_category      = market_category,
-        country_market       = "Philippines",
         target_market        = target_market,
         forecast_context     = forecast_str,
         research_context     = research_str,

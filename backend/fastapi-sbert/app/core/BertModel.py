@@ -17,7 +17,7 @@ log = logging.getLogger("module1.classifier")
 
 load_dotenv()
 _KERAS_PATH = os.environ.get(
-    "KERAS_MODEL_PATH", "/app/models/complete_classifier_head.keras"
+    "KERAS_MODEL_PATH", "/models/complete_classifier_head.keras"
 )
 E5_MODEL_ID = "intfloat/multilingual-e5-base"
 CATEGORY_THRESHOLD = 0.5

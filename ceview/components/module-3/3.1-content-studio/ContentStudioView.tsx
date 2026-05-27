@@ -149,14 +149,37 @@ export default function ContentStudioView({
       return;
     }
 
-    api.evaluateCompliance({
-      caption: stagedCaption,
-      market: initialMarketId ?? 'korea',
-      mediaName: uploadedFile?.name,
-      mediaSize: uploadedFile?.size,
-    })
+    // Use the full OMCS pipeline (CAS + VAS + HCS) when a profileId is
+    // available so the SmartOptimizationBoard can render sub-scores.
+    // Fall back to the basic path for unauthenticated / no-profile sessions.
+    const complianceCall = businessProfileId
+      ? api.evaluateComplianceFull({
+          caption: stagedCaption,
+          market: initialMarketId ?? 'korea',
+          mediaName: uploadedFile?.name,
+          mediaSize: uploadedFile?.size,
+        }, businessProfileId)
+      : api.evaluateCompliance({
+          caption: stagedCaption,
+          market: initialMarketId ?? 'korea',
+          mediaName: uploadedFile?.name,
+          mediaSize: uploadedFile?.size,
+        });
+
+    complianceCall
       .then(r => {
-        setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
+        setCompliance({
+          score: r.score,
+          aligned: r.aligned ?? [],
+          gaps: r.gaps ?? [],
+          source: r.source,
+          casScore: r.casScore,
+          vasScore: r.vasScore,
+          hcsScore: r.hcsScore,
+          omcsScore: r.omcsScore,
+          interpretation: r.interpretation,
+          mismatches: r.mismatches,
+        });
         setComplianceSource(r.source ?? 'fallback');
       })
       .catch(e => {
@@ -188,12 +211,23 @@ export default function ContentStudioView({
 
   /**
    * Approve an option card — stores the approved index + text per platform,
-   * and stages it in the Media Caption Manager for the compliance audit.
+   * stages it in the Media Caption Manager for the compliance audit, and
+   * persists the approval to the backend (required by the creative direction
+   * pipeline: CreativeDirectionService checks for approved content before
+   * generating visual direction).
    */
   const handleApproveOption = (idx: number, text: string) => {
     setApprovedIndices(prev => ({ ...prev, [activeTab]: idx }));
     setApprovedCaptions(prev => ({ ...prev, [activeTab]: text }));
     setStagedCaption(text);
+
+    // Persist to tbl_localized_promotional_content so UC-3.2 (creative
+    // direction) and UC-3.3 (full compliance pipeline) can read approved
+    // captions. Fire-and-forget — approval failure is non-blocking for the UI.
+    if (businessProfileId) {
+      api.approveContent(businessProfileId, initialMarketId ?? 'korea')
+        .catch(e => logModule3Error('approveContent', e));
+    }
   };
 
   // ── Loading / error empty states ─────────────────────────────────────────

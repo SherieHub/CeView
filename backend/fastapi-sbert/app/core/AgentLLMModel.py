@@ -6,10 +6,10 @@ logger = logging.getLogger(__name__)
 
 
 class AgentLLMModel:
-    """Singleton wrapper around ChatOpenAI (DeepSeek backend) for the LangGraph caption agent.
+    """Singleton wrapper around ChatGoogleGenerativeAI (Gemini) for the LangGraph caption agent.
 
-    Initialisation is deferred and fail-safe: if DEEPSEEK_API_KEY is absent or
-    langchain_openai cannot be imported, the singleton is set to None so
+    Initialisation is deferred and fail-safe: if GEMINI_API_KEY is absent or
+    langchain_google_genai cannot be imported, the singleton is set to None so
     the rest of the SBERT server starts normally.  Callers must guard against
     get_model() returning None.
     """
@@ -26,25 +26,24 @@ class AgentLLMModel:
 
     def _initialize(self):
         self._model = None
-        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        api_key = os.environ.get("GEMINI_API_KEY", "")
         if not api_key:
             logger.warning(
-                "AgentLLMModel: DEEPSEEK_API_KEY not set — "
+                "AgentLLMModel: GEMINI_API_KEY not set — "
                 "caption generation agent will be unavailable."
             )
             return
         try:
-            from langchain_openai import ChatOpenAI  # type: ignore[import]
-            self._model = ChatOpenAI(
-                model="deepseek-chat",
+            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import]
+            self._model = ChatGoogleGenerativeAI(
+                model="gemini-2.0-flash",
                 temperature=0.7,
-                openai_api_key=api_key,
-                openai_api_base="https://api.deepseek.com/v1",
+                google_api_key=api_key,
             )
-            logger.info("AgentLLMModel: ChatOpenAI (DeepSeek) initialised (deepseek-chat).")
+            logger.info("AgentLLMModel: ChatGoogleGenerativeAI (Gemini) initialised (gemini-2.0-flash).")
         except Exception as exc:
             logger.warning(
-                "AgentLLMModel: could not initialise DeepSeek client — "
+                "AgentLLMModel: could not initialise Gemini client — "
                 "caption agent will be unavailable. Error: %s", exc
             )
 
@@ -55,4 +54,4 @@ class AgentLLMModel:
 
 # ── Module-level singleton — safe: never raises, may be None ─────────────────
 _wrapper = AgentLLMModel()
-model = _wrapper.get_model()   # None when DEEPSEEK_API_KEY absent
+model = _wrapper.get_model()   # None when GEMINI_API_KEY absent
