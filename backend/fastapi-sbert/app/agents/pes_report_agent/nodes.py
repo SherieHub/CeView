@@ -1,114 +1,157 @@
-from app.agents.pes_report_agent.nodes import AgentState, ReportOutput, EvaluationResult
-import json
-from typing import Dict, TypedDict, Any, List
-from pydantic import BaseModel, Field
+"""PES Report Agent — node definitions.
 
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph, END
+generate_report  → builds structured ReportOutput via Gemini
+evaluate_report  → scores and validates the report via Gemini
+finalize_response → packages final_ui_payload and metadata
+route_action     → conditional edge: pass (score ≥ 85) or retry (up to 3×)
+"""
+from __future__ import annotations
+
+# BUG FIX: was `from app.agents.pes_report_agent.nodes import ...` — circular.
+# All shared types live in state.py.
+from app.agents.pes_report_agent.state import (
+    AgentState,
+    ReportOutput,
+    EvaluationResult,
+    CrossMetricLogic,
+    MetricCondition,
+    RankedWeakness,
+)
+import json
+from typing import Any
+
 from app.core.AgentLLMModel import AgentLLMModel
 from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
 
-generator_llm = AgentLLMModel.get_model()
-evaluator_llm = AgentLLMModel.get_model()
+# ── LLM setup with structured outputs ────────────────────────────────────────
+# BUG FIX: AgentLLMModel.get_model() is an *instance* method — must instantiate
+# via AgentLLMModel() (singleton __new__ returns the same object every time).
+# BUG FIX: plain get_model() returns the base LLM; we need .with_structured_output()
+# so the invoke() result is the Pydantic model, not a BaseMessage.
+_base_llm = AgentLLMModel().get_model()   # None when GOOGLE_API_KEY absent
+
+generator_llm = _base_llm.with_structured_output(ReportOutput)     if _base_llm else None
+evaluator_llm = _base_llm.with_structured_output(EvaluationResult) if _base_llm else None
+
+# ── Fallback values used when LLM is unavailable ─────────────────────────────
+
+_FALLBACK_REPORT = ReportOutput(
+    metric_conditions=[],
+    cross_metric_logic=CrossMetricLogic(
+        relationships="LLM unavailable — no analysis performed.",
+        insights="",
+    ),
+    ranked_weaknesses=[],
+)
+
+_FALLBACK_EVALUATION = {
+    "score": 0,
+    "pass": False,
+    "issues": ["LLM unavailable"],
+    "missing_elements": [],
+    "accuracy_check": "incorrect",
+    "recommendation": "regenerate",
+}
+
 # ==========================================
-# 2. Define the Nodes (Agents)
+# Node definitions
 # ==========================================
 
-def generate_report(state: AgentState):
-    """Agent 1: Generates the structured marketing report JSON."""
+
+def generate_report(state: AgentState) -> dict[str, Any]:
+    """Agent 1 — Generate structured marketing report JSON.
+
+    On retry iterations, the evaluator's feedback is injected into the prompt
+    so the generator can correct specific issues.
+    """
     metrics_data = state["metrics_data"]
-    iterations = state.get("iterations", 0)
-    
-    # 1. Prepare feedback context if this is a retry loop
+    iterations   = state.get("iterations", 0)
+
+    # Inject evaluator feedback on retries
     feedback_context = ""
     if iterations > 0 and state.get("evaluation"):
-        feedback_context = f"\n\nCRITICAL FEEDBACK FROM EVALUATOR - FIX THESE ISSUES:\n{json.dumps(state['evaluation'], indent=2)}"
+        feedback_context = (
+            "\n\nCRITICAL FEEDBACK FROM EVALUATOR — FIX THESE ISSUES:\n"
+            + json.dumps(state["evaluation"], indent=2)
+        )
 
-    # 2. Format the messages using the ChatPromptTemplate
+    if generator_llm is None:
+        return {"report": _FALLBACK_REPORT.model_dump(), "iterations": iterations + 1}
+
     messages = generation_prompt.format_messages(
         metrics_data=metrics_data,
-        feedback_context=feedback_context
+        feedback_context=feedback_context,
     )
-    
-    # 3. Invoke the generator LLM with the structured output schema
     result: ReportOutput = generator_llm.invoke(messages)
-    
-    # 4. Return the dumped Pydantic model and increment iterations
-    return {
-        "report": result.model_dump(), 
-        "iterations": iterations + 1
-    }
+    return {"report": result.model_dump(), "iterations": iterations + 1}
 
-def evaluate_report(state: AgentState):
-    """Agent 2: Evaluates the generated JSON report."""
-    metrics_data = state["metrics_data"]
-    report = state["report"]
 
-    # 1. Convert the report dictionary into a formatted JSON string
+def evaluate_report(state: AgentState) -> dict[str, Any]:
+    """Agent 2 — Evaluate the generated report for accuracy and completeness."""
+    metrics_data     = state["metrics_data"]
+    report           = state["report"]
     formatted_report = json.dumps(report, indent=2)
 
-    # 2. Format the messages using your ChatPromptTemplate
+    if evaluator_llm is None:
+        return {"evaluation": _FALLBACK_EVALUATION}
+
     messages = evaluation_prompt.format_messages(
         metrics_data=metrics_data,
-        generated_report=formatted_report
+        generated_report=formatted_report,
     )
-    
-    # 3. Invoke the evaluator LLM with the structured output schema
     result: EvaluationResult = evaluator_llm.invoke(messages)
-    
-    # 4. Return the dumped Pydantic model back to the state
+    # by_alias=True serializes pass_status → "pass" (matches route_action's key lookup)
     return {"evaluation": result.model_dump(by_alias=True)}
 
-def finalize_response(state: AgentState):
-    """Agent 3 (Final Node): Packages the final score, determines if user review is needed, and bundles the UI payload."""
-    
-    # 1. Grab necessary data from the current state
-    report = state.get("report", {})
-    evaluation = state.get("evaluation", {})
-    score = evaluation.get("score", 0)
-    iterations = state.get("iterations", 0)
+
+def finalize_response(state: AgentState) -> dict[str, Any]:
+    """Agent 3 (Final) — Package report + metadata into the UI payload."""
+    report      = state.get("report", {})
+    evaluation  = state.get("evaluation", {})
+    score       = evaluation.get("score", 0)
+    iterations  = state.get("iterations", 0)
     MAX_RETRIES = 3
-    
-    # 2. Calculate logic
+
     needs_review = bool(iterations >= MAX_RETRIES and score < 85)
-    
-    # 3. Build Metadata
+
     final_metadata = {
-        "final_score": score,
-        "total_iterations": iterations,
+        "final_score":        score,
+        "total_iterations":   iterations,
         "needs_human_review": needs_review,
-        "warning_message": "WARNING: Quality threshold not met after maximum retries. Please review the AI report for inaccuracies." if needs_review else "Report passed quality checks."
+        "warning_message": (
+            "WARNING: Quality threshold not met after maximum retries. "
+            "Please review the AI report for inaccuracies."
+            if needs_review
+            else "Report passed quality checks."
+        ),
     }
-    
-    # 4. NEW: Bundle everything together for the UI
+
     final_ui_payload = {
-        "report_data": report,       # This includes your metric conditions, cross-metric logic, and ranked weaknesses!
-        "metadata": final_metadata   # This includes your score and warnings!
+        "report_data": report,        # metric_conditions, cross_metric_logic, ranked_weaknesses
+        "metadata":    final_metadata,
     }
-    
-    # 5. Return both to update the state. 
-    # If your API reads the output of this final node, it will now see the entire package.
+
     return {
-        "final_metadata": final_metadata,
-        "final_ui_payload": final_ui_payload 
+        "final_metadata":   final_metadata,
+        "final_ui_payload": final_ui_payload,
     }
 
+
 # ==========================================
-# 3. Define the Routing Logic
+# Routing logic
 # ==========================================
 
-def route_action(state: AgentState):
-    evaluation = state.get("evaluation", {})
-    score = evaluation.get("score", 0)
-    passed = evaluation.get("pass", False)
-    iterations = state.get("iterations", 0)
-    
+
+def route_action(state: AgentState) -> str:
+    """Conditional edge: pass → finalize_response; fail → generate_report (retry)."""
+    evaluation  = state.get("evaluation", {})
+    score       = evaluation.get("score", 0)
+    passed      = evaluation.get("pass", False)
+    iterations  = state.get("iterations", 0)
     MAX_RETRIES = 3
 
     if score >= 85 and passed:
         return "finalize_response"
-    elif iterations >= MAX_RETRIES:
+    if iterations >= MAX_RETRIES:
         return "finalize_response"
-    else:
-        return "generate_report"
+    return "generate_report"

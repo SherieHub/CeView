@@ -38,15 +38,61 @@ public class AnalyticsDtos {
         List<PesBreakdownItem> breakdown
     ) {}
 
+    /**
+     * One evaluated funnel transition — ranked from "Weakest" → "Alright"
+     * by business impact (not solely by raw drop-rate percentage).
+     *
+     * <ul>
+     *   <li>"Weakest"  — primary conversion bottleneck; most actionable</li>
+     *   <li>"Moderate" — secondary concern; materially improvable</li>
+     *   <li>"Alright"  — lowest-priority leak for this campaign period</li>
+     * </ul>
+     *
+     * @param stage    Transition label  e.g. "Clicks → Conversions"
+     * @param rank     "Weakest" | "Moderate" | "Alright"
+     * @param dropRate Formatted absolute drop percentage e.g. "88.1%"
+     * @param insight  AI one-sentence root-cause diagnosis for this transition
+     */
+    public record FunnelDiagnostic(
+        String stage,
+        String rank,
+        String dropRate,
+        String insight
+    ) {}
+
+    /**
+     * A specific, actionable recommendation mapped 1-to-1 with a {@link FunnelDiagnostic}.
+     *
+     * <p>Urgency is strictly derived from the corresponding funnel rank:
+     * <ul>
+     *   <li>"Weakest"  → "Most Urgent"</li>
+     *   <li>"Moderate" → "Urgent"</li>
+     *   <li>"Alright"  → "Not Very Urgent"</li>
+     * </ul>
+     *
+     * @param stage   Matches the corresponding {@link FunnelDiagnostic#stage()}
+     * @param urgency "Most Urgent" | "Urgent" | "Not Very Urgent"
+     * @param title   Short action title (≤ 8 words)
+     * @param action  Concrete 1-sentence implementation step
+     */
+    public record RankedRecommendation(
+        String stage,
+        String urgency,
+        String title,
+        String action
+    ) {}
+
+    /**
+     * Prescriptive report shape — Module 4 SDD §4.3.
+     *
+     * <p>All three funnel transitions are always evaluated and returned,
+     * ranked from "Weakest" to "Alright". Every {@link FunnelDiagnostic}
+     * has exactly one matching {@link RankedRecommendation} (same {@code stage} value).
+     */
     public record PrescriptiveReport(
         String executiveSummary,
-        String lowestMetric,
-        String lowestMetricMeaning,
-        List<String> recommendations,
-        List<String> otherAreasImprove,
-        WeakStage weakestStage,
-        List<WeakStage> secondaryLeaks
-    ) {
-        public record WeakStage(String name, String dropoff, String diagnosis) {}
-    }
+        List<FunnelDiagnostic> funnelDiagnostics,
+        List<RankedRecommendation> recommendations,
+        String recommendedPlatform
+    ) {}
 }

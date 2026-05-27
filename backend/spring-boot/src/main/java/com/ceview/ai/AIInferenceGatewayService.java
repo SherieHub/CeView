@@ -116,10 +116,27 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/compliance/evaluate-full", payload);
     }
 
-    // ─── Module 4 — Analytics report (fastapi-sbert) ─────────────────────────
+    // ─── Module 4 — Analytics report + PES deep-analysis (fastapi-sbert) ───────
 
     public Map<String, Object> generateReport(Map<String, Object> payload) {
         return postSbert("/internal/report/generate", payload);
+    }
+
+    /**
+     * PES time-series deep-analysis via pes_report_agent (LangGraph + Gemini).
+     *
+     * <p>Payload shape:
+     * <pre>
+     * {
+     *   "metrics_data": { "CTR": [current,...,baseline], "CPC": [...], ... },
+     *   "weeks": 4 | 8
+     * }
+     * </pre>
+     *
+     * @see com.ceview.module4.AnalyticsController#pesAnalysis
+     */
+    public Map<String, Object> generatePesAnalysis(Map<String, Object> payload) {
+        return postSbert("/internal/pes-analysis/generate", payload);
     }
 
     public byte[] generateReportPdf(Map<String, Object> payload) {
