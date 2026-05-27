@@ -9,7 +9,7 @@ pre-formatted string blocks injected directly into the LangChain
 prompt template — they must be populated by the caller before invoking
 the graph (via CaptionInputClass).
 """
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, TypedDict, Optional
 
 
 class SocialAgentState(TypedDict):
@@ -19,22 +19,22 @@ class SocialAgentState(TypedDict):
     business_uvp:         str
     business_services:    List[str]   # full list; Node 1 filters this down
     market_category:      str         # e.g. "Coastal & Island", "healing travel"
-    country_market:       str         # e.g. "Philippines"
 
     # ── Market localisation context (optional, defaults to empty string) ─────
     target_market:        str   # e.g. "South Korea", "Japan", "USA"
                                 # injected into prompt as {target_market}
 
-    forecast_context:     str   # pre-formatted multi-line block, e.g.:
+    forecast_context:     Optional[str]   # pre-formatted multi-line block, e.g.:
                                 #   "Market forecast context:\n- Market score: 0.87 / 1.0\n..."
                                 # empty string when Module 2 data is unavailable
 
-    research_context:     str   # pre-formatted multi-line block from SerpAPI/cultural_research,
+    research_context:     Optional[str]   # pre-formatted multi-line block from SerpAPI/cultural_research,
                                 # e.g.: "Cultural research context:\n- Traveller behaviour: ..."
                                 # empty string when SerpAPI is unavailable
 
     # ── Derived / generated (written by graph nodes) ─────────────────────────
-    relevant_services: List[str]                           # set by Node 1
+    relevant_priority_services: List[str]                           # set by Node 1
+    extra_additional_services: List[str]                           # set by Node 1
     final_captions:    Dict[str, List[Dict[str, Any]]]    # set by Node 2
     # final_captions shape (6-field schema — one object per demographic archetype):
     # {
