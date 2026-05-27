@@ -79,7 +79,7 @@ Description: {description}
 UVP: {uvp}
 
 Return JSON: descriptionScore (0-100), categoryScore (0-100), descriptionReasoning (string), categoryReasoning (string).""",
-    )
+)
 
 
 # ── Module 3 ────────────────────────────────────────────────────────────────
