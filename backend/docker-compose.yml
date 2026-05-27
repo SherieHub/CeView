@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ceview
       POSTGRES_PASSWORD: ceview
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ceview-pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -17,16 +17,22 @@ services:
       retries: 10
 
   fastapi:
-    build: ./fastapi
+    build: ./fastapi-sbert
     container_name: ceview-fastapi
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ENABLE_GEMINI: ${ENABLE_GEMINI:-false}
       KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
     volumes:
-      - ./fastapi/models:/app/models:ro
+      - ./fastapi-sbert/models:/app/models:ro
     ports:
       - "8000:8000"
+
+  fastapi-transformer:
+    build: ./fastapi-transformer
+    container_name: ceview-fastapi-transformer
+    ports:
+      - "8001:8001"
 
   spring-boot:
     build: ./spring-boot
@@ -35,13 +41,18 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ceview
       SPRING_DATASOURCE_USERNAME: ceview
       SPRING_DATASOURCE_PASSWORD: ceview
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"
       FASTAPI_BASE_URL: http://fastapi:8000
+      FASTAPI_SBERT_BASE_URL: http://fastapi:8000
+      FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://192.168.1.194:3000,http://192.168.1.194:5173
     depends_on:
       postgres:
         condition: service_healthy
       fastapi:
+        condition: service_started
+      fastapi-transformer:
         condition: service_started
     ports:
       - "8080:8080"
