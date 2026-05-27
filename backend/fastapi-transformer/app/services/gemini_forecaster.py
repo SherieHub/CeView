@@ -60,11 +60,18 @@ def forecast(
     seasonality_score: float,
     forex_rate: float,
     gdp_growth: float,
+    gdp_trend_direction: str | None = None,
+    gdp_trend_delta: float | None = None,
 ) -> dict:
     """Produce 4-week and 12-week demand forecasts.
 
     Calls the Gemini API when available; otherwise falls back to a deterministic
     linear-extrapolation stub that always passes FR2.12 MAPE ≤ 15% validation.
+
+    Args:
+        gdp_trend_direction: "growing" | "declining" | "flat" — multi-year GDP direction
+                             injected by ForecastingService from the 5-year World Bank series.
+        gdp_trend_delta:     Numeric change (newest − oldest GDP growth %) across the series.
 
     Returns:
         {predicted_demand_4w, predicted_demand_12w, mape, mae, rmse,
@@ -77,6 +84,7 @@ def forecast(
         result = _gemini_forecast(
             market, trend_series, rolling_7d, rolling_30d, rolling_std_7d,
             spike_indicator, yoy_ratio, seasonality_score, forex_rate, gdp_growth,
+            gdp_trend_direction, gdp_trend_delta,
         )
         result["source"] = "gemini"
 
@@ -97,10 +105,13 @@ def _gemini_forecast(
     seasonality_score: float,
     forex_rate: float,
     gdp_growth: float,
+    gdp_trend_direction: str | None = None,
+    gdp_trend_delta: float | None = None,
 ) -> dict:
     prompt = _build_prompt(
         market, trend_series, rolling_7d, rolling_30d, rolling_std_7d,
         spike_indicator, yoy_ratio, seasonality_score, forex_rate, gdp_growth,
+        gdp_trend_direction, gdp_trend_delta,
     )
 
     for attempt in range(3):
@@ -139,6 +150,8 @@ def _build_prompt(
     seasonality_score: float,
     forex_rate: float,
     gdp_growth: float,
+    gdp_trend_direction: str | None = None,
+    gdp_trend_delta: float | None = None,
 ) -> str:
     # Cap at 12 most-recent points to keep prompt compact
     display = trend_series[-12:] if len(trend_series) > 12 else trend_series
@@ -146,6 +159,16 @@ def _build_prompt(
     yoy_str = f"{yoy_ratio:.3f}" if yoy_ratio is not None else "N/A (< 59 weeks of history)"
     momentum = "accelerating" if rolling_7d > rolling_30d else "decelerating"
     spike_str = "YES — current trend exceeds μ + 2σ" if spike_indicator else "NO"
+
+    # GDP trend context block — present only when the 5-year series is available
+    if gdp_trend_direction is not None and gdp_trend_delta is not None:
+        sign = "+" if gdp_trend_delta >= 0 else ""
+        gdp_trend_str = (
+            f"  GDP multi-year trend (5yr)  : {gdp_trend_direction.upper()} "
+            f"({sign}{gdp_trend_delta:.2f}pp change from oldest to latest)\n"
+        )
+    else:
+        gdp_trend_str = ""
 
     return (
         "You are a precision tourism demand forecasting engine for CeView, a business intelligence "
@@ -164,13 +187,16 @@ def _build_prompt(
         f"  Seasonality score         : {seasonality_score:.3f} (0=flat, 1=highly seasonal)\n\n"
         "ECONOMIC CONTEXT:\n"
         f"  Forex rate (PHP per 1 foreign unit) : {forex_rate:.4f}\n"
-        f"  GDP growth (annual %)               : {gdp_growth:.2f}\n\n"
-        "FORECASTING RULES (apply in order):\n"
+        f"  GDP growth (annual %, latest)       : {gdp_growth:.2f}\n"
+        f"{gdp_trend_str}"
+        "\nFORECASTING RULES (apply in order):\n"
         "  1. Continue the current momentum direction, dampening linearly over time.\n"
         "  2. Apply mean-reversion pressure when the index exceeds 80 or falls below 20.\n"
         "  3. If YoY > 1.2, apply a proportional seasonal uplift to the forecast window.\n"
         "  4. If spike=YES, forecast partial reversion toward the 7-period mean by week 4.\n"
-        "  5. GDP growth > 3% and high seasonality score are mild positive modifiers (~+3%).\n\n"
+        "  5. GDP growth > 3% and high seasonality score are mild positive modifiers (~+3%).\n"
+        "  6. If GDP multi-year trend is DECLINING, apply a mild demand dampener (~-2%) to "
+        "the 12-week forecast — sustained economic weakness reduces outbound travel budgets.\n\n"
         "OUTPUT FORMAT: Respond with ONLY valid JSON — no markdown, no explanation.\n"
         '{"predicted_demand_4w": <float 0-100>, "predicted_demand_12w": <float 0-100>}'
     )

@@ -668,3 +668,107 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
         },
     },
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CATEGORY_KEYWORDS
+# 10 fixed English-language search terms per category used for cross-market
+# volume aggregation.  These are the SAME keywords regardless of target market
+# so that total_volume values are directly comparable across KR / JP / US.
+#
+# Sourced from the "US" column of EXHAUSTIVE_DIMENSION_MAPPING (Places +
+# Activities + Experiences dimensions, 10 terms per category).
+# ─────────────────────────────────────────────────────────────────────────────
+
+CATEGORY_KEYWORDS: dict[str, list[str]] = {
+
+    "Coastal & Island": [
+        "Cebu beach",
+        "Philippines island hopping",
+        "snorkeling Cebu Philippines",
+        "scuba diving Cebu",
+        "surfing Philippines",
+        "Cebu sunset view",
+        "white sand beach Philippines",
+        "Philippines lagoon swimming",
+        "Cebu hidden cove",
+        "Cebu island tour",
+    ],
+
+    "Adventure & Nature": [
+        "mountain hiking Philippines",
+        "cave exploration Philippines",
+        "river kayaking Philippines",
+        "Cebu hiking trail",
+        "mountain trekking Philippines",
+        "camping Philippines outdoors",
+        "Kawasan Falls Cebu waterfall",
+        "cliff diving Philippines",
+        "Philippines mountain summit trek",
+        "Cebu nature tour",
+    ],
+
+    "Cultural & Heritage": [
+        "Cebu Basilica cathedral church",
+        "Cebu museum history culture",
+        "Cebu city plaza heritage",
+        "Lapu Lapu shrine Mactan Cebu",
+        "Fort San Pedro Cebu heritage",
+        "Sinulog festival Cebu Philippines",
+        "Philippines local fiesta celebration",
+        "Cebu art scene gallery",
+        "Cebu cultural heritage tour",
+        "Magellan Cross Lapu Lapu statue Cebu",
+    ],
+
+    "Theme Parks / Entertainment": [
+        "Cebu waterpark resort water slides",
+        "Philippines theme park amusement",
+        "Philippines carnival fair rides",
+        "Cebu arcade game center",
+        "amusement park rides Philippines",
+        "rollercoaster theme park Philippines",
+        "water slides park Philippines",
+        "Ferris wheel Philippines amusement park",
+        "amusement park Philippines fun",
+        "Philippines fireworks festival show",
+    ],
+
+    "Urban & City": [
+        "SM Seaside Cebu mall shopping",
+        "Cebu IT Park tower skyline",
+        "casino resort Cebu Philippines",
+        "IT Park Cebu business district lifestyle",
+        "Cebu city shopping centres",
+        "live concert music event Philippines",
+        "karaoke bar Philippines nightlife",
+        "cinema movie theater Cebu",
+        "rooftop bar sunset view Cebu",
+        "best cafes Cebu Philippines",
+    ],
+
+    "Culinary & Gastronomy": [
+        "Cebu Carbon market local produce",
+        "craft beer brewery Cebu",
+        "local bakery pan de sal Cebu",
+        "local eatery Filipino food Cebu",
+        "grill restaurant seafood Cebu",
+        "fine dining restaurant Cebu Philippines",
+        "seafood buffet Philippines restaurant",
+        "fresh seafood Cebu Philippines restaurant",
+        "vegan restaurants plant-based Cebu",
+        "Filipino street food Cebu tour",
+    ],
+
+    "Accommodation & Staycation": [
+        "backpacker hostel budget Cebu Philippines",
+        "mountain lodge Philippines nature stay",
+        "beach cabin cottage Philippines",
+        "glamping Philippines luxury camping",
+        "camping site Philippines outdoor",
+        "luxury beachfront resort Cebu Philippines",
+        "hotel booking reservation Cebu Philippines",
+        "boutique hotel unique stay Cebu",
+        "infinity pool resort Cebu Philippines",
+        "spa resort wellness treatment Cebu",
+    ],
+}

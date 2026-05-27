@@ -50,12 +50,3 @@ def uniqueness(req: UniquenessRequest) -> dict:
     }
 
 
-class KeywordRequest(BaseModel):
-    businessName: str = ""
-    description: str = ""
-    category: str = ""
-
-
-@router.post("/keywords")
-def keywords(req: KeywordRequest) -> dict:
-    return {"keywords": gemini_client.keywords(req.businessName, req.description, req.category)}
