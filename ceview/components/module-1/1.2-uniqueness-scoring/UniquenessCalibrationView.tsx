@@ -73,7 +73,10 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
     setServerError(null);
     try {
       const result = await api.classifyUniqueness({
+<<<<<<< HEAD
         businessProfileId: profile?.businessProfileId ?? '',
+=======
+>>>>>>> paldo
         businessName: payload.businessName,
         categories: selectedCategories,
         coreServices: payload.coreServices,

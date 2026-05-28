@@ -14,8 +14,13 @@ dependencies = [
     "pandas>=2.2.0",
     "pytrends>=4.9.2",
     "xgboost>=2.0.0",
+<<<<<<< HEAD
     # Groq API (OpenAI-compatible) — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
     "openai>=1.0.0",
+=======
+    # Gemini API — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
+    "google-generativeai>=0.8.0",
+>>>>>>> paldo
 ]
 
 [tool.uv]

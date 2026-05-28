@@ -40,7 +40,11 @@ ceview:
     worldbank:
       base-url: ${WORLDBANK_BASE_URL:https://api.worldbank.org/v2}
     forex:
+<<<<<<< HEAD
       base-url: ${FOREX_BASE_URL:https://api.frankfurter.dev}
+=======
+      base-url: ${FOREX_BASE_URL:https://api.exchangerate.host}
+>>>>>>> paldo
   ingestion:
     enabled: ${INGESTION_ENABLED:true}
 

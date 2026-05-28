@@ -70,14 +70,20 @@ public class ContentGenerationService {
                 ? profileRepo.findById(profileId).orElse(null)
                 : null;
 
+<<<<<<< HEAD
         String uvp = "";
+=======
+>>>>>>> paldo
         if (profile != null) {
             // Prefer DB values over request body; request body is the fallback for unauthenticated use
             businessName = profile.getBusinessName() != null ? profile.getBusinessName() : businessName;
             description  = profile.getBusinessDescription() != null ? profile.getBusinessDescription() : description;
             categories   = profile.categoriesList() != null && !profile.categoriesList().isEmpty()
                     ? profile.categoriesList() : categories;
+<<<<<<< HEAD
             uvp          = profile.getUvp() != null ? profile.getUvp() : "";
+=======
+>>>>>>> paldo
         }
 
         int uniquenessScore = (profile != null && profile.getUniquenessScore() != null)
@@ -91,7 +97,10 @@ public class ContentGenerationService {
         payload.put("market", market == null ? "korea" : market);
         payload.put("businessName", businessName == null ? "" : businessName);
         payload.put("description", description == null ? "" : description);
+<<<<<<< HEAD
         payload.put("uvp", uvp);
+=======
+>>>>>>> paldo
         payload.put("categories", categories == null ? List.of() : categories);
         payload.put("trend", trend == null ? "" : trend);
         payload.put("uniquenessScore", uniquenessScore);
