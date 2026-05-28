@@ -2,11 +2,16 @@ import os
 import logging
 import threading
 
+from dotenv import load_dotenv
+
+# This forces Python to find and load the .env file
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
 
 class AgentLLMModel:
-    """Singleton wrapper around ChatGoogleGenerativeAI (Gemini backend) for the LangGraph agents.
+    """Singleton wrapper around ChatGroq (Groq) for the LangGraph agents.
 
     Self-healing initialization: If the environment variables are not loaded when
     the module is first imported, get_model() will retry initialization dynamically.
@@ -24,31 +29,29 @@ class AgentLLMModel:
         return cls._instance
 
     def _initialize(self):
-        """Attempts to build the LangChain Gemini model."""
-        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
-        
+        """Attempts to build the LangChain Groq model."""
+        api_key = os.environ.get("GROQ_API_KEY", "")
+
         if not api_key:
-            # We don't log a massive warning here anymore because it might just be
-            # that the .env file hasn't loaded yet.
             return
-            
+
         try:
-            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import]
-            
-            self._model = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+            from langchain_groq import ChatGroq  # type: ignore[import]
+
+            self._model = ChatGroq(
+                model="llama-3.3-70b-versatile",
                 temperature=0.7,
-                google_api_key=api_key,
+                groq_api_key=api_key,
             )
-            logger.info("AgentLLMModel: ChatGoogleGenerativeAI initialised (gemini-1.5-flash).")
-            
+            logger.info("AgentLLMModel: ChatGroq initialised (llama-3.3-70b-versatile).")
+
         except ImportError:
             logger.error(
-                "AgentLLMModel: 'langchain-google-genai' package not found. "
-                "CRITICAL: Run `pip install langchain-google-genai`."
+                "AgentLLMModel: 'langchain-groq' package not found. "
+                "CRITICAL: Run `pip install langchain-groq`."
             )
         except Exception as exc:
-            logger.error("AgentLLMModel: Failed to initialise Gemini client. Error: %s", exc)
+            logger.error("AgentLLMModel: Failed to initialise Groq client. Error: %s", exc)
 
     def get_model(self):
         """Return the configured LLM. If it failed previously, try one more time."""

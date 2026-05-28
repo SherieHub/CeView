@@ -28,10 +28,7 @@ from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_pro
 # via AgentLLMModel() (singleton __new__ returns the same object every time).
 # BUG FIX: plain get_model() returns the base LLM; we need .with_structured_output()
 # so the invoke() result is the Pydantic model, not a BaseMessage.
-_base_llm = AgentLLMModel().get_model()   # None when GOOGLE_API_KEY absent
 
-generator_llm = _base_llm.with_structured_output(ReportOutput)     if _base_llm else None
-evaluator_llm = _base_llm.with_structured_output(EvaluationResult) if _base_llm else None
 
 # ── Fallback values used when LLM is unavailable ─────────────────────────────
 
@@ -74,9 +71,13 @@ def generate_report(state: AgentState) -> dict[str, Any]:
             "\n\nCRITICAL FEEDBACK FROM EVALUATOR — FIX THESE ISSUES:\n"
             + json.dumps(state["evaluation"], indent=2)
         )
-
-    if generator_llm is None:
+    
+    _base_llm = AgentLLMModel().get_model()
+    
+    if _base_llm is None:
         return {"report": _FALLBACK_REPORT.model_dump(), "iterations": iterations + 1}
+    
+    generator_llm = _base_llm.with_structured_output(ReportOutput)
 
     messages = generation_prompt.format_messages(
         metrics_data=metrics_data,
@@ -91,9 +92,13 @@ def evaluate_report(state: AgentState) -> dict[str, Any]:
     metrics_data     = state["metrics_data"]
     report           = state["report"]
     formatted_report = json.dumps(report, indent=2)
+    
+    _base_llm = AgentLLMModel().get_model()
 
-    if evaluator_llm is None:
+    if _base_llm is None:
         return {"evaluation": _FALLBACK_EVALUATION}
+    
+    evaluator_llm = _base_llm.with_structured_output(EvaluationResult)
 
     messages = evaluation_prompt.format_messages(
         metrics_data=metrics_data,
