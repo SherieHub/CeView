@@ -1,5 +1,8 @@
 # Module 1 — Architecture Diagrams
 
+> Scope: Backend only (Spring Boot + FastAPI-SBERT).
+> Designed for OOP — covers database schema, business logic, and AI data models.
+
 ---
 
 ## 1.1 Business Input and Categorization
@@ -10,230 +13,157 @@
 classDiagram
     direction TB
 
-    %% ── Frontend (React / TypeScript) ──────────────────────────────────────────
+    %% ── DTOs ──────────────────────────────────────────────────────────────────
+
+    class BusinessProfileDto {
+        <<Record>>
+        +UUID businessProfileId
+        +String businessName
+        +List~String~ categories
+        +List~String~ coreServices
+        +String description
+        +String uvp
+        +String imagePreview
+        +Float uniquenessScore
+    }
+
+    class AnalyzeRequest {
+        <<Record>>
+        +String businessName
+        +List~String~ coreServices
+        +String description
+        +String uvp
+    }
+
+    class CategoryAllocation {
+        <<Record>>
+        +String name
+        +int percentage
+    }
+
+    class AnalyzeResponse {
+        <<Record>>
+        +List~CategoryAllocation~ categories
+    }
+
+    %% ── Entity ────────────────────────────────────────────────────────────────
+
     class BusinessProfile {
-        <<React Component>>
-        +ProfileData profile
-        +ProfileSetters setters
-        -bool isEditModalOpen
-        -string tempBusinessName
-        -string[] tempCategories
-        -string[] tempCoreServices
-        -string tempDescription
-        -string tempUvp
-        -string tempImagePreview
-        +handleSave() void
-        +openEditModal() void
-        +handleImageUpload(file File) void
-    }
-
-    class UniquenessCalibrationForm {
-        <<React Component>>
-        +UniquenessPayloadDTO payload
-        +CategoryAllocation[] categories
-        +bool isAnalyzing
-        +bool hasAnalyzed
-        +string[] selectedCategories
-        +onAnalyzeRequest() void
-        +onPayloadChange(dto UniquenessPayloadDTO) void
-        +onToggleCategory(name string) void
-    }
-
-    class InferredCategoryBoard {
-        <<React Component>>
-        +CategoryAllocation[] categories
-        +string[] selectedCategories
-        +number minSelected
-        +onToggle(name string) void
-    }
-
-    class AdjustableCategoryItem {
-        <<React Component>>
-        +string name
-        +number percentage
-        +bool isSelected
-        +onAdd() void
-        +onRemove() void
-    }
-
-    class DynamicListManager {
-        <<React Component>>
-        +string[] items
-        +string draft
-        +onAdd(item string) void
-        +onRemove(idx number) void
-    }
-
-    class TextField {
-        <<React Component>>
-        +string label
-        +string value
-        +string placeholder
-        +onChange(val string) void
-    }
-
-    class TextAreaField {
-        <<React Component>>
-        +string label
-        +string value
-        +number minWords
-        +onChange(val string) void
-    }
-
-    class ValidationBanner {
-        <<React Component>>
-        +string[] errors
-    }
-
-    class ActionTag {
-        <<React Component>>
-        +string label
-        +bool isActive
-        +onRemove() void
-    }
-
-    class apiClient {
-        <<TypeScript Service>>
-        +loadProfile(operatorId string) BusinessProfileDTO
-        +saveProfile(operatorId string, dto BusinessProfileDTO) BusinessProfileDTO
-        +classifyAnalyze(body object) CategoryAllocation[]
-    }
-
-    %% ── Spring Boot ──────────────────────────────────────────────────────────
-    class BusinessProfileController {
-        <<RestController>>
-        -BusinessProfileRepository repo
-        -AIInferenceGatewayService ai
-        +get(operatorId UUID) BusinessProfileDto
-        +save(body BusinessProfileDto, operatorId UUID) BusinessProfileDto
-    }
-
-    class ClassificationAnalyzeController {
-        <<RestController>>
-        -AIInferenceGatewayService ai
-        +analyze(req AnalyzeRequest) AnalyzeResponse
-    }
-
-    class BusinessProfileEntity {
-        <<Entity – tbl_business_profile>>
-        UUID businessProfileId
-        UUID userId
-        String businessName
-        String businessDescription
-        String uvp
-        String coreServices
-        String categories
-        String imageUrl
-        Float confidenceScore
-        Float uniquenessScore
-        OffsetDateTime createdAt
-        OffsetDateTime updatedAt
+        <<Entity>>
+        -UUID businessProfileId
+        -UUID userId
+        -String businessName
+        -String businessDescription
+        -String uvp
+        -String coreServices
+        -String categories
+        -String imageUrl
+        -Float confidenceScore
+        -Float uniquenessScore
+        -OffsetDateTime createdAt
+        -OffsetDateTime updatedAt
         +coreServicesList() List~String~
         +categoriesList() List~String~
         +setCoreServicesList(List~String~) void
         +setCategoriesList(List~String~) void
     }
 
+    %% ── Repository ────────────────────────────────────────────────────────────
+
+    class JpaRepository {
+        <<Interface>>
+        +save(T entity) T
+        +findById(ID id) Optional~T~
+    }
+
     class BusinessProfileRepository {
-        <<JpaRepository>>
-        +findFirstByUserId(userId UUID) Optional~BusinessProfileEntity~
-        +save(entity BusinessProfileEntity) BusinessProfileEntity
-        +findById(id UUID) Optional~BusinessProfileEntity~
+        <<Interface>>
+        +findFirstByUserId(UUID) Optional~BusinessProfile~
     }
 
-    class BusinessProfileDto {
-        <<Record>>
-        UUID businessProfileId
-        String businessName
-        List~String~ categories
-        List~String~ coreServices
-        String description
-        String uvp
-        String imagePreview
-        Float uniquenessScore
+    %% ── Controllers ───────────────────────────────────────────────────────────
+
+    class BusinessProfileController {
+        <<RestController>>
+        -BusinessProfileRepository repo
+        -AIInferenceGatewayService ai
+        +get(UUID operatorId) ResponseEntity~BusinessProfileDto~
+        +save(BusinessProfileDto body, UUID operatorId) BusinessProfileDto
+        -toDto(BusinessProfile) BusinessProfileDto
     }
 
-    class AnalyzeRequest {
-        <<Record>>
-        String businessName
-        List~String~ coreServices
-        String description
-        String uvp
+    class ClassificationAnalyzeController {
+        <<RestController>>
+        -AIInferenceGatewayService ai
+        +analyze(AnalyzeRequest req) AnalyzeResponse
     }
 
-    class CategoryAllocation {
-        <<Record>>
-        String name
-        int percentage
-    }
-
-    class AnalyzeResponse {
-        <<Record>>
-        List~CategoryAllocation~ categories
-    }
+    %% ── AI Gateway Service ────────────────────────────────────────────────────
 
     class AIInferenceGatewayService {
-        <<Spring Service>>
+        <<Service>>
         -WebClient sbertClient
         -Duration timeout
-        +classifyCategories(payload Map) Map
-        +embedBusinessProfile(payload Map) void
+        +classifyCategories(Map payload) Map
+        +embedBusinessProfile(Map payload) void
     }
 
-    %% ── FastAPI – fastapi-sbert ──────────────────────────────────────────────
+    %% ── FastAPI: Router ───────────────────────────────────────────────────────
+
     class ClassificationRouter {
-        <<FastAPI Router – classification.py>>
-        +POST_analyze(req AnalyzeRequest) dict
-        +POST_embed(req EmbedRequest) dict
+        <<FastAPI Router>>
+        +analyze(AnalyzeRequest req) dict
+        +embed(EmbedRequest req) dict
     }
+
+    %% ── FastAPI: ML Services ──────────────────────────────────────────────────
 
     class MlClassifier {
-        <<ML Service – ml_classifier.py>>
-        +predict_all(name str, services list, desc str, uvp str) list
-        +predict_top3(name str, services list, desc str, uvp str) list
-        +embed_business(services list, desc str, uvp str) list~float~
-        -_build_text(services list, uvp str, desc str) str
-        -_predict_probs(text str) ndarray
+        <<Service>>
+        +predict_all(str, list, str, str) list~dict~
+        +predict_top3(str, list, str, str) list~dict~
+        +embed_business(list, str, str) list~float~
+        -_build_text(list, str, str) str
+        -_predict_probs(str) ndarray
     }
 
-    class BertModel {
-        <<Singleton – BertModel.py>>
-        -SentenceTransformer encoder
-        -KerasModel classifier
-        +get() BertModel
+    class _BertModel {
+        <<Singleton>>
+        -_instance _BertModel
+        -SentenceTransformer _encoder
+        -KerasModel _classifier
+        +get() _BertModel
     }
 
     class EmbeddingStore {
-        <<DB Service – embedding_store.py>>
-        +upsert_embedding(profileId str, vector list) None
+        <<Service>>
+        +upsert_embedding(str profileId, list vector) None
+        -_connect() Connection
     }
 
-    %% ── Relationships ────────────────────────────────────────────────────────
-    BusinessProfile *-- UniquenessCalibrationForm : contains
-    BusinessProfile --> DynamicListManager : uses
-    BusinessProfile --> TextField : uses
-    BusinessProfile --> TextAreaField : uses
-    BusinessProfile --> ValidationBanner : uses
-    BusinessProfile --> ActionTag : uses
-    UniquenessCalibrationForm *-- InferredCategoryBoard : renders
-    InferredCategoryBoard *-- AdjustableCategoryItem : renders per category
+    %% ── Relationships ─────────────────────────────────────────────────────────
 
-    BusinessProfile ..> apiClient : loadProfile · saveProfile
-    UniquenessCalibrationForm ..> apiClient : classifyAnalyze
+    JpaRepository <|.. BusinessProfileRepository : implements
 
     BusinessProfileController --> BusinessProfileRepository : uses
-    BusinessProfileController ..> AIInferenceGatewayService : async embedBusinessProfile
-    ClassificationAnalyzeController --> AIInferenceGatewayService : classifyCategories
-    BusinessProfileRepository --> BusinessProfileEntity : manages
+    BusinessProfileController --> AIInferenceGatewayService : async embed
     BusinessProfileController ..> BusinessProfileDto : returns
+
+    ClassificationAnalyzeController --> AIInferenceGatewayService : delegates
     ClassificationAnalyzeController ..> AnalyzeRequest : accepts
     ClassificationAnalyzeController ..> AnalyzeResponse : returns
+
+    BusinessProfileRepository --> BusinessProfile : manages
+
     AnalyzeResponse *-- CategoryAllocation : contains
 
-    AIInferenceGatewayService ..> ClassificationRouter : HTTP POST /analyze · /embed
+    AIInferenceGatewayService ..> ClassificationRouter : HTTP POST /analyze / /embed
+
     ClassificationRouter --> MlClassifier : invokes
-    MlClassifier --> BertModel : uses singleton
-    ClassificationRouter --> EmbeddingStore : upserts on /embed
+    ClassificationRouter --> EmbeddingStore : persists on /embed
+
+    MlClassifier --> _BertModel : uses singleton
+
 ```
 
 ---
@@ -243,68 +173,58 @@ classDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User
-    participant BP as BusinessProfile
-    participant UCF as UniquenessCalibrationForm
-    participant ICB as InferredCategoryBoard
-    participant API as apiClient
+    participant Client
     participant BPC as BusinessProfileController
     participant CAC as ClassificationAnalyzeController
     participant REPO as BusinessProfileRepository
     participant GW as AIInferenceGatewayService
-    participant CR as classification.py
-    participant ML as ml_classifier
-    participant ES as embedding_store
+    participant CR as ClassificationRouter
+    participant ML as MlClassifier
+    participant ES as EmbeddingStore
     participant DB as PostgreSQL
 
     rect rgb(235, 242, 255)
-        Note over BP,DB: Flow A — Load Saved Profile on App Mount
-        BP->>API: loadProfile(OPERATOR_ID)
-        API->>BPC: GET /api/v1/business-profile?operatorId=…
+        Note over Client,DB: UC-1.1a — Load Business Profile
+        Client->>BPC: GET /api/v1/business-profile?operatorId={id}
         BPC->>REPO: findFirstByUserId(operatorId)
         REPO->>DB: SELECT * FROM tbl_business_profile WHERE user_id = ?
-        DB-->>REPO: row or empty
-        REPO-->>BPC: Optional~BusinessProfileEntity~
-        BPC-->>API: BusinessProfileDto (JSON)
-        API-->>BP: hydrate shared profile state in App.tsx
+        DB-->>REPO: Optional~BusinessProfile~
+        REPO-->>BPC: entity or empty
+        BPC->>BPC: toDto(BusinessProfile)
+        BPC-->>Client: 200 BusinessProfileDto
     end
 
     rect rgb(255, 248, 230)
-        Note over BP,DB: Flow B — Save Business Profile
-        User->>BP: fills edit modal fields → clicks Save
-        BP->>API: saveProfile(OPERATOR_ID, BusinessProfileDto)
-        API->>BPC: PUT /api/v1/business-profile?operatorId=…
-        BPC->>REPO: save(BusinessProfileEntity)
+        Note over Client,DB: UC-1.1b — Save Business Profile + Embed
+        Client->>BPC: PUT /api/v1/business-profile (BusinessProfileDto)
+        BPC->>REPO: save(BusinessProfile entity)
         REPO->>DB: UPSERT tbl_business_profile
         DB-->>REPO: persisted entity
-        Note over BPC,DB: Async fire-and-forget — non-blocking for the UI
-        BPC->>GW: embedBusinessProfile(payload)
+        Note over BPC,DB: Fire-and-forget — non-blocking
+        BPC--)GW: embedBusinessProfile(Map payload)
         GW->>CR: POST /internal/classification/embed
         CR->>ML: embed_business(coreServices, description, uvp)
-        ML->>ML: _build_text() → E5 encode → L2-normalised 768-dim vector
+        ML->>ML: _build_text() → encoder.encode() → 768-dim vector
         ML-->>CR: float[768]
-        CR->>ES: upsert_embedding(businessProfileId, vector)
+        CR->>ES: upsert_embedding(profileId, vector)
         ES->>DB: INSERT … ON CONFLICT DO UPDATE tbl_business_embedding
-        BPC-->>API: BusinessProfileDto
-        API-->>BP: isSaved = true
+        BPC-->>Client: 200 BusinessProfileDto
     end
 
     rect rgb(235, 255, 242)
-        Note over UCF,DB: Flow C — Analyze Business Profile for Category Inference
-        User->>UCF: fills businessName, description, coreServices, uvp → clicks Analyze
-        UCF->>API: classifyAnalyze({businessName, coreServices, description, uvp})
-        API->>CAC: POST /api/v1/classification/analyze
-        CAC->>GW: classifyCategories(payload Map)
+        Note over Client,DB: UC-1.1c — Classify Business Categories
+        Client->>CAC: POST /api/v1/classification/analyze (AnalyzeRequest)
+        CAC->>GW: classifyCategories(Map payload)
         GW->>CR: POST /internal/classification/analyze
-        CR->>ML: predict_all(name, services, desc, uvp)
-        ML->>ML: _build_text() → E5 encode 768-dim → Keras Dense(256→128→7) sigmoid
-        ML->>ML: argsort() → normalize probabilities to 100%
-        ML-->>CR: list of 7 CategoryAllocation items sorted by confidence
-        CR-->>GW: {categories: [{name, percentage}, …]}
+        CR->>ML: predict_all(businessName, coreServices, description, uvp)
+        ML->>ML: _build_text() → encoder.encode() [768-dim]
+        ML->>ML: classifier.predict() → Dense(256→128→7) sigmoid
+        ML->>ML: argsort() → normalize to 100%
+        ML-->>CR: List~CategoryAllocation~ (7 items)
+        CR-->>GW: {categories: [...]}
         GW-->>CAC: Map response
-        CAC-->>API: AnalyzeResponse (JSON)
-        API-->>UCF: CategoryAllocation[]
-        UCF->>ICB: render InferredCategoryBoard with inferred allocations
+        CAC->>CAC: map to AnalyzeResponse
+        CAC-->>Client: 200 AnalyzeResponse
     end
 ```
 
@@ -344,7 +264,7 @@ erDiagram
         TIMESTAMPTZ generated_at
     }
 
-    tbl_msme_operator ||--o{ tbl_business_profile : "operator owns"
+    tbl_msme_operator ||--o{ tbl_business_profile : "owns"
     tbl_business_profile ||--o| tbl_business_embedding : "has embedding"
 ```
 
@@ -359,184 +279,147 @@ erDiagram
 classDiagram
     direction TB
 
-    %% ── Frontend (React / TypeScript) ──────────────────────────────────────────
-    class UniquenessCalibrationView {
-        <<React Component>>
-        +ProfileData profile
-        +ProfileSetters setters
-        -UniquenessPayloadDTO payload
-        -bool isAnalyzing
-        -bool hasAnalyzed
-        -CategoryAllocation[] categories
-        -string[] selectedCategories
-        -bool isComputing
-        -DetailedCalibrationResultDTO calibrationResult
-        +handleAnalyzeRequest() void
-        +handleComputeRequest() void
-        +toggleCategory(name string) void
-    }
+    %% ── DTOs ──────────────────────────────────────────────────────────────────
 
-    class UniquenessCalibrationForm {
-        <<React Component – shared from 1.1>>
-        +UniquenessPayloadDTO payload
-        +CategoryAllocation[] categories
-        +bool isAnalyzing
-        +bool hasAnalyzed
-        +string[] selectedCategories
-        +onAnalyzeRequest() void
-        +onPayloadChange(dto UniquenessPayloadDTO) void
-        +onToggleCategory(name string) void
-    }
-
-    class InferredCategoryBoard {
-        <<React Component – shared from 1.1>>
-        +CategoryAllocation[] categories
-        +string[] selectedCategories
-        +onToggle(name string) void
-    }
-
-    class CalibrationResultsDashboard {
-        <<React Component>>
-        +DetailedCalibrationResultDTO result
-        +bool isComputing
-        +onConfirm() void
-    }
-
-    class DetailedCalibrationResultDTO {
-        <<TypeScript Interface>>
-        +number overallScore
-        +number semanticsScore
-        +number categoryScore
-        +string descriptionFeedback
-        +string categoryFeedback
-    }
-
-    class OverallScoreCard {
-        <<React Component>>
-        +number score
-    }
-
-    class ActionableScoreCard {
-        <<React Component>>
-        +string title
-        +number score
-        +string description
-        +string color
-    }
-
-    class StatTypography {
-        <<React Component>>
-        +number value
-    }
-
-    class ComputeUniquenessButton {
-        <<React Component>>
-        +bool isLoading
-        +bool disabled
-        +onClick() void
-    }
-
-    class apiClient {
-        <<TypeScript Service>>
-        +classifyAnalyze(body object) CategoryAllocation[]
-        +classifyUniqueness(body object) UniquenessResultDTO
-        +saveProfile(operatorId string, dto BusinessProfileDTO) BusinessProfileDTO
-    }
-
-    %% ── Spring Boot ──────────────────────────────────────────────────────────
-    class UniquenessScoringController {
-        <<RestController>>
-        -AIInferenceGatewayService ai
-        +uniqueness(req UniquenessRequest) UniquenessResponse
+    class BusinessProfileDto {
+        <<Record>>
+        +UUID businessProfileId
+        +String businessName
+        +List~String~ categories
+        +List~String~ coreServices
+        +String description
+        +String uvp
+        +Float uniquenessScore
     }
 
     class UniquenessRequest {
         <<Record>>
-        String businessProfileId
-        String businessName
-        List~String~ categories
-        List~String~ coreServices
-        String description
-        String uvp
+        +String businessProfileId
+        +String businessName
+        +List~String~ categories
+        +List~String~ coreServices
+        +String description
+        +String uvp
     }
 
     class UniquenessResponse {
         <<Record>>
-        int overallScore
-        int semanticsScore
-        int categoryScore
-        String descriptionFeedback
-        String categoryFeedback
+        +int overallScore
+        +int semanticsScore
+        +int categoryScore
+        +String descriptionFeedback
+        +String categoryFeedback
     }
 
-    class AIInferenceGatewayService {
-        <<Spring Service>>
-        -WebClient sbertClient
-        -Duration timeout
-        +computeUniqueness(payload Map) Map
+    %% ── Entity ────────────────────────────────────────────────────────────────
+
+    class BusinessProfile {
+        <<Entity>>
+        -UUID businessProfileId
+        -UUID userId
+        -String businessName
+        -String businessDescription
+        -String uvp
+        -String coreServices
+        -String categories
+        -Float uniquenessScore
+        -OffsetDateTime updatedAt
+        +coreServicesList() List~String~
+        +categoriesList() List~String~
     }
 
-    class BusinessProfileController {
-        <<RestController – shared from 1.1>>
-        -BusinessProfileRepository repo
-        -AIInferenceGatewayService ai
-        +save(body BusinessProfileDto, operatorId UUID) BusinessProfileDto
+    %% ── Repository ────────────────────────────────────────────────────────────
+
+    class JpaRepository {
+        <<Interface>>
+        +save(T entity) T
+        +findById(ID id) Optional~T~
     }
 
     class BusinessProfileRepository {
-        <<JpaRepository – shared from 1.1>>
-        +save(entity BusinessProfileEntity) BusinessProfileEntity
+        <<Interface>>
+        +findFirstByUserId(UUID) Optional~BusinessProfile~
     }
 
-    %% ── FastAPI – fastapi-sbert ──────────────────────────────────────────────
-    class ClassificationRouter {
-        <<FastAPI Router – classification.py>>
-        +POST_uniqueness(req UniquenessRequest) dict
+    %% ── Controllers ───────────────────────────────────────────────────────────
+
+    class UniquenessScoringController {
+        <<RestController>>
+        -AIInferenceGatewayService ai
+        +uniqueness(UniquenessRequest req) UniquenessResponse
     }
+
+    class BusinessProfileController {
+        <<RestController>>
+        -BusinessProfileRepository repo
+        -AIInferenceGatewayService ai
+        +save(BusinessProfileDto body, UUID operatorId) BusinessProfileDto
+        -toDto(BusinessProfile) BusinessProfileDto
+    }
+
+    %% ── AI Gateway Service ────────────────────────────────────────────────────
+
+    class AIInferenceGatewayService {
+        <<Service>>
+        -WebClient sbertClient
+        -Duration timeout
+        +computeUniqueness(Map payload) Map
+        +embedBusinessProfile(Map payload) void
+    }
+
+    %% ── FastAPI: Router ───────────────────────────────────────────────────────
+
+    class ClassificationRouter {
+        <<FastAPI Router>>
+        +uniqueness(UniquenessRequest req) dict
+    }
+
+    %% ── FastAPI: ML Services ──────────────────────────────────────────────────
 
     class MlClassifier {
-        <<ML Service – ml_classifier.py>>
-        +compute_semantic_uniqueness(services list, desc str, uvp str, corpus list) float
-        +compute_category_score(name str, services list, desc str, uvp str, selected list) float
-        -_build_text(services list, uvp str, desc str) str
-        -_predict_probs(text str) ndarray
+        <<Service>>
+        +compute_semantic_uniqueness(list, str, str, list) float
+        +compute_category_score(str, list, str, str, list) float
+        +embed_business(list, str, str) list~float~
+        -_build_text(list, str, str) str
+        -_predict_probs(str) ndarray
     }
 
-    class BertModel {
-        <<Singleton – BertModel.py>>
-        -SentenceTransformer encoder
-        -KerasModel classifier
-        +get() BertModel
+    class _BertModel {
+        <<Singleton>>
+        -_instance _BertModel
+        -SentenceTransformer _encoder
+        -KerasModel _classifier
+        +get() _BertModel
     }
 
     class EmbeddingStore {
-        <<DB Service – embedding_store.py>>
-        +fetch_others(excludeProfileId str) list~list~
+        <<Service>>
+        +fetch_others(str excludeProfileId) list~list~
+        -_connect() Connection
     }
 
-    %% ── Relationships ────────────────────────────────────────────────────────
-    UniquenessCalibrationView *-- UniquenessCalibrationForm : renders
-    UniquenessCalibrationView *-- CalibrationResultsDashboard : renders
-    UniquenessCalibrationView --> ComputeUniquenessButton : uses
-    UniquenessCalibrationForm *-- InferredCategoryBoard : renders
-    CalibrationResultsDashboard *-- OverallScoreCard : renders
-    CalibrationResultsDashboard *-- ActionableScoreCard : renders 2x
-    CalibrationResultsDashboard ..> DetailedCalibrationResultDTO : receives
-    OverallScoreCard --> StatTypography : uses
-    ActionableScoreCard --> StatTypography : uses
+    %% ── Relationships ─────────────────────────────────────────────────────────
 
-    UniquenessCalibrationView ..> apiClient : classifyAnalyze · classifyUniqueness · saveProfile
+    JpaRepository <|.. BusinessProfileRepository : implements
 
-    UniquenessScoringController --> AIInferenceGatewayService : computeUniqueness
+    UniquenessScoringController --> AIInferenceGatewayService : delegates
     UniquenessScoringController ..> UniquenessRequest : accepts
     UniquenessScoringController ..> UniquenessResponse : returns
+
     BusinessProfileController --> BusinessProfileRepository : uses
+    BusinessProfileController --> AIInferenceGatewayService : async embed
+    BusinessProfileController ..> BusinessProfileDto : returns
+
+    BusinessProfileRepository --> BusinessProfile : manages
 
     AIInferenceGatewayService ..> ClassificationRouter : HTTP POST /uniqueness
-    ClassificationRouter --> EmbeddingStore : fetch_others
-    ClassificationRouter --> MlClassifier : compute_semantic_uniqueness · compute_category_score
-    MlClassifier --> BertModel : uses singleton
-    EmbeddingStore ..> MlClassifier : provides corpus vectors
+
+    ClassificationRouter --> EmbeddingStore : fetch corpus
+    ClassificationRouter --> MlClassifier : compute scores
+
+    MlClassifier --> _BertModel : uses singleton
+    EmbeddingStore ..> MlClassifier : supplies corpus vectors
 ```
 
 ---
@@ -546,82 +429,58 @@ classDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User
-    participant UCV as UniquenessCalibrationView
-    participant UCF as UniquenessCalibrationForm
-    participant ICB as InferredCategoryBoard
-    participant CRD as CalibrationResultsDashboard
-    participant API as apiClient
-    participant CAC as ClassificationAnalyzeController
+    participant Client
     participant USC as UniquenessScoringController
     participant BPC as BusinessProfileController
-    participant GW as AIInferenceGatewayService
-    participant CR as classification.py
-    participant ML as ml_classifier
-    participant ES as embedding_store
     participant REPO as BusinessProfileRepository
+    participant GW as AIInferenceGatewayService
+    participant CR as ClassificationRouter
+    participant ML as MlClassifier
+    participant ES as EmbeddingStore
     participant DB as PostgreSQL
 
     rect rgb(235, 242, 255)
-        Note over UCV,DB: Flow A — Analyze Business Profile for Category Selection
-        User->>UCF: fills businessName, description, coreServices, uvp → clicks Analyze
-        UCF->>API: classifyAnalyze({businessName, coreServices, description, uvp})
-        API->>CAC: POST /api/v1/classification/analyze
-        CAC->>GW: classifyCategories(payload Map)
-        GW->>CR: POST /internal/classification/analyze
-        CR->>ML: predict_all(name, services, desc, uvp)
-        ML->>ML: E5 encode → Keras forward pass → 7 category probabilities
-        ML-->>CR: list of 7 CategoryAllocation items
-        CR-->>GW: {categories: […]}
-        GW-->>CAC: Map
-        CAC-->>API: AnalyzeResponse (JSON)
-        API-->>UCF: CategoryAllocation[]
-        UCF->>ICB: render InferredCategoryBoard with AI-inferred allocations
-        User->>ICB: toggles category selections (min 1 required)
-    end
-
-    rect rgb(255, 235, 235)
-        Note over UCV,DB: Flow B — Compute Uniqueness Score
-        User->>UCV: clicks Compute Uniqueness
-        UCV->>API: classifyUniqueness({profileId, businessName, selectedCategories, coreServices, description, uvp})
-        API->>USC: POST /api/v1/classification/uniqueness
-        USC->>GW: computeUniqueness(payload Map)
+        Note over Client,DB: UC-1.2a — Compute Uniqueness Score
+        Client->>USC: POST /api/v1/classification/uniqueness (UniquenessRequest)
+        USC->>GW: computeUniqueness(Map payload)
         GW->>CR: POST /internal/classification/uniqueness
 
-        CR->>ES: fetch_others(excludeProfileId)
+        CR->>ES: fetch_others(businessProfileId)
         ES->>DB: SELECT embedding_vector FROM tbl_business_embedding WHERE profile_id != ?
-        DB-->>ES: N rows of 768-dim vectors (corpus)
-        ES-->>CR: list of float[768] corpus embeddings
+        DB-->>ES: N rows → float[768] corpus
+        ES-->>CR: list~list~float~~
 
-        CR->>ML: compute_semantic_uniqueness(services, desc, uvp, corpus)
-        ML->>ML: E5 encode current profile → cosine distance vs each corpus vector
-        ML->>ML: mean_distance / 0.5 × 100  (capped at 100)
+        CR->>ML: compute_semantic_uniqueness(coreServices, description, uvp, corpus)
+        ML->>ML: _build_text() → encoder.encode() → 768-dim unit vector
+        ML->>ML: cosine_distance vs corpus → mean_dist / 0.5 × 100
         ML-->>CR: semanticsScore (float 0–100)
 
-        CR->>ML: compute_category_score(name, services, desc, uvp, selectedCategories)
-        ML->>ML: Keras forward pass → selected category indices probability sum
-        ML->>ML: normalize by max_possible → scale 0–100
+        CR->>ML: compute_category_score(name, coreServices, description, uvp, categories)
+        ML->>ML: classifier.predict() → selected category confidence → scale 0–100
         ML-->>CR: categoryScore (float 0–100)
 
-        CR->>CR: overallScore = (semanticsScore + categoryScore) / 2
+        CR->>CR: overallScore = avg(semanticsScore, categoryScore)
         CR-->>GW: {overallScore, semanticsScore, categoryScore}
-        GW-->>USC: Map
-        USC-->>API: UniquenessResponse (JSON)
-        API-->>UCV: UniquenessResultDTO
-        UCV->>CRD: render score cards (overall, semantics, category)
+        GW-->>USC: Map response
+        USC->>USC: map to UniquenessResponse
+        USC-->>Client: 200 UniquenessResponse
     end
 
-    rect rgb(235, 255, 242)
-        Note over UCV,DB: Flow C — Confirm and Register Profile
-        User->>CRD: reviews scores → clicks Confirm & Register Profile
-        CRD->>API: saveProfile(OPERATOR_ID, {…profile, uniquenessScore})
-        API->>BPC: PUT /api/v1/business-profile?operatorId=…
-        BPC->>REPO: save(entity with uniquenessScore set)
+    rect rgb(255, 248, 230)
+        Note over Client,DB: UC-1.2b — Confirm and Persist Uniqueness Score
+        Client->>BPC: PUT /api/v1/business-profile (BusinessProfileDto with uniquenessScore)
+        BPC->>REPO: save(BusinessProfile entity)
         REPO->>DB: UPSERT tbl_business_profile SET uniqueness_score = ?
         DB-->>REPO: persisted entity
-        REPO-->>BPC: BusinessProfileEntity
-        BPC-->>API: BusinessProfileDto
-        API-->>UCV: profile saved → navigate to profile tab
+        Note over BPC,DB: Fire-and-forget — refreshes embedding corpus
+        BPC--)GW: embedBusinessProfile(Map payload)
+        GW->>CR: POST /internal/classification/embed
+        CR->>ML: embed_business(coreServices, description, uvp)
+        ML->>ML: _build_text() → encoder.encode() → 768-dim vector
+        ML-->>CR: float[768]
+        CR->>ES: upsert_embedding(profileId, vector)
+        ES->>DB: INSERT … ON CONFLICT DO UPDATE tbl_business_embedding
+        BPC-->>Client: 200 BusinessProfileDto
     end
 ```
 
@@ -661,6 +520,6 @@ erDiagram
         TIMESTAMPTZ generated_at
     }
 
-    tbl_msme_operator ||--o{ tbl_business_profile : "operator owns"
-    tbl_business_profile ||--o| tbl_business_embedding : "corpus entry for scoring"
+    tbl_msme_operator ||--o{ tbl_business_profile : "owns"
+    tbl_business_profile ||--o| tbl_business_embedding : "corpus for scoring"
 ```
