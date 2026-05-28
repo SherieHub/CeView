@@ -94,19 +94,21 @@ def _rule_based_ai_report(
 
     recommendations = [
         (
-            f"Prioritise the '{weakest_stage}' funnel stage — the {weakest_name} metric "
-            "contributes the least to your current PES score. Audit and tighten this specific "
-            "conversion step before scaling ad spend further."
+            f"Your '{weakest_stage}' funnel stage is the weakest link — the {weakest_name} metric "
+            "is contributing the least to your PES score for this Cebu tourism campaign. "
+            "Audit this specific conversion step before increasing ad spend: for Cebu resorts and tour operators, "
+            "this typically means aligning your ad creative with your Cebu landing page offer and simplifying the booking enquiry form."
         ),
         (
-            "Implement retargeting campaigns targeting visitors who clicked but did not book: "
-            "carousel ads with a limited-time offer typically recover 15–25 % of lost mid-funnel leads "
-            "within two campaign cycles."
+            "Launch a retargeting campaign on Facebook targeting Cebu tourists who clicked your ad but did not complete a booking enquiry. "
+            "Use carousel ads showcasing your specific Cebu experience (e.g. island-hopping packages, Moalboal dive tours, or Oslob whale shark encounters) "
+            "with a limited-time discount — this typically recovers 15–25% of lost mid-funnel leads within two campaign cycles."
         ),
         (
-            "Add social proof elements — verified guest reviews, a live booking counter, and a "
-            "response-time badge — directly above your primary Call-To-Action button to reduce "
-            "commitment hesitation and improve the Clicks → Bookings conversion rate."
+            "Add Cebu-specific social proof directly above your booking CTA: verified guest reviews mentioning Cebu attractions, "
+            "a live booking counter showing recent reservations, and a guaranteed response-time badge. "
+            "For Korean tourists, include Naver Blog or KakaoTalk review snippets; for US tourists, Google Reviews work best. "
+            "This reduces commitment hesitation and improves your Clicks → Bookings conversion rate."
         ),
     ]
 
@@ -117,10 +119,11 @@ def _rule_based_ai_report(
     )
 
     executive_summary = (
-        f"Your campaign's Promotional Effectiveness Score is {pes_score:.2f} / 1.00 ({pes_label}). "
-        f"The analysis reveals that your strongest driver is {top_name}, "
-        f"while the primary bottleneck is the '{weakest_stage}' transition. "
-        f"Focusing optimisation efforts on this stage offers the highest potential ROI improvement."
+        f"Your Cebu tourism campaign's Promotional Effectiveness Score is {pes_score:.2f} / 1.00 ({pes_label}). "
+        f"The strongest contributor to your score is {top_name}, which is currently working well for your campaign. "
+        f"However, the primary bottleneck is the '{weakest_stage}' transition — this is the stage where the most potential booking revenue is being lost, "
+        f"either through poor ad-to-landing-page alignment, weak conversion copy, or insufficient trust signals for international tourists visiting Cebu. "
+        f"Prioritising improvements to this stage will have the highest direct impact on your bookings and revenue per peso of ad spend."
         f"{flag_note}"
     )
 

@@ -59,7 +59,13 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\\\\backend\\\\spring-boot\" -Recurse -Directory)",
       "Bash(Sort-Object FullName)",
       "Bash(grep -rn *)",
-      "Bash(Remove-Item \"c:/Users/austi/CeView/backend/spring-boot/src/main/resources/db/migration/V12__module4_campaign_records.sql\")"
+      "Bash(Remove-Item \"c:/Users/austi/CeView/backend/spring-boot/src/main/resources/db/migration/V12__module4_campaign_records.sql\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\" -Directory)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\austi\\\\CeView\" -Exclude \"node_modules\" -Recurse -Directory)",
+      "Bash(xargs ls -1)",
+      "Read(//c/c/Users/austi/CeView/backend/fastapi-sbert/**)",
+      "Read(//c/c/Users/austi/CeView/backend/fastapi-transformer/**)",
+      "Read(//c/c/Users/austi/CeView/backend/fastapi-compliance/**)"
     ]
   }
 }
