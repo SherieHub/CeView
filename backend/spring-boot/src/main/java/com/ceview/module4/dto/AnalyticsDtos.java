@@ -102,4 +102,20 @@ public class AnalyticsDtos {
         List<FunnelStage> funnel,
         PesResponse pes
     ) {}
+
+    /** One week's campaign snapshot — used by GET /history for the trend line chart. */
+    public record CampaignSnapshot(
+        String periodStart,
+        String periodEnd,
+        double pesScore,
+        String pesLabel,
+        Double ctr,
+        Double cpc,
+        Double roas,
+        Double convRate,
+        Double cac
+    ) {}
+
+    /** Ordered list of weekly snapshots (chronological) for the trend line chart. */
+    public record CampaignHistoryResponse(List<CampaignSnapshot> snapshots) {}
 }

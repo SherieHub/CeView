@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, Download, FileText, BarChart2, Loader2, Globe2 } from 'lucide-react';
-import ReportActionBtn from './ReportActionBtn';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, FileText, BarChart2, Loader2, Globe2 } from 'lucide-react';
 import PriorityFixCard from './PriorityFixCard';
 import { COLORS } from '../../../../constants';
 import { api, ApiError } from '../../../../services/apiClient';
@@ -16,22 +15,25 @@ const AIActionPlanReport: React.FC<AIActionPlanReportProps> = ({ weeks }) => {
   const [reportData, setReportData]     = useState<PrescriptiveReport | null>(null);
   const [serverError, setServerError]   = useState<string | null>(null);
 
-  const handleGenerateReport = async () => {
-    setIsGenerating(true);
-    setServerError(null);
-    try {
-      const r = await api.prescriptiveReport(weeks);
-      setReportData(r);
-    } catch (e) {
-      console.warn('[Module 4] prescriptiveReport failed', e);
-      const msg = e instanceof ApiError
-        ? `AI report generation failed. [${e.code}]`
-        : 'AI report generation failed. The analytics service may be unavailable.';
-      setServerError(msg);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  useEffect(() => {
+    const fetchReport = async () => {
+      setIsGenerating(true);
+      setServerError(null);
+      try {
+        const r = await api.prescriptiveReport(weeks);
+        setReportData(r);
+      } catch (e) {
+        console.warn('[Module 4] prescriptiveReport failed', e);
+        const msg = e instanceof ApiError
+          ? `AI report generation failed. [${e.code}]`
+          : 'AI report generation failed. The analytics service may be unavailable.';
+        setServerError(msg);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+    fetchReport();
+  }, [weeks]);
 
   return (
     <div className="border-t-2 border-dashed border-slate-200 pt-12 animate-fade-in space-y-6 mt-12">
@@ -41,52 +43,17 @@ const AIActionPlanReport: React.FC<AIActionPlanReportProps> = ({ weeks }) => {
 
       {/* ── Header bar ──────────────────────────────────────────────────── */}
       <div
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 rounded-2xl border"
+        className="p-6 rounded-2xl border"
         style={{ backgroundColor: COLORS.CREAM, borderColor: '#E2E8F0' }}
       >
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-            <Sparkles size={24} style={{ color: COLORS.GOLD }} />
-            AI Action Plan
-          </h2>
-          <p className="mt-1 text-sm" style={{ color: COLORS.TEXT_MUTED }}>
-            Exhaustive funnel diagnostics with urgency-ranked, 1-to-1 recommendations for every stage.
-          </p>
-        </div>
-        <div className="flex gap-3 w-full md:w-auto">
-          <ReportActionBtn
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-            icon={isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
-            label={isGenerating ? 'Analyzing...' : reportData ? 'Regenerate Analysis' : 'Generate AI Report'}
-          />
-          {reportData && (
-            <ReportActionBtn
-              icon={<Download size={18} />}
-              label="PDF"
-              variant="danger"
-            />
-          )}
-        </div>
+        <h2 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+          <Sparkles size={24} style={{ color: COLORS.GOLD }} />
+          AI Action Plan
+        </h2>
+        <p className="mt-1 text-sm" style={{ color: COLORS.TEXT_MUTED }}>
+          Exhaustive funnel diagnostics with urgency-ranked, 1-to-1 recommendations for every stage.
+        </p>
       </div>
-
-      {/* ── Empty state ─────────────────────────────────────────────────── */}
-      {!reportData && !isGenerating && (
-        <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center min-h-[250px]">
-          <div
-            className="w-16 h-16 border rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: COLORS.CREAM, borderColor: '#E2E8F0', color: COLORS.GOLD }}
-          >
-            <Sparkles size={32} />
-          </div>
-          <h3 className="text-lg font-bold" style={{ color: COLORS.TEXT_MAIN }}>
-            Ready for Strategic Calibration
-          </h3>
-          <p className="max-w-md mt-2" style={{ color: COLORS.TEXT_MUTED }}>
-            Click Generate to analyse your campaign funnel — all stages evaluated, ranked by impact, with urgency-mapped action steps.
-          </p>
-        </div>
-      )}
 
       {/* ── Loading state ───────────────────────────────────────────────── */}
       {isGenerating && (

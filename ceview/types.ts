@@ -176,7 +176,7 @@ export interface PerformanceReport {
 
 // ── Module 3 — Content Studio ───────────────────────────────────────────────
 
-export type ContentPlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+export type ContentPlatformId = 'instagram' | 'tiktok' | 'facebook';
 
 export interface MarketHeader {
   country: string;
@@ -367,4 +367,22 @@ export interface ManualIngestResponse {
   metrics: Metrics;
   funnel: FunnelStage[];
   pes: PesResponse;
+}
+
+/** One week's campaign snapshot — mirrors AnalyticsDtos.CampaignSnapshot. */
+export interface CampaignSnapshot {
+  periodStart: string | null;
+  periodEnd: string | null;
+  pesScore: number;
+  pesLabel: string;
+  ctr: number | null;
+  cpc: number | null;
+  roas: number | null;
+  convRate: number | null;
+  cac: number | null;
+}
+
+/** GET /history response — chronologically ordered snapshots for the trend chart. */
+export interface CampaignHistoryResponse {
+  snapshots: CampaignSnapshot[];
 }

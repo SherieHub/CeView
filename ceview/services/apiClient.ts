@@ -7,6 +7,7 @@
 import type {
   Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
   MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
+  CampaignHistoryResponse,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -187,6 +188,13 @@ export const api = {
    */
   analyticsPes: (campaignId: string = 'default', weeks: 4 | 8 = 4) =>
     req<PesResponse>(`/api/v1/analytics/pes/${encodeURIComponent(campaignId)}?weeks=${weeks}`),
+
+  /**
+   * Weekly PES trend — returns the N most recent campaign records in chronological
+   * order for the trend line chart. N = weeks (4 or 8).
+   */
+  analyticsHistory: (weeks: 4 | 8 = 4) =>
+    req<CampaignHistoryResponse>(`/api/v1/analytics/history?weeks=${weeks}`),
 
   /**
    * Generate the prescriptive performance report (exhaustive funnel diagnostics schema).
