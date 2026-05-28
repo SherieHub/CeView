@@ -95,4 +95,11 @@ public class AnalyticsDtos {
         List<RankedRecommendation> recommendations,
         String recommendedPlatform
     ) {}
+
+    /** Combined response for POST /manual — includes computed KPIs, funnel, and PES. */
+    public record ManualIngestResponse(
+        Metrics metrics,
+        List<FunnelStage> funnel,
+        PesResponse pes
+    ) {}
 }

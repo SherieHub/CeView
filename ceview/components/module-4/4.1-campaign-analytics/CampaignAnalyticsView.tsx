@@ -5,34 +5,25 @@ import EngagementMetricsBoard from './components/EngagementMetricsBoard';
 import CustomerJourneyFunnel from './components/CustomerJourneyFunnel';
 import PESComputationBoard from './components/PESComputationBoard';
 import AIActionPlanReport from './components/AIActionPlanReport';
-import type { MetricsResponse } from '../../../types';
+import type { ManualIngestResponse, PesResponse } from '../../../types';
 
 /**
  * Module 4 — Campaign Analytics & Reporting.
  *
  * Data flow:
  *   1. DataIngestionForm  → user submits raw values → api.analyticsManual()
- *   2. MetricsResponse    → stored in state, passed to EngagementMetricsBoard + CustomerJourneyFunnel
- *   3. 4W / 8W toggle     → weeks state lifted here; forwarded to PESComputationBoard + AIActionPlanReport
- *                           (engagement metrics remain the operator-submitted values)
- *   4. PESComputationBoard  → independently calls api.analyticsPes(weeks)
+ *   2. ManualIngestResponse → metrics + funnel stored in state; pes passed to PESComputationBoard
+ *   3. 4W / 8W toggle     → weeks state lifted here; forwarded to AIActionPlanReport
+ *                           (engagement metrics and PES reflect the operator-submitted values)
+ *   4. PESComputationBoard  → receives pesData prop from form submission (no extra round-trip)
  *   5. AIActionPlanReport   → calls api.prescriptiveReport(weeks) on-demand when user clicks Generate
  */
 const CampaignAnalyticsView: React.FC = () => {
-  /** Whether the user has submitted form data and entered the dashboard. */
   const [dashboardActive, setDashboardActive] = useState(false);
-
-  /** Operator-submitted campaign data — set once after DataIngestionForm submit. */
-  const [metricsData, setMetricsData] = useState<MetricsResponse | null>(null);
-
-  /**
-   * Analysis window for PES and AI report.
-   * Engagement metrics always reflect the submitted data; only PES + AI report
-   * are re-scoped when this toggle changes.
-   */
+  const [metricsData, setMetricsData] = useState<ManualIngestResponse | null>(null);
   const [weeks, setWeeks] = useState<4 | 8>(4);
 
-  const handleDataReady = (data: MetricsResponse) => {
+  const handleDataReady = (data: ManualIngestResponse) => {
     setMetricsData(data);
     setDashboardActive(true);
   };
@@ -71,8 +62,8 @@ const CampaignAnalyticsView: React.FC = () => {
         </>
       )}
 
-      {/* ── PES score — refetches when weeks changes ────────────────────── */}
-      <PESComputationBoard weeks={weeks} />
+      {/* ── PES score — uses submitted data, no extra round-trip ────────── */}
+      <PESComputationBoard weeks={weeks} pesData={metricsData?.pes ?? null} />
 
       {/* ── AI prescriptive report — on-demand with weeks context ─────── */}
       <AIActionPlanReport weeks={weeks} />

@@ -15,11 +15,12 @@ public class PESComputationService {
         // Min-max bounds are placeholder until historical data exists. The
         // frontend's PESComputationBoard expects a 0–1 overall + per-metric
         // contributions that sum to it.
-        double roasN = clamp01(m.roas().value() / 5.0);             // 5x ROAS = ceiling
-        double crN   = clamp01(m.convRate().value() / 10.0);        // 10% CR = ceiling
-        double cacN  = 1.0 - clamp01(m.cac().value() / 5000.0);     // lower CAC = better
-        double ctrN  = clamp01(m.ctr().value() / 10.0);             // 10% CTR = ceiling
-        double cpcN  = 1.0 - clamp01(m.cpc().value() / 100.0);      // lower CPC = better
+        // Calibrated Cebu MSME hospitality bounds — aligned with FastAPI pes_compute_service.py
+        double roasN = clamp01(m.roas().value() / 8.0);
+        double crN   = clamp01(m.convRate().value() / 15.0);
+        double cacN  = 1.0 - clamp01((m.cac().value() - 1.0) / (5000.0 - 1.0));
+        double ctrN  = clamp01(m.ctr().value() / 10.0);
+        double cpcN  = 1.0 - clamp01((m.cpc().value() - 0.01) / (500.0 - 0.01));
 
         double cRoas = roasN * W_ROAS;
         double cCr   = crN   * W_CR;

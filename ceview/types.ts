@@ -361,3 +361,10 @@ export interface PrescriptiveReport {
   recommendations: RankedRecommendation[];
   recommendedPlatform: string;
 }
+
+/** Combined response for POST /manual — mirrors AnalyticsDtos.ManualIngestResponse. */
+export interface ManualIngestResponse {
+  metrics: Metrics;
+  funnel: FunnelStage[];
+  pes: PesResponse;
+}

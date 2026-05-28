@@ -149,7 +149,6 @@ export default function ContentStudioView({
       return;
     }
 
-<<<<<<< HEAD
     // Use the full OMCS pipeline (CAS + VAS + HCS) when a profileId is
     // available so the SmartOptimizationBoard can render sub-scores.
     // Fall back to the basic path for unauthenticated / no-profile sessions.
@@ -181,16 +180,6 @@ export default function ContentStudioView({
           interpretation: r.interpretation,
           mismatches: r.mismatches,
         });
-=======
-    api.evaluateCompliance({
-      caption: stagedCaption,
-      market: initialMarketId ?? 'korea',
-      mediaName: uploadedFile?.name,
-      mediaSize: uploadedFile?.size,
-    })
-      .then(r => {
-        setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
->>>>>>> paldo
         setComplianceSource(r.source ?? 'fallback');
       })
       .catch(e => {
@@ -235,7 +224,7 @@ export default function ContentStudioView({
     setApprovedIndices(prev => ({ ...prev, [activeTab]: idx }));
     setApprovedCaptions(prev => ({ ...prev, [activeTab]: text }));
     setStagedCaption(text);
-<<<<<<< HEAD
+
 
     // Persist to tbl_localized_promotional_content so UC-3.2 (creative
     // direction) and UC-3.3 (full compliance pipeline) can read approved
@@ -244,8 +233,6 @@ export default function ContentStudioView({
       api.approveContent(businessProfileId, initialMarketId ?? 'korea')
         .catch(e => logModule3Error('approveContent', e));
     }
-=======
->>>>>>> paldo
   };
 
   // ── Loading / error empty states ─────────────────────────────────────────

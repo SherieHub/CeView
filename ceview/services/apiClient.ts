@@ -6,7 +6,7 @@
 
 import type {
   Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
-  MetricsResponse, PesResponse, PrescriptiveReport,
+  MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -176,7 +176,7 @@ export const api = {
   analyticsManual: (body: {
     impressions: number; clicks: number; adSpend: number; revenue: number;
     conversions: number; bookings: number; newCustomers: number;
-  }) => req<MetricsResponse>('/api/v1/analytics/manual', {
+  }) => req<ManualIngestResponse>('/api/v1/analytics/manual', {
     method: 'POST', body: JSON.stringify(body),
   }),
 

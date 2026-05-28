@@ -9,22 +9,26 @@ import type { PesResponse } from '../../../../types';
 
 interface PESComputationBoardProps {
   weeks: 4 | 8;
+  /** PES computed from the submitted form data. When provided, skips the API fetch. */
+  pesData: PesResponse | null;
 }
 
 const BAR_FILLS = [COLORS.NAVY, COLORS.GOLD, COLORS.RED_ORANGE, COLORS.GREEN, COLORS.NAVY_LIGHT];
 
-const PESComputationBoard: React.FC<PESComputationBoardProps> = ({ weeks }) => {
-  const [pesData, setPesData] = useState<PesResponse | null>(null);
-  const [loading, setLoading]  = useState(true);
-  const [error, setError]      = useState<string | null>(null);
+const PESComputationBoard: React.FC<PESComputationBoardProps> = ({ weeks, pesData: submittedPes }) => {
+  const [fetchedPes, setFetchedPes] = useState<PesResponse | null>(null);
+  const [loading, setLoading]       = useState(!submittedPes);
+  const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
+    if (submittedPes) return;
+
     let cancelled = false;
     setLoading(true);
     setError(null);
 
     api.analyticsPes('default', weeks)
-      .then(r => { if (!cancelled) setPesData(r); })
+      .then(r => { if (!cancelled) setFetchedPes(r); })
       .catch(e => {
         if (cancelled) return;
         const msg = e instanceof ApiError ? `PES service unavailable [${e.code}]` : 'PES service unavailable.';
@@ -34,7 +38,9 @@ const PESComputationBoard: React.FC<PESComputationBoardProps> = ({ weeks }) => {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [weeks]);
+  }, [weeks, submittedPes]);
+
+  const pesData = submittedPes ?? fetchedPes;
 
   if (loading) {
     return (
