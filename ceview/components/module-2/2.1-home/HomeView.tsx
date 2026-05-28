@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+<<<<<<< HEAD
 import { AlertTriangle, X, Info } from 'lucide-react';
 import TrendAlertCard from './components/TrendAlertCard';
 import TrendAlertCardSkeleton from './components/TrendAlertCardSkeleton';
@@ -6,6 +7,13 @@ import MarketRadarView from '../2.2-market-radar/MarketRadarView';
 import { COLORS } from '../../../constants';
 import { Notification } from '../../../types';
 import { api, ApiError } from '../../../services/apiClient';
+=======
+import TrendAlertCard from './components/TrendAlertCard';
+import MarketRadarView from '../2.2-market-radar/MarketRadarView';
+import { MOCK_NOTIFICATIONS, COLORS } from '../../../constants';
+import { Notification } from '../../../types';
+import { api } from '../../../services/apiClient';
+>>>>>>> paldo
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
 interface HomeViewProps {
@@ -17,6 +25,7 @@ interface HomeViewProps {
 
 const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, categories, onNavigateToContent }) => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+<<<<<<< HEAD
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -48,6 +57,26 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
             code: ae.code ?? 'UNKNOWN',
           });
         }
+=======
+  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [isUsingMock, setIsUsingMock] = useState<boolean>(true);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Pass profileId so the backend returns real persisted demand alerts instead
+    // of always falling back to the FastAPI stub path.
+    api.listNotifications(businessProfileId)
+      .then(r => {
+        if (r.notifications?.length) {
+          setNotifications(r.notifications);
+          setIsUsingMock(false);
+        }
+      })
+      .catch(e => {
+        console.warn('listNotifications failed, using mock', e);
+        setIsUsingMock(true);
+        setServerError('Notification service unavailable. Showing demo data.');
+>>>>>>> paldo
       });
   }, [businessProfileId]);
 
@@ -69,6 +98,7 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in space-y-6 md:space-y-8 min-h-screen" style={{ backgroundColor: COLORS.CREAM }}>
       {serverError && <ServerErrorBanner message={serverError} onDismiss={() => setServerError(null)} />}
+<<<<<<< HEAD
 
       {aiError && (
         <div
@@ -101,11 +131,14 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
         </div>
       )}
 
+=======
+>>>>>>> paldo
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold" style={{ color: COLORS.NAVY }}>Home</h2>
           <p className="mt-1" style={{ color: COLORS.TEXT_MUTED }}>Weekly trend updates and market signals.</p>
         </div>
+<<<<<<< HEAD
       </div>
 
       <div className="space-y-4">
@@ -125,6 +158,27 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
                 </p>
               )
         }
+=======
+        {isUsingMock && (
+          <span
+            className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border"
+            style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
+            title="Backend unreachable — showing seeded demo data"
+          >
+            Demo Data
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {notifications.map((notif) => (
+          <TrendAlertCard
+            key={notif.id}
+            notif={notif}
+            onClick={() => setSelectedNotification(notif)}
+          />
+        ))}
+>>>>>>> paldo
       </div>
     </div>
   );

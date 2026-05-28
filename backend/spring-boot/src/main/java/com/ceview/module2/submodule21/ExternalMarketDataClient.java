@@ -8,14 +8,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+<<<<<<< HEAD
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+=======
+>>>>>>> paldo
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.Comparator;
+=======
+>>>>>>> paldo
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +42,7 @@ public class ExternalMarketDataClient {
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
             new ParameterizedTypeReference<>() {};
 
+<<<<<<< HEAD
     /**
      * fawazahmed0/currency-api — free, no API key, CDN-backed, supports PHP as base.
      * URL: https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/v1/currencies/php.min.json
@@ -51,6 +58,10 @@ public class ExternalMarketDataClient {
     private final WebClient worldBankClient;
     private final WebClient forexClient;
     private final String    forexBaseUrl;   // stored so we can build absolute URIs that bypass WebClient path-normalisation
+=======
+    private final WebClient worldBankClient;
+    private final WebClient forexClient;
+>>>>>>> paldo
 
     // Static flight reference data for the three fixed markets
     private static final Map<String, FlightReferenceDto> FLIGHT_REFS = Map.of(
@@ -86,7 +97,10 @@ public class ExternalMarketDataClient {
             @Value("${ceview.external.forex.base-url}") String forexUrl) {
         this.worldBankClient = WebClient.builder().baseUrl(worldBankUrl).build();
         this.forexClient     = WebClient.builder().baseUrl(forexUrl).build();
+<<<<<<< HEAD
         this.forexBaseUrl    = forexUrl.replaceAll("/$", ""); // strip trailing slash
+=======
+>>>>>>> paldo
     }
 
     public GdpDataDto fetchGdpGrowth(String marketId) {
@@ -123,21 +137,33 @@ public class ExternalMarketDataClient {
 
     public ForexDataDto fetchForexRate(String marketId) {
         String currencyCode = CURRENCY_CODE.getOrDefault(marketId, "USD");
+<<<<<<< HEAD
         String currencyLower = currencyCode.toLowerCase();
         try {
             // fawazahmed0/currency-api: PHP as base, returns foreign units per 1 PHP
             java.net.URI uri = java.net.URI.create(CURRENCY_CDN_BASE + "latest" + CURRENCY_CDN_SUFFIX);
             Map<String, Object> response = forexClient.get()
                     .uri(uri)
+=======
+        try {
+            Map<String, Object> response = forexClient.get()
+                    .uri("/latest?base=PHP&symbols={code}", currencyCode)
+>>>>>>> paldo
                     .retrieve()
                     .bodyToMono(MAP_TYPE)
                     .block(TIMEOUT);
 
             if (response != null) {
                 @SuppressWarnings("unchecked")
+<<<<<<< HEAD
                 Map<String, Object> phpRates = (Map<String, Object>) response.get("php");
                 if (phpRates != null && phpRates.containsKey(currencyLower)) {
                     double rate = ((Number) phpRates.get(currencyLower)).doubleValue();
+=======
+                Map<String, Object> rates = (Map<String, Object>) response.get("rates");
+                if (rates != null && rates.containsKey(currencyCode)) {
+                    double rate = ((Number) rates.get(currencyCode)).doubleValue();
+>>>>>>> paldo
                     String date = response.getOrDefault("date", "").toString();
                     return new ForexDataDto(currencyCode, rate, date);
                 }
@@ -220,6 +246,7 @@ public class ExternalMarketDataClient {
      * historical endpoint is not supported or the API is unavailable.
      */
     public ForexTrendDto fetchForexTrend(String marketId) {
+<<<<<<< HEAD
         String currencyCode  = CURRENCY_CODE.getOrDefault(marketId, "USD");
         String currencyLower = currencyCode.toLowerCase();
         double defaultRate   = FOREX_DEFAULTS.getOrDefault(currencyCode, 1.0);
@@ -266,6 +293,31 @@ public class ExternalMarketDataClient {
                 double latest = points.get(points.size() - 1).value();
                 log.info("Forex trend fetched for {}: {} monthly points", currencyCode, points.size());
                 return new ForexTrendDto(currencyCode, points, latest);
+=======
+        String currencyCode = CURRENCY_CODE.getOrDefault(marketId, "USD");
+        LocalDate today     = LocalDate.now();
+        LocalDate startDate = today.minusMonths(12).withDayOfMonth(1);
+        DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
+        try {
+            Map<String, Object> response = forexClient.get()
+                    .uri("/{start}..{end}?from=PHP&to={code}",
+                            startDate.format(iso), today.format(iso), currencyCode)
+                    .retrieve()
+                    .bodyToMono(MAP_TYPE)
+                    .block(TIMEOUT);
+
+            if (response != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> ratesMap =
+                        (Map<String, Object>) response.get("rates");
+                if (ratesMap != null && !ratesMap.isEmpty()) {
+                    List<ForexTrendPoint> monthly = sampleMonthly(ratesMap, currencyCode);
+                    if (!monthly.isEmpty()) {
+                        double latest = monthly.get(monthly.size() - 1).value();
+                        return new ForexTrendDto(currencyCode, monthly, latest);
+                    }
+                }
+>>>>>>> paldo
             }
         } catch (Exception e) {
             MDC.put("code", Module2ErrorCodes.MOD21_EXTERNAL_API_ERROR);
@@ -277,6 +329,38 @@ public class ExternalMarketDataClient {
 
     // ─── helpers ─────────────────────────────────────────────────────────────
 
+<<<<<<< HEAD
+=======
+    /**
+     * Samples a daily forex response map to one entry per calendar month
+     * (earliest date in each YYYY-MM bucket) and returns them chronologically.
+     *
+     * <p>The Frankfurter API returns:
+     * <pre>{"rates": {"2025-01-02": {"KRW": 23.5}, "2025-01-03": {"KRW": 23.6}, ...}}</pre>
+     */
+    @SuppressWarnings("unchecked")
+    private List<ForexTrendPoint> sampleMonthly(Map<String, Object> ratesMap, String currencyCode) {
+        // Bucket daily dates → (YYYY-MM → earliest rate)
+        Map<String, Double> monthBucket = new java.util.TreeMap<>();
+        for (Map.Entry<String, Object> entry : ratesMap.entrySet()) {
+            String dateStr = entry.getKey();            // "YYYY-MM-DD"
+            String monthKey = dateStr.substring(0, 7);  // "YYYY-MM"
+            Object dayRates = entry.getValue();
+            if (dayRates instanceof Map) {
+                Object rateObj = ((Map<String, Object>) dayRates).get(currencyCode);
+                if (rateObj instanceof Number && !monthBucket.containsKey(monthKey)) {
+                    monthBucket.put(monthKey, ((Number) rateObj).doubleValue());
+                }
+            }
+        }
+        List<ForexTrendPoint> points = new ArrayList<>();
+        for (Map.Entry<String, Double> e : monthBucket.entrySet()) {
+            points.add(new ForexTrendPoint(e.getKey(), e.getValue()));
+        }
+        return points;
+    }
+
+>>>>>>> paldo
     /** Synthetic 5-year GDP trend at the market's static default (straight-line fallback). */
     private GdpTrendDto gdpTrendFallback(String countryCode) {
         double def  = GDP_DEFAULTS.getOrDefault(countryCode, 2.0);

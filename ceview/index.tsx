@@ -8,4 +8,12 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+<<<<<<< HEAD
 root.render(<App />);
+=======
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+>>>>>>> paldo

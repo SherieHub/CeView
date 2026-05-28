@@ -8,6 +8,11 @@ export interface DetailedCalibrationResultDTO {
   overallScore: number;
   semanticsScore: number;
   categoryScore: number;
+<<<<<<< HEAD
+=======
+  descriptionFeedback: string;
+  categoryFeedback: string;
+>>>>>>> paldo
 }
 
 interface DashboardProps {
@@ -52,6 +57,10 @@ const CalibrationResultsDashboard: React.FC<DashboardProps> = ({ isAwaiting, res
           score={result.semanticsScore}
           color={COLORS.TEAL}
           description="Measures how original and distinctive your business description and value proposition are compared to standard Cebu tourism marketing copy."
+<<<<<<< HEAD
+=======
+          feedbackText={result.descriptionFeedback}
+>>>>>>> paldo
           className="text-2xl"
         />
 
@@ -60,6 +69,10 @@ const CalibrationResultsDashboard: React.FC<DashboardProps> = ({ isAwaiting, res
           score={result.categoryScore}
           color={COLORS.GOLD}
           description="Measures how rare or differentiated your operational category mix is within the regional tourism landscape."
+<<<<<<< HEAD
+=======
+          feedbackText={result.categoryFeedback}
+>>>>>>> paldo
         />
       </div>
 

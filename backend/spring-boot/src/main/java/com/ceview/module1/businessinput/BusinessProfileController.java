@@ -2,8 +2,11 @@ package com.ceview.module1.businessinput;
 
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.module1.businessinput.dto.BusinessProfileDto;
+<<<<<<< HEAD
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+=======
+>>>>>>> paldo
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +16,11 @@ import java.util.*;
 @RequestMapping("/api/v1/business-profile")
 public class BusinessProfileController {
 
+<<<<<<< HEAD
     private static final Logger log = LoggerFactory.getLogger(BusinessProfileController.class);
 
+=======
+>>>>>>> paldo
     private final BusinessProfileRepository repo;
     private final AIInferenceGatewayService ai;
 
@@ -47,6 +53,7 @@ public class BusinessProfileController {
         p.setCategoriesList(in.categories() == null ? List.of() : in.categories());
         p.setUniquenessScore(in.uniquenessScore());
         repo.save(p);
+<<<<<<< HEAD
 
         // Fire-and-forget: generate + persist the 768-dim E5 embedding so this
         // profile joins the uniqueness comparison corpus for all future scorings.
@@ -63,6 +70,8 @@ public class BusinessProfileController {
                      p.getBusinessProfileId(), e.getMessage());
         }
 
+=======
+>>>>>>> paldo
         return toDto(p);
     }
 

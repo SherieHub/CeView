@@ -12,7 +12,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.HashMap;
+<<<<<<< HEAD
 import java.util.List;
+=======
+>>>>>>> paldo
 import java.util.Map;
 
 /**
@@ -58,6 +61,7 @@ public class AIInferenceGatewayService {
     }
 
     /**
+<<<<<<< HEAD
      * Generate and persist the 768-dim E5 embedding for a saved business profile.
      *
      * <p>Called by {@link com.ceview.module1.businessinput.BusinessProfileController}
@@ -69,6 +73,8 @@ public class AIInferenceGatewayService {
     }
 
     /**
+=======
+>>>>>>> paldo
      * Aggregate 10-keyword volumes across KR/JP/US and rank markets for one category (FR2.2).
      *
      * <p>Uses {@link #rankMarketsTimeout} (default 90 s) instead of the shared timeout
@@ -112,6 +118,7 @@ public class AIInferenceGatewayService {
         return postTransformer("/internal/forecasting/inference", payload);
     }
 
+<<<<<<< HEAD
     /**
      * Batch Gemini demand forecast — all markets in a single API call (FR2.11).
      *
@@ -138,11 +145,32 @@ public class AIInferenceGatewayService {
         return (Map<String, Map<String, Object>>) response.get("results");
     }
 
+=======
+>>>>>>> paldo
     /** Run XGBoost market scoring model (FR2.13). */
     public Map<String, Object> runMarketScoring(Map<String, Object> payload) {
         return postTransformer("/internal/forecasting/score", payload);
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * Legacy stub fallback — called when no enriched data exists for a profile.
+     * Routes to the transformer's /analyze stub which returns MOCK_MARKETS-shaped data.
+     */
+    public Map<String, Object> forecastMarkets(Map<String, Object> payload) {
+        return postTransformer("/internal/forecasting/analyze", payload);
+    }
+
+    /**
+     * Legacy stub fallback — called when no demand alerts exist for a profile.
+     * Routes to the transformer's /notifications stub.
+     */
+    public Map<String, Object> listNotifications() {
+        return postTransformer("/internal/forecasting/notifications", Map.of());
+    }
+
+>>>>>>> paldo
     // ─── Module 3 — Content / Creative / Compliance (fastapi-sbert) ──────────
 
     public Map<String, Object> generateContent(Map<String, Object> payload) {
@@ -169,6 +197,54 @@ public class AIInferenceGatewayService {
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * UC-4.2 / UC-4.3 — Raw campaign data PES computation + AI prescriptive insights.
+     *
+     * <p>Delegates to FastAPI {@code /internal/pes-compute/analyze} which:
+     * <ol>
+     *   <li>Computes CTR, CPC, CR, ROAS, CAC from raw inputs.</li>
+     *   <li>Applies Min-Max normalization and inverts cost metrics.</li>
+     *   <li>Applies the PES weighted-sum formula with edge-case weight recalibration.</li>
+     *   <li>Calls DeepSeek/Gemini to identify the weakest funnel stage and generate
+     *       3 ranked optimisation recommendations + an executive summary.</li>
+     * </ol>
+     *
+     * <p>Payload shape:
+     * <pre>
+     * {
+     *   "impressions":  int,
+     *   "clicks":       int,
+     *   "adSpend":      double,
+     *   "revenue":      double,
+     *   "conversions":  int,
+     *   "bookings":     int,
+     *   "newCustomers": int
+     * }
+     * </pre>
+     *
+     * <p>Response shape (from FastAPI):
+     * <pre>
+     * {
+     *   "base_metrics":       { CTR, CPC, CR, ROAS, CAC },
+     *   "normalized_metrics": { ... },
+     *   "pes_score":          double,
+     *   "pes_label":          string,
+     *   "breakdown":          [ { metric, weight, contribution } ],
+     *   "flagged_metrics":    [ string ],
+     *   "effective_weights":  { ... },
+     *   "ai_report":          { weakest_funnel_stage, recommendations[], executive_summary, source }
+     * }
+     * </pre>
+     *
+     * @see com.ceview.module4.AnalyticsController#manualIngest
+     */
+    public Map<String, Object> computePesFromRaw(Map<String, Object> payload) {
+        return postSbert("/internal/pes-compute/analyze", payload);
+    }
+
+    /**
+>>>>>>> paldo
      * PES time-series deep-analysis via pes_report_agent (LangGraph + Gemini).
      *
      * <p>Payload shape:
@@ -213,6 +289,7 @@ public class AIInferenceGatewayService {
                 .retrieve()
                 .onStatus(
                     status -> status.is4xxClientError() || status.is5xxServerError(),
+<<<<<<< HEAD
                     // Read as String so any Content-Type (text/plain or application/json) is accepted.
                     // The upstream FastAPI may return text/plain on unhandled RuntimeErrors; reading
                     // as MAP_TYPE would throw UnsupportedMediaTypeException in that case.
@@ -235,10 +312,22 @@ public class AIInferenceGatewayService {
                                 }
                             } catch (Exception ignored) {}
                             if (msg.isBlank()) msg = response.statusCode().toString();
+=======
+                    response -> response.bodyToMono(MAP_TYPE)
+                        .map(body -> {
+                            String code = String.valueOf(body.getOrDefault("code", "FASTAPI_ERROR"));
+                            String msg  = String.valueOf(body.getOrDefault("message", response.statusCode().toString()));
+>>>>>>> paldo
                             return (Throwable) new ResponseStatusException(
                                 HttpStatus.valueOf(response.statusCode().value()),
                                 code + " :: " + msg);
                         })
+<<<<<<< HEAD
+=======
+                        .defaultIfEmpty(new ResponseStatusException(
+                            HttpStatus.valueOf(response.statusCode().value()),
+                            "upstream error from " + path))
+>>>>>>> paldo
                 )
                 .bodyToMono(MAP_TYPE)
                 .block(timeout);

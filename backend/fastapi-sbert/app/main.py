@@ -17,9 +17,6 @@ from app.routers import (
 )
 
 configure_logging()
-
-
-@asynccontextmanager
 async def lifespan(app: FastAPI):
     """Eagerly load the E5 encoder + Keras classifier on startup.
 

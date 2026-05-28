@@ -18,7 +18,10 @@ public class UniquenessScoringController {
     @PostMapping("/uniqueness")
     public UniquenessResponse uniqueness(@RequestBody UniquenessRequest req) {
         var payload = new HashMap<String, Object>();
+<<<<<<< HEAD
         payload.put("businessProfileId", req.businessProfileId() != null ? req.businessProfileId() : "");
+=======
+>>>>>>> paldo
         payload.put("businessName", req.businessName());
         payload.put("categories", req.categories());
         payload.put("coreServices", req.coreServices());
@@ -29,7 +32,13 @@ public class UniquenessScoringController {
         return new UniquenessResponse(
             ((Number) r.getOrDefault("overallScore", 0)).intValue(),
             ((Number) r.getOrDefault("semanticsScore", 0)).intValue(),
+<<<<<<< HEAD
             ((Number) r.getOrDefault("categoryScore", 0)).intValue()
+=======
+            ((Number) r.getOrDefault("categoryScore", 0)).intValue(),
+            String.valueOf(r.getOrDefault("descriptionFeedback", "")),
+            String.valueOf(r.getOrDefault("categoryFeedback", ""))
+>>>>>>> paldo
         );
     }
 }

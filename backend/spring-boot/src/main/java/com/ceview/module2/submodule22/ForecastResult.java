@@ -24,8 +24,11 @@ public class ForecastResult {
     @Column(name = "rmse")                     private Double rmse;
     @Column(name = "forecast_horizon_weeks")   private Integer forecastHorizonWeeks;
     @Column(name = "generated_at")             private OffsetDateTime generatedAt;
+<<<<<<< HEAD
     @Column(name = "weekly_forecasts_json", columnDefinition = "TEXT")
     private String weeklyForecastsJson;
+=======
+>>>>>>> paldo
 
     @PrePersist
     void onCreate() {

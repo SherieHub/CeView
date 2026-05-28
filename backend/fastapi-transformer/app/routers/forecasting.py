@@ -3,15 +3,27 @@
 Phase 2 architecture:
   POST /inference  — Gemini-powered 4w / 12w demand forecasting (replaces BiLSTM)
   POST /score      — XGBoost economic viability scoring (GDP, FX, flight, distance)
+<<<<<<< HEAD
+=======
+  POST /analyze    — legacy stub fallback (kept for backward compatibility)
+  POST /notifications — legacy stub fallback
+>>>>>>> paldo
 """
 from __future__ import annotations
 
 import logging
 
+<<<<<<< HEAD
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services import gemini_forecaster, xgboost_scorer
+=======
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
+from app.services import gemini_forecaster, ml_stubs, xgboost_scorer
+>>>>>>> paldo
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +62,11 @@ class GeminiForecastRequest(BaseModel):
     gdpGrowth:         float = 2.0
     holidayFlag:       bool  = False
     # ── Economic trend context (Phase 3 MarketRadar extension) ────────────────
+<<<<<<< HEAD
     # Optional — absent from early-stage requests.
+=======
+    # Optional — absent from early-stage / stub requests.
+>>>>>>> paldo
     gdpTrendDirection: str   | None = None   # "growing" | "declining" | "flat"
     gdpTrendDelta:     float | None = None   # newest − oldest GDP growth point
     gdpTrend:    list[GdpTrendPoint]   = Field(default_factory=list)
@@ -60,9 +76,15 @@ class GeminiForecastRequest(BaseModel):
 class ForecastResponse(BaseModel):
     predicted_demand_4w:     float
     predicted_demand_12w:    float
+<<<<<<< HEAD
     # Individual per-week forecasts [Wk+1, Wk+2, Wk+3, Wk+4] — used by the
     # Spring Boot ForecastingService to render a real trend line on the chart
     # instead of a flat repeated value.
+=======
+    # Per-week demand projections: [Wk+1, Wk+2, Wk+3, Wk+4].
+    # weekly_forecasts[-1] == predicted_demand_4w.
+    # Empty only on legacy/stub responses that pre-date this field.
+>>>>>>> paldo
     weekly_forecasts:        list[float] = Field(default_factory=list)
     mape:                    float
     mae:                     float
@@ -71,6 +93,7 @@ class ForecastResponse(BaseModel):
     passed:                  bool
     low_confidence_disclaimer: bool = False
     message:                 str   = ""
+<<<<<<< HEAD
     source:                  str   = "gemini"
 
 
@@ -82,6 +105,9 @@ class GeminiBatchForecastRequest(BaseModel):
 class GeminiBatchForecastResponse(BaseModel):
     """Batch response: forecast results keyed by market name (e.g. 'korea')."""
     results: dict[str, ForecastResponse]
+=======
+    source:                  str   = "stub"
+>>>>>>> paldo
 
 
 class EconomicScoreRequest(BaseModel):
@@ -118,6 +144,7 @@ def run_inference(body: GeminiForecastRequest) -> ForecastResponse:
     calls the Gemini API with temperature=0.1 and JSON response mode, then
     parses and validates the output (FR2.12 MAPE ≤ 15%).
 
+<<<<<<< HEAD
     Error handling: Gemini quota exhaustion (429) and transient failures are
     caught here and returned as 503 JSON so Spring Boot's WebClient can parse
     the error body without an UnsupportedMediaTypeException.
@@ -260,6 +287,27 @@ def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecast
     return GeminiBatchForecastResponse(
         results={mkt: ForecastResponse(**data) for mkt, data in batch_result.items()}
     )
+=======
+    Falls back to a deterministic linear-extrapolation stub when:
+      - GEMINI_API_KEY is not configured
+      - The API returns an unparseable response after 3 retries
+    """
+    result = gemini_forecaster.forecast(
+        market              = body.market,
+        trend_series        = body.trendSeries,
+        rolling_7d          = body.rolling7dAvg,
+        rolling_30d         = body.rolling30dAvg,
+        rolling_std_7d      = body.rollingStd7d,
+        spike_indicator     = body.spikeIndicator,
+        yoy_ratio           = body.yoyRatio,
+        seasonality_score   = body.seasonalityScore,
+        forex_rate          = body.forexRate,
+        gdp_growth          = body.gdpGrowth,
+        gdp_trend_direction = body.gdpTrendDirection,
+        gdp_trend_delta     = body.gdpTrendDelta,
+    )
+    return ForecastResponse(**result)
+>>>>>>> paldo
 
 
 # ─── Submodule 2.2: XGBoost economic scoring (FR2.13) ────────────────────────
@@ -276,6 +324,7 @@ def score_market(body: EconomicScoreRequest) -> EconomicScoreResponse:
     score and the seasonality score to produce the final market_score:
       market_score = 0.40·demand + 0.35·seasonality + 0.25·economic_viability
     """
+<<<<<<< HEAD
     try:
         result = xgboost_scorer.score(body.model_dump())
     except RuntimeError as exc:
@@ -300,3 +349,21 @@ def score_market(body: EconomicScoreRequest) -> EconomicScoreResponse:
             },
         )
     return EconomicScoreResponse(**result)
+=======
+    result = xgboost_scorer.score(body.model_dump())
+    return EconomicScoreResponse(**result)
+
+
+# ─── Legacy stub fallbacks ────────────────────────────────────────────────────
+
+@router.post("/analyze")
+def analyze(_: dict | None = None) -> dict:
+    """Legacy stub — returns MOCK_MARKETS-shaped data when no enriched dataset exists."""
+    return {"markets": ml_stubs.forecast_markets()}
+
+
+@router.post("/notifications")
+def list_notifications(_: dict | None = None) -> dict:
+    """Legacy stub — returns static notifications when DB alerts are absent."""
+    return {"notifications": ml_stubs.notifications()}
+>>>>>>> paldo
