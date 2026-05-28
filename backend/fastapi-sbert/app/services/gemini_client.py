@@ -260,24 +260,8 @@ The optionNames field is a list parallel to options:
 
 def evaluate_compliance(caption: str, market: str,
                         media_name: str | None, media_size: int | None) -> dict:
-    """
-    Returns: { score, aligned[], gaps[], source }.
-    Same fallback/source contract as `content_for_market`.
-    """
-    base = {
-        "score": 88,
-        "aligned": [
-            "Destination tags are correctly added so travelers can easily find your location.",
-            "Text is clear and very easy to read against the background image.",
-            "Important text is placed exactly where travelers naturally look first.",
-            "Caption tone matches the target audience's search intent.",
-        ],
-        "gaps": [
-            "The background looks a bit too crowded. Try a cleaner, simpler image.",
-            "Missing words that suggest a 'fresh start' which travelers respond to.",
-            "No people are visible in the photo. Adding one helps travelers project themselves.",
-        ],
-    }
+    """Returns: { score, source }."""
+    base = {"score": 88}
 
     if not _enabled():
         _compliance_log.info(
@@ -303,8 +287,6 @@ destination tagging, emotional resonance, and trigger words for the target marke
 
 Return JSON with exactly:
 - score: integer 0-100 (overall compliance)
-- aligned: array of 3-5 plain-language strings explaining what works well
-- gaps: array of 2-4 plain-language strings explaining what is missing or weak
 """
     try:
         out = _generate_json(prompt)
@@ -332,8 +314,6 @@ Return JSON with exactly:
     _compliance_log.info("Groq compliance ok market=%s score=%s", market, score)
     return {
         "score": max(0, min(100, score)),
-        "aligned": list(out.get("aligned") or [])[:5],
-        "gaps": list(out.get("gaps") or [])[:4],
         "source": "groq",
     }
 
@@ -989,7 +969,7 @@ def evaluate_compliance_multimodal(
         shot_list_context: str | None,
         media_name: str | None,
         media_size: int | None) -> dict:
-    """Visual Alignment Score (VAS) + explainable AI outputs (FR3.24, FR3.25.2, FR3.26).
+    """Visual Alignment Score (VAS) + mismatch detection (FR3.24, FR3.25.2, FR3.26).
 
     Evaluates: composition consistency, cultural appropriateness, visual tone
     alignment, subject emphasis, destination relevance (FR3.24 criteria).
@@ -997,8 +977,6 @@ def evaluate_compliance_multimodal(
     Returns:
         {
             vas: float 0-100,
-            aligned: list[str],     — what works well (FR3.26)
-            gaps: list[str],        — improvement areas (FR3.26)
             mismatches: list[str],  — detected mismatches and deviations (FR3.26)
             source: "gemini" | "fallback"
         }
@@ -1042,8 +1020,6 @@ Perform multimodal visual compliance analysis (FR3.24). Evaluate:
 
 Return JSON with exactly:
 - vas: integer 0-100 (Visual Alignment Score — weighted average of the 5 criteria above)
-- aligned: array of 3-5 strings — what works well and why (FR3.26)
-- gaps: array of 2-4 strings — specific improvement areas (FR3.26)
 - mismatches: array of 1-3 strings — detected mismatches vs approved direction (FR3.26)
 """
 
@@ -1070,11 +1046,9 @@ Return JSON with exactly:
 
     _compliance_log.info("Groq multimodal VAS ok market=%s vas=%s", market, vas)
     return {
-        "vas":       vas,
-        "aligned":   list(out.get("aligned") or [])[:5],
-        "gaps":      list(out.get("gaps") or [])[:4],
+        "vas":        vas,
         "mismatches": list(out.get("mismatches") or [])[:3],
-        "source":    "groq",
+        "source":     "groq",
     }
 
 
@@ -1154,7 +1128,7 @@ def pes_compute_insights(
         if flagged_metrics else "No metrics were excluded."
     )
 
-    prompt = f"""You are CeView's Campaign Analyst for Cebu MSME tourism businesses.
+    prompt = f"""You are CeView's Senior Campaign Analyst for Cebu MSME tourism businesses — resorts, tour operators, dive shops, and cultural experience providers in Cebu, Philippines targeting Korean, Japanese, and US tourists.
 
 Campaign PES Analysis:
 - PES Score: {pes_score:.4f} / 1.00 ({pes_label})
@@ -1163,13 +1137,23 @@ Campaign PES Analysis:
 {breakdown_text}
 - {flag_text}
 
-Identify the weakest funnel stage and provide 3 specific, actionable recommendations
-to improve the campaign's Promotional Effectiveness Score for a Cebu tourism MSME.
+Context on what each metric means for a Cebu tourism operator:
+- CTR: % of tourists who saw the ad and clicked — measures ad creative relevance for Cebu's target tourist markets
+- CPC: ₱ cost per click on platforms like Facebook, Naver Blog, or Instagram — measures ad spend efficiency per tourist reached
+- ROAS: ₱ revenue from Cebu resort packages or tours per ₱1 of ad spend — measures overall campaign profitability
+- CR: % of clicks that became booking enquiries or form submissions on the Cebu operator's landing page — measures offer and landing page effectiveness
+- CAC: total ₱ cost to acquire one confirmed booking customer for the Cebu tourism business — measures total acquisition efficiency
+
+Identify the weakest funnel stage and provide 3 specific, actionable recommendations to improve the campaign's PES score.
+Each recommendation must:
+  - Reference Cebu's tourism context specifically (e.g. Cebu resort packages, island-hopping tours, dive packages in Moalboal, cultural experiences)
+  - Name the specific platform to act on (e.g. Naver Blog for Korean tourists, Instagram Reels for US tourists, Facebook for Japanese tourists)
+  - State the expected business outcome for the Cebu operator (e.g. lower CAC, more booking enquiries, higher ROAS)
 
 Return JSON with exactly:
 - weakest_funnel_stage: string (e.g. "Clicks → Bookings", "Impressions → Clicks", etc.)
-- recommendations: array of exactly 3 strings — each a concrete, specific action
-- executive_summary: string — 2-3 sentences summarising the PES result and top priority
+- recommendations: array of exactly 3 strings — each a concrete, Cebu-specific action with platform and expected outcome
+- executive_summary: string — 3-4 sentences: state the PES score and what it means for this Cebu tourism business, explain which metric is the biggest drag on performance and why it matters for booking revenue, and name the single most impactful action the operator should take immediately
 """
 
     out = _generate_json(prompt)
@@ -1249,7 +1233,7 @@ RULES:
 
 Return this exact JSON structure:
 {{
-  "executiveSummary": "<2–3 sentence overall campaign assessment referencing PES and funnel>",
+  "executiveSummary": "<4–6 sentence overall campaign assessment that: (1) opens with a plain-language explanation of what each of the 5 KPIs means for this Cebu tourism business — CTR is the percentage of tourists who saw the ad and clicked (measures ad creative relevance), CPC is the ₱ cost per click on platforms like Facebook and Naver Blog (measures ad spend efficiency), ROAS is the ₱ revenue earned per ₱1 of ad spend (measures overall campaign profitability for the resort or tour package), CR is the percentage of clicks that turned into a booking enquiry or form submission (measures how well the landing page converts tourist interest into action), and CAC is the total ₱ cost to secure one confirmed booking customer (measures total acquisition efficiency and directly impacts profit margin); (2) summarises the current overall campaign health in the context of this Cebu tourism MSME; (3) identifies the single top-priority improvement for the operator>",
   "funnelDiagnostics": [
     {{
       "stage": "<transition label>",

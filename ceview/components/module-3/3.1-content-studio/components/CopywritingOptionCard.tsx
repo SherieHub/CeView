@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Hash, Check, Pencil, X, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Hash, Check, Pencil, X, CheckCircle2 } from 'lucide-react';
 import CopyTargetBtn from './CopyTargetBtn';
 import { COLORS } from '../../../../constants';
-import type { CaptionMetadata } from '../../../../types';
-
 // ── Demographic archetype badge config ──────────────────────────────────────
 // Index 0 → Witty & High-Energy (Gen Z)   → blue
 // Index 1 → Formal & Educational (Mature)  → emerald
@@ -28,23 +26,11 @@ function barColor(pct: number): string {
   return '#10B981';                   // comfortable  — emerald
 }
 
-// ── AI Reasoning field config ─────────────────────────────────────────────────
-// Maps CaptionMetadata keys → human-readable label + icon emoji
-const REASONING_FIELDS: { key: keyof CaptionMetadata; icon: string; label: string }[] = [
-  { key: 'core_business_context',             icon: '💼', label: 'Core Business Context'        },
-  { key: 'market_cultural_localization',      icon: '🌍', label: 'Market & Cultural Localisation' },
-  { key: 'psychological_elements',            icon: '🧠', label: 'Psychological Elements'         },
-  { key: 'creative_tone_atmosphere',          icon: '🎨', label: 'Creative Tone & Atmosphere'     },
-  { key: 'algorithmic_platform_architecture', icon: '⚡', label: 'Algorithmic Architecture'       },
-];
-
 // ── Props ────────────────────────────────────────────────────────────────────
 interface CopywritingOptionCardProps {
   index: number;
   text: string;
   optionName?: string;
-  /** AI reasoning metadata for this caption — rendered in collapsible section. */
-  metadata?: CaptionMetadata;
   /** Character limit for this platform (from PLATFORM_CHAR_LIMITS). */
   charLimit?: number;
   isApproved?: boolean;
@@ -59,7 +45,6 @@ const CopywritingOptionCard: React.FC<CopywritingOptionCardProps> = ({
   index,
   text,
   optionName,
-  metadata,
   charLimit,
   isApproved = false,
   isCopied,
@@ -67,9 +52,8 @@ const CopywritingOptionCard: React.FC<CopywritingOptionCardProps> = ({
   onApprove,
   onEdit,
 }) => {
-  const [isEditing, setIsEditing]       = useState(false);
-  const [editValue, setEditValue]       = useState(text);
-  const [reasoningOpen, setReasoningOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(text);
 
   const hashCount  = (text.match(/#\S+/g) || []).length;
   const charCount  = text.length;
@@ -201,41 +185,6 @@ const CopywritingOptionCard: React.FC<CopywritingOptionCardProps> = ({
           </span>
         </div>
       </div>
-
-      {/* ── AI Reasoning section (collapsible) ──────────────────────────────── */}
-      {metadata && (
-        <div style={{ backgroundColor: COLORS.CREAM }}>
-          {/* Toggle row */}
-          <button
-            onClick={() => setReasoningOpen(o => !o)}
-            className="w-full flex items-center justify-between px-4 py-2 border-t border-b text-left transition-colors hover:bg-slate-50"
-            style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: COLORS.WHITE }}
-          >
-            <span className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider" style={{ color: COLORS.NAVY }}>
-              <span>🤖</span> AI Reasoning
-            </span>
-            {reasoningOpen
-              ? <ChevronUp size={13} style={{ color: COLORS.TEXT_MUTED }} />
-              : <ChevronDown size={13} style={{ color: COLORS.TEXT_MUTED }} />}
-          </button>
-
-          {/* Expanded content */}
-          {reasoningOpen && (
-            <div className="divide-y" style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: '#FAFAF9' }}>
-              {REASONING_FIELDS.map(({ key, icon, label }) => (
-                <div key={key} className="px-4 py-3">
-                  <p className="text-[10px] font-black uppercase tracking-wider mb-1 flex items-center gap-1" style={{ color: COLORS.TEXT_MUTED }}>
-                    <span>{icon}</span>{label}
-                  </p>
-                  <p className="text-xs font-medium leading-relaxed" style={{ color: COLORS.TEXT_MAIN }}>
-                    {metadata[key]}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── Footer row ──────────────────────────────────────────────────────── */}
       <div

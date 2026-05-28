@@ -1,19 +1,10 @@
 """BiLSTM + Transformer demand forecasting model for Module 2.2 (FR2.11).
 
-<<<<<<< HEAD
-NOTE: This model has been superseded by the Gemini API forecaster (Phase 2).
+NOTE: This model has been superseded by the Groq API forecaster (Phase 2).
 It is retained for reference and as a potential offline fallback if weights
 are trained and provided via BILSTM_WEIGHTS_PATH.
 
 Model architecture:
-=======
-Follows the same singleton + fallback pattern as ml_classifier.py:
-  - try to load bilstm_weights.npz at module load
-  - if absent, all calls return deterministic stub predictions
-  - stub values satisfy MAPE ≤ 15% so stub output passes FR2.12 validation
-
-Model architecture (for future trained-weight swap):
->>>>>>> paldo
   Input  : (1, seq_len, 6)  — [trend_index, forex_rate, gdp_growth,
                                 seasonality_score, spike_indicator, holiday_flag]
   BiLSTM : hidden=64, bidirectional → (seq_len, 128)
@@ -24,10 +15,6 @@ Model architecture (for future trained-weight swap):
 """
 from __future__ import annotations
 
-<<<<<<< HEAD
-=======
-import hashlib
->>>>>>> paldo
 import logging
 import os
 
@@ -44,22 +31,14 @@ _weights: dict | None = None
 def _load() -> None:
     global _weights
     if not os.path.exists(_WEIGHTS_PATH):
-<<<<<<< HEAD
         logger.info("bilstm_weights.npz not found at %s — model unavailable", _WEIGHTS_PATH)
-=======
-        logger.info("bilstm_weights.npz not found — using stub inference")
->>>>>>> paldo
         return
     try:
         _weights = dict(np.load(_WEIGHTS_PATH, allow_pickle=False))
         logger.info("BiLSTM weights loaded from %s", _WEIGHTS_PATH)
     except Exception as exc:  # noqa: BLE001
-<<<<<<< HEAD
         logger.error("Failed to load BiLSTM weights: %s", exc)
         raise RuntimeError(f"BiLSTM weight load failed: {exc}") from exc
-=======
-        logger.warning("Failed to load BiLSTM weights: %s", exc)
->>>>>>> paldo
 
 
 _load()
@@ -72,16 +51,11 @@ def run_inference(sequences: list[dict], market: str) -> dict:
         sequences: list of feature dicts with keys
             {week, trendIndex, forexRate, gdpGrowth, seasonalityScore,
              spikeIndicator, holidayFlag}
-<<<<<<< HEAD
         market: market identifier for logging
-=======
-        market: market identifier for caching/reproducibility
->>>>>>> paldo
 
     Returns:
         {predicted_demand_4w, predicted_demand_12w, mape, mae, rmse,
          confidence, low_confidence_disclaimer, message}
-<<<<<<< HEAD
 
     Raises:
         RuntimeError: if model weights are not loaded.
@@ -92,7 +66,7 @@ def run_inference(sequences: list[dict], market: str) -> dict:
             f"BiLSTM model weights are not loaded. "
             f"Provide a trained weights file at {_WEIGHTS_PATH} "
             f"(set BILSTM_WEIGHTS_PATH to override). "
-            f"Consider using the Gemini forecaster (gemini_forecaster.py) instead."
+            f"Consider using the Groq forecaster (gemini_forecaster.py) instead."
         )
     if not sequences:
         raise ValueError(
@@ -101,14 +75,6 @@ def run_inference(sequences: list[dict], market: str) -> dict:
         )
 
     result = _numpy_forward(sequences)
-=======
-    """
-    if _weights is None or not sequences:
-        result = _stub_inference(sequences, market)
-    else:
-        result = _numpy_forward(sequences)
-
->>>>>>> paldo
     validation = validate(result["mape"], result["mae"], result["rmse"])
     return {**result, **validation}
 
@@ -153,29 +119,7 @@ def _numpy_forward(sequences: list[dict]) -> dict:
     }
 
 
-<<<<<<< HEAD
-=======
-# ─── deterministic stub ───────────────────────────────────────────────────────
 
-def _stub_inference(sequences: list[dict], market: str) -> dict:
-    last_trend = sequences[-1].get("trendIndex", 50.0) if sequences else 50.0
-    seed = int(hashlib.md5(f"{market}{int(last_trend)}".encode()).digest()[0])
-
-    demand_4w = round(50.0 + (seed % 40), 2)
-    demand_12w = round(demand_4w + (seed // 7) % 30, 2)
-    mape = round(8.0 + (seed % 7), 2)  # always ≤ 15 → stub always passes FR2.12
-
-    return {
-        "predicted_demand_4w": demand_4w,
-        "predicted_demand_12w": demand_12w,
-        "mape": mape,
-        "mae": round(mape * 0.6, 2),
-        "rmse": round(mape * 0.9, 2),
-        "confidence": round(max(0.5, 1.0 - mape / 100.0), 3),
-    }
-
-
->>>>>>> paldo
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def _sequences_to_array(sequences: list[dict]) -> np.ndarray:

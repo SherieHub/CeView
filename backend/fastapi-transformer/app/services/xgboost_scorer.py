@@ -1,10 +1,6 @@
 """XGBoost Economic Viability Scorer for CeView Module 2.2 (FR2.13).
 
-<<<<<<< HEAD
 Phase 2 architectural directive: XGBoost evaluates and weights the
-=======
-Phase 2 architectural directive: XGBoost now evaluates and weights the
->>>>>>> paldo
 ECONOMIC SIGNALS exclusively:
 
     Input features (5 economic):
@@ -20,12 +16,8 @@ ECONOMIC SIGNALS exclusively:
 The final market_score is assembled OUTSIDE this module as:
     market_score = 0.40·(predicted_demand/100) + 0.35·seasonality_score + 0.25·econ
 
-<<<<<<< HEAD
 Requires a trained XGBoost model at XGBOOST_MODEL_PATH.
-=======
-Tries to load a trained XGBoost model from XGBOOST_MODEL_PATH; falls back to
-the weighted-formula stub when absent.
->>>>>>> paldo
+Falls back to a weighted linear approximation when the model file is absent.
 """
 from __future__ import annotations
 
@@ -37,12 +29,7 @@ logger = logging.getLogger(__name__)
 _MODEL_PATH = os.getenv("XGBOOST_MODEL_PATH", "/app/models/xgboost_market.json")
 _model = None
 
-<<<<<<< HEAD
-# ─── economic feature weights (documentation for trained model feature order) ─
-=======
-# ─── economic feature weights (sum to 1.0) ────────────────────────────────────
-# Used by stub and as documentation for the trained model feature order.
->>>>>>> paldo
+# ─── economic feature weights (sum to 1.0; used by linear fallback + model reference) ──
 _ECONOMIC_WEIGHTS: dict[str, float] = {
     "gdp_growth_norm":       0.30,   # higher GDP growth → higher overseas spending
     "forex_norm":            0.30,   # stronger foreign currency → Cebu more affordable
@@ -62,11 +49,7 @@ _SCORE_WEIGHTS: dict[str, float] = {
 def _load() -> None:
     global _model
     if not os.path.exists(_MODEL_PATH):
-<<<<<<< HEAD
-        logger.warning("XGBoost model not found at %s", _MODEL_PATH)
-=======
-        logger.info("xgboost_market.json not found — using weighted-formula stub")
->>>>>>> paldo
+        logger.warning("XGBoost model not found at %s — using linear fallback", _MODEL_PATH)
         return
     try:
         import xgboost as xgb  # type: ignore[import]
@@ -75,12 +58,8 @@ def _load() -> None:
         _model = m
         logger.info("XGBoost economic viability model loaded from %s", _MODEL_PATH)
     except Exception as exc:  # noqa: BLE001
-<<<<<<< HEAD
         logger.error("Failed to load XGBoost model: %s", exc)
         raise RuntimeError(f"XGBoost model load failed: {exc}") from exc
-=======
-        logger.warning("Failed to load XGBoost model: %s", exc)
->>>>>>> paldo
 
 
 _load()
@@ -108,14 +87,7 @@ def score(features: dict) -> dict:
                                       economic_component}
         }
     """
-<<<<<<< HEAD
     econ = _xgb_economic(features) if _model is not None else _linear_economic(features)
-=======
-    econ = (
-        _xgb_economic(features) if _model is not None
-        else _stub_economic(features)
-    )
->>>>>>> paldo
 
     demand_component      = features.get("predicted_demand", 50.0) / 100.0
     seasonality_component = features.get("seasonality_score", 0.5)
@@ -137,23 +109,15 @@ def score(features: dict) -> dict:
     }
 
 
-<<<<<<< HEAD
 # ─── Linear fallback (used when XGBoost model file is absent) ────────────────
 
 def _linear_economic(features: dict) -> float:
-    """Weighted linear approximation of the XGBoost economic score.
-
-    Uses the same feature weights defined in _ECONOMIC_WEIGHTS so the output
-    range and interpretation match what a trained model would produce.
-    Used automatically when xgboost_market.json has not been loaded.
-    """
+    """Weighted linear approximation of the XGBoost economic score."""
     fv = _feature_vector(features)
-    weights = list(_ECONOMIC_WEIGHTS.values())  # order matches _feature_vector output
+    weights = list(_ECONOMIC_WEIGHTS.values())
     return float(min(max(sum(w * v for w, v in zip(weights, fv)), 0.0), 1.0))
 
 
-=======
->>>>>>> paldo
 # ─── XGBoost economic inference ───────────────────────────────────────────────
 
 def _xgb_economic(features: dict) -> float:
@@ -165,18 +129,6 @@ def _xgb_economic(features: dict) -> float:
     return min(max(raw, 0.0), 1.0)
 
 
-<<<<<<< HEAD
-=======
-# ─── weighted formula stub ────────────────────────────────────────────────────
-
-def _stub_economic(features: dict) -> float:
-    keys = list(_ECONOMIC_WEIGHTS.keys())
-    fv   = _feature_vector(features)
-    raw  = sum(_ECONOMIC_WEIGHTS[k] * v for k, v in zip(keys, fv))
-    return min(max(raw, 0.0), 1.0)
-
-
->>>>>>> paldo
 # ─── feature engineering ──────────────────────────────────────────────────────
 
 def _feature_vector(features: dict) -> list[float]:

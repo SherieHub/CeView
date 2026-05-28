@@ -3,7 +3,6 @@ import { Shield, ToggleLeft, ToggleRight } from 'lucide-react';
 import AuditEmptyBanner from './AuditEmptyBanner';
 import ComplianceGauge from './ComplianceGauge';
 import ChecklistIndicator from './ChecklistIndicator';
-import FeedbackList from './FeedbackList';
 import { COLORS } from '../../../../constants';
 import type { ComplianceResultDTO, ResponseSource } from '../../../../types';
 
@@ -220,14 +219,8 @@ const SmartOptimizationBoard: React.FC<SmartOptimizationBoardProps> = ({
                 </div>
               </div>
 
-              {/* Feedback lists */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FeedbackList type="pros" items={compliance.aligned} />
-                <FeedbackList type="cons" items={compliance.gaps} />
-              </div>
-
-              {/* Mismatches (full pipeline only) */}
-              {compliance.mismatches && compliance.mismatches.length > 0 && (
+              {/* Mismatches (full pipeline only, failing scores only) */}
+              {compliance.score < 80 && compliance.mismatches && compliance.mismatches.length > 0 && (
                 <div className="p-4 rounded-xl border" style={{ backgroundColor: '#FFF8E1', borderColor: `${COLORS.GOLD}40` }}>
                   <p className="text-xs font-black uppercase tracking-widest mb-2" style={{ color: COLORS.GOLD }}>
                     ⚠ Detected Mismatches

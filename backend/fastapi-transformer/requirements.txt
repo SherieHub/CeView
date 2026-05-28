@@ -8,10 +8,6 @@ scipy>=1.13.0
 pandas>=2.2.0
 xgboost>=2.0.0
 numpy>=1.26.0,<2.0
-<<<<<<< HEAD
-# Groq API (OpenAI-compatible) — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
+# Groq API (OpenAI-compatible) and Gemini API — demand forecasting (Phase 2)
 openai>=1.0.0
-=======
-# Gemini API — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
 google-generativeai>=0.8.0
->>>>>>> paldo

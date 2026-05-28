@@ -134,12 +134,14 @@ def _fallback_report(transitions: list[FunnelTransition], market: str) -> dict:
 
     return {
         "executiveSummary": (
-            "Over the selected campaign period, your ads generated strong top-of-funnel "
-            "awareness but a significant efficiency gap emerged mid-funnel. While cost-per-click "
-            "remains competitive, the Promotional Effectiveness Score indicates the conversion "
-            f"path needs optimisation across all {len(diagnostics)} evaluated funnel stages — "
-            f"with the '{transitions[0].stage if transitions else 'Clicks → Conversions'}' "
-            "transition identified as the highest-priority bottleneck."
+            "Here is what your five campaign metrics mean for your Cebu tourism business: "
+            "CTR (Click-Through Rate) shows the percentage of tourists who saw your ad and clicked — a low or declining CTR means your ad creative or audience targeting is losing relevance with your target market. "
+            "CPC (Cost Per Click) is how much you pay in ₱ for each visitor on platforms like Facebook or Naver Blog — a rising CPC means you are reaching fewer tourists per peso of ad budget. "
+            "ROAS (Return on Ad Spend) is the ₱ revenue your resort or tour packages generate for every ₱1 spent on ads — it directly measures campaign profitability. "
+            "CR (Conversion Rate) is the percentage of clicks that became booking enquiries or form submissions — a falling CR points to a landing page or offer issue that is losing high-intent tourists before they enquire. "
+            "CAC (Customer Acquisition Cost) is the total ₱ you spend to secure one confirmed booking — rising CAC directly erodes your profit margin per customer. "
+            f"Currently, the '{transitions[0].stage if transitions else 'Clicks → Conversions'}' "
+            "stage is your most urgent bottleneck and should be your immediate focus to improve overall campaign efficiency."
         ),
         "funnelDiagnostics": diagnostics,
         "recommendations":   recommendations,

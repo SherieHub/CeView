@@ -6,17 +6,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Produces two named WebClient beans:
+ * Produces three named WebClient beans:
  *
- *  - {@code fastapiSbertClient}   → fastapi-sbert (port 8000)
- *                                   Modules 1, 3, 4 — SBERT / Gemini endpoints
+ *  - {@code fastapiSbertClient}       → fastapi-sbert (port 8000)
+ *                                       Modules 1, 3, 4 — SBERT / Groq endpoints
  *
  *  - {@code fastapiTransformerClient} → fastapi-transformer (port 8001)
  *                                       Module 2 — Gemini demand forecasting, XGBoost economic
  *                                       viability scoring, PyTrends, Seasonal Shift Detection
  *
- * The split ensures Module 2 AI calls are never accidentally routed to the
- * SBERT service (wrong model, wrong port).
+ *  - {@code fastapiComplianceClient}  → fastapi-compliance (port 8002)
+ *                                       Module 3.3 — Groq OMCS evaluator
  */
 @Configuration
 public class WebClientConfig {
@@ -26,6 +26,9 @@ public class WebClientConfig {
 
     @Value("${ceview.fastapi.transformer.base-url}")
     private String transformerBaseUrl;
+
+    @Value("${ceview.fastapi.compliance.base-url}")
+    private String complianceBaseUrl;
 
     /** WebClient for fastapi-sbert — Modules 1, 3, 4. */
     @Bean(name = "fastapiSbertClient")
@@ -49,6 +52,14 @@ public class WebClientConfig {
     public WebClient fastapiTransformerClient() {
         return WebClient.builder()
                 .baseUrl(transformerBaseUrl)
+                .build();
+    }
+
+    /** WebClient for fastapi-compliance — Module 3.3 Groq OMCS. */
+    @Bean(name = "fastapiComplianceClient")
+    public WebClient fastapiComplianceClient() {
+        return WebClient.builder()
+                .baseUrl(complianceBaseUrl)
                 .build();
     }
 }

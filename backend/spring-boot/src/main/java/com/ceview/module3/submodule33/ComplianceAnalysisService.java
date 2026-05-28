@@ -139,41 +139,99 @@ public class ComplianceAnalysisService {
 
     // ── FastAPI invocation ────────────────────────────────────────────────────
 
+    @SuppressWarnings("unchecked")
     private ComplianceResultDto invokeFullPipeline(String caption, String market,
             List<String> approvedCaptions, List<String> categories,
             String visualTone, String shotListContext,
             String mediaName, Long mediaSize) {
 
-        // FR3.22 — assemble enriched payload
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("caption", caption);
-        payload.put("market", market);
-        payload.put("approvedCaptions", approvedCaptions);
-        payload.put("categories", categories);          // FR3.25.3 HCS rule 1
-        payload.put("visualTone", visualTone);
-        payload.put("shotListContext", shotListContext);
-        payload.put("mediaName", mediaName);
-        payload.put("mediaSize", mediaSize);
+        // FR3.22 — call fastapi-compliance (Groq OMCS) as primary path
+        Map<String, Object> omcsPayload = new HashMap<>();
+        omcsPayload.put("aiRecommendation", String.join("\n", approvedCaptions));
+        omcsPayload.put("submissionText", caption);
+        omcsPayload.put("heuristicRules", categories);
+        omcsPayload.put("market", market);
+        omcsPayload.put("mediaName", mediaName);
+        omcsPayload.put("mediaSize", mediaSize);
 
         try {
-            Map<String, Object> raw = ai.evaluateComplianceFull(payload);
-            return mapper.convertValue(raw, ComplianceResultDto.class);
+            Map<String, Object> raw = ai.evaluateOmcs(omcsPayload);
+            return mapOmcsResponse(raw);
 
         } catch (WebClientResponseException e) {
             MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_COMPLIANCE_GATEWAY_5XX);
-            log.warn("3.3 full pipeline gateway failure status={} — falling back to basic",
+            log.warn("3.3 compliance gateway failure status={} — falling back to sbert pipeline",
                     e.getStatusCode().value(), e);
             MDC.remove(TraceIdFilter.MDC_CODE_KEY);
-            return invokeBasicEvaluate(caption, market, mediaName, mediaSize);
 
         } catch (RuntimeException e) {
             if (e.getCause() instanceof TimeoutException) {
                 MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_COMPLIANCE_GATEWAY_TIMEOUT);
-                log.warn("3.3 full pipeline gateway timeout — falling back to basic", e);
+                log.warn("3.3 compliance gateway timeout — falling back to sbert pipeline", e);
                 MDC.remove(TraceIdFilter.MDC_CODE_KEY);
+            } else {
+                log.warn("3.3 compliance gateway error — falling back to sbert pipeline: {}",
+                        e.getMessage());
             }
+        }
+
+        // Fallback: enriched fastapi-sbert pipeline (FR3.30)
+        Map<String, Object> sbertPayload = new HashMap<>();
+        sbertPayload.put("caption", caption);
+        sbertPayload.put("market", market);
+        sbertPayload.put("approvedCaptions", approvedCaptions);
+        sbertPayload.put("categories", categories);
+        sbertPayload.put("visualTone", visualTone);
+        sbertPayload.put("shotListContext", shotListContext);
+        sbertPayload.put("mediaName", mediaName);
+        sbertPayload.put("mediaSize", mediaSize);
+
+        try {
+            Map<String, Object> raw = ai.evaluateComplianceFull(sbertPayload);
+            return mapper.convertValue(raw, ComplianceResultDto.class);
+        } catch (Exception e) {
+            log.warn("3.3 sbert fallback also failed — falling back to basic: {}", e.getMessage());
             return invokeBasicEvaluate(caption, market, mediaName, mediaSize);
         }
+    }
+
+    /** Map fastapi-compliance OmcsEvalResponse → ComplianceResultDto. */
+    @SuppressWarnings("unchecked")
+    private ComplianceResultDto mapOmcsResponse(Map<String, Object> raw) {
+        Map<String, Object> results = (Map<String, Object>) raw.get("omcs_results");
+        Map<String, Object> scores  = (Map<String, Object>) results.get("component_scores");
+        Map<String, Object> feedback = (Map<String, Object>) raw.get("compliance_feedback");
+
+        double totalScore = toDouble(results.get("total_score"));
+        int score = (int) Math.round(totalScore * 100);
+
+        String visualDeviations = feedback != null ? (String) feedback.get("visual_deviations") : null;
+        String guidance          = feedback != null ? (String) feedback.get("actionable_revision_guidance") : null;
+
+        return new ComplianceResultDto(
+                score,
+                List.of(),
+                guidance != null ? List.of(guidance) : List.of(),
+                "groq",
+                toDouble(scores.get("Ss_score")) * 100,
+                toDouble(scores.get("Ma_score")) * 100,
+                toDouble(scores.get("Hc_score")) * 100,
+                totalScore * 100,
+                interpretOmcs(score),
+                visualDeviations != null ? List.of(visualDeviations) : List.of()
+        );
+    }
+
+    private static double toDouble(Object val) {
+        if (val instanceof Number) return ((Number) val).doubleValue();
+        return 0.0;
+    }
+
+    private static String interpretOmcs(int score) {
+        if (score >= 90) return "Excellent Alignment";
+        if (score >= 80) return "High Compliance";
+        if (score >= 70) return "Moderate Revision Required";
+        return "Significant Revision Required";
     }
 
     private ComplianceResultDto invokeBasicEvaluate(String caption, String market,

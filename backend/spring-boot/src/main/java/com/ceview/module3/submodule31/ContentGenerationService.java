@@ -30,6 +30,12 @@ public class ContentGenerationService {
 
     private static final Logger log = LoggerFactory.getLogger(ContentGenerationService.class);
 
+    private static final Map<String, String> MARKET_DISPLAY = Map.of(
+            "korea", "South Korea",
+            "japan", "Japan",
+            "usa",   "USA"
+    );
+
     private final AIInferenceGatewayService ai;
     private final BusinessProfileRepository profileRepo;
     private final ForecastResultRepository forecastRepo;
@@ -83,21 +89,36 @@ public class ContentGenerationService {
         int uniquenessScore = (profile != null && profile.getUniquenessScore() != null)
                 ? profile.getUniquenessScore().intValue() : 0;
 
+        // FR3.1 — use actual core services from profile when available
+        List<String> services = (profile != null && !profile.coreServicesList().isEmpty())
+                ? profile.coreServicesList()
+                : (categories != null ? categories : List.of());
+
         // FR3.4 — retrieve Module 2 forecasting outputs for the selected market
         Map<String, Object> forecastContext = buildForecastContext(profileId, market);
 
-        // Build enriched payload for FastAPI
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("market", market == null ? "korea" : market);
-        payload.put("businessName", businessName == null ? "" : businessName);
-        payload.put("description", description == null ? "" : description);
-        payload.put("uvp", uvp);
-        payload.put("categories", categories == null ? List.of() : categories);
-        payload.put("trend", trend == null ? "" : trend);
-        payload.put("uniquenessScore", uniquenessScore);
-        payload.put("forecastContext", forecastContext);
+        // Market display name for the agent prompt (e.g. "korea" → "South Korea")
+        String targetMarket = MARKET_DISPLAY.getOrDefault(
+                market == null ? "korea" : market.toLowerCase(), "South Korea");
 
-        Map<String, Object> raw = ai.generateContent(payload);
+        // First category is used as market_category in the agent prompt
+        String marketCategory = (categories != null && !categories.isEmpty())
+                ? categories.get(0) : (trend != null ? trend : "");
+
+        // Build enriched payload for FastAPI /internal/generation/caption
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("business_name",        businessName == null ? "" : businessName);
+        payload.put("business_description", description  == null ? "" : description);
+        payload.put("business_uvp",         uvp);
+        payload.put("business_services",    services);
+        payload.put("target_market",        targetMarket);
+        payload.put("market_category",      marketCategory);
+        payload.put("market_score",         forecastContext.containsKey("marketScore")
+                ? forecastContext.get("marketScore").toString() + "/1.0" : "");
+        payload.put("forecast_context",     formatForecastContext(forecastContext, uniquenessScore));
+        payload.put("research_context",     "");
+
+        Map<String, Object> raw = ai.generateCaption(payload);
 
         ContentResponseDto dto;
         try {
@@ -197,6 +218,17 @@ public class ContentGenerationService {
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
+
+    private String formatForecastContext(Map<String, Object> fc, int uniquenessScore) {
+        if (fc == null || fc.isEmpty()) return "";
+        boolean spike = Boolean.TRUE.equals(fc.get("spikeIndicator"));
+        return "Market forecast context (Module 2 outputs):\n"
+                + "- Market score: " + fc.getOrDefault("marketScore", "") + " / 1.0\n"
+                + "- Predicted 4-week demand index: " + fc.getOrDefault("predictedDemand", "") + "\n"
+                + "- Demand spike detected: " + spike + (spike ? " — use urgency framing" : "") + "\n"
+                + "- Seasonality score: " + fc.getOrDefault("seasonalityScore", "") + "\n"
+                + "- Uniqueness score: " + uniquenessScore + " / 100\n";
+    }
 
     private String firstOption(PlatformContentDto p) {
         if (p == null || p.options() == null || p.options().isEmpty()) return "";
