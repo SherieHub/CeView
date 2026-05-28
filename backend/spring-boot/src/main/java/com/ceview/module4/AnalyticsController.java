@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.util.*;
 
 /**
@@ -135,6 +137,33 @@ public class AnalyticsController {
         }
 
         return new ManualIngestResponse(mr.metrics(), mr.funnel(), pes);
+    }
+
+    // ─── GET /history ─────────────────────────────────────────────────────────
+
+    /**
+     * Weekly PES trend for the line chart.
+     *
+     * Returns the {@code weeks} most recent campaign records in chronological order
+     * so the frontend can plot a left-to-right trend line.
+     *
+     * @param weeks 4 (default) or 8 — controls how many data points are returned.
+     */
+    @GetMapping("/history")
+    public CampaignHistoryResponse history(
+            @RequestParam(required = false, defaultValue = "4") int weeks) {
+        int limit = (weeks == 8) ? 8 : 4;
+        List<CampaignRecord> records = campaignRepo.findAllByOrderByCreatedAtDesc(
+                PageRequest.of(0, limit));
+        Collections.reverse(records);
+        List<CampaignSnapshot> snapshots = records.stream()
+                .map(r -> new CampaignSnapshot(
+                        r.getPeriodStart(), r.getPeriodEnd(),
+                        r.getPesScore()  != null ? r.getPesScore()  : 0.0,
+                        r.getPesLabel()  != null ? r.getPesLabel()  : "",
+                        r.getCtr(), r.getCpc(), r.getRoas(), r.getConvRate(), r.getCac()))
+                .toList();
+        return new CampaignHistoryResponse(snapshots);
     }
 
     // ─── GET /pes/{campaignId} ────────────────────────────────────────────────

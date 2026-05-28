@@ -19,7 +19,6 @@ export const PLATFORM_CHAR_LIMITS: Record<string, number> = {
   instagram: 2200,
   tiktok:    300,   // optimal display target (hard limit = 2200)
   facebook:  500,   // practical conversational target
-  naver:     1500,  // minimum threshold for Naver SEO
 };
 
 // ── Progress bar color thresholds ────────────────────────────────────────────

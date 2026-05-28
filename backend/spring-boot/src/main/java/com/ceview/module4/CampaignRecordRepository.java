@@ -1,5 +1,6 @@
 package com.ceview.module4;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -31,4 +32,10 @@ public interface CampaignRecordRepository extends JpaRepository<CampaignRecord, 
      * Bounded to avoid unbounded result sets on large deployments.
      */
     List<CampaignRecord> findTop10ByOrderByCreatedAtDesc();
+
+    /**
+     * Retrieve the N most recent campaign records (newest-first).
+     * Used by GET /history to populate the weekly PES trend line chart.
+     */
+    List<CampaignRecord> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

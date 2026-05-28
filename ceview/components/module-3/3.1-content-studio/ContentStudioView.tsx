@@ -15,14 +15,12 @@ const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-[18px] h-[18px] block shrink-0"/> },
   { id: 'tiktok',   label: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-[18px] h-[18px] block shrink-0"/> },
   { id: 'facebook', label: 'Facebook', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-[18px] h-[18px] block shrink-0"/>},
-  { id: 'naver',    label: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-[18px] h-[18px] block shrink-0"/>},
 ];
 
 const CHANNELS = [
   { id: 'instagram', label: 'Instagram',  icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-[32px] h-[32px] block mx-auto"/>, handle: '@cebutravel_kr',   verified: true },
   { id: 'tiktok',   label: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-[32px] h-[32px] block mx-auto"/>, handle: '@cebuhealing',     verified: true },
   { id: 'facebook', label: 'Facebook', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-[32px] h-[32px] block mx-auto"/>, handle: 'CebuTourismKR',    verified: false },
-  { id: 'naver',    label: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-[32px] h-[32px] block mx-auto"/>, handle: '세부관광블로그',   verified: true },
 ];
 
 const AUDIT_STEPS = [
@@ -75,11 +73,11 @@ export default function ContentStudioView({
 
   /** Which option index (0/1/2) has been approved per platform (-1 = none). */
   const [approvedIndices, setApprovedIndices] = useState<Record<ContentPlatformId, number>>({
-    instagram: -1, tiktok: -1, facebook: -1, naver: -1,
+    instagram: -1, tiktok: -1, facebook: -1,
   });
   /** The approved caption text for each platform — forwarded to compliance audit. */
   const [approvedCaptions, setApprovedCaptions] = useState<Record<ContentPlatformId, string>>({
-    instagram: '', tiktok: '', facebook: '', naver: '',
+    instagram: '', tiktok: '', facebook: '',
   });
 
   const [auditOn, setAuditOn] = useState(false);
