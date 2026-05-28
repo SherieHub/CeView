@@ -151,30 +151,28 @@ def run_inference(body: GeminiForecastRequest) -> ForecastResponse:
         )
     except RuntimeError as exc:
         error_msg = str(exc)
-        if "429" in error_msg or "quota" in error_msg.lower():
-            code = "MOD22_GEMINI_QUOTA_EXCEEDED"
+        if "429" in error_msg or "quota" in error_msg.lower() or "rate_limit" in error_msg.lower():
+            code = "MOD22_AI_QUOTA_EXCEEDED"
             human_reason = (
-                "Gemini API quota exceeded. The free-tier daily limit has been reached. "
-                "Wait until the quota resets (usually midnight Pacific time) or upgrade the API plan."
+                "AI model daily token limit reached. "
+                "Wait until the quota resets (rolling 24-hour window) or upgrade the API plan."
             )
         elif "api key" in error_msg.lower() or "api_key" in error_msg.lower():
-            code = "MOD22_GEMINI_AUTH_FAILED"
+            code = "MOD22_AI_AUTH_FAILED"
             human_reason = (
-                "Gemini API key is invalid or missing. "
-                "Check that GEMINI_API_KEY is set correctly in the environment."
+                "AI model API key is invalid or missing. "
+                "Check that the API key environment variable is set correctly."
             )
         elif "timeout" in error_msg.lower() or "deadline" in error_msg.lower():
-            code = "MOD22_GEMINI_TIMEOUT"
+            code = "MOD22_AI_TIMEOUT"
             human_reason = (
-                "Gemini API request timed out after 3 attempts. "
+                "AI model request timed out after 3 attempts. "
                 "The service may be experiencing high load — retry in a few minutes."
             )
         else:
-            code = "MOD22_GEMINI_UNAVAILABLE"
-            human_reason = (
-                f"Gemini API failed after 3 attempts: {error_msg}"
-            )
-        logger.error("[%s] Gemini forecast failed for market=%s: %s", code, body.market, exc)
+            code = "MOD22_AI_UNAVAILABLE"
+            human_reason = f"AI model failed after 3 attempts: {error_msg}"
+        logger.error("[%s] AI forecast failed for market=%s: %s", code, body.market, exc)
         raise HTTPException(
             status_code=503,
             detail={
@@ -229,31 +227,31 @@ def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecast
         )
     except RuntimeError as exc:
         error_msg = str(exc)
-        if "429" in error_msg or "quota" in error_msg.lower():
-            code = "MOD22_GEMINI_QUOTA_EXCEEDED"
+        if "429" in error_msg or "quota" in error_msg.lower() or "rate_limit" in error_msg.lower():
+            code = "MOD22_AI_QUOTA_EXCEEDED"
             human_reason = (
-                "Gemini API quota exceeded. The free-tier daily limit has been reached. "
-                "Wait until the quota resets (usually midnight Pacific time) or upgrade the API plan."
+                "AI model daily token limit reached. "
+                "Wait until the quota resets (rolling 24-hour window) or upgrade the API plan."
             )
         elif "api key" in error_msg.lower() or "api_key" in error_msg.lower():
-            code = "MOD22_GEMINI_AUTH_FAILED"
+            code = "MOD22_AI_AUTH_FAILED"
             human_reason = (
-                "Gemini API key is invalid or missing. "
-                "Check that GEMINI_API_KEY is set correctly in the environment."
+                "AI model API key is invalid or missing. "
+                "Check that the API key environment variable is set correctly."
             )
         elif "timeout" in error_msg.lower() or "deadline" in error_msg.lower():
-            code = "MOD22_GEMINI_TIMEOUT"
+            code = "MOD22_AI_TIMEOUT"
             human_reason = (
-                "Gemini API request timed out after 3 attempts. "
+                "AI model request timed out after 3 attempts. "
                 "The service may be experiencing high load — retry in a few minutes."
             )
         elif "missing forecast for market" in error_msg:
-            code = "MOD22_GEMINI_INCOMPLETE_RESPONSE"
-            human_reason = f"Gemini returned an incomplete batch response: {error_msg}"
+            code = "MOD22_AI_INCOMPLETE_RESPONSE"
+            human_reason = f"AI model returned an incomplete batch response: {error_msg}"
         else:
-            code = "MOD22_GEMINI_UNAVAILABLE"
-            human_reason = f"Gemini API failed after 3 attempts: {error_msg}"
-        logger.error("[%s] Gemini batch forecast failed: %s", code, exc)
+            code = "MOD22_AI_UNAVAILABLE"
+            human_reason = f"AI model failed after 3 attempts: {error_msg}"
+        logger.error("[%s] AI batch forecast failed: %s", code, exc)
         raise HTTPException(
             status_code=503,
             detail={"code": code, "message": human_reason},

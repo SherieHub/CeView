@@ -21,8 +21,6 @@ public class UniquenessDtos {
     public record UniquenessResponse(
         int overallScore,
         int semanticsScore,
-        int categoryScore,
-        String descriptionFeedback,
-        String categoryFeedback
+        int categoryScore
     ) {}
 }

@@ -28,14 +28,12 @@ public class ForecastingController {
         this.forecastingService = forecastingService;
     }
 
-    /** Ranked markets for MarketRadarView (cached DB read, no AI call). */
+    /** Ranked markets for MarketRadarView — pure DB read, no AI calls. */
     @GetMapping("/markets")
     public ResponseEntity<?> markets(@RequestParam(required = false) UUID profileId) {
         try {
-            MarketsResponse result = forecastingService.forecastForProfile(profileId, false);
+            MarketsResponse result = forecastingService.loadMarketsFromDb(profileId);
             return ResponseEntity.ok(result);
-        } catch (ResponseStatusException rse) {
-            return structuredError(rse, "MOD22_MARKETS_FAILED");
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_MARKETS_FAILED", "message", e.getMessage()));

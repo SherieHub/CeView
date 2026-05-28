@@ -20,7 +20,7 @@ services:
     build: ./fastapi-sbert
     container_name: ceview-fastapi
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
       KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
       DATABASE_URL: postgresql://ceview:ceview@postgres:5432/ceview
@@ -36,7 +36,7 @@ services:
     build: ./fastapi-transformer
     container_name: ceview-fastapi-transformer
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     ports:
       - "8001:8001"
 

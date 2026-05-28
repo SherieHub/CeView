@@ -61,7 +61,6 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
           initialMarketId={selectedNotification.marketId}
           onBack={() => setSelectedNotification(null)}
           onNavigateToContent={onNavigateToContent}
-          autoAnalyze
         />
       </div>
     );

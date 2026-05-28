@@ -3,8 +3,8 @@ uvicorn[standard]>=0.30.0
 pydantic>=2.7.0
 python-multipart>=0.0.9
 httpx>=0.27.0
-# Gemini API — Module 1 uniqueness feedback, Module 3 content/compliance/creative/reports
-google-generativeai>=0.8.0
+# Groq API (OpenAI-compatible) — Module 1 uniqueness, Module 3 content/compliance/creative/reports
+openai>=1.0.0
 # Module 1 — SBERT classifier head + E5 sentence embeddings
 tensorflow-cpu>=2.17.0
 sentence-transformers>=3.0.0
@@ -16,4 +16,4 @@ google-search-results>=2.4.2
 # Module 3 — LangGraph agentic caption generation (/internal/generation/caption)
 langgraph>=0.2.0
 langchain-core>=0.3.0
-langchain-google-genai>=2.0.0
+langchain-openai>=0.1.0

@@ -6,10 +6,10 @@ logger = logging.getLogger(__name__)
 
 
 class AgentLLMModel:
-    """Singleton wrapper around ChatGoogleGenerativeAI (Gemini) for the LangGraph caption agent.
+    """Singleton wrapper around ChatOpenAI (Groq) for the LangGraph caption agent.
 
-    Initialisation is deferred and fail-safe: if GEMINI_API_KEY is absent or
-    langchain_google_genai cannot be imported, the singleton is set to None so
+    Initialisation is deferred and fail-safe: if GROQ_API_KEY is absent or
+    langchain_openai cannot be imported, the singleton is set to None so
     the rest of the SBERT server starts normally.  Callers must guard against
     get_model() returning None.
     """
@@ -26,24 +26,25 @@ class AgentLLMModel:
 
     def _initialize(self):
         self._model = None
-        api_key = os.environ.get("GEMINI_API_KEY", "")
+        api_key = os.environ.get("GROQ_API_KEY", "")
         if not api_key:
             logger.warning(
-                "AgentLLMModel: GEMINI_API_KEY not set — "
+                "AgentLLMModel: GROQ_API_KEY not set — "
                 "caption generation agent will be unavailable."
             )
             return
         try:
-            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import]
-            self._model = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash",
+            from langchain_openai import ChatOpenAI  # type: ignore[import]
+            self._model = ChatOpenAI(
+                model="llama-3.3-70b-versatile",
                 temperature=0.7,
-                google_api_key=api_key,
+                api_key=api_key,
+                base_url="https://api.groq.com/openai/v1",
             )
-            logger.info("AgentLLMModel: ChatGoogleGenerativeAI (Gemini) initialised (gemini-2.0-flash).")
+            logger.info("AgentLLMModel: ChatOpenAI (Groq/llama-3.3-70b-versatile) initialised.")
         except Exception as exc:
             logger.warning(
-                "AgentLLMModel: could not initialise Gemini client — "
+                "AgentLLMModel: could not initialise Groq client — "
                 "caption agent will be unavailable. Error: %s", exc
             )
 
@@ -54,4 +55,4 @@ class AgentLLMModel:
 
 # ── Module-level singleton — safe: never raises, may be None ─────────────────
 _wrapper = AgentLLMModel()
-model = _wrapper.get_model()   # None when GEMINI_API_KEY absent
+model = _wrapper.get_model()   # None when GROQ_API_KEY absent

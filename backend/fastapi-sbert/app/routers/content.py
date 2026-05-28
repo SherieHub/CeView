@@ -205,7 +205,7 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
         captions  — { instagram, tiktok, facebook, naver } each with options + guide
         source    — "gemini" | "fallback"
     """
-    market           = (req.market or "korea").strip() or "korea"
+    market           = (req.market or "korea").strip().lower() or "korea"
     business_name    = req.businessName or ""
     description      = req.description or ""
     uvp              = req.uvp or ""

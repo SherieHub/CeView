@@ -29,9 +29,7 @@ public class UniquenessScoringController {
         return new UniquenessResponse(
             ((Number) r.getOrDefault("overallScore", 0)).intValue(),
             ((Number) r.getOrDefault("semanticsScore", 0)).intValue(),
-            ((Number) r.getOrDefault("categoryScore", 0)).intValue(),
-            String.valueOf(r.getOrDefault("descriptionFeedback", "")),
-            String.valueOf(r.getOrDefault("categoryFeedback", ""))
+            ((Number) r.getOrDefault("categoryScore", 0)).intValue()
         );
     }
 }

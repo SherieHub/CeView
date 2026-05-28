@@ -8,11 +8,15 @@ import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendDto;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendDto;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendPoint;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendPoint;
 import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -75,6 +79,7 @@ public class ForecastingService {
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
+    private final ObjectMapper objectMapper;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -85,7 +90,8 @@ public class ForecastingService {
                               MarketDataIngestionService ingestionService,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
-                              MarketEconomicTrendRepository economicTrendRepo) {
+                              MarketEconomicTrendRepository economicTrendRepo,
+                              ObjectMapper objectMapper) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -96,6 +102,7 @@ public class ForecastingService {
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
+        this.objectMapper       = objectMapper;
     }
 
     /**
@@ -138,6 +145,107 @@ public class ForecastingService {
             }
             throw e;
         }
+    }
+
+    // ─── DB-only read path (GET /markets) ────────────────────────────────────
+
+    /**
+     * Reconstructs the latest ranked market list from persisted DB rows only.
+     * No AI calls are made — this is the fast path for the home view and
+     * notification click-through.
+     *
+     * Returns an empty MarketsResponse when no forecast data exists yet for the
+     * profile (e.g., before the first daily ingestion run or seed job).
+     */
+    public MarketsResponse loadMarketsFromDb(UUID profileId) {
+        List<MarketResultBundle> bundles = new ArrayList<>();
+
+        for (String market : MARKETS) {
+            Optional<ForecastResult> fr4wOpt = forecastRepo
+                    .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                            profileId, market, 4);
+            if (fr4wOpt.isEmpty()) continue;
+
+            ForecastResult fr4w = fr4wOpt.get();
+
+            List<MarketScore> scores = scoreRepo.findByForecastResultIdOrderByMarketRankAsc(
+                    fr4w.getForecastResultId());
+            if (scores.isEmpty()) continue;
+            MarketScore ms = scores.get(0);
+
+            List<MarketSignalRecord> history = signalRepo
+                    .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+            MarketSignalRecord latest = history.isEmpty() ? null : history.get(0);
+
+            // Deserialize stored weekly forecasts — falls back to empty list
+            List<Double> weeklyForecasts = new ArrayList<>();
+            if (fr4w.getWeeklyForecastsJson() != null) {
+                try {
+                    weeklyForecasts = objectMapper.readValue(
+                            fr4w.getWeeklyForecastsJson(), new TypeReference<List<Double>>() {});
+                } catch (Exception e) {
+                    log.warn("Failed to deserialize weeklyForecastsJson for market={}: {}", market, e.getMessage());
+                }
+            }
+
+            // Reconstruct economic trend from persisted snapshot
+            GdpTrendDto gdpTrend   = economicTrendToGdpDto(market);
+            ForexTrendDto forexTrend = economicTrendToForexDto(market);
+
+            double marketScore = ms.getMarketScore() != null ? ms.getMarketScore() : 0.0;
+            boolean spike      = Boolean.TRUE.equals(ms.getSpikeIndicator());
+            double confidence  = fr4w.getForecastConfidence() != null ? fr4w.getForecastConfidence() : 0.8;
+
+            bundles.add(new MarketResultBundle(
+                    market, marketScore, ms, fr4w, history, spike, confidence,
+                    gdpTrend, forexTrend, weeklyForecasts, latest));
+        }
+
+        if (bundles.isEmpty()) {
+            log.info("No forecast data found in DB for profile={} — returning empty response", profileId);
+            return new MarketsResponse(List.of());
+        }
+
+        bundles.sort(Comparator.comparingDouble(MarketResultBundle::marketScore).reversed());
+        List<MarketDto> dtos = new ArrayList<>();
+        for (int i = 0; i < bundles.size(); i++) {
+            dtos.add(buildMarketDto(bundles.get(i), i + 1));
+        }
+        return new MarketsResponse(dtos);
+    }
+
+    private GdpTrendDto economicTrendToGdpDto(String market) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(market)
+                .filter(t -> t.getGdpTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<GdpTrendPoint> pts = objectMapper.readValue(
+                                t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
+                        double latest = t.getGdpLatest() != null ? t.getGdpLatest()
+                                : (pts.isEmpty() ? 2.0 : pts.get(pts.size() - 1).value());
+                        return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
+    private ForexTrendDto economicTrendToForexDto(String market) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(market)
+                .filter(t -> t.getForexTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<ForexTrendPoint> pts = objectMapper.readValue(
+                                t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
+                        double latest = t.getForexLatest() != null ? t.getForexLatest()
+                                : (pts.isEmpty() ? 1.0 : pts.get(pts.size() - 1).value());
+                        return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
     }
 
     // ─── pipeline ─────────────────────────────────────────────────────────────
@@ -276,7 +384,7 @@ public class ForecastingService {
             ForecastResult fr4w;
             if (canPersist) {
                 fr4w = persistForecastResult(
-                        profileId, market, demand4w, confidence, mape, mae, rmse, 4);
+                        profileId, market, demand4w, confidence, mape, mae, rmse, 4, weeklyForecasts);
                 persistForecastResult(profileId, market, demand12w, confidence, mape, mae, rmse, 12);
             } else {
                 // In-memory stub so downstream DTO assembly has a non-null object
@@ -373,6 +481,13 @@ public class ForecastingService {
     private ForecastResult persistForecastResult(UUID profileId, String market,
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon) {
+        return persistForecastResult(profileId, market, demand, confidence, mape, mae, rmse, horizon, null);
+    }
+
+    private ForecastResult persistForecastResult(UUID profileId, String market,
+                                                  double demand, double confidence,
+                                                  double mape, double mae, double rmse, int horizon,
+                                                  List<Double> weeklyForecasts) {
         ForecastResult fr = new ForecastResult();
         fr.setBusinessProfileId(profileId);
         fr.setTargetMarket(market);
@@ -382,6 +497,13 @@ public class ForecastingService {
         fr.setMae(mae);
         fr.setRmse(rmse);
         fr.setForecastHorizonWeeks(horizon);
+        if (horizon == 4 && weeklyForecasts != null && !weeklyForecasts.isEmpty()) {
+            try {
+                fr.setWeeklyForecastsJson(objectMapper.writeValueAsString(weeklyForecasts));
+            } catch (Exception e) {
+                log.warn("Failed to serialize weeklyForecasts for market={}: {}", market, e.getMessage());
+            }
+        }
         return forecastRepo.save(fr);
     }
 

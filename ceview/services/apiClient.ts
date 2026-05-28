@@ -61,8 +61,6 @@ export interface UniquenessResultDTO {
   overallScore: number;
   semanticsScore: number;
   categoryScore: number;
-  descriptionFeedback: string;
-  categoryFeedback: string;
 }
 
 /** Mirrors backend BusinessProfileDto (com.ceview.module1.dto). */

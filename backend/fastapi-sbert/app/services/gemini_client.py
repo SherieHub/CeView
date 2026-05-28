@@ -1,14 +1,15 @@
 """
-Server-side AI wrapper (Gemini). Mirrors the five prompts currently in the
+Server-side AI wrapper (Groq). Mirrors the five prompts currently in the
 frontend's `ceview/services/geminiService.ts` so swapping the frontend over
 later changes only the transport, not the behavior.
 
-When GEMINI_API_KEY is missing, every function returns a deterministic
+When GROQ_API_KEY is missing, every function returns a deterministic
 fallback. Module-3 functions tag the returned dict with a `source` field
-("gemini" | "fallback") so the UI can label demo data.
+("groq" | "fallback") so the UI can label demo data.
 
-Follows the same initialisation pattern as fastapi-transformer/gemini_forecaster.py:
-  google.generativeai → genai.configure(api_key) → GenerativeModel.generate_content()
+Uses the OpenAI-compatible Groq API:
+  openai.OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
+  → client.chat.completions.create(response_format={"type": "json_object"})
 """
 
 from __future__ import annotations
@@ -21,50 +22,50 @@ from app import errors
 
 _log = logging.getLogger("gemini_client")
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
-_genai = None
-if GEMINI_API_KEY:
+_groq_client = None
+if GROQ_API_KEY:
     try:
-        import google.generativeai as _google_genai  # type: ignore[import]
-        _google_genai.configure(api_key=GEMINI_API_KEY)
-        _genai = _google_genai
-        _log.info("Gemini API initialised — model=%s", GEMINI_MODEL)
+        from openai import OpenAI  # type: ignore[import]
+        _groq_client = OpenAI(
+            api_key=GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        _log.info("Groq API initialised — model=%s", GROQ_MODEL)
     except Exception as _init_exc:
-        _log.error("Failed to initialise Gemini API: %s", _init_exc)
-        _genai = None
+        _log.error("Failed to initialise Groq API: %s", _init_exc)
+        _groq_client = None
 else:
     _log.warning(
-        "GEMINI_API_KEY not set — all AI calls will return deterministic fallback data."
+        "GROQ_API_KEY not set — all AI calls will return deterministic fallback data."
     )
 
 
 def _enabled() -> bool:
-    return _genai is not None
+    return _groq_client is not None
 
 
 def _generate_json(prompt: str) -> dict:
-    """Call Gemini and return the parsed JSON response dict.
+    """Call Groq and return the parsed JSON response dict.
 
-    Uses ``response_mime_type="application/json"`` so the model returns a
+    Uses ``response_format={"type": "json_object"}`` so the model returns a
     clean JSON string without markdown fences.  Returns ``{}`` on any failure
-    so callers' ``gemini_out.get(key, fallback)`` pattern is always safe.
+    so callers' ``out.get(key, fallback)`` pattern is always safe.
     """
     if not _enabled():
         return {}
     try:
-        model = _genai.GenerativeModel(
-            GEMINI_MODEL,
-            generation_config=_genai.GenerationConfig(
-                temperature=0.4,
-                response_mime_type="application/json",
-            ),
+        response = _groq_client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            response_format={"type": "json_object"},
         )
-        response = model.generate_content(prompt)
-        return json.loads(response.text.strip())
+        return json.loads(response.choices[0].message.content.strip())
     except Exception as exc:
-        _log.warning("Gemini API call failed: %s", exc)
+        _log.warning("Groq API call failed: %s", exc)
         return {}
 
 
@@ -248,12 +249,12 @@ The optionNames field is a list parallel to options:
         )
         return {**base, "source": "fallback"}
 
-    _content_log.info("Gemini content ok market=%s", market)
+    _content_log.info("Groq content ok market=%s", market)
     return {
         "market":    enriched.get("market") or base["market"],
         "framework": enriched.get("framework") or base["framework"],
         "captions":  enriched.get("captions"),
-        "source":    "gemini",
+        "source":    "groq",
     }
 
 
@@ -328,12 +329,12 @@ Return JSON with exactly:
     except (TypeError, ValueError):
         score = 0
 
-    _compliance_log.info("Gemini compliance ok market=%s score=%s", market, score)
+    _compliance_log.info("Groq compliance ok market=%s score=%s", market, score)
     return {
         "score": max(0, min(100, score)),
         "aligned": list(out.get("aligned") or [])[:5],
         "gaps": list(out.get("gaps") or [])[:4],
-        "source": "gemini",
+        "source": "groq",
     }
 
 
@@ -891,13 +892,13 @@ Generate destination-specific creative direction. Return JSON with exactly:
         )
         return {**fallback, "source": "fallback"}
 
-    _creative_log.info("Gemini creative direction ok market=%s", market)
+    _creative_log.info("Groq creative direction ok market=%s", market)
     return {
         "visualGuide":            out.get("visualGuide") or fallback["visualGuide"],
         "shots":                  out.get("shots") or fallback["shots"],
         "moodboard":              out.get("moodboard") or fallback["moodboard"],
         "platformRecommendations": out.get("platformRecommendations") or fallback["platformRecommendations"],
-        "source": "gemini",
+        "source": "groq",
     }
 
 
@@ -1067,13 +1068,13 @@ Return JSON with exactly:
     except (TypeError, ValueError):
         vas = fallback["vas"]
 
-    _compliance_log.info("Gemini multimodal VAS ok market=%s vas=%s", market, vas)
+    _compliance_log.info("Groq multimodal VAS ok market=%s vas=%s", market, vas)
     return {
         "vas":       vas,
         "aligned":   list(out.get("aligned") or [])[:5],
         "gaps":      list(out.get("gaps") or [])[:4],
         "mismatches": list(out.get("mismatches") or [])[:3],
-        "source":    "gemini",
+        "source":    "groq",
     }
 
 

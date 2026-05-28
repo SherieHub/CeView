@@ -85,18 +85,8 @@ def score(features: dict) -> dict:
           components               : {demand_component, seasonality_component,
                                       economic_component}
         }
-
-    Raises:
-        RuntimeError: if the XGBoost model has not been loaded.
     """
-    if _model is None:
-        raise RuntimeError(
-            f"XGBoost model is not loaded. "
-            f"Ensure a trained model file exists at {_MODEL_PATH} "
-            f"(set XGBOOST_MODEL_PATH to override)."
-        )
-
-    econ = _xgb_economic(features)
+    econ = _xgb_economic(features) if _model is not None else _linear_economic(features)
 
     demand_component      = features.get("predicted_demand", 50.0) / 100.0
     seasonality_component = features.get("seasonality_score", 0.5)
@@ -116,6 +106,20 @@ def score(features: dict) -> dict:
             "economic_component":    round(float(econ),           4),
         },
     }
+
+
+# ─── Linear fallback (used when XGBoost model file is absent) ────────────────
+
+def _linear_economic(features: dict) -> float:
+    """Weighted linear approximation of the XGBoost economic score.
+
+    Uses the same feature weights defined in _ECONOMIC_WEIGHTS so the output
+    range and interpretation match what a trained model would produce.
+    Used automatically when xgboost_market.json has not been loaded.
+    """
+    fv = _feature_vector(features)
+    weights = list(_ECONOMIC_WEIGHTS.values())  # order matches _feature_vector output
+    return float(min(max(sum(w * v for w, v in zip(weights, fv)), 0.0), 1.0))
 
 
 # ─── XGBoost economic inference ───────────────────────────────────────────────

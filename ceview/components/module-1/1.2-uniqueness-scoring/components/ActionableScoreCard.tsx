@@ -7,7 +7,6 @@ interface ActionableScoreCardProps {
   score: number;
   color: string;
   description: string;
-  feedbackText: string;
   className?: string;
 }
 
@@ -16,7 +15,6 @@ const ActionableScoreCard: React.FC<ActionableScoreCardProps> = ({
   score,
   color,
   description,
-  feedbackText,
   className
 }) => {
   return (
@@ -33,9 +31,6 @@ const ActionableScoreCard: React.FC<ActionableScoreCardProps> = ({
         {description}
       </p>
 
-      <p className="text-xs font-bold leading-relaxed" style={{ color: COLORS.NAVY }}>
-        {feedbackText}
-      </p>
     </div>
   );
 };

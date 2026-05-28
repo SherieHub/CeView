@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # must run before any app module reads os.environ
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
@@ -12,9 +15,6 @@ from app.routers import (
     caption_generation,
     pes_analysis,
 )
-
-from dotenv import load_dotenv
-load_dotenv()
 
 configure_logging()
 

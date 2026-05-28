@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services import market_data_processor, pytrends_client, seasonal_shift_detector
@@ -91,7 +91,13 @@ def fetch_trends(body: TrendsRequest) -> TrendsResponse:
     derived from the market identifier and business category labels.
     Falls back to a deterministic stub index on rate-limit or network error.
     """
-    raw = pytrends_client.fetch_trends(body.market, body.categories)
+    try:
+        raw = pytrends_client.fetch_trends(body.market, body.categories)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "MOD21_PYTRENDS_UNAVAILABLE", "message": str(exc)},
+        ) from exc
     trend_index = market_data_processor.normalize_trend_index(
         float(raw.get("trend_index", 50.0))
     )
@@ -114,7 +120,13 @@ def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
     MarketSignalRecord rows so the demand chart shows real week-over-week
     variance rather than a flat repeated value.
     """
-    raw = pytrends_client.fetch_trend_history(body.market, body.categories, body.weeks)
+    try:
+        raw = pytrends_client.fetch_trend_history(body.market, body.categories, body.weeks)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "MOD21_PYTRENDS_UNAVAILABLE", "message": str(exc)},
+        ) from exc
     series = [
         TrendWeekPoint(
             date=point["date"],

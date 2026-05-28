@@ -1,4 +1,4 @@
-"""Gemini-powered demand forecasting for CeView Module 2.2.
+"""Groq-powered demand forecasting for CeView Module 2.2.
 
 Replaces the BiLSTM + Transformer model entirely per Phase 2 architectural
 directive.  Constructs a structured analytical prompt combining:
@@ -9,13 +9,13 @@ directive.  Constructs a structured analytical prompt combining:
   - Seasonality score (composite from SeasonalShiftDetector)
   - Forex rate and GDP growth for economic context
 
-Gemini returns 4 individual weekly forecasts (Wk+1 to Wk+4) plus a
+Groq returns 4 individual weekly forecasts (Wk+1 to Wk+4) plus a
 12-week outlook, so the demand chart shows a real trend line instead of
 a flat repeated value.
 
 Environment variables:
-    GEMINI_API_KEY  — Gemini API key (required)
-    GEMINI_MODEL    — model name (default: "gemini-2.0-flash")
+    GROQ_API_KEY  — Groq API key (required)
+    GROQ_MODEL    — model name (default: "llama-3.3-70b-versatile")
 """
 from __future__ import annotations
 
@@ -31,23 +31,25 @@ logger = logging.getLogger(__name__)
 
 # ─── API initialisation ───────────────────────────────────────────────────────
 
-_API_KEY    = os.getenv("GEMINI_API_KEY", "")
-_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-_genai      = None   # set below on successful import
+_API_KEY    = os.getenv("GROQ_API_KEY", "")
+_MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+_groq_client = None   # set below on successful import
 
 if _API_KEY:
     try:
-        import google.generativeai as genai  # type: ignore[import]
-        genai.configure(api_key=_API_KEY)
-        _genai = genai
-        logger.info("Gemini API initialised — model=%s", _MODEL_NAME)
+        from openai import OpenAI  # type: ignore[import]
+        _groq_client = OpenAI(
+            api_key=_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        logger.info("Groq API initialised — model=%s", _MODEL_NAME)
     except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to initialise Gemini API: %s", exc)
-        raise RuntimeError(f"Gemini API initialisation failed: {exc}") from exc
+        logger.error("Failed to initialise Groq API: %s", exc)
+        raise RuntimeError(f"Groq API initialisation failed: {exc}") from exc
 else:
     raise RuntimeError(
-        "GEMINI_API_KEY environment variable is not set. "
-        "Gemini forecasting requires a valid API key."
+        "GROQ_API_KEY environment variable is not set. "
+        "Groq forecasting requires a valid API key."
     )
 
 
@@ -67,7 +69,7 @@ def forecast(
     gdp_trend_direction: str | None = None,
     gdp_trend_delta: float | None = None,
 ) -> dict:
-    """Produce 4 individual weekly forecasts plus a 12-week outlook via Gemini.
+    """Produce 4 individual weekly forecasts plus a 12-week outlook via Groq.
 
     Returns:
         {
@@ -79,7 +81,7 @@ def forecast(
 
     Raises:
         ValueError: if trend_series is empty (ingestion has not run).
-        RuntimeError: if the Gemini API is unavailable after 3 retries.
+        RuntimeError: if the Groq API is unavailable after 3 retries.
             The caller (FastAPI router) converts this to a 503 response with a
             structured error body — no statistical fallback is used.
     """
@@ -89,20 +91,20 @@ def forecast(
             "run ingestion to populate signal records before forecasting."
         )
 
-    result = _gemini_forecast(
+    result = _groq_forecast(
         market, trend_series, rolling_7d, rolling_30d, rolling_std_7d,
         spike_indicator, yoy_ratio, seasonality_score, forex_rate, gdp_growth,
         gdp_trend_direction, gdp_trend_delta,
     )
-    result["source"] = "gemini"
+    result["source"] = "groq"
     validation = validate(result["mape"], result["mae"], result["rmse"])
     return {**result, **validation}
 
 
-# ─── Gemini inference ─────────────────────────────────────────────────────────
+# ─── Groq inference ───────────────────────────────────────────────────────────
 
 def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -> str:
-    """Shared Gemini HTTP call with 3-attempt exponential back-off.
+    """Shared Groq HTTP call with 3-attempt exponential back-off.
 
     Args:
         prompt: The full prompt string to send.
@@ -115,30 +117,28 @@ def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -
     last_exc: Exception | None = None
     for attempt in range(3):
         try:
-            model = _genai.GenerativeModel(_MODEL_NAME)
-            response = model.generate_content(
-                prompt,
-                generation_config=_genai.GenerationConfig(
-                    temperature=0.10,
-                    max_output_tokens=max_output_tokens,
-                    response_mime_type="application/json",
-                ),
+            response = _groq_client.chat.completions.create(
+                model=_MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.10,
+                max_tokens=max_output_tokens,
+                response_format={"type": "json_object"},
             )
-            return response.text.strip()
+            return response.choices[0].message.content.strip()
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
             if attempt < 2:
                 time.sleep(2 ** attempt)   # exponential back-off: 1 s, 2 s
-                logger.debug("Gemini retry %d%s: %s",
+                logger.debug("Groq retry %d%s: %s",
                              attempt + 1, f" for {context}" if context else "", exc)
                 continue
             break
     raise RuntimeError(
-        f"Gemini API failed after 3 attempts{f' for {context}' if context else ''}: {last_exc}"
+        f"Groq API failed after 3 attempts{f' for {context}' if context else ''}: {last_exc}"
     ) from last_exc
 
 
-def _gemini_forecast(
+def _groq_forecast(
     market: str,
     trend_series: list[float],
     rolling_7d: float,
@@ -234,7 +234,7 @@ def _build_prompt(
 
 
 def _parse_response(raw: str, trend_series: list[float]) -> dict:
-    """Extract 12 weekly demand values from Gemini JSON response."""
+    """Extract 12 weekly demand values from Groq JSON response."""
     cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
     data = json.loads(cleaned)
 
@@ -243,7 +243,7 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
 
     current = trend_series[-1] if trend_series else 50.0
 
-    # Parse all 12 weeks — if Gemini omits a week, extrapolate from the last known value
+    # Parse all 12 weeks — if a week is omitted, extrapolate from the last known value
     weekly: list[float] = []
     for k in range(1, 13):
         raw_val = data.get(f"week_{k}")
@@ -259,14 +259,14 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
         weekly.append(clamp(float(raw_val)))
 
     # ── Guard 1: flat line ────────────────────────────────────────────────
-    # All 12 identical — Gemini returned no variance; apply dampened linear tilt.
+    # All 12 identical — model returned no variance; apply dampened linear tilt.
     if len(set(round(w, 1) for w in weekly)) == 1:
         slope = (weekly[-1] - current) / 12.0
         weekly = [clamp(current + slope * (k + 1) * max(0.2, 1.0 - k * 0.07))
                   for k in range(12)]
 
     # ── Guard 2: ceiling / floor collision ───────────────────────────────
-    # 3+ values clamped at ≥99.5 or ≤5.5 — Gemini over-extrapolated.
+    # 3+ values clamped at ≥99.5 or ≤5.5 — model over-extrapolated.
     # Pull all clamped values back toward the 7-period rolling mean.
     window  = trend_series[-7:] if len(trend_series) >= 7 else trend_series
     mean_val = sum(window) / len(window) if window else current
@@ -302,10 +302,10 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
     }
 
 
-# ─── Batch forecasting (1 Gemini call for all markets) ───────────────────────
+# ─── Batch forecasting (1 Groq call for all markets) ─────────────────────────
 
 def forecast_batch(markets_data: list[dict]) -> dict[str, dict]:
-    """Single Gemini call producing forecasts for all markets simultaneously.
+    """Single Groq call producing forecasts for all markets simultaneously.
 
     Reduces per-analyze RPM consumption from N calls (one per market) to 1 call,
     avoiding rate-limit 503s when the free-tier quota is tight.
@@ -323,7 +323,7 @@ def forecast_batch(markets_data: list[dict]) -> dict[str, dict]:
 
     Raises:
         ValueError: if markets_data is empty or any entry has an empty trend_series.
-        RuntimeError: if the Gemini API fails after 3 retries.
+        RuntimeError: if the Groq API fails after 3 retries.
     """
     if not markets_data:
         raise ValueError("markets_data must not be empty")
@@ -342,7 +342,7 @@ def forecast_batch(markets_data: list[dict]) -> dict[str, dict]:
     # Attach source + validation to each market result (mirrors what forecast() does)
     from app.services.forecast_validator import validate  # local import to avoid circularity
     for market_result in results.values():
-        market_result["source"] = "gemini"
+        market_result["source"] = "groq"
         validation = validate(market_result["mape"], market_result["mae"], market_result["rmse"])
         market_result.update(validation)
 
@@ -445,7 +445,7 @@ def _build_batch_prompt(markets_data: list[dict]) -> str:
 
 
 def _parse_batch_response(raw: str, markets_data: list[dict]) -> dict[str, dict]:
-    """Parse Gemini's multi-market JSON into per-market forecast dicts."""
+    """Parse Groq's multi-market JSON into per-market forecast dicts."""
     cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
     data = json.loads(cleaned)
 
@@ -456,7 +456,7 @@ def _parse_batch_response(raw: str, markets_data: list[dict]) -> dict[str, dict]
 
         if market_key not in data:
             raise RuntimeError(
-                f"Gemini batch response is missing forecast for market '{market_key}'. "
+                f"Groq batch response is missing forecast for market '{market_key}'. "
                 f"Response keys: {list(data.keys())}"
             )
 
