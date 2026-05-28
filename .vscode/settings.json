@@ -1,5 +1,8 @@
 {
   "js/ts.tsdk.path": "node_modules\\typescript\\lib",
   "java.compile.nullAnalysis.mode": "automatic",
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "cSpell.words": [
+    "genai"
+  ]
 }

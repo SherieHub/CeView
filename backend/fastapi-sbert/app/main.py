@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 load_dotenv()   # ← MUST be first — before any app import reads os.environ
 

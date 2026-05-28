@@ -23,7 +23,7 @@ from app.agents.creative_director_agent.prompts import (
     service_analysis_prompt,
 )
 from app.agents.creative_director_agent.state import SocialAgentState
-from app.core.AgentLLMModel import AgentLLMModel
+from app.core.AgentLLMModel import _wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,8 @@ def analyze_services(state: SocialAgentState) -> dict:
     # If both were empty, use the fallback
     if not all_services:
         all_services = _FALLBACK_SERVICES
+        
+    llm_with_tools = _wrapper.get_model()
 
     if llm_with_tools is None:
         logger.error(
@@ -92,6 +94,9 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
     to the platform-aware prompt so Gemini can produce culturally localised,
     platform-rule-compliant captions with named variation types.
     """
+    
+    llm_with_tools = _wrapper.get_model()
+    
     if llm_with_tools is None:
         logger.error(
             "[%s] caption_agent.generate_platform_captions: LLM unavailable — GOOGLE_API_KEY may be unset or invalid.",
