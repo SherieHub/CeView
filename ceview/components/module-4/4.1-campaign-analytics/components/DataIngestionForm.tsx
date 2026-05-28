@@ -3,10 +3,10 @@ import { Activity, PlusCircle, Loader2 } from 'lucide-react';
 import DataInputField from './DataInputField';
 import { COLORS } from '../../../../constants';
 import { api, ApiError } from '../../../../services/apiClient';
-import type { MetricsResponse } from '../../../../types';
+import type { ManualIngestResponse } from '../../../../types';
 
 interface DataIngestionFormProps {
-  onDataReady: (data: MetricsResponse) => void;
+  onDataReady: (data: ManualIngestResponse) => void;
 }
 
 interface FormState {

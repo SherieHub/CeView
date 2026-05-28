@@ -8,21 +8,15 @@ import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendDto;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendDto;
-<<<<<<< HEAD
 import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendPoint;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendPoint;
-=======
->>>>>>> paldo
 import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
-<<<<<<< HEAD
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-=======
->>>>>>> paldo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -53,11 +47,7 @@ import java.util.stream.Collectors;
  *    writes roll back together on any failure.
  *  - seasonalityScore stored as 0–1 in DB; multiplied ×100 only in buildChartData().
  *  - buildChartData always emits exactly 8 labelled points (Wk -3 … Wk +4).
-<<<<<<< HEAD
  *  - Throws when enriched signal data is absent — run ingestion first (FR2.9).
-=======
- *  - Falls back to the legacy FastAPI stub path when enriched data is absent.
->>>>>>> paldo
  */
 @Service
 public class ForecastingService {
@@ -89,10 +79,7 @@ public class ForecastingService {
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
-<<<<<<< HEAD
     private final ObjectMapper objectMapper;
-=======
->>>>>>> paldo
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -103,12 +90,8 @@ public class ForecastingService {
                               MarketDataIngestionService ingestionService,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
-<<<<<<< HEAD
                               MarketEconomicTrendRepository economicTrendRepo,
                               ObjectMapper objectMapper) {
-=======
-                              MarketEconomicTrendRepository economicTrendRepo) {
->>>>>>> paldo
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -119,19 +102,12 @@ public class ForecastingService {
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
-<<<<<<< HEAD
         this.objectMapper       = objectMapper;
-=======
->>>>>>> paldo
     }
 
     /**
      * Run the full 2.2 pipeline for a profile.
-<<<<<<< HEAD
      * Throws IllegalStateException when enriched data is absent — run ingestion first.
-=======
-     * Falls back to the legacy stub when enriched data is absent.
->>>>>>> paldo
      */
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
         if (profileId == null) {
@@ -171,7 +147,6 @@ public class ForecastingService {
         }
     }
 
-<<<<<<< HEAD
     // ─── DB-only read path (GET /markets) ────────────────────────────────────
 
     /**
@@ -273,8 +248,6 @@ public class ForecastingService {
                 .orElse(null);
     }
 
-=======
->>>>>>> paldo
     // ─── pipeline ─────────────────────────────────────────────────────────────
 
     /**
@@ -294,7 +267,6 @@ public class ForecastingService {
         log.info("Forecast pipeline started for profile={}", profileId);
         MDC.remove("code");
 
-<<<<<<< HEAD
         // Only write to DB when the profile row actually exists; avoids FK violations
         // when the operator UUID or a test ID has no matching tbl_business_profile row.
         boolean canPersist = profileRepo.findById(profileId).isPresent();
@@ -348,17 +320,6 @@ public class ForecastingService {
                     throw seqEx;
                 }
             }
-=======
-        List<MarketResultBundle> bundles = new ArrayList<>();
-
-        for (String market : MARKETS) {
-            // ── Fetch economic trend time-series first so the GDP direction can
-            //    be injected into the Gemini prompt context below (FR2.13 extension)
-            GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
-            ForexTrendDto forexTrend = externalClient.fetchForexTrend(market);
-
-            Map<String, Object> sequence = sequenceBuilder.buildSequence(profileId, market);
->>>>>>> paldo
 
             // Inject GDP trend direction into the Gemini prompt context
             if (gdpTrend != null && gdpTrend.points().size() >= 2) {
@@ -369,7 +330,6 @@ public class ForecastingService {
                 sequence.put("gdpTrendDelta", Math.round(delta * 100.0) / 100.0);
             }
 
-<<<<<<< HEAD
             setups.add(new MarketSetup(market, gdpTrend, forexTrend, sequence));
         }
 
@@ -401,23 +361,11 @@ public class ForecastingService {
 
             double demand4w   = num(inference, "predicted_demand_4w",  50.0);
             double demand12w  = num(inference, "predicted_demand_12w", 50.0);
-=======
-            // ── Gemini demand forecasting (FR2.11) ────────────────────────────
-            Map<String, Object> inference = ai.runForecastInference(sequence);
-            double demand4w   = num(inference, "predicted_demand_4w",  50.0);
-            double demand12w  = num(inference, "predicted_demand_12w", 50.0);
-
-            // Per-week forecasts (Wk+1 … Wk+4) — prevents a flat forecast line.
-            // FastAPI returns these from the historical trend slope; fallback
-            // interpolates linearly between current and demand4w.
-            List<Double> weeklyForecasts = extractWeeklyForecasts(inference, demand4w);
->>>>>>> paldo
             double mape       = num(inference, "mape",       10.0);
             double mae        = num(inference, "mae",         6.0);
             double rmse       = num(inference, "rmse",        9.0);
             double confidence = num(inference, "confidence",  0.8);
 
-<<<<<<< HEAD
             // Per-week forecasts [Wk+1..Wk+12] — Gemini returns varying values
             // so the chart shows a real trend line (not a flat repeated scalar).
             @SuppressWarnings("unchecked")
@@ -425,8 +373,6 @@ public class ForecastingService {
                     ? (List<Double>) inference.get("weekly_forecasts")
                     : List.of(demand4w, demand4w, demand4w, demand4w);
 
-=======
->>>>>>> paldo
             // FR2.12 — MAPE warning
             if (mape > MAPE_THRESHOLD) {
                 MDC.put("code", Module2ErrorCodes.MOD22_FORECAST_MAPE_WARNING);
@@ -434,7 +380,6 @@ public class ForecastingService {
                 MDC.remove("code");
             }
 
-<<<<<<< HEAD
             // Persist ForecastResult (4w) — only when a valid profile row exists
             ForecastResult fr4w;
             if (canPersist) {
@@ -452,13 +397,6 @@ public class ForecastingService {
                 fr4w.setMapeScore(mape);
                 fr4w.setForecastHorizonWeeks(4);
             }
-=======
-            // Persist ForecastResult (4w)
-            ForecastResult fr4w = persistForecastResult(
-                    profileId, market, demand4w, confidence, mape, mae, rmse, 4);
-            // Persist ForecastResult (12w) — stored for FR2.17
-            persistForecastResult(profileId, market, demand12w, confidence, mape, mae, rmse, 12);
->>>>>>> paldo
 
             // Latest signal record for downstream enrichment
             List<MarketSignalRecord> history = signalRepo
@@ -473,10 +411,6 @@ public class ForecastingService {
             double forex  = latest != null && latest.getForexRate()  != null ? latest.getForexRate()  : 1.0;
 
             // ── XGBoost economic viability scoring (FR2.13) ───────────────────
-<<<<<<< HEAD
-=======
-            // New Phase 2 features: directFlight, distanceKm, flightFrequency
->>>>>>> paldo
             ExternalMarketDataClient.FlightReferenceDto flight = externalClient.getFlightReference(market);
             Map<String, Object> scorePayload = new LinkedHashMap<>();
             scorePayload.put("market",            market);
@@ -489,7 +423,6 @@ public class ForecastingService {
             scorePayload.put("distance_km",       flight.distanceKm());
             scorePayload.put("flight_frequency",  flight.flightFrequency());
 
-<<<<<<< HEAD
             // No fallback — propagate exception so the controller returns a
             // structured error response instead of silently using stub values.
             Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
@@ -518,22 +451,6 @@ public class ForecastingService {
                 ms.setGdpPerCapitaGrowth(gdp);
                 ms.setForexVsPhp(forex);
                 ms.setHistoricalArrivals(80_000);
-=======
-            Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
-            double marketScore = num(scoreResult, "market_score", 0.5);
-
-            // Persist MarketScore
-            MarketScore ms = persistMarketScore(
-                    fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex);
-
-            // FR2.15 — demand window alert (compare against 7d rolling average)
-            double rollingAvg = latest != null && latest.getRollingAverage7d() != null
-                    ? latest.getRollingAverage7d()
-                    : (latest != null && latest.getRollingAverage() != null
-                            ? latest.getRollingAverage() : demand4w);
-            if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
-                persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
->>>>>>> paldo
             }
 
             // ── Persist economic trend snapshot ───────────────────────────────────
@@ -541,11 +458,7 @@ public class ForecastingService {
 
             bundles.add(new MarketResultBundle(
                     market, marketScore, ms, fr4w, history, spike, confidence,
-<<<<<<< HEAD
                     gdpTrend, forexTrend, weeklyForecasts, latest));
-=======
-                    gdpTrend, forexTrend, weeklyForecasts));
->>>>>>> paldo
         }
 
         // Rank markets by score descending (FR2.14)
@@ -556,11 +469,7 @@ public class ForecastingService {
             MarketResultBundle b = bundles.get(i);
             int rank = i + 1;
             b.ms().setMarketRank(rank);
-<<<<<<< HEAD
             if (canPersist) scoreRepo.save(b.ms());
-=======
-            scoreRepo.save(b.ms());
->>>>>>> paldo
             marketDtos.add(buildMarketDto(b, rank));
         }
 
@@ -572,7 +481,6 @@ public class ForecastingService {
     private ForecastResult persistForecastResult(UUID profileId, String market,
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon) {
-<<<<<<< HEAD
         return persistForecastResult(profileId, market, demand, confidence, mape, mae, rmse, horizon, null);
     }
 
@@ -580,8 +488,6 @@ public class ForecastingService {
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon,
                                                   List<Double> weeklyForecasts) {
-=======
->>>>>>> paldo
         ForecastResult fr = new ForecastResult();
         fr.setBusinessProfileId(profileId);
         fr.setTargetMarket(market);
@@ -591,7 +497,6 @@ public class ForecastingService {
         fr.setMae(mae);
         fr.setRmse(rmse);
         fr.setForecastHorizonWeeks(horizon);
-<<<<<<< HEAD
         if (horizon == 4 && weeklyForecasts != null && !weeklyForecasts.isEmpty()) {
             try {
                 fr.setWeeklyForecastsJson(objectMapper.writeValueAsString(weeklyForecasts));
@@ -599,8 +504,6 @@ public class ForecastingService {
                 log.warn("Failed to serialize weeklyForecasts for market={}: {}", market, e.getMessage());
             }
         }
-=======
->>>>>>> paldo
         return forecastRepo.save(fr);
     }
 
@@ -660,12 +563,8 @@ public class ForecastingService {
                         tier))
                 .collect(Collectors.toList());
 
-<<<<<<< HEAD
         List<ChartDataPointDto> chartData = buildChartData(
                 b.history(), b.fr4w(), b.weeklyForecasts(), b.latestSignal());
-=======
-        List<ChartDataPointDto> chartData = buildChartData(b.history(), b.fr4w(), b.weeklyForecasts());
->>>>>>> paldo
 
         String directive = buildDirective(market, matchScore, b.spike());
 
@@ -705,28 +604,6 @@ public class ForecastingService {
         );
     }
 
-    /**
-     * Builds exactly 8 ChartDataPoints labelled Wk -3 … Wk +4.
-     *
-     * Labels must match the frontend's label-based lookup in generateTimeframeData():
-     *   history slot 0 → "Wk -3"
-     *   history slot 1 → "Wk -2"
-     *   history slot 2 → "Wk -1"
-     *   history slot 3 → "Current"
-     *   forecast slots → "Wk +1" … "Wk +4"
-     *
-     * When fewer than 4 real signal records exist, synthetic pads fill the
-     * earliest history slots from "Wk -3" forward.  The count breakdown:
-     *   4 real records → 0 pads, 4 real slots, 4 forecast = 8
-     *   3 real records → 1 pad  ("Wk -3"), 3 real, 4 forecast = 8
-     *   2 real records → 2 pads ("Wk -3","Wk -2"), 2 real, 4 forecast = 8
-     *   1 real record  → 3 pads ("Wk -3","Wk -2","Wk -1"), 1 real, 4 forecast = 8
-     *   0 real records → 3 pads + synthetic "Current", 4 forecast = 8
-     *
-     * Seasonality is multiplied by 100 here (0–1 → 0–100) so the frontend
-     * DemandForecastChart Y-axis [0, 100] renders it correctly.
-     */
-<<<<<<< HEAD
     /**
      * Builds exactly 24 ChartDataPoints: 12 history (Wk -11 … Current) + 12 forecast (Wk +1 … Wk +12).
      *
@@ -783,47 +660,10 @@ public class ForecastingService {
         // ── Real history points ───────────────────────────────────────────────
         // Formula: label = "Wk -" + (recent.size() - 1 - i) for non-Current slots.
         // This scales to any number of real records (1..12).
-=======
-    private List<ChartDataPointDto> buildChartData(List<MarketSignalRecord> history,
-                                                    ForecastResult fr4w,
-                                                    List<Double> weeklyForecasts) {
-        List<ChartDataPointDto> points = new ArrayList<>();
-
-        // Use up to 4 most-recent history records, reversed to chronological order
-        List<MarketSignalRecord> recent = history.stream().limit(4).collect(Collectors.toList());
-        Collections.reverse(recent);
-
-        double baseDemand = (fr4w != null && fr4w.getPredictedDemand() != null)
-                ? fr4w.getPredictedDemand() : 50.0;
-
-        // Synthetic pads fill the history slots that have no real records.
-        // When recent is empty we emit 3 synthetic history pads (Wk -3, Wk -2, Wk -1)
-        // plus a synthetic "Current" in the block below — total 4 history slots.
-        // When recent has k≥1 records we need (3 - (k-1)) = (4 - k) pads only for
-        // the history weeks, NOT for "Current" which the real record supplies.
-        int syntheticCount = recent.isEmpty() ? 3 : Math.max(0, 4 - recent.size());
-        for (int j = 0; j < syntheticCount; j++) {
-            // Labels count down: Wk -3, Wk -2, Wk -1 (only; "Current" is never synthetic here)
-            int week = 3 - j;
-            double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 5.0));
-            points.add(new ChartDataPointDto(
-                    "Wk -" + week,
-                    syntheticDemand,
-                    null,
-                    50.0,   // neutral seasonality (0–100 scale)
-                    1.0,
-                    2.0,
-                    0.0
-            ));
-        }
-
-        // Real history points
->>>>>>> paldo
         for (int i = 0; i < recent.size(); i++) {
             MarketSignalRecord r = recent.get(i);
             boolean isCurrent = (i == recent.size() - 1);
             String label = isCurrent ? "Current" : "Wk -" + (recent.size() - 1 - i);
-<<<<<<< HEAD
             double seasonality100 = (r.getSeasonalityScore() != null)
                     ? r.getSeasonalityScore() * 100.0 : 50.0;
             double forexVal = (r.getForexRate() != null) ? r.getForexRate() : latestForex;
@@ -852,69 +692,6 @@ public class ForecastingService {
                     latestSeasonality,
                     latestForex,
                     latestGdp,
-=======
-            // Scale seasonality from 0–1 (DB) to 0–100 (frontend chart)
-            double seasonality100 = (r.getSeasonalityScore() != null)
-                    ? r.getSeasonalityScore() * 100.0
-                    : 50.0;
-            double forexVal = (r.getForexRate()  != null) ? r.getForexRate()  : 1.0;
-            double gdpVal   = (r.getGdpGrowth()  != null) ? r.getGdpGrowth()  : 2.0;
-            double spikeVal = Boolean.TRUE.equals(r.getSpikeIndicator()) ? 1.0 : 0.0;
-
-            // For the "Current" point include both history and forecast so the
-            // forecast line (dashed gold) starts exactly where the history line ends,
-            // then transitions into the weekly projections without a visual jump.
-            Double forecastValue = null;
-            if (isCurrent) {
-                // Use the recorded trend index as the forecast-line anchor so both
-                // lines share the same "Current" y-value (seamless chart transition).
-                Double trendIdx = r.getTrendIndex();
-                forecastValue = (trendIdx != null) ? trendIdx : baseDemand;
-            }
-
-            points.add(new ChartDataPointDto(
-                    label,
-                    r.getTrendIndex(),
-                    forecastValue,
-                    seasonality100,
-                    forexVal,
-                    gdpVal,
-                    spikeVal
-            ));
-        }
-
-        // If no real history at all, add a synthetic "Current" anchor so the
-        // chart always has a transition point between history and forecast lines.
-        if (recent.isEmpty()) {
-            // Forecast anchor = Wk+1 projection so the line immediately diverges
-            // from the synthetic baseDemand rather than sitting flat.
-            double firstForecast = (weeklyForecasts != null && !weeklyForecasts.isEmpty())
-                    ? weeklyForecasts.get(0) : baseDemand;
-            points.add(new ChartDataPointDto(
-                    "Current",
-                    baseDemand,
-                    firstForecast,
-                    50.0,
-                    1.0,
-                    2.0,
-                    0.0
-            ));
-        }
-
-        // 4 forecast points (Wk +1 to Wk +4) — each week gets its own projected
-        // demand value from the historical-slope calculation so the line is never flat.
-        for (int w = 1; w <= 4; w++) {
-            double forecastVal = (weeklyForecasts != null && weeklyForecasts.size() >= w)
-                    ? weeklyForecasts.get(w - 1)
-                    : baseDemand;
-            points.add(new ChartDataPointDto(
-                    "Wk +" + w,
-                    null,
-                    forecastVal,
-                    50.0,
-                    1.0,
-                    2.0,
->>>>>>> paldo
                     0.0
             ));
         }
@@ -1040,43 +817,6 @@ public class ForecastingService {
         return v instanceof Number ? ((Number) v).doubleValue() : def;
     }
 
-<<<<<<< HEAD
-=======
-    /**
-     * Extracts the per-week forecast list from the FastAPI inference result.
-     *
-     * <p>FastAPI returns {@code weekly_forecasts: [w1, w2, w3, w4]} from the
-     * historical trend slope so each chart point has a distinct demand value.
-     * If the field is absent or malformed (e.g. legacy stub response), falls back
-     * to linear interpolation between the last recorded observation and
-     * {@code fallbackDemand} (the 4w aggregate) so the chart always shows a slope.
-     *
-     * @param inference      raw inference response map from FastAPI
-     * @param fallbackDemand the aggregate 4w demand used when weekly data is absent
-     */
-    @SuppressWarnings("unchecked")
-    private List<Double> extractWeeklyForecasts(Map<String, Object> inference, double fallbackDemand) {
-        Object raw = inference.get("weekly_forecasts");
-        if (raw instanceof List<?> rawList && rawList.size() == 4) {
-            try {
-                return ((List<Object>) rawList).stream()
-                        .map(v -> v instanceof Number n ? n.doubleValue() : fallbackDemand)
-                        .collect(Collectors.toList());
-            } catch (Exception ignored) {
-                // fall through to linear interpolation
-            }
-        }
-        // Linear interpolation fallback: flat baseline → demand4w so the line
-        // still shows a slope whenever FastAPI didn't return weekly breakdown.
-        return List.of(
-                fallbackDemand * 0.85,
-                fallbackDemand * 0.90,
-                fallbackDemand * 0.95,
-                fallbackDemand
-        );
-    }
-
->>>>>>> paldo
     private record MarketResultBundle(
             String market,
             double marketScore,
@@ -1087,10 +827,6 @@ public class ForecastingService {
             double confidence,
             GdpTrendDto gdpTrend,
             ForexTrendDto forexTrend,
-<<<<<<< HEAD
             List<Double> weeklyForecasts,
             MarketSignalRecord latestSignal) {}
-=======
-            List<Double> weeklyForecasts) {}
->>>>>>> paldo
 }

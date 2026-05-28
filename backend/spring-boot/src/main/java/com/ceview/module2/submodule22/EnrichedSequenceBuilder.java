@@ -45,11 +45,7 @@ public class EnrichedSequenceBuilder {
      * Build the Gemini forecast context payload.
      *
      * @throws IllegalStateException("enriched_dataset_empty") when fewer than
-<<<<<<< HEAD
      *         MIN_RECORDS signal records exist — propagates as a 500 error to the caller.
-=======
-     *         MIN_RECORDS signal records exist — triggers the legacy stub fallback.
->>>>>>> paldo
      */
     public Map<String, Object> buildSequence(UUID profileId, String market) {
         // DESC order: most-recent first

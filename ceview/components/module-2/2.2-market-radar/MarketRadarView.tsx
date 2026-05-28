@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, MapPin, Navigation, Plane, RefreshCw } from 'lucide-react';
-<<<<<<< HEAD
 import { COLORS } from '../../../constants';
 import { api, ApiError } from '../../../services/apiClient';
 import type { Market } from '../../../types';
@@ -9,14 +8,6 @@ import ServerErrorBanner from '../../shared/ServerErrorBanner';
 import SkeletonBox from '../../shared/SkeletonBox';
 import MarketRankCard from './components/MarketRankCard';
 import MarketRankCardSkeleton from './components/MarketRankCardSkeleton';
-=======
-import { COLORS, MOCK_MARKETS } from '../../../constants';
-import { api } from '../../../services/apiClient';
-import type { Market } from '../../../types';
-
-import ServerErrorBanner from '../../shared/ServerErrorBanner';
-import MarketRankCard from './components/MarketRankCard';
->>>>>>> paldo
 import MetricHighlight from './components/MetricHighlight';
 import LiveAlertBanner from './components/LiveAlertBanner';
 import StrategicDirectivePanel from './components/StrategicDirectivePanel';
@@ -30,19 +21,12 @@ interface MarketRadarViewProps {
   onBack?: () => void;
   initialMarketId?: string;
   onNavigateToContent?: (marketId: string) => void;
-<<<<<<< HEAD
   /** When true, automatically runs the full forecast pipeline on mount (e.g. from a notification click). */
   autoAnalyze?: boolean;
 }
 
 const MarketRadarView: React.FC<MarketRadarViewProps> = ({
   businessProfileId, businessName, categories, onBack, initialMarketId, onNavigateToContent, autoAnalyze,
-=======
-}
-
-const MarketRadarView: React.FC<MarketRadarViewProps> = ({
-  businessProfileId, businessName, categories, onBack, initialMarketId, onNavigateToContent,
->>>>>>> paldo
 }) => {
   const hasBusinessName = !!businessName?.trim();
   const hasCategories = (categories?.length ?? 0) > 0;
@@ -53,29 +37,20 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
   const pillLabel = hasCategories
     ? `Profile: ${categories!.join(' · ')}`
     : 'Profile: Eco-Tourism / Beach';
-<<<<<<< HEAD
 
   const [markets, setMarkets] = useState<Market[]>([]);
   const [selectedMarketId, setSelectedMarketId] = useState<string>(initialMarketId ?? '');
   const [isLoading, setIsLoading] = useState<boolean>(true);
-=======
-  const [markets, setMarkets] = useState<Market[]>(MOCK_MARKETS);
-  const [selectedMarketId, setSelectedMarketId] = useState<string>(initialMarketId ?? MOCK_MARKETS[0].id);
-  const [isUsingMock, setIsUsingMock] = useState<boolean>(true);
->>>>>>> paldo
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const loadMarkets = useCallback(() => {
-<<<<<<< HEAD
     setIsLoading(true);
-=======
->>>>>>> paldo
+
     api.listMarkets(businessProfileId ?? undefined)
       .then(r => {
         if (r.markets?.length) {
           setMarkets(r.markets);
-<<<<<<< HEAD
           if (!selectedMarketId) setSelectedMarketId(r.markets[0].id);
         }
       })
@@ -86,19 +61,6 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
       })
       .finally(() => setIsLoading(false));
   }, [businessProfileId]); // eslint-disable-line react-hooks/exhaustive-deps
-=======
-          setIsUsingMock(false);
-        }
-      })
-      .catch(e => {
-        console.warn('listMarkets failed, using mock', e);
-        setIsUsingMock(true);
-        setServerError('Market data service unavailable. Showing demo data.');
-      });
-  }, [businessProfileId]);
-
-  useEffect(() => { loadMarkets(); }, [loadMarkets]);
->>>>>>> paldo
 
   const handleRefresh = async () => {
     if (!businessProfileId) return;
@@ -107,7 +69,7 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
       const r = await api.analyzeMarkets(businessProfileId);
       if (r.markets?.length) {
         setMarkets(r.markets);
-<<<<<<< HEAD
+
         if (!selectedMarketId) setSelectedMarketId(r.markets[0].id);
       }
     } catch (err) {
@@ -116,19 +78,12 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
         ? ae.message
         : ae?.message ?? 'The AI service may be unavailable.';
       setServerError(`Market analysis failed: ${detail}`);
-=======
-        setIsUsingMock(false);
-      }
-    } catch (e) {
-      console.warn('analyzeMarkets failed', e);
-      setServerError('Market analysis failed. The AI service may be unavailable.');
->>>>>>> paldo
+
     } finally {
       setIsRefreshing(false);
     }
   };
 
-<<<<<<< HEAD
   useEffect(() => {
     loadMarkets();
     if (autoAnalyze && businessProfileId) {
@@ -136,8 +91,6 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
     }
   }, [loadMarkets]); // eslint-disable-line react-hooks/exhaustive-deps
 
-=======
->>>>>>> paldo
   const selectedMarket = markets.find((m) => m.id === selectedMarketId) || markets[0];
 
   return (
@@ -175,18 +128,7 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
-<<<<<<< HEAD
-=======
-          {isUsingMock && (
-            <span
-              className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border"
-              style={{ backgroundColor: COLORS.GOLD_LIGHT, color: COLORS.NAVY, borderColor: `${COLORS.GOLD}40` }}
-              title="Backend unreachable — showing seeded demo data"
-            >
-              Demo Data
-            </span>
-          )}
->>>>>>> paldo
+
           <button
             onClick={handleRefresh}
             disabled={!businessProfileId || isRefreshing}
@@ -200,7 +142,6 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
         </div>
       </div>
 
-<<<<<<< HEAD
       {/* Market rank cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isLoading
@@ -239,37 +180,6 @@ const MarketRadarView: React.FC<MarketRadarViewProps> = ({
           </div>
         </>
       )}
-=======
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {markets.map((market) => (
-          <MarketRankCard
-            key={market.id}
-            market={market}
-            isSelected={market.id === selectedMarketId}
-            onClick={() => setSelectedMarketId(market.id)}
-          />
-        ))}
-      </div>
-
-      <LiveAlertBanner market={selectedMarket} />
-
-      <div className="rounded-2xl shadow-xl overflow-hidden" style={{ backgroundColor: COLORS.WHITE, border: `1px solid ${COLORS.LIGHT_GREY}` }}>
-
-        <StrategicDirectivePanel
-          directive={selectedMarket.directive}
-          onNavigateToContent={onNavigateToContent ? () => onNavigateToContent(selectedMarketId) : undefined}
-        />
-
-        <div className="grid grid-cols-2 divide-x border-b" style={{ borderColor: COLORS.LIGHT_GREY, backgroundColor: COLORS.OFF_WHITE }}>
-          <MetricHighlight icon={<Navigation size={16} />} label="Distance to Cebu" value={`${selectedMarket.distanceKm.toLocaleString()} km`} color={COLORS.SKYBLUE} />
-          <MetricHighlight icon={<Plane size={16} />} label="Route Type" value={selectedMarket.directFlight ? 'Direct Flights' : 'Via Manila'} color={selectedMarket.directFlight ? COLORS.GREEN : COLORS.GOLD} />
-        </div>
-
-        <DemandForecastChart chartData={selectedMarket.chartData} />
-        <EconomicInsightsBoard market={selectedMarket} />
-
-      </div>
->>>>>>> paldo
     </div>
   );
 };

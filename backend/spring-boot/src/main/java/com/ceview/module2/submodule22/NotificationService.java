@@ -1,14 +1,7 @@
 package com.ceview.module2.submodule22;
 
-<<<<<<< HEAD
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.NotificationDtos.*;
-=======
-import com.ceview.ai.AIInferenceGatewayService;
-import com.ceview.module1.businessinput.BusinessProfileRepository;
-import com.ceview.module2.dto.NotificationDtos.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
->>>>>>> paldo
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -18,11 +11,7 @@ import java.util.stream.Collectors;
 /**
  * Reads persisted demand alerts from the DB and maps them to the
  * NotificationsResponse DTO shape (FR2.15, FR2.17).
-<<<<<<< HEAD
  * Returns an empty list when no alerts exist — no stub fallback.
-=======
- * Falls back to the legacy FastAPI stub when no alerts exist.
->>>>>>> paldo
  */
 @Service
 public class NotificationService {
@@ -39,32 +28,17 @@ public class NotificationService {
     private final DemandAlertRepository alertRepo;
     private final MarketScoreRepository scoreRepo;
     private final ForecastResultRepository forecastRepo;
-<<<<<<< HEAD
-=======
-    private final AIInferenceGatewayService ai;
-    private final ObjectMapper mapper;
->>>>>>> paldo
     private final BusinessProfileRepository profileRepo;
     private final CategoryRankNotificationService categoryRankService;
 
     public NotificationService(DemandAlertRepository alertRepo,
                                 MarketScoreRepository scoreRepo,
                                 ForecastResultRepository forecastRepo,
-<<<<<<< HEAD
-=======
-                                AIInferenceGatewayService ai,
-                                ObjectMapper mapper,
->>>>>>> paldo
                                 BusinessProfileRepository profileRepo,
                                 CategoryRankNotificationService categoryRankService) {
         this.alertRepo           = alertRepo;
         this.scoreRepo           = scoreRepo;
         this.forecastRepo        = forecastRepo;
-<<<<<<< HEAD
-=======
-        this.ai                  = ai;
-        this.mapper              = mapper;
->>>>>>> paldo
         this.profileRepo         = profileRepo;
         this.categoryRankService = categoryRankService;
     }
@@ -81,14 +55,7 @@ public class NotificationService {
                 categoryRankService.buildForCategories(profileCategories);
 
         if (profileId == null) {
-<<<<<<< HEAD
             return new NotificationsResponse(keywordNotifications);
-=======
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
->>>>>>> paldo
         }
 
         // Gather latest ForecastResult per market → join to MarketScore → DemandAlert
@@ -99,14 +66,7 @@ public class NotificationService {
         }
 
         if (forecasts.isEmpty()) {
-<<<<<<< HEAD
             return new NotificationsResponse(keywordNotifications);
-=======
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
->>>>>>> paldo
         }
 
         List<UUID> forecastIds = forecasts.stream()
@@ -115,14 +75,7 @@ public class NotificationService {
 
         List<MarketScore> scores = scoreRepo.findByForecastResultIdIn(forecastIds);
         if (scores.isEmpty()) {
-<<<<<<< HEAD
             return new NotificationsResponse(keywordNotifications);
-=======
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
->>>>>>> paldo
         }
 
         List<UUID> scoreIds = scores.stream()
@@ -145,14 +98,6 @@ public class NotificationService {
         List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
         merged.addAll(demandNotifications);
 
-<<<<<<< HEAD
-=======
-        // Fallback to stub if both pipelines returned nothing
-        if (merged.isEmpty()) {
-            return fromStub();
-        }
-
->>>>>>> paldo
         return new NotificationsResponse(merged);
     }
 
@@ -220,11 +165,4 @@ public class NotificationService {
                 null         // contentStrategy — nullable per DTO spec
         );
     }
-<<<<<<< HEAD
-=======
-
-    private NotificationsResponse fromStub() {
-        return mapper.convertValue(ai.listNotifications(), NotificationsResponse.class);
-    }
->>>>>>> paldo
 }

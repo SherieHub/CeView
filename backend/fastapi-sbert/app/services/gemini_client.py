@@ -1130,6 +1130,60 @@ def _visual_fallback_evaluation(market: str) -> dict:
     return _fallbacks.get(market, _fallbacks["korea"])
 
 
+def pes_compute_insights(
+    base_metrics: dict,
+    pes_score: float,
+    pes_label: str,
+    breakdown: list[dict],
+    flagged_metrics: list[str],
+) -> dict:
+    """Generate AI prescriptive insights for UC-4.3 (pes_compute endpoint).
+
+    Returns: { weakest_funnel_stage, recommendations, executive_summary, source }
+    Falls back to rule-based output if Groq is unavailable.
+    """
+    if not _enabled():
+        return {}
+
+    breakdown_text = "\n".join(
+        f"  - {b['metric']}: weight {b['weight']}, contribution {b['contribution']:.4f}"
+        for b in breakdown
+    )
+    flag_text = (
+        f"Excluded metrics (missing data): {', '.join(flagged_metrics)}"
+        if flagged_metrics else "No metrics were excluded."
+    )
+
+    prompt = f"""You are CeView's Campaign Analyst for Cebu MSME tourism businesses.
+
+Campaign PES Analysis:
+- PES Score: {pes_score:.4f} / 1.00 ({pes_label})
+- Base Metrics: {json.dumps(base_metrics, indent=2)}
+- Metric Contributions (normalized × weight):
+{breakdown_text}
+- {flag_text}
+
+Identify the weakest funnel stage and provide 3 specific, actionable recommendations
+to improve the campaign's Promotional Effectiveness Score for a Cebu tourism MSME.
+
+Return JSON with exactly:
+- weakest_funnel_stage: string (e.g. "Clicks → Bookings", "Impressions → Clicks", etc.)
+- recommendations: array of exactly 3 strings — each a concrete, specific action
+- executive_summary: string — 2-3 sentences summarising the PES result and top priority
+"""
+
+    out = _generate_json(prompt)
+    if not out or "recommendations" not in out:
+        return {}
+
+    return {
+        "weakest_funnel_stage": out.get("weakest_funnel_stage", "Clicks → Bookings"),
+        "recommendations":      list(out.get("recommendations", []))[:3],
+        "executive_summary":    out.get("executive_summary", ""),
+        "source":               "groq",
+    }
+
+
 def performance_report(
     metrics: dict,
     transitions: list[dict] | None = None,

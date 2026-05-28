@@ -14,6 +14,7 @@ from app.routers import (
     report,
     caption_generation,
     pes_analysis,
+    pes_compute,
 )
 
 configure_logging()
@@ -46,3 +47,4 @@ app.include_router(compliance.router,     prefix="/internal/compliance",     tag
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
+app.include_router(pes_compute.router,        prefix="/internal/pes-compute",   tags=["pes-compute"])
