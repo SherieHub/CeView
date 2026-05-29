@@ -1,0 +1,88 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 1.1 — Business Input: Profile Lifecycle & Category Classification
+
+actor Operator as O
+participant "Calibration\nForm" as Form
+participant "BusinessProfile\nController" as BPC
+participant "ClassificationAnalyze\nController" as CAC
+participant "AIInference\nGatewayService" as AI
+participant "BusinessProfile\nRepository" as Repo
+participant "FastAPI\n(fastapi-sbert)" as FP
+
+== 1. Load Profile ==
+
+O -> BPC: GET /api/v1/business-profile?operatorId={UUID}
+BPC -> Repo: findFirstByUserId(operatorId)
+alt profile exists
+  Repo --> BPC: BusinessProfile entity
+  BPC --> O: BusinessProfileDto (populated)
+else no profile yet
+  BPC --> O: BusinessProfileDto (empty defaults)
+end
+
+== 2. Analyze Business Profile (Transaction 1.1) ==
+
+O -> Form: Fill name, description,\ncoreServices, UVP
+Form -> Form: validateInputs()\n[name required, services ≥1,\ndesc ≥50 words, UVP ≥30 words]
+
+alt validation fails
+  Form --> O: ValidationBanner with error list
+else valid
+  Form -> CAC: POST /api/v1/classification/analyze\n{businessName, coreServices, description, uvp}
+  CAC -> AI: classifyCategories(payload)
+  AI -> FP: POST /internal/classification/analyze
+  note right of FP
+    SBERT E5 encode →
+    Keras sigmoid classifier →
+    7-category probabilities
+    normalized to 100%
+  end note
+  FP --> AI: {categories: [{name, percentage}]}
+  AI --> CAC: Map<String, Object>
+  CAC --> Form: AnalyzeResponse\n{categories: List<CategoryAllocation>}
+  Form -> Form: Render InferredCategoryBoard\n(sorted by % desc)
+end
+
+== 3. Confirm & Persist Profile ==
+
+O -> Form: Adjust category sliders,\nclick "Confirm & Register"
+Form -> BPC: PUT /api/v1/business-profile?operatorId={UUID}\n(BusinessProfileDto with selected categories)
+BPC -> BPC: setCategoriesList()\nsetCoreServicesList()
+BPC -> Repo: save(BusinessProfile entity)
+Repo --> BPC: saved entity
+
+BPC ->> AI: embedBusinessProfile(payload)\n[async — fire and forget]
+note right of AI
+  Non-blocking: profile save
+  does not wait for embed result.
+  AI calls FastAPI POST
+  /internal/classification/embed
+  to upsert 768-dim E5 vector
+  into tbl_business_embedding.
+end note
+
+BPC --> Form: BusinessProfileDto (persisted)
+
+== 4. Generate SEO Keywords ==
+
+O -> BPC: POST /api/v1/business-profile/keywords\n{businessName, description, category}
+BPC -> AI: generateKeywords(payload)
+AI -> FP: POST /internal/classification/keywords
+FP --> AI: List<String> (SEO keywords)
+AI --> BPC: List<String>
+BPC --> O: keyword list
+
+== 5. Edit Identity (Profile Dashboard) ==
+
+O -> BPC: PUT /api/v1/business-profile?operatorId={UUID}\n(updated name / image / categories)
+BPC -> Repo: save(updated entity)
+Repo --> BPC: saved entity
+BPC --> O: updated BusinessProfileDto
+
+@enduml

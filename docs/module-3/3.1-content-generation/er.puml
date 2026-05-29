@@ -1,0 +1,78 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 3.1 — Content Generation: Entity Relationships
+
+entity "tbl_business_profile" as BP {
+  * business_profile_id : UUID <<PK>>
+  --
+  * user_id             : UUID <<FK>>
+  business_name         : TEXT
+  categories            : TEXT
+  uniqueness_score      : FLOAT
+  ...
+}
+
+entity "tbl_localized_promotional_content" as LPC {
+  * content_id          : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  * selected_market     : VARCHAR
+  * platform            : VARCHAR
+  generated_caption     : TEXT
+  content_direction     : TEXT
+  hashtags              : TEXT
+  cta                   : TEXT
+  tone_suggestion       : TEXT
+  framework             : VARCHAR
+  source                : VARCHAR
+  approval_status       : BOOLEAN
+  generated_at          : TIMESTAMPTZ
+  approved_at           : TIMESTAMPTZ
+}
+
+entity "tbl_content_generation_log" as CGL {
+  * content_log_id      : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  generation_status     : VARCHAR
+  diagnostics           : TEXT
+  logged_at             : TIMESTAMPTZ
+}
+
+note bottom of LPC
+  <<Stage 1 — Generated>>
+    approval_status = false
+    4 rows inserted per generate call:
+    instagram / tiktok / facebook / naver
+
+  <<Stage 2 — Approved>>
+    approval_status = true
+    approved_at = timestamp
+    Unlocks Submodule 3.2
+
+  Indexes:
+    idx_content_profile_market
+      (business_profile_id, selected_market)
+    idx_content_approval
+      (business_profile_id, approval_status)
+
+  Naver rows use hardcoded captions
+    (2 curated Korean blog post options)
+    source = "hardcoded"
+end note
+
+note bottom of CGL
+  One row written per generate attempt.
+  generation_status: "success" | "fallback" | "error"
+  diagnostics: error message or LLM source info
+end note
+
+BP ||--o{ LPC : "generates content\nper market"
+BP ||--o{ CGL : "logs each\ngeneration attempt"
+
+@enduml

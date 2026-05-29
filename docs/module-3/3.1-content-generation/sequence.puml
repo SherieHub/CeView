@@ -1,0 +1,80 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 3.1 — Content Generation: Caption Matrix & Approval
+
+actor Operator as O
+participant "ContentStudio\nView" as UI
+participant "Content\nController" as CC
+participant "ContentGeneration\nService" as CGS
+participant "ContentApproval\nService" as CAS
+participant "FastAPI\n(LangGraph Agent)" as FP
+participant "tbl_localized_\npromotional_content" as DB
+
+== 1. Content Generation (on mount) ==
+
+O -> UI: Navigate to Content Studio\n(market selected)
+UI -> CC: POST /api/v1/content/generate\n{market, businessName, description,\ncategories, trend, ?profileId}
+
+alt profileId provided
+  CC -> CGS: generate(req)
+  CGS -> CGS: Load BusinessProfile from DB\n(override request body fields)
+else no profileId
+  CC -> CGS: generate(req)\n(use request body as-is)
+end
+
+CGS -> CGS: buildForecastContext()\n(query ForecastResult + MarketScore\nfrom Module 2 tables)
+
+CGS -> FP: POST /internal/content/generate\n{market, businessName, categories,\nuniquenesScore, forecastContext}
+
+note right of FP
+  LangGraph 2-node StateGraph:
+  Node 1 — analyze_services:
+    filter relevant vs extra services
+  Node 2 — generate_platform_captions:
+    3 archetypes × 3 platforms
+    (Witty / Formal / Storytelling)
+    × (Instagram / TikTok / Facebook)
+  CulturalResearchService provides
+    market context (SerpAPI or template)
+  Naver captions are hardcoded
+    (2 curated Korean blog options)
+end note
+
+alt LLM available
+  FP --> CGS: ContentResponseDto\n{captions: {platform → archetypes}, source: "llm"}
+else LLM unavailable
+  FP --> CGS: ContentResponseDto\n{captions: fallback templates, source: "fallback"}
+end
+
+CGS -> DB: INSERT 4 rows\n(instagram, tiktok, facebook, naver)\napproval_status = false
+
+CGS --> CC: ContentResponseDto
+CC --> UI: ContentResponseDto\n{market, captions, source}
+UI -> UI: Render AIContentMatrixPanel\n3 platform tabs × 3 archetype cards
+
+== 2. Content Approval (fire-and-forget) ==
+
+O -> UI: Click "Approve" on one\ncaption per platform
+UI ->> CC: POST /api/v1/content/approve\n{profileId, market}\n[non-blocking]
+
+CC -> CAS: approveForMarket(profileId, market)
+CAS -> DB: UPDATE approval_status = true\nSET approved_at = now()\nfor all rows matching\n(businessProfileId, selectedMarket)
+
+note right of DB
+  This approval gate enables
+  Submodule 3.2 Creative Direction.
+  hasApprovedContent() checks
+  this flag before generating
+  visual direction.
+end note
+
+DB --> CAS: updated rows
+CAS --> CC: void
+CC --> UI: {approvedIds, market, count}
+
+@enduml

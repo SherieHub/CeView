@@ -1,0 +1,211 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam classBackgroundColor white
+skinparam classBorderColor #444444
+skinparam packageBackgroundColor #f5f5f5
+skinparam PageOrientation portrait
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam ArrowColor #444444
+skinparam shadowing false
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — submodule21
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — submodule21 (Scheduled Jobs)" {
+
+    class MarketDataIngestionJob <<job>> {
+        +runDailyIngestion() void
+    }
+
+    class IngestionTriggerController <<controller>> {
+        -ingestionService : MarketDataIngestionService
+        +triggerIngestion() ResponseEntity
+    }
+
+    class MarketDataIngestionService <<service>> {
+        -ai : AIInferenceGatewayService
+        -externalClient : ExternalMarketDataClient
+        -signalRepo : MarketSignalRecordRepository
+        +ingestForProfile(BusinessProfile) int
+        -ingestMarket(BusinessProfile, String) void
+        -backfillHistory(UUID, String, Map, GdpDataDto, ForexDataDto) double
+    }
+
+    class TrendFetchSchedulerService <<service>> {
+        -jobRepo : TrendFetchJobRepository
+        -transformerClient : WebClient
+        +runWeeklyTrendFetch() void
+    }
+
+    class ExternalMarketDataClient <<service>> {
+        -worldBankClient : WebClient
+        -forexClient : WebClient
+        +fetchGdpGrowth(String) GdpDataDto
+        +fetchForexRate(String) ForexDataDto
+        +fetchGdpTrend(String) GdpTrendDto
+        +fetchForexTrend(String) ForexTrendDto
+        +getFlightReference(String) FlightReferenceDto
+    }
+
+    class MarketSignalRecord <<entity>> {
+        +signalRecordId : UUID
+        +businessProfileId : UUID
+        +targetMarket : String
+        +trendIndex : double
+        +forexRate : double
+        +gdpGrowth : double
+        +seasonalityScore : double
+        +rollingAverage : double
+        +rollingAverage7d : double
+        +rollingAverage30d : double
+        +rollingStdDev : double
+        +yoyRatio : Double
+        +spikeIndicator : boolean
+        +aggregatedAt : OffsetDateTime
+    }
+
+    class MarketEconomicTrend <<entity>> {
+        +trendId : UUID
+        +market : String
+        +gdpTrendJson : String
+        +forexTrendJson : String
+        +gdpLatest : double
+        +forexLatest : double
+        +currencyCode : String
+        +gdpPoints : int
+        +forexPoints : int
+        +fetchedAt : OffsetDateTime
+    }
+
+    class IngestionJobLog <<entity>> {
+        +jobLogId : UUID
+        +jobName : String
+        +status : String
+        +marketsProcessed : int
+        +recordsIngested : int
+        +errorMessage : String
+        +startedAt : OffsetDateTime
+        +completedAt : OffsetDateTime
+    }
+
+    class MarketSignalRecordRepository <<repository>> {
+        +findByProfileAndMarketOrderByAggregatedAtDesc(UUID, String) List~MarketSignalRecord~
+        +existsByProfileAndMarketAndAggregatedAtAfter(UUID, String, OffsetDateTime) boolean
+        +save(MarketSignalRecord) MarketSignalRecord
+    }
+
+    class MarketEconomicTrendRepository <<repository>> {
+        +findTopByMarketOrderByFetchedAtDesc(String) Optional~MarketEconomicTrend~
+        +save(MarketEconomicTrend) MarketEconomicTrend
+    }
+
+    class IngestionJobLogRepository <<repository>> {
+        +save(IngestionJobLog) IngestionJobLog
+    }
+
+    class TrendFetchJobRepository <<repository>> {
+        +findPendingAndFailedJobs() List~TrendFetchJob~
+        +upsertByKey(String, String, String) void
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — Cross-module Gateway
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — AI Gateway" {
+
+    class AIInferenceGatewayService <<service>> {
+        -transformerClient : WebClient
+        +fetchTrends(Map) Map
+        +fetchTrendHistory(Map) Map
+        +computeSeasonality(Map) Map
+        +rankMarketsForCategory(String) Map
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' FASTAPI TRANSFORMER — Market Data Router
+' ══════════════════════════════════════════════════════════════════════════
+
+package "FastAPI — marketDataRouter" {
+
+    class marketDataRouter <<router>> {
+        +POST /internal/market-data/trends : dict
+        +POST /internal/market-data/trends/history : dict
+        +POST /internal/market-data/seasonality : dict
+    }
+
+    class pytrends_client <<service>> {
+        +fetch_trends(market, categories) dict
+        +fetch_trend_history(market, categories, weeks) dict
+        -_jitter_sleep() void
+    }
+
+    class seasonal_shift_detector <<service>> {
+        +compute(weekly_series) dict
+        -_rolling_avg(series, window) float
+        -_rolling_std(series, window) float
+        -_yoy_ratio(series) float
+        -_seasonality_score(yoy, std, spike) float
+    }
+
+    class market_data_processor <<service>> {
+        +normalize(raw_index) float
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' FASTAPI TRANSFORMER — Trends Router
+' ══════════════════════════════════════════════════════════════════════════
+
+package "FastAPI — trendsRouter" {
+
+    class trendsRouter <<router>> {
+        +POST /api/v1/trends/fetch : dict
+        +POST /api/v1/trends/rank-markets : dict
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Spring Boot job / controller → services
+' ══════════════════════════════════════════════════════════════════════════
+
+MarketDataIngestionJob --> MarketDataIngestionService : ingestForProfile (per profile)
+IngestionTriggerController --> MarketDataIngestionService : delegates
+
+MarketDataIngestionService --> ExternalMarketDataClient : fetchGdpGrowth / fetchForexRate
+MarketDataIngestionService --> AIInferenceGatewayService : fetchTrends / fetchTrendHistory / computeSeasonality
+MarketDataIngestionService --> MarketSignalRecordRepository : save
+MarketDataIngestionService ..> MarketSignalRecord : persists
+
+TrendFetchSchedulerService --> TrendFetchJobRepository : state machine reads / writes
+TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/v1/trends/fetch
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Repository → Entity
+' ══════════════════════════════════════════════════════════════════════════
+
+MarketSignalRecordRepository ..> MarketSignalRecord : manages
+MarketEconomicTrendRepository ..> MarketEconomicTrend : manages
+IngestionJobLogRepository ..> IngestionJobLog : manages
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Spring Boot → FastAPI (cross-service HTTP)
+' ══════════════════════════════════════════════════════════════════════════
+
+AIInferenceGatewayService --> marketDataRouter : POST /internal/market-data/*
+AIInferenceGatewayService --> trendsRouter : POST /api/v1/trends/*
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — FastAPI internal
+' ══════════════════════════════════════════════════════════════════════════
+
+marketDataRouter --> pytrends_client : fetch_trends / fetch_trend_history
+marketDataRouter --> seasonal_shift_detector : compute
+seasonal_shift_detector --> market_data_processor : normalize
+
+@enduml

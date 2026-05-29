@@ -6,9 +6,9 @@ Companion diagrams:
 
 | File | Contents |
 |---|---|
-| [`sequence.mmd`](sequence.mmd) | Five-step flow: profile load · analyze · confirm & save · keywords · edit save |
-| [`class.mmd`](class.mmd) | Backend entities, DTOs, controllers, gateway service |
-| [`er.mmd`](er.mmd) | `tbl_msme_operator`, `tbl_business_profile`, `tbl_business_category`, `tbl_classification_logs` |
+| [`sequence.puml`](sequence.puml) | Five-step flow: profile load · analyze · confirm & save (incl. async embed) · keywords · edit save |
+| [`class.puml`](class.puml) | Backend entities, DTOs, controllers, gateway service |
+| [`er.puml`](er.puml) | `tbl_msme_operator`, `tbl_business_profile`, `tbl_business_category`, `tbl_classification_logs` |
 
 ---
 
@@ -38,12 +38,12 @@ The Business Input experience spans two surfaces. The **Uniqueness Calibration**
 | Component Name | Description & Purpose | Type / Format |
 |---|---|---|
 | `BusinessProfileController` | `GET /api/v1/business-profile` (load by operator), `PUT /api/v1/business-profile` (upsert), `POST /api/v1/business-profile/keywords`. | Spring `@RestController` |
-| `ClassificationController` | `POST /api/v1/classification/analyze` — routes the analyze request to the AI gateway. | Spring `@RestController` |
+| `ClassificationAnalyzeController` | `POST /api/v1/classification/analyze` — routes the analyze request to the AI gateway. | Spring `@RestController` |
 | `AIInferenceGatewayService` | Reactive WebClient bridge to the FastAPI microservice; methods `classifyCategories`, `generateKeywords`. | Spring `@Service` |
 | `BusinessProfile` (entity) | JPA entity for `tbl_business_profile`; comma-joined `coreServices` and `categories`; `@PrePersist`/`@PreUpdate` hooks. | JPA entity |
 | `BusinessProfileRepository` | `JpaRepository<BusinessProfile, UUID>` with custom `findFirstByUserId(UUID)`. | Spring Data repository |
 | `BusinessProfileDto` | 8-field Java record mirroring frontend `ProfileData`. | Java record |
-| `AnalyzeRequest` / `AnalyzeResponse` / `CategoryAllocationRecord` | DTO records for the analyze contract. | Java records |
+| `AnalyzeRequest` / `AnalyzeResponse` / `CategoryAllocation` | DTO records for the analyze contract. | Java records |
 | `KeywordRequest` | DTO record for the keyword generation contract. | Java record |
 | `V1__init_schema.sql` | Initial schema for all Module 1 tables. | Flyway migration |
 | `V2__module1_profile_multi_category.sql` | Drops `business_type`; renames `finalized_category` → `categories (TEXT)`; reseeds category vocabulary; inserts dev operator row. | Flyway migration |
@@ -55,7 +55,7 @@ The Business Input experience spans two surfaces. The **Uniqueness Calibration**
 | `GET` | `/api/v1/business-profile` | `BusinessProfileController.get` | `apiClient.loadProfile` (App mount) |
 | `PUT` | `/api/v1/business-profile` | `BusinessProfileController.save` | `apiClient.saveProfile` (Confirm + Edit save) |
 | `POST` | `/api/v1/business-profile/keywords` | `BusinessProfileController.keywords` | `apiClient.generateKeywords` (BusinessProfile) |
-| `POST` | `/api/v1/classification/analyze` | `ClassificationController.analyze` | `apiClient.classifyAnalyze` (Calibration Phase 1) |
+| `POST` | `/api/v1/classification/analyze` | `ClassificationAnalyzeController.analyze` | `apiClient.classifyAnalyze` (Calibration Phase 1) |
 
 ## Processing Logic
 
