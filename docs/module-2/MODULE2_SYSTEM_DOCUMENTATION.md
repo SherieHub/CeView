@@ -33,7 +33,7 @@ Handled by `ceview/components/module-2/2.2-market-radar/MarketRadarView.tsx`.
    - Direct vs. connecting flight indicator (green/gold).
    - Market Potential progress bar (`matchScore / 100`).
    - A `<SurgeBadge>` overlay when any `chartData` point has `spike === 1`.
-4. **Refresh Forecast button**: Only enabled when `businessProfileId` is present. Clicking calls `api.analyzeMarkets(businessProfileId)` → `POST /api/v1/forecasting/analyze/{profileId}`. This triggers the full AI pipeline (ingestion + Groq/Gemini + XGBoost). The button shows a spinning `<RefreshCw>` icon during the request. Errors are surfaced via `<ServerErrorBanner>` with the structured AI error code.
+4. **Refresh Forecast button**: Only enabled when `businessProfileId` is present. Clicking calls `api.analyzeMarkets(businessProfileId)` → `POST /api/v1/forecasting/analyze/{profileId}`. This triggers the full AI pipeline (ingestion + Groq `llama-3.3-70b-versatile` + XGBoost). The button shows a spinning `<RefreshCw>` icon during the request. Errors are surfaced via `<ServerErrorBanner>` with the structured AI error code.
 5. **Detail panel** (selected market):
    - `<LiveAlertBanner>`: shows a spike-alert or strategic directive text.
    - `<StrategicDirectivePanel>`: displays the AI-generated actionable directive + "Plan Content" CTA navigating to Module 3.
@@ -51,7 +51,7 @@ Handled by `ceview/components/module-2/2.2-market-radar/MarketRadarView.tsx`.
    - Points outside the backend's range (e.g., `"Wk -4"` or `"Wk +5"` through `"Wk +12"`) are **synthetically interpolated** using a sine-based curve: `Math.sin(offset) × 5` for past, `Math.cos(offset) × 8` for future, clamped to `[20, 100]`.
 3. **Three data series rendered**:
    - **History** (solid navy line): `dataKey="history"` — real `MarketSignalRecord` trend index values.
-   - **Forecast** (dashed gold line): `dataKey="forecast"` — Groq/Gemini per-week predictions.
+   - **Forecast** (dashed gold line): `dataKey="forecast"` — Groq per-week predictions.
    - **Seasonality** (sky-blue area fill): `dataKey="seasonality"` — composite seasonality score × 100.
 4. **Demand zones** (reference areas on Y-axis):
    - **Low Demand** `[0, 30]`: off-white background — "Normal traffic. Hold current pricing."
@@ -142,7 +142,7 @@ Module 2 has **two distinct operational modes**: an automated background data co
 4. `runPipeline(profileId)` executes `@Transactional` — all three markets' DB writes succeed or roll back together:
    - **Phase A** (no AI): for each market, calls `externalClient.fetchGdpTrend()` (World Bank 5-year GDP) and `externalClient.fetchForexTrend()` (12 monthly forex points). Builds enriched sequence via `EnrichedSequenceBuilder.buildSequence()` (reads all `MarketSignalRecord` rows → chronological trend series + rolling stats from the latest row).
    - Injects GDP multi-year trend direction: `delta = newest_gdp_point − oldest_gdp_point`; `direction = "growing"/"declining"/"flat"` based on `±0.3pp` threshold.
-   - **Phase B** (single batch AI call): sends all three market sequences in one `POST /internal/forecasting/inference-batch` call. Returns JSON keyed by market name with 12 weekly forecasts each (Groq) or 4w/12w aggregates + 4 weekly values (Gemini branch). Consuming 1 RPM slot instead of 3.
+   - **Phase B** (single batch AI call): sends all three market sequences in one `POST /internal/forecasting/inference-batch` call. Returns JSON keyed by market name with 12 weekly forecasts each (Groq `llama-3.3-70b-versatile`). Consuming 1 RPM slot instead of 3.
    - **Phase C** (per-market): for each market, calls `POST /internal/forecasting/score` (XGBoost). Persists `ForecastResult` (4w and 12w horizons), `MarketScore`, and `DemandAlert` when `demand4w > rollingAvg7d × 1.2`. Persists `MarketEconomicTrend` snapshot.
 5. Markets sorted by `market_score` descending; `MarketScore.market_rank` updated and re-persisted.
 6. Returns `{ markets: [...] }` with full chart data and insights.
@@ -293,9 +293,9 @@ else:
 
 ---
 
-### Demand Forecasting — Groq/Gemini AI (`gemini_forecaster.py`)
+### Demand Forecasting — Groq AI (`gemini_forecaster.py`)
 
-> **Note on branch divergence**: The `main` branch uses **Groq** (`llama-3.3-70b-versatile` via the OpenAI-compatible Groq API) and produces **12 individual weekly forecasts** (Wk+1…Wk+12). The `paldo` branch uses **Gemini** (`gemini-2.0-flash`) and produces 4 weekly forecasts + aggregate 4w/12w values. The documentation below covers both; the batch/12-week architecture is from the `main` branch.
+> **Note on file naming**: The service file is `gemini_forecaster.py` — this name is a historical artifact from the Phase 2 architectural pivot (BiLSTM → AI API). The runtime engine is **Groq `llama-3.3-70b-versatile`** via the OpenAI-compatible Groq API. It produces **12 individual weekly forecasts** (Wk+1…Wk+12) per market in batch mode.
 
 **Prompt construction (`_build_prompt`):**
 
@@ -370,7 +370,7 @@ confidence = max(0.70, 1.0 − mape / 100.0)
 
 **3-attempt exponential back-off**: `1 s → 2 s → fail`. On the 3rd failure, `RuntimeError` propagates to the FastAPI router which returns a structured `503` with `code: MOD22_AI_QUOTA_EXCEEDED / MOD22_AI_AUTH_FAILED / MOD22_AI_TIMEOUT / MOD22_AI_UNAVAILABLE`.
 
-**Stub fallback** (`_stub_forecast`): When Groq/Gemini is unavailable:
+**Stub fallback** (`_stub_forecast`): When Groq is unavailable:
 ```python
 # Linear regression on last 4 trend values to derive slope
 slope = (Σ(x - x̄)(y - ȳ)) / (Σ(x - x̄)²)
@@ -588,7 +588,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 |------|------|---------|
 | `MOD22_PROFILE_NOT_READY` | 400 | Profile categories not set — complete UC-1.1 first |
 | `MOD21_ENRICHED_DATASET_EMPTY` | 500 | No signal records exist — ingestion has not run |
-| `MOD22_AI_QUOTA_EXCEEDED` | 503 | Groq/Gemini daily token limit reached |
+| `MOD22_AI_QUOTA_EXCEEDED` | 503 | Groq daily token limit reached (`GROQ_API_KEY` exhausted) |
 | `MOD22_AI_AUTH_FAILED` | 503 | Invalid or missing API key |
 | `MOD22_AI_TIMEOUT` | 503 | AI model timed out after 3 retries |
 | `MOD22_AI_UNAVAILABLE` | 503 | General AI service failure |
@@ -624,7 +624,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 | `POST` | `/internal/market-data/trends` | Current-week PyTrends index (2.1 normal ingestion) |
 | `POST` | `/internal/market-data/trends/history` | 12-week historical PyTrends backfill (first run) |
 | `POST` | `/internal/market-data/seasonality` | Seasonal shift computation from weekly series |
-| `POST` | `/internal/forecasting/inference` | Single-market Groq/Gemini demand forecast |
+| `POST` | `/internal/forecasting/inference` | Single-market Groq demand forecast |
 | `POST` | `/internal/forecasting/inference-batch` | Batch Groq forecast for all 3 markets (1 RPM) |
 | `POST` | `/internal/forecasting/score` | XGBoost economic viability scoring |
 | `POST` | `/api/v1/trends/fetch` | TrendFetchScheduler: one (category, market) pair |
@@ -731,7 +731,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 | Table | Key Columns | Purpose |
 |-------|-------------|---------|
 | `tbl_market_signal_record` | `signal_record_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `trend_index FLOAT`, `forex_rate FLOAT`, `gdp_growth FLOAT`, `seasonality_score FLOAT`, `rolling_average FLOAT`, `rolling_average_7d FLOAT`, `rolling_average_30d FLOAT`, `rolling_std_dev FLOAT`, `spike_indicator BOOLEAN`, `yoy_ratio FLOAT`, `aggregated_at TIMESTAMPTZ` | Per-market weekly signal snapshots; primary source for `EnrichedSequenceBuilder` and chart history |
-| `tbl_forecast_result` | `forecast_result_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `predicted_demand FLOAT`, `forecast_confidence FLOAT`, `mape_score FLOAT`, `mae FLOAT`, `rmse FLOAT`, `forecast_horizon_weeks INT`, `weekly_forecasts_json TEXT` | Groq/Gemini demand predictions; `weekly_forecasts_json` stores `[wk1..wk12]` array as JSON string |
+| `tbl_forecast_result` | `forecast_result_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `predicted_demand FLOAT`, `forecast_confidence FLOAT`, `mape_score FLOAT`, `mae FLOAT`, `rmse FLOAT`, `forecast_horizon_weeks INT`, `weekly_forecasts_json TEXT` | Groq demand predictions; `weekly_forecasts_json` stores `[wk1..wk12]` array as JSON string |
 | `tbl_market_score` | `market_score_id UUID PK`, `forecast_result_id FK`, `market_score FLOAT`, `seasonality_score FLOAT`, `spike_indicator BOOLEAN`, `gdp_per_capita_growth FLOAT`, `forex_vs_php FLOAT`, `historical_arrivals INT`, `market_rank INT` | Composite XGBoost-weighted score + rank |
 | `tbl_demand_alert` | `demand_alert_id UUID PK`, `market_score_id FK`, `alert_level VARCHAR`, `alert_message TEXT`, `trend VARCHAR`, `is_read BOOLEAN`, `window_open_date TIMESTAMPTZ` | Notifications generated when demand4w > rollingAvg × 1.2 |
 | `tbl_market_economic_trend` | `market VARCHAR`, `gdp_latest FLOAT`, `forex_latest FLOAT`, `currency_code VARCHAR`, `gdp_trend_json TEXT`, `forex_trend_json TEXT`, `gdp_points INT`, `forex_points INT`, `fetched_at TIMESTAMPTZ` | Serialised GDP 5-year + forex 12-month trend arrays for frontend charts |
@@ -759,11 +759,11 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 | **External Forex API** | fawazahmed0/currency-api (jsDelivr CDN) | Free, no API key, supports PHP as the base currency, CDN-backed for high availability; uses date-parameterized URLs for historical monthly trend data |
 | **Google Trends** | `pytrends` Python library | Provides normalized search interest (0–100) — the primary demand proxy for Cebu inbound tourism; native-language keyword localization is critical for accurate Asian-market signals |
 | **Jitter rate-limiting** | `random.uniform(4.0, 12.0)` sleep in FastAPI | Sole HTTP 429 mitigation for Google Trends; must be applied after every single `build_payload()` call; designed into the system architecture, not a workaround |
-| **Demand forecasting** | Groq API (`llama-3.3-70b-versatile` — `main` branch) / Gemini (`gemini-2.0-flash` — `paldo` branch) via OpenAI-compatible client | Replaces the original BiLSTM+Transformer model (Phase 2 pivot); prompt-based forecasting enables richer context injection (YoY ratio, GDP trend direction, spike flag) without model retraining |
+| **Demand forecasting** | Groq API (`llama-3.3-70b-versatile`) via OpenAI-compatible client, accessed through `gemini_forecaster.py` | Replaces the original BiLSTM+Transformer model (Phase 2 pivot); prompt-based forecasting enables richer context injection (YoY ratio, GDP trend direction, spike flag) without model retraining. File named `gemini_forecaster.py` — historical artifact from the BiLSTM → AI API pivot. |
 | **Batch inference** | Single LLM call for all 3 markets | Reduces RPM consumption from 3 to 1 per refresh cycle; the `inference-batch` endpoint and `forecast_batch()` function were added specifically to prevent rate-limit 503s on free-tier quotas |
 | **Economic scoring** | XGBoost (`xgboost_market.json`) | Trained tree ensemble for 5-feature economic viability; falls back to a linear weighted-sum stub with identical weights when model file absent |
 | **Signal math** | NumPy (in `market_data_processor.py`) + pure-Python (in `seasonal_shift_detector.py`) | NumPy used for FFT-based legacy seasonality; canonical SeasonalShift pipeline uses pure Python with population std-dev (÷N) to exactly match the SDD §3.2 sample calculation |
-| **Forecast quality gate** | `forecast_validator.py` MAPE ≤ 15% (FR2.12) | Applied after every Groq/Gemini response; `low_confidence_disclaimer` flag returned when exceeded; stub is always tuned to produce MAPE ≤ 14.9% |
+| **Forecast quality gate** | `forecast_validator.py` MAPE ≤ 15% (FR2.12) | Applied after every Groq response; `low_confidence_disclaimer` flag returned when exceeded; stub is always tuned to produce MAPE ≤ 14.9% |
 | **Database** | PostgreSQL 16, `pgvector` extension (shared with Module 1) | `tbl_market_signal_record` uses composite index `(business_profile_id, target_market)` for efficient `EnrichedSequenceBuilder` queries |
 | **Job state machine** | `tbl_trend_fetch_job` (`PENDING → IN_PROGRESS → SUCCESS/FAILED`) | Idempotent upsert + `UNIQUE(category, market, week_of)` prevents duplicate rows; `attempt_count < max_attempts` enables automatic retry on next Sunday's run without human intervention |
 | **Containerisation** | Docker Compose — `fastapi-transformer` port 8001 | Isolated from `fastapi-sbert` (port 8000); Spring Boot `AIInferenceGatewayService` uses separate `@Qualifier("fastapiTransformerClient")` WebClient with 90 s extended timeout for `rank-markets` (6 batches × 4–12 s jitter ≈ up to 75 s live) |

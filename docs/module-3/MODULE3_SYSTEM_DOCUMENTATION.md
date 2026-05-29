@@ -2,6 +2,18 @@
 
 ---
 
+## Diagram Index
+
+| Submodule | Class Diagram | Sequence Diagram | ER Diagram |
+|-----------|--------------|-----------------|------------|
+| [3.1 Content Generation](3.1-content-generation/README.md) | [class.puml](3.1-content-generation/class.puml) | [sequence.puml](3.1-content-generation/sequence.puml) | [er.puml](3.1-content-generation/er.puml) |
+| [3.2 Creative Direction](3.2-creative-direction/README.md) | [class.puml](3.2-creative-direction/class.puml) | [sequence.puml](3.2-creative-direction/sequence.puml) | [er.puml](3.2-creative-direction/er.puml) |
+| [3.3 Compliance Audit](3.3-compliance-audit/README.md) | [class.puml](3.3-compliance-audit/class.puml) | [sequence.puml](3.3-compliance-audit/sequence.puml) | [er.puml](3.3-compliance-audit/er.puml) |
+
+All diagrams are PlantUML (`.puml`), font size 12, portrait layout — render with the VS Code PlantUML extension or any compatible renderer.
+
+---
+
 ## User Flows & Interaction (The Frontend)
 
 Module 3 is the **Content Studio** — a single-view, sequential workflow that takes a business profile and a target market and produces (1) culturally localised promotional captions for four social platforms, (2) AI-generated visual direction and shot lists, and (3) a multimodal compliance score against those outputs. The entire module lives inside `ceview/components/module-3/3.1-content-studio/ContentStudioView.tsx` and is reached by navigating to the `'content'` tab from the Market Radar "Plan Content" CTA or directly from the sidebar.

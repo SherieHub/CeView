@@ -177,6 +177,27 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/compliance/evaluate-full", payload);
     }
 
+    /**
+     * OMCS compliance audit via the LangGraph omcs_agent (Submodule 3.3).
+     *
+     * <p>Payload shape (mirrors ComplianceInputClass on the FastAPI side):
+     * <pre>
+     * {
+     *   "caption":          string,
+     *   "image_url":        string (http(s):// or data: base64),
+     *   "business_profile": { ... },
+     *   "recommendations":  { core_business_context, market_cultural_localization, ... }
+     * }
+     * </pre>
+     *
+     * <p>Returns the full omcs_agent state: profile_semantic_score, rubric_evaluation_data,
+     * recommendations_picture_score, consistency_explanation, pubmat_consistency_score,
+     * omcs_score, status, feedback (plus the echoed inputs).
+     */
+    public Map<String, Object> analyzeOmcsAgent(Map<String, Object> payload) {
+        return postSbert("/internal/omcs/analyze", payload);
+    }
+
     // ─── Module 4 — Analytics report + PES deep-analysis (fastapi-sbert) ───────
 
     public Map<String, Object> generateReport(Map<String, Object> payload) {

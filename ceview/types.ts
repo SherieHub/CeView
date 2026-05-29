@@ -276,6 +276,35 @@ export interface ComplianceResultDTO {
   mismatches?: string[];
 }
 
+/**
+ * OMCS agent audit result (Submodule 3.3) — mirrors backend
+ * ComplianceDtos.OmcsAuditResultDto / FastAPI OmcsAnalysisResponse.
+ * Produced by the LangGraph omcs_agent: the chosen caption + image are scored
+ * against the Submodule 3.2 visual-guide recommendations.
+ */
+export interface OmcsAuditResultDTO {
+  /** Profile semantic alignment score (0-100). */
+  profileSemanticScore: number;
+  /** Per-criterion rubric: { scores: {...}, total }. */
+  rubricEvaluationData: {
+    scores?: Record<string, number>;
+    total?: number;
+    [k: string]: unknown;
+  };
+  /** Rubric total — image vs recommendations (0-100). */
+  recommendationsPictureScore: number;
+  /** Caption/image consistency rationale. */
+  consistencyExplanation: string;
+  /** Caption/image consistency score (0-100). */
+  pubmatConsistencyScore: number;
+  /** OMCS = (0.35×profile)+(0.45×rubric)+(0.20×consistency). */
+  omcsScore: number;
+  /** "Pass" | "Fail". */
+  status: string;
+  /** Diagnostic feedback (root-cause + actionable fixes when failing). */
+  feedback: string;
+}
+
 /** Mirrors backend CreativeDirectionDtos.CreativeDirectionDto. */
 export interface CreativeDirectionDTO {
   visualGuide: string[];

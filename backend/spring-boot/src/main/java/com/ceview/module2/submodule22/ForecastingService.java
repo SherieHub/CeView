@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  *  - {@link #runPipeline} is {@code @Transactional} — all three markets' DB
  *    writes roll back together on any failure.
  *  - seasonalityScore stored as 0–1 in DB; multiplied ×100 only in buildChartData().
- *  - buildChartData always emits exactly 8 labelled points (Wk -3 … Wk +4).
+ *  - buildChartData always emits exactly 24 labelled points (12 history + 12 forecast; see method Javadoc).
  *  - Throws when enriched signal data is absent — run ingestion first (FR2.9).
  */
 @Service
