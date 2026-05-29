@@ -1,0 +1,124 @@
+# Module 3 — Component Tables
+
+---
+
+## 3.1 AI Caption Generation
+
+### Front-End Components
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| ContentStudioView | Main container for all of Module 3. Orchestrates content generation, caption approval, compliance audit, and distribution. On mount calls `api.generateContent()` to produce captions and guides. Manages per-platform approved captions and stages them for the compliance audit. | React view component |
+| AIContentMatrixPanel | Displays the three demographic caption variations (Gen Z, Mature, Aspirational) for the active platform. Manages platform tab switching and per-card edited text overrides. Delegates approve and copy actions upward. | React module component |
+| CopywritingOptionCard | Individual caption option card. Renders a demographic badge, character-count bar (red/amber/green), hashtag counter, inline edit mode (textarea + Save/Cancel), copy button, and approve checkmark. Exports `PLATFORM_CHAR_LIMITS` (instagram: 2200, tiktok: 300, facebook: 500). | React composite |
+| PlatformTab | Tab button with active/inactive border styling for Instagram, TikTok, and Facebook platform switching. | React base component |
+| VisualDirectionBoard | Renders the AI-generated visual direction guide (shot composition tips) as a numbered list of steps. Receives `guide: string[]` from the content generation response. | React composite |
+| BlueprintStepItem | Numbered list item used inside VisualDirectionBoard. Renders an index badge alongside the step text. | React base component |
+| MediaCaptionManager | Container for the staged caption textarea and media upload area. Composes CaptionTextArea, MediaDropzone, and MediaPreviewCard. | React module component |
+| CaptionTextArea | Labelled textarea for the staged caption text that is submitted to the compliance audit. | React base component |
+| MediaDropzone | Drag-and-drop file upload zone. Handles drag-over state, file-input click, and validates `file.type.startsWith('image/')`. Calls `onFileIngest` with the selected file. | React composite |
+| MediaPreviewCard | Uploaded image thumbnail with gradient overlay showing file name and size. Displays "Ready for audit" label and a remove button. | React composite |
+| UploadIconBadge | Rounded icon container with a camera/upload icon, used as the empty-state placeholder inside MediaDropzone. | React base component |
+| CopyTargetBtn | Toggle button that switches between a "Copy" and "Copied ✓" state for 2.2 seconds after `navigator.clipboard.writeText()` is called. | React base component |
+
+### Back-End Components — Spring Boot
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| ContentController | Exposes `POST /api/v1/content/generate` — receives GenerateRequest and returns ContentResponseDto. Exposes `POST /api/v1/content/approve` — marks rows in tbl_localized_promotional_content as approved for the given market. | Spring @RestController |
+| ContentGenerationService | Orchestrates FR3.1–FR3.10 pipeline: loads BusinessProfile + categories + uniqueness score (FR3.1), enriches the payload with Module 2 ForecastResult and MarketScore data (FR3.4), calls AIInferenceGatewayService.generateCaption() (FR3.5/FR3.6), deserializes response, persists 4 platform rows to tbl_localized_promotional_content (FR3.10), and writes a ContentGenerationLog entry. | Spring @Service |
+| ContentApprovalService | Marks all content rows for (profileId, market) as approved by setting approvalStatus=true and approvedAt. Provides `getApprovedCaptions()` for downstream services and `hasApprovedContent()` as a dependency guard for Creative Direction (FR3.11). | Spring @Service |
+| LocalizedPromotionalContent | JPA entity for `tbl_localized_promotional_content`. One row per platform per generate call. Stores generatedCaption, contentDirection, hashtags, cta, toneSuggestion, framework, source, approvalStatus, generatedAt, approvedAt. | JPA entity |
+| LocalizedPromotionalContentRepository | `JpaRepository<LocalizedPromotionalContent, UUID>` — queries by (profileId, market, platform) and supports approval batch updates. | Spring Data repository |
+| ContentGenerationLog | JPA entity for `tbl_content_generation_log`. Audit record per generation call: contentLogId, businessProfileId, generationStatus, diagnostics (TEXT), loggedAt. | JPA entity |
+| ContentGenerationLogRepository | `JpaRepository<ContentGenerationLog, UUID>` — persists generation audit records. | Spring Data repository |
+| AIInferenceGatewayService | Reactive WebClient bridge to fastapi-sbert (port 8000). Module 3.1 method: `generateCaption(Map payload)` — POST to `/generate` on the content router. | Spring @Service |
+| ContentDtos | Container class for all content DTOs: GenerateRequest, ContentResponseDto, MarketHeaderDto, PlatformContentDto, CaptionsDto (instagram/tiktok/facebook/naver). | Java records |
+
+### Back-End Components — FastAPI (fastapi-sbert)
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| content.py | FastAPI router at `/generate`. Calls `cultural_research.research_market(market)` for traveler behaviour context, builds CaptionInputClass, invokes the LangGraph `caption_generation_service`, and transforms the agent's 6-field per-caption output into ContentResponse (options[], optionNames[], optionMetadata[], guide[]). Injects hardcoded Naver Blog content for Korean market. | FastAPI router |
+| caption_generation.py | Service function `caption_generation_service(input: CaptionInputClass)`. Calls `caption_generation_agent.ainvoke(input.model_dump())` and returns `{"final_captions": {...}, "source": "groq"/"fallback"}`. | Python service |
+| graph.py | LangGraph workflow (`caption_generation_agent`). Two nodes: `analyze_services` (filters and prioritises business services) → `generate_platform_captions` (calls AgentLLMModel/Groq to produce 3 caption variations per platform with the 6-field metadata schema). Compiled as `caption_generation_agent = workflow.compile()`. | LangGraph workflow |
+| state.py | `SocialAgentState` TypedDict defining input fields (business_name, description, uvp, services, market, forecast_context, research_context) and output fields (relevant_priority_services, extra_additional_services, final_captions, source) shared across LangGraph nodes. | LangGraph state |
+| AgentLLMModel.py | Thread-safe singleton wrapping `ChatGroq(llama-3.3-70b-versatile, temperature=0.7)`. Self-heals on re-import if GROQ_API_KEY was absent at first load. Used by the LangGraph `generate_platform_captions` node. | Singleton |
+| CaptionInputClass.py | Pydantic BaseModel for the LangGraph agent input: business_name, business_description, business_uvp, business_services, market_category, target_market, forecast_context, research_context. | Pydantic model |
+| cultural_research.py | Provides `research_market(market)` — returns a structured dict of traveler behaviour, tourism preferences, platform content styles, and language nuances per market (korea/japan/usa). Used to build research_context for the LangGraph prompt. | Python service |
+
+---
+
+## 3.2 Creative Direction
+
+### Front-End Components
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| DistributionPanel | Multi-platform deployment panel at the bottom of ContentStudioView. Allows the operator to select one or more target platforms (Instagram, TikTok, Facebook) and fire a simultaneous deploy action. Shows "Analytics will propagate to Phase 5 dashboard within 2–4 hours" confirmation after posting. | React module component |
+| PlatformSyncCard | Individual platform card inside DistributionPanel. Displays the platform icon, handle, verified badge, and a toggle-select checkmark. | React composite |
+
+### Back-End Components — Spring Boot
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| CreativeDirectionController | Exposes `POST /api/v1/creative-direction/generate/{profileId}` — guards that approved content exists (FR3.11), then delegates to CreativeDirectionService. Exposes `POST /api/v1/creative-direction/approve/{profileId}` — marks the latest output as approved. Both accept an optional `?market=` query param. | Spring @RestController |
+| CreativeDirectionService | Orchestrates FR3.11–FR3.19 pipeline: dependency check via ContentApprovalService.hasApprovedContent() (FR3.11), retrieves approved captions, loads BusinessProfile + Module 2 forecast context, calls AIInferenceGatewayService.generateCreative(), persists CreativeDirectionOutput and CreativeDirectionLog (FR3.19). Returns CreativeDirectionDto. | Spring @Service |
+| CreativeApprovalService | `approveLatest(UUID profileId, String market)` — queries the most recent CreativeDirectionOutput for the profile/market and sets approvalStatus=true + approvedAt. | Spring @Service |
+| ContentApprovalService | `hasApprovedContent(UUID profileId, String market)` — reads tbl_localized_promotional_content to guard creative direction generation. Also provides `getApprovedCaptions()` for injecting approved text into the creative prompt (FR3.11). | Spring @Service (shared from 3.1) |
+| CreativeDirectionOutput | JPA entity for `tbl_creative_direction_output`. Stores shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences, platformRecommendations, visualTone (all TEXT/JSON), approvalStatus, generatedAt, approvedAt. | JPA entity |
+| CreativeDirectionOutputRepository | `JpaRepository<CreativeDirectionOutput, UUID>` — queries latest output per (profileId, market) and supports approval updates. | Spring Data repository |
+| CreativeDirectionLog | JPA entity for `tbl_creative_direction_log`. Audit record: creativeLogId, businessProfileId, generationStatus, diagnostics (TEXT), loggedAt. | JPA entity |
+| CreativeDirectionLogRepository | `JpaRepository<CreativeDirectionLog, UUID>` — persists creative direction audit records. | Spring Data repository |
+| AIInferenceGatewayService | Reactive WebClient bridge. Module 3.2 method: `generateCreative(Map payload)` — POST to `/generate` on the creative router (fastapi-sbert port 8000). | Spring @Service |
+| CreativeDirectionDtos | Container class for creative direction records: CreativeDirectionDto (visualGuide, shots, moodboard), ShotDto (label, description, lighting), MoodboardDto (palette, references). | Java records |
+
+### Back-End Components — FastAPI (fastapi-sbert)
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| creative.py | FastAPI router at `/generate`. Receives CreativeGenerateRequest (market, businessName, categories, approvedCaptions, uniquenessScore, forecastContext). Calls `gemini_client.generate_creative_direction()` using approved captions as the creative brief. Returns CreativeDirectionResponse (visualGuide, shots, moodboard, platformRecommendations, source). Falls back to curated per-market templates when Gemini is unavailable. | FastAPI router |
+| gemini_client.py | Python service wrapping the Gemini API. Module 3.2 function: `generate_creative_direction(market, businessName, categories, approvedCaptions, uniquenessScore, forecastContext)` — constructs a structured prompt and returns shot list, lighting suggestions, moodboard palette, and platform-specific visual recommendations. | Python service |
+
+---
+
+## 3.3 OMCS Compliance Evaluation
+
+### Front-End Components
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| SmartOptimizationBoard | Main compliance audit panel. Toggle activates the OMCS pipeline when media is uploaded and a caption is staged. Shows a 6-step animated progress bar while the audit runs, then renders score gauge, OMCS sub-score chips (CAS/VAS/HCS), interpretation badge, and detected mismatches. Uses the full `/evaluate-full-json` path when a businessProfileId is present. | React module component |
+| ComplianceGauge | SVG circular progress gauge rendering the overall compliance score (0–100 %). Color-coded: green ≥ 80, gold 60–79, red-orange < 60. | React composite |
+| ChecklistIndicator | Static three-item visual checklist ("Image Check", "Text Reader", "Meaning Matcher") rendered inside SmartOptimizationBoard as a progress indicator while the audit is running. | React base component |
+| AuditEmptyBanner | Warning banner displayed when the audit toggle is on but no media file has been uploaded yet. Prompts the operator to upload an image. | React base component |
+| FeedbackList | Renders an ordered list of warning items or revision tips returned in the compliance gaps or mismatches arrays. | React base component |
+
+### Back-End Components — Spring Boot
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| ComplianceController | Exposes four endpoints: `POST /api/v1/compliance/evaluate-json` (basic Gemini path), `POST /api/v1/compliance/evaluate-full-json` (full OMCS pipeline with sub-scores, uses profileId to enrich with approved captions and creative context). Also exposes multipart variants `/evaluate` and `/evaluate-full` for form submissions. | Spring @RestController |
+| ComplianceAnalysisService | Orchestrates FR3.21–FR3.30 pipeline: (FR3.21) retrieves approved captions from ContentApprovalService and visual context from CreativeDirectionOutputRepository; (FR3.22) assembles enriched EvaluateFullRequest; attempts OMCS path via fastapi-compliance; on failure falls back to fastapi-sbert full path; on all failures falls back to basic Gemini; (FR3.28/29) persists ComplianceEvaluationResult and appends ComplianceRevisionHistory. | Spring @Service |
+| ComplianceEvaluationResult | JPA entity for `tbl_compliance_evaluation_result`. Stores caption, casScore, vasScore, hcsScore, omcsScore (all Double), score (legacy Integer), complianceThreshold, alignedItems, gapItems, mismatches, complianceInterpretation, source, revisionNumber, approvalStatus, evaluatedAt. | JPA entity |
+| ComplianceEvaluationResultRepository | `JpaRepository<ComplianceEvaluationResult, UUID>` — queries results by (profileId, market) and increments revisionNumber for re-submissions. | Spring Data repository |
+| ComplianceRevisionHistory | JPA entity for `tbl_compliance_revision_history`. Tracks each revision cycle: revisionId, originalEvalId (FK), businessProfileId, selectedMarket, revisionNumber, submittedCaption, casScore, omcsScore, complianceThreshold, submittedAt. | JPA entity |
+| ComplianceRevisionHistoryRepository | `JpaRepository<ComplianceRevisionHistory, UUID>` — persists each resubmission as a new history row. | Spring Data repository |
+| AIInferenceGatewayService | Reactive WebClient bridge. Module 3.3 methods: `evaluateCompliance(Map)` → fastapi-sbert `/evaluate`; `evaluateComplianceFull(Map)` → fastapi-sbert `/evaluate-full`; `evaluateOmcs(Map)` → fastapi-compliance `/evaluate-omcs`. | Spring @Service |
+| ComplianceDtos | Container class: EvaluateRequest (caption, market, mediaName, mediaSize), EvaluateFullRequest (+ approvedCaptions, categories, visualTone, shotListContext), ComplianceResultDto (score, casScore, vasScore, hcsScore, omcsScore, interpretation, aligned, gaps, mismatches, source). | Java records |
+
+### Back-End Components — FastAPI (fastapi-sbert)
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| compliance.py | FastAPI router. Exposes `POST /evaluate` (basic Gemini single-score path) and `POST /evaluate-full` (full CAS+VAS+HCS→OMCS pipeline). The full path computes CAS via SentenceBertScorer, VAS via gemini_client multimodal, HCS via SentenceBertScorer deterministic rules, then calculates OMCS = (0.35×CAS) + (0.45×VAS) + (0.20×HCS) and returns interpretation label. | FastAPI router |
+| sentence_bert_scorer.py | Implements `compute_cas(submitted_caption, approved_captions)` — E5 cosine similarity vs approved captions (0–100); falls back to keyword overlap. Implements `compute_hcs(caption, market, categories, …)` — deterministic 6-rule checker: category alignment (20 pt), market cultural consistency (20 pt), seasonal appropriateness (20 pt), promotional tone conformity (15 pt), recommendation adherence (15 pt), caption-visual consistency (10 pt). Returns cumulative 0–100. | Python service |
+| gemini_client.py | Module 3.3 functions: `evaluate_compliance(caption, market)` — basic Gemini single-score; `evaluate_compliance_multimodal(caption, approved_captions, visual_tone, market)` — Gemini VAS evaluation returning vasScore (0–100) and visual_mismatches list. | Python service |
+
+### Back-End Components — FastAPI (fastapi-compliance)
+
+| Component Name | Description & Purpose | Type / Format |
+|---|---|---|
+| compliance.py | FastAPI router. Exposes `POST /api/v1/compliance/evaluate-omcs`. Computes Ss via omcs_service, Ma via groq_client, Hc via omcs_service, then OMCS = (0.35×Ss) + (0.45×Ma) + (0.20×Hc). Status: success (≥ 0.80) returns null feedback; failure (< 0.80) returns visual_deviations, token_level_attribution, and actionable_revision_guidance. | FastAPI router |
+| omcs_service.py | `compute_ss(submission, recommendation)` — multilingual-e5-small SBERT cosine similarity (threshold 0.80). `compute_hc(submission, heuristicRules)` — deterministic keyword-match ratio against required rules list. `extract_failing_tokens(submission, recommendation)` — returns token-level diff for failure feedback. | Python service |
+| groq_client.py | `evaluate_ma(ai_recommendation, submission_text, media_name, media_size)` — Groq LLM multimodal alignment scoring returning (ma_score: float 0–1, visual_mismatches: list). `generate_failure_feedback(…)` — generates visual_deviations and actionable_revision_guidance strings on OMCS failure. | Python service |
