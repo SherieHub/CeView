@@ -1,0 +1,81 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 4.1 — Campaign Engagement Metrics: Entity Relationships
+
+entity "tbl_campaign_records" as CR {
+  * campaign_id : UUID <<PK>>
+  --
+  <<Stage 1 — Raw Inputs>>
+  * impressions    : BIGINT
+  * clicks         : BIGINT
+  * ad_spend       : DOUBLE
+  * revenue        : DOUBLE
+  * conversions    : BIGINT
+  * bookings       : BIGINT
+  * new_customers  : BIGINT
+  * period_start   : VARCHAR(20)
+  * period_end     : VARCHAR(20)
+  * analysis_weeks : INT
+  * created_at     : TIMESTAMPTZ
+  --
+  <<Stage 2 — Derived KPIs (after MetricsCalcService)>>
+  ctr        : DOUBLE
+  cpc        : DOUBLE
+  conv_rate  : DOUBLE
+  roas       : DOUBLE
+  cac        : DOUBLE
+  updated_at : TIMESTAMPTZ
+  --
+  <<Stage 3 — PES (after FastAPI or FR4.26)>>
+  pes_score  : DOUBLE
+  pes_label  : VARCHAR(50)
+}
+
+entity "KPI Definition\n<<constant>>" as KD {
+  * metric_key    : VARCHAR(10) <<PK>>
+  --
+  formula         : VARCHAR(100)
+  unit            : VARCHAR(5)
+  inverse_logic   : BOOLEAN
+  flag_condition  : VARCHAR(60)
+}
+
+entity "FunnelStage\n<<transient>>" as FS {
+  * sequence_order : INT <<PK>>
+  --
+  stage    : VARCHAR(30)
+  value    : BIGINT
+  dropoff  : VARCHAR(10)
+}
+
+entity "CampaignSnapshot\n<<read-only view>>" as CS {
+  * campaign_id   : UUID <<FK>>
+  --
+  period_start    : VARCHAR(20)
+  period_end      : VARCHAR(20)
+  pes_score       : DOUBLE
+  pes_label       : VARCHAR(50)
+  ctr, cpc        : DOUBLE
+  roas, conv_rate : DOUBLE
+  cac             : DOUBLE
+}
+
+KD    ||..o{ CR  : "defines derivation rule\nfor KPI columns"
+CR    ||..o{ FS  : "raw values generate\nfunnel stages"
+CR    ||..||  CS  : "projected into\nhistory snapshot"
+
+note bottom of CR
+  Indexes:
+  • idx_campaign_records_created_at DESC
+  • idx_campaign_records_pes_score (partial, NOT NULL)
+  Seed data: 10-week Cebu MSME progression
+  Weeks 1-3: Fair | Week 4: Good (KOL spike)
+  Weeks 5-8: Good | Weeks 9-10: Excellent
+end note
+
+@enduml

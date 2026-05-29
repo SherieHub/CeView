@@ -1,0 +1,90 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 4.2 — PES Computation Pipeline (triggered by POST /manual; Primary & FR4.26 Fallback)
+
+participant "EngagementMetrics\nController" as AC
+participant "AI Gateway\nService" as AIS
+participant "FastAPI\nPES Service" as FPS
+participant "Normalization\nEngine" as NE
+participant "Weight\nRecalibrator" as WR
+participant "Groq API" as Groq
+participant "Campaign\nRepository" as Repo
+participant "PES Fallback\nService (FR4.26)" as FB
+
+group Primary Path (FastAPI available)
+  AC -> AIS: computePesFromRaw(rawPayload)
+  AIS -> FPS: POST /internal/pes-compute/analyze
+
+  FPS -> FPS: compute_base_metrics(raw)
+  note right of FPS
+    CTR, CPC, CR, ROAS, CAC computed
+    Zero denominator → flagged[]
+    e.g. "CTR (impressions = 0)"
+  end note
+
+  FPS -> NE: normalize(metrics, METRIC_BOUNDS)
+  note right of NE
+    Formula: clamp01((raw - min) / (max - min))
+    Cebu MSME Bounds:
+    CTR [0%, 10%]  CPC [₱0.01, ₱500]
+    CR  [0%, 15%]  ROAS [0×, 8×]
+    CAC [₱1, ₱5000]
+    Cost metrics (CPC, CAC): n_inv = 1.0 - n
+  end note
+  NE --> FPS: normalizedMetrics
+
+  FPS -> WR: recalibrate(flaggedMetrics)
+  note right of WR
+    Remove flagged weights
+    Redistribute proportionally:
+    effective[k] = base[k] / sum(active)
+    Guarantees sum(effective) = 1.00
+  end note
+  WR --> FPS: effectiveWeights
+
+  FPS -> FPS: compute_pes(normalized, weights)
+  note right of FPS
+    PES = Σ(normalized[k] × effective[k])
+    PES ∈ [0.0, 1.0]
+    Label: <0.40 Poor | 0.40 Fair
+           0.60 Good  | >=0.80 Excellent
+  end note
+
+  FPS -> Groq: pes_compute_insights(breakdown)
+  Groq --> FPS: weakestStage + recommendations
+
+  FPS --> AIS: PesAnalysisResult
+  AIS --> AC: PesResult {score, label, breakdown}
+
+  AC -> Repo: record.enrichWithPes(score, label)
+  AC -> Repo: save(record) [Stage 3: PES persisted]
+  Repo --> AC: updatedRecord
+end
+
+group FR4.26 Fallback (FastAPI unavailable or timeout >30s)
+  AC -> FB: PESComputationService.compute(metrics)
+  note right of FB
+    Same formula as FastAPI (simplified):
+    roasN = clamp01(roas / 8.0)
+    crN   = clamp01(convRate / 15.0)
+    cacN  = 1 - clamp01((cac-1)/(5000-1))
+    ctrN  = clamp01(ctr / 10.0)
+    cpcN  = 1 - clamp01((cpc-0.01)/(500-0.01))
+    PES = roasN×0.35 + crN×0.30 + cacN×0.15
+        + ctrN×0.15 + cpcN×0.05
+  end note
+  FB --> AC: PesResult (fallback, no AI insights)
+  AC -> Repo: save with fallback PES
+  note right of AC
+    No error returned to frontend.
+    Response always fully populated.
+    [Module4 FR4.26] logged for monitoring.
+  end note
+end
+
+@enduml

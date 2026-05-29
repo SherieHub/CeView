@@ -1,4 +1,4 @@
-package com.ceview.module4;
+package com.ceview.module4.engagement;
 
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import org.springframework.stereotype.Service;
@@ -6,6 +6,12 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.ArrayList;
 
+/**
+ * Submodule 4.1 — Campaign Engagement Metrics.
+ *
+ * <p>KPI + funnel computation, default demo metrics, business-impact funnel
+ * transition ranking, and synthetic time-series generation for the report agent.
+ */
 @Service
 public class MetricsCalculationService {
 
@@ -47,6 +53,20 @@ public class MetricsCalculationService {
         );
 
         return new MetricsResponse(metrics, funnel);
+    }
+
+    /**
+     * Default campaign metrics for the EngagementMetricsBoard and as a shared
+     * baseline for the PES (4.2) and prescriptive report (4.3) submodules.
+     *
+     * @param weeks Analysis window — 4 (default) or 8. Scales demo defaults proportionally.
+     */
+    public MetricsResponse defaultMetrics(int weeks) {
+        int scale = (weeks == 8) ? 2 : 1;
+        return compute(new ManualIngestRequest(
+                150_000 * scale, 7_200 * scale, 5_000.0 * scale, 16_000.0 * scale,
+                350 * scale, 180 * scale, 80 * scale, null, null
+        ));
     }
 
     /**

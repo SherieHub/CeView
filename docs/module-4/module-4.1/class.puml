@@ -1,0 +1,121 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+skinparam padding 2
+skinparam linetype ortho
+
+package "4.1 Campaign Engagement Metrics" {
+
+  package "React Frontend" #EEF2FF {
+    class CampaignAnalyticsView {
+      -dashboardActive: boolean
+      -weeks: 4|8
+      -metricsData: ManualIngestResponse
+      +render()
+    }
+    class DataIngestionForm {
+      -impressions, clicks: number
+      -adSpend, revenue: number
+      -conversions, bookings: number
+      -newCustomers: number
+      -submitting: boolean
+      +handleSubmit()
+      +validateInputs(): boolean
+    }
+    class EngagementMetricsBoard {
+      +weeks: 4|8
+      +onWindowChange(w: 4|8)
+      +renderKpiCards()
+    }
+    class MetricCard {
+      +label: string
+      +value: number
+      +unit: string
+      +trend: number
+      +inverseLogic: boolean
+    }
+    class CustomerJourneyFunnel {
+      -history: CampaignSnapshot[]
+      +fetchHistory(weeks: 4|8)
+      +renderEfficiencyChart()
+      +renderCostChart()
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class EngagementMetricsController {
+      +metrics(weeks: int): MetricsResponse
+      +manualIngest(req: ManualIngestRequest): ManualIngestResponse
+      +history(weeks: int): CampaignHistoryResponse
+    }
+    class MetricsCalculationService {
+      +compute(raw: RawInput): MetricsResult
+      -calcCTR(clicks, impressions): double
+      -calcCPC(adSpend, clicks): double
+      -calcCR(bookings, clicks): double
+      -calcROAS(revenue, adSpend): double
+      -calcCAC(adSpend, newCustomers): double
+      -flagIfZeroDenominator(metric, reason): void
+    }
+    class CampaignRecord {
+      +campaignId: UUID
+      +impressions, clicks: long
+      +adSpend, revenue: double
+      +conversions, bookings, newCustomers: long
+      +ctr, cpc, convRate, roas, cac: double
+      +pesScore: double
+      +pesLabel: String
+      +{static} from(raw): CampaignRecord
+      +enrichWithKpis(result: MetricsResult)
+      +enrichWithPes(score: double, label: String)
+    }
+    interface CampaignRecordRepository <<JPA>> {
+      +save(record): CampaignRecord
+      +findAllByOrderByCreatedAtDesc(pageable): List
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class ManualIngestRequest {
+      +impressions, clicks: long
+      +adSpend, revenue: double
+      +conversions, bookings, newCustomers: long
+    }
+    class ManualIngestResponse {
+      +metrics: Map<String, MetricValue>
+      +funnel: FunnelStage[]
+      +pes: PesResult
+    }
+    class FunnelStage {
+      +stage: String
+      +value: long
+      +dropoff: String
+    }
+    class CampaignSnapshot {
+      +periodStart, periodEnd: String
+      +pesScore: double
+      +ctr, cpc, roas, convRate, cac: double
+    }
+  }
+}
+
+CampaignAnalyticsView *-- DataIngestionForm
+CampaignAnalyticsView *-- EngagementMetricsBoard
+CampaignAnalyticsView *-- CustomerJourneyFunnel
+EngagementMetricsBoard *-- "5" MetricCard
+
+DataIngestionForm ..down.> EngagementMetricsController : POST /api/v1/analytics/manual
+CustomerJourneyFunnel ..down.> EngagementMetricsController : GET /api/v1/analytics/history
+
+EngagementMetricsController --> MetricsCalculationService : compute KPIs
+EngagementMetricsController --> CampaignRecordRepository : persist record
+EngagementMetricsController ..down.> ManualIngestResponse : returns
+
+ManualIngestRequest ..up.> CampaignRecord : creates via from()
+ManualIngestResponse *-- FunnelStage
+
+' ── Stack packages straight top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "DTOs"
+
+@enduml

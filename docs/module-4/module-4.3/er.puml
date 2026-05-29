@@ -1,0 +1,97 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 4.3 — AI-Generated Prescriptive Report: Entity Relationships
+
+entity "tbl_campaign_records" as CR {
+  * campaign_id    : UUID <<PK>>
+  --
+  ctr, cpc         : DOUBLE
+  conv_rate, roas  : DOUBLE
+  cac              : DOUBLE
+  pes_score        : DOUBLE
+  pes_label        : VARCHAR(50)
+  analysis_weeks   : INT
+  created_at       : TIMESTAMPTZ
+}
+
+entity "FunnelTransition\n<<transient>>" as FT {
+  * rank              : INT <<PK>>
+  --
+  stage               : VARCHAR(40)
+  absolute_drop_rate  : DOUBLE
+  rationale           : TEXT
+}
+
+entity "PrescriptiveReport\n<<transient>>" as PR {
+  * report_session_id : UUID <<PK>>
+  --
+  executive_summary    : TEXT
+  recommended_platform : VARCHAR(50)
+  weeks                : INT
+}
+
+entity "FunnelDiagnostic\n<<transient>>" as FD {
+  * rank     : INT <<PK>>
+  --
+  stage      : VARCHAR(40)
+  drop_rate  : VARCHAR(10)
+  insight    : TEXT
+  urgency    : VARCHAR(20)
+}
+
+entity "Recommendation\n<<transient>>" as REC {
+  * rank    : INT <<PK>>
+  --
+  stage     : VARCHAR(40)
+  urgency   : VARCHAR(20)
+  title     : VARCHAR(100)
+  action    : TEXT
+}
+
+entity "AgentState\n<<LangGraph / transient>>" as AS {
+  * session_id        : UUID <<PK>>
+  --
+  metrics_data         : TEXT (JSON)
+  iterations           : INT
+  final_score          : INT
+  needs_human_review   : BOOLEAN
+  warning_message      : TEXT
+}
+
+entity "MetricCondition\n<<Pydantic output>>" as MC {
+  * metric_name    : VARCHAR(10) <<PK>>
+  --
+  trend            : VARCHAR(10)
+  peak_value       : DOUBLE
+  low_value        : DOUBLE
+  current_status   : TEXT
+}
+
+entity "RankedWeakness\n<<Pydantic output>>" as RW {
+  * rank             : INT <<PK>>
+  --
+  metric_name        : VARCHAR(10)
+  weakness_meaning   : TEXT
+  recommendation     : TEXT
+}
+
+CR    ||..o{ FT  : "current funnel values\nused to compute transitions"
+FT    }o..||  PR  : "ranked transitions\nfeed into report"
+PR    ||--o{ FD  : "contains 3 diagnostics"
+PR    ||--o{ REC : "contains 3 recommendations"
+AS    ||--o{ MC  : "generates metric conditions"
+AS    ||--o{ RW  : "identifies ranked weaknesses"
+
+note bottom of AS
+  LangGraph quality gate:
+  score >= 85 AND pass=true → finalize
+  iterations >= 3 → finalize (needs_human_review = true)
+  else → retry with evaluator feedback injected
+end note
+
+@enduml

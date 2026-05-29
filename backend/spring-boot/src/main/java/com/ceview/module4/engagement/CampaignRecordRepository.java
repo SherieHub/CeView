@@ -1,4 +1,4 @@
-package com.ceview.module4;
+package com.ceview.module4.engagement;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Spring Data JPA repository for {@link CampaignRecord}.
+ * Submodule 4.1 — Campaign Engagement Metrics.
+ *
+ * <p>Spring Data JPA repository for {@link CampaignRecord}.
  *
  * <p>Module 4 — SDD §4.1 (UC-4.1 / FR4.26 campaign data persistence).
  *
