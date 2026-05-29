@@ -34,4 +34,5 @@ public final class Module3ErrorCodes {
     public static final String MOD3_COMPLIANCE_GATEWAY_5XX      = "MOD3_COMPLIANCE_GATEWAY_5XX";
     public static final String MOD3_COMPLIANCE_VALIDATION       = "MOD3_COMPLIANCE_VALIDATION";
     public static final String MOD3_COMPLIANCE_STORED           = "MOD3_COMPLIANCE_STORED";
+    public static final String MOD33_OMCS_AGENT_FAILED          = "MOD33_OMCS_AGENT_FAILED";
 }

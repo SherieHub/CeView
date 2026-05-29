@@ -40,10 +40,10 @@ Generates a 3-platform × 3-archetype matrix of market-localized social media ca
 ### Backend — FastAPI (`fastapi-sbert`, port 8000)
 | Component | File | Responsibility |
 |-----------|------|---------------|
-| ContentRouter | `app/routers/content.py` | `POST /internal/content/generate` |
-| CreativeDirectorAgent | `app/agents/creative_director_agent/` | 2-node LangGraph StateGraph |
-| CulturalResearchService | `app/services/cultural_research.py` | SerpAPI live context or curated market templates |
-| AgentLLMModel | `app/core/AgentLLMModel.py` | Thread-safe Groq `llama-3.3-70b-versatile` singleton |
+| ContentRouter | `app/routers/content.py` | Receives `POST /internal/content/generate` from Spring Boot; validates the request schema, invokes the `CreativeDirectorAgent`, and returns the serialized `ContentResponseDto` |
+| CreativeDirectorAgent | `app/agents/creative_director_agent/` | Executes a 2-node LangGraph `StateGraph`: **Node 1** (`analyze_services`) filters the business's services into relevant vs. supplementary; **Node 2** (`generate_platform_captions`) produces a 3-archetype × 3-platform caption matrix (Witty / Formal / Storytelling × Instagram / TikTok / Facebook) with per-caption metadata — Naver captions are hardcoded separately |
+| CulturalResearchService | `app/services/cultural_research.py` | Supplies market-specific traveler context to the agent prompt: attempts a live SerpAPI query ("Cebu Philippines tourism {market} travelers 2024 trends"); on API failure or missing key, falls back to curated `_MARKET_TEMPLATES` covering language nuances, traveler behavior, and platform preferences for Korea, Japan, and USA |
+| AgentLLMModel | `app/core/AgentLLMModel.py` | Thread-safe singleton that initializes and returns the `ChatGroq` client (`llama-3.3-70b-versatile`, temperature 0.7); handles delayed `GROQ_API_KEY` availability via self-healing re-initialization — shared across all Module 3 FastAPI agents |
 
 ## Caption Archetypes
 

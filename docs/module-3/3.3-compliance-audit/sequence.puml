@@ -1,0 +1,107 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 3.3 — Compliance Audit: OMCS Pipeline (CAS + VAS + HCS)
+
+actor Operator as O
+participant "SmartOptimization\nBoard" as UI
+participant "Compliance\nController" as CC
+participant "ComplianceAnalysis\nService" as CAS
+participant "FastAPI\n(SBERT + Groq)" as FP
+participant "tbl_compliance_\nevaluation_result" as DB
+participant "tbl_compliance_\nrevision_history" as RH
+
+== 1. Initiate Audit ==
+
+O -> UI: Upload media + edit caption\nToggle "Activate Audit"
+UI -> UI: Validate caption non-empty\nStart progress bar timer (160ms increments)
+
+UI -> CC: POST /api/v1/compliance/evaluate-full-json\n{caption, market, mediaName, mediaSize, ?profileId}
+
+== 2. Context Retrieval (FR3.21) ==
+
+CC -> CAS: analyze(req, profileId)
+
+CAS -> CAS: fetchApprovedCaptions(profileId, market)\n(query tbl_localized_promotional_content\nWHERE approval_status = true)
+
+CAS -> CAS: fetchCreativeContext(profileId, market)\n(query tbl_creative_direction_output\nfor visual_tone + shot_list_recommendations)
+
+CAS -> CAS: fetchBusinessCategories(profileId)\n(query tbl_business_profile for HCS Rule 1)
+
+== 3. Pipeline Routing (FR3.30) ==
+
+alt enriched context available (approvedCaptions not empty)
+  CAS -> FP: POST /internal/compliance/evaluate-full\n{caption, market, approvedCaptions,\ncategories, visualTone, shotListContext,\nmediaName, mediaSize}
+
+  note right of FP
+    Full OMCS Pipeline:
+
+    CAS — Caption Alignment Score (35%):
+      E5 encode caption + each approved caption
+      max cosine similarity × 100
+      Fallback: keyword overlap if E5 unavailable
+
+    VAS — Visual Alignment Score (45%):
+      Groq evaluates 5 criteria holistically:
+        1. Composition consistency
+        2. Cultural appropriateness
+        3. Visual tone alignment
+        4. Subject emphasis
+        5. Destination relevance
+      Fallback: Korea=74, Japan=76, USA=71
+
+    HCS — Heuristic Compliance Score (20%):
+      6 deterministic rules (always succeeds):
+        Rule 1 — Tourism category alignment (20pts)
+        Rule 2 — Market cultural consistency (20pts)
+        Rule 3 — Seasonal appropriateness (20pts)
+        Rule 4 — Promotional tone conformity (15pts)
+        Rule 5 — Recommendation adherence (15pts)
+        Rule 6 — Caption-visual consistency (10pts)
+
+    OMCS = (0.35 × CAS) + (0.45 × VAS) + (0.20 × HCS)
+  end note
+
+  alt FastAPI success
+    FP --> CAS: ComplianceResponse\n{casScore, vasScore, hcsScore, omcsScore,\naligned, gaps, mismatches, source}
+  else FastAPI 5xx / timeout (AF3.3)
+    FP --> CAS: error / timeout
+    CAS -> FP: POST /internal/compliance/evaluate\n[re-route to basic Groq single-score]
+    FP --> CAS: ComplianceResponse\n{score, interpretation, aligned, gaps}
+  end
+
+else no approved captions (basic path)
+  CAS -> FP: POST /internal/compliance/evaluate\n{caption, market, mediaName, mediaSize}
+  FP --> CAS: ComplianceResponse\n{score, interpretation, aligned, gaps}
+end
+
+== 4. Persist Result (FR3.29) ==
+
+CAS -> CAS: calcRevisionNumber(profileId, market)\n= MAX(revision_number) + 1\n(or 1 on first submission)
+
+CAS -> DB: INSERT tbl_compliance_evaluation_result\n{cas_score, vas_score, hcs_score, omcs_score,\ncompliance_threshold, aligned_items, gap_items,\nmismatches, revision_number}
+
+alt revision_number > 1
+  CAS -> RH: INSERT tbl_compliance_revision_history\n{original_eval_id, revision_number,\nsubmitted_caption, cas_score, omcs_score}
+
+  note right of RH
+    Created only on resubmissions.
+    original_eval_id FK links back to
+    the first evaluation for lineage tracking.
+  end note
+end
+
+DB --> CAS: saved entity
+CAS --> CC: ComplianceResultDto
+CC --> UI: ComplianceResultDto\n{omcsScore, casScore, vasScore, hcsScore,\ncompliance Threshold, aligned, gaps, mismatches}
+
+== 5. Display Results ==
+
+UI -> UI: Progress bar reaches 100%
+UI -> UI: Render ComplianceGauge (OMCS 0-100)\n+ Interpretation badge\n+ CAS / VAS / HCS sub-score chips\n+ FeedbackList (What Works / What Needs Improvement)\n+ Detected Mismatches panel (full pipeline only)
+
+@enduml

@@ -118,6 +118,11 @@ note over FS,Groq: Phase B — Single batch Groq call (1 RPM slot for all 3 mark
 FS -> AIG: runForecastInferenceBatch(allThreeSequences)
 AIG -> FT: POST /internal/forecasting/inference-batch
 FT -> FT: gemini_forecaster.forecast_batch(markets_data)
+note right of FT
+  Service file: gemini_forecaster.py
+  Runtime engine: Groq llama-3.3-70b-versatile
+  (file name is a Phase 2 artifact from BiLSTM -> AI API pivot)
+end note
 FT -> Groq: chat.completions (llama-3.3-70b-versatile, JSON mode, temp=0.1)
 note right of Groq
   Prompt per market: 12-week trend series, rolling stats,

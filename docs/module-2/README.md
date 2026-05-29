@@ -4,9 +4,11 @@ Reference index for every frontend and backend component in Module 2. Companion 
 
 | File | Contents |
 |---|---|
-| [`class.mmd`](class.mmd) | UML class diagram — Spring Boot services, entities, repositories, DTOs, and FastAPI service modules (backend only) |
-| [`sequence.mmd`](sequence.mmd) | Backend sequence diagram for two flows: GET /markets (DB-only read) and POST /analyze (full AI pipeline) |
-| [`er.mmd`](er.mmd) | Entity-relation diagram for all 7 Module 2 database tables with full column detail |
+| [`class.puml`](class.puml) | UML class diagram — Spring Boot services, entities, repositories, DTOs, and FastAPI service modules (backend only) |
+| [`sequence.puml`](sequence.puml) | Backend sequence diagram for two flows: GET /markets (DB-only read) and POST /analyze (full AI pipeline) |
+| [`er.puml`](er.puml) | Entity-relation diagram for all 7 Module 2 database tables with full column detail |
+| [`module-2.1/`](module-2.1/) | Submodule 2.1 dedicated docs — Market Data Ingestion (scheduled cron jobs) |
+| [`module-2.2/`](module-2.2/) | Submodule 2.2 dedicated docs — On-demand AI forecasting pipeline |
 
 ---
 
@@ -19,7 +21,7 @@ Reference index for every frontend and backend component in Module 2. Companion 
 | **Module** | `DemandForecastChart` | [`ceview/components/module-2/2.2-market-radar/components/DemandForecastChart.tsx`](../../ceview/components/module-2/2.2-market-radar/components/DemandForecastChart.tsx) | Recharts `ComposedChart` — history (solid navy line), forecast (dashed gold line), seasonality (blue area fill); 4WK/12WK timeframe toggle; demand-zone `ReferenceArea` bands (Low/Moderate/High Peak); lightning-bolt spike markers; synthetic week interpolation |
 | **Module** | `EconomicInsightsBoard` | [`ceview/components/module-2/2.2-market-radar/components/EconomicInsightsBoard.tsx`](../../ceview/components/module-2/2.2-market-radar/components/EconomicInsightsBoard.tsx) | Two-tab panel: **Economy** — forex rate, GDP growth KPIs, forex trend mini-chart, GDP 5-year mini-chart; **Seasonality** — 12-month peak-month calendar grid, seasonality area chart |
 | **Module** | `LiveAlertBanner` | [`ceview/components/module-2/2.2-market-radar/components/LiveAlertBanner.tsx`](../../ceview/components/module-2/2.2-market-radar/components/LiveAlertBanner.tsx) | Conditional surge-alert strip (red-orange if spike is current, gold if upcoming); market-specific action checklist (pricing, language, booking tactics) |
-| **Module** | `StrategicDirectivePanel` | [`ceview/components/module-2/2.2-market-radar/components/StrategicDirectivePanel.tsx`](../../ceview/components/module-2/2.2-market-radar/components/StrategicDirectivePanel.tsx) | Navy panel with Groq-generated strategic directive text; "Generate Content" CTA → `onNavigateToContent(marketId)` callback to Content Studio |
+| **Module** | `StrategicDirectivePanel` | [`ceview/components/module-2/2.2-market-radar/components/StrategicDirectivePanel.tsx`](../../ceview/components/module-2/2.2-market-radar/components/StrategicDirectivePanel.tsx) | Navy panel with Groq `llama-3.3-70b-versatile`-generated strategic directive text; "Generate Content" CTA → `onNavigateToContent(marketId)` callback to Content Studio |
 | **Composite** | `MarketRankCard` | [`ceview/components/module-2/2.2-market-radar/components/MarketRankCard.tsx`](../../ceview/components/module-2/2.2-market-radar/components/MarketRankCard.tsx) | Market-selector tile — rank badge, `ProgressBar` for matchScore, city, direct-flight pill, `SurgeBadge` overlay when spike detected; selected-state border ring |
 | **Composite** | `TrendAlertCard` | [`ceview/components/module-2/2.1-home/components/TrendAlertCard.tsx`](../../ceview/components/module-2/2.1-home/components/TrendAlertCard.tsx) | Single notification row — date chip, market name, trend label, alert title, animated gold unread dot; click navigates to `MarketRadarView` pre-filtered to that market |
 | **Base** | `MetricHighlight` | [`ceview/components/module-2/2.2-market-radar/components/MetricHighlight.tsx`](../../ceview/components/module-2/2.2-market-radar/components/MetricHighlight.tsx) | Icon + label + value chip; used for Distance to Cebu and Route Type (Direct / Via Manila) |
@@ -37,8 +39,8 @@ Reference index for every frontend and backend component in Module 2. Companion 
 |---|---|---|---|
 | **Controller** | `ForecastingController` | `com/ceview/module2/ForecastingController.java` | `GET /api/v1/forecasting/markets` → DB-only market list; `POST /api/v1/forecasting/analyze/{profileId}` → full AI pipeline; structured error responses with MDC codes |
 | **Controller** | `NotificationController` | `com/ceview/module2/NotificationController.java` | `GET /api/v1/notifications?profileId=UUID` → demand-alert notification list |
-| **Service** | `ForecastingService` | `com/ceview/module2/submodule22/ForecastingService.java` | Orchestrates 3-phase pipeline (ingestion → batch Groq inference → XGBoost scoring); DB-read fast path; 24-point chart data assembly; insight text generation; `@Transactional` persistence |
-| **Service** | `EnrichedSequenceBuilder` | `com/ceview/module2/submodule22/EnrichedSequenceBuilder.java` | Builds Groq prompt payload from `MarketSignalRecord` history: trend series (last 12 weeks), 7d/30d rolling stats, YoY ratio, seasonality score, forex, GDP, holiday flag |
+| **Service** | `ForecastingService` | `com/ceview/module2/submodule22/ForecastingService.java` | Orchestrates 3-phase pipeline (ingestion → batch Groq `llama-3.3-70b-versatile` inference → XGBoost scoring); DB-read fast path; 24-point chart data assembly; insight text generation; `@Transactional` persistence |
+| **Service** | `EnrichedSequenceBuilder` | `com/ceview/module2/submodule22/EnrichedSequenceBuilder.java` | Builds Groq `llama-3.3-70b-versatile` prompt payload from `MarketSignalRecord` history: trend series (last 12 weeks), 7d/30d rolling stats, YoY ratio, seasonality score, forex, GDP, holiday flag |
 | **Service** | `NotificationService` | `com/ceview/module2/submodule22/NotificationService.java` | Queries `DemandAlert → MarketScore → ForecastResult` chain; maps to `NotificationDto`; delegates category-rank supplementary notifications |
 | **Service** | `CategoryRankNotificationService` | `com/ceview/module2/submodule22/CategoryRankNotificationService.java` | Calls FastAPI `/api/v1/trends/rank-markets` per business category; builds cross-market keyword-volume notifications |
 | **Service** | `MarketDataIngestionService` | `com/ceview/module2/submodule21/MarketDataIngestionService.java` | Per-market ingestion: concurrent GDP + forex fetch → PyTrends (12-week backfill or current-week) → seasonality → persist `MarketSignalRecord`; inline 2σ fallback when FastAPI is unreachable |
@@ -57,10 +59,10 @@ Reference index for every frontend and backend component in Module 2. Companion 
 
 | Layer | Component | File | Responsibility |
 |---|---|---|---|
-| **Router** | `forecastingRouter` | `app/routers/forecasting.py` | `POST /inference` (single-market Groq forecast), `POST /inference-batch` (all 3 markets in 1 Groq call, 1 RPM slot), `POST /score` (XGBoost economic viability scoring) |
+| **Router** | `forecastingRouter` | `app/routers/forecasting.py` | `POST /inference` (single-market Groq `llama-3.3-70b-versatile` forecast), `POST /inference-batch` (all 3 markets in 1 Groq call, 1 RPM slot), `POST /score` (XGBoost economic viability scoring) |
 | **Router** | `marketDataRouter` | `app/routers/market_data.py` | `POST /trends` (current-week PyTrends index), `POST /trends/history` (N-week backfill), `POST /seasonality` (4-step seasonal shift detection pipeline) |
 | **Router** | `trendsRouter` | `app/api/trends_router.py` | `POST /fetch` (single category × market trend job for `TrendFetchSchedulerService`), `POST /rank-markets` (cross-market keyword volume ranking) |
-| **Service** | `gemini_forecaster` | `app/services/gemini_forecaster.py` | Groq `llama-3.3-70b-versatile` demand forecasting; 12 individual weekly forecasts; flat-line and ceiling/floor guards; 3-attempt exponential back-off; linear-regression stub fallback |
+| **Service** | `gemini_forecaster` | `app/services/gemini_forecaster.py` | **Groq `llama-3.3-70b-versatile`** demand forecasting via OpenAI-compatible client; 12 individual weekly forecasts; flat-line and ceiling/floor guards; 3-attempt exponential back-off; linear-regression stub fallback. File named `gemini_forecaster.py` — Phase 2 naming artifact (BiLSTM → AI API pivot). |
 | **Service** | `xgboost_scorer` | `app/services/xgboost_scorer.py` | 5-feature economic viability: GDP growth, forex, direct flight (binary), distance, flight frequency; XGBoost model inference with identical linear-sum fallback when model absent |
 | **Service** | `seasonal_shift_detector` | `app/services/seasonal_shift_detector.py` | 4-step CeView SeasonalShift pipeline: 7d/30d rolling averages → 2σ spike test → YoY ratio (52-week lookback, ≥59 points required) → composite seasonality score [0,1] |
 | **Service** | `pytrends_client` | `app/services/pytrends_client.py` | PyTrends wrapper; 4–12 s jitter sleep per request (sole rate-limit mitigation); native-language keyword mappings per (category, geo); curated 52-week stub series on HTTP 429 |

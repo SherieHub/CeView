@@ -1,0 +1,197 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "3.3 Compliance Audit (OMCS)" {
+
+  package "React Frontend" #EEF2FF {
+    class ContentStudioView {
+      -auditOn: boolean
+      -auditRunning: boolean
+      -auditDone: boolean
+      -auditProgress: number
+      -compliance: ComplianceResultDTO
+      -stagedCaption: string
+      -uploadedFile: File
+      +runAudit()
+    }
+    class SmartOptimizationBoard {
+      -progress: number
+      -steps: string[]
+      +toggleAudit()
+      +renderProgressBar()
+      +renderResults()
+    }
+    class MediaCaptionManager {
+      -caption: string
+      +onCaptionChange(text)
+    }
+    class MediaDropzone {
+      +onFileDrop(file)
+    }
+    class ComplianceGauge {
+      +score: number
+      +interpretation: string
+      +renderGauge()
+    }
+    class FeedbackList {
+      +aligned: string[]
+      +gaps: string[]
+      +renderTwoColumn()
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class ComplianceController {
+      +evaluate(req): ComplianceResultDto
+      +evaluateJson(req): ComplianceResultDto
+      +evaluateFull(req, profileId?): ComplianceResultDto
+      +evaluateFullJson(req, profileId?): ComplianceResultDto
+    }
+    class ComplianceAnalysisService {
+      +analyze(req, profileId?): ComplianceResultDto
+      -fetchApprovedCaptions(profileId, market): List<String>
+      -fetchCreativeContext(profileId, market): CreativeContext
+      -calcRevisionNumber(profileId, market): int
+      -persistResult(result): void
+    }
+    class ComplianceEvaluationResult <<Entity>> {
+      +evaluationId: UUID
+      +businessProfileId: UUID
+      +selectedMarket: String
+      +caption: TEXT
+      +casScore: Double
+      +vasScore: Double
+      +hcsScore: Double
+      +omcsScore: Double
+      +score: Integer
+      +complianceThreshold: String
+      +alignedItems: TEXT
+      +gapItems: TEXT
+      +mismatches: TEXT
+      +complianceInterpretation: TEXT
+      +source: String
+      +revisionNumber: Integer
+      +approvalStatus: Boolean
+      +evaluatedAt: OffsetDateTime
+    }
+    class ComplianceRevisionHistory <<Entity>> {
+      +revisionId: UUID
+      +businessProfileId: UUID
+      +originalEvalId: UUID
+      +selectedMarket: String
+      +revisionNumber: Integer
+      +submittedCaption: TEXT
+      +casScore: Double
+      +omcsScore: Double
+      +complianceThreshold: String
+      +submittedAt: OffsetDateTime
+    }
+    interface ComplianceEvaluationResultRepository <<JPA>> {
+      +findTopByBusinessProfileIdAndSelectedMarket()
+      +save(entity)
+    }
+    interface ComplianceRevisionHistoryRepository <<JPA>> {
+      +findByBusinessProfileIdAndSelectedMarket()
+      +save(entity)
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class ComplianceRouter {
+      +POST /internal/compliance/evaluate
+      +POST /internal/compliance/evaluate-full
+    }
+    class SentenceBertScorer {
+      +compute_cas(caption, approved_captions): float
+      +compute_hcs(caption, market, categories, visual_tone): float
+      +interpret_omcs(score): str
+      -_keyword_fallback_cas(caption): float
+    }
+    class GeminiClient {
+      +evaluate_compliance(caption, market): dict
+      +evaluate_compliance_multimodal(caption, market, ...): dict
+      -_FALLBACK_SCORES: dict
+    }
+    class BertModel {
+      -_instance: SentenceTransformer
+      +get_model(): SentenceTransformer
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class EvaluateRequest {
+      +caption: String
+      +market: String
+      +mediaName: String
+      +mediaSize: Long
+    }
+    class EvaluateFullRequest {
+      +caption: String
+      +market: String
+      +approvedCaptions: List<String>
+      +categories: List<String>
+      +visualTone: String
+      +shotListContext: String
+      +mediaName: String
+      +mediaSize: Long
+    }
+    class ComplianceResultDto {
+      +score: Integer
+      +casScore: Double
+      +vasScore: Double
+      +hcsScore: Double
+      +omcsScore: Double
+      +complianceThreshold: String
+      +interpretation: String
+      +aligned: List<String>
+      +gaps: List<String>
+      +mismatches: List<String>
+      +source: String
+    }
+    class ComplianceResponse {
+      +score: int
+      +cas_score: float
+      +vas_score: float
+      +hcs_score: float
+      +omcs_score: float
+      +interpretation: str
+      +aligned: list
+      +gaps: list
+      +mismatches: list
+      +source: str
+    }
+  }
+}
+
+ContentStudioView *-- SmartOptimizationBoard
+ContentStudioView *-- MediaCaptionManager
+MediaCaptionManager *-- MediaDropzone
+SmartOptimizationBoard *-- ComplianceGauge
+SmartOptimizationBoard *-- FeedbackList
+
+ContentStudioView ..> ComplianceController : POST /api/v1/compliance/evaluate-full-json
+
+ComplianceController --> ComplianceAnalysisService : analyze()
+ComplianceAnalysisService --> ComplianceEvaluationResultRepository : findTop... / save()
+ComplianceAnalysisService --> ComplianceRevisionHistoryRepository : save()
+
+ComplianceAnalysisService ..> ComplianceRouter : POST /internal/compliance/evaluate\nPOST /internal/compliance/evaluate-full
+
+ComplianceRouter --> SentenceBertScorer : compute_cas() / compute_hcs()
+ComplianceRouter --> GeminiClient : evaluate_compliance_multimodal()
+SentenceBertScorer --> BertModel : get_model()
+
+ComplianceController ..> ComplianceResultDto : returns
+ComplianceEvaluationResultRepository --> ComplianceEvaluationResult : persists
+ComplianceRevisionHistoryRepository --> ComplianceRevisionHistory : persists
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+
+@enduml

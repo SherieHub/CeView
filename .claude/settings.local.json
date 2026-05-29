@@ -65,7 +65,10 @@
       "Bash(xargs ls -1)",
       "Read(//c/c/Users/austi/CeView/backend/fastapi-sbert/**)",
       "Read(//c/c/Users/austi/CeView/backend/fastapi-transformer/**)",
-      "Read(//c/c/Users/austi/CeView/backend/fastapi-compliance/**)"
+      "Read(//c/c/Users/austi/CeView/backend/fastapi-compliance/**)",
+      "Bash(python -c \"import app.routers.omcs_analysis as r; print\\('OK', [route.path for route in r.router.routes]\\)\")",
+      "Bash(python -c \"import app.main as m; print\\('main OK'\\); print\\([r.path for r in m.app.routes if 'omcs' in r.path]\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

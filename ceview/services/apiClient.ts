@@ -7,7 +7,7 @@
 import type {
   Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
   MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
-  CampaignHistoryResponse,
+  CampaignHistoryResponse, OmcsAuditResultDTO,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -161,6 +161,18 @@ export const api = {
       `/api/v1/compliance/evaluate-full-json${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`,
       { method: 'POST', body: JSON.stringify(body) },
     ),
+
+  /** Submodule 3.3 — OMCS compliance audit via the LangGraph omcs_agent.
+   *  Scores the chosen caption + image against the visual-guide recommendations.
+   *  imageUrl is a data: URL (base64) or public http(s) URL. */
+  analyzeOmcs: (body: {
+    caption: string;
+    imageUrl: string;
+    businessProfile: Record<string, unknown>;
+    recommendations: Record<string, unknown>;
+  }) => req<OmcsAuditResultDTO>('/api/v1/compliance/omcs-analyze', {
+    method: 'POST', body: JSON.stringify(body),
+  }),
 
   // ── Module 4 ──────────────────────────────────────────────────────────────
 
