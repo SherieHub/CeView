@@ -4,6 +4,8 @@
 
 ## 1.1 Business Input and Categorization
 
+This transaction handles the initial onboarding of an MSME tourism operator by collecting their business identity — name, description, core services, unique value proposition, and cover image — and persisting it as a verified business profile. Once the profile is saved, the system submits the business details to an AI classification pipeline that uses a multilingual E5 encoder and a Keras classifier head to infer how the business distributes across seven Filipino tourism categories with normalized confidence percentages. The classified categories are presented to the operator for review and selection, after which the confirmed profile serves as the foundational input for all downstream modules including uniqueness scoring, content generation, and market analysis.
+
 ### Front-End Components
 
 | Component Name | Description & Purpose | Type / Format |
@@ -42,6 +44,8 @@
 ---
 
 ## 1.2 Uniqueness Scoring Dashboard
+
+This transaction evaluates how semantically distinct an MSME operator's business is relative to all other registered businesses in the system, producing a quantified uniqueness score that measures competitive differentiation. Using the same E5 sentence encoder from Transaction 1.1, the business profile text is embedded into a 768-dimensional vector and compared against the stored corpus of other businesses via cosine distance, yielding a semanticsScore (0–100) that reflects how different the business description is from its peers; a parallel categoryScore is computed by measuring how confidently the Keras classifier predicts the operator's chosen tourism categories. The two scores are averaged into an overallScore that is permanently written back to the business profile on confirmation, registering the operator in the semantic comparison corpus for all future uniqueness evaluations.
 
 ### Front-End Components
 
