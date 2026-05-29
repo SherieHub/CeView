@@ -4,6 +4,8 @@
 
 ## 4.1 Campaign Data Ingestion & KPI Computation
 
+The Module 4 entry point is the DataIngestionForm — a clean card with 7 labelled DataInputField rows (impressions, clicks, ad spend, revenue, conversions, bookings, new customers) and a navy submit button that replaces its label with a Loader2 spinner during submission. After a successful submit the form transitions to the analytics dashboard, starting with the EngagementMetricsBoard: a section header with a 4W/8W binary toggle and a row of five KpiMetricCards, each showing an icon, bold KPI value with unit, and a TrendIndicator arrow with the delta vs. the prior period coloured green for improvements and red for regressions. Immediately below, the CustomerJourneyFunnel renders a horizontal Recharts BarChart of four funnel stages (Impressions → Clicks → Conversions → Bookings), with a DropOffBadge between each adjacent pair displaying the percentage of users lost at that step in red-tinted text.
+
 ### Front-End Components
 
 | Component Name | Description & Purpose | Type / Format |
@@ -41,6 +43,8 @@
 ---
 
 ## 4.2 AI Prescriptive Report Generation
+
+The AIActionPlanReport section appears at the bottom of the analytics page separated by a dashed divider; it opens with a header bar showing a gold Sparkles icon, the "AI Action Plan" title, and two ReportActionBtns — a navy "Generate AI Report" button and a grey "Download PDF" button. Clicking Generate shows a Loader2 spinner while the backend processes, then renders an executive summary text block and a recommended platform badge (e.g., "Naver Blog") at the top, followed by a PriorityFixCard grid displaying three diagnosis cards each colour-coded by severity (red for Weakest, amber for Moderate, green for Alright) with the funnel stage label, drop-rate, and an AI-generated root cause insight. Beside each diagnosis card sits the paired RankedRecommendation rendered via RecommendationItem, showing a numbered gold circle badge, a bold action title, and a plain-English implementation step.
 
 ### Front-End Components
 

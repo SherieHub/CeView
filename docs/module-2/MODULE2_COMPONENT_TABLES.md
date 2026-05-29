@@ -4,6 +4,8 @@
 
 ## 2.1 Market Data Aggregation Service
 
+The operator lands on the HomeView — a notification feed dashboard displaying a vertically scrolling list of TrendAlertCards, each showing a market name, a trend label (e.g., "Rising demand window"), and a pulsing gold dot in the top-left corner for unread items. Each card is fully clickable with a hover-activated shadow and a chevron arrow on the right edge, navigating the operator to the Market Radar view scoped to that specific market. During the initial load, multiple TrendAlertCardSkeleton placeholders animate in place of real cards to communicate that data is being fetched.
+
 ### Front-End Components
 
 | Component Name | Description & Purpose | Type / Format |
@@ -49,6 +51,8 @@
 ---
 
 ## 2.2 Market Radar & Demand Forecasting
+
+The operator sees the MarketRadarView, which opens with three MarketRankCards stacked vertically (ranked 1–3), each displaying the market name, city, distance to Cebu, route type, and an animated ProgressBar colour-coded by match score — plus a red SurgeBadge pinned to the top-right corner of the card when a demand spike is detected. Clicking a card selects it (applying a scale and shadow transform) and populates the panels below: a StrategicDirectivePanel with navy background showing the AI-generated strategic directive text and a gold "Generate Content" CTA button, followed by a DemandForecastChart with a 4WK/12WK toggle rendering history (solid navy line) and forecast (dashed gold line) demand curves, and an EconomicInsightsBoard with Economy and Seasonality tabs showing trend charts and a monthly peak calendar heatmap. A Refresh button in the header triggers the full AI forecast pipeline, during which MarketRankCardSkeleton placeholders replace the cards until results load.
 
 ### Front-End Components
 
