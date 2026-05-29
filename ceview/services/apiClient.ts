@@ -5,7 +5,7 @@
  */
 
 import type {
-  Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
+  Market, Notification, ContentResponseDTO, CreativeDirectionDTO,
   MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
   CampaignHistoryResponse, OmcsAuditResultDTO,
 } from '../types';
@@ -143,23 +143,6 @@ export const api = {
     req<{ approvedId: string; market: string }>(
       `/api/v1/creative-direction/approve/${encodeURIComponent(profileId)}?market=${encodeURIComponent(market)}`,
       { method: 'POST', body: '{}' },
-    ),
-
-  evaluateCompliance: (body: {
-    caption: string; market: string; mediaName?: string; mediaSize?: number;
-  }) => req<ComplianceResultDTO>('/api/v1/compliance/evaluate-json', {
-    method: 'POST', body: JSON.stringify(body),
-  }),
-
-  /** Full multimodal compliance pipeline — FR3.20-FR3.30 (Submodule 3.3).
-   *  Pass profileId to auto-inject approved captions (3.1) and creative context (3.2).
-   *  Returns sub-scores (casScore, vasScore, omcsScore) and explainable AI outputs. */
-  evaluateComplianceFull: (body: {
-    caption: string; market: string; mediaName?: string; mediaSize?: number;
-  }, profileId?: string) =>
-    req<ComplianceResultDTO>(
-      `/api/v1/compliance/evaluate-full-json${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`,
-      { method: 'POST', body: JSON.stringify(body) },
     ),
 
   /** Submodule 3.3 — OMCS compliance audit via the LangGraph omcs_agent.

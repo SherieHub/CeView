@@ -4,9 +4,9 @@
                    against the visual-guide recommendations, returning the full
                    OMCS evaluation state.
 
-Called by Spring Boot ComplianceAnalysisService, which assembles the payload
-from the chosen caption, the uploaded image (as an http/data URL), the business
-profile, and the Submodule 3.2 recommendations.
+Called by Spring Boot ComplianceController.omcsAnalyze (a stateless passthrough),
+which assembles the payload from the chosen caption, the uploaded image (as an
+http/data URL), the business profile, and the approved caption's recommendations.
 
 Request body (ComplianceInputClass):
     caption          — operator-chosen caption text

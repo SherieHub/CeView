@@ -68,7 +68,19 @@
       "Read(//c/c/Users/austi/CeView/backend/fastapi-compliance/**)",
       "Bash(python -c \"import app.routers.omcs_analysis as r; print\\('OK', [route.path for route in r.router.routes]\\)\")",
       "Bash(python -c \"import app.main as m; print\\('main OK'\\); print\\([r.path for r in m.app.routes if 'omcs' in r.path]\\)\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python -)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app/services/gemini_client.py',encoding='utf-8'\\).read\\(\\)\\); print\\('gemini_client.py parses OK'\\)\")",
+      "Bash(python -c \"import app.main as m; print\\('main OK'\\); paths=[r.path for r in m.app.routes]; print\\('omcs present:', '/internal/omcs/analyze' in paths\\); print\\('compliance gone:', not any\\('/internal/compliance' in p for p in paths\\)\\)\")",
+      "Bash(rm -f components/module-3/3.1-content-studio/components/FeedbackList.tsx components/module-3/3.1-content-studio/components/ChecklistIndicator.tsx)",
+      "Bash(grep -rn \"FeedbackList\\\\|ChecklistIndicator\\\\|ComplianceResultDTO\\\\|evaluateCompliance\" components services types.ts App.tsx)",
+      "Bash(python -c \"import pytrends; print\\('pytrends version:', getattr\\(pytrends,'__version__','?'\\)\\)\")",
+      "Bash(python -c \"from pytrends.request import TrendReq; print\\('TrendReq import OK'\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "Bash(curl -s -m 10 -o /dev/null -w \"POST omcs-analyze -> HTTP %{http_code}\\\\n\" -X POST http://localhost:8080/api/v1/compliance/omcs-analyze -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(docker exec *)",
+      "Bash(java -version)",
+      "Bash(./mvnw -q -DskipTests clean package)"
     ]
   }
 }

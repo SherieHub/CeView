@@ -5,53 +5,64 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-package "3.1 Content Generation" {
+title 3.1 — Market-Localized Promotional Content Generation: Class / Component Structure
+
+package "3.1 Market-Localized Promotional Content Generation" {
 
   package "React Frontend" #EEF2FF {
     class ContentStudioView {
       -content: ContentResponseDTO
-      -activeTab: string
-      -stagedCaption: string
-      -uploadedFile: File
-      -approvedIndices: Map<string, number>
-      -approvedCaptions: Map<string, string>
+      -activeTab: ContentPlatformId
+      -approvedIndices: Record<platform, number>
+      -approvedCaptions: Record<platform, string>
+      -approvedMetadata: Record<platform, CaptionMetadata>
       +generateContent()
       +approveContent(platform)
     }
     class AIContentMatrixPanel {
-      -captions: PlatformCaptions
-      -activeTab: string
-      -editOverrides: Map<string, string>
+      -options: string[]
+      -optionNames: string[]
+      -activeTab: ContentPlatformId
+      -charLimit: number
       +renderPlatformTab(platform)
     }
     class CopywritingOptionCard {
-      +archetype: string
-      +caption: string
+      +index: number
+      +text: string
+      +optionName: string
+      +charLimit: number
       +isApproved: boolean
       +onApprove()
       +onCopy()
+      +onEdit()
     }
     class PlatformTab {
       +platform: string
       +isActive: boolean
-      +charLimit: number
+    }
+    class DistributionPanel {
+      +channels: SocialChannel[]
+      +renderChannelCards()
     }
   }
 
   package "Spring Boot" #E8F5E9 {
     class ContentController {
       +generate(req, profileId?): ContentResponseDto
-      +approve(req): ApproveResponseDto
+      +approve(body, profileId): Map<approvedIds, market, count>
     }
     class ContentGenerationService {
-      +generate(req): ContentResponseDto
-      -buildForecastContext(profile): Map
-      -persistContent(market, response): void
+      +generate(req, profileId): ContentResponseDto
+      -buildForecastContext(profileId, market): Map
+      -persistContent(profileId, market, dto): void
     }
     class ContentApprovalService {
-      +approveForMarket(profileId, market): void
+      +approveForMarket(profileId, market): List<UUID>
       +hasApprovedContent(profileId, market): boolean
       +getApprovedCaptions(profileId, market): List<String>
+    }
+    class AIInferenceGatewayService {
+      +generateCaption(payload): Map
     }
     class LocalizedPromotionalContent <<Entity>> {
       +contentId: UUID
@@ -70,8 +81,8 @@ package "3.1 Content Generation" {
       +approvedAt: OffsetDateTime
     }
     interface LocalizedPromotionalContentRepository <<JPA>> {
-      +findByBusinessProfileIdAndSelectedMarket()
-      +findByBusinessProfileIdAndApprovalStatus()
+      +findByBusinessProfileIdAndSelectedMarket...()
+      +findByBusinessProfileIdAndApprovalStatusTrue()
       +save(entity)
     }
     class ContentGenerationLog <<Entity>> {
@@ -84,18 +95,22 @@ package "3.1 Content Generation" {
   }
 
   package "FastAPI (fastapi-sbert)" #FFFDE7 {
-    class ContentRouter {
-      +POST /internal/content/generate
+    class CaptionRouter {
+      +POST /internal/generation/caption
     }
-    class CreativeDirectorAgent {
-      +run(state): ContentResponseDto
-      -analyze_services(state): state
-      -generate_platform_captions(state): state
+    class CaptionGenerationService {
+      +caption_generation_service(input): dict
+    }
+    class CaptionGenerationAgent <<LangGraph>> {
+      +analyze_services(state): state
+      +generate_platform_captions(state): state
     }
     class CulturalResearchService {
-      +get_market_context(market): dict
-      -_serpapi_search(market): dict
+      +research_market(market): dict
       -_MARKET_TEMPLATES: dict
+    }
+    class GeminiClient {
+      +get_platform_guides(market): dict
     }
     class AgentLLMModel {
       -_instance: ChatGroq
@@ -103,32 +118,51 @@ package "3.1 Content Generation" {
     }
   }
 
-  package "DTOs" #FFF3E0 {
-    class ContentGenerateRequest {
-      +market: String
-      +businessName: String
-      +description: String
-      +categories: List<String>
-      +trend: String
+  package "DTOs / Models" #FFF3E0 {
+    class CaptionInputClass {
+      +business_name: str
+      +business_description: str
+      +business_uvp: str
+      +business_services: List[str]
+      +market_category: str
+      +target_market: str
+      +forecast_context: str
+      +research_context: str
+    }
+    class SocialAgentState {
+      +final_captions: Dict[platform, List]
+      +source: str
     }
     class ContentResponseDto {
-      +market: String
-      +captions: Map<platform, ArchetypeCaptions>
+      +market: MarketHeaderDto
+      +framework: String
+      +captions: CaptionsDto
       +source: String
     }
-    class ContentApproveRequest {
-      +profileId: UUID
-      +market: String
+    class CaptionsDto {
+      +instagram: PlatformContentDto
+      +tiktok: PlatformContentDto
+      +facebook: PlatformContentDto
+      +naver: PlatformContentDto
     }
-    class ContentApproveResponseDto {
-      +approvedIds: List<UUID>
-      +market: String
-      +count: int
+    class PlatformContentDto {
+      +options: List<String>
+      +optionNames: List<String>
+      +optionMetadata: List<CaptionMetadata>
+      +guide: List<String>
+    }
+    class CaptionMetadata {
+      +core_business_context: String
+      +market_cultural_localization: String
+      +psychological_elements: String
+      +creative_tone_atmosphere: String
+      +algorithmic_platform_architecture: String
     }
   }
 }
 
 ContentStudioView *-- AIContentMatrixPanel
+ContentStudioView *-- DistributionPanel
 AIContentMatrixPanel *-- "3" CopywritingOptionCard
 AIContentMatrixPanel *-- "3" PlatformTab
 
@@ -136,23 +170,29 @@ ContentStudioView ..> ContentController : POST /api/v1/content/generate\nPOST /a
 
 ContentController --> ContentGenerationService : generate()
 ContentController --> ContentApprovalService : approveForMarket()
+ContentGenerationService --> AIInferenceGatewayService : generateCaption()
 ContentGenerationService --> LocalizedPromotionalContentRepository : save()
-ContentGenerationService --> ContentApprovalService : getApprovedCaptions()
-ContentApprovalService --> LocalizedPromotionalContentRepository : findBy...
+ContentApprovalService --> LocalizedPromotionalContentRepository : findBy... / save()
 
-ContentGenerationService ..> ContentRouter : POST /internal/content/generate
+AIInferenceGatewayService ..> CaptionRouter : POST /internal/generation/caption
 
-ContentRouter --> CreativeDirectorAgent : run(state)
-CreativeDirectorAgent --> CulturalResearchService : get_market_context()
-CreativeDirectorAgent --> AgentLLMModel : get_llm()
+CaptionRouter --> CaptionGenerationService : caption_generation_service()
+CaptionRouter --> GeminiClient : get_platform_guides()
+CaptionGenerationService --> CaptionGenerationAgent : ainvoke(state)
+CaptionGenerationAgent --> CulturalResearchService : research_market()
+CaptionGenerationAgent --> AgentLLMModel : get_llm()
 
+CaptionGenerationService ..> CaptionInputClass : consumes
+CaptionGenerationAgent ..> SocialAgentState : reads / writes
 ContentController ..> ContentResponseDto : returns
-ContentController ..> ContentApproveResponseDto : returns
+ContentResponseDto *-- CaptionsDto
+CaptionsDto *-- "4" PlatformContentDto
+PlatformContentDto *-- "3" CaptionMetadata
 LocalizedPromotionalContentRepository --> LocalizedPromotionalContent : persists
 
 ' ── Stack packages top-to-bottom ──
 "React Frontend" -[hidden]down-> "Spring Boot"
 "Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
-"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs / Models"
 
 @enduml

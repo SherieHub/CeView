@@ -5,7 +5,7 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-title 3.2 — Creative Direction and Visual Recommendation Generation: Entity Relationships
+title Module 3 — Content Studio: Entity Relationships (3.1 + 3.2)
 
 entity "tbl_business_profile" as BP {
   * business_profile_id : UUID <<PK>>
@@ -17,15 +17,35 @@ entity "tbl_business_profile" as BP {
   ...
 }
 
+' ── 3.1 — Market-Localized Promotional Content Generation ──
 entity "tbl_localized_promotional_content" as LPC {
   * content_id          : UUID <<PK>>
   --
   * business_profile_id : UUID <<FK>>
   * selected_market     : VARCHAR
+  * platform            : VARCHAR
+  generated_caption     : TEXT
+  content_direction     : TEXT
+  hashtags              : TEXT
+  cta                   : TEXT
+  tone_suggestion       : TEXT
+  framework             : VARCHAR
+  source                : VARCHAR
   approval_status       : BOOLEAN
-  ...
+  generated_at          : TIMESTAMPTZ
+  approved_at           : TIMESTAMPTZ
 }
 
+entity "tbl_content_generation_log" as CGL {
+  * content_log_id      : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  generation_status     : VARCHAR
+  diagnostics           : TEXT
+  logged_at             : TIMESTAMPTZ
+}
+
+' ── 3.2 — Creative Direction and Visual Recommendation Generation ──
 entity "tbl_creative_direction_output" as CDO {
   * creative_direction_id   : UUID <<PK>>
   --
@@ -51,35 +71,24 @@ entity "tbl_creative_direction_log" as CDL {
   logged_at             : TIMESTAMPTZ
 }
 
-note bottom of CDO
-  <<Stage 1 — Generated>>
-    approval_status = false
-    1 row per profile + market
-    JSON-serialised arrays in TEXT columns
-
-  <<Stage 2 — Approved>>
-    approval_status = true
-    approved_at = timestamp
-
+note bottom of LPC
+  3.1 output — 4 rows per generate call
+  (instagram / tiktok / facebook / naver)
   source: "groq" | "fallback"
-
-  Index:
-    idx_creative_profile_market
-      (business_profile_id, selected_market)
+  approval_status = true unlocks 3.2
+  Indexes: idx_content_profile_market,
+           idx_content_approval
 end note
 
-note bottom of CDL
-  One row per generation attempt.
-  generation_status: COMPLETED | FAILED
+note bottom of CDO
+  3.2 output — 1 row per profile + market
+  JSON-serialised arrays in TEXT columns
+  source: "groq" | "fallback"
+  Index: idx_creative_profile_market
 end note
 
-note right of LPC
-  Dependency source for 3.2:
-  CreativeDirectionService calls
-  hasApprovedContent() which queries
-  this table before generating.
-end note
-
+BP ||--o{ LPC : "generates content\nper market"
+BP ||--o{ CGL : "logs each\ngeneration attempt"
 BP ||--o{ CDO : "generates creative\ndirection per market"
 BP ||--o{ CDL : "logs each\ngeneration attempt"
 LPC }o--|| BP : "approval gate\nfor 3.2"

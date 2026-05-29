@@ -5,13 +5,14 @@ skinparam padding 2
 skinparam ParticipantPadding 20
 skinparam maxMessageSize 150
 
-title 3.2 — Creative Direction: Visual Direction Generation & Approval
+title 3.2 — Creative Direction and Visual Recommendation Generation: Generation & Approval
 
 actor Operator as O
 participant "ContentStudio\nView" as UI
 participant "CreativeDirection\nController" as CDC
 participant "CreativeDirection\nService" as CDS
 participant "ContentApproval\nService" as CAS
+participant "AIInferenceGateway\nService" as GW
 participant "FastAPI\n(Groq Client)" as FP
 participant "tbl_creative_\ndirection_output" as DB
 
@@ -23,11 +24,11 @@ CDC -> CDS: generate(profileId, market)
 CDS -> CAS: hasApprovedContent(profileId, market)
 CAS -> CAS: query tbl_localized_promotional_content\nWHERE approval_status = true
 
-alt no approved 3.1 content (A3 alternative flow)
+alt no approved 3.1 content (A3)
   CAS --> CDS: false
   CDS --> CDC: throw IllegalStateException("missing_dependency")
-  CDC --> UI: HTTP 400\n{error: "missing_dependency"}
-  UI -> UI: Show error — operator must\napprove 3.1 captions first
+  CDC --> UI: HTTP 400 {error: "missing_dependency"}
+  UI -> UI: Show error — approve 3.1 captions first
 else approved content found
   CAS --> CDS: true
 end
@@ -36,45 +37,46 @@ end
 
 CDS -> CAS: getApprovedCaptions(profileId, market)
 CAS --> CDS: List<String> approvedCaptions
-
 CDS -> CDS: Load BusinessProfile\n(name, categories, UVP, uniquenessScore)
-CDS -> CDS: buildForecastContext()\n(query ForecastResult + MarketScore\nfrom Module 2 tables)
+CDS -> CDS: buildForecastContext()\n(ForecastResult + MarketScore — Module 2)
 
 == 3. Creative Direction Generation ==
 
-CDS -> FP: POST /internal/creative/generate\n{market, approvedCaptions, categories,\nuniquenesScore, forecastContext}
+CDS -> GW: generateCreative(payload)
+GW -> FP: POST /internal/creative/generate\n{market, approvedCaptions, categories,\nuniquenessScore, forecastContext}
 
 note right of FP
+  gemini_client.generate_creative_direction()
   Groq generates per market:
-  visualGuide[] — platform composition tips
-  shots[] — {label, description, lighting}
-  moodboard — {palette[], references[]}
-  platformRecommendations — platform → string
+    visualGuide[] — composition tips
+    shots[] — {label, description, lighting}
+    moodboard — {palette, references[]}
+    platformRecommendations — platform → string
 
   Platform priority (FR3.16):
-    Korea: Naver Blog → Instagram → TikTok
-    Japan: Facebook → Instagram → TikTok
-    USA:   Instagram Reels → TikTok
+    Korea: Naver Blog -> Instagram -> TikTok
+    Japan: Facebook -> Instagram -> TikTok
+    USA:   Instagram Reels -> TikTok
 
   On Groq timeout/error:
-    return curated per-market template
-    source = "fallback"
+    curated per-market template, source = "fallback"
 end note
 
 alt Groq available
-  FP --> CDS: CreativeDirectionResponse\n{visualGuide, shots, moodboard,\nplatformRecommendations, source: "llm"}
+  FP --> GW: CreativeDirectionResponse\n{visualGuide, shots, moodboard,\nplatformRecommendations, source: "groq"}
 else Groq unavailable
-  FP --> CDS: CreativeDirectionResponse\n{...fallback template, source: "fallback"}
+  FP --> GW: {...fallback template, source: "fallback"}
 end
+
+GW --> CDS: raw map
 
 == 4. Persist & Return ==
 
 CDS -> DB: INSERT tbl_creative_direction_output\n(shot_list_recommendations, visual_recommendations,\nlighting_suggestions, moodboard_references,\nplatform_recommendations, visual_tone)\napproval_status = false
-
 DB --> CDS: saved entity
 CDS --> CDC: CreativeDirectionDto
 CDC --> UI: CreativeDirectionDto\n{visualGuide, shots, moodboard, platformRecommendations}
-UI -> UI: Render VisualDirectionBoard\n+ DistributionPanel
+UI -> UI: Render VisualDirectionBoard
 
 == 5. Approve Creative Direction ==
 
@@ -82,14 +84,6 @@ O -> UI: Review output and confirm
 UI -> CDC: POST /api/v1/creative-direction/approve/{profileId}\n?market={market}
 CDC -> CDC: approveLatest(profileId, market)
 CDC -> DB: UPDATE approval_status = true\nSET approved_at = now()
-
-note right of DB
-  This approval enriches the 3.3
-  compliance pipeline with visualTone
-  and shotListContext for HCS Rule 6
-  and VAS evaluation.
-end note
-
 DB --> CDC: updated entity
 CDC --> UI: {approvedId, market}
 

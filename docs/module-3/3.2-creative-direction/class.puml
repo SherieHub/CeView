@@ -5,7 +5,9 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-package "3.2 Creative Direction" {
+title 3.2 — Creative Direction and Visual Recommendation Generation: Class / Component Structure
+
+package "3.2 Creative Direction and Visual Recommendation Generation" {
 
   package "React Frontend" #EEF2FF {
     class ContentStudioView {
@@ -17,9 +19,9 @@ package "3.2 Creative Direction" {
       -guide: string[]
       +renderGuideItems()
     }
-    class DistributionPanel {
-      +channels: SocialChannel[]
-      +renderChannelCards()
+    class BlueprintStepItem {
+      +index: number
+      +text: string
     }
   }
 
@@ -31,15 +33,18 @@ package "3.2 Creative Direction" {
     class CreativeDirectionService {
       +generate(profileId, market): CreativeDirectionDto
       -checkDependency(profileId, market): void
-      -buildForecastContext(profile): Map
+      -buildForecastContext(profileId, market): Map
       -persistOutput(market, response): void
     }
     class CreativeApprovalService {
-      +approveLatest(profileId, market): void
+      +approveLatest(profileId, market): Optional<UUID>
     }
     class ContentApprovalService {
       +hasApprovedContent(profileId, market): boolean
       +getApprovedCaptions(profileId, market): List<String>
+    }
+    class AIInferenceGatewayService {
+      +generateCreative(payload): Map
     }
     class CreativeDirectionOutput <<Entity>> {
       +creativeDirectionId: UUID
@@ -56,7 +61,7 @@ package "3.2 Creative Direction" {
       +approvedAt: OffsetDateTime
     }
     interface CreativeDirectionOutputRepository <<JPA>> {
-      +findTopByBusinessProfileIdAndSelectedMarket()
+      +findTopBy...OrderByGeneratedAtDesc()
       +save(entity)
     }
     class CreativeDirectionLog <<Entity>> {
@@ -74,8 +79,7 @@ package "3.2 Creative Direction" {
     }
     class GeminiClient {
       +generate_creative_direction(req): dict
-      -_PLATFORM_PRIORITY: dict
-      -_FALLBACK_TEMPLATES: dict
+      -_creative_fallback(market): dict
     }
     class AgentLLMModel {
       -_instance: ChatGroq
@@ -83,25 +87,39 @@ package "3.2 Creative Direction" {
     }
   }
 
-  package "DTOs" #FFF3E0 {
+  package "DTOs / Models" #FFF3E0 {
     class CreativeGenerateRequest {
-      +market: String
-      +approvedCaptions: List<String>
-      +categories: List<String>
-      +uniquenessScore: Float
-      +forecastContext: Map
+      +profileId: str
+      +market: str
+      +approvedCaptions: List[str]
+      +categories: List[str]
+      +uniquenessScore: int
+      +forecastContext: dict
     }
     class CreativeDirectionDto {
       +visualGuide: List<String>
-      +shots: List<ShotItem>
+      +shots: List<ShotDto>
       +moodboard: MoodboardDto
-      +platformRecommendations: Map<String, String>
-      +source: String
+    }
+    note bottom of CreativeDirectionDto
+      Spring DTO returned to the frontend
+      carries only visualGuide / shots / moodboard.
+      platformRecommendations + source exist on
+      the FastAPI CreativeDirectionResponse only.
+    end note
+    class ShotDto {
+      +label: String
+      +description: String
+      +lighting: String
+    }
+    class MoodboardDto {
+      +palette: String
+      +references: List<String>
     }
     class CreativeDirectionResponse {
       +visualGuide: list
-      +shots: list
-      +moodboard: dict
+      +shots: List[ShotItem]
+      +moodboard: MoodboardItem
       +platformRecommendations: dict
       +source: str
     }
@@ -109,28 +127,29 @@ package "3.2 Creative Direction" {
 }
 
 ContentStudioView *-- VisualDirectionBoard
-ContentStudioView *-- DistributionPanel
+VisualDirectionBoard *-- "N" BlueprintStepItem
 
 ContentStudioView ..> CreativeDirectionController : POST /api/v1/creative-direction/generate\nPOST /api/v1/creative-direction/approve
 
 CreativeDirectionController --> CreativeDirectionService : generate()
 CreativeDirectionController --> CreativeApprovalService : approveLatest()
-CreativeDirectionService --> ContentApprovalService : hasApprovedContent()
-CreativeDirectionService --> ContentApprovalService : getApprovedCaptions()
+CreativeDirectionService --> ContentApprovalService : hasApprovedContent()\ngetApprovedCaptions()
+CreativeDirectionService --> AIInferenceGatewayService : generateCreative()
 CreativeDirectionService --> CreativeDirectionOutputRepository : save()
 CreativeApprovalService --> CreativeDirectionOutputRepository : findTop... / save()
 
-CreativeDirectionService ..> CreativeRouter : POST /internal/creative/generate
-
+AIInferenceGatewayService ..> CreativeRouter : POST /internal/creative/generate
 CreativeRouter --> GeminiClient : generate_creative_direction()
 GeminiClient --> AgentLLMModel : get_llm()
 
 CreativeDirectionController ..> CreativeDirectionDto : returns
+CreativeDirectionDto *-- "N" ShotDto
+CreativeDirectionDto *-- MoodboardDto
 CreativeDirectionOutputRepository --> CreativeDirectionOutput : persists
 
 ' ── Stack packages top-to-bottom ──
 "React Frontend" -[hidden]down-> "Spring Boot"
 "Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
-"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs / Models"
 
 @enduml
