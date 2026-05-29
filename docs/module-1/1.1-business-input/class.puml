@@ -1,0 +1,156 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "1.1 Business Input" {
+
+  package "React Frontend" #EEF2FF {
+    class UniquenessCalibrationForm {
+      -businessName: string
+      -description: string
+      -coreServices: string[]
+      -uvp: string
+      -submitting: boolean
+      +handleAnalyze()
+      +validateInputs(): boolean
+    }
+    class InferredCategoryBoard {
+      -categories: CategoryAllocation[]
+      +renderSelected()
+      +renderAddMore()
+    }
+    class AdjustableCategoryItem {
+      +name: string
+      +percentage: number
+      +selected: boolean
+      +onToggle()
+    }
+    class BusinessProfile {
+      -profileData: BusinessProfileDTO
+      +handleEditSave()
+      +renderIdentityCard()
+      +renderEditModal()
+    }
+    class DynamicListManager {
+      -items: string[]
+      +onAdd(item)
+      +onRemove(index)
+    }
+    class ValidationBanner {
+      +errors: string[]
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class BusinessProfileController {
+      +get(operatorId): BusinessProfileDto
+      +save(operatorId, dto): BusinessProfileDto
+      +keywords(req: KeywordRequest): List<String>
+      -toDto(entity): BusinessProfileDto
+      -emptyDto(userId): BusinessProfileDto
+    }
+    class ClassificationAnalyzeController {
+      +analyze(req: AnalyzeRequest): AnalyzeResponse
+    }
+    class BusinessProfile <<Entity>> {
+      +businessProfileId: UUID
+      +userId: UUID
+      +businessName: String
+      +businessDescription: String
+      +uvp: String
+      +coreServices: String
+      +categories: String
+      +imageUrl: String
+      +confidenceScore: Float
+      +uniquenessScore: Float
+      +createdAt: Instant
+      +updatedAt: Instant
+      +coreServicesList(): List
+      +categoriesList(): List
+    }
+    interface BusinessProfileRepository <<JPA>> {
+      +findFirstByUserId(userId): Optional
+      +save(entity): BusinessProfile
+    }
+    class AIInferenceGatewayService {
+      +classifyCategories(payload): Map
+      +generateKeywords(payload): List
+      +embedBusinessProfile(payload): void
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class ClassificationRouter {
+      +POST /internal/classification/analyze
+      +POST /internal/classification/keywords
+      +POST /internal/classification/embed
+    }
+    class MLClassifier {
+      +predict_all(name, services, desc, uvp): List
+      +embed_business(services, desc, uvp): vector
+    }
+    class EmbeddingStore {
+      +upsert_embedding(profileId, vector)
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class BusinessProfileDto {
+      +businessProfileId: UUID
+      +businessName: String
+      +categories: List<String>
+      +coreServices: List<String>
+      +description: String
+      +uvp: String
+      +imagePreview: String
+      +uniquenessScore: Float
+    }
+    class AnalyzeRequest {
+      +businessName: String
+      +coreServices: String
+      +description: String
+      +uvp: String
+    }
+    class AnalyzeResponse {
+      +categories: List<CategoryAllocation>
+    }
+    class CategoryAllocation {
+      +name: String
+      +percentage: double
+    }
+    class KeywordRequest {
+      +businessName: String
+      +description: String
+      +category: String
+    }
+  }
+}
+
+UniquenessCalibrationForm *-- InferredCategoryBoard
+UniquenessCalibrationForm *-- DynamicListManager
+UniquenessCalibrationForm *-- ValidationBanner
+InferredCategoryBoard *-- "7" AdjustableCategoryItem
+
+UniquenessCalibrationForm ..> ClassificationAnalyzeController : POST /api/v1/classification/analyze
+BusinessProfile ..> BusinessProfileController : GET/PUT /api/v1/business-profile
+
+BusinessProfileController --> BusinessProfileRepository : findFirstByUserId / save
+BusinessProfileController --> AIInferenceGatewayService : generateKeywords / embedBusinessProfile
+ClassificationAnalyzeController --> AIInferenceGatewayService : classifyCategories
+
+AIInferenceGatewayService ..> ClassificationRouter : POST /internal/classification/*
+
+BusinessProfileController ..> BusinessProfileDto : returns
+ClassificationAnalyzeController ..> AnalyzeResponse : returns
+AnalyzeResponse *-- CategoryAllocation
+BusinessProfileRepository --> BusinessProfile : persists
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+
+@enduml

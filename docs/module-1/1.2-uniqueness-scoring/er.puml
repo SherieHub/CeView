@@ -1,0 +1,66 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 1.2 — Uniqueness Scoring: Entity Relationships
+
+entity "tbl_business_profile" as BP {
+  * business_profile_id : UUID <<PK>>
+  --
+  * user_id             : UUID <<FK>>
+  uniqueness_score      : FLOAT
+  confidence_score      : FLOAT
+  categories            : TEXT
+  updated_at            : TIMESTAMPTZ
+}
+
+entity "tbl_business_embedding" as BE {
+  * embedding_id            : UUID <<PK>>
+  --
+  * business_profile_id     : UUID <<FK>> <<UK>>
+  embedding_vector          : vector(768)
+  embedding_model_version   : VARCHAR
+  generated_at              : TIMESTAMPTZ
+}
+
+entity "tbl_business_categories_score" as BCS {
+  * categories_score_id : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  coastal_island        : NUMERIC
+  adventure             : NUMERIC
+  cultural              : NUMERIC
+  theme_parks           : NUMERIC
+  urban                 : NUMERIC
+  culinary              : NUMERIC
+  accommodation         : NUMERIC
+}
+
+note right of BE
+  V12 migration: upgraded from
+  vector(384) to vector(768)
+  to match intfloat/multilingual-e5-base
+  encoder output dimension.
+
+  HNSW index: idx_biz_emb_cosine
+  on embedding_vector vector_cosine_ops
+  (approximate nearest-neighbour search)
+
+  Unique constraint: uq_biz_emb_profile
+  on business_profile_id
+  (one embedding per profile)
+end note
+
+note right of BP
+  uniqueness_score written here
+  after "Confirm & Register Profile"
+  via PUT /api/v1/business-profile
+end note
+
+BP ||--o{ BE  : "has embedding\n(upserted by embed job)"
+BP ||--o{ BCS : "has category scores\n(written at analyze time)"
+
+@enduml

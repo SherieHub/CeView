@@ -1,0 +1,88 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 3.2 — Creative Direction: Entity Relationships
+
+entity "tbl_business_profile" as BP {
+  * business_profile_id : UUID <<PK>>
+  --
+  * user_id             : UUID <<FK>>
+  business_name         : TEXT
+  categories            : TEXT
+  uniqueness_score      : FLOAT
+  ...
+}
+
+entity "tbl_localized_promotional_content" as LPC {
+  * content_id          : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  * selected_market     : VARCHAR
+  approval_status       : BOOLEAN
+  ...
+}
+
+entity "tbl_creative_direction_output" as CDO {
+  * creative_direction_id   : UUID <<PK>>
+  --
+  * business_profile_id     : UUID <<FK>>
+  * selected_market         : VARCHAR
+  shot_list_recommendations : TEXT
+  visual_recommendations    : TEXT
+  lighting_suggestions      : TEXT
+  moodboard_references      : TEXT
+  platform_recommendations  : TEXT
+  visual_tone               : TEXT
+  approval_status           : BOOLEAN
+  generated_at              : TIMESTAMPTZ
+  approved_at               : TIMESTAMPTZ
+}
+
+entity "tbl_creative_direction_log" as CDL {
+  * creative_log_id     : UUID <<PK>>
+  --
+  * business_profile_id : UUID <<FK>>
+  generation_status     : VARCHAR
+  diagnostics           : TEXT
+  logged_at             : TIMESTAMPTZ
+}
+
+note bottom of CDO
+  <<Stage 1 — Generated>>
+    approval_status = false
+    1 row per profile + market
+    JSON-serialised arrays in TEXT columns
+
+  <<Stage 2 — Approved>>
+    approval_status = true
+    approved_at = timestamp
+    Enriches Submodule 3.3:
+      visual_tone → HCS Rule 6 + VAS context
+      shot_list_recommendations → VAS context
+
+  Index:
+    idx_creative_profile_market
+      (business_profile_id, selected_market)
+end note
+
+note bottom of CDL
+  One row written per generation attempt.
+  generation_status: "success" | "fallback" | "error"
+end note
+
+note right of LPC
+  Dependency source for 3.2:
+  CreativeDirectionService calls
+  hasApprovedContent() which queries
+  this table before generating.
+end note
+
+BP ||--o{ CDO : "generates creative\ndirection per market"
+BP ||--o{ CDL : "logs each\ngeneration attempt"
+LPC }o--|| BP : "approval gate\nfor 3.2"
+
+@enduml

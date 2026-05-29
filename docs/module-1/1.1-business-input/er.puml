@@ -1,0 +1,74 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 1.1 — Business Input: Entity Relationships
+
+entity "tbl_msme_operator" as OP {
+  * operator_id    : UUID <<PK>>
+  --
+  * first_name     : VARCHAR
+  * last_name      : VARCHAR
+  * email          : VARCHAR <<UK>>
+  * password_hash  : VARCHAR
+  contact_number   : VARCHAR
+  * created_at     : TIMESTAMPTZ
+}
+
+entity "tbl_business_profile" as BP {
+  * business_profile_id : UUID <<PK>>
+  --
+  * user_id             : UUID <<FK>>
+  * business_name       : TEXT
+  business_description  : TEXT
+  uvp                   : TEXT
+  core_services         : TEXT
+  categories            : TEXT
+  image_url             : TEXT
+  confidence_score      : FLOAT
+  uniqueness_score      : FLOAT
+  created_at            : TIMESTAMPTZ
+  updated_at            : TIMESTAMPTZ
+}
+
+entity "tbl_business_category" as BC {
+  * category_id          : UUID <<PK>>
+  --
+  * category_name        : VARCHAR <<UK>>
+  category_description   : TEXT
+}
+
+entity "tbl_classification_logs" as CL {
+  * log_id               : UUID <<PK>>
+  --
+  * business_profile_id  : UUID <<FK>>
+  inference_status       : VARCHAR
+  confidence_score       : FLOAT
+  execution_time         : BIGINT
+  error_message          : TEXT
+}
+
+note bottom of BC
+  Seed rows (V2 migration):
+  Coastal & Island
+  Adventure & Nature
+  Cultural & Heritage
+  Theme Parks / Entertainment
+  Urban & City
+  Culinary & Gastronomy
+  Accommodation & Staycation
+end note
+
+note bottom of BP
+  core_services: comma-joined string
+  categories:    comma-joined string
+  (V2 multi-category refactor)
+end note
+
+OP    ||--o{ BP  : "owns via user_id"
+BP    ||--o{ CL  : "logged on each\nPOST /analyze call"
+
+@enduml

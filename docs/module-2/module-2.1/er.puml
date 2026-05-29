@@ -1,0 +1,120 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam PageOrientation portrait
+skinparam linetype ortho
+skinparam EntityBorderColor #444444
+skinparam EntityBackgroundColor white
+skinparam ArrowColor #444444
+skinparam shadowing false
+hide methods
+hide stereotypes
+
+' ── Auth / Profile anchors (Module 1, referenced here) ───────────────────
+
+entity tbl_msme_operator {
+    * operator_id : UUID <<PK>>
+}
+
+entity tbl_business_profile {
+    * business_profile_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+    business_name : VARCHAR
+    categories_json : TEXT
+}
+
+' ── Submodule 2.1 — Market Signal Records ────────────────────────────────
+
+entity tbl_market_signal_record {
+    * signal_record_id : UUID <<PK>>
+    --
+    business_profile_id : UUID <<FK>>
+    target_market : VARCHAR
+    trend_index : FLOAT
+    forex_rate : FLOAT
+    gdp_growth : FLOAT
+    seasonality_score : FLOAT
+    rolling_average : FLOAT
+    rolling_average_7d : FLOAT
+    rolling_average_30d : FLOAT
+    rolling_std_dev : FLOAT
+    yoy_ratio : FLOAT
+    spike_indicator : BOOLEAN
+    aggregated_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_market_signal_record
+  Written by 2.1 MarketDataIngestionService.
+  Read by 2.2 EnrichedSequenceBuilder.
+  No UNIQUE constraint — one row per ingestion run.
+end note
+
+' ── Submodule 2.1 — Job Audit ─────────────────────────────────────────────
+
+entity tbl_ingestion_job_log {
+    * job_log_id : UUID <<PK>>
+    --
+    job_name : VARCHAR
+    status : VARCHAR
+    markets_processed : INT
+    records_ingested : INT
+    error_message : TEXT
+    started_at : TIMESTAMPTZ
+    completed_at : TIMESTAMPTZ
+}
+
+' ── Submodule 2.1 — Weekly Trend Fetch State Machine ─────────────────────
+
+entity tbl_trend_fetch_job {
+    * job_id : UUID <<PK>>
+    --
+    category : VARCHAR
+    market : VARCHAR
+    status : VARCHAR
+    week_of : VARCHAR(10)
+    attempt_count : INT
+    max_attempts : INT
+    trend_index : FLOAT
+    spike_indicator : BOOLEAN
+    yoy_ratio : FLOAT
+    seasonality_score : FLOAT
+    source : VARCHAR
+    last_error : TEXT
+}
+
+note bottom of tbl_trend_fetch_job
+  UNIQUE(category, market, week_of) —
+  enables idempotent upserts.
+  status: PENDING → IN_PROGRESS
+          → SUCCESS | FAILED
+end note
+
+' ── Submodule 2.1 — Economic Trend Snapshots ─────────────────────────────
+
+entity tbl_market_economic_trend {
+    * trend_id : UUID <<PK>>
+    --
+    market : VARCHAR
+    gdp_trend_json : TEXT
+    forex_trend_json : TEXT
+    gdp_latest : FLOAT
+    forex_latest : FLOAT
+    currency_code : VARCHAR
+    gdp_points : INT
+    forex_points : INT
+    fetched_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_market_economic_trend
+  Written by 2.1, read by 2.2.
+  gdp_trend_json: [{year, value}×5]
+  forex_trend_json: [{date "YYYY-MM", value}×12]
+end note
+
+' ── Relationships ──────────────────────────────────────────────────────────
+
+tbl_msme_operator        ||--o{ tbl_business_profile        : "owns"
+tbl_business_profile     ||--o{ tbl_market_signal_record    : "has signal records"
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 1.2 — Uniqueness Scoring: Compute & Confirm Flow
+
+actor Operator as O
+participant "Calibration\nView" as CV
+participant "UniquenessScoringController" as USC
+participant "AIInference\nGatewayService" as AI
+participant "FastAPI\n(fastapi-sbert)" as FP
+participant "Embedding\nStore" as ES
+
+note over CV
+  Prerequisite: Transaction 1.1 completed.
+  Operator has confirmed category allocations
+  (percentages > 0 for selected categories).
+end note
+
+== Compute Uniqueness Score ==
+
+O -> CV: Adjust category sliders,\nclick "Compute Final Uniqueness Score"
+CV -> USC: POST /api/v1/classification/uniqueness\n{businessProfileId, businessName, categories,\ncoreServices, description, uvp}
+
+USC -> AI: computeUniqueness(payload)
+AI -> FP: POST /internal/classification/uniqueness
+
+FP -> ES: fetch_others(excludeProfileId)
+ES --> FP: List<vector(768)> corpus embeddings
+
+FP -> FP: compute_semantic_uniqueness()\n[cosine distance vs corpus]\nif corpus < 3 → score = 100
+FP -> FP: compute_category_score()\n[SBERT + Keras confidence\non selected categories]
+FP -> FP: overallScore = mean(semantics, category)\n[50/50 average]
+
+FP --> AI: {overallScore, semanticsScore, categoryScore,\ndescriptionFeedback, categoryFeedback}
+AI --> USC: Map<String, Object>
+USC --> CV: UniquenessResponse
+
+CV -> CV: Render CalibrationResultsDashboard\n[OverallScoreCard + 2× ActionableScoreCard]
+
+== Confirm & Register Profile ==
+
+O -> CV: Review scores, click\n"Confirm & Register Profile"
+CV -> CV: call api.saveProfile()\n[delegates to 1.1 PUT /api/v1/business-profile\nwith uniquenessScore written to tbl_business_profile]
+CV --> O: Navigate to Business Profile dashboard
+
+@enduml

@@ -1,0 +1,158 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "3.1 Content Generation" {
+
+  package "React Frontend" #EEF2FF {
+    class ContentStudioView {
+      -content: ContentResponseDTO
+      -activeTab: string
+      -stagedCaption: string
+      -uploadedFile: File
+      -approvedIndices: Map<string, number>
+      -approvedCaptions: Map<string, string>
+      +generateContent()
+      +approveContent(platform)
+    }
+    class AIContentMatrixPanel {
+      -captions: PlatformCaptions
+      -activeTab: string
+      -editOverrides: Map<string, string>
+      +renderPlatformTab(platform)
+    }
+    class CopywritingOptionCard {
+      +archetype: string
+      +caption: string
+      +isApproved: boolean
+      +onApprove()
+      +onCopy()
+    }
+    class PlatformTab {
+      +platform: string
+      +isActive: boolean
+      +charLimit: number
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class ContentController {
+      +generate(req, profileId?): ContentResponseDto
+      +approve(req): ApproveResponseDto
+    }
+    class ContentGenerationService {
+      +generate(req): ContentResponseDto
+      -buildForecastContext(profile): Map
+      -persistContent(market, response): void
+    }
+    class ContentApprovalService {
+      +approveForMarket(profileId, market): void
+      +hasApprovedContent(profileId, market): boolean
+      +getApprovedCaptions(profileId, market): List<String>
+    }
+    class LocalizedPromotionalContent <<Entity>> {
+      +contentId: UUID
+      +businessProfileId: UUID
+      +selectedMarket: String
+      +platform: String
+      +generatedCaption: TEXT
+      +contentDirection: TEXT
+      +hashtags: TEXT
+      +cta: TEXT
+      +toneSuggestion: TEXT
+      +framework: String
+      +source: String
+      +approvalStatus: Boolean
+      +generatedAt: OffsetDateTime
+      +approvedAt: OffsetDateTime
+    }
+    interface LocalizedPromotionalContentRepository <<JPA>> {
+      +findByBusinessProfileIdAndSelectedMarket()
+      +findByBusinessProfileIdAndApprovalStatus()
+      +save(entity)
+    }
+    class ContentGenerationLog <<Entity>> {
+      +contentLogId: UUID
+      +businessProfileId: UUID
+      +generationStatus: String
+      +diagnostics: TEXT
+      +loggedAt: OffsetDateTime
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class ContentRouter {
+      +POST /internal/content/generate
+    }
+    class CreativeDirectorAgent {
+      +run(state): ContentResponseDto
+      -analyze_services(state): state
+      -generate_platform_captions(state): state
+    }
+    class CulturalResearchService {
+      +get_market_context(market): dict
+      -_serpapi_search(market): dict
+      -_MARKET_TEMPLATES: dict
+    }
+    class AgentLLMModel {
+      -_instance: ChatGroq
+      +get_llm(): ChatGroq
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class ContentGenerateRequest {
+      +market: String
+      +businessName: String
+      +description: String
+      +categories: List<String>
+      +trend: String
+    }
+    class ContentResponseDto {
+      +market: String
+      +captions: Map<platform, ArchetypeCaptions>
+      +source: String
+    }
+    class ContentApproveRequest {
+      +profileId: UUID
+      +market: String
+    }
+    class ContentApproveResponseDto {
+      +approvedIds: List<UUID>
+      +market: String
+      +count: int
+    }
+  }
+}
+
+ContentStudioView *-- AIContentMatrixPanel
+AIContentMatrixPanel *-- "3" CopywritingOptionCard
+AIContentMatrixPanel *-- "3" PlatformTab
+
+ContentStudioView ..> ContentController : POST /api/v1/content/generate\nPOST /api/v1/content/approve
+
+ContentController --> ContentGenerationService : generate()
+ContentController --> ContentApprovalService : approveForMarket()
+ContentGenerationService --> LocalizedPromotionalContentRepository : save()
+ContentGenerationService --> ContentApprovalService : getApprovedCaptions()
+ContentApprovalService --> LocalizedPromotionalContentRepository : findBy...
+
+ContentGenerationService ..> ContentRouter : POST /internal/content/generate
+
+ContentRouter --> CreativeDirectorAgent : run(state)
+CreativeDirectorAgent --> CulturalResearchService : get_market_context()
+CreativeDirectorAgent --> AgentLLMModel : get_llm()
+
+ContentController ..> ContentResponseDto : returns
+ContentController ..> ContentApproveResponseDto : returns
+LocalizedPromotionalContentRepository --> LocalizedPromotionalContent : persists
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+
+@enduml

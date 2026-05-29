@@ -1,0 +1,136 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "3.2 Creative Direction" {
+
+  package "React Frontend" #EEF2FF {
+    class ContentStudioView {
+      -creativeDirection: CreativeDirectionDTO
+      +generateCreative(profileId, market)
+      +approveCreative(profileId, market)
+    }
+    class VisualDirectionBoard {
+      -guide: string[]
+      +renderGuideItems()
+    }
+    class DistributionPanel {
+      +channels: SocialChannel[]
+      +renderChannelCards()
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class CreativeDirectionController {
+      +generate(profileId, market?): CreativeDirectionDto
+      +approve(profileId, market?): ApproveResponseDto
+    }
+    class CreativeDirectionService {
+      +generate(profileId, market): CreativeDirectionDto
+      -checkDependency(profileId, market): void
+      -buildForecastContext(profile): Map
+      -persistOutput(market, response): void
+    }
+    class CreativeApprovalService {
+      +approveLatest(profileId, market): void
+    }
+    class ContentApprovalService {
+      +hasApprovedContent(profileId, market): boolean
+      +getApprovedCaptions(profileId, market): List<String>
+    }
+    class CreativeDirectionOutput <<Entity>> {
+      +creativeDirectionId: UUID
+      +businessProfileId: UUID
+      +selectedMarket: String
+      +shotListRecommendations: TEXT
+      +visualRecommendations: TEXT
+      +lightingSuggestions: TEXT
+      +moodboardReferences: TEXT
+      +platformRecommendations: TEXT
+      +visualTone: TEXT
+      +approvalStatus: Boolean
+      +generatedAt: OffsetDateTime
+      +approvedAt: OffsetDateTime
+    }
+    interface CreativeDirectionOutputRepository <<JPA>> {
+      +findTopByBusinessProfileIdAndSelectedMarket()
+      +save(entity)
+    }
+    class CreativeDirectionLog <<Entity>> {
+      +creativeLogId: UUID
+      +businessProfileId: UUID
+      +generationStatus: String
+      +diagnostics: TEXT
+      +loggedAt: OffsetDateTime
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class CreativeRouter {
+      +POST /internal/creative/generate
+    }
+    class GeminiClient {
+      +generate_creative_direction(req): dict
+      -_PLATFORM_PRIORITY: dict
+      -_FALLBACK_TEMPLATES: dict
+    }
+    class AgentLLMModel {
+      -_instance: ChatGroq
+      +get_llm(): ChatGroq
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class CreativeGenerateRequest {
+      +market: String
+      +approvedCaptions: List<String>
+      +categories: List<String>
+      +uniquenessScore: Float
+      +forecastContext: Map
+    }
+    class CreativeDirectionDto {
+      +visualGuide: List<String>
+      +shots: List<ShotItem>
+      +moodboard: MoodboardDto
+      +platformRecommendations: Map<String, String>
+      +source: String
+    }
+    class CreativeDirectionResponse {
+      +visualGuide: list
+      +shots: list
+      +moodboard: dict
+      +platformRecommendations: dict
+      +source: str
+    }
+  }
+}
+
+ContentStudioView *-- VisualDirectionBoard
+ContentStudioView *-- DistributionPanel
+
+ContentStudioView ..> CreativeDirectionController : POST /api/v1/creative-direction/generate\nPOST /api/v1/creative-direction/approve
+
+CreativeDirectionController --> CreativeDirectionService : generate()
+CreativeDirectionController --> CreativeApprovalService : approveLatest()
+CreativeDirectionService --> ContentApprovalService : hasApprovedContent()
+CreativeDirectionService --> ContentApprovalService : getApprovedCaptions()
+CreativeDirectionService --> CreativeDirectionOutputRepository : save()
+CreativeApprovalService --> CreativeDirectionOutputRepository : findTop... / save()
+
+CreativeDirectionService ..> CreativeRouter : POST /internal/creative/generate
+
+CreativeRouter --> GeminiClient : generate_creative_direction()
+GeminiClient --> AgentLLMModel : get_llm()
+
+CreativeDirectionController ..> CreativeDirectionDto : returns
+CreativeDirectionOutputRepository --> CreativeDirectionOutput : persists
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+
+@enduml
