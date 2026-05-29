@@ -22,55 +22,50 @@ Generates a **3-platform × 3-archetype** matrix of market-localized social medi
 
 ## Components
 
-### Frontend — React 18 + TypeScript (`ceview/`)
+### Frontend Components
 
-| Component | File | Responsibility |
-|-----------|------|---------------|
-| `ContentStudioView` | `components/module-3/3.1-content-studio/ContentStudioView.tsx` | Orchestrates all Module 3 state; calls `api.generateContent()` on mount and `api.approveContent()` on approval |
-| `AIContentMatrixPanel` | `components/module-3/3.1-content-studio/components/AIContentMatrixPanel.tsx` | Renders platform tabs and the 3 caption options for the active platform |
-| `CopywritingOptionCard` | `components/module-3/3.1-content-studio/components/CopywritingOptionCard.tsx` | Archetype card with approve / copy / inline-edit; owns `PLATFORM_CHAR_LIMITS` and the char/hashtag counters |
-| `PlatformTab` | `components/module-3/3.1-content-studio/components/PlatformTab.tsx` | Tab selector (Instagram / TikTok / Facebook) |
-| `CopyTargetBtn` | `components/module-3/3.1-content-studio/components/CopyTargetBtn.tsx` | Copy-to-clipboard button with state toggle |
-| `DistributionPanel` | `components/module-3/3.1-content-studio/components/DistributionPanel.tsx` | Multi-platform deployment cards (post-approval completion of 3.1) |
-| `PlatformSyncCard` | `components/module-3/3.1-content-studio/components/PlatformSyncCard.tsx` | Individual channel card (Instagram / TikTok / Facebook / Naver) |
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| `ContentStudioView` | Main Content Studio interface; orchestrates all Module 3 state and calls `api.generateContent()` on mount and `api.approveContent()` on approval. | React functional component |
+| `AIContentMatrixPanel` | Renders the platform tabs and the 3 AI-generated caption options for the active platform. | React panel component |
+| `CopywritingOptionCard` | Displays a single archetype caption with approve / copy / inline-edit controls; owns `PLATFORM_CHAR_LIMITS` and the char/hashtag counters. | React card component |
+| `PlatformTab` | Tab selector for switching between Instagram / TikTok / Facebook outputs. | React button component |
+| `CopyTargetBtn` | Copy-to-clipboard button with copied-state toggle. | React button component |
+| `DistributionPanel` | Multi-platform deployment cards shown after approval (completion of 3.1). | React panel component |
+| `PlatformSyncCard` | Individual channel card (Instagram / TikTok / Facebook / Naver). | React card component |
+| `api.generateContent` | API client method — `POST /api/v1/content/generate`; requests the caption matrix. | TypeScript API client method |
+| `api.approveContent` | API client method — `POST /api/v1/content/approve` (fire-and-forget) marking approved captions. | TypeScript API client method |
+| `ContentResponseDTO`, `PlatformContent`, `CaptionMetadata`, `ContentPlatformId` | Response and per-platform option shapes consumed by the view. | TypeScript interfaces |
 
-**Frontend service & types**
+### Backend Components — Spring Boot 3 / Java 21
 
-| Symbol | File | Notes |
-|--------|------|-------|
-| `api.generateContent(body, profileId?)` | `services/apiClient.ts` | `POST /api/v1/content/generate` |
-| `api.approveContent(profileId, market)` | `services/apiClient.ts` | `POST /api/v1/content/approve` (fire-and-forget) |
-| `ContentResponseDTO`, `PlatformContent`, `CaptionMetadata`, `ContentPlatformId` | `types.ts` | Response and per-platform option shapes |
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| `ContentController` | Exposes `POST /api/v1/content/generate` and `POST /api/v1/content/approve`. | Spring REST Controller |
+| `ContentGenerationService` | Loads `BusinessProfile`, builds forecast context from Module 2, builds the snake_case payload, delegates to FastAPI via `AIInferenceGatewayService.generateCaption()`, deserializes `ContentResponseDto`, persists 4 rows. | Spring Service |
+| `ContentApprovalService` | Sets `approval_status = true`; exposes `hasApprovedContent()` / `getApprovedCaptions()` used as the 3.2 dependency gate. | Spring Service |
+| `LocalizedPromotionalContent` | JPA entity mapping `tbl_localized_promotional_content` (4 rows per generate call). | JPA Entity |
+| `LocalizedPromotionalContentRepository` | Queries content by profile + market + approval status. | JPA Repository |
+| `ContentGenerationLog` | JPA entity mapping `tbl_content_generation_log` (audit trail). | JPA Entity |
+| `ContentGenerationLogRepository` | Spring Data JPA repository for `ContentGenerationLog`. | JPA Repository |
+| `ContentDtos` | Immutable records: `ContentResponseDto`, `CaptionsDto`, `PlatformContentDto`, `MarketHeaderDto`. | DTO Record Class |
+| `AIInferenceGatewayService` | WebClient bridge — `generateCaption(payload)` → `POST /internal/generation/caption` (to `fastapi-sbert`). | Spring Service |
+| `Module3ErrorCodes` | Constants for structured error codes (`MOD31_CONTENT_*`, `MOD3_CONTENT_GATEWAY_*`). | Utility Class |
 
-### Backend — Spring Boot 3 / Java 21 (`backend/spring-boot/`)
+### Backend Components — FastAPI (`fastapi-sbert`, port 8000)
 
-| Class | Package | Responsibility |
-|-------|---------|---------------|
-| `ContentController` | `com.ceview.module3` | `POST /api/v1/content/generate` and `POST /api/v1/content/approve` |
-| `ContentGenerationService` | `com.ceview.module3.submodule31` | Loads `BusinessProfile`, builds forecast context from Module 2, builds the snake_case payload, delegates to FastAPI via `AIInferenceGatewayService.generateCaption()`, deserializes `ContentResponseDto`, persists 4 rows |
-| `ContentApprovalService` | `com.ceview.module3.submodule31` | Sets `approval_status = true`; exposes `hasApprovedContent()` / `getApprovedCaptions()` used as the 3.2 dependency gate |
-| `LocalizedPromotionalContent` | `com.ceview.module3.submodule31` | JPA entity → `tbl_localized_promotional_content` (4 rows per generate call) |
-| `LocalizedPromotionalContentRepository` | `com.ceview.module3.submodule31` | JPA repository (queries by profile + market + approval status) |
-| `ContentGenerationLog` | `com.ceview.module3.submodule31` | JPA entity → `tbl_content_generation_log` (audit trail) |
-| `ContentGenerationLogRepository` | `com.ceview.module3.submodule31` | JPA repository |
-| `ContentDtos` | `com.ceview.module3.dto` | `ContentResponseDto`, `CaptionsDto`, `PlatformContentDto`, `MarketHeaderDto` |
-| `AIInferenceGatewayService` | `com.ceview.ai` | `generateCaption(payload)` → `POST /internal/generation/caption` (WebClient to `fastapi-sbert`) |
-| `Module3ErrorCodes` | `com.ceview.module3` | `MOD31_CONTENT_*`, `MOD3_CONTENT_GATEWAY_*` |
-
-### Backend — FastAPI (`backend/fastapi-sbert`, port 8000)
-
-| Component | File | Responsibility |
-|-----------|------|---------------|
-| Caption router | `app/routers/caption_generation.py` | **`POST /internal/generation/caption`** — the live path called by Spring Boot. Accepts `CaptionInputClass`, runs `caption_generation_service`, then `_transform_captions()` + `get_platform_guides()` |
-| Content router (alternate) | `app/routers/content.py` | `POST /internal/content/generate` — equivalent endpoint accepting `ContentGenerateRequest`; performs cultural research + forecast formatting itself. Not used by the current Spring path (`AIInferenceGatewayService.generateContent()` exists but is unused for 3.1) |
-| `caption_generation_service` | `app/services/caption_generation.py` | Invokes the LangGraph agent; raises `MOD31_CAPTION_AGENT_FAILED` on failure (no silent fallback at this layer) |
-| Caption Generation Agent | `app/agents/creative_director_agent/` | LangGraph `StateGraph(SocialAgentState)`: **Node 1** `analyze_services` (relevant vs. extra services) → **Node 2** `generate_platform_captions` (3 archetypes × 3 platforms with 6-field schema) → `END` |
-| `SocialAgentState` | `app/agents/creative_director_agent/state.py` | State carrying business context, `forecast_context`, `research_context`, `final_captions`, `source` |
-| Agent prompt | `app/agents/creative_director_agent/prompts.py` | Encodes the 4 cultural factors, 3 archetypes, and platform mechanics |
-| `cultural_research.research_market()` | `app/services/cultural_research.py` | FR3.3 — live SerpAPI query with curated `_MARKET_TEMPLATES` fallback |
-| `gemini_client.get_platform_guides()` | `app/services/gemini_client.py` | Per-market, per-platform visual composition tips; also supplies hardcoded Naver content |
-| `AgentLLMModel` | `app/core/AgentLLMModel.py` | Thread-safe `ChatGroq` singleton (`llama-3.3-70b-versatile`), shared across Module 3 agents |
-| `CaptionInputClass` | `app/model/CaptionInputClass.py` | Pydantic request model for the agent |
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| Caption Router | **`POST /internal/generation/caption`** — the live path called by Spring Boot. Accepts `CaptionInputClass`, runs `caption_generation_service`, then `_transform_captions()` + `get_platform_guides()`. (`app/routers/caption_generation.py`) | FastAPI Router |
+| Content Router (alternate) | `POST /internal/content/generate` — equivalent endpoint accepting `ContentGenerateRequest`; performs cultural research + forecast formatting itself. Not used by the current Spring path. (`app/routers/content.py`) | FastAPI Router |
+| `caption_generation_service` | Invokes the LangGraph agent; raises `MOD31_CAPTION_AGENT_FAILED` on failure (no silent fallback at this layer). | Python Service |
+| Caption Generation Agent | LangGraph `StateGraph(SocialAgentState)`: **Node 1** `analyze_services` → **Node 2** `generate_platform_captions` (3 archetypes × 3 platforms, 6-field schema) → `END`. (`app/agents/creative_director_agent/`) | LangGraph Agent |
+| `SocialAgentState` | State carrying business context, `forecast_context`, `research_context`, `final_captions`, `source`. | Python Agent State Class |
+| Agent Prompt | Encodes the 4 cultural factors, 3 archetypes, and platform mechanics. (`app/agents/creative_director_agent/prompts.py`) | Python Prompt Module |
+| `cultural_research.research_market()` | FR3.3 — live SerpAPI query with curated `_MARKET_TEMPLATES` fallback. | Python Service |
+| `gemini_client.get_platform_guides()` | Per-market, per-platform visual composition tips; also supplies hardcoded Naver content. | Python Service |
+| `AgentLLMModel` | Thread-safe `ChatGroq` singleton (`llama-3.3-70b-versatile`), shared across Module 3 agents. | Python Singleton |
+| `CaptionInputClass` | Request model for the caption agent. | Pydantic Schema |
 
 ## Caption Archetypes
 

@@ -23,49 +23,46 @@ Generates market-specific **visual direction** (visual guide, shot list, lightin
 
 ## Components
 
-### Frontend — React 18 + TypeScript (`ceview/`)
+### Frontend Components
 
-| Component | File | Responsibility |
-|-----------|------|---------------|
-| `ContentStudioView` | `components/module-3/3.1-content-studio/ContentStudioView.tsx` | Calls `api.generateCreative()` / `api.approveCreative()`; holds creative-direction state |
-| `VisualDirectionBoard` | `components/module-3/3.1-content-studio/components/VisualDirectionBoard.tsx` | Renders the `guide[]` / `visualGuide[]` staging blueprint per platform |
-| `BlueprintStepItem` | `components/module-3/3.1-content-studio/components/BlueprintStepItem.tsx` | Single numbered visual-direction step |
-
-**Frontend service & types**
-
-| Symbol | File | Notes |
-|--------|------|-------|
-| `api.generateCreative(profileId, market?)` | `services/apiClient.ts` | `POST /api/v1/creative-direction/generate/{profileId}` |
-| `api.approveCreative(profileId, market)` | `services/apiClient.ts` | `POST /api/v1/creative-direction/approve/{profileId}` |
-| `CreativeDirectionDTO` | `types.ts` | `{ visualGuide[], shots[], moodboard }` |
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| `ContentStudioView` | Hosts the creative-direction workflow; calls `api.generateCreative()` / `api.approveCreative()` and holds creative-direction state. | React functional component |
+| `VisualDirectionBoard` | Renders the `guide[]` / `visualGuide[]` staging blueprint per platform. | React board component |
+| `BlueprintStepItem` | Displays a single numbered visual-direction step. | React item component |
+| `api.generateCreative` | API client method — `POST /api/v1/creative-direction/generate/{profileId}`. | TypeScript API client method |
+| `api.approveCreative` | API client method — `POST /api/v1/creative-direction/approve/{profileId}`. | TypeScript API client method |
+| `CreativeDirectionDTO` | Response shape `{ visualGuide[], shots[], moodboard }` consumed by the board. | TypeScript interface |
 
 > **UI status note:** `visualGuide[]` is rendered today; the `shots[]` shot list and `moodboard` palette are returned by the backend but not yet visualized in the UI.
 
-### Backend — Spring Boot 3 / Java 21 (`backend/spring-boot/`)
+### Backend Components — Spring Boot 3 / Java 21
 
-| Class | Package | Responsibility |
-|-------|---------|---------------|
-| `CreativeDirectionController` | `com.ceview.module3` | `POST /api/v1/creative-direction/generate/{profileId}` and `approve/{profileId}` |
-| `CreativeDirectionService` | `com.ceview.module3.submodule32` | Dependency-gate check, context retrieval, FastAPI delegation via `generateCreative()`, transform + persist |
-| `CreativeApprovalService` | `com.ceview.module3.submodule32` | `approveLatest(profileId, market)` — sets `approval_status = true` on the latest output |
-| `ContentApprovalService` | `com.ceview.module3.submodule31` | Provides `hasApprovedContent()` / `getApprovedCaptions()` (the 3.1 dependency) |
-| `CreativeDirectionOutput` | `com.ceview.module3.submodule32` | JPA entity → `tbl_creative_direction_output` (1 row per profile + market) |
-| `CreativeDirectionOutputRepository` | `com.ceview.module3.submodule32` | JPA repository (`findTopBy...OrderByGeneratedAtDesc`) |
-| `CreativeDirectionLog` | `com.ceview.module3.submodule32` | JPA entity → `tbl_creative_direction_log` (audit trail) |
-| `CreativeDirectionLogRepository` | `com.ceview.module3.submodule32` | JPA repository |
-| `CreativeDirectionDtos` | `com.ceview.module3.dto` | `CreativeDirectionDto`, `ShotDto`, `MoodboardDto` |
-| `AIInferenceGatewayService` | `com.ceview.ai` | `generateCreative(payload)` → `POST /internal/creative/generate` |
-| `Module3ErrorCodes` | `com.ceview.module3` | `MOD32_CREATIVE_*`, `MOD3_CREATIVE_GATEWAY_*` |
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| `CreativeDirectionController` | Exposes `POST /api/v1/creative-direction/generate/{profileId}` and `approve/{profileId}`. | Spring REST Controller |
+| `CreativeDirectionService` | Performs the dependency-gate check, context retrieval, FastAPI delegation via `generateCreative()`, transform + persist. | Spring Service |
+| `CreativeApprovalService` | `approveLatest(profileId, market)` — sets `approval_status = true` on the latest output. | Spring Service |
+| `ContentApprovalService` | Provides `hasApprovedContent()` / `getApprovedCaptions()` — the 3.1 dependency gate. | Spring Service |
+| `CreativeDirectionOutput` | JPA entity mapping `tbl_creative_direction_output` (1 row per profile + market). | JPA Entity |
+| `CreativeDirectionOutputRepository` | Spring Data JPA repository (`findTopBy...OrderByGeneratedAtDesc`). | JPA Repository |
+| `CreativeDirectionLog` | JPA entity mapping `tbl_creative_direction_log` (audit trail). | JPA Entity |
+| `CreativeDirectionLogRepository` | Spring Data JPA repository for `CreativeDirectionLog`. | JPA Repository |
+| `CreativeDirectionDtos` | Immutable records: `CreativeDirectionDto`, `ShotDto`, `MoodboardDto`. | DTO Record Class |
+| `AIInferenceGatewayService` | WebClient bridge — `generateCreative(payload)` → `POST /internal/creative/generate`. | Spring Service |
+| `Module3ErrorCodes` | Constants for structured error codes (`MOD32_CREATIVE_*`, `MOD3_CREATIVE_GATEWAY_*`). | Utility Class |
 
-### Backend — FastAPI (`backend/fastapi-sbert`, port 8000)
+### Backend Components — FastAPI (`fastapi-sbert`, port 8000)
 
-| Component | File | Responsibility |
-|-----------|------|---------------|
-| Creative router | `app/routers/creative.py` | `POST /internal/creative/generate` — accepts `CreativeGenerateRequest`, returns `CreativeDirectionResponse` |
-| `gemini_client.generate_creative_direction()` | `app/services/gemini_client.py` | Groq (OpenAI-compatible) call; produces `visualGuide`, `shots`, `moodboard`, `platformRecommendations`; falls back to curated per-market templates |
-| `AgentLLMModel` | `app/core/AgentLLMModel.py` | Shared `ChatGroq` singleton (also used by the 3.1 agent) |
-
-**Pydantic schemas** (`app/routers/creative.py`): `CreativeGenerateRequest`, `ShotItem`, `MoodboardItem`, `CreativeDirectionResponse`.
+| Component Name | Description & Purpose | Type / Format |
+|----------------|-----------------------|---------------|
+| Creative Router | `POST /internal/creative/generate` — accepts `CreativeGenerateRequest`, returns `CreativeDirectionResponse`. (`app/routers/creative.py`) | FastAPI Router |
+| `gemini_client.generate_creative_direction()` | Groq (OpenAI-compatible) call; produces `visualGuide`, `shots`, `moodboard`, `platformRecommendations`; falls back to curated per-market templates. | Python Service |
+| `AgentLLMModel` | Shared `ChatGroq` singleton (also used by the 3.1 agent). | Python Singleton |
+| `CreativeGenerateRequest` | Request payload for creative direction generation. | Pydantic Schema |
+| `CreativeDirectionResponse` | Response payload carrying `visualGuide`, `shots`, `moodboard`, `platformRecommendations`, `source`. | Pydantic Schema |
+| `ShotItem` | Single shot-list entry (`label`, `description`, `lighting`). | Pydantic Schema |
+| `MoodboardItem` | Moodboard entry (`palette`, `references`). | Pydantic Schema |
 
 ## Platform Priority Mapping (FR3.16)
 
