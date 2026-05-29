@@ -222,7 +222,7 @@ public class AIInferenceGatewayService {
      * }
      * </pre>
      *
-     * @see com.ceview.module4.AnalyticsController#manualIngest
+     * @see com.ceview.module4.engagement.EngagementMetricsController#manualIngest
      */
     public Map<String, Object> computePesFromRaw(Map<String, Object> payload) {
         return postSbert("/internal/pes-compute/analyze", payload);
@@ -239,7 +239,7 @@ public class AIInferenceGatewayService {
      * }
      * </pre>
      *
-     * @see com.ceview.module4.AnalyticsController#pesAnalysis
+     * @see com.ceview.module4.report.PrescriptiveReportController#pesAnalysis
      */
     public Map<String, Object> generatePesAnalysis(Map<String, Object> payload) {
         return postSbert("/internal/pes-analysis/generate", payload);

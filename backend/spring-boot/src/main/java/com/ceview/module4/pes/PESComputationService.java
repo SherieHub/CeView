@@ -1,13 +1,25 @@
-package com.ceview.module4;
+package com.ceview.module4.pes;
 
 import com.ceview.module4.dto.AnalyticsDtos.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
-/** SDD §4.2 — PES = ROAS×0.35 + CR×0.30 + CAC_inv×0.15 + CTR×0.15 + CPC_inv×0.05. */
+/**
+ * Submodule 4.2 — Promotional Effectiveness Score (PES) Computation.
+ *
+ * <p>SDD §4.2 — PES = ROAS×0.35 + CR×0.30 + CAC_inv×0.15 + CTR×0.15 + CPC_inv×0.05.
+ *
+ * <p>Also serves as the FR4.26 rule-based fallback when the FastAPI PES service
+ * is unavailable.
+ */
 @Service
 public class PESComputationService {
+
+    private static final Logger log = LoggerFactory.getLogger(PESComputationService.class);
 
     private static final double W_ROAS = 0.35, W_CR = 0.30, W_CAC = 0.15, W_CTR = 0.15, W_CPC = 0.05;
 
@@ -38,6 +50,38 @@ public class PESComputationService {
         );
 
         return new PesResponse(round(total), label(total), breakdown);
+    }
+
+    /**
+     * Reconstruct a typed {@link PesResponse} from the raw FastAPI
+     * {@code /internal/pes-compute/analyze} result map.
+     *
+     * <p>Falls back to {@link #compute(Metrics)} if the map is missing required keys
+     * so the caller always receives a fully populated response (FR4.26).
+     *
+     * @param pesResult raw FastAPI result map
+     * @param metrics   locally computed KPIs used for the fallback computation
+     */
+    @SuppressWarnings("unchecked")
+    public PesResponse fromFastApiResult(Map<String, Object> pesResult, Metrics metrics) {
+        try {
+            double score = ((Number) pesResult.get("pes_score")).doubleValue();
+            String label = (String) pesResult.get("pes_label");
+            List<Map<String, Object>> rawBreakdown =
+                    (List<Map<String, Object>>) pesResult.get("breakdown");
+
+            List<PesBreakdownItem> breakdown = rawBreakdown.stream()
+                    .map(b -> new PesBreakdownItem(
+                            (String) b.get("metric"),
+                            (String) b.get("weight"),
+                            ((Number) b.get("contribution")).doubleValue()))
+                    .toList();
+
+            return new PesResponse(score, label, breakdown);
+        } catch (Exception e) {
+            log.warn("[Module4] Could not parse FastAPI PES breakdown, falling back to rule-based");
+            return compute(metrics);
+        }
     }
 
     private static String label(double s) {

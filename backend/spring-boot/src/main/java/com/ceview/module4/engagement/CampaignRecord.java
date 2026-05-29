@@ -1,4 +1,4 @@
-package com.ceview.module4;
+package com.ceview.module4.engagement;
 
 import com.ceview.module4.dto.AnalyticsDtos.ManualIngestRequest;
 import jakarta.persistence.*;
@@ -6,7 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * JPA entity that persists every operator-submitted campaign data ingestion.
+ * Submodule 4.1 — Campaign Engagement Metrics.
+ *
+ * <p>JPA entity that persists every operator-submitted campaign data ingestion.
  *
  * <p>Module 4 — SDD §4.1 (UC-4.1 raw data ingestion / FR4.26 persistence).
  *

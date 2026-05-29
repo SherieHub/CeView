@@ -99,7 +99,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 The central pipeline of Module 4. All computation, persistence, and AI enrichment flows through this single endpoint.
 
-1. `AnalyticsController.manualIngest()` receives the raw input record.
+1. `EngagementMetricsController.manualIngest()` receives the raw input record.
 2. **Step 1 — Local KPI computation** (synchronous, zero latency):
    `MetricsCalculationService.compute(in)` → derives all five KPIs and the four-stage funnel locally without any external call.
 3. **Step 2 — Persist raw inputs + KPIs**:
@@ -118,7 +118,7 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 **Trigger**: `PESComputationBoard` and `CustomerJourneyFunnel` mount → `GET /api/v1/analytics/history?weeks={4|8}`.
 
-1. `AnalyticsController.history()` sets `limit = (weeks == 8) ? 8 : 4`.
+1. `EngagementMetricsController.history()` sets `limit = (weeks == 8) ? 8 : 4`.
 2. `campaignRepo.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit))` — loads the most recent `limit` records in DESC order.
 3. `Collections.reverse(records)` — reverses to **chronological order** (oldest first) so the frontend trend charts read left-to-right correctly.
 4. Returns `CampaignHistoryResponse(snapshots)` — each snapshot carries: `periodStart`, `periodEnd`, `pesScore`, `pesLabel`, `ctr`, `cpc`, `roas`, `convRate`, `cac`.
@@ -129,7 +129,7 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 **Trigger**: `AIActionPlanReport` mounts → `POST /api/v1/analytics/report` with body `{ weeks: 4 | 8 }`.
 
-1. `AnalyticsController.report()` loads default metrics via `metrics(weeks)` (scaled demo defaults).
+1. `PrescriptiveReportController.report()` loads default metrics via `metricsSvc.defaultMetrics(weeks)` (scaled demo defaults).
 2. `metricsSvc.computeFunnelTransitions(mr.funnel())` — derives three absolute drop rates and **ranks them by business impact** (see Engine section).
 3. Enriches payload: adds `funnelTransitions` and `weeks` to the request body.
 4. `ai.generateReport(payload)` → `POST /internal/report/generate` to fastapi-sbert → `gemini_client.performance_report()` which calls Groq.
@@ -142,7 +142,7 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 **Trigger**: Future on-demand call → `POST /api/v1/analytics/pes-analysis` with body `{ weeks: 4 | 8 }`.
 
-1. `AnalyticsController.pesAnalysis()` loads current metrics via `metrics(weeks)`.
+1. `PrescriptiveReportController.pesAnalysis()` loads current metrics via `metricsSvc.defaultMetrics(weeks)`.
 2. `metricsSvc.buildTimeSeries(metrics, weeks)` — generates a synthetic `weeks`-length time series in **reverse chronological order** (index 0 = current) for all five metrics.
 3. `ai.generatePesAnalysis({"metrics_data": timeSeries, "weeks": weeks})` → `POST /internal/pes-analysis/generate` → LangGraph `pes_report_agent`.
 4. **FR4.26 Fallback**: `buildOfflinePesAnalysisFallback()` returns `{report_data: {metric_conditions: [], ...}, metadata: {needs_human_review: true, warning_message: "..."}}`.
@@ -619,6 +619,7 @@ This mirrors the FastAPI formula exactly, producing consistent PES scores whethe
 | `GET` | `/api/v1/analytics/pes/{campaignId}` | `permitAll` | PES breakdown for a campaign ID |
 | `POST` | `/api/v1/analytics/report` | `permitAll` | Prescriptive Groq report (funnel diagnostics) |
 | `POST` | `/api/v1/analytics/pes-analysis` | `permitAll` | PES deep-analysis via LangGraph agent |
+| `GET` | `/api/v1/analytics/report/{id}/pdf` | `permitAll` | Binary PDF download of a generated report |
 
 ---
 
@@ -736,6 +737,7 @@ This mirrors the FastAPI formula exactly, producing consistent PES scores whethe
 | `POST` | `/internal/pes-compute/analyze` | Full PES pipeline: base metrics → normalize → invert → weighted sum → AI insights |
 | `POST` | `/internal/pes-analysis/generate` | LangGraph PES deep-analysis agent (quality-gated) |
 | `POST` | `/internal/report/generate` | Groq prescriptive report (funnel diagnostics + recommendations) |
+| `POST` | `/internal/report/pdf` | Render the prescriptive report as a binary PDF |
 
 **`POST /internal/pes-compute/analyze`** — full response schema:
 ```json
