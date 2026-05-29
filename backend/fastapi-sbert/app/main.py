@@ -10,7 +10,6 @@ from app.routers import (
     classification,
     content,
     creative,
-    compliance,
     report,
     caption_generation,
     pes_analysis,
@@ -44,7 +43,6 @@ def healthz() -> dict:
 app.include_router(classification.router, prefix="/internal/classification", tags=["classification"])
 app.include_router(content.router,        prefix="/internal/content",        tags=["content"])
 app.include_router(creative.router,       prefix="/internal/creative",       tags=["creative"])
-app.include_router(compliance.router,     prefix="/internal/compliance",     tags=["compliance"])
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])

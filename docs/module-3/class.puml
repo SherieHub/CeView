@@ -1,0 +1,142 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title Module 3 — Content Studio: Class / Component Structure (3.1 + 3.2)
+
+package "Module 3 — Content Studio" {
+
+  package "React Frontend" #EEF2FF {
+    class ContentStudioView {
+      -content: ContentResponseDTO
+      -creativeDirection: CreativeDirectionDTO
+      -activeTab: ContentPlatformId
+      -approvedIndices: Record<platform, number>
+      -approvedCaptions: Record<platform, string>
+      +generateContent()
+      +approveContent(platform)
+      +generateCreative(profileId, market)
+      +approveCreative(profileId, market)
+    }
+    class AIContentMatrixPanel {
+      +renderPlatformTab(platform)
+    }
+    class CopywritingOptionCard {
+      +onApprove()
+      +onCopy()
+      +onEdit()
+    }
+    class PlatformTab
+    class VisualDirectionBoard {
+      -guide: string[]
+    }
+    class BlueprintStepItem
+    class DistributionPanel
+    class apiClient <<service>> {
+      +generateContent()
+      +approveContent()
+      +generateCreative()
+      +approveCreative()
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class ContentController {
+      +generate(req, profileId?)
+      +approve(body, profileId)
+    }
+    class CreativeDirectionController {
+      +generate(profileId, market?)
+      +approve(profileId, market?)
+    }
+    class ContentGenerationService
+    class ContentApprovalService {
+      +hasApprovedContent(profileId, market): boolean
+      +getApprovedCaptions(profileId, market)
+    }
+    class CreativeDirectionService
+    class CreativeApprovalService
+    class AIInferenceGatewayService {
+      +generateCaption(payload)
+      +generateCreative(payload)
+    }
+    class LocalizedPromotionalContent <<Entity>>
+    class ContentGenerationLog <<Entity>>
+    class CreativeDirectionOutput <<Entity>>
+    class CreativeDirectionLog <<Entity>>
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class CaptionRouter {
+      +POST /internal/generation/caption
+    }
+    class CreativeRouter {
+      +POST /internal/creative/generate
+    }
+    class CaptionGenerationAgent <<LangGraph>> {
+      +analyze_services(state)
+      +generate_platform_captions(state)
+    }
+    class CulturalResearchService {
+      +research_market(market)
+    }
+    class GeminiClient {
+      +get_platform_guides(market)
+      +generate_creative_direction(req)
+    }
+    class AgentLLMModel {
+      +get_llm(): ChatGroq
+    }
+  }
+}
+
+' ── Frontend composition ──
+ContentStudioView *-- AIContentMatrixPanel
+ContentStudioView *-- VisualDirectionBoard
+ContentStudioView *-- DistributionPanel
+ContentStudioView --> apiClient
+AIContentMatrixPanel *-- "3" CopywritingOptionCard
+AIContentMatrixPanel *-- "3" PlatformTab
+VisualDirectionBoard *-- "N" BlueprintStepItem
+
+' ── Frontend → Spring Boot ──
+apiClient ..> ContentController : /api/v1/content/*
+apiClient ..> CreativeDirectionController : /api/v1/creative-direction/*
+
+' ── Spring Boot 3.1 ──
+ContentController --> ContentGenerationService
+ContentController --> ContentApprovalService
+ContentGenerationService --> AIInferenceGatewayService : generateCaption()
+ContentGenerationService --> LocalizedPromotionalContent
+ContentGenerationService --> ContentGenerationLog
+ContentApprovalService --> LocalizedPromotionalContent
+
+' ── Spring Boot 3.2 (depends on 3.1 approval) ──
+CreativeDirectionController --> CreativeDirectionService
+CreativeDirectionController --> CreativeApprovalService
+CreativeDirectionService --> ContentApprovalService : hasApprovedContent()
+CreativeDirectionService --> AIInferenceGatewayService : generateCreative()
+CreativeDirectionService --> CreativeDirectionOutput
+CreativeDirectionService --> CreativeDirectionLog
+CreativeApprovalService --> CreativeDirectionOutput
+
+' ── Spring Boot → FastAPI ──
+AIInferenceGatewayService ..> CaptionRouter : POST /internal/generation/caption
+AIInferenceGatewayService ..> CreativeRouter : POST /internal/creative/generate
+
+' ── FastAPI internals ──
+CaptionRouter --> CaptionGenerationAgent
+CaptionRouter --> GeminiClient : get_platform_guides()
+CaptionGenerationAgent --> CulturalResearchService
+CaptionGenerationAgent --> AgentLLMModel
+CreativeRouter --> GeminiClient : generate_creative_direction()
+GeminiClient --> AgentLLMModel
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+
+@enduml

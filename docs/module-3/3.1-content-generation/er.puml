@@ -5,7 +5,7 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-title 3.1 — Content Generation: Entity Relationships
+title 3.1 — Market-Localized Promotional Content Generation: Entity Relationships
 
 entity "tbl_business_profile" as BP {
   * business_profile_id : UUID <<PK>>
@@ -55,21 +55,21 @@ note bottom of LPC
     approved_at = timestamp
     Unlocks Submodule 3.2
 
+  source: "groq" | "fallback"
+  Naver rows use 2 hardcoded
+    curated Korean blog options
+
   Indexes:
     idx_content_profile_market
       (business_profile_id, selected_market)
     idx_content_approval
       (business_profile_id, approval_status)
-
-  Naver rows use hardcoded captions
-    (2 curated Korean blog post options)
-    source = "hardcoded"
 end note
 
 note bottom of CGL
-  One row written per generate attempt.
-  generation_status: "success" | "fallback" | "error"
-  diagnostics: error message or LLM source info
+  One row per generate attempt.
+  generation_status: COMPLETED | FAILED
+  diagnostics: error message / source info
 end note
 
 BP ||--o{ LPC : "generates content\nper market"

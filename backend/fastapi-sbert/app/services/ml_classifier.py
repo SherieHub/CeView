@@ -27,8 +27,7 @@ CATEGORY_LABELS: list[str] = [
 # Load at import time — same pattern as BertModel.get_model() in the reference.
 _bert = _BertModel.get()
 
-# Expose encoder as module-level alias so sentence_bert_scorer.py can reuse it
-# without importing the class directly.
+# Expose the E5 encoder as a module-level alias for convenience.
 _e5_model = _bert.encoder if _bert is not None else None
 
 # ── Internal helpers ──────────────────────────────────────────────────────────

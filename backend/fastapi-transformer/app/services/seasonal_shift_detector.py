@@ -263,12 +263,14 @@ def _rolling_std(series: list[float], window: int) -> float:
 
 
 def _neutral() -> dict:
+    # Empty input: return zeros so "no data" is unambiguous to callers, rather
+    # than synthetic 50.0 averages / 0.40 score that look like a real signal.
     return {
-        "rolling_7d_avg":    50.0,
-        "rolling_30d_avg":   50.0,
+        "rolling_7d_avg":    0.0,
+        "rolling_30d_avg":   0.0,
         "rolling_7d_std":    0.0,
         "spike_indicator":   False,
         "yoy_ratio":         None,
-        "seasonality_score": 0.40,   # conservative — no data to assess
+        "seasonality_score": 0.0,
         "computed_at":       datetime.now(timezone.utc).isoformat(),
     }

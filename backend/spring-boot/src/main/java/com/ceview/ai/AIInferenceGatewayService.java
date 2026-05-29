@@ -32,7 +32,6 @@ public class AIInferenceGatewayService {
 
     private final WebClient sbertClient;
     private final WebClient transformerClient;
-    private final WebClient complianceClient;
     private final Duration timeout;
     /** Extended timeout for rank-markets: PyTrends needs up to 75 s (6 batches × 4–12 s jitter). */
     private final Duration rankMarketsTimeout;
@@ -40,12 +39,10 @@ public class AIInferenceGatewayService {
     public AIInferenceGatewayService(
             @Qualifier("fastapiSbertClient") WebClient sbertClient,
             @Qualifier("fastapiTransformerClient") WebClient transformerClient,
-            @Qualifier("fastapiComplianceClient") WebClient complianceClient,
             @Value("${ceview.fastapi.timeout-seconds}") long timeoutSec,
             @Value("${ceview.fastapi.rank-markets-timeout-seconds:90}") long rankMarketsTimeoutSec) {
         this.sbertClient          = sbertClient;
         this.transformerClient    = transformerClient;
-        this.complianceClient     = complianceClient;
         this.timeout              = Duration.ofSeconds(timeoutSec);
         this.rankMarketsTimeout   = Duration.ofSeconds(rankMarketsTimeoutSec);
     }
@@ -146,13 +143,6 @@ public class AIInferenceGatewayService {
         return postTransformer("/internal/forecasting/score", payload);
     }
 
-    // ─── Module 3.3 — OMCS via dedicated fastapi-compliance Groq service ────────
-
-    /** Full OMCS evaluation via fastapi-compliance Groq service (FR3.20–FR3.26). */
-    public Map<String, Object> evaluateOmcs(Map<String, Object> payload) {
-        return post(complianceClient, "/api/v1/compliance/evaluate-omcs", payload);
-    }
-
     // ─── Module 3 — Content / Creative / Compliance (fastapi-sbert) ──────────
 
     public Map<String, Object> generateContent(Map<String, Object> payload) {
@@ -166,15 +156,6 @@ public class AIInferenceGatewayService {
 
     public Map<String, Object> generateCreative(Map<String, Object> payload) {
         return postSbert("/internal/creative/generate", payload);
-    }
-
-    public Map<String, Object> evaluateCompliance(Map<String, Object> payload) {
-        return postSbert("/internal/compliance/evaluate", payload);
-    }
-
-    /** Full multimodal compliance analysis (FR3.20-FR3.26). */
-    public Map<String, Object> evaluateComplianceFull(Map<String, Object> payload) {
-        return postSbert("/internal/compliance/evaluate-full", payload);
     }
 
     /**

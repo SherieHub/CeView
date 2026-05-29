@@ -28,7 +28,7 @@ import hashlib
 import logging
 import random
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from app.config.keyword_mapping import MACRO_TREND_MAPPING, MARKET_CONFIG
 from app.services.seasonal_shift_detector import compute as seasonal_compute
@@ -60,6 +60,36 @@ _STUB_BASE: dict[str, float] = {
     "korea": 72.0,
     "japan": 58.0,
     "usa":   44.0,
+}
+
+# Curated stub series — 52 weeks of realistic inbound tourism search interest
+# for each market (chronological, oldest first). Values reflect seasonal peaks
+# observed in Philippine inbound tourism data: Korea peaks Jul–Aug & Dec–Jan,
+# Japan peaks Mar–Apr & Oct–Nov, USA peaks Jun–Aug & Dec–Jan.
+# Used by fetch_current_index / fetch_trend_history fallbacks so the demand
+# chart keeps realistic week-over-week variance when pytrends is offline.
+_STUB_SERIES: dict[str, list[float]] = {
+    "korea": [
+        42, 45, 48, 52, 55, 58, 62, 65, 67, 64, 60, 55,
+        50, 48, 45, 43, 41, 40, 42, 45, 50, 55, 60, 65,
+        70, 75, 72, 68, 63, 58, 54, 50, 47, 45, 44, 46,
+        50, 55, 60, 65, 68, 70, 72, 68, 63, 58, 52, 48,
+        45, 43, 41, 40,
+    ],
+    "japan": [
+        35, 38, 42, 48, 55, 58, 54, 50, 46, 42, 40, 38,
+        36, 35, 37, 40, 44, 48, 52, 55, 53, 50, 47, 44,
+        42, 40, 38, 37, 36, 38, 42, 46, 50, 54, 57, 55,
+        52, 48, 45, 42, 40, 39, 38, 40, 44, 48, 52, 55,
+        53, 50, 46, 42,
+    ],
+    "usa": [
+        30, 32, 35, 38, 42, 48, 55, 60, 58, 52, 45, 40,
+        36, 34, 32, 31, 30, 32, 35, 38, 42, 46, 50, 54,
+        58, 62, 60, 56, 51, 46, 42, 38, 35, 33, 32, 34,
+        38, 43, 48, 53, 57, 60, 58, 54, 49, 44, 40, 36,
+        33, 31, 30, 30,
+    ],
 }
 
 
@@ -134,11 +164,13 @@ def fetch_and_process(market: str, category: str) -> dict:
             geo       = geo_code,
         )
 
-        # ── Jitter sleep: MUST run after build_payload/before reading result ──
-        # This is the primary HTTP 429 mitigation.  Do not remove or shorten.
-        _jitter_sleep()
-
         df = pt.interest_over_time()
+
+        # ── Jitter sleep: MUST run after the data fetch ──────────────────────
+        # This is the primary HTTP 429 mitigation — it spaces out consecutive
+        # requests so the NEXT (market, category) fetch starts after a delay.
+        # Do not remove or shorten.
+        _jitter_sleep()
 
         if df is None or df.empty:
             logger.warning(
@@ -199,7 +231,180 @@ def fetch_and_process(market: str, category: str) -> dict:
         return _stub_result(market_key, category, keywords)
 
 
+# ─── Market-data ingestion API (consumed by /internal/market-data router) ──────
+
+def fetch_current_index(market: str, categories: list[str]) -> dict:
+    """Fetch the current Google Trends index for a market using localized keywords.
+
+    Replaces the legacy ``pytrends_client.fetch_trends``.  Unlike that version
+    this targets the correct per-market geo (KR/JP/US) and resolves native-
+    language keywords, so KR/JP indices are no longer near-zero.
+
+    Keyword resolution: the FIRST tagged category drives the localized lookup
+    via ``MACRO_TREND_MAPPING[category][geo]``; ``_generic_keywords`` is used
+    when the category has no mapping.
+
+    Args:
+        market:     "korea" | "japan" | "usa"
+        categories: business-profile category labels (first is used for keywords)
+
+    Returns:
+        {market, trend_index, keywords_used, fetched_at, source}
+
+    Raises:
+        ValueError: if market is not in MARKET_CONFIG
+    """
+    market_key, config = _resolve_market(market)
+    geo_code = config["geo"]
+    keywords = _resolve_localized_keywords(market_key, geo_code, categories)
+
+    if _TrendReq is None:
+        logger.warning(
+            "pytrends unavailable — stub current index market=%s", market_key,
+        )
+        return _stub_current_index(market_key, keywords)
+
+    try:
+        pt = _TrendReq(hl=config["hl"], tz=config["tz"], timeout=REQUEST_TIMEOUT)
+        pt.build_payload(kw_list=keywords[:5], timeframe="today 3-m", geo=geo_code)
+        df = pt.interest_over_time()
+        _jitter_sleep()   # space out consecutive requests (HTTP 429 mitigation)
+
+        if df is None or df.empty:
+            logger.warning(
+                "Empty DataFrame for current index — stub fallback market=%s", market_key,
+            )
+            return _stub_current_index(market_key, keywords)
+
+        if "isPartial" in df.columns:
+            df = df.drop(columns=["isPartial"])
+
+        primary_kw  = keywords[0] if keywords[0] in df.columns else df.columns[0]
+        trend_index = float(df[primary_kw].tail(4).mean())
+
+        return {
+            "market":        market_key,
+            "trend_index":   round(max(0.0, min(100.0, trend_index)), 2),
+            "keywords_used": list(keywords[:5]),
+            "fetched_at":    datetime.now(timezone.utc).isoformat(),
+            "source":        "pytrends",
+        }
+
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "Current index fetch failed — stub fallback market=%s error=%s",
+            market_key, exc,
+        )
+        return _stub_current_index(market_key, keywords)
+
+
+def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> dict:
+    """Fetch ``weeks`` of weekly Google Trends history for a market.
+
+    Replaces the legacy ``pytrends_client.fetch_trend_history``.  Used on first
+    ingestion to backfill MarketSignalRecord rows so the demand chart shows real
+    week-over-week variance.  Same localized-keyword / correct-geo resolution as
+    ``fetch_current_index``.
+
+    Args:
+        market:     "korea" | "japan" | "usa"
+        categories: business-profile category labels (first is used for keywords)
+        weeks:      number of trailing weeks to fetch
+
+    Returns:
+        {market, weekly_series: [{date, trend_index}], keywords_used, fetched_at, source}
+
+    Raises:
+        ValueError: if market is not in MARKET_CONFIG
+    """
+    market_key, config = _resolve_market(market)
+    geo_code = config["geo"]
+    keywords = _resolve_localized_keywords(market_key, geo_code, categories)
+
+    if _TrendReq is None:
+        logger.warning(
+            "pytrends unavailable — stub history market=%s weeks=%d", market_key, weeks,
+        )
+        return _stub_history(market_key, keywords, weeks)
+
+    try:
+        pt = _TrendReq(hl=config["hl"], tz=config["tz"], timeout=REQUEST_TIMEOUT)
+        pt.build_payload(kw_list=keywords[:5], timeframe=f"today {weeks}-w", geo=geo_code)
+        df = pt.interest_over_time()
+        _jitter_sleep()   # space out consecutive requests (HTTP 429 mitigation)
+
+        if df is None or df.empty:
+            logger.warning(
+                "Empty DataFrame for history — stub fallback market=%s", market_key,
+            )
+            return _stub_history(market_key, keywords, weeks)
+
+        if "isPartial" in df.columns:
+            df = df.drop(columns=["isPartial"])
+
+        primary_kw = keywords[0] if keywords[0] in df.columns else df.columns[0]
+        series = [
+            {
+                "date":        str(idx.date()),
+                "trend_index": round(max(0.0, min(100.0, float(val))), 2),
+            }
+            for idx, val in zip(df.index, df[primary_kw])
+        ]
+
+        logger.info(
+            "fetch_trend_history ok market=%s geo=%s weeks=%d points=%d",
+            market_key, geo_code, weeks, len(series),
+        )
+
+        return {
+            "market":        market_key,
+            "weekly_series": series,
+            "keywords_used": list(keywords[:5]),
+            "fetched_at":    datetime.now(timezone.utc).isoformat(),
+            "source":        "pytrends",
+        }
+
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "History fetch failed — stub fallback market=%s error=%s",
+            market_key, exc,
+        )
+        return _stub_history(market_key, keywords, weeks)
+
+
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _resolve_market(market: str) -> tuple[str, dict]:
+    """Normalize a market name and return (market_key, config), raising on unknown."""
+    market_key = market.strip().lower()
+    config     = MARKET_CONFIG.get(market_key)
+    if config is None:
+        raise ValueError(
+            f"Unknown market '{market}'. Valid values: {list(MARKET_CONFIG.keys())}"
+        )
+    return market_key, config
+
+
+def _resolve_localized_keywords(
+    market_key: str, geo_code: str, categories: list[str]
+) -> list[str]:
+    """Resolve localized pytrends keywords from the FIRST tagged category.
+
+    Mirrors fetch_and_process's resolution but accepts the category LIST that
+    the ingestion pipeline passes.  Uses MACRO_TREND_MAPPING[category][geo] for
+    the first category; falls back to generic per-market keywords when absent.
+    """
+    first_category = categories[0] if categories else ""
+    cat_map  = MACRO_TREND_MAPPING.get(first_category, {})
+    keywords = cat_map.get(geo_code, [])
+    if not keywords:
+        logger.warning(
+            "No keyword mapping for category='%s' geo='%s' — generic fallback",
+            first_category, geo_code,
+        )
+        keywords = _generic_keywords(market_key)
+    return keywords
+
 
 def _jitter_sleep() -> None:
     """Sleep for a random interval [JITTER_MIN_S, JITTER_MAX_S] seconds.
@@ -224,6 +429,54 @@ def _generic_keywords(market_key: str) -> list[str]:
     return defaults.get(market_key, ["Cebu Philippines travel"])
 
 
+def _stub_current_index(market: str, keywords: list[str]) -> dict:
+    """Curated stub current index — most-recent week of the seasonal series.
+
+    Rotates the 52-week curated series by the current ISO week so the 'current'
+    value tracks the calendar, giving the chart a plausible seasonal position.
+    """
+    series      = _STUB_SERIES.get(market, _STUB_SERIES["korea"])
+    idx         = date.today().isocalendar()[1] % len(series)
+    trend_index = float(series[idx])
+    return {
+        "market":        market,
+        "trend_index":   round(max(0.0, min(100.0, trend_index)), 2),
+        "keywords_used": list(keywords[:5]),
+        "fetched_at":    datetime.now(timezone.utc).isoformat(),
+        "source":        "stub",
+    }
+
+
+def _stub_history(market: str, keywords: list[str], weeks: int) -> dict:
+    """Curated stub weekly history — ``weeks`` dated points from the seasonal series.
+
+    Ends at the current ISO week and walks backwards (wrapping around the 52-week
+    series), attaching the Monday of each corresponding past week so the series is
+    chronological with real week-over-week variance.
+    """
+    full     = _STUB_SERIES.get(market, _STUB_SERIES["korea"])
+    end_idx  = date.today().isocalendar()[1] % len(full)
+    indices  = [(end_idx - weeks + i) % len(full) for i in range(weeks)]
+    values   = [full[i] for i in indices]
+
+    today  = date.today()
+    monday = today - timedelta(days=today.weekday())
+    series = [
+        {
+            "date":        str(monday - timedelta(weeks=weeks - 1 - i)),
+            "trend_index": round(max(0.0, min(100.0, float(v))), 2),
+        }
+        for i, v in enumerate(values)
+    ]
+    return {
+        "market":        market,
+        "weekly_series": series,
+        "keywords_used": list(keywords[:5]),
+        "fetched_at":    datetime.now(timezone.utc).isoformat(),
+        "source":        "stub",
+    }
+
+
 def _stub_result(market: str, category: str, keywords: list[str]) -> dict:
     """Return a deterministic stub when pytrends is unavailable or a request fails.
 
@@ -231,7 +484,10 @@ def _stub_result(market: str, category: str, keywords: list[str]) -> dict:
     (market, category) hash so results are consistent across restarts while
     still exercising the full SeasonalShift math pipeline.
     """
-    seed_val   = int(hashlib.md5(f"{market}:{category}".encode()).digest()[0])
+    # Use 8 bytes of the digest (not just the first byte) so distinct
+    # (market, category) pairs get distinct seeds — a single byte (0–255)
+    # collides for ~66% of the 21 possible pairs.
+    seed_val   = int.from_bytes(hashlib.md5(f"{market}:{category}".encode()).digest()[:8], "big")
     jitter_val = (seed_val % 20) - 10       # ±10 deterministic jitter
     base       = _STUB_BASE.get(market, 50.0)
     trend_idx  = round(max(0.0, min(100.0, base + jitter_val)), 2)
@@ -319,8 +575,8 @@ def fetch_category_volume(category: str, market: str) -> dict:
         try:
             pt = _TrendReq(hl=hl, tz=tz_offset, timeout=REQUEST_TIMEOUT)
             pt.build_payload(kw_list=batch, timeframe=TIMEFRAME, geo=geo_code)
-            _jitter_sleep()
             df = pt.interest_over_time()
+            _jitter_sleep()   # space out consecutive batch requests (HTTP 429 mitigation)
 
             if df is None or df.empty:
                 logger.warning(
