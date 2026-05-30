@@ -147,6 +147,58 @@ public class ForecastingService {
         }
     }
 
+    /**
+     * Staleness-aware live forecast for the Home view.
+     *
+     * Runs the full live pipeline (2.1 ingestion + 2.2 Gemini/XGBoost) when the
+     * profile has no forecast yet, or its newest 4-week forecast is older than
+     * {@code maxAgeHours}. Otherwise serves the cached DB rows unchanged.
+     *
+     * This is what makes the Home cards reflect a live forecast on load while
+     * avoiding an expensive Gemini batch call on every single page visit.
+     *
+     * @throws IllegalArgumentException when the profile is missing or its
+     *         categories are not set (UC-1.1 incomplete) — surfaced by the
+     *         controller as a non-server 409 so the Home view degrades quietly.
+     */
+    public MarketsResponse ensureFreshForecast(UUID profileId, long maxAgeHours) {
+        if (profileId == null) {
+            throw new IllegalArgumentException("profileId is required");
+        }
+
+        // Fast-fail on an unknown profile id rather than spinning up the ~6s live
+        // pipeline (which forecastForProfile would run unpersisted for a missing
+        // row). The Home view passes whatever id it holds, so a stale/garbage id
+        // must 409 quickly instead of silently triggering a forecast.
+        if (profileRepo.findById(profileId).isEmpty()) {
+            throw new IllegalArgumentException("Business profile not found: " + profileId);
+        }
+
+        OffsetDateTime newest = null;
+        for (String market : MARKETS) {
+            Optional<ForecastResult> fr = forecastRepo
+                    .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                            profileId, market, 4);
+            if (fr.isPresent() && fr.get().getGeneratedAt() != null) {
+                OffsetDateTime g = fr.get().getGeneratedAt();
+                if (newest == null || g.isAfter(newest)) newest = g;
+            }
+        }
+
+        boolean stale = newest == null
+                || newest.isBefore(OffsetDateTime.now().minusHours(maxAgeHours));
+
+        if (stale) {
+            log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
+                    profileId, newest, maxAgeHours);
+            return forecastForProfile(profileId, true);
+        }
+
+        log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={}) — serving cached DB rows",
+                profileId, newest, maxAgeHours);
+        return loadMarketsFromDb(profileId);
+    }
+
     // ─── DB-only read path (GET /markets) ────────────────────────────────────
 
     /**

@@ -40,6 +40,30 @@ public class ForecastingController {
         }
     }
 
+    /**
+     * Home-view live forecast: runs the pipeline only when the profile's newest
+     * forecast is missing or older than {@code maxAgeHours} (default 12h),
+     * otherwise serves cached rows. Drives the demand-alert cards on Home.
+     */
+    @PostMapping("/ensure/{profileId}")
+    public ResponseEntity<?> ensure(@PathVariable UUID profileId,
+                                    @RequestParam(defaultValue = "12") long maxAgeHours) {
+        try {
+            MarketsResponse result = forecastingService.ensureFreshForecast(profileId, maxAgeHours);
+            return ResponseEntity.ok(result);
+        } catch (ResponseStatusException rse) {
+            return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (IllegalArgumentException iae) {
+            // Profile missing or categories not set — a client-state issue, not a
+            // server fault. 409 keeps the Home view from showing the AI-down banner.
+            return ResponseEntity.status(409)
+                    .body(Map.of("code", "MOD22_PROFILE_NOT_READY", "message", iae.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
+        }
+    }
+
     /** Re-analyze for a specific profile (the "Refresh Forecast" CTA). */
     @PostMapping("/analyze/{profileId}")
     public ResponseEntity<?> analyze(@PathVariable UUID profileId) {

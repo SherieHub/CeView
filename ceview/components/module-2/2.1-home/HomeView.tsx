@@ -4,7 +4,7 @@ import TrendAlertCard from './components/TrendAlertCard';
 import TrendAlertCardSkeleton from './components/TrendAlertCardSkeleton';
 import MarketRadarView from '../2.2-market-radar/MarketRadarView';
 import { COLORS } from '../../../constants';
-import { Notification } from '../../../types';
+import { Notification, Market } from '../../../types';
 import { api, ApiError } from '../../../services/apiClient';
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
@@ -15,42 +15,106 @@ interface HomeViewProps {
   onNavigateToContent?: () => void;
 }
 
+/**
+ * Derive trend-alert notifications from the forecasting markets response.
+ * A market is a "caught trend" when its chart has a 2σ spike either in the
+ * history portion (active surge now) or the forecast portion (upcoming surge).
+ * Mirrors the spike-detection logic in LiveAlertBanner.
+ */
+const deriveTrendNotifications = (markets: Market[]): Notification[] => {
+  const alerts: { notif: Notification; active: boolean }[] = [];
+
+  for (const market of markets) {
+    const chart = market.chartData ?? [];
+    const hasSpikeNow = chart.some((d) => d.history !== null && d.spike === 1);
+    const hasSpikeAhead = chart.some((d) => d.forecast !== null && d.spike === 1);
+    if (!hasSpikeNow && !hasSpikeAhead) continue;
+
+    const spikeWeek = chart.find((d) => d.spike === 1)?.week ?? '';
+    const trend = market.peakMonths?.length
+      ? `peak season (${market.peakMonths[0]})`
+      : 'rising Cebu travel demand';
+
+    alerts.push({
+      active: hasSpikeNow,
+      notif: {
+        id: `market-trend-${market.id}`,
+        marketId: market.id,
+        market: market.name,
+        title: hasSpikeNow
+          ? `Demand Surge Active — ${market.name}`
+          : `Upcoming Surge — ${market.name}`,
+        date: hasSpikeNow ? 'Active now' : spikeWeek,
+        trend,
+        isRead: false,
+      },
+    });
+  }
+
+  // Active surges first, then upcoming
+  return alerts
+    .sort((a, b) => Number(b.active) - Number(a.active))
+    .map((a) => a.notif);
+};
+
 const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, categories, onNavigateToContent }) => {
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [marketAlerts, setMarketAlerts] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [serverError, setServerError] = useState<string | null>(null);
   const [aiError, setAiError] = useState<{ reason: string; code: string } | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    setServerError(null);
-    setAiError(null);
+    let cancelled = false;
 
-    // Load cached alerts from DB — always works even when Gemini is down
-    api.listNotifications(businessProfileId)
-      .then(r => setNotifications(r.notifications ?? []))
-      .catch((err) => {
+    const load = async () => {
+      setIsLoading(true);
+      setServerError(null);
+      setAiError(null);
+
+      // Run a live forecast first so every card below reflects fresh pipeline
+      // output. The backend skips the heavy Gemini/XGBoost run when a recent
+      // forecast already exists, so this is cheap on most visits. Derive the
+      // "caught trend" surge cards from the markets it returns (live or cached).
+      // Failures are non-fatal: we still fall through to the last persisted
+      // alerts and only raise the warning banner on a genuine AI/server fault.
+      if (businessProfileId) {
+        try {
+          const r = await api.ensureForecast(businessProfileId);
+          if (!cancelled) setMarketAlerts(deriveTrendNotifications(r.markets ?? []));
+        } catch (err) {
+          const ae = err instanceof ApiError ? err : null;
+          if (ae && ae.status >= 500) {
+            setAiError({
+              reason: ae.message ?? 'The AI forecast service may be unavailable.',
+              code: ae.code ?? 'UNKNOWN',
+            });
+          }
+          // 4xx (e.g. profile not ready) → degrade quietly to cached alerts.
+        }
+      }
+
+      if (cancelled) return;
+
+      // Read the demand alerts the forecast just produced. Always works even
+      // when the live run above failed — these are the last persisted rows.
+      try {
+        const r = await api.listNotifications(businessProfileId);
+        if (!cancelled) setNotifications(r.notifications ?? []);
+      } catch (err) {
+        if (cancelled) return;
         const ae = err instanceof ApiError ? err : null;
         const detail = ae?.message ?? 'Please try again later.';
         setServerError(`Notification service unavailable: ${detail}`);
-      })
-      .finally(() => setIsLoading(false));
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
 
-    // Fire-and-forget: probe the AI forecast service to detect Gemini failures.
-    // We don't block the notification list on this — it only drives the warning banner.
-    api.listMarkets(businessProfileId)
-      .catch((err) => {
-        const ae = err instanceof ApiError ? err : null;
-        if (ae && ae.status >= 500) {
-          setAiError({
-            reason: ae.message ?? 'The AI forecast service may be unavailable.',
-            code: ae.code ?? 'UNKNOWN',
-          });
-        }
-
-      });
+    load();
+    return () => { cancelled = true; };
   }, [businessProfileId]);
 
   if (selectedNotification) {
@@ -67,6 +131,9 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
       </div>
     );
   }
+
+  // Caught-trend cards (from /forecasting/markets) first, then /notifications cards
+  const merged = [...marketAlerts, ...notifications];
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6 animate-fade-in space-y-6 md:space-y-8 min-h-screen" style={{ backgroundColor: COLORS.CREAM }}>
@@ -112,11 +179,12 @@ const HomeView: React.FC<HomeViewProps> = ({ businessProfileId, businessName, ca
       <div className="space-y-4">
         {isLoading
           ? [0, 1, 2].map(i => <TrendAlertCardSkeleton key={i} />)
-          : notifications.length > 0
-            ? notifications.map((notif) => (
+          : merged.length > 0
+            ? merged.map((notif) => (
                 <TrendAlertCard
                   key={notif.id}
                   notif={notif}
+                  variant={notif.id.startsWith('market-trend-') ? 'surge' : 'default'}
                   onClick={() => setSelectedNotification(notif)}
                 />
               ))

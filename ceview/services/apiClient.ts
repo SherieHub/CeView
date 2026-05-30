@@ -108,6 +108,17 @@ export const api = {
       method: 'POST', body: '{}',
     }),
 
+  /**
+   * Home-view live forecast. Runs the pipeline only when the profile's newest
+   * forecast is missing or older than maxAgeHours; otherwise returns cached rows.
+   * Side effect: writes fresh demand-alert rows that listNotifications then reads.
+   */
+  ensureForecast: (profileId: string, maxAgeHours?: number) =>
+    req<{ markets: Market[] }>(
+      `/api/v1/forecasting/ensure/${encodeURIComponent(profileId)}${maxAgeHours != null ? `?maxAgeHours=${maxAgeHours}` : ''}`,
+      { method: 'POST', body: '{}' },
+    ),
+
   listNotifications: (profileId?: string | null) => {
     const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
     return req<{ notifications: Notification[] }>(`/api/v1/notifications${qs}`);
