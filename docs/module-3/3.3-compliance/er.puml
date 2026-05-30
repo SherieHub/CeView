@@ -1,0 +1,37 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 3.3 — OMCS Compliance Audit: Entity Relationships
+
+note as N1
+  Submodule 3.3 is fully stateless.
+  No rows are persisted to any database table.
+  tbl_compliance_evaluation_result and
+  tbl_compliance_revision_history were created
+  in V5/V6 and dropped in V16 when the audit
+  was reimplemented as a LangGraph omcs_agent.
+  All audit results are returned in-memory only.
+end note
+
+entity "tbl_business_profile" as BP {
+  * business_profile_id : UUID <<PK>>
+  --
+  * user_id             : UUID <<FK>>
+  business_name         : TEXT
+  categories            : TEXT
+  uniqueness_score      : FLOAT
+  ...
+}
+
+note bottom of BP
+  3.3 reads business profile data
+  from this table at audit time
+  (via businessProfile payload field)
+  but writes nothing back.
+end note
+
+@enduml

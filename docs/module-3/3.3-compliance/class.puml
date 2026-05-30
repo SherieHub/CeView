@@ -1,0 +1,134 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 3.3 — OMCS Compliance Audit: Class / Component Structure
+
+package "3.3 OMCS Compliance Audit" {
+
+  package "React Frontend" #EEF2FF {
+    class ContentStudioView {
+      -stagedCaption: string
+      -uploadedFile: File
+      -imageDataUrl: string
+      -auditOn: boolean
+      -auditRunning: boolean
+      -auditDone: boolean
+      -auditProgress: number
+      -omcs: OmcsAuditResultDTO
+      +runOmcsAudit()
+      +onResetAudit()
+    }
+    class SmartOptimizationBoard {
+      -auditOn: boolean
+      -auditRunning: boolean
+      -auditDone: boolean
+      -auditProgress: number
+      -omcs: OmcsAuditResultDTO
+      -auditSteps: AuditStep[]
+      +onRunAudit()
+      +onResetAudit()
+    }
+    class ComplianceGauge {
+      +score: number
+    }
+    class MediaCaptionManager {
+      +stagedCaption: string
+      +file: File
+      +previewUrl: string
+      +onFileIngest(file)
+      +onRemoveFile()
+    }
+    class MediaDropzone {
+      +onFileIngest(file)
+    }
+    class MediaPreviewCard {
+      +file: File
+      +previewUrl: string
+      +onRemove()
+    }
+    class CaptionTextArea {
+      +value: string
+      +onChange(value)
+    }
+    class AuditEmptyBanner
+    class apiClient <<service>> {
+      +analyzeOmcs(body): OmcsAuditResultDTO
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class ComplianceController {
+      +omcsAnalyze(body): OmcsAuditResultDto
+    }
+    class AIInferenceGatewayService {
+      +analyzeOmcsAgent(payload): Map
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class ComplianceRouter {
+      +POST /internal/omcs/analyze
+    }
+    note bottom of ComplianceRouter
+      LangGraph omcs_agent (stateless):
+      Node 1 — profile semantic alignment (CAS)
+      Node 2 — image vs recommendations rubric (VAS)
+      Node 3 — pubmat caption/image consistency (HCS)
+      OMCS = (0.35×CAS) + (0.45×VAS) + (0.20×HCS)
+      Pass threshold: 70
+    end note
+  }
+
+  package "DTOs / Models" #FFF3E0 {
+    class OmcsAuditRequest {
+      +caption: String
+      +imageUrl: String
+      +businessProfile: Map<String, Object>
+      +recommendations: Map<String, Object>
+    }
+    class OmcsAuditResultDto {
+      +profileSemanticScore: double
+      +rubricEvaluationData: Map<String, Object>
+      +recommendationsPictureScore: double
+      +consistencyExplanation: String
+      +pubmatConsistencyScore: double
+      +omcsScore: double
+      +status: String
+      +feedback: String
+    }
+  }
+}
+
+' ── Frontend composition ──
+ContentStudioView *-- SmartOptimizationBoard
+ContentStudioView *-- MediaCaptionManager
+ContentStudioView --> apiClient
+SmartOptimizationBoard *-- ComplianceGauge
+MediaCaptionManager *-- CaptionTextArea
+MediaCaptionManager *-- MediaDropzone
+MediaCaptionManager *-- MediaPreviewCard
+SmartOptimizationBoard *-- AuditEmptyBanner
+
+' ── Frontend → Spring Boot ──
+apiClient ..> ComplianceController : POST /api/v1/compliance/omcs-analyze
+
+' ── Spring Boot ──
+ComplianceController --> AIInferenceGatewayService : analyzeOmcsAgent()
+
+' ── Spring Boot → FastAPI ──
+AIInferenceGatewayService ..> ComplianceRouter : POST /internal/omcs/analyze
+
+' ── DTOs ──
+ComplianceController ..> OmcsAuditRequest : consumes
+ComplianceController ..> OmcsAuditResultDto : returns
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs / Models"
+
+@enduml

@@ -1,0 +1,95 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 3.3 — OMCS Compliance Audit: End-to-End Pipeline
+
+actor Operator as O
+participant "ContentStudio\nView" as UI
+participant "SmartOptimization\nBoard" as SOB
+participant "MediaCaption\nManager" as MCM
+participant "Compliance\nController" as CC
+participant "AIInferenceGateway\nService" as GW
+participant "FastAPI\n(omcs_agent)" as FP
+
+== Setup — Stage Caption + Upload Media ==
+
+O -> UI: Approve a caption card (CopywritingOptionCard.onApprove)
+UI -> UI: stagedCaption ← approvedCaptions[platform]
+UI -> SOB: auditOn = true (SmartOptimizationBoard toggle)
+SOB -> MCM: show MediaCaptionManager
+O -> MCM: Upload PNG / JPG / WEBP image (≤20 MB)
+MCM -> MCM: FileReader reads file as base64 data URL\n→ imageDataUrl
+
+alt no media uploaded
+  MCM -> SOB: show AuditEmptyBanner
+  note right: Run button disabled until\nmedia is present
+end
+
+== Transaction 3.3 — OMCS Compliance Audit ==
+
+O -> SOB: Click "Run Audit"
+SOB -> UI: onRunAudit()
+UI -> UI: auditRunning = true\nauditProgress animates 0→100 (6 steps)
+
+UI -> CC: POST /api/v1/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
+
+note right of CC
+  Validates: caption + imageUrl required.
+  Builds snake_case payload.
+  Delegates to AIInferenceGatewayService.
+  No DB writes — fully stateless.
+end note
+
+CC -> GW: analyzeOmcsAgent(payload)
+GW -> FP: POST /internal/omcs/analyze\n{caption, image_url, business_profile, recommendations}
+
+note right of FP
+  LangGraph omcs_agent (stateless, 3 scoring axes):
+
+  CAS — Content Alignment Score (weight 0.35)
+    Profile semantic alignment: business context,
+    market localization, tone, psychology vectors.
+    7-criterion rubric; each criterion 0–100.
+
+  VAS — Visual Alignment Score (weight 0.45)
+    Image evaluated against the creative-direction
+    recommendations (shot list, visual guide, platform rules).
+    recommendationsPictureScore from rubric total.
+
+  HCS — Heuristic Consistency Score (weight 0.20)
+    Caption ↔ image semantic consistency.
+    pubmatConsistencyScore; plus consistencyExplanation.
+
+  OMCS = (0.35 × CAS) + (0.45 × VAS) + (0.20 × HCS)
+  Pass threshold ≥ 70
+end note
+
+FP --> GW: {profile_semantic_score, rubric_evaluation_data,\nrecommendations_picture_score, consistency_explanation,\npubmat_consistency_score, omcs_score, status, feedback}
+GW --> CC: raw Map
+CC -> CC: mapOmcsAgentResponse() — snake_case → camelCase
+CC --> UI: OmcsAuditResultDto\n{profileSemanticScore, rubricEvaluationData,\nrecommendationsPictureScore, consistencyExplanation,\npubmatConsistencyScore, omcsScore, status, feedback}
+
+UI -> UI: auditRunning = false\nauditDone = true\nomcs ← OmcsAuditResultDto
+UI -> SOB: render audit result
+
+== Result Rendering ==
+
+SOB -> SOB: ComplianceGauge — circular SVG gauge\n(green ≥80 / gold ≥60 / red <60)
+SOB -> SOB: Component score breakdown:\n  Profile Semantic Score × 0.35\n  Recommendations×Picture × 0.45\n  Pubmat Consistency × 0.20
+SOB -> SOB: Rubric table — 7 criteria with individual scores
+
+alt status = "Fail"
+  SOB -> SOB: Show feedback diagnostic\n(root-cause + suggested corrections)
+else status = "Pass"
+  SOB -> SOB: Show Pass badge + final OMCS score
+end
+
+O -> SOB: Click "Reset Audit"
+SOB -> UI: onResetAudit()
+UI -> UI: omcs = null, auditDone = false, auditOn = false
+
+@enduml

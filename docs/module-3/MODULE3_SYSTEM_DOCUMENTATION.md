@@ -9,6 +9,7 @@
 | [Module 3 (end-to-end)](README.md) | [class.puml](class.puml) | [sequence.puml](sequence.puml) | [er.puml](er.puml) |
 | [3.1 Market-Localized Promotional Content Generation](3.1-content-generation/README.md) | [class.puml](3.1-content-generation/class.puml) | [sequence.puml](3.1-content-generation/sequence.puml) | [er.puml](3.1-content-generation/er.puml) |
 | [3.2 Creative Direction and Visual Recommendation Generation](3.2-creative-direction/README.md) | [class.puml](3.2-creative-direction/class.puml) | [sequence.puml](3.2-creative-direction/sequence.puml) | [er.puml](3.2-creative-direction/er.puml) |
+| [3.3 OMCS Compliance Audit](3.3-compliance/README.md) | [class.puml](3.3-compliance/class.puml) | [sequence.puml](3.3-compliance/sequence.puml) | [er.puml](3.3-compliance/er.puml) |
 
 All diagrams are PlantUML (`.puml`), font size 12, portrait layout — render with the VS Code PlantUML extension or any compatible renderer.
 
@@ -63,6 +64,21 @@ Module 3 is the **Content Studio** — a single-view, sequential workflow that t
 ### Sub-Flow C — Distribution Panel
 
 `DistributionPanel` shows social platform channel cards (Instagram `@cebutravel_kr`, TikTok `@cebuhealing`, Facebook `CebuTourismKR`). These display connection status (verified/unverified icons) and are UI scaffolding for future social API integrations — no live API calls are made from this panel.
+
+---
+
+### Sub-Flow D — OMCS Compliance Audit (Submodule 3.3)
+
+1. **Toggle**: The operator enables the compliance audit via `SmartOptimizationBoard`'s toggle. `auditOn = true` reveals `MediaCaptionManager` (caption textarea + media upload zone).
+2. **Caption staging**: The `stagedCaption` field is pre-populated from the most recently approved caption card (`handleApproveOption` sets it automatically). The operator can edit it in `CaptionTextArea` before running the audit.
+3. **Media upload**: `MediaDropzone` accepts PNG, JPG, or WEBP up to 20 MB via drag-and-drop or file browser. On selection the file is read as a base64 data URL (`imageDataUrl`) and a preview is shown in `MediaPreviewCard`. If no media is uploaded, `AuditEmptyBanner` blocks the run button.
+4. **Audit execution**: The operator clicks "Run Audit". `runOmcsAudit()` in `ContentStudioView` fires → `api.analyzeOmcs({ caption, imageUrl: imageDataUrl, businessProfile, recommendations })` → `POST /api/v1/compliance/omcs-analyze`. A 6-step `auditProgress` animation plays while the request is in-flight.
+5. **Score display**: On response, `SmartOptimizationBoard` renders:
+   - `ComplianceGauge` — SVG circular gauge coloured green (score ≥80), gold (≥60), or red (<60).
+   - Three component scores: Profile Semantic Score (weight 0.35), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
+   - Rubric breakdown table — 7 evaluation criteria with individual scores.
+   - Pass/Fail badge and a diagnostic `feedback` string when the audit fails.
+6. **No persistence**: The audit result is held in `omcs` state only. No rows are written to the database (compliance tables were dropped in V16 — the audit is fully stateless).
 
 ---
 
@@ -357,6 +373,7 @@ class AgentLLMModel:
 | `POST` | `/api/v1/content/approve` | `permitAll` | Approve content for a market (UC-3.1 step 14) |
 | `POST` | `/api/v1/creative-direction/generate/{profileId}` | `permitAll` | Generate visual direction (requires 3.1 approved) |
 | `POST` | `/api/v1/creative-direction/approve/{profileId}` | `permitAll` | Approve creative direction output |
+| `POST` | `/api/v1/compliance/omcs-analyze` | `permitAll` | OMCS compliance audit — stateless passthrough to FastAPI omcs_agent (Submodule 3.3) |
 
 ---
 
@@ -441,6 +458,7 @@ class AgentLLMModel:
 | `POST` | `/internal/generation/caption` | LangGraph caption generation agent (live path for 3.1) |
 | `POST` | `/internal/content/generate` | Alternate caption endpoint (not used by the current Spring path) |
 | `POST` | `/internal/creative/generate` | Groq visual direction + moodboard |
+| `POST` | `/internal/omcs/analyze` | LangGraph omcs_agent — CAS + VAS + HCS scoring, stateless (3.3) |
 
 ---
 
@@ -459,6 +477,8 @@ class AgentLLMModel:
 - `idx_creative_profile_market` on `(business_profile_id, selected_market)` — creative context retrieval
 
 Schema migration: `V5__module3_content_creative_columns.sql`.
+
+> **Submodule 3.3 — No persistent tables.** `tbl_compliance_evaluation_result` and `tbl_compliance_revision_history` (created in V5/V6, extended in V9) were dropped in `V16__drop_compliance_tables.sql` when the compliance audit was reimplemented as a stateless LangGraph omcs_agent. All audit results are returned in-memory only.
 
 ---
 
