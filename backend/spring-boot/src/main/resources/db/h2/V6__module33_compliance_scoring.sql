@@ -14,7 +14,7 @@ ALTER TABLE tbl_compliance_evaluation_result
     ADD COLUMN mismatches           CLOB;
 
 CREATE TABLE IF NOT EXISTS tbl_compliance_revision_history (
-    revision_id          UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    revision_id          UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     business_profile_id  UUID,
     original_eval_id     UUID,
     selected_market      VARCHAR(60),

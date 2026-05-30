@@ -36,7 +36,11 @@ import static org.mockito.Mockito.when;
  * Run with:
  *   mvn -pl backend/spring-boot test -Dtest=ChartDataVisualTest -Dsurefire.useFile=false
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+// MOCK (not NONE): the full app context includes SecurityConfig, whose
+// securityFilterChain(HttpSecurity) bean requires a servlet web context.
+// MOCK supplies a mock servlet environment (no port bound) so the context
+// loads; the test itself only exercises ForecastingService.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class ChartDataVisualTest {
 
     // ── Service under test ────────────────────────────────────────────────────
@@ -116,32 +120,30 @@ class ChartDataVisualTest {
                 List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "3x / week"))));
 
         // ── Mock AIInferenceGatewayService ────────────────────────────────────
-        // Each market gets distinct weekly_forecasts derived from its historical slope.
-        when(ai.runForecastInference(any())).thenAnswer(inv -> {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> payload = (Map<String, Object>) inv.getArgument(0);
-            String market = String.valueOf(payload.getOrDefault("market", "unknown"));
-            return switch (market) {
-                // Korea: upward trend continues  63 → 72.5 over 4 weeks
-                case "korea" -> Map.of(
-                        "predicted_demand_4w",  72.5,
-                        "predicted_demand_12w", 70.0,
-                        "weekly_forecasts",     List.of(65.2, 67.8, 70.1, 72.5),
-                        "mape", 8.2, "mae", 4.9, "rmse", 7.0, "confidence", 0.87);
-                // Japan: mild further decline  47 → 44 then stabilises
-                case "japan" -> Map.of(
-                        "predicted_demand_4w",  44.0,
-                        "predicted_demand_12w", 43.5,
-                        "weekly_forecasts",     List.of(46.2, 45.4, 44.7, 44.0),
-                        "mape", 6.5, "mae", 3.9, "rmse", 5.5, "confidence", 0.91);
-                // USA: spike reverts toward mean  65 → 60.5
-                default ->     Map.of(
-                        "predicted_demand_4w",  60.5,
-                        "predicted_demand_12w", 63.0,
-                        "weekly_forecasts",     List.of(63.5, 62.2, 61.3, 60.5),
-                        "mape", 10.1, "mae", 6.1, "rmse", 8.6, "confidence", 0.82);
-            };
-        });
+        // runPipeline() submits all markets in a single batch call and zips the
+        // results back by market name, so mock runForecastInferenceBatch (not the
+        // legacy per-market runForecastInference). Each market gets distinct
+        // weekly_forecasts derived from its historical slope.
+        Map<String, Object> koreaForecast = Map.of(      // upward trend continues  63 → 72.5
+                "predicted_demand_4w",  72.5,
+                "predicted_demand_12w", 70.0,
+                "weekly_forecasts",     List.of(65.2, 67.8, 70.1, 72.5),
+                "mape", 8.2, "mae", 4.9, "rmse", 7.0, "confidence", 0.87);
+        Map<String, Object> japanForecast = Map.of(      // mild decline  47 → 44 then stabilises
+                "predicted_demand_4w",  44.0,
+                "predicted_demand_12w", 43.5,
+                "weekly_forecasts",     List.of(46.2, 45.4, 44.7, 44.0),
+                "mape", 6.5, "mae", 3.9, "rmse", 5.5, "confidence", 0.91);
+        Map<String, Object> usaForecast = Map.of(        // spike reverts toward mean  65 → 60.5
+                "predicted_demand_4w",  60.5,
+                "predicted_demand_12w", 63.0,
+                "weekly_forecasts",     List.of(63.5, 62.2, 61.3, 60.5),
+                "mape", 10.1, "mae", 6.1, "rmse", 8.6, "confidence", 0.82);
+
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
+                "korea", koreaForecast,
+                "japan", japanForecast,
+                "usa",   usaForecast));
 
         when(ai.runMarketScoring(any())).thenAnswer(inv -> {
             @SuppressWarnings("unchecked")
