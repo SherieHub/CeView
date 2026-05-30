@@ -75,6 +75,7 @@ end
 == PES Deep-Analysis Agent (LangGraph) ==
 
 note over UI, Groq
+  Backend-only (no UI trigger yet).
   POST /api/v1/analytics/pes-analysis triggers PesReportAgent:
   [generate_report] -> [evaluate_report] -> route_action
     • score >= 85 AND pass=true  → [finalize_response]

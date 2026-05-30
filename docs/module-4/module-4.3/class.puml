@@ -9,22 +9,27 @@ package "4.3 AI-Generated Prescriptive Report" {
 
   package "React Frontend" #EEF2FF {
     class AIActionPlanReport {
-      -weeks: 4|8
-      -reportData: PrescriptiveReport
-      -loading: boolean
+      +weeks: 4|8
+      -reportData: PrescriptiveReport|null
+      -isGenerating: boolean
+      -serverError: string|null
       +fetchReport(weeks: 4|8)
       +renderExecutiveSummary()
       +renderStageAnalysis()
-      +renderPriorityFixCards()
+      +renderPriorityFixCard()
     }
     class PriorityFixCard {
-      +rank: "Weakest"|"Moderate"|"Alright"
-      +stage: String
-      +dropRate: String
-      +insight: String
-      +urgency: String
+      +funnelDiagnostics: FunnelDiagnostic[]
+      +recommendations: RankedRecommendation[]
+    }
+    class RecommendationItem <<unused>> {
+      +index: int
       +title: String
-      +action: String
+      +explanation: String
+    }
+    class ReportActionBtn <<unused>> {
+      +onClick, disabled
+      +icon, label, variant
     }
   }
 
@@ -51,8 +56,10 @@ package "4.3 AI-Generated Prescriptive Report" {
   }
 
   package "FastAPI" #FFFDE7 {
-    class ReportGenerationService {
-      +generate(payload): PrescriptiveReport
+    class "report (router) +\ngemini_client" as ReportGenerationService {
+      +generate(req: ReportRequest): dict
+      +performance_report(metrics, transitions, weeks, market)
+      -_fallback_report(transitions, market)
       -resolvePlatform(marketKey): String
     }
     class PesReportAgent <<LangGraph>> {
@@ -74,6 +81,7 @@ package "4.3 AI-Generated Prescriptive Report" {
       +report: ReportOutput
       +evaluation: EvaluationResult
       +iterations: int
+      +final_metadata: dict
       +final_ui_payload: dict
     }
   }
@@ -88,7 +96,7 @@ package "4.3 AI-Generated Prescriptive Report" {
     class PrescriptiveReport {
       +executiveSummary: String
       +funnelDiagnostics: FunnelDiagnostic[]
-      +recommendations: Recommendation[]
+      +recommendations: RankedRecommendation[]
       +recommendedPlatform: String
     }
     class ReportOutput <<Pydantic>> {
@@ -100,13 +108,14 @@ package "4.3 AI-Generated Prescriptive Report" {
       +score: int
       +pass_status: boolean
       +issues: String[]
+      +missing_elements: String[]
       +accuracy_check: String
       +recommendation: "approve"|"regenerate"
     }
   }
 }
 
-AIActionPlanReport *-- "3" PriorityFixCard
+AIActionPlanReport *-- "1" PriorityFixCard
 AIActionPlanReport ..> PrescriptiveReportController : POST /api/v1/analytics/report
 
 PrescriptiveReportController --> MetricsCalculationService : computeFunnelTransitions

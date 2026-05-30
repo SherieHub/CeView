@@ -14,20 +14,33 @@ Submodule 3.3 evaluates a staged caption + uploaded image against the business p
 
 ## Component Table
 
+### Frontend — `ceview/components/module-3/3.1-content-studio/`
+
 | Component Name (file) | Description & Purpose | Type / Format |
 |----------------------|----------------------|---------------|
-| `SmartOptimizationBoard.tsx` | Core 3.3 UI — audit toggle, 6-step progress indicator, `ComplianceGauge` + rubric display | React component `.tsx` |
-| `ComplianceGauge.tsx` | SVG circular gauge visualising the OMCS score (green ≥80, gold ≥60, red <60) | React component `.tsx` |
+| `ContentStudioView.tsx` | Root view — owns audit state (`auditOn`, `auditRunning`, `omcs`, `stagedCaption`, `uploadedFile`, `imageDataUrl`); fires `runOmcsAudit()` | React view `.tsx` |
+| `SmartOptimizationBoard.tsx` | Audit toggle, 6-step progress indicator, `ComplianceGauge` + rubric display | React component `.tsx` |
+| `ComplianceGauge.tsx` | SVG circular gauge for OMCS score (green ≥80, gold ≥60, red <60) | React component `.tsx` |
 | `MediaCaptionManager.tsx` | Container composing `CaptionTextArea` + `MediaDropzone`/`MediaPreviewCard` for audit input staging | React component `.tsx` |
-| `MediaDropzone.tsx` | Drag-and-drop file upload; accepts PNG/JPG/WEBP ≤20 MB; reads file as base64 data URL | React component `.tsx` |
+| `MediaDropzone.tsx` | Drag-and-drop file upload; PNG/JPG/WEBP ≤20 MB; reads file as base64 data URL | React component `.tsx` |
 | `MediaPreviewCard.tsx` | Image thumbnail preview with file size and removal button | React component `.tsx` |
-| `CaptionTextArea.tsx` | Editable textarea for staging the caption before running the audit | React component `.tsx` |
-| `AuditEmptyBanner.tsx` | Warning banner displayed when no media is uploaded; disables the run button | React component `.tsx` |
+| `CaptionTextArea.tsx` | Editable textarea for staging the caption before the audit | React component `.tsx` |
+| `AuditEmptyBanner.tsx` | Warning banner blocking run until media is uploaded | React component `.tsx` |
 | `apiClient.ts` (`analyzeOmcs`) | Calls `POST /api/v1/compliance/omcs-analyze`; returns `OmcsAuditResultDTO` | TypeScript service `.ts` |
+
+### Backend — `backend/spring-boot/src/main/java/com/ceview/module3/`
+
+| Component Name (file) | Description & Purpose | Type / Format |
+|----------------------|----------------------|---------------|
 | `ComplianceController.java` | Thin stateless REST controller: validates inputs, builds payload, delegates to `AIInferenceGatewayService` | `@RestController` `.java` |
 | `dto/ComplianceDtos.java` | Records `OmcsAuditRequest` + `OmcsAuditResultDto` — 3.3 wire format | Java records `.java` |
 | `AIInferenceGatewayService.java` (`analyzeOmcsAgent`) | HTTP gateway method routing to FastAPI `/internal/omcs/analyze` | `@Service` `.java` |
-| `ComplianceRouter` | FastAPI endpoint `POST /internal/omcs/analyze`; runs LangGraph omcs_agent | FastAPI router |
+
+### FastAPI — `backend/fastapi/`
+
+| Component Name (file) | Description & Purpose | Type / Format |
+|----------------------|----------------------|---------------|
+| `ComplianceRouter` | Endpoint `POST /internal/omcs/analyze`; runs LangGraph omcs_agent (CAS + VAS + HCS scoring) | FastAPI router |
 
 ---
 

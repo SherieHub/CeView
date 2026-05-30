@@ -14,28 +14,47 @@ package "4.1 Campaign Engagement Metrics" {
       +render()
     }
     class DataIngestionForm {
-      -impressions, clicks: number
-      -adSpend, revenue: number
-      -conversions, bookings: number
-      -newCustomers: number
+      +onDataReady(data: ManualIngestResponse)
+      -formData: {7 raw fields as string}
       -submitting: boolean
+      -formError: string|null
       +handleSubmit()
       +validateInputs(): boolean
     }
+    class DataInputField {
+      +label: string
+      +name: string
+      +type: string
+      +placeholder: string
+      +onChange(e)
+    }
     class EngagementMetricsBoard {
+      +metrics: Metrics
       +weeks: 4|8
-      +onWindowChange(w: 4|8)
+      +onWeeksChange(w: 4|8)
+      +isRefreshing: boolean
       +renderKpiCards()
     }
-    class MetricCard {
-      +label: string
-      +value: number
-      +unit: string
-      +trend: number
+    class KpiMetricCard {
+      +title: string
+      +data: MetricCard
+      +icon: ReactNode
+      +tooltip: ReactNode
       +inverseLogic: boolean
     }
+    class TrendIndicator {
+      +trend: number
+      +unit: string
+      +isPositive: boolean
+    }
+    class DropOffBadge <<unused>> {
+      +dropoff: string
+    }
     class CustomerJourneyFunnel {
-      -history: CampaignSnapshot[]
+      +weeks: 4|8
+      -data: ChartPoint[]
+      -loading: boolean
+      -error: string|null
       +fetchHistory(weeks: 4|8)
       +renderEfficiencyChart()
       +renderCostChart()
@@ -72,14 +91,23 @@ package "4.1 Campaign Engagement Metrics" {
     interface CampaignRecordRepository <<JPA>> {
       +save(record): CampaignRecord
       +findAllByOrderByCreatedAtDesc(pageable): List
+      +findTop10ByOrderByCreatedAtDesc(): List
+      +findByCreatedAtAfterOrderByCreatedAtDesc(after): List
     }
   }
 
   package "DTOs" #FFF3E0 {
     class ManualIngestRequest {
-      +impressions, clicks: long
-      +adSpend, revenue: double
-      +conversions, bookings, newCustomers: long
+      +impressions, clicks: Integer
+      +conversions, bookings, newCustomers: Integer
+      +adSpend, revenue: Double
+      +periodStart, periodEnd: String
+    }
+    class MetricCard {
+      +value: double
+      +unit: String
+      +trend: double
+      +isPositive: boolean
     }
     class ManualIngestResponse {
       +metrics: Map<String, MetricValue>
@@ -102,7 +130,10 @@ package "4.1 Campaign Engagement Metrics" {
 CampaignAnalyticsView *-- DataIngestionForm
 CampaignAnalyticsView *-- EngagementMetricsBoard
 CampaignAnalyticsView *-- CustomerJourneyFunnel
-EngagementMetricsBoard *-- "5" MetricCard
+DataIngestionForm *-- "7" DataInputField
+EngagementMetricsBoard *-- "5" KpiMetricCard
+KpiMetricCard *-- TrendIndicator
+KpiMetricCard ..> MetricCard : data prop
 
 DataIngestionForm ..down.> EngagementMetricsController : POST /api/v1/analytics/manual
 CustomerJourneyFunnel ..down.> EngagementMetricsController : GET /api/v1/analytics/history

@@ -9,9 +9,9 @@ title 4.2 — PES Computation Pipeline (triggered by POST /manual; Primary & FR4
 
 participant "EngagementMetrics\nController" as AC
 participant "AI Gateway\nService" as AIS
-participant "FastAPI\nPES Service" as FPS
-participant "Normalization\nEngine" as NE
-participant "Weight\nRecalibrator" as WR
+participant "pes_compute\n(router + service)" as FPS
+participant "normalize_\nand_invert()" as NE
+participant "weight recalc\n(in same fn)" as WR
 participant "Groq API" as Groq
 participant "Campaign\nRepository" as Repo
 participant "PES Fallback\nService (FR4.26)" as FB
@@ -27,7 +27,7 @@ group Primary Path (FastAPI available)
     e.g. "CTR (impressions = 0)"
   end note
 
-  FPS -> NE: normalize(metrics, METRIC_BOUNDS)
+  FPS -> NE: normalize_and_invert(metrics, METRIC_BOUNDS)
   note right of NE
     Formula: clamp01((raw - min) / (max - min))
     Cebu MSME Bounds:
@@ -38,7 +38,7 @@ group Primary Path (FastAPI available)
   end note
   NE --> FPS: normalizedMetrics
 
-  FPS -> WR: recalibrate(flaggedMetrics)
+  FPS -> WR: recalibrate weights(flaggedMetrics)
   note right of WR
     Remove flagged weights
     Redistribute proportionally:
@@ -55,8 +55,8 @@ group Primary Path (FastAPI available)
            0.60 Good  | >=0.80 Excellent
   end note
 
-  FPS -> Groq: pes_compute_insights(breakdown)
-  Groq --> FPS: weakestStage + recommendations
+  FPS -> Groq: gemini_client.pes_compute_insights(breakdown)
+  Groq --> FPS: weakestStage + recommendations (source="groq")
 
   FPS --> AIS: PesAnalysisResult
   AIS --> AC: PesResult {score, label, breakdown}

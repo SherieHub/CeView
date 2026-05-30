@@ -63,7 +63,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 **3. `PESComputationBoard`**
 
-- **Left panel — Score Gauge**: `<ScoreGauge>` circular gauge (0–1 scale, shown as 0.00–1.00) displays `submittedPes.overallScore`. `<QualitativeLabel>` shows the textual tier: Poor / Fair / Good / Excellent Performance. Falls back to last history record when no submitted PES is present.
+- **Left panel — Score Gauge**: `<ScoreGauge>` circular gauge (0–1 scale, shown as 0.00–1.00) receives the submitted PES `overallScore` as its `score` prop. `<QualitativeLabel>` takes the PES `label` string and shows the textual tier: Poor / Fair / Good / Excellent Performance. Falls back to last history record when no submitted PES is present.
 - **Right panel — PES Trend chart**:
   - Auto-fetches `api.analyticsHistory(weeks)` → `GET /api/v1/analytics/history`.
   - Recharts `LineChart` with Y domain `[0, 1]` and four dashed reference lines:

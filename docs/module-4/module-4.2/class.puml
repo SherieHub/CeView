@@ -10,20 +10,22 @@ package "4.2 PES Computation" {
 
   package "React Frontend" #EEF2FF {
     class PESComputationBoard {
-      -submittedPes: PesResult
-      -history: CampaignSnapshot[]
-      -weeks: 4|8
+      +pesData: PesResponse|null
+      +weeks: 4|8
+      -history: ChartPoint[]
+      -loading: boolean
+      -error: string|null
       +fetchHistory(weeks: 4|8)
       +renderGaugePanel()
       +renderTrendChart()
     }
     class ScoreGauge {
-      +overallScore: number
+      +score: number
       +render()
     }
     class QualitativeLabel {
-      +score: number
-      +getLabel(): "Poor"|"Fair"|"Good"|"Excellent"
+      +label: string
+      +colourForLabel(): "red"|"amber"|"green"|"gold"
     }
     
     ' Internal layout to keep frontend package compact
@@ -61,30 +63,24 @@ package "4.2 PES Computation" {
   }
 
   package "FastAPI (pes_compute_service.py)" #FFFDE7 {
-    class PesComputeService {
-      +analyze(rawInput): PesAnalysisResult
-      +compute_base_metrics(raw): dict
+    class "pes_compute (router)" as PesComputeRouter {
+      +analyze(req: CampaignRawRequest): dict
     }
-    class NormalizationEngine {
-      +METRIC_BOUNDS: dict
-      +COST_METRICS: set = {CPC, CAC}
-      +normalize(raw, min, max): double
-      +invert(n: double): double
-      +clamp01(n: double): double
+    class "pes_compute_service" as PesComputeService {
+      +{static} METRIC_BOUNDS: dict
+      +{static} BASE_WEIGHTS: dict
+      +{static} COST_METRICS: set = {CPC, CAC}
+      +compute_base_metrics(raw): (dict, flagged)
+      +normalize_and_invert(metrics, flagged): (dict, weights)
+      +compute_pes(normalized, weights): PesResult
     }
-    class WeightRecalibrator {
-      +BASE_WEIGHTS: dict
-      +recalibrate(flagged: list): dict
+    class "gemini_client" as GeminiClient {
+      +pes_compute_insights(...): AiReport
     }
-    class GroqInsightService {
-      +pes_compute_insights(breakdown): AiReport
-    }
-    
-    ' Arrange in a tight 2x2 grid to avoid extreme landscape stretching
-    PesComputeService -[hidden]right-> NormalizationEngine
-    PesComputeService -[hidden]down-> WeightRecalibrator
-    NormalizationEngine -[hidden]down-> GroqInsightService
-    WeightRecalibrator -[hidden]right-> GroqInsightService
+
+    ' Arrange compactly
+    PesComputeRouter -[hidden]right-> PesComputeService
+    PesComputeService -[hidden]right-> GeminiClient
   }
 
   package "DTOs" #FFF3E0 {
@@ -120,13 +116,12 @@ EngagementMetricsController --> AIInferenceGatewayService : primary PES path (PO
 EngagementMetricsController ..> PESComputationService : FR4.26 fallback
 PesComputationController --> PESComputationService : GET /pes (Spring-only, no FastAPI)
 
-AIInferenceGatewayService ..down.> PesComputeService : POST /internal/pes-compute/analyze
+AIInferenceGatewayService ..down.> PesComputeRouter : POST /internal/pes-compute/analyze
 
-PesComputeService --> NormalizationEngine
-PesComputeService --> WeightRecalibrator
-PesComputeService --> GroqInsightService
+PesComputeRouter --> PesComputeService : base metrics / normalize / PES
+PesComputeRouter --> GeminiClient : pes_compute_insights
 
-PesComputeService ..down.> PesResult : returns
+PesComputeRouter ..down.> PesResult : returns
 PESComputationService ..down.> PesResult : returns (fallback)
 PesResult *-- PesBreakdownItem
 PesResult *-- AiReport

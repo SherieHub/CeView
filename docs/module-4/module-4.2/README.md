@@ -16,7 +16,7 @@ Submodule 4.2 is the **scoring engine** of Module 4. It receives the five raw KP
 |---|---|---|---|
 | **PES compute** (primary) | `POST /manual` in Submodule 4.1 | `POST /internal/pes-compute/analyze` (FastAPI, internal) | 1× Groq call via `pes_compute_insights()` for weakest stage + recommendations |
 | **PES compute** (fallback) | FastAPI unavailable / timeout > 30 s | Spring Boot `PESComputationService.compute()` (in-process) | None — deterministic rule-based |
-| **PES score by ID** | `PESComputationBoard` requesting on-demand score | `GET /api/v1/analytics/pes/{campaignId}?weeks=4\|8` | None — Spring Boot rule-based only |
+| **PES score by ID** | — | `GET /api/v1/analytics/pes/{campaignId}?weeks=4\|8` | None — Spring Boot rule-based only. Client method `analyticsPes` is **defined but not called by the UI**; the controller ignores `campaignId` and computes default metrics for the window |
 | **PES trend history** | `PESComputationBoard` mount / weeks change | `GET /api/v1/analytics/history?weeks=4\|8` (owned by 4.1) | None |
 
 ---
@@ -60,9 +60,9 @@ Submodule 4.2 is the **scoring engine** of Module 4. It receives the five raw KP
 
 | Component | File | Renders From | What It Displays |
 |---|---|---|---|
-| `PESComputationBoard` | `components/PESComputationBoard.tsx` | `submittedPes: PesResponse`, `history: CampaignSnapshot[]`, `weeks` | Left panel: `ScoreGauge` + `QualitativeLabel`; Right panel: Recharts `LineChart` PES trend with four `ReferenceLine` bands (0.40/0.60/0.80); falls back to last history record when no submitted PES |
-| `ScoreGauge` | `components/ScoreGauge.tsx` | `overallScore: number` (0–1) | Circular SVG gauge; needle position maps 0–1 to 0°–180° arc |
-| `QualitativeLabel` | `components/QualitativeLabel.tsx` | `score: number` | Colour-coded chip: red (Poor) · amber (Fair) · green (Good) · gold (Excellent) |
+| `PESComputationBoard` | `components/PESComputationBoard.tsx` | `weeks: 4\|8`, `pesData: PesResponse \| null` (fetches history itself via `api.analyticsHistory(weeks)`; local `history`/`loading`/`error`) | Left panel: `ScoreGauge` + `QualitativeLabel`; Right panel: Recharts `LineChart` PES trend with `ReferenceLine` bands (0.40/0.60/0.80); falls back to last history record when no submitted PES |
+| `ScoreGauge` | `components/ScoreGauge.tsx` | `score: number` (0–1) | Circular SVG gauge; needle position maps 0–1 to 0°–180° arc |
+| `QualitativeLabel` | `components/QualitativeLabel.tsx` | `label: string` | Colour-coded chip derived from the label text: red (Poor) · amber (Fair) · green (Good) · gold (Excellent) |
 
 ---
 
@@ -70,8 +70,8 @@ Submodule 4.2 is the **scoring engine** of Module 4. It receives the five raw KP
 
 | Response Field | Component | Effect |
 |---|---|---|
-| `pes.overallScore` | `ScoreGauge` | Gauge needle position |
-| `pes.label` | `QualitativeLabel` | Tier chip text + colour |
+| `pes.overallScore` | `ScoreGauge` | Gauge needle position (passed as the `score` prop) |
+| `pes.label` | `QualitativeLabel` | Tier chip text + colour (passed as the `label` prop) |
 | `pes.breakdown[].metric` | `PESComputationBoard` | Per-metric label in breakdown list |
 | `pes.breakdown[].weight` | `PESComputationBoard` | Weight % shown alongside metric |
 | `pes.breakdown[].contribution` | `PESComputationBoard` | Horizontal bar fill width in breakdown |

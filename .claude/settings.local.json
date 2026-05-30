@@ -83,7 +83,8 @@
       "Bash(./mvnw -q -DskipTests clean package)",
       "Bash(find . -path ./node_modules -prune -o -iname \"*demand*\" -print)",
       "Bash(find . -path ./node_modules -prune -o -type d -iname \"*module*2*\" -print)",
-      "Bash(curl -s -m 15 \"http://localhost:8080/api/v1/forecasting/markets\")"
+      "Bash(curl -s -m 15 \"http://localhost:8080/api/v1/forecasting/markets\")",
+      "PowerShell($base=\"c:\\\\Users\\\\austi\\\\CeView\\\\docs\\\\module-4\"; \"=== stale prop terms \\(should be DTO-only\\) ===\"; Select-String -Path \"$base\\\\module-4.2\\\\class.puml\",\"$base\\\\module-4.2\\\\README.md\",\"$base\\\\module-4.3\\\\README.md\",\"$base\\\\module-4.3\\\\class.puml\",\"$base\\\\module-4.1\\\\README.md\" -Pattern \"overallScore\",\"submittedPes\" | ForEach-Object { \"{0}:{1}: {2}\" -f \\(Split-Path $_.Path -Leaf\\), $_.LineNumber, $_.Line.Trim\\(\\) })"
     ]
   }
 }
