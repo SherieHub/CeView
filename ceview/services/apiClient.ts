@@ -7,7 +7,7 @@
 import type {
   Market, Notification, ContentResponseDTO, CreativeDirectionDTO,
   MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
-  CampaignHistoryResponse, OmcsAuditResultDTO,
+  CampaignHistoryResponse, OmcsAuditResultDTO, PesAnalysisReport,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -210,5 +210,20 @@ export const api = {
     req<PrescriptiveReport>('/api/v1/analytics/report', {
       method: 'POST',
       body: JSON.stringify({ weeks }),
+    }),
+
+  /**
+   * PES time-series deep-analysis (pes_report_agent).
+   * @param weeks       Analysis window (4 or 8).
+   * @param metricsData Per-KPI weekly arrays (index 0 = most recent week), keyed
+   *                    CTR/CPC/ROAS/CR/CAC. Built by the frontend from campaign
+   *                    history. When omitted, Spring Boot synthesizes a series.
+   */
+  pesAnalysis: (weeks: 4 | 8 = 4, metricsData?: Record<string, number[]>) =>
+    req<PesAnalysisReport>('/api/v1/analytics/pes-analysis', {
+      method: 'POST',
+      body: JSON.stringify(
+        metricsData ? { weeks, metrics_data: metricsData } : { weeks },
+      ),
     }),
 };
