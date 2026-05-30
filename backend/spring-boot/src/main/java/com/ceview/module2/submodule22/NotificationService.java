@@ -1,9 +1,7 @@
 package com.ceview.module2.submodule22;
 
-import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.NotificationDtos.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -13,7 +11,7 @@ import java.util.stream.Collectors;
 /**
  * Reads persisted demand alerts from the DB and maps them to the
  * NotificationsResponse DTO shape (FR2.15, FR2.17).
- * Falls back to the legacy FastAPI stub when no alerts exist.
+ * Returns an empty list when no alerts exist — no stub fallback.
  */
 @Service
 public class NotificationService {
@@ -30,23 +28,17 @@ public class NotificationService {
     private final DemandAlertRepository alertRepo;
     private final MarketScoreRepository scoreRepo;
     private final ForecastResultRepository forecastRepo;
-    private final AIInferenceGatewayService ai;
-    private final ObjectMapper mapper;
     private final BusinessProfileRepository profileRepo;
     private final CategoryRankNotificationService categoryRankService;
 
     public NotificationService(DemandAlertRepository alertRepo,
                                 MarketScoreRepository scoreRepo,
                                 ForecastResultRepository forecastRepo,
-                                AIInferenceGatewayService ai,
-                                ObjectMapper mapper,
                                 BusinessProfileRepository profileRepo,
                                 CategoryRankNotificationService categoryRankService) {
         this.alertRepo           = alertRepo;
         this.scoreRepo           = scoreRepo;
         this.forecastRepo        = forecastRepo;
-        this.ai                  = ai;
-        this.mapper              = mapper;
         this.profileRepo         = profileRepo;
         this.categoryRankService = categoryRankService;
     }
@@ -63,10 +55,7 @@ public class NotificationService {
                 categoryRankService.buildForCategories(profileCategories);
 
         if (profileId == null) {
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
+            return new NotificationsResponse(keywordNotifications);
         }
 
         // Gather latest ForecastResult per market → join to MarketScore → DemandAlert
@@ -77,10 +66,7 @@ public class NotificationService {
         }
 
         if (forecasts.isEmpty()) {
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
+            return new NotificationsResponse(keywordNotifications);
         }
 
         List<UUID> forecastIds = forecasts.stream()
@@ -89,10 +75,7 @@ public class NotificationService {
 
         List<MarketScore> scores = scoreRepo.findByForecastResultIdIn(forecastIds);
         if (scores.isEmpty()) {
-            NotificationsResponse stub = fromStub();
-            List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-            merged.addAll(stub.notifications());
-            return new NotificationsResponse(merged);
+            return new NotificationsResponse(keywordNotifications);
         }
 
         List<UUID> scoreIds = scores.stream()
@@ -114,11 +97,6 @@ public class NotificationService {
         // Keyword trend notifications appear first (most recent signal), then demand alerts
         List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
         merged.addAll(demandNotifications);
-
-        // Fallback to stub if both pipelines returned nothing
-        if (merged.isEmpty()) {
-            return fromStub();
-        }
 
         return new NotificationsResponse(merged);
     }
@@ -186,9 +164,5 @@ public class NotificationService {
                 List.of(),   // keywordData — populated by Module 3 content service
                 null         // contentStrategy — nullable per DTO spec
         );
-    }
-
-    private NotificationsResponse fromStub() {
-        return mapper.convertValue(ai.listNotifications(), NotificationsResponse.class);
     }
 }

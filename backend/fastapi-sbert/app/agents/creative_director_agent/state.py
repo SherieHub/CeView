@@ -32,10 +32,14 @@ class SocialAgentState(TypedDict):
                                 # e.g.: "Cultural research context:\n- Traveller behaviour: ..."
                                 # empty string when SerpAPI is unavailable
 
+    # ── Optional enrichment from Module 2 ───────────────────────────────────
+    market_score:         Optional[str]   # e.g. "82/100", passed through from CaptionInputClass
+
     # ── Derived / generated (written by graph nodes) ─────────────────────────
     relevant_priority_services: List[str]                           # set by Node 1
     extra_additional_services: List[str]                           # set by Node 1
     final_captions:    Dict[str, List[Dict[str, Any]]]    # set by Node 2
+    source:            Optional[str]                               # "groq" | "fallback"
     # final_captions shape (6-field schema — one object per demographic archetype):
     # {
     #   "facebook":  [ { "core_business_context": "...",

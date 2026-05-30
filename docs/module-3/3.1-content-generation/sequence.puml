@@ -1,0 +1,87 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 3.1 — Market-Localized Promotional Content Generation: Caption Matrix & Approval
+
+actor Operator as O
+participant "ContentStudio\nView" as UI
+participant "Content\nController" as CC
+participant "ContentGeneration\nService" as CGS
+participant "ContentApproval\nService" as CAS
+participant "AIInferenceGateway\nService" as GW
+participant "FastAPI\n(LangGraph Agent)" as FP
+participant "tbl_localized_\npromotional_content" as DB
+
+== 1. Content Generation (on mount) ==
+
+O -> UI: Navigate to Content Studio\n(market selected)
+UI -> CC: POST /api/v1/content/generate\n{market, businessName, description,\ncategories, trend} ?profileId
+
+alt profileId provided
+  CC -> CGS: generate(req, profileId)
+  CGS -> CGS: Load BusinessProfile\n(override request fields: services, uvp, uniquenessScore)
+else no profileId
+  CC -> CGS: generate(req)\n(use request body as-is)
+end
+
+CGS -> CGS: buildForecastContext()\n(query ForecastResult + MarketScore\nfrom Module 2 tables)
+CGS -> CGS: build snake_case payload\n(business_name, target_market,\nmarket_category, forecast_context, ...)
+
+CGS -> GW: generateCaption(payload)
+GW -> FP: POST /internal/generation/caption\n(CaptionInputClass)
+
+note right of FP
+  LangGraph StateGraph(SocialAgentState):
+  Node 1 — analyze_services:
+    relevant vs. extra services
+  Node 2 — generate_platform_captions:
+    3 archetypes × 3 platforms
+    (Witty / Formal / Storytelling)
+    × (Instagram / TikTok / Facebook)
+  cultural_research.research_market()
+    supplies context (SerpAPI or template)
+  get_platform_guides() adds visual tips;
+    Naver = 2 hardcoded Korean blog options
+end note
+
+alt LLM available
+  FP --> GW: {market, framework, captions, source: "groq"}
+else LLM unavailable
+  FP --> GW: {captions: fallback templates, source: "fallback"}
+end
+
+GW --> CGS: raw map
+CGS -> CGS: deserialize → ContentResponseDto
+
+alt profileId present
+  CGS -> DB: INSERT 4 rows\n(instagram, tiktok, facebook, naver)\napproval_status = false
+end
+
+CGS --> CC: ContentResponseDto
+CC --> UI: ContentResponseDto\n{market, captions, source}
+UI -> UI: Render AIContentMatrixPanel\n3 platform tabs × 3 archetype cards
+
+== 2. Content Approval (fire-and-forget) ==
+
+O -> UI: Click "Approve" on one\ncaption per platform
+UI ->> CC: POST /api/v1/content/approve\n{market} ?profileId [non-blocking]
+
+CC -> CAS: approveForMarket(profileId, market)
+CAS -> DB: UPDATE approval_status = true\nSET approved_at = now()\nWHERE (business_profile_id, selected_market)
+
+note right of DB
+  This approval gate enables
+  Submodule 3.2 Creative Direction.
+  hasApprovedContent() checks this
+  flag before generating visual direction.
+end note
+
+DB --> CAS: updated rows
+CAS --> CC: List<UUID> approvedIds
+CC --> UI: {approvedIds, market, count}
+
+@enduml

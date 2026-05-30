@@ -13,4 +13,6 @@ public interface ForecastResultRepository extends JpaRepository<ForecastResult, 
 
     Optional<ForecastResult> findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
             UUID businessProfileId, String targetMarket, Integer forecastHorizonWeeks);
+
+    boolean existsByBusinessProfileId(UUID businessProfileId);
 }

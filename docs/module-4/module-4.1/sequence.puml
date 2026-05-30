@@ -1,0 +1,61 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 4.1 — Campaign Data Ingestion & KPI Dashboard
+
+actor Operator as O
+participant "DataIngestion\nForm" as Form
+participant "EngagementMetrics\nController" as AC
+participant "Metrics\nCalc Service" as MCS
+participant "CampaignRecord\nRepository" as Repo
+participant "Engagement\nMetrics Board" as EMB
+participant "Customer\nJourney Funnel" as CJF
+
+O -> Form: Submit 7 raw inputs\n(impressions, clicks, adSpend,\nrevenue, conversions, bookings,\nnewCustomers)
+Form -> Form: validateInputs()\n[all values >= 0 & not NaN]
+
+alt invalid inputs
+  Form --> O: Red error banner\n"All fields must be non-negative numbers"
+else valid inputs
+  Form -> AC: POST /api/v1/analytics/manual
+  AC -> MCS: compute(rawInput)
+  note right of MCS
+    CTR  = clicks / impressions × 100
+    CPC  = adSpend / clicks
+    CR   = bookings / clicks × 100
+    ROAS = revenue / adSpend
+    CAC  = adSpend / newCustomers
+    Zero denominator → metric flagged
+  end note
+  MCS --> AC: MetricsResult + FunnelStages
+
+  AC -> Repo: save(CampaignRecord)\n[Stage 1: raw inputs + derived KPIs]
+  Repo --> AC: savedRecord
+
+  AC --> Form: ManualIngestResponse\n{metrics, funnel, pes}
+  Form -> Form: dashboardActive = true\nonDataReady(result)
+
+  Form -> EMB: render(metricsData)
+  note right of EMB
+    5 KPI Cards:
+    CTR (%) — Higher is better
+    CPC (₱) — inverseLogic = true
+    ROAS (×) — Higher is better
+    CR  (%) — Higher is better
+    CAC (₱) — inverseLogic = true
+  end note
+
+  Form -> CJF: mount(weeks = 4)
+  CJF -> AC: GET /api/v1/analytics/history?weeks=4
+  AC -> Repo: findAllByOrderByCreatedAtDesc(limit=4)
+  Repo --> AC: [4 records] reversed to chronological order
+  AC --> CJF: CampaignHistoryResponse{snapshots}
+  CJF -> CJF: Render Efficiency Chart\n(ROAS navy, CTR gold, CR emerald)
+  CJF -> CJF: Render Cost Chart\n(CPC amber, CAC red-orange)
+end
+
+@enduml

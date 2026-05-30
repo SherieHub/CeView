@@ -1,19 +1,19 @@
 erDiagram
 
-    %% ── Auth / Operator (stub — defined in Module 1) ─────────────────────────
+    %% ── Auth / Profile anchors (Module 1 stubs) ─────────────────────────────
 
     tbl_msme_operator {
-        UUID operator_id PK
+        UUID   operator_id PK
     }
-
-    %% ── Module 1 anchor (stub) ───────────────────────────────────────────────
 
     tbl_business_profile {
-        UUID business_profile_id PK
-        UUID user_id             FK
+        UUID   business_profile_id PK
+        UUID   user_id             FK
+        string business_name
+        text   categories_json
     }
 
-    %% ── Module 2: Market Signals & Forecasting ───────────────────────────────
+    %% ── Submodule 2.1 — Market Signal Records ────────────────────────────────
 
     tbl_market_signal_record {
         UUID    signal_record_id    PK
@@ -24,65 +24,98 @@ erDiagram
         float   gdp_growth
         float   seasonality_score
         float   rolling_average
+        float   rolling_average_7d
+        float   rolling_average_30d
+        float   rolling_std_dev
+        float   yoy_ratio
         boolean spike_indicator
         ts      aggregated_at
     }
 
-    tbl_orig_weekly_demand_value {
-        UUID    demand_value_id     PK
-        UUID    business_profile_id FK
-        ts      week
-        string  target_market
-        numeric beach_category
-        numeric adventure
-        numeric cultural
-        numeric theme_parks
-        numeric urban
-        numeric culinary
-        numeric accommodation
-        string  connecting_flights
-        numeric market_score
-        string  strategy
-        numeric forex
-        numeric gdp
-        int     rank
-        string  spike_meaning
-        string  current_checklist
-        string  seasonality_meaning
+    tbl_ingestion_job_log {
+        UUID   job_log_id        PK
+        string job_name
+        string status
+        int    markets_processed
+        int    records_ingested
+        text   error_message
+        ts     started_at
+        ts     completed_at
     }
 
+    tbl_trend_fetch_job {
+        UUID    job_id        PK
+        string  category
+        string  market
+        string  status
+        string  week_of
+        int     attempt_count
+        int     max_attempts
+        float   trend_index
+        boolean spike_indicator
+        float   yoy_ratio
+        float   seasonality_score
+        string  source
+        text    last_error
+    }
+
+    %% ── Submodule 2.2 — Forecasting & Scoring ────────────────────────────────
+
     tbl_forecast_result {
-        UUID  forecast_result_id  PK
-        UUID  business_profile_id FK
+        UUID   forecast_result_id    PK
+        UUID   business_profile_id   FK
         string target_market
         float  predicted_demand
         float  forecast_confidence
         float  mape_score
+        float  mae
+        float  rmse
+        int    forecast_horizon_weeks
+        text   weekly_forecasts_json
         ts     generated_at
     }
 
     tbl_market_score {
-        UUID    market_score_id   PK
-        UUID    forecast_result_id FK
+        UUID    market_score_id      PK
+        UUID    forecast_result_id   FK
         float   market_score
         float   seasonality_score
         boolean spike_indicator
+        float   gdp_per_capita_growth
+        float   forex_vs_php
+        int     historical_arrivals
+        int     market_rank
         ts      evaluated_at
     }
 
     tbl_demand_alert {
-        UUID   demand_alert_id PK
-        UUID   market_score_id FK
-        string alert_level
-        text   alert_message
-        ts     alert_date
+        UUID    demand_alert_id  PK
+        UUID    market_score_id  FK
+        string  alert_level
+        text    alert_message
+        ts      window_open_date
+        ts      alert_date
+        string  trend
+        boolean is_read
+    }
+
+    tbl_market_economic_trend {
+        UUID   trend_id         PK
+        string market
+        text   gdp_trend_json
+        text   forex_trend_json
+        float  gdp_latest
+        float  forex_latest
+        string currency_code
+        int    gdp_points
+        int    forex_points
+        ts     fetched_at
     }
 
     %% ── Relationships ────────────────────────────────────────────────────────
 
-    tbl_msme_operator            ||--o{ tbl_business_profile         : "owns (user_id)"
-    tbl_business_profile         ||--o{ tbl_market_signal_record     : "has signal records"
-    tbl_business_profile         ||--o{ tbl_orig_weekly_demand_value : "has weekly demand values"
-    tbl_business_profile         ||--o{ tbl_forecast_result          : "has forecast results"
-    tbl_forecast_result          ||--o{ tbl_market_score             : "scored by"
-    tbl_market_score             ||--o{ tbl_demand_alert             : "triggers alerts"
+    tbl_msme_operator         ||--o{ tbl_business_profile        : "owns"
+    tbl_business_profile      ||--o{ tbl_market_signal_record    : "has signal records"
+    tbl_business_profile      ||--o{ tbl_forecast_result         : "has forecast results"
+    tbl_forecast_result       ||--o{ tbl_market_score            : "scored by"
+    tbl_market_score          ||--o{ tbl_demand_alert            : "triggers alerts"

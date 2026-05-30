@@ -1,11 +1,15 @@
 """
-Server-side AI wrapper (DeepSeek). Mirrors the five prompts currently in the
+Server-side AI wrapper (Groq). Mirrors the five prompts currently in the
 frontend's `ceview/services/geminiService.ts` so swapping the frontend over
 later changes only the transport, not the behavior.
 
-When DEEPSEEK_API_KEY is missing, every function returns a deterministic
+When GROQ_API_KEY is missing, every function returns a deterministic
 fallback. Module-3 functions tag the returned dict with a `source` field
-("deepseek" | "fallback") so the UI can label demo data.
+("groq" | "fallback") so the UI can label demo data.
+
+Uses the OpenAI-compatible Groq API:
+  openai.OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
+  → client.chat.completions.create(response_format={"type": "json_object"})
 """
 
 from __future__ import annotations
@@ -16,33 +20,52 @@ import os
 
 from app import errors
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+_log = logging.getLogger("gemini_client")
 
-_client = None
-if DEEPSEEK_API_KEY:
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+_groq_client = None
+if GROQ_API_KEY:
     try:
-        from openai import OpenAI as _OpenAI
-        _client = _OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com/v1")
-    except Exception:
-        _client = None
+        from openai import OpenAI  # type: ignore[import]
+        _groq_client = OpenAI(
+            api_key=GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        _log.info("Groq API initialised — model=%s", GROQ_MODEL)
+    except Exception as _init_exc:
+        _log.error("Failed to initialise Groq API: %s", _init_exc)
+        _groq_client = None
+else:
+    _log.warning(
+        "GROQ_API_KEY not set — all AI calls will return deterministic fallback data."
+    )
 
 
 def _enabled() -> bool:
-    return _client is not None
+    return _groq_client is not None
 
 
-def _generate_json(prompt: str, schema: dict | None = None) -> dict:
+def _generate_json(prompt: str) -> dict:
+    """Call Groq and return the parsed JSON response dict.
+
+    Uses ``response_format={"type": "json_object"}`` so the model returns a
+    clean JSON string without markdown fences.  Returns ``{}`` on any failure
+    so callers' ``out.get(key, fallback)`` pattern is always safe.
+    """
     if not _enabled():
         return {}
     try:
-        resp = _client.chat.completions.create(
-            model="deepseek-chat",
-            response_format={"type": "json_object"},
+        response = _groq_client.chat.completions.create(
+            model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+            response_format={"type": "json_object"},
         )
-        return json.loads(resp.choices[0].message.content or "{}")
+        return json.loads(response.choices[0].message.content.strip())
     except Exception as exc:
-        logging.getLogger("deepseek_client").warning("DeepSeek API call failed: %s", exc)
+        _log.warning("Groq API call failed: %s", exc)
         return {}
 
 
@@ -226,92 +249,12 @@ The optionNames field is a list parallel to options:
         )
         return {**base, "source": "fallback"}
 
-    _content_log.info("Gemini content ok market=%s", market)
+    _content_log.info("Groq content ok market=%s", market)
     return {
         "market":    enriched.get("market") or base["market"],
         "framework": enriched.get("framework") or base["framework"],
         "captions":  enriched.get("captions"),
-        "source":    "gemini",
-    }
-
-
-def evaluate_compliance(caption: str, market: str,
-                        media_name: str | None, media_size: int | None) -> dict:
-    """
-    Returns: { score, aligned[], gaps[], source }.
-    Same fallback/source contract as `content_for_market`.
-    """
-    base = {
-        "score": 88,
-        "aligned": [
-            "Destination tags are correctly added so travelers can easily find your location.",
-            "Text is clear and very easy to read against the background image.",
-            "Important text is placed exactly where travelers naturally look first.",
-            "Caption tone matches the target audience's search intent.",
-        ],
-        "gaps": [
-            "The background looks a bit too crowded. Try a cleaner, simpler image.",
-            "Missing words that suggest a 'fresh start' which travelers respond to.",
-            "No people are visible in the photo. Adding one helps travelers project themselves.",
-        ],
-    }
-
-    if not _enabled():
-        _compliance_log.info(
-            "Gemini disabled; returning fallback compliance for market=%s",
-            market,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_DISABLED},
-        )
-        return {**base, "source": "fallback"}
-
-    media_hint = ""
-    if media_name:
-        media_hint = f"\nMedia file: {media_name} ({media_size or 0} bytes)"
-
-    prompt = f"""You are CeView's Multimodal Compliance Auditor for Cebu tourism social media.
-
-Caption to audit:
-\"\"\"{caption}\"\"\"
-
-Target market: {market}{media_hint}
-
-Evaluate the caption (and implied visual) on cultural fit, readability, hashtag strategy,
-destination tagging, emotional resonance, and trigger words for the target market.
-
-Return JSON with exactly:
-- score: integer 0-100 (overall compliance)
-- aligned: array of 3-5 plain-language strings explaining what works well
-- gaps: array of 2-4 plain-language strings explaining what is missing or weak
-"""
-    try:
-        out = _generate_json(prompt)
-    except Exception as exc:
-        _compliance_log.exception(
-            "Gemini compliance call failed market=%s: %s",
-            market, exc,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EXCEPTION},
-        )
-        return {**base, "source": "fallback"}
-
-    if not out or "score" not in out:
-        _compliance_log.warning(
-            "Gemini returned empty compliance payload market=%s",
-            market,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EMPTY},
-        )
-        return {**base, "source": "fallback"}
-
-    try:
-        score = int(out.get("score", 0))
-    except (TypeError, ValueError):
-        score = 0
-
-    _compliance_log.info("Gemini compliance ok market=%s score=%s", market, score)
-    return {
-        "score": max(0, min(100, score)),
-        "aligned": list(out.get("aligned") or [])[:5],
-        "gaps": list(out.get("gaps") or [])[:4],
-        "source": "gemini",
+        "source":    "groq",
     }
 
 
@@ -869,13 +812,13 @@ Generate destination-specific creative direction. Return JSON with exactly:
         )
         return {**fallback, "source": "fallback"}
 
-    _creative_log.info("Gemini creative direction ok market=%s", market)
+    _creative_log.info("Groq creative direction ok market=%s", market)
     return {
         "visualGuide":            out.get("visualGuide") or fallback["visualGuide"],
         "shots":                  out.get("shots") or fallback["shots"],
         "moodboard":              out.get("moodboard") or fallback["moodboard"],
         "platformRecommendations": out.get("platformRecommendations") or fallback["platformRecommendations"],
-        "source": "gemini",
+        "source": "groq",
     }
 
 
@@ -958,153 +901,68 @@ def _creative_fallback(market: str, platforms: dict) -> dict:
 _creative_log = logging.getLogger("module3.creative.gemini")
 
 
-def evaluate_compliance_multimodal(
-        caption: str,
-        market: str,
-        approved_captions: list[str],
-        visual_tone: str | None,
-        shot_list_context: str | None,
-        media_name: str | None,
-        media_size: int | None) -> dict:
-    """Visual Alignment Score (VAS) + explainable AI outputs (FR3.24, FR3.25.2, FR3.26).
+def pes_compute_insights(
+    base_metrics: dict,
+    pes_score: float,
+    pes_label: str,
+    breakdown: list[dict],
+    flagged_metrics: list[str],
+) -> dict:
+    """Generate AI prescriptive insights for UC-4.3 (pes_compute endpoint).
 
-    Evaluates: composition consistency, cultural appropriateness, visual tone
-    alignment, subject emphasis, destination relevance (FR3.24 criteria).
-
-    Returns:
-        {
-            vas: float 0-100,
-            aligned: list[str],     — what works well (FR3.26)
-            gaps: list[str],        — improvement areas (FR3.26)
-            mismatches: list[str],  — detected mismatches and deviations (FR3.26)
-            source: "gemini" | "fallback"
-        }
+    Returns: { weakest_funnel_stage, recommendations, executive_summary, source }
+    Falls back to rule-based output if Groq is unavailable.
     """
-    fallback = _visual_fallback_evaluation(market)
-
     if not _enabled():
-        _compliance_log.info(
-            "Gemini disabled; returning fallback VAS for market=%s", market,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_DISABLED},
-        )
-        return {**fallback, "source": "fallback"}
+        return {}
 
-    approved_block = "\n".join(f"- {c}" for c in (approved_captions or [])[:3])
-    visual_context = ""
-    if visual_tone:
-        visual_context += f"\nApproved visual tone: {visual_tone}"
-    if shot_list_context:
-        visual_context += f"\nApproved shot list: {shot_list_context[:400]}"
+    breakdown_text = "\n".join(
+        f"  - {b['metric']}: weight {b['weight']}, contribution {b['contribution']:.4f}"
+        for b in breakdown
+    )
+    flag_text = (
+        f"Excluded metrics (missing data): {', '.join(flagged_metrics)}"
+        if flagged_metrics else "No metrics were excluded."
+    )
 
-    media_hint = ""
-    if media_name:
-        media_hint = f"\nSubmitted media: {media_name} ({media_size or 0} bytes)"
+    prompt = f"""You are CeView's Senior Campaign Analyst for Cebu MSME tourism businesses — resorts, tour operators, dive shops, and cultural experience providers in Cebu, Philippines targeting Korean, Japanese, and US tourists.
 
-    prompt = f"""You are CeView's Multimodal Compliance Auditor for Cebu tourism promotions
-targeting the {market} market.
+Campaign PES Analysis:
+- PES Score: {pes_score:.4f} / 1.00 ({pes_label})
+- Base Metrics: {json.dumps(base_metrics, indent=2)}
+- Metric Contributions (normalized × weight):
+{breakdown_text}
+- {flag_text}
 
-Operator-submitted caption:
-\"\"\"{caption}\"\"\"
+Context on what each metric means for a Cebu tourism operator:
+- CTR: % of tourists who saw the ad and clicked — measures ad creative relevance for Cebu's target tourist markets
+- CPC: ₱ cost per click on platforms like Facebook, Naver Blog, or Instagram — measures ad spend efficiency per tourist reached
+- ROAS: ₱ revenue from Cebu resort packages or tours per ₱1 of ad spend — measures overall campaign profitability
+- CR: % of clicks that became booking enquiries or form submissions on the Cebu operator's landing page — measures offer and landing page effectiveness
+- CAC: total ₱ cost to acquire one confirmed booking customer for the Cebu tourism business — measures total acquisition efficiency
 
-AI-approved reference captions:
-{approved_block}
-{visual_context}{media_hint}
-
-Perform multimodal visual compliance analysis (FR3.24). Evaluate:
-1. Composition consistency — does the caption imply visual framing aligned with recommendations?
-2. Cultural appropriateness — does tone and language match {market} traveler expectations?
-3. Visual tone alignment — does emotional atmosphere match the approved creative direction?
-4. Subject emphasis — are the correct tourism subjects (healing, scenery, food) emphasised?
-5. Destination relevance — is Cebu positioning clear and authentic?
+Identify the weakest funnel stage and provide 3 specific, actionable recommendations to improve the campaign's PES score.
+Each recommendation must:
+  - Reference Cebu's tourism context specifically (e.g. Cebu resort packages, island-hopping tours, dive packages in Moalboal, cultural experiences)
+  - Name the specific platform to act on (e.g. Naver Blog for Korean tourists, Instagram Reels for US tourists, Facebook for Japanese tourists)
+  - State the expected business outcome for the Cebu operator (e.g. lower CAC, more booking enquiries, higher ROAS)
 
 Return JSON with exactly:
-- vas: integer 0-100 (Visual Alignment Score — weighted average of the 5 criteria above)
-- aligned: array of 3-5 strings — what works well and why (FR3.26)
-- gaps: array of 2-4 strings — specific improvement areas (FR3.26)
-- mismatches: array of 1-3 strings — detected mismatches vs approved direction (FR3.26)
+- weakest_funnel_stage: string (e.g. "Clicks → Bookings", "Impressions → Clicks", etc.)
+- recommendations: array of exactly 3 strings — each a concrete, Cebu-specific action with platform and expected outcome
+- executive_summary: string — 3-4 sentences: state the PES score and what it means for this Cebu tourism business, explain which metric is the biggest drag on performance and why it matters for booking revenue, and name the single most impactful action the operator should take immediately
 """
 
-    try:
-        out = _generate_json(prompt)
-    except Exception as exc:
-        _compliance_log.exception(
-            "Gemini multimodal compliance failed market=%s: %s", market, exc,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EXCEPTION},
-        )
-        return {**fallback, "source": "fallback"}
+    out = _generate_json(prompt)
+    if not out or "recommendations" not in out:
+        return {}
 
-    if not out or "vas" not in out:
-        _compliance_log.warning(
-            "Gemini multimodal compliance empty market=%s", market,
-            extra={"code": errors.MOD3_COMPLIANCE_GEMINI_EMPTY},
-        )
-        return {**fallback, "source": "fallback"}
-
-    try:
-        vas = max(0, min(100, int(out.get("vas", 0))))
-    except (TypeError, ValueError):
-        vas = fallback["vas"]
-
-    _compliance_log.info("Gemini multimodal VAS ok market=%s vas=%s", market, vas)
     return {
-        "vas":       vas,
-        "aligned":   list(out.get("aligned") or [])[:5],
-        "gaps":      list(out.get("gaps") or [])[:4],
-        "mismatches": list(out.get("mismatches") or [])[:3],
-        "source":    "gemini",
+        "weakest_funnel_stage": out.get("weakest_funnel_stage", "Clicks → Bookings"),
+        "recommendations":      list(out.get("recommendations", []))[:3],
+        "executive_summary":    out.get("executive_summary", ""),
+        "source":               "groq",
     }
-
-
-def _visual_fallback_evaluation(market: str) -> dict:
-    """Rule-based VAS fallback for FR3.30 — deterministic per market."""
-    _fallbacks = {
-        "korea": {
-            "vas": 74,
-            "aligned": [
-                "Caption adopts a warm, contemplative tone consistent with Korean healing-travel aesthetic.",
-                "Destination references Cebu clearly — tourism positioning is unambiguous.",
-                "Language register is appropriately calm and non-aggressive for the market.",
-            ],
-            "gaps": [
-                "No Korean hashtags detected — Naver Blog SEO depends on #세부여행 and similar tags.",
-                "Visual tone cues (golden hour, minimal clutter) are absent from the caption.",
-            ],
-            "mismatches": [
-                "Caption does not reference the solo 'me-space' framing recommended in creative direction.",
-            ],
-        },
-        "japan": {
-            "vas": 76,
-            "aligned": [
-                "Tone is polite and understated — consistent with Japanese communication norms.",
-                "Destination imagery (ocean, resort) aligns with 非日常 (non-daily life) travel motivation.",
-                "Caption length is appropriate for Facebook/Instagram Japanese audience.",
-            ],
-            "gaps": [
-                "Missing Japanese trigger words (絶景, 癒し) that drive emotional resonance.",
-                "No clear price point or value reference — important for Japanese purchase decisions.",
-            ],
-            "mismatches": [
-                "Food/cultural close-up emphasis is missing despite being a priority in the shot list.",
-            ],
-        },
-        "usa": {
-            "vas": 71,
-            "aligned": [
-                "Hook is energetic — consistent with Instagram Reels first-2-second requirement.",
-                "Informal tone matches US casual communication style.",
-                "Hashtag strategy present — discoverability for Reels is addressed.",
-            ],
-            "gaps": [
-                "No explicit CTA ('Book now', 'Link in bio') — conversion intent is weak.",
-                "FOMO framing ('hidden gem', 'bucket list') is absent.",
-            ],
-            "mismatches": [
-                "Caption describes a slow, contemplative experience — mismatches the high-energy adventure framing in the US creative direction.",
-            ],
-        },
-    }
-    return _fallbacks.get(market, _fallbacks["korea"])
 
 
 def performance_report(
@@ -1172,7 +1030,7 @@ RULES:
 
 Return this exact JSON structure:
 {{
-  "executiveSummary": "<2–3 sentence overall campaign assessment referencing PES and funnel>",
+  "executiveSummary": "<4–6 sentence overall campaign assessment that: (1) opens with a plain-language explanation of what each of the 5 KPIs means for this Cebu tourism business — CTR is the percentage of tourists who saw the ad and clicked (measures ad creative relevance), CPC is the ₱ cost per click on platforms like Facebook and Naver Blog (measures ad spend efficiency), ROAS is the ₱ revenue earned per ₱1 of ad spend (measures overall campaign profitability for the resort or tour package), CR is the percentage of clicks that turned into a booking enquiry or form submission (measures how well the landing page converts tourist interest into action), and CAC is the total ₱ cost to secure one confirmed booking customer (measures total acquisition efficiency and directly impacts profit margin); (2) summarises the current overall campaign health in the context of this Cebu tourism MSME; (3) identifies the single top-priority improvement for the operator>",
   "funnelDiagnostics": [
     {{
       "stage": "<transition label>",

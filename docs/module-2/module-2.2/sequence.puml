@@ -1,0 +1,185 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam noteFontSize 9
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 250
+skinparam SequenceGroupBodyBackgroundColor transparent
+skinparam SequenceGroupBorderThickness 1
+
+participant Browser
+participant "MarketRadarView" as MRV
+participant "apiClient" as AC
+participant "ForecastingController" as FC
+participant "ForecastingService" as FS
+participant "EnrichedSequenceBuilder" as ESB
+participant "ExternalMarketDataClient" as EXT
+participant "AIInferenceGatewayService" as AIG
+participant "MarketDataIngestionService" as I21
+participant "forecastingRouter (FastAPI)" as FT
+participant Groq
+participant "PostgreSQL" as DB
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow 1 — Page load: GET /api/v1/forecasting/markets  (DB-only, no AI)
+' ══════════════════════════════════════════════════════════════════════════
+
+note over Browser,DB: Flow 1 · Market Radar page load — GET /api/v1/forecasting/markets (no AI calls)
+
+Browser -> MRV: mount (tab: radar)
+MRV -> AC: listMarkets(businessProfileId)
+AC -> FC: GET /api/v1/forecasting/markets?profileId=UUID
+FC -> FS: loadMarketsFromDb(profileId)
+
+loop For each market in [korea, japan, usa]
+    FS -> DB: ForecastResultRepo.findTop(profileId, market, 4wk)
+    DB --> FS: ForecastResult (most recent 4-week)
+    FS -> DB: MarketScoreRepo.findByForecastResultId(fr.id)
+    DB --> FS: MarketScore (marketScore, marketRank, spike)
+    FS -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market) DESC
+    DB --> FS: List~MarketSignalRecord~ (chart history, up to 12)
+    FS -> DB: MarketEconomicTrendRepo.findTopByMarket(market)
+    DB --> FS: MarketEconomicTrend (gdpTrendJson, forexTrendJson)
+    FS -> FS: deserialize weeklyForecastsJson → List~Double~
+    FS -> FS: deserialize gdpTrendJson + forexTrendJson → trend DTOs
+end
+
+FS -> FS: sort bundles by marketScore DESC — assign ranks 1-3
+FS -> FS: buildMarketDto() for each bundle
+FS -> FS: buildChartData() — 24 ChartDataPointDto (12 history + 12 forecast)
+FS -> FS: buildDirective() · buildEconomyInsight() · buildSeasonalityInsight()
+FS --> FC: MarketsResponse
+FC --> AC: 200 OK · MarketsResponse { markets: [...] }
+AC --> MRV: Market[]
+
+MRV -> Browser: render 3 MarketRankCards (rank, matchScore, SurgeBadge if spike)
+MRV -> Browser: render detail panel for selected market
+note right of Browser
+  DemandForecastChart — history + forecast + seasonality series
+  EconomicInsightsBoard — forex/GDP mini-charts + peak-month calendar
+  LiveAlertBanner — visible only if chartData[].spike === 1
+  StrategicDirectivePanel — AI directive text + "Generate Content" CTA
+end note
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow 2 — Refresh Forecast: POST /api/v1/forecasting/analyze/{profileId}
+' ══════════════════════════════════════════════════════════════════════════
+
+note over Browser,DB: Flow 2 · Refresh Forecast — POST /api/v1/forecasting/analyze/{profileId}
+
+Browser -> MRV: click "Refresh Forecast" button
+MRV -> MRV: setIsRefreshing(true) — spinner on button
+MRV -> AC: analyzeMarkets(businessProfileId)
+AC -> FC: POST /api/v1/forecasting/analyze/UUID
+
+FC -> FS: forecastForProfile(profileId, refresh=true)
+FS -> DB: BusinessProfileRepo.findById(profileId)
+DB --> FS: BusinessProfile
+FS -> FS: validate categoriesList() non-empty (else 400 MOD22_PROFILE_NOT_READY)
+
+' ── Phase 0 — Submodule 2.1 Ingestion (black-box) ───────────────────────
+
+note over FS,DB: Phase 0 — 2.1 Ingestion sub-step (PyTrends + seasonality, treated as black-box here)
+FS -> I21: ingestForProfile(profile)
+I21 -> DB: fetch latest MarketSignalRecords + external GDP/forex
+I21 -> DB: persist fresh MarketSignalRecord per market (trend_index, rolling stats, yoy_ratio, spike)
+I21 --> FS: ingestion count
+
+' ── Phase A — Build enriched sequences (no AI calls) ────────────────────
+
+note over FS,DB: Phase A — Build enriched sequences for all 3 markets
+
+loop For each market [korea, japan, usa]
+    FS -> EXT: fetchGdpTrend(market)
+    EXT -> EXT: World Bank NY.GDP.MKTP.KD.ZG — 5-year series (10 s timeout)
+    EXT --> FS: GdpTrendDto (List~GdpTrendPoint~, chronological)
+
+    FS -> EXT: fetchForexTrend(market)
+    EXT -> EXT: 12 concurrent CDN calls via Flux.merge() (30 s combined timeout)
+    EXT --> FS: ForexTrendDto (List~ForexTrendPoint~, 12 monthly)
+
+    FS -> ESB: buildSequence(profileId, market)
+    ESB -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market) DESC
+    DB --> ESB: List~MarketSignalRecord~
+    ESB -> ESB: assemble trendSeries · rolling7dAvg · rolling30dAvg · rollingStd7d
+    ESB -> ESB: attach spike · yoyRatio · seasonalityScore · forex · gdp
+    ESB --> FS: Map (Groq prompt payload)
+
+    FS -> FS: inject gdpTrendDirection (GROWING/DECLINING/FLAT, delta = newest-oldest GDP pt)
+end
+
+' ── Phase B — Batch Groq inference (single API call for 3 markets) ──────
+
+note over FS,Groq: Phase B — Single batch Groq call (1 RPM slot for all 3 markets)
+
+FS -> AIG: runForecastInferenceBatch(allThreeSequences)
+AIG -> FT: POST /internal/forecasting/inference-batch
+FT -> FT: gemini_forecaster.forecast_batch(markets_data)
+note right of FT
+  Service file: gemini_forecaster.py
+  Runtime engine: Groq llama-3.3-70b-versatile
+  (file name is a Phase 2 artifact from BiLSTM -> AI API pivot)
+end note
+FT -> Groq: chat.completions (llama-3.3-70b-versatile, JSON mode, temp=0.1)
+note right of Groq
+  Prompt per market: 12-week trend series, rolling stats,
+  momentum (ACCELERATING/DECELERATING), spike (YES/NO),
+  YoY ratio, seasonality score, forex rate, GDP growth + trend direction
+end note
+Groq --> FT: { korea:{week_1..week_12}, japan:{...}, usa:{...} }
+FT -> FT: clamp each week to [5, 100]
+FT -> FT: flat-line guard — all identical → dampened linear tilt
+FT -> FT: ceiling/floor guard — 3+ at >=99.5 or <=5.5 → pull toward rolling mean
+FT -> FT: forecast_validator.validate() — MAPE <= 15% gate (FR2.12)
+FT --> AIG: GeminiBatchForecastResponse { results: { korea:{predicted_demand_4w, predicted_demand_12w,\nweekly_forecasts[12], mape, mae, rmse, confidence, passed}, ... } }
+AIG --> FS: Map~String_Map~
+
+' ── Phase C — XGBoost scoring + @Transactional persistence ──────────────
+
+note over FS,DB: Phase C — Per-market XGBoost scoring + @Transactional persistence (all-or-rollback)
+
+loop For each market (transactional)
+    FS -> AIG: runMarketScoring({ market, predicted_demand, seasonality_score, spike_indicator,\ngdp_growth, forex_vs_php, direct_flight, distance_km, flight_frequency })
+    AIG -> FT: POST /internal/forecasting/score
+    FT -> FT: xgboost_scorer.score(features)
+    note right of FT
+      economic_viability = 0.30×gdp + 0.30×forex + 0.20×direct_flight
+                          + 0.10×distance + 0.10×flight_frequency
+      market_score = 0.40×demand + 0.35×seasonality + 0.25×economic
+    end note
+    FT --> AIG: EconomicScoreResponse { market_score, economic_viability_score, components }
+    AIG --> FS: Map
+
+    FS -> DB: ForecastResultRepo.save() — 4-week horizon
+    FS -> DB: ForecastResultRepo.save() — 12-week horizon
+    FS -> DB: MarketScoreRepo.save() — composite score + spike + economic fields
+    DB --> FS: MarketScore
+
+    alt demand4w > rollingAvg7d x 1.2
+        FS -> DB: DemandAlertRepo.save() — WARNING · is_read=false · windowOpenDate=now+1wk
+        note right of DB: Alert feeds HomeView notification feed (Module 2.1 GET /notifications)
+    end
+
+    FS -> DB: MarketEconomicTrendRepo.save() — GDP 5yr + forex 12mo JSON snapshot
+end
+
+FS -> DB: MarketScoreRepo.save() x 3 — update market_rank 1-3 (sorted by market_score DESC)
+
+FS -> FS: buildMarketDto() + buildChartData() (24 pts) for each market
+FS --> FC: MarketsResponse
+FC --> AC: 200 OK · MarketsResponse { markets: [...] }
+AC --> MRV: Market[] (fresh forecast data)
+
+MRV -> MRV: setMarkets(fresh) · setIsRefreshing(false)
+MRV -> Browser: re-render with updated ranks, chart data, alerts, directives
+note right of Browser
+  MarketRankCard order may change if ranks shifted
+  DemandForecastChart — new 12 weekly forecast points
+  LiveAlertBanner — appears if demand surge detected
+  EconomicInsightsBoard — updated GDP + forex trend charts
+end note
+
+@enduml

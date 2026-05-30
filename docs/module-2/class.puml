@@ -1,0 +1,586 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam classBackgroundColor white
+skinparam classBorderColor #444444
+skinparam packageBackgroundColor #f5f5f5
+skinparam PageOrientation portrait
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam ArrowColor #444444
+skinparam shadowing false
+
+' ══════════════════════════════════════════════════════════════════════════
+' FASTAPI TRANSFORMER — Pydantic Schemas
+' ══════════════════════════════════════════════════════════════════════════
+
+package "FastAPI — Pydantic Schemas" {
+
+    class GeminiForecastRequest <<schema>> {
+        +market : str
+        +trendSeries : list~float~
+        +rolling7dAvg : float
+        +rolling30dAvg : float
+        +rollingStd7d : float
+        +spikeIndicator : bool
+        +yoyRatio : float
+        +seasonalityScore : float
+        +forexRate : float
+        +gdpGrowth : float
+        +gdpTrendDirection : str
+        +gdpTrendDelta : float
+    }
+
+    class ForecastResponse <<schema>> {
+        +predicted_demand_4w : float
+        +predicted_demand_12w : float
+        +weekly_forecasts : list~float~
+        +mape : float
+        +mae : float
+        +rmse : float
+        +confidence : float
+        +passed : bool
+        +low_confidence_disclaimer : bool
+        +source : str
+    }
+
+    class GeminiBatchForecastRequest <<schema>> {
+        +markets : list~GeminiForecastRequest~
+    }
+
+    class GeminiBatchForecastResponse <<schema>> {
+        +results : dict~str_ForecastResponse~
+    }
+
+    class EconomicScoreRequest <<schema>> {
+        +market : str
+        +predicted_demand : float
+        +seasonality_score : float
+        +spike_indicator : bool
+        +gdp_growth : float
+        +forex_vs_php : float
+        +direct_flight : bool
+        +distance_km : int
+        +flight_frequency : int
+    }
+
+    class EconomicScoreResponse <<schema>> {
+        +market_score : float
+        +economic_viability_score : float
+        +components : dict
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' FASTAPI TRANSFORMER — Services
+' ══════════════════════════════════════════════════════════════════════════
+
+package "FastAPI — Services" {
+
+    class gemini_forecaster <<service>> {
+        +GROQ_MODEL : str
+        +forecast(market, data) dict
+        +forecast_batch(markets_data) dict
+        -_build_prompt(market, data) str
+        -_groq_call(prompt) str
+        -_stub_forecast(market, data) dict
+    }
+
+    note bottom of gemini_forecaster
+      File: gemini_forecaster.py
+      Runtime engine: Groq llama-3.3-70b-versatile
+      (file name is a Phase 2 artifact from
+      BiLSTM -> AI API pivot)
+    end note
+
+    class xgboost_scorer <<service>> {
+        +score(features) dict
+        -_xgb_economic(features) float
+        -_linear_economic(features) float
+    }
+
+    class seasonal_shift_detector <<service>> {
+        +compute(weekly_series) dict
+        -_rolling_avg(series, window) float
+        -_rolling_std(series, window) float
+        -_yoy_ratio(series) float
+        -_seasonality_score(yoy, std, spike) float
+    }
+
+    class pytrends_client <<service>> {
+        +fetch_trends(market, categories) dict
+        +fetch_trend_history(market, categories, weeks) dict
+        -_jitter_sleep() void
+    }
+
+    class forecast_validator <<service>> {
+        +validate(mape, mae, rmse) dict
+    }
+
+    class market_data_processor <<service>> {
+        +normalize(raw_index) float
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' FASTAPI TRANSFORMER — Routers
+' ══════════════════════════════════════════════════════════════════════════
+
+package "FastAPI — Routers" {
+
+    class forecastingRouter <<router>> {
+        +POST /internal/forecasting/inference : ForecastResponse
+        +POST /internal/forecasting/inference-batch : GeminiBatchForecastResponse
+        +POST /internal/forecasting/score : EconomicScoreResponse
+    }
+
+    class marketDataRouter <<router>> {
+        +POST /internal/market-data/trends : dict
+        +POST /internal/market-data/trends/history : dict
+        +POST /internal/market-data/seasonality : dict
+    }
+
+    class trendsRouter <<router>> {
+        +POST /api/v1/trends/fetch : dict
+        +POST /api/v1/trends/rank-markets : dict
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — DTOs
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — DTOs" {
+
+    class MarketsResponse <<record>> {
+        +markets : List~MarketDto~
+    }
+
+    class MarketDto <<record>> {
+        +id : String
+        +rank : int
+        +name : String
+        +city : String
+        +matchScore : int
+        +directive : String
+        +directFlight : boolean
+        +flightHours : String
+        +distanceKm : int
+        +nearestAirport : String
+        +destinationAirport : String
+        +accessibilityScore : int
+        +flightFrequency : int
+        +avgFlightPrice : String
+        +airlines : List~AirlineDto~
+        +peakMonths : List~String~
+        +economyInsight : String
+        +seasonalityInsight : String
+        +chartData : List~ChartDataPointDto~
+        +gdpTrend : List~GdpTrendPointDto~
+        +forexTrend : List~ForexTrendPointDto~
+    }
+
+    class AirlineDto <<record>> {
+        +name : String
+        +code : String
+        +frequency : String
+        +direct : boolean
+        +duration : String
+        +tier : String
+    }
+
+    class ChartDataPointDto <<record>> {
+        +week : String
+        +history : Double
+        +forecast : Double
+        +seasonality : double
+        +forex : double
+        +gdp : double
+        +spike : double
+    }
+
+    class GdpTrendPointDto <<record>> {
+        +year : int
+        +value : double
+    }
+
+    class ForexTrendPointDto <<record>> {
+        +date : String
+        +value : double
+    }
+
+    class NotificationsResponse <<record>> {
+        +notifications : List~NotificationDto~
+    }
+
+    class NotificationDto <<record>> {
+        +id : String
+        +date : String
+        +title : String
+        +market : String
+        +marketId : String
+        +trend : String
+        +isRead : boolean
+        +details : DetailsDto
+    }
+
+    class DetailsDto <<record>> {
+        +projectedArrivals : int
+        +arrivalGrowth : double
+        +topInterests : List~TopInterestDto~
+        +segments : List~String~
+        +strategicInsights : StrategicInsightsDto
+        +keywordData : List~KeywordTrendDto~
+    }
+
+    class KeywordTrendDto <<record>> {
+        +keyword : String
+        +volume : int
+        +growth : int
+        +market : String
+    }
+
+    class TopInterestDto <<record>> {
+        +name : String
+        +score : int
+    }
+
+    class StrategicInsightsDto <<record>> {
+        +trendAlignment : String
+        +connectivity : String
+        +economicValue : String
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — JPA Entities
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — Entities" {
+
+    class ForecastResult <<entity>> {
+        +forecastResultId : UUID
+        +businessProfileId : UUID
+        +targetMarket : String
+        +predictedDemand : double
+        +forecastConfidence : double
+        +mapeScore : double
+        +mae : double
+        +rmse : double
+        +forecastHorizonWeeks : int
+        +weeklyForecastsJson : String
+        +generatedAt : OffsetDateTime
+    }
+
+    class MarketScore <<entity>> {
+        +marketScoreId : UUID
+        +forecastResultId : UUID
+        +marketScore : double
+        +seasonalityScore : double
+        +spikeIndicator : boolean
+        +gdpPerCapitaGrowth : double
+        +forexVsPhp : double
+        +historicalArrivals : int
+        +marketRank : int
+        +evaluatedAt : OffsetDateTime
+    }
+
+    class DemandAlert <<entity>> {
+        +demandAlertId : UUID
+        +marketScoreId : UUID
+        +alertLevel : String
+        +alertMessage : String
+        +windowOpenDate : OffsetDateTime
+        +alertDate : OffsetDateTime
+        +trend : String
+        +isRead : boolean
+    }
+
+    class MarketSignalRecord <<entity>> {
+        +signalRecordId : UUID
+        +businessProfileId : UUID
+        +targetMarket : String
+        +trendIndex : double
+        +forexRate : double
+        +gdpGrowth : double
+        +seasonalityScore : double
+        +rollingAverage : double
+        +rollingAverage7d : double
+        +rollingAverage30d : double
+        +rollingStdDev : double
+        +yoyRatio : Double
+        +spikeIndicator : boolean
+        +aggregatedAt : OffsetDateTime
+    }
+
+    class MarketEconomicTrend <<entity>> {
+        +trendId : UUID
+        +market : String
+        +gdpTrendJson : String
+        +forexTrendJson : String
+        +gdpLatest : double
+        +forexLatest : double
+        +currencyCode : String
+        +gdpPoints : int
+        +forexPoints : int
+        +fetchedAt : OffsetDateTime
+    }
+
+    class IngestionJobLog <<entity>> {
+        +jobLogId : UUID
+        +jobName : String
+        +status : String
+        +marketsProcessed : int
+        +recordsIngested : int
+        +errorMessage : String
+        +startedAt : OffsetDateTime
+        +completedAt : OffsetDateTime
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — Repositories
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — Repositories" {
+
+    class ForecastResultRepository <<repository>> {
+        +findTopByProfileAndMarketAndHorizon(UUID, String, int) Optional~ForecastResult~
+        +existsByBusinessProfileId(UUID) boolean
+    }
+
+    class MarketScoreRepository <<repository>> {
+        +findByForecastResultIdIn(List~UUID~) List~MarketScore~
+        +findByForecastResultIdOrderByMarketRankAsc(UUID) List~MarketScore~
+    }
+
+    class DemandAlertRepository <<repository>> {
+        +findByMarketScoreIdInOrderByAlertDateDesc(List~UUID~) List~DemandAlert~
+    }
+
+    class MarketSignalRecordRepository <<repository>> {
+        +findByProfileAndMarketOrderByAggregatedAtDesc(UUID, String) List~MarketSignalRecord~
+        +existsByProfileAndMarketAndAggregatedAtAfter(UUID, String, OffsetDateTime) boolean
+    }
+
+    class MarketEconomicTrendRepository <<repository>> {
+        +findTopByMarketOrderByFetchedAtDesc(String) Optional~MarketEconomicTrend~
+    }
+
+    class IngestionJobLogRepository <<repository>> {
+        +save(IngestionJobLog) IngestionJobLog
+    }
+
+    class TrendFetchJobRepository <<repository>> {
+        +findPendingAndFailedJobs() List~TrendFetchJob~
+        +upsertByKey(String, String, String) void
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — Services
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — Services" {
+
+    class ForecastingService <<service>> {
+        -sequenceBuilder : EnrichedSequenceBuilder
+        -ai : AIInferenceGatewayService
+        -forecastRepo : ForecastResultRepository
+        -scoreRepo : MarketScoreRepository
+        -alertRepo : DemandAlertRepository
+        -ingestionService : MarketDataIngestionService
+        -externalClient : ExternalMarketDataClient
+        -signalRepo : MarketSignalRecordRepository
+        -economicTrendRepo : MarketEconomicTrendRepository
+        +forecastForProfile(UUID, boolean) MarketsResponse
+        +loadMarketsFromDb(UUID) MarketsResponse
+        -runPipeline(UUID) MarketsResponse
+        -buildMarketDto(bundle, int) MarketDto
+        -buildChartData(records, forecasts, ...) List~ChartDataPointDto~
+        -persistForecastResult(UUID, String, Map, int) ForecastResult
+        -persistMarketScore(UUID, Map, double) MarketScore
+        -persistDemandAlert(UUID, String, double) void
+        -persistEconomicTrend(String, GdpTrendDto, ForexTrendDto) void
+    }
+
+    class EnrichedSequenceBuilder <<service>> {
+        -signalRepo : MarketSignalRecordRepository
+        +buildSequence(UUID, String) Map
+    }
+
+    class NotificationService <<service>> {
+        -alertRepo : DemandAlertRepository
+        -scoreRepo : MarketScoreRepository
+        -forecastRepo : ForecastResultRepository
+        -categoryRankService : CategoryRankNotificationService
+        +getNotificationsForProfile(UUID) NotificationsResponse
+        -toNotificationDto(DemandAlert, Map, Map) NotificationDto
+    }
+
+    class CategoryRankNotificationService <<service>> {
+        -ai : AIInferenceGatewayService
+        +buildForCategories(List~String~) List~NotificationDto~
+    }
+
+    class MarketDataIngestionService <<service>> {
+        -ai : AIInferenceGatewayService
+        -externalClient : ExternalMarketDataClient
+        -signalRepo : MarketSignalRecordRepository
+        +ingestForProfile(BusinessProfile) int
+        -ingestMarket(BusinessProfile, String) void
+        -backfillHistory(UUID, String, Map, GdpDataDto, ForexDataDto) double
+    }
+
+    class ExternalMarketDataClient <<service>> {
+        -worldBankClient : WebClient
+        -forexClient : WebClient
+        +fetchGdpGrowth(String) GdpDataDto
+        +fetchForexRate(String) ForexDataDto
+        +fetchGdpTrend(String) GdpTrendDto
+        +fetchForexTrend(String) ForexTrendDto
+        +getFlightReference(String) FlightReferenceDto
+    }
+
+    class TrendFetchSchedulerService <<service>> {
+        -jobRepo : TrendFetchJobRepository
+        -transformerClient : WebClient
+        +runWeeklyTrendFetch() void
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' SPRING BOOT — Controllers & Gateway
+' ══════════════════════════════════════════════════════════════════════════
+
+package "Spring Boot — Controllers & Gateway" {
+
+    class ForecastingController <<controller>> {
+        -forecastingService : ForecastingService
+        +markets(UUID) ResponseEntity
+        +analyze(UUID) ResponseEntity
+        -structuredError(ResponseStatusException, String) ResponseEntity
+    }
+
+    class NotificationController <<controller>> {
+        -notificationService : NotificationService
+        +list(UUID) NotificationsResponse
+    }
+
+    class AIInferenceGatewayService <<service>> {
+        -sbertClient : WebClient
+        -transformerClient : WebClient
+        -complianceClient : WebClient
+        -timeout : Duration
+        -rankMarketsTimeout : Duration
+        +fetchTrends(Map) Map
+        +fetchTrendHistory(Map) Map
+        +computeSeasonality(Map) Map
+        +runForecastInference(Map) Map
+        +runForecastInferenceBatch(List) Map
+        +runMarketScoring(Map) Map
+        +rankMarketsForCategory(String) Map
+    }
+}
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — FastAPI internal
+' ══════════════════════════════════════════════════════════════════════════
+
+GeminiBatchForecastRequest *-- GeminiForecastRequest : contains list
+GeminiBatchForecastResponse *-- ForecastResponse : maps market to result
+
+forecastingRouter --> gemini_forecaster : forecast / forecast_batch
+forecastingRouter --> xgboost_scorer : score
+forecastingRouter ..> GeminiBatchForecastRequest : accepts
+forecastingRouter ..> GeminiBatchForecastResponse : returns
+forecastingRouter ..> EconomicScoreResponse : returns
+
+marketDataRouter --> pytrends_client : fetch_trends / fetch_trend_history
+marketDataRouter --> seasonal_shift_detector : compute
+seasonal_shift_detector --> market_data_processor : normalize
+
+gemini_forecaster --> forecast_validator : validate mape
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Spring Boot controllers → services
+' ══════════════════════════════════════════════════════════════════════════
+
+ForecastingController --> ForecastingService : delegates
+ForecastingController ..> MarketsResponse : returns
+
+NotificationController --> NotificationService : delegates
+NotificationController ..> NotificationsResponse : returns
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Spring Boot services
+' ══════════════════════════════════════════════════════════════════════════
+
+ForecastingService --> EnrichedSequenceBuilder : buildSequence
+ForecastingService --> AIInferenceGatewayService : runForecastInferenceBatch / runMarketScoring
+ForecastingService --> MarketDataIngestionService : ingestForProfile
+ForecastingService --> ExternalMarketDataClient : fetchGdpTrend / fetchForexTrend
+ForecastingService --> ForecastResultRepository : save / query
+ForecastingService --> MarketScoreRepository : save / query
+ForecastingService --> DemandAlertRepository : save
+ForecastingService --> MarketSignalRecordRepository : query
+ForecastingService --> MarketEconomicTrendRepository : save / query
+ForecastingService ..> MarketsResponse : produces
+ForecastingService ..> MarketDto : assembles via buildMarketDto
+
+EnrichedSequenceBuilder --> MarketSignalRecordRepository : findByProfileAndMarket
+
+NotificationService --> DemandAlertRepository : findByMarketScoreIds
+NotificationService --> MarketScoreRepository : findByForecastResultIds
+NotificationService --> ForecastResultRepository : findByProfile
+NotificationService --> CategoryRankNotificationService : buildForCategories
+NotificationService ..> NotificationsResponse : produces
+
+CategoryRankNotificationService --> AIInferenceGatewayService : rankMarketsForCategory
+
+MarketDataIngestionService --> AIInferenceGatewayService : fetchTrends / fetchTrendHistory / computeSeasonality
+MarketDataIngestionService --> ExternalMarketDataClient : fetchGdpGrowth / fetchForexRate
+MarketDataIngestionService --> MarketSignalRecordRepository : save
+
+TrendFetchSchedulerService --> TrendFetchJobRepository : state machine reads / writes
+TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/v1/trends/fetch
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Entities
+' ══════════════════════════════════════════════════════════════════════════
+
+ForecastResult "1" --> "0..*" MarketScore : scored by (forecastResultId FK)
+MarketScore "1" --> "0..*" DemandAlert : triggers (marketScoreId FK)
+
+ForecastResultRepository ..> ForecastResult : manages
+MarketScoreRepository ..> MarketScore : manages
+DemandAlertRepository ..> DemandAlert : manages
+MarketSignalRecordRepository ..> MarketSignalRecord : manages
+MarketEconomicTrendRepository ..> MarketEconomicTrend : manages
+IngestionJobLogRepository ..> IngestionJobLog : manages
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — Spring Boot → FastAPI (cross-service HTTP)
+' ══════════════════════════════════════════════════════════════════════════
+
+AIInferenceGatewayService --> forecastingRouter : POST /inference-batch · /score
+AIInferenceGatewayService --> marketDataRouter : POST /trends · /seasonality
+AIInferenceGatewayService --> trendsRouter : POST /rank-markets
+
+' ══════════════════════════════════════════════════════════════════════════
+' RELATIONSHIPS — DTO composition
+' ══════════════════════════════════════════════════════════════════════════
+
+MarketsResponse *-- MarketDto : contains list
+MarketDto *-- AirlineDto : contains list
+MarketDto *-- ChartDataPointDto : contains list
+MarketDto *-- GdpTrendPointDto : contains list
+MarketDto *-- ForexTrendPointDto : contains list
+
+NotificationsResponse *-- NotificationDto : contains list
+NotificationDto *-- DetailsDto : contains
+DetailsDto *-- TopInterestDto : contains list
+DetailsDto *-- StrategicInsightsDto : contains
+DetailsDto *-- KeywordTrendDto : contains list
+
+@enduml

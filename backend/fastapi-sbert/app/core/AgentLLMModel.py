@@ -2,16 +2,19 @@ import os
 import logging
 import threading
 
+from dotenv import load_dotenv
+
+# This forces Python to find and load the .env file
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
 
 class AgentLLMModel:
-    """Singleton wrapper around ChatOpenAI (DeepSeek backend) for the LangGraph caption agent.
+    """Singleton wrapper around ChatGroq (Groq) for the LangGraph agents.
 
-    Initialisation is deferred and fail-safe: if DEEPSEEK_API_KEY is absent or
-    langchain_openai cannot be imported, the singleton is set to None so
-    the rest of the SBERT server starts normally.  Callers must guard against
-    get_model() returning None.
+    Self-healing initialization: If the environment variables are not loaded when
+    the module is first imported, get_model() will retry initialization dynamically.
     """
 
     _instance = None
@@ -21,38 +24,41 @@ class AgentLLMModel:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(AgentLLMModel, cls).__new__(cls)
+                cls._instance._model = None
                 cls._instance._initialize()
         return cls._instance
 
     def _initialize(self):
-        self._model = None
-        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+        """Attempts to build the LangChain Groq model."""
+        api_key = os.environ.get("GROQ_API_KEY", "")
+
         if not api_key:
-            logger.warning(
-                "AgentLLMModel: DEEPSEEK_API_KEY not set — "
-                "caption generation agent will be unavailable."
-            )
             return
+
         try:
-            from langchain_openai import ChatOpenAI  # type: ignore[import]
-            self._model = ChatOpenAI(
-                model="deepseek-chat",
+            from langchain_groq import ChatGroq  # type: ignore[import]
+
+            self._model = ChatGroq(
+                model="llama-3.3-70b-versatile",
                 temperature=0.7,
-                openai_api_key=api_key,
-                openai_api_base="https://api.deepseek.com/v1",
+                groq_api_key=api_key,
             )
-            logger.info("AgentLLMModel: ChatOpenAI (DeepSeek) initialised (deepseek-chat).")
+            logger.info("AgentLLMModel: ChatGroq initialised (llama-3.3-70b-versatile).")
+
+        except ImportError:
+            logger.error(
+                "AgentLLMModel: 'langchain-groq' package not found. "
+                "CRITICAL: Run `pip install langchain-groq`."
+            )
         except Exception as exc:
-            logger.warning(
-                "AgentLLMModel: could not initialise DeepSeek client — "
-                "caption agent will be unavailable. Error: %s", exc
-            )
+            logger.error("AgentLLMModel: Failed to initialise Groq client. Error: %s", exc)
 
     def get_model(self):
-        """Return the configured LLM, or None if unavailable."""
+        """Return the configured LLM. If it failed previously, try one more time."""
+        if self._model is None:
+            self._initialize()
         return self._model
 
 
-# ── Module-level singleton — safe: never raises, may be None ─────────────────
+# ── Module-level singleton ───────────────────────────────────────────────────
 _wrapper = AgentLLMModel()
-model = _wrapper.get_model()   # None when DEEPSEEK_API_KEY absent

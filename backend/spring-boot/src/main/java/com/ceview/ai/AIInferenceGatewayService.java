@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,6 +55,17 @@ public class AIInferenceGatewayService {
 
     public Map<String, Object> computeUniqueness(Map<String, Object> payload) {
         return postSbert("/internal/classification/uniqueness", payload);
+    }
+
+    /**
+     * Generate and persist the 768-dim E5 embedding for a saved business profile.
+     *
+     * <p>Called by {@link com.ceview.module1.businessinput.BusinessProfileController}
+     * after each profile save so the uniqueness corpus stays current.  Failures are
+     * non-fatal — the corpus will be stale until the next save succeeds.
+     */
+    public Map<String, Object> embedBusinessProfile(Map<String, Object> payload) {
+        return postSbert("/internal/classification/embed", payload);
     }
 
     /**
@@ -100,25 +112,35 @@ public class AIInferenceGatewayService {
         return postTransformer("/internal/forecasting/inference", payload);
     }
 
+    /**
+     * Batch Gemini demand forecast — all markets in a single API call (FR2.11).
+     *
+     * <p>Sends all market sequences together so Gemini returns one JSON response
+     * with forecasts for every market, consuming only 1 RPM quota slot instead of N.
+     *
+     * @param sequences list of per-market payload maps (same shape as runForecastInference)
+     * @return Map keyed by market name (e.g. "korea"), each value is the ForecastResponse fields
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Map<String, Object>> runForecastInferenceBatch(
+            List<Map<String, Object>> sequences) {
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("markets", sequences);
+
+        Map<String, Object> response = postTransformer("/internal/forecasting/inference-batch", body);
+
+        if (response == null || !response.containsKey("results")) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "MOD22_FORECAST_FAILED :: Batch inference returned empty response");
+        }
+        return (Map<String, Map<String, Object>>) response.get("results");
+    }
+
     /** Run XGBoost market scoring model (FR2.13). */
     public Map<String, Object> runMarketScoring(Map<String, Object> payload) {
         return postTransformer("/internal/forecasting/score", payload);
-    }
-
-    /**
-     * Legacy stub fallback — called when no enriched data exists for a profile.
-     * Routes to the transformer's /analyze stub which returns MOCK_MARKETS-shaped data.
-     */
-    public Map<String, Object> forecastMarkets(Map<String, Object> payload) {
-        return postTransformer("/internal/forecasting/analyze", payload);
-    }
-
-    /**
-     * Legacy stub fallback — called when no demand alerts exist for a profile.
-     * Routes to the transformer's /notifications stub.
-     */
-    public Map<String, Object> listNotifications() {
-        return postTransformer("/internal/forecasting/notifications", Map.of());
     }
 
     // ─── Module 3 — Content / Creative / Compliance (fastapi-sbert) ──────────
@@ -127,23 +149,85 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/content/generate", payload);
     }
 
+    /** Generate captions via the LangGraph agent with full business context (FR3.5/FR3.6). */
+    public Map<String, Object> generateCaption(Map<String, Object> payload) {
+        return postSbert("/internal/generation/caption", payload);
+    }
+
     public Map<String, Object> generateCreative(Map<String, Object> payload) {
         return postSbert("/internal/creative/generate", payload);
     }
 
-    public Map<String, Object> evaluateCompliance(Map<String, Object> payload) {
-        return postSbert("/internal/compliance/evaluate", payload);
-    }
-
-    /** Full multimodal compliance analysis (FR3.20-FR3.26). */
-    public Map<String, Object> evaluateComplianceFull(Map<String, Object> payload) {
-        return postSbert("/internal/compliance/evaluate-full", payload);
+    /**
+     * OMCS compliance audit via the LangGraph omcs_agent (Submodule 3.3).
+     *
+     * <p>Payload shape (mirrors ComplianceInputClass on the FastAPI side):
+     * <pre>
+     * {
+     *   "caption":          string,
+     *   "image_url":        string (http(s):// or data: base64),
+     *   "business_profile": { ... },
+     *   "recommendations":  { core_business_context, market_cultural_localization, ... }
+     * }
+     * </pre>
+     *
+     * <p>Returns the full omcs_agent state: profile_semantic_score, rubric_evaluation_data,
+     * recommendations_picture_score, consistency_explanation, pubmat_consistency_score,
+     * omcs_score, status, feedback (plus the echoed inputs).
+     */
+    public Map<String, Object> analyzeOmcsAgent(Map<String, Object> payload) {
+        return postSbert("/internal/omcs/analyze", payload);
     }
 
     // ─── Module 4 — Analytics report + PES deep-analysis (fastapi-sbert) ───────
 
     public Map<String, Object> generateReport(Map<String, Object> payload) {
         return postSbert("/internal/report/generate", payload);
+    }
+
+    /**
+     * UC-4.2 / UC-4.3 — Raw campaign data PES computation + AI prescriptive insights.
+     *
+     * <p>Delegates to FastAPI {@code /internal/pes-compute/analyze} which:
+     * <ol>
+     *   <li>Computes CTR, CPC, CR, ROAS, CAC from raw inputs.</li>
+     *   <li>Applies Min-Max normalization and inverts cost metrics.</li>
+     *   <li>Applies the PES weighted-sum formula with edge-case weight recalibration.</li>
+     *   <li>Calls DeepSeek/Gemini to identify the weakest funnel stage and generate
+     *       3 ranked optimisation recommendations + an executive summary.</li>
+     * </ol>
+     *
+     * <p>Payload shape:
+     * <pre>
+     * {
+     *   "impressions":  int,
+     *   "clicks":       int,
+     *   "adSpend":      double,
+     *   "revenue":      double,
+     *   "conversions":  int,
+     *   "bookings":     int,
+     *   "newCustomers": int
+     * }
+     * </pre>
+     *
+     * <p>Response shape (from FastAPI):
+     * <pre>
+     * {
+     *   "base_metrics":       { CTR, CPC, CR, ROAS, CAC },
+     *   "normalized_metrics": { ... },
+     *   "pes_score":          double,
+     *   "pes_label":          string,
+     *   "breakdown":          [ { metric, weight, contribution } ],
+     *   "flagged_metrics":    [ string ],
+     *   "effective_weights":  { ... },
+     *   "ai_report":          { weakest_funnel_stage, recommendations[], executive_summary, source }
+     * }
+     * </pre>
+     *
+     * @see com.ceview.module4.engagement.EngagementMetricsController#manualIngest
+     */
+    public Map<String, Object> computePesFromRaw(Map<String, Object> payload) {
+        return postSbert("/internal/pes-compute/analyze", payload);
     }
 
     /**
@@ -157,7 +241,7 @@ public class AIInferenceGatewayService {
      * }
      * </pre>
      *
-     * @see com.ceview.module4.AnalyticsController#pesAnalysis
+     * @see com.ceview.module4.report.PrescriptiveReportController#pesAnalysis
      */
     public Map<String, Object> generatePesAnalysis(Map<String, Object> payload) {
         return postSbert("/internal/pes-analysis/generate", payload);
@@ -191,17 +275,32 @@ public class AIInferenceGatewayService {
                 .retrieve()
                 .onStatus(
                     status -> status.is4xxClientError() || status.is5xxServerError(),
-                    response -> response.bodyToMono(MAP_TYPE)
-                        .map(body -> {
-                            String code = String.valueOf(body.getOrDefault("code", "FASTAPI_ERROR"));
-                            String msg  = String.valueOf(body.getOrDefault("message", response.statusCode().toString()));
+                    // Read as String so any Content-Type (text/plain or application/json) is accepted.
+                    // The upstream FastAPI may return text/plain on unhandled RuntimeErrors; reading
+                    // as MAP_TYPE would throw UnsupportedMediaTypeException in that case.
+                    response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .map(rawBody -> {
+                            String code = "FASTAPI_ERROR";
+                            String msg  = rawBody;
+                            // Best-effort extraction of structured {"code":"...","message":"..."} fields
+                            try {
+                                if (rawBody.contains("\"code\"")) {
+                                    int ci = rawBody.indexOf("\"code\"") + 8;
+                                    int ce = rawBody.indexOf('"', ci);
+                                    if (ce > ci) code = rawBody.substring(ci, ce);
+                                }
+                                if (rawBody.contains("\"message\"")) {
+                                    int mi = rawBody.indexOf("\"message\"") + 11;
+                                    int me = rawBody.indexOf('"', mi);
+                                    if (me > mi) msg = rawBody.substring(mi, me);
+                                }
+                            } catch (Exception ignored) {}
+                            if (msg.isBlank()) msg = response.statusCode().toString();
                             return (Throwable) new ResponseStatusException(
                                 HttpStatus.valueOf(response.statusCode().value()),
                                 code + " :: " + msg);
                         })
-                        .defaultIfEmpty(new ResponseStatusException(
-                            HttpStatus.valueOf(response.statusCode().value()),
-                            "upstream error from " + path))
                 )
                 .bodyToMono(MAP_TYPE)
                 .block(timeout);

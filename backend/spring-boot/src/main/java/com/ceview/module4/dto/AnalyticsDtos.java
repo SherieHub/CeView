@@ -95,4 +95,27 @@ public class AnalyticsDtos {
         List<RankedRecommendation> recommendations,
         String recommendedPlatform
     ) {}
+
+    /** Combined response for POST /manual — includes computed KPIs, funnel, and PES. */
+    public record ManualIngestResponse(
+        Metrics metrics,
+        List<FunnelStage> funnel,
+        PesResponse pes
+    ) {}
+
+    /** One week's campaign snapshot — used by GET /history for the trend line chart. */
+    public record CampaignSnapshot(
+        String periodStart,
+        String periodEnd,
+        double pesScore,
+        String pesLabel,
+        Double ctr,
+        Double cpc,
+        Double roas,
+        Double convRate,
+        Double cac
+    ) {}
+
+    /** Ordered list of weekly snapshots (chronological) for the trend line chart. */
+    public record CampaignHistoryResponse(List<CampaignSnapshot> snapshots) {}
 }

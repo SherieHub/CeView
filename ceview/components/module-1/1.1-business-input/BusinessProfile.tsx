@@ -52,7 +52,6 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
     { id: 'instagram', name: 'Instagram', icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-5 h-5 object-contain" />, color: '#0F2854', isConnected: true },
     { id: 'facebook', name: 'Facebook', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-5 h-5 object-contain" />, color: '#0F2854', isConnected: false },
     { id: 'tiktok', name: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-5 h-5 object-contain" />, color: '#0F2854', isConnected: false },
-    { id: 'naver', name: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-5 h-5 object-contain" />, color: '#0F2854', isConnected: false },
   ]);
 
   const [modalOpen, setModalOpen] = useState(false);

@@ -1,0 +1,202 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam noteFontSize 9
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 250
+skinparam SequenceGroupBodyBackgroundColor transparent
+skinparam SequenceGroupBorderThickness 1
+skinparam PageOrientation portrait
+
+participant "Client" as Client
+participant "ForecastingController" as FC
+participant "ForecastingService" as FS
+participant "EnrichedSequenceBuilder" as ESB
+participant "MarketDataIngestionService" as MDI
+participant "ExternalMarketDataClient" as EXT
+participant "AIInferenceGatewayService" as AIG
+participant "fastapi-transformer" as FT
+participant "Groq" as Groq
+participant "PostgreSQL" as DB
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow 1 — GET /api/v1/forecasting/markets  (DB-only, no AI calls)
+' ══════════════════════════════════════════════════════════════════════════
+
+note over Client,DB: Flow 1 · GET /api/v1/forecasting/markets — Pure DB read (no AI calls)
+
+Client -> FC: GET /api/v1/forecasting/markets?profileId=UUID
+FC -> FS: loadMarketsFromDb(profileId)
+
+loop For each market in [korea, japan, usa]
+    FS -> DB: ForecastResultRepo.findTop(profileId, market, horizon=4)
+    DB --> FS: ForecastResult (4-week, most recent)
+    FS -> DB: MarketScoreRepo.findByForecastResultId(fr.id)
+    DB --> FS: MarketScore (with market_rank)
+    FS -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market) DESC
+    DB --> FS: List~MarketSignalRecord~ (history, up to 12 rows)
+    FS -> DB: MarketEconomicTrendRepo.findTopByMarket(market)
+    DB --> FS: MarketEconomicTrend (GDP + forex trend JSON)
+    FS -> FS: deserialize weeklyForecastsJson -> List~Double~
+    FS -> FS: deserialize gdpTrendJson + forexTrendJson -> trend DTOs
+end
+
+FS -> FS: sort bundles by marketScore DESC -> assign ranks 1-3
+FS -> FS: buildMarketDto() each bundle
+FS -> FS: buildChartData() -> 24 ChartDataPointDto (12 history + 12 forecast)
+FS -> FS: buildDirective() · buildEconomyInsight() · buildSeasonalityInsight()
+FS --> FC: MarketsResponse
+FC --> Client: 200 OK · MarketsResponse { markets: [...] }
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow 2 — POST /api/v1/forecasting/analyze/{profileId}  (Full AI pipeline)
+' ══════════════════════════════════════════════════════════════════════════
+
+note over Client,DB: Flow 2 · POST /api/v1/forecasting/analyze/{profileId} — Full AI pipeline
+
+Client -> FC: POST /api/v1/forecasting/analyze/UUID
+FC -> FS: forecastForProfile(profileId, refresh=true)
+FS -> DB: BusinessProfileRepo.findById(profileId)
+DB --> FS: BusinessProfile
+FS -> FS: validate categoriesList() non-empty
+
+' ── Phase 0 — Submodule 2.1 Ingestion ────────────────────────────────────
+
+note over FS,DB: Phase 0 — Submodule 2.1 Ingestion (per-market, sequential)
+
+FS -> MDI: ingestForProfile(profile)
+
+loop For each market in [korea, japan, usa]
+    par Concurrent external data fetch
+        MDI -> EXT: fetchGdpGrowth(market)
+        EXT -> EXT: World Bank NY.GDP.MKTP.KD.ZG (10 s timeout)
+        EXT --> MDI: GdpDataDto
+    and
+        MDI -> EXT: fetchForexRate(market)
+        EXT -> EXT: fawazahmed0 CDN forex API (10 s timeout)
+        EXT --> MDI: ForexDataDto
+    end
+
+    MDI -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market)
+    DB --> MDI: existing signal records
+
+    alt First ingestion — no history rows
+        MDI -> AIG: fetchTrendHistory({ market, weeks=12 })
+        AIG -> FT: POST /internal/market-data/trends/history
+        FT -> FT: pytrends_client.fetch_trend_history() + 4-12 s jitter
+        FT --> AIG: { weekly_series: [{date, trend_index}, ...] }
+        AIG --> MDI: Map
+        MDI -> DB: MarketSignalRecordRepo.save() x12 (backfill rows, back-dated)
+        MDI -> DB: reload signal records (now includes backfill)
+    else Subsequent ingestion
+        MDI -> AIG: fetchTrends({ market })
+        AIG -> FT: POST /internal/market-data/trends
+        FT -> FT: pytrends_client.fetch_trends() + 4-12 s jitter
+        FT --> AIG: { trend_index: float, source: pytrends | stub }
+        AIG --> MDI: Map
+    end
+
+    MDI -> MDI: build chronological weekly_history series from signal records
+    MDI -> AIG: computeSeasonality({ profile_id, market, weekly_history })
+    AIG -> FT: POST /internal/market-data/seasonality
+    FT -> FT: seasonal_shift_detector.compute(weekly_series)
+    note right of FT
+      Step 1: 7d/30d rolling averages
+      Step 2: 2 sigma spike test
+      Step 3: YoY ratio (52-week lookback)
+      Step 4: seasonality_score [0,1]
+    end note
+    FT --> AIG: { seasonality_score, rolling_7d_avg, rolling_30d_avg,\nrolling_7d_std, spike_indicator, yoy_ratio }
+    AIG --> MDI: Map
+
+    MDI -> MDI: compute 30-period forex rolling average from history
+    MDI -> DB: MarketSignalRecordRepo.save() — new MarketSignalRecord with all computed fields
+end
+
+MDI --> FS: int (markets ingested count)
+
+' ── Phase A — Build enriched sequences ────────────────────────────────────
+
+note over FS,DB: Phase A — Build enriched sequences for all 3 markets (no AI calls)
+
+loop For each market
+    FS -> EXT: fetchGdpTrend(market)
+    EXT -> EXT: World Bank 5-year GDP series (newest-first -> reversed to chronological)
+    EXT --> FS: GdpTrendDto (List~GdpTrendPoint~)
+    FS -> EXT: fetchForexTrend(market)
+    EXT -> EXT: 12 concurrent monthly CDN calls via Flux.merge() (30 s combined timeout)
+    EXT --> FS: ForexTrendDto (List~ForexTrendPoint~)
+
+    FS -> ESB: buildSequence(profileId, market)
+    ESB -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market) DESC
+    DB --> ESB: List~MarketSignalRecord~
+    ESB -> ESB: assemble trendSeries, rolling stats, spike, yoyRatio, seasonalityScore, forex, gdp
+    ESB --> FS: Map (payload for Groq)
+
+    FS -> FS: inject gdpTrendDirection (GROWING/DECLINING/FLAT) and gdpTrendDelta from 5yr series
+end
+
+' ── Phase B — Batch Groq inference (1 API call, 3 markets) ───────────────
+
+note over FS,Groq: Phase B — Single batch Groq inference (1 RPM slot for all 3 markets)
+
+FS -> AIG: runForecastInferenceBatch(allThreeSequences)
+AIG -> FT: POST /internal/forecasting/inference-batch
+FT -> FT: gemini_forecaster.forecast_batch(markets_data)
+note right of FT
+  Service file: gemini_forecaster.py
+  Runtime engine: Groq llama-3.3-70b-versatile
+  (file name is a Phase 2 artifact from BiLSTM -> AI API pivot)
+end note
+FT -> Groq: chat.completions.create (llama-3.3-70b-versatile, JSON mode, temp=0.1)
+note right of Groq
+  Prompt per market: 12-week trend series,
+  rolling stats, spike, YoY, seasonality,
+  forex rate, GDP growth + trend direction
+end note
+Groq --> FT: { korea:{week_1..week_12}, japan:{...}, usa:{...} }
+FT -> FT: parse 12 weekly floats per market · clamp to [5, 100]
+FT -> FT: flat-line guard (all identical -> dampened linear tilt)
+FT -> FT: ceiling/floor guard (3+ values at >=99.5 or <=5.5 -> pull toward rolling mean)
+FT -> FT: forecast_validator.validate() — MAPE <= 15% gate (FR2.12)
+FT --> AIG: GeminiBatchForecastResponse { results: { korea: { predicted_demand_4w,\npredicted_demand_12w, weekly_forecasts[12], mape, mae, rmse, confidence, passed }, ... } }
+AIG --> FS: Map~String_Map~
+
+' ── Phase C — XGBoost scoring + @Transactional persistence ───────────────
+
+note over FS,DB: Phase C — Per-market XGBoost scoring + @Transactional persistence
+
+loop For each market (all-or-nothing transaction)
+    FS -> AIG: runMarketScoring({ market, predicted_demand, seasonality_score,\nspike_indicator, gdp_growth, forex_vs_php, direct_flight, distance_km, flight_frequency })
+    AIG -> FT: POST /internal/forecasting/score
+    FT -> FT: xgboost_scorer.score(features)
+    note right of FT
+      market_score = 0.40 x demand
+                   + 0.35 x seasonality
+                   + 0.25 x economic_viability
+    end note
+    FT --> AIG: EconomicScoreResponse { market_score, economic_viability_score, components }
+    AIG --> FS: Map
+
+    FS -> DB: ForecastResultRepo.save() x2 (4-week and 12-week horizons)
+    DB --> FS: ForecastResult x2
+
+    FS -> DB: MarketScoreRepo.save() — composite score + spike + economic fields
+    DB --> FS: MarketScore
+
+    alt demand4w > rollingAvg7d x 1.2  (20% surge threshold)
+        FS -> DB: DemandAlertRepo.save() — WARNING alert, is_read=false, windowOpenDate=now+1week
+    end
+
+    FS -> DB: MarketEconomicTrendRepo.save() — GDP 5yr + forex 12mo JSON snapshot
+end
+
+FS -> DB: MarketScoreRepo.save() x3 — update market_rank (1-3) after sorting by market_score DESC
+FS -> FS: buildMarketDto() · buildChartData() — 24 points (12 history + 12 forecast)
+FS --> FC: MarketsResponse
+FC --> Client: 200 OK · MarketsResponse { markets: [...] }
+
+@enduml

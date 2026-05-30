@@ -23,7 +23,7 @@ from app.agents.creative_director_agent.prompts import (
     service_analysis_prompt,
 )
 from app.agents.creative_director_agent.state import SocialAgentState
-from app.core.AgentLLMModel import model as llm_with_tools
+from app.core.AgentLLMModel import _wrapper as _llm_wrapper
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +46,10 @@ def analyze_services(state: SocialAgentState) -> dict:
     if not all_services:
         all_services = _FALLBACK_SERVICES
 
-    if llm_with_tools is None:
+    llm = _llm_wrapper.get_model()
+    if llm is None:
         logger.error(
-            "[%s] caption_agent.analyze_services: LLM unavailable — GOOGLE_API_KEY may be unset or invalid.",
+            "[%s] caption_agent.analyze_services: LLM unavailable — GROQ_API_KEY may be unset or invalid.",
             errors.MOD31_LLM_UNAVAILABLE,
         )
         return {
@@ -57,7 +58,7 @@ def analyze_services(state: SocialAgentState) -> dict:
         }
 
     try:
-        chain = service_analysis_prompt | llm_with_tools | JsonOutputParser()
+        chain = service_analysis_prompt | llm | JsonOutputParser()
         
         filtered = chain.invoke({
             "market_category": state.get("market_category", ""),
@@ -85,22 +86,42 @@ def analyze_services(state: SocialAgentState) -> dict:
         }
 
 
+def _fallback_captions() -> dict:
+    """Return mock captions in the agent output shape when LLM is unavailable."""
+    from app.services.gemini_client import _mock_captions  # local to avoid circular import
+    mock = _mock_captions()
+    result: dict = {"_source": "fallback"}
+    for platform in ("instagram", "tiktok", "facebook"):
+        pdata    = mock.get(platform, {})
+        options  = pdata.get("options", [])
+        metadata = pdata.get("optionMetadata", [])
+        result[platform] = [
+            {"caption": options[i], **(metadata[i] if i < len(metadata) else {})}
+            for i in range(len(options))
+        ]
+    return result
+
+
 def generate_platform_captions(state: SocialAgentState) -> dict:
     """Node 2 — Generate 3-platform × 3-variation caption matrix.
 
     Passes full market context (target_market, forecast_context, research_context)
-    to the platform-aware prompt so Gemini can produce culturally localised,
+    to the platform-aware prompt so the LLM can produce culturally localised,
     platform-rule-compliant captions with named variation types.
+    Falls back to curated mock captions when the LLM is unavailable.
     """
-    if llm_with_tools is None:
-        logger.error(
-            "[%s] caption_agent.generate_platform_captions: LLM unavailable — GOOGLE_API_KEY may be unset or invalid.",
+    llm = _llm_wrapper.get_model()
+    if llm is None:
+        logger.warning(
+            "[%s] caption_agent.generate_platform_captions: LLM unavailable — "
+            "GROQ_API_KEY may be unset or ChatOpenAI failed to initialise. Returning mock captions.",
             errors.MOD31_LLM_UNAVAILABLE,
         )
-        raise RuntimeError(errors.MOD31_LLM_UNAVAILABLE)
+        fb = _fallback_captions()
+        return {"final_captions": fb, "source": fb.pop("_source", "fallback")}
 
     try:
-        chain = caption_generation_prompt | llm_with_tools | JsonOutputParser()
+        chain = caption_generation_prompt | llm | JsonOutputParser()
 
         # FIX: Build prompt variables to match template placeholders EXACTLY
         invoke_data = {
@@ -141,7 +162,7 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
                 if isinstance(opt, dict) and not opt.get("caption"):
                     opt["caption"] = ""
 
-        return {"final_captions": matrix}
+        return {"final_captions": matrix, "source": "groq"}
 
     except (RuntimeError, ValueError):
         raise

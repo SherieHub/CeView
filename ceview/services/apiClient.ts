@@ -5,8 +5,9 @@
  */
 
 import type {
-  Market, Notification, ContentResponseDTO, ComplianceResultDTO, CreativeDirectionDTO,
-  MetricsResponse, PesResponse, PrescriptiveReport,
+  Market, Notification, ContentResponseDTO, CreativeDirectionDTO,
+  MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
+  CampaignHistoryResponse, OmcsAuditResultDTO, PesAnalysisReport,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
@@ -61,8 +62,6 @@ export interface UniquenessResultDTO {
   overallScore: number;
   semanticsScore: number;
   categoryScore: number;
-  descriptionFeedback: string;
-  categoryFeedback: string;
 }
 
 /** Mirrors backend BusinessProfileDto (com.ceview.module1.dto). */
@@ -93,7 +92,7 @@ export const api = {
   }),
 
   classifyUniqueness: (body: {
-    businessName: string; categories: string[]; coreServices: string[]; description: string; uvp: string;
+    businessProfileId?: string; businessName: string; categories: string[]; coreServices: string[]; description: string; uvp: string;
   }) => req<UniquenessResultDTO>('/api/v1/classification/uniqueness', {
     method: 'POST', body: JSON.stringify(body),
   }),
@@ -108,6 +107,17 @@ export const api = {
     req<{ markets: Market[] }>(`/api/v1/forecasting/analyze/${encodeURIComponent(profileId)}`, {
       method: 'POST', body: '{}',
     }),
+
+  /**
+   * Home-view live forecast. Runs the pipeline only when the profile's newest
+   * forecast is missing or older than maxAgeHours; otherwise returns cached rows.
+   * Side effect: writes fresh demand-alert rows that listNotifications then reads.
+   */
+  ensureForecast: (profileId: string, maxAgeHours?: number) =>
+    req<{ markets: Market[] }>(
+      `/api/v1/forecasting/ensure/${encodeURIComponent(profileId)}${maxAgeHours != null ? `?maxAgeHours=${maxAgeHours}` : ''}`,
+      { method: 'POST', body: '{}' },
+    ),
 
   listNotifications: (profileId?: string | null) => {
     const qs = profileId ? `?profileId=${encodeURIComponent(profileId)}` : '';
@@ -146,22 +156,17 @@ export const api = {
       { method: 'POST', body: '{}' },
     ),
 
-  evaluateCompliance: (body: {
-    caption: string; market: string; mediaName?: string; mediaSize?: number;
-  }) => req<ComplianceResultDTO>('/api/v1/compliance/evaluate-json', {
+  /** Submodule 3.3 — OMCS compliance audit via the LangGraph omcs_agent.
+   *  Scores the chosen caption + image against the visual-guide recommendations.
+   *  imageUrl is a data: URL (base64) or public http(s) URL. */
+  analyzeOmcs: (body: {
+    caption: string;
+    imageUrl: string;
+    businessProfile: Record<string, unknown>;
+    recommendations: Record<string, unknown>;
+  }) => req<OmcsAuditResultDTO>('/api/v1/compliance/omcs-analyze', {
     method: 'POST', body: JSON.stringify(body),
   }),
-
-  /** Full multimodal compliance pipeline — FR3.20-FR3.30 (Submodule 3.3).
-   *  Pass profileId to auto-inject approved captions (3.1) and creative context (3.2).
-   *  Returns sub-scores (casScore, vasScore, omcsScore) and explainable AI outputs. */
-  evaluateComplianceFull: (body: {
-    caption: string; market: string; mediaName?: string; mediaSize?: number;
-  }, profileId?: string) =>
-    req<ComplianceResultDTO>(
-      `/api/v1/compliance/evaluate-full-json${profileId ? `?profileId=${encodeURIComponent(profileId)}` : ''}`,
-      { method: 'POST', body: JSON.stringify(body) },
-    ),
 
   // ── Module 4 ──────────────────────────────────────────────────────────────
 
@@ -178,7 +183,7 @@ export const api = {
   analyticsManual: (body: {
     impressions: number; clicks: number; adSpend: number; revenue: number;
     conversions: number; bookings: number; newCustomers: number;
-  }) => req<MetricsResponse>('/api/v1/analytics/manual', {
+  }) => req<ManualIngestResponse>('/api/v1/analytics/manual', {
     method: 'POST', body: JSON.stringify(body),
   }),
 
@@ -191,6 +196,13 @@ export const api = {
     req<PesResponse>(`/api/v1/analytics/pes/${encodeURIComponent(campaignId)}?weeks=${weeks}`),
 
   /**
+   * Weekly PES trend — returns the N most recent campaign records in chronological
+   * order for the trend line chart. N = weeks (4 or 8).
+   */
+  analyticsHistory: (weeks: 4 | 8 = 4) =>
+    req<CampaignHistoryResponse>(`/api/v1/analytics/history?weeks=${weeks}`),
+
+  /**
    * Generate the prescriptive performance report (exhaustive funnel diagnostics schema).
    * @param weeks  Analysis window forwarded to Spring Boot for metric scaling.
    */
@@ -198,5 +210,20 @@ export const api = {
     req<PrescriptiveReport>('/api/v1/analytics/report', {
       method: 'POST',
       body: JSON.stringify({ weeks }),
+    }),
+
+  /**
+   * PES time-series deep-analysis (pes_report_agent).
+   * @param weeks       Analysis window (4 or 8).
+   * @param metricsData Per-KPI weekly arrays (index 0 = most recent week), keyed
+   *                    CTR/CPC/ROAS/CR/CAC. Built by the frontend from campaign
+   *                    history. When omitted, Spring Boot synthesizes a series.
+   */
+  pesAnalysis: (weeks: 4 | 8 = 4, metricsData?: Record<string, number[]>) =>
+    req<PesAnalysisReport>('/api/v1/analytics/pes-analysis', {
+      method: 'POST',
+      body: JSON.stringify(
+        metricsData ? { weeks, metrics_data: metricsData } : { weeks },
+      ),
     }),
 };

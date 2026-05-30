@@ -20,18 +20,36 @@ services:
     build: ./fastapi-sbert
     container_name: ceview-fastapi
     environment:
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      HF_TOKEN: ${HF_TOKEN:-}
       KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
+      # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
+      DATABASE_URL: postgresql://ceview:ceview@postgres:5432/ceview
     volumes:
       - ./fastapi-sbert/models:/app/models:ro
+      # Persist the HuggingFace cache so the ~1.1GB E5 encoder is downloaded
+      # once and reused across rebuilds/recreates instead of every startup.
+      - ceview-hf-cache:/root/.cache/huggingface
     ports:
       - "8000:8000"
+    # The lifespan hook downloads + loads the E5 encoder before /healthz serves.
+    # A cold download can take several minutes, so give it a long start_period;
+    # failures during this window don't count against the container.
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\" || exit 1"]
+      interval: 15s
+      timeout: 10s
+      start_period: 600s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   fastapi-transformer:
     build: ./fastapi-transformer
     container_name: ceview-fastapi-transformer
     environment:
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     ports:
       - "8001:8001"
 
@@ -52,7 +70,7 @@ services:
       postgres:
         condition: service_healthy
       fastapi:
-        condition: service_started
+        condition: service_healthy
       fastapi-transformer:
         condition: service_started
     ports:
@@ -60,3 +78,4 @@ services:
 
 volumes:
   ceview-pgdata:
+  ceview-hf-cache:

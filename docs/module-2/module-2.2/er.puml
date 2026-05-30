@@ -1,0 +1,136 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam PageOrientation portrait
+skinparam linetype ortho
+skinparam EntityBorderColor #444444
+skinparam EntityBackgroundColor white
+skinparam ArrowColor #444444
+skinparam shadowing false
+hide methods
+hide stereotypes
+
+' ── Anchors (defined in other modules / submodules, referenced here) ──────
+
+entity tbl_business_profile {
+    * business_profile_id : UUID <<PK>>
+    --
+    user_id : UUID <<FK>>
+}
+
+entity tbl_market_signal_record {
+    * signal_record_id : UUID <<PK>>
+    --
+    business_profile_id : UUID <<FK>>
+    target_market : VARCHAR
+    trend_index : FLOAT
+    rolling_average_7d : FLOAT
+    rolling_average_30d : FLOAT
+    rolling_std_dev : FLOAT
+    yoy_ratio : FLOAT
+    seasonality_score : FLOAT
+    spike_indicator : BOOLEAN
+    aggregated_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_market_signal_record
+  Written by 2.1 MarketDataIngestionService.
+  Read by 2.2 EnrichedSequenceBuilder.
+end note
+
+' ── Module 2.2 — Forecast Results ────────────────────────────────────────
+
+entity tbl_forecast_result {
+    * forecast_result_id : UUID <<PK>>
+    --
+    business_profile_id : UUID <<FK>>
+    target_market : VARCHAR
+    predicted_demand : FLOAT
+    forecast_confidence : FLOAT
+    mape_score : FLOAT
+    mae : FLOAT
+    rmse : FLOAT
+    forecast_horizon_weeks : INT
+    weekly_forecasts_json : TEXT
+    generated_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_forecast_result
+  Saved twice per market per run:
+  4-week horizon + 12-week horizon.
+  weekly_forecasts_json: 12 Groq
+  per-week float values as JSON.
+end note
+
+' ── Module 2.2 — Market Scoring ──────────────────────────────────────────
+
+entity tbl_market_score {
+    * market_score_id : UUID <<PK>>
+    --
+    forecast_result_id : UUID <<FK>>
+    market_score : FLOAT
+    seasonality_score : FLOAT
+    spike_indicator : BOOLEAN
+    gdp_per_capita_growth : FLOAT
+    forex_vs_php : FLOAT
+    historical_arrivals : INT
+    market_rank : INT
+    evaluated_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_market_score
+  market_score = 0.40 x demand
+              + 0.35 x seasonality
+              + 0.25 x economic_viability
+  market_rank (1-3) updated post-sort.
+end note
+
+' ── Module 2.2 — Demand Alerts ───────────────────────────────────────────
+
+entity tbl_demand_alert {
+    * demand_alert_id : UUID <<PK>>
+    --
+    market_score_id : UUID <<FK>>
+    alert_level : VARCHAR
+    alert_message : TEXT
+    window_open_date : TIMESTAMPTZ
+    alert_date : TIMESTAMPTZ
+    trend : VARCHAR
+    is_read : BOOLEAN
+}
+
+note bottom of tbl_demand_alert
+  Generated when demand4w > rollingAvg7d x 1.2.
+  is_read=false → unread dot in HomeView.
+end note
+
+' ── Module 2.2 — Economic Trend Snapshots ────────────────────────────────
+
+entity tbl_market_economic_trend {
+    * trend_id : UUID <<PK>>
+    --
+    market : VARCHAR
+    gdp_trend_json : TEXT
+    forex_trend_json : TEXT
+    gdp_latest : FLOAT
+    forex_latest : FLOAT
+    currency_code : VARCHAR
+    gdp_points : INT
+    forex_points : INT
+    fetched_at : TIMESTAMPTZ
+}
+
+note bottom of tbl_market_economic_trend
+  Written by 2.1 ExternalMarketDataClient.
+  gdp_trend_json: [{year, value}x5]
+  forex_trend_json: [{date "YYYY-MM", value}x12]
+end note
+
+' ── Relationships ──────────────────────────────────────────────────────────
+
+tbl_business_profile  ||--o{ tbl_market_signal_record : "written by 2.1 · read by EnrichedSequenceBuilder"
+tbl_business_profile  ||--o{ tbl_forecast_result      : "has forecast results"
+tbl_forecast_result   ||--o{ tbl_market_score         : "scored by XGBoost"
+tbl_market_score      ||--o{ tbl_demand_alert         : "triggers when demand4w > rollingAvg x 1.2"
+
+@enduml

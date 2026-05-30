@@ -6,7 +6,7 @@
 
 -- ─── Submodule 2.1: Ingestion job audit log ──────────────────────────────────
 CREATE TABLE IF NOT EXISTS tbl_ingestion_job_log (
-    job_log_id        UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    job_log_id        UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     job_name          VARCHAR(80)  NOT NULL,
     status            VARCHAR(40)  NOT NULL,
     markets_processed INTEGER,
