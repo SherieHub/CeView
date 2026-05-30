@@ -5,7 +5,7 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-title Module 3 — Content Studio: Class / Component Structure (3.1 + 3.2)
+title Module 3 — Content Studio: Class / Component Structure (3.1 + 3.2 + 3.3)
 
 package "Module 3 — Content Studio" {
 
@@ -16,10 +16,17 @@ package "Module 3 — Content Studio" {
       -activeTab: ContentPlatformId
       -approvedIndices: Record<platform, number>
       -approvedCaptions: Record<platform, string>
+      -stagedCaption: string
+      -uploadedFile: File
+      -imageDataUrl: string
+      -auditOn: boolean
+      -auditRunning: boolean
+      -omcs: OmcsAuditResultDTO
       +generateContent()
       +approveContent(platform)
       +generateCreative(profileId, market)
       +approveCreative(profileId, market)
+      +runOmcsAudit()
     }
     class AIContentMatrixPanel {
       +renderPlatformTab(platform)
@@ -35,11 +42,26 @@ package "Module 3 — Content Studio" {
     }
     class BlueprintStepItem
     class DistributionPanel
+    class SmartOptimizationBoard {
+      -auditOn: boolean
+      -auditRunning: boolean
+      -omcs: OmcsAuditResultDTO
+      +onRunAudit()
+      +onResetAudit()
+    }
+    class ComplianceGauge {
+      +score: number
+    }
+    class MediaCaptionManager {
+      +stagedCaption: string
+      +onFileIngest(file)
+    }
     class apiClient <<service>> {
       +generateContent()
       +approveContent()
       +generateCreative()
       +approveCreative()
+      +analyzeOmcs()
     }
   }
 
@@ -52,6 +74,9 @@ package "Module 3 — Content Studio" {
       +generate(profileId, market?)
       +approve(profileId, market?)
     }
+    class ComplianceController {
+      +omcsAnalyze(body): OmcsAuditResultDto
+    }
     class ContentGenerationService
     class ContentApprovalService {
       +hasApprovedContent(profileId, market): boolean
@@ -62,6 +87,7 @@ package "Module 3 — Content Studio" {
     class AIInferenceGatewayService {
       +generateCaption(payload)
       +generateCreative(payload)
+      +analyzeOmcsAgent(payload)
     }
     class LocalizedPromotionalContent <<Entity>>
     class ContentGenerationLog <<Entity>>
@@ -75,6 +101,9 @@ package "Module 3 — Content Studio" {
     }
     class CreativeRouter {
       +POST /internal/creative/generate
+    }
+    class ComplianceRouter {
+      +POST /internal/omcs/analyze
     }
     class CaptionGenerationAgent <<LangGraph>> {
       +analyze_services(state)
@@ -97,14 +126,18 @@ package "Module 3 — Content Studio" {
 ContentStudioView *-- AIContentMatrixPanel
 ContentStudioView *-- VisualDirectionBoard
 ContentStudioView *-- DistributionPanel
+ContentStudioView *-- SmartOptimizationBoard
+ContentStudioView *-- MediaCaptionManager
 ContentStudioView --> apiClient
 AIContentMatrixPanel *-- "3" CopywritingOptionCard
 AIContentMatrixPanel *-- "3" PlatformTab
 VisualDirectionBoard *-- "N" BlueprintStepItem
+SmartOptimizationBoard *-- ComplianceGauge
 
 ' ── Frontend → Spring Boot ──
 apiClient ..> ContentController : /api/v1/content/*
 apiClient ..> CreativeDirectionController : /api/v1/creative-direction/*
+apiClient ..> ComplianceController : /api/v1/compliance/omcs-analyze
 
 ' ── Spring Boot 3.1 ──
 ContentController --> ContentGenerationService
@@ -123,9 +156,13 @@ CreativeDirectionService --> CreativeDirectionOutput
 CreativeDirectionService --> CreativeDirectionLog
 CreativeApprovalService --> CreativeDirectionOutput
 
+' ── Spring Boot 3.3 (stateless passthrough) ──
+ComplianceController --> AIInferenceGatewayService : analyzeOmcsAgent()
+
 ' ── Spring Boot → FastAPI ──
 AIInferenceGatewayService ..> CaptionRouter : POST /internal/generation/caption
 AIInferenceGatewayService ..> CreativeRouter : POST /internal/creative/generate
+AIInferenceGatewayService ..> ComplianceRouter : POST /internal/omcs/analyze
 
 ' ── FastAPI internals ──
 CaptionRouter --> CaptionGenerationAgent

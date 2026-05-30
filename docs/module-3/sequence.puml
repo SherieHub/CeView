@@ -5,13 +5,14 @@ skinparam padding 2
 skinparam ParticipantPadding 20
 skinparam maxMessageSize 150
 
-title Module 3 — Content Studio: End-to-End Pipeline (3.1 → 3.2)
+title Module 3 — Content Studio: End-to-End Pipeline (3.1 → 3.2 → 3.3)
 
 actor Operator as O
 participant "ContentStudio\nView" as UI
 participant "Content\nController" as CC
 participant "ContentGeneration\n/ApprovalService" as CS
 participant "CreativeDirection\nController/Service" as CD
+participant "Compliance\nController" as CC3
 participant "AIInferenceGateway\nService" as GW
 participant "FastAPI\n(fastapi-sbert)" as FP
 database "PostgreSQL" as DB
@@ -79,5 +80,35 @@ O -> UI: Approve creative direction
 UI -> CD: POST /api/v1/creative-direction/approve/{profileId} ?market
 CD -> DB: UPDATE approval_status = true, approved_at = now()
 CD --> UI: {approvedId, market}
+
+== Transaction 3.3 — OMCS Compliance Audit (Stateless) ==
+
+O -> UI: Upload media image + stage caption\n(SmartOptimizationBoard toggle → MediaCaptionManager)
+O -> UI: Run audit
+UI -> CC3: POST /api/v1/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
+
+note right of CC3
+  Validates: caption + imageUrl required.
+  Builds payload; delegates to FastAPI.
+  No rows are persisted.
+end note
+
+CC3 -> GW: analyzeOmcsAgent(payload)
+GW -> FP: POST /internal/omcs/analyze
+
+note right of FP
+  LangGraph omcs_agent (stateless):
+  CAS  = profile semantic alignment   (weight 0.35)
+  VAS  = recommendations×picture rubric (weight 0.45)
+  HCS  = pubmat caption/image consistency (weight 0.20)
+  OMCS = (0.35×CAS) + (0.45×VAS) + (0.20×HCS)
+  Pass/Fail threshold: 70
+  Returns rubric breakdown + feedback diagnostic on Fail
+end note
+
+FP --> GW: {profileSemanticScore, rubricEvaluationData,\nrecommendationsPictureScore, consistencyExplanation,\npubmatConsistencyScore, omcsScore, status, feedback}
+GW --> CC3: raw map
+CC3 --> UI: OmcsAuditResultDto
+UI -> UI: Render SmartOptimizationBoard\n(ComplianceGauge + rubric table + feedback)
 
 @enduml

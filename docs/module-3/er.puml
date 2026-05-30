@@ -5,7 +5,7 @@ top to bottom direction
 skinparam padding 2
 skinparam linetype ortho
 
-title Module 3 — Content Studio: Entity Relationships (3.1 + 3.2)
+title Module 3 — Content Studio: Entity Relationships (3.1 + 3.2 | 3.3 stateless)
 
 entity "tbl_business_profile" as BP {
   * business_profile_id : UUID <<PK>>
@@ -92,5 +92,7 @@ BP ||--o{ CGL : "logs each\ngeneration attempt"
 BP ||--o{ CDO : "generates creative\ndirection per market"
 BP ||--o{ CDL : "logs each\ngeneration attempt"
 LPC }o--|| BP : "approval gate\nfor 3.2"
+
+note "Submodule 3.3 — OMCS Compliance Audit is stateless.\nNo rows are persisted; compliance tables (created in V5/V6)\nwere dropped in V16. Audit results are returned in-memory only." as N3
 
 @enduml

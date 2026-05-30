@@ -80,7 +80,10 @@
       "Bash(curl -s -m 10 -o /dev/null -w \"POST omcs-analyze -> HTTP %{http_code}\\\\n\" -X POST http://localhost:8080/api/v1/compliance/omcs-analyze -H \"Content-Type: application/json\" -d '{}')",
       "Bash(docker exec *)",
       "Bash(java -version)",
-      "Bash(./mvnw -q -DskipTests clean package)"
+      "Bash(./mvnw -q -DskipTests clean package)",
+      "Bash(find . -path ./node_modules -prune -o -iname \"*demand*\" -print)",
+      "Bash(find . -path ./node_modules -prune -o -type d -iname \"*module*2*\" -print)",
+      "Bash(curl -s -m 15 \"http://localhost:8080/api/v1/forecasting/markets\")"
     ]
   }
 }
