@@ -16,9 +16,9 @@ Submodule 4.3 is the **AI diagnostics layer** of Module 4. It runs two distinct 
 |---|---|---|---|
 | **Prescriptive report** | `AIActionPlanReport` mount + weeks toggle | `POST /api/v1/analytics/report` | 1× Groq call via `performance_report()` with pre-ranked funnel transitions |
 | **Prescriptive report** (fallback) | FastAPI unavailable | `PrescriptiveReportService.buildRuleBasedReport()` (in-process) | None — lowest-PES-contribution metric identified deterministically |
-| **PES deep analysis** | `AIActionPlanReport` mount + weeks toggle | `POST /api/v1/analytics/pes-analysis` | LangGraph agent: 1–3× Groq structured-output calls (generate + evaluate, up to MAX_RETRIES = 3) |
+| **PES deep analysis** | Backend-only (no UI trigger yet) | `POST /api/v1/analytics/pes-analysis` | LangGraph agent: 1–3× Groq structured-output calls (generate + evaluate, up to MAX_RETRIES = 3) |
 | **PES deep analysis** (fallback) | FastAPI unavailable | `PrescriptiveReportService.buildOfflinePesAnalysisFallback()` (in-process) | None — returns `needs_human_review: true` with empty metric conditions |
-| **PDF download** | Future / on-demand | `GET /api/v1/analytics/report/{id}/pdf` | FastAPI `POST /internal/report/pdf` |
+| **PDF download** | Backend-only (no UI trigger yet) | `GET /api/v1/analytics/report/{id}/pdf` | FastAPI `POST /internal/report/pdf` |
 
 ---
 
@@ -60,10 +60,10 @@ Submodule 4.3 is the **AI diagnostics layer** of Module 4. It runs two distinct 
 
 | Component | File | Renders From | What It Displays |
 |---|---|---|---|
-| `AIActionPlanReport` | `components/AIActionPlanReport.tsx` | `weeks`, `reportData: PrescriptiveReport`, `loading` | Auto-fires POST /report on mount and on weeks change; full-panel spinner "Analyzing your campaign funnel…"; executive summary + recommended platform chip + stage analysis panel + three `PriorityFixCard` instances |
-| `PriorityFixCard` | `components/PriorityFixCard.tsx` | `FunnelDiagnostic` + matching `Recommendation` | Rank badge (Weakest red / Moderate amber / Alright green) + drop-rate pill + AI insight sentence + urgency-tagged title + action step |
-| `RecommendationItem` | `components/RecommendationItem.tsx` | `RankedRecommendation` (urgency, title, action) | Urgency row in the left-column stage-analysis panel: Most Urgent (red) · Urgent (amber) · Not Very Urgent (green) |
-| `ReportActionBtn` | `components/ReportActionBtn.tsx` | `onClick`, `label` | CTA button rendered inside the report panel |
+| `AIActionPlanReport` | `components/AIActionPlanReport.tsx` | `weeks: 4\|8` (fetches itself via `api.prescriptiveReport(weeks)`; local `reportData`, `isGenerating`, `serverError`) | Auto-fires POST /report on mount and on weeks change; full-panel spinner "Analyzing your campaign funnel…"; executive summary + recommended platform chip + stage analysis panel + one `PriorityFixCard` |
+| `PriorityFixCard` | `components/PriorityFixCard.tsx` | `funnelDiagnostics: FunnelDiagnostic[]`, `recommendations: RankedRecommendation[]` | A single instance that maps all three rank tiers internally — each row: rank badge (Weakest red / Moderate amber / Alright green) + drop-rate pill + AI insight sentence + urgency-tagged title + action step |
+| `RecommendationItem` | `components/RecommendationItem.tsx` | `index`, `title`, `explanation` | Urgency row component. **Defined, currently unused** — `AIActionPlanReport` renders the stage-analysis rows inline |
+| `ReportActionBtn` | `components/ReportActionBtn.tsx` | `onClick`, `disabled`, `icon`, `label`, `variant` | CTA button. **Defined, currently unused** in Module 4 |
 
 ---
 
@@ -81,10 +81,10 @@ Submodule 4.3 is the **AI diagnostics layer** of Module 4. It runs two distinct 
 | `recommendations[i].urgency` | `RecommendationItem` | Row colour + label in stage-analysis panel |
 | `recommendations[i].title` | `RecommendationItem` | Bold action title (≤ 8 words) |
 | `recommendations[i].action` | `PriorityFixCard` | Concrete implementation step beneath insight |
-| `report_data.metric_conditions[]` | `AIActionPlanReport` (PES analysis tab) | Per-metric trend + current status descriptions |
-| `report_data.ranked_weaknesses[0]` | `AIActionPlanReport` | Rank-1 weakness with recommendation highlighted |
-| `metadata.needs_human_review` | `AIActionPlanReport` | Warning banner when `true` (agent quality threshold not met) |
-| `metadata.final_score` | `AIActionPlanReport` (debug / tooltip) | Evaluator quality score (0–100) |
+| `report_data.metric_conditions[]` | — | Per-metric trend + current status. **Not currently consumed by the UI** (`/pes-analysis` is backend-only) |
+| `report_data.ranked_weaknesses[0]` | — | Rank-1 weakness with recommendation. **Not currently consumed by the UI** |
+| `metadata.needs_human_review` | — | Quality-gate warning flag. **Not currently consumed by the UI** |
+| `metadata.final_score` | — | Evaluator quality score (0–100). **Not currently consumed by the UI** |
 
 ---
 

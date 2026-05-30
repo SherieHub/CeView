@@ -41,7 +41,6 @@ entity "FunnelDiagnostic\n<<transient>>" as FD {
   stage      : VARCHAR(40)
   drop_rate  : VARCHAR(10)
   insight    : TEXT
-  urgency    : VARCHAR(20)
 }
 
 entity "Recommendation\n<<transient>>" as REC {
