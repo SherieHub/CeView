@@ -1,0 +1,141 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "4.3 AI-Generated Prescriptive Report" {
+
+  package "React Frontend" #EEF2FF {
+    class AIActionPlanReport {
+      +weeks: 4|8
+      -reportData: PrescriptiveReport|null
+      -isGenerating: boolean
+      -serverError: string|null
+      +fetchReport(weeks: 4|8)
+      +renderExecutiveSummary()
+      +renderStageAnalysis()
+      +renderPriorityFixCard()
+    }
+    class PriorityFixCard {
+      +funnelDiagnostics: FunnelDiagnostic[]
+      +recommendations: RankedRecommendation[]
+    }
+    class RecommendationItem <<unused>> {
+      +index: int
+      +title: String
+      +explanation: String
+    }
+    class ReportActionBtn <<unused>> {
+      +onClick, disabled
+      +icon, label, variant
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class PrescriptiveReportController {
+      +report(weeks: int): PrescriptiveReport
+      +pesAnalysis(weeks: int): PesAnalysisResult
+      +reportPdf(id: UUID): byte[]
+    }
+    class MetricsCalculationService {
+      +computeFunnelTransitions(funnel): List<FunnelTransition>
+      +buildTimeSeries(metrics, weeks): Map<String, List>
+    }
+    class AIInferenceGatewayService {
+      +generateReport(payload): PrescriptiveReport
+      +generatePesAnalysis(timeSeries): PesAnalysisResult
+      +generateReportPdf(payload): byte[]
+    }
+    class PrescriptiveReportService <<FR4.26>> {
+      +buildRuleBasedReport(metrics, transitions): PrescriptiveReport
+      +buildOfflinePesAnalysisFallback(): Map
+      -findLowestContributionMetric(breakdown): String
+    }
+  }
+
+  package "FastAPI" #FFFDE7 {
+    class "report (router) +\ngemini_client" as ReportGenerationService {
+      +generate(req: ReportRequest): dict
+      +performance_report(metrics, transitions, weeks, market)
+      -_fallback_report(transitions, market)
+      -resolvePlatform(marketKey): String
+    }
+    class PesReportAgent <<LangGraph>> {
+      -{static} MAX_RETRIES: int = 3
+      +run(metricsData, weeks): FinalUiPayload
+      -route_action(state): String
+    }
+    class GeneratorNode {
+      +generate_report(state: AgentState): AgentState
+    }
+    class EvaluatorNode {
+      +evaluate_report(state: AgentState): AgentState
+    }
+    class FinalizerNode {
+      +finalize_response(state: AgentState): AgentState
+    }
+    class AgentState {
+      +metrics_data: str
+      +report: ReportOutput
+      +evaluation: EvaluationResult
+      +iterations: int
+      +final_metadata: dict
+      +final_ui_payload: dict
+    }
+  }
+
+  package "DTOs / Pydantic" #FFF3E0 {
+    class FunnelTransition {
+      +rank: int
+      +stage: String
+      +absoluteDropRate: double
+      +rationale: String
+    }
+    class PrescriptiveReport {
+      +executiveSummary: String
+      +funnelDiagnostics: FunnelDiagnostic[]
+      +recommendations: RankedRecommendation[]
+      +recommendedPlatform: String
+    }
+    class ReportOutput <<Pydantic>> {
+      +metric_conditions: MetricCondition[]
+      +cross_metric_logic: CrossMetricLogic
+      +ranked_weaknesses: RankedWeakness[]
+    }
+    class EvaluationResult <<Pydantic>> {
+      +score: int
+      +pass_status: boolean
+      +issues: String[]
+      +missing_elements: String[]
+      +accuracy_check: String
+      +recommendation: "approve"|"regenerate"
+    }
+  }
+}
+
+AIActionPlanReport *-- "1" PriorityFixCard
+AIActionPlanReport ..> PrescriptiveReportController : POST /api/v1/analytics/report
+
+PrescriptiveReportController --> MetricsCalculationService : computeFunnelTransitions
+PrescriptiveReportController --> AIInferenceGatewayService : primary path
+PrescriptiveReportController ..> PrescriptiveReportService : FR4.26 fallback
+
+AIInferenceGatewayService ..> ReportGenerationService : POST /internal/report/generate
+AIInferenceGatewayService ..> PesReportAgent : POST /internal/pes-analysis/generate
+
+PesReportAgent *-- GeneratorNode
+PesReportAgent *-- EvaluatorNode
+PesReportAgent *-- FinalizerNode
+PesReportAgent --> AgentState : shared state
+
+GeneratorNode ..> ReportOutput : structured output
+EvaluatorNode ..> EvaluationResult : structured output
+
+' ── Stack packages top-to-bottom (one hidden anchor per package) ──
+AIActionPlanReport -[hidden]down-> PrescriptiveReportController
+PrescriptiveReportController -[hidden]down-> ReportGenerationService
+ReportGenerationService -[hidden]down-> PrescriptiveReport
+
+@enduml

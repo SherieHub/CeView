@@ -1,0 +1,134 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+top to bottom direction
+skinparam padding 3
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "4.2 PES Computation" {
+
+  package "React Frontend" #EEF2FF {
+    class PESComputationBoard {
+      +pesData: PesResponse|null
+      +weeks: 4|8
+      -history: ChartPoint[]
+      -loading: boolean
+      -error: string|null
+      +fetchHistory(weeks: 4|8)
+      +renderGaugePanel()
+      +renderTrendChart()
+    }
+    class ScoreGauge {
+      +score: number
+      +render()
+    }
+    class QualitativeLabel {
+      +label: string
+      +colourForLabel(): "red"|"amber"|"green"|"gold"
+    }
+    
+    ' Internal layout to keep frontend package compact
+    PESComputationBoard -[hidden]right-> ScoreGauge
+    ScoreGauge -[hidden]right-> QualitativeLabel
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class EngagementMetricsController <<4.1 — triggers PES>> {
+      +manualIngest(req): ManualIngestResponse
+    }
+    class PesComputationController <<4.2>> {
+      +pes(campaignId): PesResponse
+    }
+    class AIInferenceGatewayService {
+      +computePesFromRaw(payload): PesResult
+    }
+    class PESComputationService <<FR4.26 Fallback>> {
+      -{static} MAX_CTR  : double = 10.0
+      -{static} MAX_CPC  : double = 500.0
+      -{static} MAX_CR   : double = 15.0
+      -{static} MAX_ROAS : double = 8.0
+      -{static} MAX_CAC  : double = 5000.0
+      +compute(metrics: MetricsResult): PesResult
+      -clamp01(v: double): double
+      -normalize(raw, min, max): double
+      -invertCostMetric(n: double): double
+    }
+    
+    ' Arrange in a tight 2x2 grid to preserve vertical document width
+    EngagementMetricsController -[hidden]right-> PesComputationController
+    EngagementMetricsController -[hidden]down-> AIInferenceGatewayService
+    PesComputationController -[hidden]down-> PESComputationService
+    AIInferenceGatewayService -[hidden]right-> PESComputationService
+  }
+
+  package "FastAPI (pes_compute_service.py)" #FFFDE7 {
+    class "pes_compute (router)" as PesComputeRouter {
+      +analyze(req: CampaignRawRequest): dict
+    }
+    class "pes_compute_service" as PesComputeService {
+      +{static} METRIC_BOUNDS: dict
+      +{static} BASE_WEIGHTS: dict
+      +{static} COST_METRICS: set = {CPC, CAC}
+      +compute_base_metrics(raw): (dict, flagged)
+      +normalize_and_invert(metrics, flagged): (dict, weights)
+      +compute_pes(normalized, weights): PesResult
+    }
+    class "gemini_client" as GeminiClient {
+      +pes_compute_insights(...): AiReport
+    }
+
+    ' Arrange compactly
+    PesComputeRouter -[hidden]right-> PesComputeService
+    PesComputeService -[hidden]right-> GeminiClient
+  }
+
+  package "DTOs" #FFF3E0 {
+    class PesResult {
+      +overallScore: double
+      +label: String
+      +breakdown: PesBreakdownItem[]
+      +flaggedMetrics: String[]
+      +effectiveWeights: Map<String, Double>
+    }
+    class PesBreakdownItem {
+      +metric: String
+      +weight: String
+      +contribution: double
+    }
+    class AiReport {
+      +weakestFunnelStage: String
+      +recommendations: String[]
+      +executiveSummary: String
+      +source: "groq"|"fallback"
+    }
+    
+    ' Compact triangular/grid arrangement
+    PesResult -[hidden]right-> PesBreakdownItem
+    PesResult -[hidden]down-> AiReport
+  }
+}
+
+PESComputationBoard *-- ScoreGauge
+PESComputationBoard *-- QualitativeLabel
+
+EngagementMetricsController --> AIInferenceGatewayService : primary PES path (POST /manual)
+EngagementMetricsController ..> PESComputationService : FR4.26 fallback
+PesComputationController --> PESComputationService : GET /pes (Spring-only, no FastAPI)
+
+AIInferenceGatewayService ..down.> PesComputeRouter : POST /internal/pes-compute/analyze
+
+PesComputeRouter --> PesComputeService : base metrics / normalize / PES
+PesComputeRouter --> GeminiClient : pes_compute_insights
+
+PesComputeRouter ..down.> PesResult : returns
+PESComputationService ..down.> PesResult : returns (fallback)
+PesResult *-- PesBreakdownItem
+PesResult *-- AiReport
+
+' ── Strict top-to-bottom package layout constraints ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (pes_compute_service.py)"
+"FastAPI (pes_compute_service.py)" -[hidden]down-> "DTOs"
+
+@enduml

@@ -1,0 +1,88 @@
+erDiagram
+
+    %% ── Anchors (defined in other modules, referenced here) ─────────────────
+
+    tbl_business_profile {
+        UUID business_profile_id PK
+        UUID user_id             FK
+    }
+
+    tbl_market_signal_record {
+        UUID    signal_record_id    PK
+        UUID    business_profile_id FK
+        string  target_market
+        float   trend_index
+        float   rolling_average_7d
+        float   rolling_average_30d
+        float   rolling_std_dev
+        float   yoy_ratio
+        float   seasonality_score
+        boolean spike_indicator
+        ts      aggregated_at
+    }
+
+    %% ── Module 2.2 — Forecast Results ───────────────────────────────────────
+
+    tbl_forecast_result {
+        UUID   forecast_result_id    PK
+        UUID   business_profile_id   FK
+        string target_market
+        float  predicted_demand
+        float  forecast_confidence
+        float  mape_score
+        float  mae
+        float  rmse
+        int    forecast_horizon_weeks
+        text   weekly_forecasts_json
+        ts     generated_at
+    }
+
+    %% ── Module 2.2 — Market Scoring ─────────────────────────────────────────
+
+    tbl_market_score {
+        UUID    market_score_id      PK
+        UUID    forecast_result_id   FK
+        float   market_score
+        float   seasonality_score
+        boolean spike_indicator
+        float   gdp_per_capita_growth
+        float   forex_vs_php
+        int     historical_arrivals
+        int     market_rank
+        ts      evaluated_at
+    }
+
+    %% ── Module 2.2 — Demand Alerts ──────────────────────────────────────────
+
+    tbl_demand_alert {
+        UUID    demand_alert_id  PK
+        UUID    market_score_id  FK
+        string  alert_level
+        text    alert_message
+        ts      window_open_date
+        ts      alert_date
+        string  trend
+        boolean is_read
+    }
+
+    %% ── Module 2.2 — Economic Trend Snapshots ───────────────────────────────
+
+    tbl_market_economic_trend {
+        UUID   trend_id         PK
+        string market
+        text   gdp_trend_json
+        text   forex_trend_json
+        float  gdp_latest
+        float  forex_latest
+        string currency_code
+        int    gdp_points
+        int    forex_points
+        ts     fetched_at
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+
+    tbl_business_profile      ||--o{ tbl_market_signal_record  : "written by 2.1 · read by EnrichedSequenceBuilder"
+    tbl_business_profile      ||--o{ tbl_forecast_result       : "has forecast results"
+    tbl_forecast_result       ||--o{ tbl_market_score          : "scored by XGBoost"
+    tbl_market_score          ||--o{ tbl_demand_alert          : "triggers when demand4w > rollingAvg x 1.2"

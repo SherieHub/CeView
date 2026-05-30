@@ -1,0 +1,79 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+title 4.2 — PES Computation: Entity Relationships
+
+entity "tbl_campaign_records" as CR {
+  * campaign_id : UUID <<PK>>
+  --
+  <<KPI Inputs to PES Formula>>
+  ctr       : DOUBLE
+  cpc       : DOUBLE
+  conv_rate : DOUBLE
+  roas      : DOUBLE
+  cac       : DOUBLE
+  --
+  <<PES Output (Stage 3)>>
+  pes_score  : DOUBLE
+  pes_label  : VARCHAR(50)
+  updated_at : TIMESTAMPTZ
+}
+
+entity "MetricBounds\n<<config constant>>" as MB {
+  * metric       : VARCHAR(10) <<PK>>
+  --
+  min_val        : DOUBLE
+  max_val        : DOUBLE
+  unit           : VARCHAR(5)
+  is_cost_metric : BOOLEAN
+}
+
+entity "WeightConfig\n<<config constant>>" as WC {
+  * metric      : VARCHAR(10) <<PK>>
+  --
+  base_weight   : DOUBLE
+  weight_rank   : INT
+  rationale     : TEXT
+}
+
+entity "PES Breakdown\n<<transient>>" as PB {
+  * metric           : VARCHAR(20) <<PK>>
+  --
+  normalized_value   : DOUBLE
+  effective_weight   : DOUBLE
+  contribution       : DOUBLE
+  is_flagged         : BOOLEAN
+}
+
+entity "PES Label Tier\n<<lookup>>" as PLT {
+  * min_score    : DOUBLE <<PK>>
+  --
+  label          : VARCHAR(30)
+  action_guidance : TEXT
+}
+
+note right of PLT
+  >= 0.80 → Excellent Performance
+  >= 0.60 → Good Performance
+  >= 0.40 → Fair Performance
+  <  0.40 → Poor Performance
+end note
+
+note right of WC
+  ROAS 35% — Ad spend profitability
+  CR   30% — Booking conversion
+  CAC  15% — Acquisition cost eff.
+  CTR  15% — Creative relevance
+  CPC   5% — Click cost efficiency
+end note
+
+CR  ||..o{ PB  : "KPI values produce\nbreakdown entries"
+MB  ||..o{ PB  : "bounds used in\nmin-max normalization"
+WC  ||..o{ PB  : "weights applied\n(recalibrated if flagged)"
+PB  }o..|| PLT : "overall score\nmaps to tier"
+
+@enduml

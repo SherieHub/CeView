@@ -1,0 +1,101 @@
+@startuml
+skinparam defaultFontSize 12
+scale max 800 width
+top to bottom direction
+skinparam padding 2
+skinparam linetype ortho
+
+package "1.2 Uniqueness Scoring" {
+
+  package "React Frontend" #EEF2FF {
+    class UniquenessCalibrationView {
+      -analyzeResult: CategoryAllocation[]
+      -uniquenessResult: UniquenessResultDTO
+      +handleCompute()
+      +handleConfirm()
+    }
+    class CalibrationResultsDashboard {
+      +overallScore: number
+      +semanticsScore: number
+      +categoryScore: number
+      +loading: boolean
+      +onConfirm()
+    }
+    class OverallScoreCard {
+      +score: number
+      +renderScore()
+    }
+    class ActionableScoreCard {
+      +title: string
+      +score: number
+      +description: string
+    }
+    class ComputeUniquenessButton {
+      +loading: boolean
+      +disabled: boolean
+      +onClick()
+    }
+  }
+
+  package "Spring Boot" #E8F5E9 {
+    class UniquenessScoringController {
+      +uniqueness(req: UniquenessRequest): UniquenessResponse
+    }
+    class AIInferenceGatewayService {
+      +computeUniqueness(payload: Map): Map
+    }
+  }
+
+  package "FastAPI (fastapi-sbert)" #FFFDE7 {
+    class ClassificationRouter {
+      +POST /internal/classification/uniqueness
+    }
+    class MLClassifier {
+      +compute_semantic_uniqueness(services, desc, uvp, corpus): double
+      +compute_category_score(name, services, desc, uvp, categories): double
+    }
+    class EmbeddingStore {
+      +fetch_others(excludeProfileId): List<vector>
+    }
+  }
+
+  package "DTOs" #FFF3E0 {
+    class UniquenessRequest {
+      +businessProfileId: UUID
+      +businessName: String
+      +categories: List<String>
+      +coreServices: String
+      +description: String
+      +uvp: String
+    }
+    class UniquenessResponse {
+      +overallScore: double
+      +semanticsScore: double
+      +categoryScore: double
+      +descriptionFeedback: String
+      +categoryFeedback: String
+    }
+  }
+}
+
+UniquenessCalibrationView *-- CalibrationResultsDashboard
+UniquenessCalibrationView *-- ComputeUniquenessButton
+CalibrationResultsDashboard *-- OverallScoreCard
+CalibrationResultsDashboard *-- "2" ActionableScoreCard
+
+UniquenessCalibrationView ..> UniquenessScoringController : POST /api/v1/classification/uniqueness
+
+UniquenessScoringController --> AIInferenceGatewayService : computeUniqueness
+AIInferenceGatewayService ..> ClassificationRouter : POST /internal/classification/uniqueness
+
+ClassificationRouter --> MLClassifier : compute scores
+ClassificationRouter --> EmbeddingStore : fetch corpus embeddings
+
+UniquenessScoringController ..> UniquenessResponse : returns
+
+' ── Stack packages top-to-bottom ──
+"React Frontend" -[hidden]down-> "Spring Boot"
+"Spring Boot" -[hidden]down-> "FastAPI (fastapi-sbert)"
+"FastAPI (fastapi-sbert)" -[hidden]down-> "DTOs"
+
+@enduml

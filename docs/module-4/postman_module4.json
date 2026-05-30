@@ -1,0 +1,179 @@
+{
+  "info": {
+    "name": "CeView — Module 4: Campaign Analytics & PES Reporting",
+    "description": "Complete Postman collection for UC-4.1 (data ingestion), UC-4.2 (PES compute), and UC-4.3 (AI prescriptive report). Three request directions are covered:\n  1. Frontend → Spring Boot  (POST /api/v1/analytics/manual)\n  2. Spring Boot → FastAPI   (POST /internal/pes-compute/analyze)\n  3. FastAPI → Spring Boot → Frontend  (final structured response)\n\nAll monetary values are in Philippine Peso (₱).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Frontend → Spring Boot  (UC-4.1: Manual Data Ingestion)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/analytics/manual",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "v1", "analytics", "manual"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"impressions\":  150000,\n  \"clicks\":       7200,\n  \"adSpend\":      5000.00,\n  \"revenue\":      16000.00,\n  \"conversions\":  350,\n  \"bookings\":     180,\n  \"newCustomers\": 80,\n  \"periodStart\":  \"2026-05-01\",\n  \"periodEnd\":    \"2026-05-28\"\n}"
+        },
+        "description": "Operator submits raw campaign values from the DataIngestionForm.\n\nSpring Boot:\n  1. Computes KPIs (CTR, CPC, CR, ROAS, CAC)\n  2. Persists to tbl_campaign_records via JPA\n  3. Forwards raw data to FastAPI /internal/pes-compute/analyze\n  4. Updates the DB record with the returned PES score\n  5. Returns ManualIngestResponse (metrics + funnel + pes) to the frontend\n\nFR4.26: if FastAPI is unavailable, a rule-based PES is computed by Spring Boot and the UI response is identical."
+      },
+      "response": [
+        {
+          "name": "200 OK — ManualIngestResponse (success path)",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"metrics\": {\n    \"ctr\":      { \"value\": 4.8,   \"unit\": \"%\",  \"trend\": 1.2,  \"isPositive\": true  },\n    \"cpc\":      { \"value\": 0.69,  \"unit\": \"₱\",  \"trend\": -0.05,\"isPositive\": true  },\n    \"roas\":     { \"value\": 3.2,   \"unit\": \"x\",  \"trend\": 0.4,  \"isPositive\": true  },\n    \"convRate\": { \"value\": 2.5,   \"unit\": \"%\",  \"trend\": -0.5, \"isPositive\": false },\n    \"cac\":      { \"value\": 62.50, \"unit\": \"₱\",  \"trend\": 5.0,  \"isPositive\": false }\n  },\n  \"funnel\": [\n    { \"stage\": \"Impressions\", \"value\": 150000, \"dropoff\": null   },\n    { \"stage\": \"Clicks\",      \"value\": 7200,   \"dropoff\": \"-95.2%\" },\n    { \"stage\": \"Conversions\", \"value\": 350,    \"dropoff\": \"-95.1%\" },\n    { \"stage\": \"Bookings\",    \"value\": 180,    \"dropoff\": \"-48.6%\" }\n  ],\n  \"pes\": {\n    \"overallScore\": 0.5637,\n    \"label\": \"Fair Performance\",\n    \"breakdown\": [\n      { \"metric\": \"ROAS\",       \"weight\": \"35%\", \"contribution\": 0.14 },\n      { \"metric\": \"Conv. Rate\", \"weight\": \"30%\", \"contribution\": 0.05 },\n      { \"metric\": \"CAC (Inv)\",  \"weight\": \"15%\", \"contribution\": 0.1481 },\n      { \"metric\": \"CTR\",        \"weight\": \"15%\", \"contribution\": 0.072 },\n      { \"metric\": \"CPC (Inv)\",  \"weight\": \"5%\",  \"contribution\": 0.0499 }\n    ]\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "2. Spring Boot → FastAPI  (UC-4.2: PES Compute from Raw Data)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:8000/internal/pes-compute/analyze",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["internal", "pes-compute", "analyze"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"impressions\":  150000,\n  \"clicks\":       7200,\n  \"adSpend\":      5000.00,\n  \"revenue\":      16000.00,\n  \"conversions\":  350,\n  \"bookings\":     180,\n  \"newCustomers\": 80\n}"
+        },
+        "description": "Forwarded by Spring Boot AIInferenceGatewayService.computePesFromRaw().\n\nFastAPI pipeline:\n  1. Base metrics:    CTR=4.8%, CPC=₱0.69, CR=2.5%, ROAS=3.2x, CAC=₱62.50\n  2. Normalization:   Min-Max scaling with calibrated Cebu MSME bounds\n  3. Inversion:       CPC and CAC inverted (lower cost → higher contribution)\n  4. PES formula:     ROAS×0.35 + CR×0.30 + CAC_inv×0.15 + CTR×0.15 + CPC_inv×0.05\n  5. Edge cases:      flags zero-value metrics, recalibrates weights proportionally\n  6. AI insights:     Groq identifies weakest funnel stage + 3 recommendations\n                       (rule-based fallback if Groq is offline — FR4.26)"
+      },
+      "response": [
+        {
+          "name": "200 OK — Full PES Compute Response (AI online)",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"base_metrics\": {\n    \"CTR\":  4.8,\n    \"CPC\":  0.6944,\n    \"CR\":   2.5,\n    \"ROAS\": 3.2,\n    \"CAC\":  62.5\n  },\n  \"normalized_metrics\": {\n    \"CTR\":  0.48,\n    \"CPC\":  0.9986,\n    \"CR\":   0.1667,\n    \"ROAS\": 0.4,\n    \"CAC\":  0.9875\n  },\n  \"pes_score\": 0.5637,\n  \"pes_label\": \"Fair Performance\",\n  \"breakdown\": [\n    { \"metric\": \"ROAS\",       \"weight\": \"35%\", \"contribution\": 0.14 },\n    { \"metric\": \"Conv. Rate\", \"weight\": \"30%\", \"contribution\": 0.05 },\n    { \"metric\": \"CAC (Inv)\",  \"weight\": \"15%\", \"contribution\": 0.1481 },\n    { \"metric\": \"CTR\",        \"weight\": \"15%\", \"contribution\": 0.072 },\n    { \"metric\": \"CPC (Inv)\",  \"weight\": \"5%\",  \"contribution\": 0.0499 }\n  ],\n  \"flagged_metrics\": [],\n  \"effective_weights\": {\n    \"ROAS\": 0.35,\n    \"CR\":   0.30,\n    \"CAC\":  0.15,\n    \"CTR\":  0.15,\n    \"CPC\":  0.05\n  },\n  \"ai_report\": {\n    \"weakest_funnel_stage\": \"Clicks → Bookings\",\n    \"recommendations\": [\n      \"Run A/B tests on your booking landing page — test a single-field form (phone only) against the current multi-field version; a 20% form simplification typically lifts booking CR by 8–15% for Cebu hospitality MSMEs.\",\n      \"Implement a retargeting campaign targeting users who reached the enquiry page but did not complete the booking form; offer a limited-time 5% early-bird discount exclusive to retargeted users.\",\n      \"Add a live chat widget (Tidio or WhatsApp Business) directly on the booking page; real-time response to objections reduces abandonment by an average of 12% in the Philippine tourism vertical.\"\n    ],\n    \"executive_summary\": \"Your campaign achieved a PES of 0.5637 (Fair Performance), driven primarily by a strong CAC_inv contribution of 0.1481 indicating efficient customer acquisition at ₱62.50 per customer. The primary bottleneck is the Clicks → Bookings conversion rate of 2.5%, which is below the 4–5% industry benchmark for Cebu resort operators. Addressing landing page friction and implementing retargeting is projected to improve overall PES by 0.10–0.15 points within two campaign cycles.\",\n    \"source\": \"groq\"\n  }\n}"
+        },
+        {
+          "name": "200 OK — FR4.26 Rule-Based Fallback (AI offline)",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"base_metrics\": {\n    \"CTR\":  4.8,\n    \"CPC\":  0.6944,\n    \"CR\":   2.5,\n    \"ROAS\": 3.2,\n    \"CAC\":  62.5\n  },\n  \"normalized_metrics\": {\n    \"CTR\":  0.48,\n    \"CPC\":  0.9986,\n    \"CR\":   0.1667,\n    \"ROAS\": 0.4,\n    \"CAC\":  0.9875\n  },\n  \"pes_score\": 0.5637,\n  \"pes_label\": \"Fair Performance\",\n  \"breakdown\": [\n    { \"metric\": \"ROAS\",       \"weight\": \"35%\", \"contribution\": 0.14 },\n    { \"metric\": \"Conv. Rate\", \"weight\": \"30%\", \"contribution\": 0.05 },\n    { \"metric\": \"CAC (Inv)\",  \"weight\": \"15%\", \"contribution\": 0.1481 },\n    { \"metric\": \"CTR\",        \"weight\": \"15%\", \"contribution\": 0.072 },\n    { \"metric\": \"CPC (Inv)\",  \"weight\": \"5%\",  \"contribution\": 0.0499 }\n  ],\n  \"flagged_metrics\": [],\n  \"effective_weights\": {\n    \"ROAS\": 0.35,\n    \"CR\":   0.30,\n    \"CAC\":  0.15,\n    \"CTR\":  0.15,\n    \"CPC\":  0.05\n  },\n  \"ai_report\": {\n    \"weakest_funnel_stage\": \"Clicks → Bookings\",\n    \"recommendations\": [\n      \"Prioritise the 'Clicks → Bookings' funnel stage — the Conv. Rate metric contributes the least to your current PES score. Audit and tighten this specific conversion step before scaling ad spend further.\",\n      \"Implement retargeting campaigns targeting visitors who clicked but did not book: carousel ads with a limited-time offer typically recover 15–25% of lost mid-funnel leads within two campaign cycles.\",\n      \"Add social proof elements — verified guest reviews, a live booking counter, and a response-time badge — directly above your primary Call-To-Action button to reduce commitment hesitation.\"\n    ],\n    \"executive_summary\": \"Your campaign's Promotional Effectiveness Score is 0.5637 / 1.00 (Fair Performance). The analysis reveals that your strongest driver is CAC (Inv), while the primary bottleneck is the 'Clicks → Bookings' transition. Focusing optimisation efforts on this stage offers the highest potential ROI improvement.\",\n    \"source\": \"fallback\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. FastAPI → Spring Boot → Frontend  (UC-4.3: Full AI Report — PES Analysis Agent)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/analytics/pes-analysis",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "v1", "analytics", "pes-analysis"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"weeks\": 4\n}"
+        },
+        "description": "Triggers the LangGraph pes_report_agent deep-analysis.\n\nSpring Boot builds a synthetic 4-week time-series from the stored campaign metrics,\nforwards it to FastAPI /internal/pes-analysis/generate, which runs the Groq\nstructured-output agent with up to 3 quality-gated iterations.\n\nThis produces the exact output format matching the sample data in the task brief."
+      },
+      "response": [
+        {
+          "name": "200 OK — Final AI Report (LangGraph agent output matching brief sample)",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"report_data\": {\n    \"metric_conditions\": [\n      {\n        \"metric_name\": \"CTR\",\n        \"current_status\": \"The CTR has steadily increased from 3.9% to 4.8% over the period, indicating improved ad relevance and audience engagement. This is a positive trend, suggesting that more users are clicking on the ads, which is crucial for driving traffic further down the funnel.\",\n        \"trend\": \"up\",\n        \"peak_value\": 4.8,\n        \"low_value\": 3.9\n      },\n      {\n        \"metric_name\": \"CPC\",\n        \"current_status\": \"The CPC has consistently decreased from ₱0.89 to ₱0.72. This downward trend is highly favourable, as it means the campaign is acquiring clicks at a lower cost, improving overall cost efficiency and potentially allowing for more clicks within the same budget.\",\n        \"trend\": \"down\",\n        \"peak_value\": 0.89,\n        \"low_value\": 0.72\n      },\n      {\n        \"metric_name\": \"ROAS\",\n        \"current_status\": \"ROAS has shown a healthy increase from 4.3 to 5.4. This indicates that the campaign is generating significantly more revenue for every peso spent on advertising, reflecting strong profitability and effective ad spend.\",\n        \"trend\": \"up\",\n        \"peak_value\": 5.4,\n        \"low_value\": 4.3\n      },\n      {\n        \"metric_name\": \"CR\",\n        \"current_status\": \"The Conversion Rate has steadily improved from 2.5% to 3.2%. This positive trend suggests that a higher percentage of website visitors are completing the desired action, indicating better landing page optimisation and/or more qualified traffic.\",\n        \"trend\": \"up\",\n        \"peak_value\": 3.2,\n        \"low_value\": 2.5\n      },\n      {\n        \"metric_name\": \"CAC\",\n        \"current_status\": \"CAC has consistently decreased from ₱24.0 to ₱18.5. This is an excellent development, as it means the cost to acquire a new customer is significantly lower, leading to improved marketing efficiency and better overall business profitability.\",\n        \"trend\": \"down\",\n        \"peak_value\": 24.0,\n        \"low_value\": 18.5\n      }\n    ],\n    \"cross_metric_logic\": {\n      \"relationships\": \"The positive trends across all metrics indicate a well-performing campaign where improvements in early-funnel metrics cascade positively through the entire marketing funnel. Specifically, increasing CTR and decreasing CPC show improved ad relevance and cost efficiency in acquiring clicks.\",\n      \"insights\": \"The higher quality and lower-cost traffic, combined with an improving Conversion Rate, directly results in a rising ROAS and a declining CAC. This signifies a highly efficient and profitable campaign, demonstrating strong optimisation from initial engagement through to final customer acquisition and revenue generation.\"\n    },\n    \"ranked_weaknesses\": [\n      {\n        \"metric_name\": \"CR\",\n        \"rank\": 1,\n        \"weakness_meaning\": \"While improving, the Conversion Rate still represents a significant opportunity for further optimisation. Even with effective traffic acquisition, a higher conversion rate means a greater percentage of engaged users are completing desired actions, directly boosting overall revenue.\",\n        \"recommendation\": \"Implement continuous A/B testing on landing page elements such as headlines, calls-to-action, form layouts, and value propositions. Analyse user behaviour to identify and remove friction points, and ensure a seamless mobile experience.\"\n      },\n      {\n        \"metric_name\": \"CTR\",\n        \"rank\": 2,\n        \"weakness_meaning\": \"Although CTR is trending positively, there is always room to enhance ad engagement further. Improving CTR can lead to even lower CPCs and attract more highly qualified traffic, setting a stronger foundation for conversions.\",\n        \"recommendation\": \"Regularly refresh ad creatives and copy to prevent ad fatigue. Experiment with new ad formats (interactive ads, short video clips) and refine audience segmentation to ensure ads are shown to the most receptive users.\"\n      }\n    ]\n  },\n  \"metadata\": {\n    \"final_score\": 98,\n    \"total_iterations\": 1,\n    \"needs_human_review\": false,\n    \"warning_message\": \"Report passed quality checks.\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "4. Edge Case — Missing newCustomers (FR4.26 Weight Recalibration)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:8000/internal/pes-compute/analyze",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["internal", "pes-compute", "analyze"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"impressions\":  150000,\n  \"clicks\":       7200,\n  \"adSpend\":      5000.00,\n  \"revenue\":      16000.00,\n  \"conversions\":  350,\n  \"bookings\":     180,\n  \"newCustomers\": 0\n}"
+        },
+        "description": "newCustomers = 0  →  CAC is FLAGGED and EXCLUDED.\n\nFastAPI recalibrates remaining weights proportionally so they still sum to 1.0:\n  ROAS: 0.35 / 0.85 = 0.4118\n  CR:   0.30 / 0.85 = 0.3529\n  CTR:  0.15 / 0.85 = 0.1765\n  CPC:  0.05 / 0.85 = 0.0588\n\nThe flagged_metrics array will contain 'CAC (newCustomers = 0)'.\nThe PES score is still valid and meaningful despite the missing data."
+      },
+      "response": [
+        {
+          "name": "200 OK — CAC flagged, weights recalibrated",
+          "status": "OK",
+          "code": 200,
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": "{\n  \"base_metrics\": {\n    \"CTR\":  4.8,\n    \"CPC\":  0.6944,\n    \"CR\":   2.5,\n    \"ROAS\": 3.2,\n    \"CAC\":  0.0\n  },\n  \"normalized_metrics\": {\n    \"CTR\":  0.48,\n    \"CPC\":  0.9986,\n    \"CR\":   0.1667,\n    \"ROAS\": 0.4,\n    \"CAC\":  0.0\n  },\n  \"pes_score\": 0.4232,\n  \"pes_label\": \"Fair Performance\",\n  \"breakdown\": [\n    { \"metric\": \"ROAS\",       \"weight\": \"35%\", \"contribution\": 0.1647 },\n    { \"metric\": \"Conv. Rate\", \"weight\": \"30%\", \"contribution\": 0.0588 },\n    { \"metric\": \"CAC (Inv)\",  \"weight\": \"15%\", \"contribution\": 0.0    },\n    { \"metric\": \"CTR\",        \"weight\": \"15%\", \"contribution\": 0.0847 },\n    { \"metric\": \"CPC (Inv)\",  \"weight\": \"5%\",  \"contribution\": 0.0588 }\n  ],\n  \"flagged_metrics\": [\"CAC (newCustomers = 0)\"],\n  \"effective_weights\": {\n    \"ROAS\": 0.411765,\n    \"CR\":   0.352941,\n    \"CTR\":  0.176471,\n    \"CPC\":  0.058824\n  },\n  \"ai_report\": {\n    \"weakest_funnel_stage\": \"Clicks → Bookings\",\n    \"recommendations\": [\n      \"Prioritise the 'Clicks → Bookings' funnel stage — the Conv. Rate metric contributes the least to your current PES score.\",\n      \"Implement retargeting campaigns targeting visitors who clicked but did not book.\",\n      \"Track new customer acquisition explicitly to re-enable the CAC metric in the next campaign cycle.\"\n    ],\n    \"executive_summary\": \"Your campaign's Promotional Effectiveness Score is 0.4232 / 1.00 (Fair Performance). Note: 1 metric was excluded due to missing data: CAC (newCustomers = 0). The primary bottleneck is the 'Clicks → Bookings' transition. Begin tracking new customer counts to fully utilise all five PES metrics.\",\n    \"source\": \"fallback\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Spring Boot — GET Default Metrics (EngagementMetricsBoard seed)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/analytics/metrics?weeks=4",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "v1", "analytics", "metrics"],
+          "query": [{ "key": "weeks", "value": "4" }]
+        },
+        "description": "Returns pre-computed default KPIs for the EngagementMetricsBoard when no manual data has been ingested yet. Pass weeks=8 to scale the demo values for an 8-week analysis window."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Spring Boot — GET PES Score  (PESComputationBoard)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/analytics/pes/default?weeks=4",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "v1", "analytics", "pes", "default"],
+          "query": [{ "key": "weeks", "value": "4" }]
+        },
+        "description": "Returns the PES score + qualitative label + per-metric breakdown used by PESComputationBoard's gauge and horizontal bar chart."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Spring Boot — POST Prescriptive Report  (AIActionPlanReport)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:8080/api/v1/analytics/report",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "v1", "analytics", "report"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"weeks\": 4\n}"
+        },
+        "description": "Triggers the AIActionPlanReport funnel diagnostics. Spring Boot enriches the payload with computed metrics + pre-ranked funnel transitions, then delegates to FastAPI /internal/report/generate (Groq). Falls back to rule-based diagnostics if FastAPI is unavailable (FR4.26)."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "springboot_base", "value": "http://localhost:8080" },
+    { "key": "fastapi_sbert_base", "value": "http://localhost:8000" }
+  ]
+}

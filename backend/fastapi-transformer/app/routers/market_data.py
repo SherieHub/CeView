@@ -12,10 +12,10 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.services import market_data_processor, pytrends_client, seasonal_shift_detector
+from app.services import market_data_processor, seasonal_shift_detector, trend_service
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ class TrendsResponse(BaseModel):
     trend_index: float = Field(ge=0.0, le=100.0)
     keywords_used: list[str] = Field(default_factory=list)
     fetched_at: str
-    source: str = "live"
+    source: str = Field(default="stub", description="'pytrends' when live; 'stub' on fallback")
 
 
 class TrendHistoryRequest(BaseModel):
@@ -53,7 +53,7 @@ class TrendHistoryResponse(BaseModel):
     weekly_series: list[TrendWeekPoint]
     keywords_used: list[str] = Field(default_factory=list)
     fetched_at: str
-    source: str = "live"
+    source: str = Field(default="stub", description="'pytrends' when live; 'stub' on fallback")
 
 
 class SeasonalityRequest(BaseModel):
@@ -87,11 +87,16 @@ class SeasonalityResponse(BaseModel):
 def fetch_trends(body: TrendsRequest) -> TrendsResponse:
     """Fetch Google Trends index for a market-category pair (FR2.2).
 
-    Uses PyTrends to fetch the 3-month trailing average for up to 5 keywords
-    derived from the market identifier and business category labels.
-    Falls back to a deterministic stub index on rate-limit or network error.
+    Uses PyTrends to fetch the 3-month trailing average for up to 5 localized
+    keywords resolved from the target market (correct geo) and the first business
+    category label.  Always returns 200: falls back to a curated seasonal stub
+    index on rate-limit, network error, or missing pytrends.
     """
-    raw = pytrends_client.fetch_trends(body.market, body.categories)
+    try:
+        raw = trend_service.fetch_current_index(body.market, body.categories)
+    except ValueError as exc:
+        # Unknown market — return 422 Unprocessable Entity
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     trend_index = market_data_processor.normalize_trend_index(
         float(raw.get("trend_index", 50.0))
     )
@@ -100,7 +105,7 @@ def fetch_trends(body: TrendsRequest) -> TrendsResponse:
         trend_index   = trend_index,
         keywords_used = raw.get("keywords_used", []),
         fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
-        source        = raw.get("source", "live"),
+        source        = raw.get("source", "stub"),
     )
 
 
@@ -114,7 +119,11 @@ def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
     MarketSignalRecord rows so the demand chart shows real week-over-week
     variance rather than a flat repeated value.
     """
-    raw = pytrends_client.fetch_trend_history(body.market, body.categories, body.weeks)
+    try:
+        raw = trend_service.fetch_trend_history(body.market, body.categories, body.weeks)
+    except ValueError as exc:
+        # Unknown market — return 422 Unprocessable Entity
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     series = [
         TrendWeekPoint(
             date=point["date"],
@@ -127,7 +136,7 @@ def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
         weekly_series = series,
         keywords_used = raw.get("keywords_used", []),
         fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
-        source        = raw.get("source", "live"),
+        source        = raw.get("source", "stub"),
     )
 
 

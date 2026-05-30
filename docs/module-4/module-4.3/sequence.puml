@@ -1,0 +1,89 @@
+@startuml
+skinparam defaultFontSize 11
+scale max 800 width
+skinparam padding 2
+skinparam ParticipantPadding 20
+skinparam maxMessageSize 150
+
+title 4.3 — AI-Generated Prescriptive Report & LangGraph PES Agent
+
+participant "AIAction\nPlanReport" as UI
+participant "PrescriptiveReport\nController" as AC
+participant "Metrics Calc\nService" as MCS
+participant "AI Gateway\nService" as AIS
+participant "FastAPI\nReport Service" as FRS
+participant "Groq API" as Groq
+participant "Prescriptive\nReport Service" as RBR
+
+== Prescriptive Report Flow ==
+
+UI -> AC: POST /api/v1/analytics/report\n{weeks: 4|8}
+note right of UI
+  Auto-fires on mount.
+  Re-fires when weeks toggle changes.
+  Shows spinner: "Analyzing your\ncampaign funnel..."
+end note
+
+AC -> AC: load default metrics(weeks)
+AC -> MCS: computeFunnelTransitions(funnel)
+note right of MCS
+  Ranked by business impact (not raw drop %):
+  Rank 1 — Clicks→Conversions (wasted ad spend)
+  Rank 2 — Conversions→Bookings (abandoned leads)
+  Rank 3 — Impressions→Clicks (expected CTR drop)
+end note
+MCS --> AC: List<FunnelTransition> (ranked)
+
+AC -> AIS: generateReport(payload + funnelTransitions)
+AIS -> FRS: POST /internal/report/generate
+
+FRS -> FRS: resolvePlatform(marketKey)
+note right of FRS
+  recommendedPlatform resolved BEFORE
+  LLM call (e.g. "Naver Blog" for Korea)
+end note
+
+FRS -> Groq: performance_report(rankedTransitions)
+note right of Groq
+  System prompt instructs:
+  "Rank 1 = Weakest — do NOT re-order"
+  Returns: executiveSummary, funnelDiagnostics[3],
+  recommendations[3], recommendedPlatform
+end note
+Groq --> FRS: PrescriptiveReport
+FRS --> AIS: PrescriptiveReport
+AIS --> AC: PrescriptiveReport
+
+AC --> UI: {executiveSummary, funnelDiagnostics,\nrecommendations, recommendedPlatform}
+UI -> UI: Render Executive Summary
+UI -> UI: Render Stage Analysis Panel\n[Most Urgent / Urgent / Not Very Urgent]
+UI -> UI: Render 3 PriorityFixCards\n[Weakest / Moderate / Alright]
+
+== FR4.26 Fallback ==
+
+alt FastAPI unavailable
+  AIS -> RBR: buildRuleBasedReport(metrics, transitions)
+  note right of RBR
+    1. Find metric with lowest PES contribution
+    2. That metric = primary bottleneck stage
+    3. Return 3 hardcoded contextual diagnostics
+    No error propagated to frontend
+  end note
+  RBR --> AC: RuleBasedPrescriptiveReport
+end
+
+== PES Deep-Analysis Agent (LangGraph) ==
+
+note over UI, Groq
+  Backend-only (no UI trigger yet).
+  POST /api/v1/analytics/pes-analysis triggers PesReportAgent:
+  [generate_report] -> [evaluate_report] -> route_action
+    • score >= 85 AND pass=true  → [finalize_response]
+    • iterations >= 3 (MAX_RETRIES) → [finalize_response]
+    • else → [generate_report] with evaluator feedback injected
+  Output: {report_data: {metric_conditions, cross_metric_logic,
+           ranked_weaknesses}, metadata: {final_score, total_iterations,
+           needs_human_review}}
+end note
+
+@enduml

@@ -1,0 +1,133 @@
+@startuml
+
+skinparam defaultFontSize 12
+skinparam noteFontSize 9
+skinparam sequenceArrowThickness 1
+skinparam ParticipantPadding 2
+skinparam BoxPadding 2
+skinparam sequenceMessageAlign left
+skinparam maxMessageSize 250
+skinparam SequenceGroupBodyBackgroundColor transparent
+skinparam SequenceGroupBorderThickness 1
+skinparam PageOrientation portrait
+
+participant "Spring Scheduler" as SCH
+participant "MarketDataIngestionJob" as JOB
+participant "MarketDataIngestionService" as MDI
+participant "ExternalMarketDataClient" as EXT
+participant "AIInferenceGatewayService" as AIG
+participant "fastapi-transformer" as FT
+participant "PostgreSQL" as DB
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow A — Daily Ingestion   cron: 0 0 0 * * * (midnight UTC)
+' ══════════════════════════════════════════════════════════════════════════
+
+note over SCH,DB: Flow A · Daily Market Data Ingestion — cron: 0 0 0 * * * UTC
+
+SCH -> JOB: runDailyIngestion()
+JOB -> DB: BusinessProfileRepo.findAll()
+DB --> JOB: List~BusinessProfile~
+
+loop For each BusinessProfile
+    JOB -> MDI: ingestForProfile(profile)
+
+    loop For each market in [korea, japan, usa]
+
+        par Concurrent external data fetch
+            MDI -> EXT: fetchGdpGrowth(market)
+            EXT -> EXT: World Bank NY.GDP.MKTP.KD.ZG (10 s timeout)
+            EXT --> MDI: GdpDataDto { value, year }
+        and
+            MDI -> EXT: fetchForexRate(market)
+            EXT -> EXT: fawazahmed0 CDN forex API (10 s timeout)
+            EXT --> MDI: ForexDataDto { rate, currency }
+        end
+
+        MDI -> DB: MarketSignalRecordRepo.findByProfileAndMarket(profileId, market)
+        DB --> MDI: existing List~MarketSignalRecord~
+
+        alt First ingestion — no history rows exist
+            MDI -> AIG: fetchTrendHistory({ market, weeks=12 })
+            AIG -> FT: POST /internal/market-data/trends/history
+            FT -> FT: pytrends_client.fetch_trend_history() + 4-12 s jitter
+            FT --> AIG: { weekly_series: [{date, trend_index}, ...] }
+            AIG --> MDI: Map
+            MDI -> DB: MarketSignalRecordRepo.save() x12 — back-dated weekly rows
+            MDI -> DB: reload signal records (now includes backfill)
+        else Subsequent ingestion — history rows present
+            MDI -> AIG: fetchTrends({ market })
+            AIG -> FT: POST /internal/market-data/trends
+            FT -> FT: pytrends_client.fetch_trends() + 4-12 s jitter
+            FT --> AIG: { trend_index: float, source: "live" | "stub" }
+            AIG --> MDI: Map
+        end
+
+        MDI -> MDI: build chronological weekly_history series from signal records
+
+        MDI -> AIG: computeSeasonality({ profile_id, market, weekly_history })
+        AIG -> FT: POST /internal/market-data/seasonality
+        FT -> FT: seasonal_shift_detector.compute(weekly_series)
+        note right of FT
+          Step 1: 7-period + 30-period rolling averages
+          Step 2: spike_indicator = current > (mean + 2 x std)
+          Step 3: YoY ratio = rolling_7d_now / rolling_7d_52w_prior
+          Step 4: seasonality_score [0,1] — weighted composite
+        end note
+        FT --> AIG: { seasonality_score, rolling_7d_avg, rolling_30d_avg,\nrolling_7d_std, spike_indicator, yoy_ratio }
+        AIG --> MDI: Map
+
+        MDI -> MDI: compute 30-period forex rolling average from history
+        MDI -> DB: MarketSignalRecordRepo.save()\n— new MarketSignalRecord with all computed fields
+        note right of DB
+          Fields persisted: trend_index, forex_rate, gdp_growth,
+          seasonality_score (0-1), rolling_average_7d/30d,
+          rolling_std_dev, yoy_ratio, spike_indicator
+        end note
+
+    end
+
+    MDI --> JOB: int (markets ingested)
+end
+
+JOB -> DB: IngestionJobLogRepo.save() — status COMPLETED / FAILED, counts, timestamps
+
+' ══════════════════════════════════════════════════════════════════════════
+' Flow B — Weekly Trend Fetch   cron: 0 0 0 * * SUN (Sunday midnight UTC)
+' ══════════════════════════════════════════════════════════════════════════
+
+note over SCH,DB: Flow B · Weekly Google Trends Fetch — cron: 0 0 0 * * SUN UTC
+
+SCH -> "TrendFetchSchedulerService" as TFS: runWeeklyTrendFetch()
+
+TFS -> TFS: compute ISO week key (e.g. "2025-W21")
+
+TFS -> DB: TrendFetchJobRepo.upsertByKey() x21\n— idempotent PENDING rows for (category x market)\nUNIQUE(category, market, week_of) prevents duplicates
+DB --> TFS: 21 rows upserted
+
+TFS -> DB: TrendFetchJobRepo.findPendingAndFailedJobs()\n— attempt_count < max_attempts
+DB --> TFS: List~TrendFetchJob~
+
+loop For each TrendFetchJob (sequential — rate-limit safe)
+    TFS -> DB: TrendFetchJobRepo.save() — status = IN_PROGRESS
+    TFS -> AIG: POST /api/v1/trends/fetch { category, market }
+    AIG -> FT: POST /api/v1/trends/fetch
+    FT -> FT: trend_service.fetch_and_process() + 4-12 s jitter
+
+    alt PyTrends success
+        FT --> AIG: { trend_index, spike_indicator, yoy_ratio, seasonality_score, source: "live" }
+        AIG --> TFS: Map
+        TFS -> DB: TrendFetchJobRepo.save() — status = SUCCESS, store results
+    else PyTrends failure (HTTP 429 / network error)
+        FT --> AIG: error or stub result
+        TFS -> DB: TrendFetchJobRepo.save() — status = FAILED, increment attempt_count
+        note right of DB
+          Jobs with attempt_count < max_attempts (3)
+          will be retried next Sunday automatically.
+        end note
+    end
+end
+
+note over TFS,DB: Summary: 21 jobs processed — SUCCESS / FAILED counts logged
+
+@enduml

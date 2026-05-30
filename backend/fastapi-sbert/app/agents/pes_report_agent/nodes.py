@@ -7,8 +7,9 @@ route_action     → conditional edge: pass (score ≥ 85) or retry (up to 3×)
 """
 from __future__ import annotations
 
-# BUG FIX: was `from app.agents.pes_report_agent.nodes import ...` — circular.
-# All shared types live in state.py.
+import json
+from typing import Any
+
 from app.agents.pes_report_agent.state import (
     AgentState,
     ReportOutput,
@@ -17,21 +18,8 @@ from app.agents.pes_report_agent.state import (
     MetricCondition,
     RankedWeakness,
 )
-import json
-from typing import Any
-
 from app.core.AgentLLMModel import AgentLLMModel
 from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
-
-# ── LLM setup with structured outputs ────────────────────────────────────────
-# BUG FIX: AgentLLMModel.get_model() is an *instance* method — must instantiate
-# via AgentLLMModel() (singleton __new__ returns the same object every time).
-# BUG FIX: plain get_model() returns the base LLM; we need .with_structured_output()
-# so the invoke() result is the Pydantic model, not a BaseMessage.
-_base_llm = AgentLLMModel().get_model()   # None when GOOGLE_API_KEY absent
-
-generator_llm = _base_llm.with_structured_output(ReportOutput)     if _base_llm else None
-evaluator_llm = _base_llm.with_structured_output(EvaluationResult) if _base_llm else None
 
 # ── Fallback values used when LLM is unavailable ─────────────────────────────
 
@@ -53,6 +41,7 @@ _FALLBACK_EVALUATION = {
     "recommendation": "regenerate",
 }
 
+
 # ==========================================
 # Node definitions
 # ==========================================
@@ -67,7 +56,6 @@ def generate_report(state: AgentState) -> dict[str, Any]:
     metrics_data = state["metrics_data"]
     iterations   = state.get("iterations", 0)
 
-    # Inject evaluator feedback on retries
     feedback_context = ""
     if iterations > 0 and state.get("evaluation"):
         feedback_context = (
@@ -75,9 +63,12 @@ def generate_report(state: AgentState) -> dict[str, Any]:
             + json.dumps(state["evaluation"], indent=2)
         )
 
-    if generator_llm is None:
+    _base_llm = AgentLLMModel().get_model()
+
+    if _base_llm is None:
         return {"report": _FALLBACK_REPORT.model_dump(), "iterations": iterations + 1}
 
+    generator_llm = _base_llm.with_structured_output(ReportOutput)
     messages = generation_prompt.format_messages(
         metrics_data=metrics_data,
         feedback_context=feedback_context,
@@ -92,15 +83,17 @@ def evaluate_report(state: AgentState) -> dict[str, Any]:
     report           = state["report"]
     formatted_report = json.dumps(report, indent=2)
 
-    if evaluator_llm is None:
+    _base_llm = AgentLLMModel().get_model()
+
+    if _base_llm is None:
         return {"evaluation": _FALLBACK_EVALUATION}
 
+    evaluator_llm = _base_llm.with_structured_output(EvaluationResult)
     messages = evaluation_prompt.format_messages(
         metrics_data=metrics_data,
         generated_report=formatted_report,
     )
     result: EvaluationResult = evaluator_llm.invoke(messages)
-    # by_alias=True serializes pass_status → "pass" (matches route_action's key lookup)
     return {"evaluation": result.model_dump(by_alias=True)}
 
 
@@ -127,7 +120,7 @@ def finalize_response(state: AgentState) -> dict[str, Any]:
     }
 
     final_ui_payload = {
-        "report_data": report,        # metric_conditions, cross_metric_logic, ranked_weaknesses
+        "report_data": report,
         "metadata":    final_metadata,
     }
 

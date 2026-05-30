@@ -176,7 +176,7 @@ export interface PerformanceReport {
 
 // ── Module 3 — Content Studio ───────────────────────────────────────────────
 
-export type ContentPlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+export type ContentPlatformId = 'instagram' | 'tiktok' | 'facebook';
 
 export interface MarketHeader {
   country: string;
@@ -260,20 +260,33 @@ export interface ContentResponseDTO {
   source?: ResponseSource;
 }
 
-/** Mirrors backend ComplianceDtos.ComplianceResultDto (FR3.25). */
-export interface ComplianceResultDTO {
-  score: number;
-  aligned: string[];
-  gaps: string[];
-  source?: ResponseSource;
-  // FR3.25 sub-scores (present when /evaluate-full pipeline ran)
-  casScore?: number;
-  vasScore?: number;
-  hcsScore?: number;
-  omcsScore?: number;
-  // FR3.25.4 threshold label + FR3.26 explainability
-  interpretation?: string;
-  mismatches?: string[];
+/**
+ * OMCS agent audit result (Submodule 3.3) — mirrors backend
+ * ComplianceDtos.OmcsAuditResultDto / FastAPI OmcsAnalysisResponse.
+ * Produced by the LangGraph omcs_agent: the chosen caption + image are scored
+ * against the Submodule 3.2 visual-guide recommendations.
+ */
+export interface OmcsAuditResultDTO {
+  /** Profile semantic alignment score (0-100). */
+  profileSemanticScore: number;
+  /** Per-criterion rubric: { scores: {...}, total }. */
+  rubricEvaluationData: {
+    scores?: Record<string, number>;
+    total?: number;
+    [k: string]: unknown;
+  };
+  /** Rubric total — image vs recommendations (0-100). */
+  recommendationsPictureScore: number;
+  /** Caption/image consistency rationale. */
+  consistencyExplanation: string;
+  /** Caption/image consistency score (0-100). */
+  pubmatConsistencyScore: number;
+  /** OMCS = (0.35×profile)+(0.45×rubric)+(0.20×consistency). */
+  omcsScore: number;
+  /** "Pass" | "Fail". */
+  status: string;
+  /** Diagnostic feedback (root-cause + actionable fixes when failing). */
+  feedback: string;
 }
 
 /** Mirrors backend CreativeDirectionDtos.CreativeDirectionDto. */
@@ -360,4 +373,63 @@ export interface PrescriptiveReport {
   funnelDiagnostics: FunnelDiagnostic[];
   recommendations: RankedRecommendation[];
   recommendedPlatform: string;
+}
+
+/**
+ * PES time-series deep-analysis schema — mirrors the FastAPI pes_report_agent
+ * ReportOutput (snake_case, passed through verbatim by Spring Boot
+ * POST /api/v1/analytics/pes-analysis).
+ */
+export interface PesMetricCondition {
+  metric_name: string;
+  current_status: string;
+  trend: 'up' | 'down' | 'stable' | 'volatile';
+  peak_value: number;
+  low_value: number;
+}
+
+export interface PesRankedWeakness {
+  metric_name: string;
+  rank: number;            // 1 = most urgent / weakest metric
+  weakness_meaning: string;
+  recommendation: string;
+}
+
+export interface PesAnalysisReport {
+  report_data: {
+    metric_conditions: PesMetricCondition[];
+    cross_metric_logic: { relationships: string; insights: string };
+    ranked_weaknesses: PesRankedWeakness[];
+  };
+  metadata: {
+    final_score: number;
+    total_iterations: number;
+    needs_human_review: boolean;
+    warning_message: string;
+  };
+}
+
+/** Combined response for POST /manual — mirrors AnalyticsDtos.ManualIngestResponse. */
+export interface ManualIngestResponse {
+  metrics: Metrics;
+  funnel: FunnelStage[];
+  pes: PesResponse;
+}
+
+/** One week's campaign snapshot — mirrors AnalyticsDtos.CampaignSnapshot. */
+export interface CampaignSnapshot {
+  periodStart: string | null;
+  periodEnd: string | null;
+  pesScore: number;
+  pesLabel: string;
+  ctr: number | null;
+  cpc: number | null;
+  roas: number | null;
+  convRate: number | null;
+  cac: number | null;
+}
+
+/** GET /history response — chronologically ordered snapshots for the trend chart. */
+export interface CampaignHistoryResponse {
+  snapshots: CampaignSnapshot[];
 }

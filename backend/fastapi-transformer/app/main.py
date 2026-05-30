@@ -35,13 +35,13 @@ def healthz_models() -> dict:
       gemini  — Gemini API availability (requires GEMINI_API_KEY)
       xgboost — XGBoost model file presence (requires xgboost_market.json)
     """
-    from app.services.gemini_forecaster import _genai
+    from app.services.gemini_forecaster import _groq_client
     from app.services.xgboost_scorer import _model as xgb_model
 
     return {
-        "gemini":   "live"   if _genai     is not None else "stub",
-        "xgboost":  "loaded" if xgb_model  is not None else "stub",
-        "status":   "ok",
+        "groq":    "live"   if _groq_client is not None else "stub",
+        "xgboost": "loaded" if xgb_model    is not None else "stub",
+        "status":  "ok",
     }
 
 

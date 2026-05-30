@@ -36,7 +36,7 @@ const MediaDropzone: React.FC<MediaDropzoneProps> = ({ onFileIngest }) => {
       <div className="px-4 py-2 rounded-lg text-xs font-bold border mt-2" style={{ backgroundColor: COLORS.WHITE, borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MUTED }}>
         Browse files
       </div>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => onFileIngest(e.target.files?.[0])} />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { onFileIngest(e.target.files?.[0]); e.target.value = ''; }} />
     </div>
   );
 };

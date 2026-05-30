@@ -6,9 +6,9 @@ Companion diagrams:
 
 | File | Contents |
 |---|---|
-| [`sequence.mmd`](sequence.mmd) | Compute Uniqueness Score interaction |
-| [`class.mmd`](class.mmd) | Backend DTOs, controller method, gateway service |
-| [`er.mmd`](er.mmd) | `tbl_business_profile` (parent), `tbl_business_embedding`, `tbl_business_categories_score` |
+| [`sequence.puml`](sequence.puml) | Compute Uniqueness Score interaction |
+| [`class.puml`](class.puml) | Backend DTOs, controller method, gateway service |
+| [`er.puml`](er.puml) | `tbl_business_profile` (parent), `tbl_business_embedding` (vector(768) + HNSW), `tbl_business_categories_score` |
 
 ---
 
@@ -33,7 +33,7 @@ The Uniqueness Scoring Dashboard renders inside the same Calibration view as Tra
 
 | Component Name | Description & Purpose | Type / Format |
 |---|---|---|
-| `ClassificationController` | `POST /api/v1/classification/uniqueness` — routes the uniqueness request to the AI gateway and returns the score package. | Spring `@RestController` |
+| `UniquenessScoringController` | `POST /api/v1/classification/uniqueness` — routes the uniqueness request to the AI gateway and returns the score package. | Spring `@RestController` |
 | `AIInferenceGatewayService` | Reactive WebClient bridge to the FastAPI microservice; method `computeUniqueness`. | Spring `@Service` |
 | `UniquenessRequest` | DTO record carrying the business payload plus the operator-confirmed category allocations. | Java record |
 | `UniquenessResponse` | DTO record carrying `overallScore`, `semanticsScore`, `categoryScore`, `descriptionFeedback`, `categoryFeedback`. | Java record |
@@ -42,7 +42,7 @@ The Uniqueness Scoring Dashboard renders inside the same Calibration view as Tra
 
 | Method | Path | Controller method | Frontend caller |
 |---|---|---|---|
-| `POST` | `/api/v1/classification/uniqueness` | `ClassificationController.uniqueness` | `apiClient.classifyUniqueness` (Calibration Phase 2) |
+| `POST` | `/api/v1/classification/uniqueness` | `UniquenessScoringController.uniqueness` | `apiClient.classifyUniqueness` (Calibration Phase 2) |
 
 ## Processing Logic
 

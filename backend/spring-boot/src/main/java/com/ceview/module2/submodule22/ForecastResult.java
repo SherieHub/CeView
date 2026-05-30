@@ -24,6 +24,8 @@ public class ForecastResult {
     @Column(name = "rmse")                     private Double rmse;
     @Column(name = "forecast_horizon_weeks")   private Integer forecastHorizonWeeks;
     @Column(name = "generated_at")             private OffsetDateTime generatedAt;
+    @Column(name = "weekly_forecasts_json", columnDefinition = "TEXT")
+    private String weeklyForecastsJson;
 
     @PrePersist
     void onCreate() {

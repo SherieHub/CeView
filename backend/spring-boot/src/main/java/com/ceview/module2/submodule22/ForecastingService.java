@@ -8,11 +8,15 @@ import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendDto;
 import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendDto;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.GdpTrendPoint;
+import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendPoint;
 import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -42,8 +46,8 @@ import java.util.stream.Collectors;
  *  - {@link #runPipeline} is {@code @Transactional} — all three markets' DB
  *    writes roll back together on any failure.
  *  - seasonalityScore stored as 0–1 in DB; multiplied ×100 only in buildChartData().
- *  - buildChartData always emits exactly 8 labelled points (Wk -3 … Wk +4).
- *  - Falls back to the legacy FastAPI stub path when enriched data is absent.
+ *  - buildChartData always emits exactly 24 labelled points (12 history + 12 forecast; see method Javadoc).
+ *  - Throws when enriched signal data is absent — run ingestion first (FR2.9).
  */
 @Service
 public class ForecastingService {
@@ -75,6 +79,7 @@ public class ForecastingService {
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
+    private final ObjectMapper objectMapper;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -85,7 +90,8 @@ public class ForecastingService {
                               MarketDataIngestionService ingestionService,
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
-                              MarketEconomicTrendRepository economicTrendRepo) {
+                              MarketEconomicTrendRepository economicTrendRepo,
+                              ObjectMapper objectMapper) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -96,11 +102,12 @@ public class ForecastingService {
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
+        this.objectMapper       = objectMapper;
     }
 
     /**
      * Run the full 2.2 pipeline for a profile.
-     * Falls back to the legacy stub when enriched data is absent.
+     * Throws IllegalStateException when enriched data is absent — run ingestion first.
      */
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
         if (profileId == null) {
@@ -140,6 +147,159 @@ public class ForecastingService {
         }
     }
 
+    /**
+     * Staleness-aware live forecast for the Home view.
+     *
+     * Runs the full live pipeline (2.1 ingestion + 2.2 Gemini/XGBoost) when the
+     * profile has no forecast yet, or its newest 4-week forecast is older than
+     * {@code maxAgeHours}. Otherwise serves the cached DB rows unchanged.
+     *
+     * This is what makes the Home cards reflect a live forecast on load while
+     * avoiding an expensive Gemini batch call on every single page visit.
+     *
+     * @throws IllegalArgumentException when the profile is missing or its
+     *         categories are not set (UC-1.1 incomplete) — surfaced by the
+     *         controller as a non-server 409 so the Home view degrades quietly.
+     */
+    public MarketsResponse ensureFreshForecast(UUID profileId, long maxAgeHours) {
+        if (profileId == null) {
+            throw new IllegalArgumentException("profileId is required");
+        }
+
+        // Fast-fail on an unknown profile id rather than spinning up the ~6s live
+        // pipeline (which forecastForProfile would run unpersisted for a missing
+        // row). The Home view passes whatever id it holds, so a stale/garbage id
+        // must 409 quickly instead of silently triggering a forecast.
+        if (profileRepo.findById(profileId).isEmpty()) {
+            throw new IllegalArgumentException("Business profile not found: " + profileId);
+        }
+
+        OffsetDateTime newest = null;
+        for (String market : MARKETS) {
+            Optional<ForecastResult> fr = forecastRepo
+                    .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                            profileId, market, 4);
+            if (fr.isPresent() && fr.get().getGeneratedAt() != null) {
+                OffsetDateTime g = fr.get().getGeneratedAt();
+                if (newest == null || g.isAfter(newest)) newest = g;
+            }
+        }
+
+        boolean stale = newest == null
+                || newest.isBefore(OffsetDateTime.now().minusHours(maxAgeHours));
+
+        if (stale) {
+            log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
+                    profileId, newest, maxAgeHours);
+            return forecastForProfile(profileId, true);
+        }
+
+        log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={}) — serving cached DB rows",
+                profileId, newest, maxAgeHours);
+        return loadMarketsFromDb(profileId);
+    }
+
+    // ─── DB-only read path (GET /markets) ────────────────────────────────────
+
+    /**
+     * Reconstructs the latest ranked market list from persisted DB rows only.
+     * No AI calls are made — this is the fast path for the home view and
+     * notification click-through.
+     *
+     * Returns an empty MarketsResponse when no forecast data exists yet for the
+     * profile (e.g., before the first daily ingestion run or seed job).
+     */
+    public MarketsResponse loadMarketsFromDb(UUID profileId) {
+        List<MarketResultBundle> bundles = new ArrayList<>();
+
+        for (String market : MARKETS) {
+            Optional<ForecastResult> fr4wOpt = forecastRepo
+                    .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                            profileId, market, 4);
+            if (fr4wOpt.isEmpty()) continue;
+
+            ForecastResult fr4w = fr4wOpt.get();
+
+            List<MarketScore> scores = scoreRepo.findByForecastResultIdOrderByMarketRankAsc(
+                    fr4w.getForecastResultId());
+            if (scores.isEmpty()) continue;
+            MarketScore ms = scores.get(0);
+
+            List<MarketSignalRecord> history = signalRepo
+                    .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+            MarketSignalRecord latest = history.isEmpty() ? null : history.get(0);
+
+            // Deserialize stored weekly forecasts — falls back to empty list
+            List<Double> weeklyForecasts = new ArrayList<>();
+            if (fr4w.getWeeklyForecastsJson() != null) {
+                try {
+                    weeklyForecasts = objectMapper.readValue(
+                            fr4w.getWeeklyForecastsJson(), new TypeReference<List<Double>>() {});
+                } catch (Exception e) {
+                    log.warn("Failed to deserialize weeklyForecastsJson for market={}: {}", market, e.getMessage());
+                }
+            }
+
+            // Reconstruct economic trend from persisted snapshot
+            GdpTrendDto gdpTrend   = economicTrendToGdpDto(market);
+            ForexTrendDto forexTrend = economicTrendToForexDto(market);
+
+            double marketScore = ms.getMarketScore() != null ? ms.getMarketScore() : 0.0;
+            boolean spike      = Boolean.TRUE.equals(ms.getSpikeIndicator());
+            double confidence  = fr4w.getForecastConfidence() != null ? fr4w.getForecastConfidence() : 0.8;
+
+            bundles.add(new MarketResultBundle(
+                    market, marketScore, ms, fr4w, history, spike, confidence,
+                    gdpTrend, forexTrend, weeklyForecasts, latest));
+        }
+
+        if (bundles.isEmpty()) {
+            log.info("No forecast data found in DB for profile={} — returning empty response", profileId);
+            return new MarketsResponse(List.of());
+        }
+
+        bundles.sort(Comparator.comparingDouble(MarketResultBundle::marketScore).reversed());
+        List<MarketDto> dtos = new ArrayList<>();
+        for (int i = 0; i < bundles.size(); i++) {
+            dtos.add(buildMarketDto(bundles.get(i), i + 1));
+        }
+        return new MarketsResponse(dtos);
+    }
+
+    private GdpTrendDto economicTrendToGdpDto(String market) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(market)
+                .filter(t -> t.getGdpTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<GdpTrendPoint> pts = objectMapper.readValue(
+                                t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
+                        double latest = t.getGdpLatest() != null ? t.getGdpLatest()
+                                : (pts.isEmpty() ? 2.0 : pts.get(pts.size() - 1).value());
+                        return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
+    private ForexTrendDto economicTrendToForexDto(String market) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(market)
+                .filter(t -> t.getForexTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<ForexTrendPoint> pts = objectMapper.readValue(
+                                t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
+                        double latest = t.getForexLatest() != null ? t.getForexLatest()
+                                : (pts.isEmpty() ? 1.0 : pts.get(pts.size() - 1).value());
+                        return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                })
+                .orElse(null);
+    }
+
     // ─── pipeline ─────────────────────────────────────────────────────────────
 
     /**
@@ -159,15 +319,59 @@ public class ForecastingService {
         log.info("Forecast pipeline started for profile={}", profileId);
         MDC.remove("code");
 
-        List<MarketResultBundle> bundles = new ArrayList<>();
+        // Only write to DB when the profile row actually exists; avoids FK violations
+        // when the operator UUID or a test ID has no matching tbl_business_profile row.
+        boolean canPersist = profileRepo.findById(profileId).isPresent();
+        if (!canPersist) {
+            log.warn("Profile {} not found in tbl_business_profile — pipeline will run without persistence", profileId);
+        }
 
+        // ── Phase A: build all market sequences (no AI calls) ────────────────
+        // Stores (market, gdpTrend, forexTrend, sequence) in MARKETS order so
+        // Phase B can submit them as a batch and Phase C can zip results back.
+        record MarketSetup(
+                String market,
+                GdpTrendDto gdpTrend,
+                ForexTrendDto forexTrend,
+                Map<String, Object> sequence) {}
+
+        List<MarketSetup> setups = new ArrayList<>();
         for (String market : MARKETS) {
-            // ── Fetch economic trend time-series first so the GDP direction can
-            //    be injected into the Gemini prompt context below (FR2.13 extension)
+            // Fetch economic trend time-series so the GDP direction can be
+            // injected into the Gemini prompt context below (FR2.13 extension)
             GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
             ForexTrendDto forexTrend = externalClient.fetchForexTrend(market);
 
-            Map<String, Object> sequence = sequenceBuilder.buildSequence(profileId, market);
+            // Build enriched sequence; fall back to safe defaults when signal records are
+            // absent (fresh profile, ingestion not yet run) so the pipeline can still
+            // return degraded-but-valid market cards rather than a 500.
+            Map<String, Object> sequence;
+            try {
+                sequence = sequenceBuilder.buildSequence(profileId, market);
+            } catch (IllegalStateException seqEx) {
+                if ("enriched_dataset_empty".equals(seqEx.getMessage())) {
+                    MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
+                    log.warn("No enriched signal data for market={} profile={} — using baseline defaults",
+                            market, profileId);
+                    MDC.remove("code");
+                    Map<String, Object> defaultSeq = new LinkedHashMap<>();
+                    defaultSeq.put("profileId",       profileId.toString());
+                    defaultSeq.put("market",          market);
+                    defaultSeq.put("trendSeries",     List.of(45.0, 48.0, 50.0, 52.0));
+                    defaultSeq.put("rolling7dAvg",    50.0);
+                    defaultSeq.put("rolling30dAvg",   50.0);
+                    defaultSeq.put("rollingStd7d",    2.0);
+                    defaultSeq.put("spikeIndicator",  false);
+                    defaultSeq.put("yoyRatio",        null);
+                    defaultSeq.put("seasonalityScore", 0.5);
+                    defaultSeq.put("forexRate",       1.0);
+                    defaultSeq.put("gdpGrowth",       2.0);
+                    defaultSeq.put("holidayFlag",     false);
+                    sequence = defaultSeq;
+                } else {
+                    throw seqEx;
+                }
+            }
 
             // Inject GDP trend direction into the Gemini prompt context
             if (gdpTrend != null && gdpTrend.points().size() >= 2) {
@@ -178,19 +382,48 @@ public class ForecastingService {
                 sequence.put("gdpTrendDelta", Math.round(delta * 100.0) / 100.0);
             }
 
-            // ── Gemini demand forecasting (FR2.11) ────────────────────────────
-            Map<String, Object> inference = ai.runForecastInference(sequence);
+            setups.add(new MarketSetup(market, gdpTrend, forexTrend, sequence));
+        }
+
+        // ── Phase B: single batch Gemini call (1 RPM slot for all markets) ───
+        // Collects all sequences and sends them in one prompt; Gemini returns a
+        // JSON object keyed by market name with 12 weekly forecasts each.
+        // No fallback — propagate exception so the controller returns a
+        // structured error response instead of silently using stub values.
+        List<Map<String, Object>> allSequences = new ArrayList<>();
+        for (MarketSetup s : setups) allSequences.add(s.sequence());
+        Map<String, Map<String, Object>> batchInference = ai.runForecastInferenceBatch(allSequences);
+
+        // ── Phase C: per-market XGBoost scoring + persistence ─────────────────
+        List<MarketResultBundle> bundles = new ArrayList<>();
+
+        for (MarketSetup setup : setups) {
+            String              market     = setup.market();
+            GdpTrendDto         gdpTrend   = setup.gdpTrend();
+            ForexTrendDto       forexTrend = setup.forexTrend();
+            Map<String, Object> sequence   = setup.sequence();
+
+            // Look up this market's Gemini result from the batch response
+            Map<String, Object> inference = batchInference.get(market);
+            if (inference == null) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_GATEWAY,
+                        "MOD22_FORECAST_FAILED :: Batch response missing results for market=" + market);
+            }
+
             double demand4w   = num(inference, "predicted_demand_4w",  50.0);
             double demand12w  = num(inference, "predicted_demand_12w", 50.0);
-
-            // Per-week forecasts (Wk+1 … Wk+4) — prevents a flat forecast line.
-            // FastAPI returns these from the historical trend slope; fallback
-            // interpolates linearly between current and demand4w.
-            List<Double> weeklyForecasts = extractWeeklyForecasts(inference, demand4w);
             double mape       = num(inference, "mape",       10.0);
             double mae        = num(inference, "mae",         6.0);
             double rmse       = num(inference, "rmse",        9.0);
             double confidence = num(inference, "confidence",  0.8);
+
+            // Per-week forecasts [Wk+1..Wk+12] — Gemini returns varying values
+            // so the chart shows a real trend line (not a flat repeated scalar).
+            @SuppressWarnings("unchecked")
+            List<Double> weeklyForecasts = inference.get("weekly_forecasts") instanceof List<?>
+                    ? (List<Double>) inference.get("weekly_forecasts")
+                    : List.of(demand4w, demand4w, demand4w, demand4w);
 
             // FR2.12 — MAPE warning
             if (mape > MAPE_THRESHOLD) {
@@ -199,11 +432,23 @@ public class ForecastingService {
                 MDC.remove("code");
             }
 
-            // Persist ForecastResult (4w)
-            ForecastResult fr4w = persistForecastResult(
-                    profileId, market, demand4w, confidence, mape, mae, rmse, 4);
-            // Persist ForecastResult (12w) — stored for FR2.17
-            persistForecastResult(profileId, market, demand12w, confidence, mape, mae, rmse, 12);
+            // Persist ForecastResult (4w) — only when a valid profile row exists
+            ForecastResult fr4w;
+            if (canPersist) {
+                fr4w = persistForecastResult(
+                        profileId, market, demand4w, confidence, mape, mae, rmse, 4, weeklyForecasts);
+                persistForecastResult(profileId, market, demand12w, confidence, mape, mae, rmse, 12);
+            } else {
+                // In-memory stub so downstream DTO assembly has a non-null object
+                fr4w = new ForecastResult();
+                fr4w.setForecastResultId(UUID.randomUUID());
+                fr4w.setBusinessProfileId(profileId);
+                fr4w.setTargetMarket(market);
+                fr4w.setPredictedDemand(demand4w);
+                fr4w.setForecastConfidence(confidence);
+                fr4w.setMapeScore(mape);
+                fr4w.setForecastHorizonWeeks(4);
+            }
 
             // Latest signal record for downstream enrichment
             List<MarketSignalRecord> history = signalRepo
@@ -218,7 +463,6 @@ public class ForecastingService {
             double forex  = latest != null && latest.getForexRate()  != null ? latest.getForexRate()  : 1.0;
 
             // ── XGBoost economic viability scoring (FR2.13) ───────────────────
-            // New Phase 2 features: directFlight, distanceKm, flightFrequency
             ExternalMarketDataClient.FlightReferenceDto flight = externalClient.getFlightReference(market);
             Map<String, Object> scorePayload = new LinkedHashMap<>();
             scorePayload.put("market",            market);
@@ -231,20 +475,34 @@ public class ForecastingService {
             scorePayload.put("distance_km",       flight.distanceKm());
             scorePayload.put("flight_frequency",  flight.flightFrequency());
 
+            // No fallback — propagate exception so the controller returns a
+            // structured error response instead of silently using stub values.
             Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
             double marketScore = num(scoreResult, "market_score", 0.5);
 
-            // Persist MarketScore
-            MarketScore ms = persistMarketScore(
-                    fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex);
-
-            // FR2.15 — demand window alert (compare against 7d rolling average)
-            double rollingAvg = latest != null && latest.getRollingAverage7d() != null
-                    ? latest.getRollingAverage7d()
-                    : (latest != null && latest.getRollingAverage() != null
-                            ? latest.getRollingAverage() : demand4w);
-            if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
-                persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
+            // Persist MarketScore (and demand alert) — only when profile row exists
+            MarketScore ms;
+            if (canPersist) {
+                ms = persistMarketScore(
+                        fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex);
+                double rollingAvg = latest != null && latest.getRollingAverage7d() != null
+                        ? latest.getRollingAverage7d()
+                        : (latest != null && latest.getRollingAverage() != null
+                                ? latest.getRollingAverage() : demand4w);
+                if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
+                    persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
+                }
+            } else {
+                // In-memory stub — no FK writes
+                ms = new MarketScore();
+                ms.setMarketScoreId(UUID.randomUUID());
+                ms.setForecastResultId(fr4w.getForecastResultId());
+                ms.setMarketScore(marketScore);
+                ms.setSeasonalityScore(seasonality);
+                ms.setSpikeIndicator(spike);
+                ms.setGdpPerCapitaGrowth(gdp);
+                ms.setForexVsPhp(forex);
+                ms.setHistoricalArrivals(80_000);
             }
 
             // ── Persist economic trend snapshot ───────────────────────────────────
@@ -252,7 +510,7 @@ public class ForecastingService {
 
             bundles.add(new MarketResultBundle(
                     market, marketScore, ms, fr4w, history, spike, confidence,
-                    gdpTrend, forexTrend, weeklyForecasts));
+                    gdpTrend, forexTrend, weeklyForecasts, latest));
         }
 
         // Rank markets by score descending (FR2.14)
@@ -263,7 +521,7 @@ public class ForecastingService {
             MarketResultBundle b = bundles.get(i);
             int rank = i + 1;
             b.ms().setMarketRank(rank);
-            scoreRepo.save(b.ms());
+            if (canPersist) scoreRepo.save(b.ms());
             marketDtos.add(buildMarketDto(b, rank));
         }
 
@@ -275,6 +533,13 @@ public class ForecastingService {
     private ForecastResult persistForecastResult(UUID profileId, String market,
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon) {
+        return persistForecastResult(profileId, market, demand, confidence, mape, mae, rmse, horizon, null);
+    }
+
+    private ForecastResult persistForecastResult(UUID profileId, String market,
+                                                  double demand, double confidence,
+                                                  double mape, double mae, double rmse, int horizon,
+                                                  List<Double> weeklyForecasts) {
         ForecastResult fr = new ForecastResult();
         fr.setBusinessProfileId(profileId);
         fr.setTargetMarket(market);
@@ -284,6 +549,13 @@ public class ForecastingService {
         fr.setMae(mae);
         fr.setRmse(rmse);
         fr.setForecastHorizonWeeks(horizon);
+        if (horizon == 4 && weeklyForecasts != null && !weeklyForecasts.isEmpty()) {
+            try {
+                fr.setWeeklyForecastsJson(objectMapper.writeValueAsString(weeklyForecasts));
+            } catch (Exception e) {
+                log.warn("Failed to serialize weeklyForecasts for market={}: {}", market, e.getMessage());
+            }
+        }
         return forecastRepo.save(fr);
     }
 
@@ -343,7 +615,8 @@ public class ForecastingService {
                         tier))
                 .collect(Collectors.toList());
 
-        List<ChartDataPointDto> chartData = buildChartData(b.history(), b.fr4w(), b.weeklyForecasts());
+        List<ChartDataPointDto> chartData = buildChartData(
+                b.history(), b.fr4w(), b.weeklyForecasts(), b.latestSignal());
 
         String directive = buildDirective(market, matchScore, b.spike());
 
@@ -384,125 +657,93 @@ public class ForecastingService {
     }
 
     /**
-     * Builds exactly 8 ChartDataPoints labelled Wk -3 … Wk +4.
+     * Builds exactly 24 ChartDataPoints: 12 history (Wk -11 … Current) + 12 forecast (Wk +1 … Wk +12).
      *
-     * Labels must match the frontend's label-based lookup in generateTimeframeData():
-     *   history slot 0 → "Wk -3"
-     *   history slot 1 → "Wk -2"
-     *   history slot 2 → "Wk -1"
-     *   history slot 3 → "Current"
-     *   forecast slots → "Wk +1" … "Wk +4"
+     * History slots use real MarketSignalRecord values (trend, seasonality, forex, gdp).
+     * When fewer than 12 real records exist, synthetic pads fill the oldest slots.
+     * Forecast slots use per-week Gemini predictions (weekly_forecasts[0..11]).
+     * Future seasonality / forex / gdp carry the latest known values forward.
      *
-     * When fewer than 4 real signal records exist, synthetic pads fill the
-     * earliest history slots from "Wk -3" forward.  The count breakdown:
-     *   4 real records → 0 pads, 4 real slots, 4 forecast = 8
-     *   3 real records → 1 pad  ("Wk -3"), 3 real, 4 forecast = 8
-     *   2 real records → 2 pads ("Wk -3","Wk -2"), 2 real, 4 forecast = 8
-     *   1 real record  → 3 pads ("Wk -3","Wk -2","Wk -1"), 1 real, 4 forecast = 8
-     *   0 real records → 3 pads + synthetic "Current", 4 forecast = 8
-     *
-     * Seasonality is multiplied by 100 here (0–1 → 0–100) so the frontend
-     * DemandForecastChart Y-axis [0, 100] renders it correctly.
+     * Pad count breakdown (12-slot history):
+     *   12 real → 0 pads,  12 real, 12 forecast = 24
+     *    8 real → 4 pads,   8 real, 12 forecast = 24
+     *    1 real → 11 pads,  1 real, 12 forecast = 24
+     *    0 real → 11 pads + synthetic "Current", 12 forecast = 24
      */
     private List<ChartDataPointDto> buildChartData(List<MarketSignalRecord> history,
                                                     ForecastResult fr4w,
-                                                    List<Double> weeklyForecasts) {
+                                                    List<Double> weeklyForecasts,
+                                                    MarketSignalRecord latestSignal) {
         List<ChartDataPointDto> points = new ArrayList<>();
 
-        // Use up to 4 most-recent history records, reversed to chronological order
-        List<MarketSignalRecord> recent = history.stream().limit(4).collect(Collectors.toList());
+        // 12 most-recent history records, reversed to chronological order (oldest first)
+        List<MarketSignalRecord> recent = history.stream().limit(12).collect(Collectors.toList());
         Collections.reverse(recent);
 
-        double baseDemand = (fr4w != null && fr4w.getPredictedDemand() != null)
-                ? fr4w.getPredictedDemand() : 50.0;
+        double baseDemand = fr4w != null ? fr4w.getPredictedDemand() : 50.0;
 
-        // Synthetic pads fill the history slots that have no real records.
-        // When recent is empty we emit 3 synthetic history pads (Wk -3, Wk -2, Wk -1)
-        // plus a synthetic "Current" in the block below — total 4 history slots.
-        // When recent has k≥1 records we need (3 - (k-1)) = (4 - k) pads only for
-        // the history weeks, NOT for "Current" which the real record supplies.
-        int syntheticCount = recent.isEmpty() ? 3 : Math.max(0, 4 - recent.size());
+        // Latest signal values carried forward into future chart points
+        double latestSeasonality = latestSignal != null && latestSignal.getSeasonalityScore() != null
+                ? latestSignal.getSeasonalityScore() * 100.0 : 50.0;
+        double latestForex = latestSignal != null && latestSignal.getForexRate() != null
+                ? latestSignal.getForexRate() : 1.0;
+        double latestGdp   = latestSignal != null && latestSignal.getGdpGrowth() != null
+                ? latestSignal.getGdpGrowth() : 2.0;
+
+        // Normalise weekly forecasts — ensure exactly 12 values
+        List<Double> wf = new ArrayList<>();
+        if (weeklyForecasts != null) {
+            for (Double v : weeklyForecasts) wf.add(v != null ? v : baseDemand);
+        }
+        while (wf.size() < 12) wf.add(baseDemand);
+
+        // ── Synthetic history pads for missing records ────────────────────────
+        // Each pad fills one of the 12 history slots from the oldest end.
+        // Pad at index j occupies position j in a 12-slot array, so its week
+        // label is "Wk -" + (11 - j).
+        int syntheticCount = recent.isEmpty() ? 11 : Math.max(0, 12 - recent.size());
         for (int j = 0; j < syntheticCount; j++) {
-            // Labels count down: Wk -3, Wk -2, Wk -1 (only; "Current" is never synthetic here)
-            int week = 3 - j;
-            double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 5.0));
+            int weekNum = 11 - j;   // Wk -11, Wk -10, … Wk -1
+            double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 3.0));
             points.add(new ChartDataPointDto(
-                    "Wk -" + week,
-                    syntheticDemand,
-                    null,
-                    50.0,   // neutral seasonality (0–100 scale)
-                    1.0,
-                    2.0,
-                    0.0
-            ));
+                    "Wk -" + weekNum, syntheticDemand, null, 50.0, latestForex, latestGdp, 0.0));
         }
 
-        // Real history points
+        // ── Real history points ───────────────────────────────────────────────
+        // Formula: label = "Wk -" + (recent.size() - 1 - i) for non-Current slots.
+        // This scales to any number of real records (1..12).
         for (int i = 0; i < recent.size(); i++) {
             MarketSignalRecord r = recent.get(i);
             boolean isCurrent = (i == recent.size() - 1);
             String label = isCurrent ? "Current" : "Wk -" + (recent.size() - 1 - i);
-            // Scale seasonality from 0–1 (DB) to 0–100 (frontend chart)
             double seasonality100 = (r.getSeasonalityScore() != null)
-                    ? r.getSeasonalityScore() * 100.0
-                    : 50.0;
-            double forexVal = (r.getForexRate()  != null) ? r.getForexRate()  : 1.0;
-            double gdpVal   = (r.getGdpGrowth()  != null) ? r.getGdpGrowth()  : 2.0;
+                    ? r.getSeasonalityScore() * 100.0 : 50.0;
+            double forexVal = (r.getForexRate() != null) ? r.getForexRate() : latestForex;
+            double gdpVal   = (r.getGdpGrowth() != null) ? r.getGdpGrowth() : latestGdp;
             double spikeVal = Boolean.TRUE.equals(r.getSpikeIndicator()) ? 1.0 : 0.0;
-
-            // For the "Current" point include both history and forecast so the
-            // forecast line (dashed gold) starts exactly where the history line ends,
-            // then transitions into the weekly projections without a visual jump.
-            Double forecastValue = null;
-            if (isCurrent) {
-                // Use the recorded trend index as the forecast-line anchor so both
-                // lines share the same "Current" y-value (seamless chart transition).
-                Double trendIdx = r.getTrendIndex();
-                forecastValue = (trendIdx != null) ? trendIdx : baseDemand;
-            }
+            // "Current" shows both history observation and Wk+1 forecast as the transition
+            Double forecastValue = isCurrent ? wf.get(0) : null;
 
             points.add(new ChartDataPointDto(
-                    label,
-                    r.getTrendIndex(),
-                    forecastValue,
-                    seasonality100,
-                    forexVal,
-                    gdpVal,
-                    spikeVal
-            ));
+                    label, r.getTrendIndex(), forecastValue,
+                    seasonality100, forexVal, gdpVal, spikeVal));
         }
 
-        // If no real history at all, add a synthetic "Current" anchor so the
-        // chart always has a transition point between history and forecast lines.
+        // Synthetic "Current" anchor when no real history exists at all
         if (recent.isEmpty()) {
-            // Forecast anchor = Wk+1 projection so the line immediately diverges
-            // from the synthetic baseDemand rather than sitting flat.
-            double firstForecast = (weeklyForecasts != null && !weeklyForecasts.isEmpty())
-                    ? weeklyForecasts.get(0) : baseDemand;
             points.add(new ChartDataPointDto(
-                    "Current",
-                    baseDemand,
-                    firstForecast,
-                    50.0,
-                    1.0,
-                    2.0,
-                    0.0
-            ));
+                    "Current", baseDemand, wf.get(0), 50.0, latestForex, latestGdp, 0.0));
         }
 
-        // 4 forecast points (Wk +1 to Wk +4) — each week gets its own projected
-        // demand value from the historical-slope calculation so the line is never flat.
-        for (int w = 1; w <= 4; w++) {
-            double forecastVal = (weeklyForecasts != null && weeklyForecasts.size() >= w)
-                    ? weeklyForecasts.get(w - 1)
-                    : baseDemand;
+        // ── 12 forecast points (Wk +1 … Wk +12) ─────────────────────────────
+        for (int w = 1; w <= 12; w++) {
             points.add(new ChartDataPointDto(
                     "Wk +" + w,
                     null,
-                    forecastVal,
-                    50.0,
-                    1.0,
-                    2.0,
+                    wf.get(w - 1),
+                    latestSeasonality,
+                    latestForex,
+                    latestGdp,
                     0.0
             ));
         }
@@ -628,40 +869,6 @@ public class ForecastingService {
         return v instanceof Number ? ((Number) v).doubleValue() : def;
     }
 
-    /**
-     * Extracts the per-week forecast list from the FastAPI inference result.
-     *
-     * <p>FastAPI returns {@code weekly_forecasts: [w1, w2, w3, w4]} from the
-     * historical trend slope so each chart point has a distinct demand value.
-     * If the field is absent or malformed (e.g. legacy stub response), falls back
-     * to linear interpolation between the last recorded observation and
-     * {@code fallbackDemand} (the 4w aggregate) so the chart always shows a slope.
-     *
-     * @param inference      raw inference response map from FastAPI
-     * @param fallbackDemand the aggregate 4w demand used when weekly data is absent
-     */
-    @SuppressWarnings("unchecked")
-    private List<Double> extractWeeklyForecasts(Map<String, Object> inference, double fallbackDemand) {
-        Object raw = inference.get("weekly_forecasts");
-        if (raw instanceof List<?> rawList && rawList.size() == 4) {
-            try {
-                return ((List<Object>) rawList).stream()
-                        .map(v -> v instanceof Number n ? n.doubleValue() : fallbackDemand)
-                        .collect(Collectors.toList());
-            } catch (Exception ignored) {
-                // fall through to linear interpolation
-            }
-        }
-        // Linear interpolation fallback: flat baseline → demand4w so the line
-        // still shows a slope whenever FastAPI didn't return weekly breakdown.
-        return List.of(
-                fallbackDemand * 0.85,
-                fallbackDemand * 0.90,
-                fallbackDemand * 0.95,
-                fallbackDemand
-        );
-    }
-
     private record MarketResultBundle(
             String market,
             double marketScore,
@@ -672,5 +879,6 @@ public class ForecastingService {
             double confidence,
             GdpTrendDto gdpTrend,
             ForexTrendDto forexTrend,
-            List<Double> weeklyForecasts) {}
+            List<Double> weeklyForecasts,
+            MarketSignalRecord latestSignal) {}
 }

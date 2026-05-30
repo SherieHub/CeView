@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { Bell, ChevronRight } from 'lucide-react';
+import { Bell, Zap, ChevronRight } from 'lucide-react';
 import { Notification } from '../../../../types';
 import { COLORS } from '../../../../constants';
 
 interface TrendAlertCardProps {
   notif: Notification;
   onClick: () => void;
+  /** 'surge' flags a caught-trend (spike) alert with a distinct icon + accent. */
+  variant?: 'default' | 'surge';
 }
 
-const TrendAlertCard: React.FC<TrendAlertCardProps> = ({ notif, onClick }) => {
+const TrendAlertCard: React.FC<TrendAlertCardProps> = ({ notif, onClick, variant = 'default' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const isSurge = variant === 'surge';
+  const accent = isSurge ? COLORS.RED_ORANGE : COLORS.GOLD;
+  const Icon = isSurge ? Zap : Bell;
 
   return (
     <div
@@ -19,22 +24,25 @@ const TrendAlertCard: React.FC<TrendAlertCardProps> = ({ notif, onClick }) => {
       className="p-6 rounded-xl shadow-sm border transition-all duration-200 cursor-pointer relative overflow-hidden"
       style={{
         backgroundColor: COLORS.WHITE,
-        borderColor: isHovered ? COLORS.GOLD : COLORS.LIGHT_GREY,
+        borderColor: isHovered ? accent : (isSurge ? `${COLORS.RED_ORANGE}55` : COLORS.LIGHT_GREY),
         boxShadow: isHovered ? '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)' : '',
-        borderWidth: isHovered ? '2px' : '1px',
+        borderWidth: isHovered || isSurge ? '2px' : '1px',
         borderStyle: 'solid',
       }}
     >
       {!notif.isRead && (
-        <div className="absolute top-6 right-6 w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: COLORS.GOLD }} />
+        <div className="absolute top-6 right-6 w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
       )}
 
       <div className="flex items-start gap-4">
         <div
           className="p-3 rounded-full flex items-center justify-center transition-colors"
-          style={{ backgroundColor: isHovered ? COLORS.LIGHT_GOLD : COLORS.LIGHT_GREY, color: COLORS.NAVY }}
+          style={{
+            backgroundColor: isSurge ? COLORS.BEIGE : (isHovered ? COLORS.LIGHT_GOLD : COLORS.LIGHT_GREY),
+            color: isSurge ? accent : COLORS.NAVY,
+          }}
         >
-          <Bell size={24} />
+          <Icon size={24} style={isSurge ? { fill: accent } : undefined} />
         </div>
 
         <div className="flex-1">

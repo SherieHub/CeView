@@ -8,15 +8,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 /**
  * Produces two named WebClient beans:
  *
- *  - {@code fastapiSbertClient}   → fastapi-sbert (port 8000)
- *                                   Modules 1, 3, 4 — SBERT / Gemini endpoints
+ *  - {@code fastapiSbertClient}       → fastapi-sbert (port 8000)
+ *                                       Modules 1, 3, 4 — SBERT / Groq endpoints
+ *                                       (incl. Module 3.3 OMCS agent at /internal/omcs)
  *
  *  - {@code fastapiTransformerClient} → fastapi-transformer (port 8001)
  *                                       Module 2 — Gemini demand forecasting, XGBoost economic
  *                                       viability scoring, PyTrends, Seasonal Shift Detection
- *
- * The split ensures Module 2 AI calls are never accidentally routed to the
- * SBERT service (wrong model, wrong port).
  */
 @Configuration
 public class WebClientConfig {

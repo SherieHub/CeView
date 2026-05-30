@@ -73,6 +73,9 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
     setServerError(null);
     try {
       const result = await api.classifyUniqueness({
+
+        businessProfileId: profile?.businessProfileId ?? '',
+
         businessName: payload.businessName,
         categories: selectedCategories,
         coreServices: payload.coreServices,

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { COLORS } from '../../../constants';
 import { api, ApiError } from '../../../services/apiClient';
-import type { ContentResponseDTO, ComplianceResultDTO, ContentPlatformId, ResponseSource } from '../../../types';
+import type { ContentResponseDTO, OmcsAuditResultDTO, CaptionMetadata, ContentPlatformId, ResponseSource } from '../../../types';
 
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 import AIContentMatrixPanel from './components/AIContentMatrixPanel';
@@ -15,14 +15,12 @@ const PLATFORMS = [
   { id: 'instagram', label: 'Instagram', icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-[18px] h-[18px] block shrink-0"/> },
   { id: 'tiktok',   label: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-[18px] h-[18px] block shrink-0"/> },
   { id: 'facebook', label: 'Facebook', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-[18px] h-[18px] block shrink-0"/>},
-  { id: 'naver',    label: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-[18px] h-[18px] block shrink-0"/>},
 ];
 
 const CHANNELS = [
   { id: 'instagram', label: 'Instagram',  icon: <img src="/assets/instagram.svg" alt="Instagram" className="w-[32px] h-[32px] block mx-auto"/>, handle: '@cebutravel_kr',   verified: true },
   { id: 'tiktok',   label: 'TikTok', icon: <img src="/assets/tiktok.svg" alt="TikTok" className="w-[32px] h-[32px] block mx-auto"/>, handle: '@cebuhealing',     verified: true },
   { id: 'facebook', label: 'Facebook', icon: <img src="/assets/facebook.svg" alt="Facebook" className="w-[32px] h-[32px] block mx-auto"/>, handle: 'CebuTourismKR',    verified: false },
-  { id: 'naver',    label: 'Naver Blog', icon: <img src="/assets/naver.svg" alt="Naver Blog" className="w-[32px] h-[32px] block mx-auto"/>, handle: '세부관광블로그',   verified: true },
 ];
 
 const AUDIT_STEPS = [
@@ -72,22 +70,27 @@ export default function ContentStudioView({
   const [stagedCaption, setStagedCaption] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  /** base64 data: URL of the uploaded image — sent as image_url to the omcs_agent. */
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
 
   /** Which option index (0/1/2) has been approved per platform (-1 = none). */
   const [approvedIndices, setApprovedIndices] = useState<Record<ContentPlatformId, number>>({
-    instagram: -1, tiktok: -1, facebook: -1, naver: -1,
+    instagram: -1, tiktok: -1, facebook: -1,
   });
   /** The approved caption text for each platform — forwarded to compliance audit. */
   const [approvedCaptions, setApprovedCaptions] = useState<Record<ContentPlatformId, string>>({
-    instagram: '', tiktok: '', facebook: '', naver: '',
+    instagram: '', tiktok: '', facebook: '',
+  });
+  /** The approved option's metadata per platform — sent as `recommendations` to the omcs_agent. */
+  const [approvedMetadata, setApprovedMetadata] = useState<Record<ContentPlatformId, CaptionMetadata | null>>({
+    instagram: null, tiktok: null, facebook: null,
   });
 
   const [auditOn, setAuditOn] = useState(false);
   const [auditRunning, setAuditRunning] = useState(false);
   const [auditDone, setAuditDone] = useState(false);
   const [auditProgress, setAuditProgress] = useState(0);
-  const [compliance, setCompliance] = useState<ComplianceResultDTO | null>(null);
-  const [complianceSource, setComplianceSource] = useState<ResponseSource | null>(null);
+  const [omcs, setOmcs] = useState<OmcsAuditResultDTO | null>(null);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -126,12 +129,18 @@ export default function ContentStudioView({
     if (!file || !file.type.startsWith('image/')) return;
     setUploadedFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+    // Read a base64 data: URL so the omcs_agent can receive the image inline
+    // (Groq's image fetcher can't reach the operator's local blob URL).
+    const reader = new FileReader();
+    reader.onload = () => setImageDataUrl(typeof reader.result === 'string' ? reader.result : null);
+    reader.readAsDataURL(file);
     resetAudit();
   };
 
   const removeFile = () => {
     setUploadedFile(null);
     setPreviewUrl(null);
+    setImageDataUrl(null);
     resetAudit();
   };
 
@@ -140,31 +149,43 @@ export default function ContentStudioView({
     setAuditRunning(true);
     setAuditDone(false);
     setAuditProgress(0);
-    setCompliance(null);
-    setComplianceSource(null);
+    setOmcs(null);
 
     if (!stagedCaption || !stagedCaption.trim()) {
       setServerError('Add a caption before running the audit. [MOD3_COMPLIANCE_VALIDATION]');
       setAuditRunning(false);
       return;
     }
+    if (!imageDataUrl) {
+      setServerError('Add an image before running the audit. [MOD3_COMPLIANCE_VALIDATION]');
+      setAuditRunning(false);
+      return;
+    }
 
-    api.evaluateCompliance({
+    // Submodule 3.3 — OMCS audit via the LangGraph omcs_agent. The chosen
+    // caption + image are scored against the visual-guide recommendations
+    // (the approved option's metadata). Business profile gives identity context.
+    const recommendations = approvedMetadata[activeTab] ?? {};
+    const businessProfile: Record<string, unknown> = {
+      business_name: businessName ?? '',
+      business_description: description ?? '',
+      market_category: (categories && categories[0]) || initialTrend || '',
+      target_market: initialMarketId ?? 'korea',
+    };
+
+    api.analyzeOmcs({
       caption: stagedCaption,
-      market: initialMarketId ?? 'korea',
-      mediaName: uploadedFile?.name,
-      mediaSize: uploadedFile?.size,
+      imageUrl: imageDataUrl,
+      businessProfile,
+      recommendations,
     })
-      .then(r => {
-        setCompliance({ score: r.score, aligned: r.aligned ?? [], gaps: r.gaps ?? [] });
-        setComplianceSource(r.source ?? 'fallback');
-      })
+      .then(r => setOmcs(r))
       .catch(e => {
-        logModule3Error('evaluateCompliance', e);
+        logModule3Error('analyzeOmcs', e);
         if (e instanceof ApiError) {
-          setServerError(formatErrorBanner('Compliance evaluation failed.', e));
+          setServerError(formatErrorBanner('OMCS compliance audit failed.', e));
         } else {
-          setServerError('Compliance evaluation failed.');
+          setServerError('OMCS compliance audit failed.');
         }
       });
 
@@ -187,13 +208,29 @@ export default function ContentStudioView({
   };
 
   /**
-   * Approve an option card — stores the approved index + text per platform,
-   * and stages it in the Media Caption Manager for the compliance audit.
+   * Approve an option card — stores the approved index + text + metadata per
+   * platform, stages it in the Media Caption Manager for the compliance audit,
+   * and persists the approval to the backend (required by the creative direction
+   * pipeline: CreativeDirectionService checks for approved content before
+   * generating visual direction).
    */
   const handleApproveOption = (idx: number, text: string) => {
     setApprovedIndices(prev => ({ ...prev, [activeTab]: idx }));
     setApprovedCaptions(prev => ({ ...prev, [activeTab]: text }));
+    // Capture the option's generative metadata as the omcs_agent recommendations.
+    const meta = content?.captions[activeTab]?.optionMetadata?.[idx] ?? null;
+    setApprovedMetadata(prev => ({ ...prev, [activeTab]: meta }));
     setStagedCaption(text);
+    resetAudit();
+
+
+    // Persist to tbl_localized_promotional_content so UC-3.2 (creative
+    // direction) and UC-3.3 (full compliance pipeline) can read approved
+    // captions. Fire-and-forget — approval failure is non-blocking for the UI.
+    if (businessProfileId) {
+      api.approveContent(businessProfileId, initialMarketId ?? 'korea')
+        .catch(e => logModule3Error('approveContent', e));
+    }
   };
 
   // ── Loading / error empty states ─────────────────────────────────────────
@@ -280,10 +317,8 @@ export default function ContentStudioView({
         auditOn={auditOn} setAuditOn={setAuditOn} hasFile={!!uploadedFile}
         auditRunning={auditRunning} auditDone={auditDone} auditProgress={auditProgress}
         onRunAudit={runAudit} onResetAudit={resetAudit}
-        compliance={compliance}
+        omcs={omcs}
         marketCity={content.market.city}
-        complianceSource={complianceSource}
-        fallbackPillLabel={FALLBACK_PILL_LABEL}
         auditSteps={AUDIT_STEPS}
       />
 
