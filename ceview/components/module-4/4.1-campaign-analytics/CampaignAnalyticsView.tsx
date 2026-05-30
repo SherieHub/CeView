@@ -66,7 +66,7 @@ const CampaignAnalyticsView: React.FC = () => {
       <PESComputationBoard weeks={weeks} pesData={metricsData?.pes ?? null} />
 
       {/* ── AI prescriptive report — on-demand with weeks context ─────── */}
-      <AIActionPlanReport weeks={weeks} />
+      <AIActionPlanReport weeks={weeks} current={metricsData?.metrics ?? null} />
     </div>
   );
 };

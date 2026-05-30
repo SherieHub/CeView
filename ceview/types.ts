@@ -375,6 +375,40 @@ export interface PrescriptiveReport {
   recommendedPlatform: string;
 }
 
+/**
+ * PES time-series deep-analysis schema — mirrors the FastAPI pes_report_agent
+ * ReportOutput (snake_case, passed through verbatim by Spring Boot
+ * POST /api/v1/analytics/pes-analysis).
+ */
+export interface PesMetricCondition {
+  metric_name: string;
+  current_status: string;
+  trend: 'up' | 'down' | 'stable' | 'volatile';
+  peak_value: number;
+  low_value: number;
+}
+
+export interface PesRankedWeakness {
+  metric_name: string;
+  rank: number;            // 1 = most urgent / weakest metric
+  weakness_meaning: string;
+  recommendation: string;
+}
+
+export interface PesAnalysisReport {
+  report_data: {
+    metric_conditions: PesMetricCondition[];
+    cross_metric_logic: { relationships: string; insights: string };
+    ranked_weaknesses: PesRankedWeakness[];
+  };
+  metadata: {
+    final_score: number;
+    total_iterations: number;
+    needs_human_review: boolean;
+    warning_message: string;
+  };
+}
+
 /** Combined response for POST /manual — mirrors AnalyticsDtos.ManualIngestResponse. */
 export interface ManualIngestResponse {
   metrics: Metrics;

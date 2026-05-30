@@ -82,8 +82,11 @@ public class PrescriptiveReportController {
     /**
      * PES time-series deep-analysis via the pes_report_agent LangGraph workflow.
      *
-     * <p>Builds a {@code weeks}-length synthetic time-series for the five KPIs
-     * and forwards it to FastAPI {@code /internal/pes-analysis/generate}.
+     * <p>Forwards the caller-supplied {@code metrics_data} time-series (the five
+     * KPI arrays the frontend builds from campaign history) to FastAPI
+     * {@code /internal/pes-analysis/generate}. Only when the caller omits
+     * {@code metrics_data} does it fall back to a synthetic {@code weeks}-length
+     * series so the endpoint still works for ad-hoc/manual calls.
      *
      * <p><b>FR4.26:</b> if FastAPI is unavailable, returns a minimal offline payload.
      */
@@ -94,7 +97,10 @@ public class PrescriptiveReportController {
         int weeks = (body != null && body.get("weeks") instanceof Number n)
                     ? n.intValue() : 4;
 
-        Map<String, Object> timeSeries = metricsSvc.buildTimeSeries(metricsSvc.defaultMetrics(weeks), weeks);
+        // Prefer the frontend-supplied series; synthesize only when absent.
+        Object timeSeries = (body != null && body.get("metrics_data") instanceof Map<?, ?> m && !m.isEmpty())
+                ? m
+                : metricsSvc.buildTimeSeries(metricsSvc.defaultMetrics(weeks), weeks);
 
         try {
             return ai.generatePesAnalysis(Map.of("metrics_data", timeSeries, "weeks", weeks));
