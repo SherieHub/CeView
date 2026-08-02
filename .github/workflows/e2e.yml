@@ -1,0 +1,90 @@
+name: E2E (Playwright, full stack)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    # fastapi-sbert downloads a ~1.1GB HuggingFace model on cold start with no
+    # persistent cache in CI, and docker-compose gates spring-boot on its
+    # health check — this job can take 10+ minutes. Free on this public repo,
+    # but worth knowing before you tune the timeout below.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build Spring Boot jar
+        working-directory: backend/spring-boot
+        run: |
+          chmod +x mvnw
+          ./mvnw -B package -DskipTests
+
+      - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
+        working-directory: backend
+        env:
+          # Repo secret — see docs/DEPLOY_RENDER.md and the repo README for
+          # setup notes. fastapi-transformer hard-fails at startup without a
+          # real key; a placeholder is enough to boot but forecasting calls
+          # that actually reach Groq will fail, which the smoke test doesn't
+          # exercise.
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: docker compose up -d --build
+
+      - name: Wait for backend health checks
+        run: |
+          echo "Waiting for spring-boot on :8080..."
+          timeout 600 bash -c 'until curl -sf http://localhost:8080/actuator/health; do sleep 5; done'
+          echo "Waiting for fastapi-sbert on :8000..."
+          timeout 60 bash -c 'until curl -sf http://localhost:8000/healthz; do sleep 5; done'
+          echo "Waiting for fastapi-transformer on :8001..."
+          timeout 60 bash -c 'until curl -sf http://localhost:8001/healthz; do sleep 5; done'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ceview/package-lock.json
+
+      - name: Build and start frontend
+        working-directory: ceview
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: |
+          npm ci
+          npm run build
+          npm run preview -- --port 3000 --host 0.0.0.0 &
+          timeout 60 bash -c 'until curl -sf http://localhost:3000; do sleep 2; done'
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: e2e
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Tear down backend stack
+        if: always()
+        working-directory: backend
+        run: docker compose down -v

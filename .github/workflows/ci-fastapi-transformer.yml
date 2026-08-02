@@ -1,0 +1,40 @@
+name: CI - fastapi-transformer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/fastapi-transformer/**'
+      - '.github/workflows/ci-fastapi-transformer.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/fastapi-transformer/**'
+      - '.github/workflows/ci-fastapi-transformer.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/fastapi-transformer
+    # gemini_forecaster.py raises RuntimeError at import time if GROQ_API_KEY
+    # is unset (no stub mode — see RUNNING.md). tests/conftest.py also sets a
+    # placeholder as a safety net, but setting it here covers any other entry
+    # point that imports the app. This is never used to make a real API call.
+    env:
+      GROQ_API_KEY: test-placeholder-key-not-real
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/fastapi-transformer/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest tests/ -v

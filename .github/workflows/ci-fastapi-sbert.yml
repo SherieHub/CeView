@@ -1,0 +1,39 @@
+name: CI - fastapi-sbert
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/fastapi-sbert/**'
+      - '.github/workflows/ci-fastapi-sbert.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/fastapi-sbert/**'
+      - '.github/workflows/ci-fastapi-sbert.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/fastapi-sbert
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/fastapi-sbert/requirements*.txt
+
+      # tensorflow-cpu + sentence-transformers make this the slowest install in
+      # the pipeline (several minutes) — acceptable since Actions minutes are
+      # free on this public repo. The integration test mocks model loading
+      # (see tests/integration/test_healthz.py) so it doesn't also download
+      # the ~1.1GB E5 encoder.
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest tests/ -v

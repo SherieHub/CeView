@@ -1,0 +1,36 @@
+name: CI - Spring Boot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/spring-boot/**'
+      - '.github/workflows/ci-spring-boot.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/spring-boot/**'
+      - '.github/workflows/ci-spring-boot.yml'
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/spring-boot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Unit + integration tests (H2, no Postgres needed)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      - name: Build jar
+        run: ./mvnw -B package -DskipTests

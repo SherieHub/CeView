@@ -30,16 +30,23 @@ One command brings up Postgres + Spring Boot + FastAPI together.
 
 ```powershell
 cd backend
-copy .env.example .env       # optional — only needed if you want live Gemini calls
+copy .env.example .env       # optional — only needed if you want live Groq/HF calls
+
 docker-compose up --build
 ```
 
-When you see `Started CeViewApplication` and the FastAPI worker line, the backend is ready.
+Spring Boot's `Dockerfile` builds the jar itself in a Maven stage (multi-stage
+build) — no separate `mvnw package` step needed before `docker-compose up`
+anymore. The first build will be slower since it compiles inside Docker; later
+builds reuse Docker's layer cache unless `pom.xml` or `src/` changed.
+
+When you see `Started CeViewApplication` and the FastAPI worker lines, the backend is ready.
 
 **Health checks:**
 ```powershell
-curl http://localhost:8080/actuator/health    # {"status":"UP"}
-curl http://localhost:8000/healthz            # {"status":"ok"}
+curl http://localhost:8080/actuator/health    # spring-boot        {"status":"UP"}
+curl http://localhost:8000/healthz            # fastapi-sbert      {"status":"ok"}
+curl http://localhost:8001/healthz            # fastapi-transformer {"status":"ok"}
 ```
 
 Stop with `Ctrl+C` then `docker-compose down`.
@@ -50,12 +57,12 @@ Stop with `Ctrl+C` then `docker-compose down`.
 
 ## Path B: Native (no Docker)
 
-Three terminals. Keep all three open while testing.
+Four terminals. Keep all four open while testing.
 
-### 1. FastAPI — terminal 1
+### 1. FastAPI (sbert) — terminal 1
 
 ```powershell
-cd backend\fastapi
+cd backend\fastapi-sbert
 # First time only — install Python deps
 C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
 # Run
@@ -64,7 +71,19 @@ C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app
 
 You should see `Uvicorn running on http://127.0.0.1:8000`. Swagger docs at http://localhost:8000/docs.
 
-### 2. Spring Boot — terminal 2
+### 2. FastAPI (transformer) — terminal 2
+
+```powershell
+cd backend\fastapi-transformer
+# First time only — install Python deps
+C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
+# Run
+C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+```
+
+You should see `Uvicorn running on http://127.0.0.1:8001`. Swagger docs at http://localhost:8001/docs.
+
+### 3. Spring Boot — terminal 3
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot"
@@ -74,7 +93,8 @@ cd backend\spring-boot
 # Run with the H2 profile (no DB required)
 & "$env:JAVA_HOME\bin\java.exe" -jar target\ceview-backend-0.1.0.jar `
     --spring.profiles.active=h2 `
-    --ceview.fastapi.base-url=http://127.0.0.1:8000 `
+    --ceview.fastapi.sbert.base-url=http://127.0.0.1:8000 `
+    --ceview.fastapi.transformer.base-url=http://127.0.0.1:8001 `
     --ceview.cors.allowed-origins=http://localhost:3000
 ```
 
@@ -82,7 +102,7 @@ Wait for `Started CeViewApplication in N seconds`. Health at http://localhost:80
 
 H2 console: http://localhost:8080/h2 — JDBC URL `jdbc:h2:mem:ceview`, user `sa`, no password.
 
-### 3. Frontend — terminal 3
+### 4. Frontend — terminal 4
 
 ```powershell
 cd ceview
@@ -132,19 +152,20 @@ See `backend/CONTRACT.md` for the full endpoint table.
 
 ---
 
-## Optional: enable live Gemini calls
+## AI keys: one required, one optional
 
-The backend defaults to **mocked** AI responses so it runs offline. To use the real Gemini API:
+- **`GROQ_API_KEY` is REQUIRED for `fastapi-transformer`.** Unlike `fastapi-sbert`, it does not degrade gracefully — the process raises `RuntimeError` and exits immediately at startup if this is unset (`app/services/gemini_forecaster.py`). The service will not come up at all without a valid key. Get one from https://console.groq.com/keys.
+- **`GROQ_API_KEY` is optional for `fastapi-sbert`.** Without it, `app/services/gemini_client.py` logs a warning and every AI call (captions, prescriptive reports) returns a deterministic fallback tagged `"source": "fallback"` instead of `"source": "groq"`.
+- **`HF_TOKEN`** — optional, used by `fastapi-sbert` for downloading the SBERT/E5 encoder from HuggingFace. Get a token from https://huggingface.co/settings/tokens.
 
-1. Get a key from https://aistudio.google.com/app/apikey
-2. Set environment variables before launching FastAPI (or in `backend/.env` for Path A):
+Set before launching FastAPI (or in `backend/.env` for Path A — `docker-compose.yml` already reads `GROQ_API_KEY`/`HF_TOKEN` from it):
 
-   ```powershell
-   $env:GEMINI_API_KEY = "your-key-here"
-   $env:ENABLE_GEMINI = "true"
-   ```
+```powershell
+$env:GROQ_API_KEY = "your-groq-key-here"   # required to run fastapi-transformer at all
+$env:HF_TOKEN = "your-hf-token-here"       # optional
+```
 
-3. Restart FastAPI. Caption generation and prescriptive report endpoints will now call Gemini; everything else stays on stubs.
+Without `GROQ_API_KEY` you can still run `spring-boot` + `fastapi-sbert` + the frontend, but any view that hits `fastapi-transformer` (Market Radar forecasting) will fail — that container won't start.
 
 ---
 
@@ -170,6 +191,8 @@ Get-Process node   | Stop-Process -Force
 | Symptom | Fix |
 |---|---|
 | `docker-compose` says *Virtualization support not detected* | Enable Intel VT-x / AMD-V in BIOS, or use Path B. |
+| `mvnw.cmd` fails with *"The system cannot find the file ...maven-wrapper.properties"* (Path B only — Path A builds inside Docker and doesn't need `mvnw.cmd`) | The `.mvn/wrapper/` folder is missing from the checkout. Regenerate it with an installed Maven (`mvn -N wrapper:wrapper -Dmaven=3.9.9`), or install Maven directly (`winget install Apache.Maven`) and run `mvn -B package -DskipTests` instead of `mvnw.cmd`. |
+| `ceview-fastapi-transformer` container exits immediately / `docker-compose ps` doesn't list it | It crashes on startup with `RuntimeError: GROQ_API_KEY environment variable is not set` — this service has no stub mode. Set `GROQ_API_KEY` in `backend/.env` (Path A) or as an env var before launching it (Path B), then restart just that service: `docker-compose up -d --build fastapi-transformer`. |
 | Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3000`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2. Use `--spring.profiles.active=h2`. |
 | `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
@@ -189,11 +212,14 @@ CeView/
 ├── backend/
 │   ├── docker-compose.yml        # Path A
 │   ├── .env.example
-│   ├── spring-boot/              # orchestrator on :8080
+│   ├── spring-boot/               # orchestrator on :8080
 │   │   ├── mvnw, mvnw.cmd
 │   │   ├── pom.xml
 │   │   └── src/main/...
-│   └── fastapi/                  # AI microservice on :8000
+│   ├── fastapi-sbert/             # SBERT/Gemini NLP microservice on :8000
+│   │   ├── requirements.txt
+│   │   └── app/
+│   └── fastapi-transformer/       # forecasting microservice on :8001
 │       ├── requirements.txt
 │       └── app/
 └── RUNNING.md                    # this file

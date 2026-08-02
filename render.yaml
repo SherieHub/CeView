@@ -1,0 +1,93 @@
+# Render Blueprint — declares the whole CeView stack so it can be created in
+# one pass from the Render dashboard ("New" -> "Blueprint", point at this
+# repo). Optional convenience on top of the manual steps in
+# docs/DEPLOY_RENDER.md; read that guide first, especially the free-tier
+# caveats section, before deploying this.
+#
+# `sync: false` env vars are secrets Render will prompt for during blueprint
+# creation instead of storing them in this file.
+
+databases:
+  - name: ceview-db
+    databaseName: ceview
+    user: ceview
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: ceview-spring-boot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/spring-boot/Dockerfile
+    dockerContext: ./backend/spring-boot
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      # Render's fromDatabase connectionString is postgres://..., not the
+      # jdbc:postgresql://... URL Spring Data expects — build
+      # SPRING_DATASOURCE_URL manually from the database's host/port/name
+      # shown on its Render dashboard page (see docs/DEPLOY_RENDER.md step 2).
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: ceview-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: ceview-db
+          property: password
+      - key: FASTAPI_SBERT_BASE_URL
+        fromService:
+          type: web
+          name: ceview-fastapi-sbert
+          property: hostport
+      - key: FASTAPI_TRANSFORMER_BASE_URL
+        fromService:
+          type: web
+          name: ceview-fastapi-transformer
+          property: hostport
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+  - type: web
+    name: ceview-fastapi-sbert
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/fastapi-sbert/Dockerfile
+    dockerContext: ./backend/fastapi-sbert
+    healthCheckPath: /healthz
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ceview-db
+          property: connectionString
+
+  - type: web
+    name: ceview-fastapi-transformer
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/fastapi-transformer/Dockerfile
+    dockerContext: ./backend/fastapi-transformer
+    healthCheckPath: /healthz
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+
+  - type: web
+    name: ceview-frontend
+    runtime: static
+    buildCommand: cd ceview && npm install && npm run build
+    staticPublishPath: ./ceview/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: ceview-spring-boot
+          property: hostport
