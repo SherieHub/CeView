@@ -30,6 +30,9 @@ public class CampaignRecord {
     @Column(name = "campaign_id", updatable = false, nullable = false)
     private UUID id;
 
+    @Column(name = "business_profile_id")
+    private UUID businessProfileId;
+
     // ── Raw operator inputs ───────────────────────────────────────────────────
 
     @Column(name = "impressions", nullable = false)
@@ -138,7 +141,9 @@ public class CampaignRecord {
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    public UUID    getId()           { return id;           }
+    public UUID    getId()                { return id;                }
+    public UUID    getBusinessProfileId() { return businessProfileId; }
+    public void    setBusinessProfileId(UUID businessProfileId) { this.businessProfileId = businessProfileId; }
     public long    getImpressions()  { return impressions;  }
     public long    getClicks()       { return clicks;       }
     public double  getAdSpend()      { return adSpend;      }
