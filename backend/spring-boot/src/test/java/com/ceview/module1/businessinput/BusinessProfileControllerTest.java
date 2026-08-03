@@ -130,7 +130,9 @@ class BusinessProfileControllerTest {
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.error").value("forbidden"))
+            .andExpect(jsonPath("$.message").value("business profile belongs to a different operator"));
 
         BusinessProfile stillB = profileRepo.findById(ownedByB.getBusinessProfileId()).orElseThrow();
         assertEquals("Operator B's Business", stillB.getBusinessName(), "profile must not be mutated");
@@ -138,8 +140,26 @@ class BusinessProfileControllerTest {
     }
 
     @Test
-    void getWithoutTokenIsUnauthorized() throws Exception {
-        mvc.perform(get("/api/v1/business-profile"))
-            .andExpect(status().isUnauthorized());
+    void putAdoptsAnOwnerlessProfileForTheAuthenticatedOperator() throws Exception {
+        // A null userId is an orphaned/pre-auth row, not another operator's data — by
+        // design it's treated as adoptable by whichever authenticated operator saves
+        // against its (unguessable) businessProfileId. See BusinessProfileController#save.
+        BusinessProfile ownerless = new BusinessProfile();
+        ownerless.setUserId(null);
+        ownerless.setBusinessName("Ownerless Business");
+        profileRepo.save(ownerless);
+
+        var dto = new BusinessProfileDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
+            List.of(), "desc", "uvp", null, null);
+
+        mvc.perform(put("/api/v1/business-profile")
+                .header("Authorization", "Bearer " + tokenA)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.businessName").value("Adopted Business"));
+
+        BusinessProfile reloaded = profileRepo.findById(ownerless.getBusinessProfileId()).orElseThrow();
+        assertEquals(operatorA, reloaded.getUserId(), "ownerless profile should now belong to the saving operator");
     }
 }

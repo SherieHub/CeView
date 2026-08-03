@@ -50,6 +50,13 @@ public class BusinessProfileController {
             if (p.getUserId() != null && !p.getUserId().equals(operatorId)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "business profile belongs to a different operator");
             }
+            // A null userId means an orphaned/pre-auth row (user_id has always been
+            // nullable) rather than another operator's data, so it's fair game to adopt:
+            // businessProfileId is an unguessable UUID, so reaching this branch requires
+            // already knowing the id. Logged so an unexpected adoption is traceable.
+            if (p.getUserId() == null) {
+                log.warn("adopting ownerless business profile {} into operator {}", p.getBusinessProfileId(), operatorId);
+            }
         });
         var p = existing.orElseGet(BusinessProfile::new);
         p.setUserId(operatorId);
