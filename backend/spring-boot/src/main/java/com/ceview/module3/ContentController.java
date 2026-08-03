@@ -1,5 +1,6 @@
 package com.ceview.module3;
 
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module3.dto.ContentDtos.ContentResponseDto;
 import com.ceview.module3.submodule31.ContentApprovalService;
 import com.ceview.module3.submodule31.ContentGenerationService;
@@ -19,6 +20,10 @@ import java.util.UUID;
  *                  retrieves business profile + Module 2 forecast context from DB (FR3.1, FR3.4),
  *                  persists all generated content rows (FR3.10).
  * POST /approve  — marks generated content as operator-approved (FR3.10 / UC-3.1 step 14).
+ *
+ * Ownership: profileId — optional on /generate, required on /approve — is derived
+ * from or validated against {@link CurrentBusinessProfile}, which resolves the
+ * caller's own profile from the JWT. See Task 8 (mirrors Task 7 for Module 2).
  */
 @RestController
 @RequestMapping("/api/v1/content")
@@ -28,11 +33,14 @@ public class ContentController {
 
     private final ContentGenerationService generationService;
     private final ContentApprovalService approvalService;
+    private final CurrentBusinessProfile currentBusinessProfile;
 
     public ContentController(ContentGenerationService generationService,
-                             ContentApprovalService approvalService) {
+                             ContentApprovalService approvalService,
+                             CurrentBusinessProfile currentBusinessProfile) {
         this.generationService = generationService;
         this.approvalService   = approvalService;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     public record GenerateRequest(
@@ -51,9 +59,10 @@ public class ContentController {
     public ContentResponseDto generate(
             @RequestBody GenerateRequest req,
             @RequestParam(required = false) UUID profileId) {
-        log.info("content.generate received market={} profileId={}", req.market(), profileId);
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
+        log.info("content.generate received market={} profileId={}", req.market(), resolvedProfileId);
         return generationService.generate(
-                profileId,
+                resolvedProfileId,
                 req.market(),
                 req.businessName(),
                 req.description(),
@@ -70,10 +79,11 @@ public class ContentController {
     public ResponseEntity<Map<String, Object>> approve(
             @RequestParam UUID profileId,
             @RequestBody Map<String, String> body) {
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String market = body.getOrDefault("market", "korea");
-        log.info("content.approve received profileId={} market={}", profileId, market);
+        log.info("content.approve received profileId={} market={}", resolvedProfileId, market);
 
-        List<UUID> ids = approvalService.approveForMarket(profileId, market);
+        List<UUID> ids = approvalService.approveForMarket(resolvedProfileId, market);
 
         if (ids.isEmpty()) {
             return ResponseEntity.notFound().build();
