@@ -52,10 +52,10 @@ INSERT INTO tbl_campaign_records (
     created_at, updated_at
 ) VALUES
 -- Week 1 · 2026-03-02 — Post launches — broad snorkel/freedive-curious audience, cold-start CTR.
---   ROAS=2.67  CTR=1.78  CR=3.12  CAC=300.0  CPC=3.75  PES≈0.4 (Fair Performance)
+--   ROAS=2.67  CTR=1.78  CR=3.44  CAC=300.0  CPC=3.75  PES≈0.4027 (Fair Performance, cold start)
     ('20000000-0000-0000-0000-000000000001',
-     18000, 320, 1200.00, 3200.00, 22, 10, 4,
-     1.78, 3.75, 3.12, 2.67, 300.0,
+     18000, 320, 1200.00, 3200.00, 22, 11, 4,
+     1.78, 3.75, 3.44, 2.67, 300.0,
      0.4, 'Fair Performance',
      4, '2026-03-02', '2026-03-08',
      '2026-03-02 09:00:00+08', '2026-03-02 09:45:00+08'),
@@ -236,11 +236,11 @@ INSERT INTO tbl_campaign_records (
     created_at, updated_at
 ) VALUES
 -- Week 1 · 2026-03-16 — First sandbar-tour post — small local audience, cold-start CTR.
---   ROAS=2.67  CTR=1.83  CR=3.18  CAC=300.0  CPC=4.09  PES≈0.4 (Fair Performance)
+--   ROAS=2.67  CTR=1.83  CR=3.64  CAC=300.0  CPC=4.09  PES≈0.4075 (Fair Performance, cold start)
     ('20000000-0000-0000-0000-000000000003',
-     12000, 220, 900.00, 2400.00, 15, 7, 3,
-     1.83, 4.09, 3.18, 2.67, 300.0,
-     0.4, 'Fair Performance',
+     12000, 220, 900.00, 2400.00, 15, 8, 3,
+     1.83, 4.09, 3.64, 2.67, 300.0,
+     0.41, 'Fair Performance',
      4, '2026-03-16', '2026-03-22',
      '2026-03-16 09:00:00+08', '2026-03-16 09:45:00+08'),
 
