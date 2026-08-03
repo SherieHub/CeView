@@ -57,4 +57,16 @@ class SecurityLockdownVerificationTest {
         mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk());
     }
+
+    @Test
+    void protectedModuleEndpointWithGarbageTokenReturns401WithJsonBody() throws Exception {
+        // JwtAuthenticationFilter swallows parse failures and leaves the context
+        // anonymous; this verifies that path still falls through to our JSON
+        // entry point rather than leaking a stack trace or a non-JSON response.
+        mvc.perform(get("/api/v1/business-profile")
+                .header("Authorization", "Bearer not-a-real-jwt"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.error").value("authentication required"));
+    }
 }
