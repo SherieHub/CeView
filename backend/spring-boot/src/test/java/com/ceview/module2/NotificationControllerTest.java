@@ -84,4 +84,17 @@ class NotificationControllerTest {
         mvc.perform(get("/api/v1/notifications"))
             .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void operatorWithNoBusinessProfileGets409() throws Exception {
+        UUID operatorWithoutProfile = UUID.randomUUID();
+        String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
+
+        mvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + tokenWithoutProfile))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.status").value(409))
+            .andExpect(jsonPath("$.error").value("request_failed"))
+            .andExpect(jsonPath("$.message").value(
+                    "operator " + operatorWithoutProfile + " has no business profile yet"));
+    }
 }
