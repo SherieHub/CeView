@@ -56,12 +56,12 @@ public class CreativeDirectionController {
         // URL shape unchanged (frontend routing change is a later task) — but the
         // path-variable profileId is now validated against the JWT-resolved profile
         // instead of trusted outright.
-        currentBusinessProfile.resolveOrValidate(profileId);
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String resolvedMarket = market == null ? "korea" : market;
         log.info("creative.generate received profileId={} market={}", profileId, resolvedMarket);
 
         try {
-            CreativeDirectionDto dto = directionService.generate(profileId, resolvedMarket);
+            CreativeDirectionDto dto = directionService.generate(resolvedProfileId, resolvedMarket);
             return ResponseEntity.ok(dto);
         } catch (IllegalStateException e) {
             if ("missing_dependency".equals(e.getMessage())) {
@@ -83,11 +83,11 @@ public class CreativeDirectionController {
     public ResponseEntity<Map<String, Object>> approve(
             @PathVariable UUID profileId,
             @RequestParam(required = false) String market) {
-        currentBusinessProfile.resolveOrValidate(profileId);
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String resolvedMarket = market == null ? "korea" : market;
         log.info("creative.approve received profileId={} market={}", profileId, resolvedMarket);
 
-        Optional<UUID> approvedId = approvalService.approveLatest(profileId, resolvedMarket);
+        Optional<UUID> approvedId = approvalService.approveLatest(resolvedProfileId, resolvedMarket);
 
         if (approvedId.isEmpty()) {
             return ResponseEntity.notFound().build();
