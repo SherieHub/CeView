@@ -64,9 +64,9 @@ public class ForecastingController {
         // URL shape unchanged (frontend routing change is a later task) — but the
         // path-variable profileId is now validated against the JWT-resolved profile
         // instead of trusted outright.
-        currentBusinessProfile.resolveOrValidate(profileId);
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.ensureFreshForecast(profileId, maxAgeHours);
+            MarketsResponse result = forecastingService.ensureFreshForecast(resolvedProfileId, maxAgeHours);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
@@ -84,9 +84,9 @@ public class ForecastingController {
     /** Re-analyze for a specific profile (the "Refresh Forecast" CTA). */
     @PostMapping("/analyze/{profileId}")
     public ResponseEntity<?> analyze(@PathVariable UUID profileId) {
-        currentBusinessProfile.resolveOrValidate(profileId);
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.forecastForProfile(profileId, true);
+            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
