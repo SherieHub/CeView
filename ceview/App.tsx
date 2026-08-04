@@ -5,6 +5,8 @@ import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 import { api } from './services/apiClient';
 import { OPERATOR_ID } from './services/identity';
+import { useAuth } from './services/auth';
+import AuthGate from './components/auth/AuthGate';
 
 import BusinessProfile from './components/module-1/1.1-business-input/BusinessProfile';
 import UniquenessCalibrationView from './components/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
@@ -36,6 +38,7 @@ export interface ProfileSetters {
 }
 
 const App: React.FC = () => {
+  const { isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -74,6 +77,10 @@ const App: React.FC = () => {
     setDescription, setUvp, setImagePreview, setUniquenessScore,
   };
 
+  if (!isAuthenticated) {
+    return <AuthGate />;
+  }
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: COLORS.OFF_WHITE }}>
       {/* Mobile top bar */}
@@ -96,6 +103,7 @@ const App: React.FC = () => {
         setIsCollapsed={setIsCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
+        onLogout={logout}
       />
 
       <main
