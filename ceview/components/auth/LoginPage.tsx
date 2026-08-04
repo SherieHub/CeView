@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LogIn, Mail, Lock } from 'lucide-react';
 import { COLORS } from '../../constants';
+import { ApiError } from '../../services/apiClient';
 import { useAuth } from '../../services/auth';
 import PrimaryButton from '../shared/PrimaryButton';
 import ServerErrorBanner from '../shared/ServerErrorBanner';
@@ -22,8 +23,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
     setIsLoading(true);
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err?.message || 'Invalid credentials. Please try again.');
+    } catch (err) {
+      const ae = err instanceof ApiError ? err : null;
+      setError(ae?.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +65,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>
@@ -82,7 +84,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>
