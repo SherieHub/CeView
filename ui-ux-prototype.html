@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en" data-view="login">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CeView — UI/UX Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --brand-primary:#0F2854;
+  --brand-primary-hover:#183C7B;
+  --brand-accent:#F4A216;
+  --brand-accent-strong:#D48E15;
+  --brand-accent-soft:#FFB941;
+  --surface-page:#FDFBF7;
+  --surface-panel:#FFFFFF;
+  --surface-sand:#F5E5D1;
+  --text-primary:#0A2342;
+  --text-muted:#64748B;
+  --state-critical:#A70000;
+  --state-critical-alt:#ED3F27;
+  --state-warning-bg:#FFF5DF;
+  --state-success-bg:#E6F4EE;
+  --state-success-text:#0F7A4E;
+  --border-subtle:#C7D3E2;
+  --border-strong:#98A7B9;
+
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-full:999px;
+  --shadow-raised:0 1px 3px rgba(15,40,84,0.10), 0 1px 2px rgba(15,40,84,0.06);
+  --shadow-overlay:0 8px 24px rgba(15,40,84,0.20);
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px; --sp-16:64px;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Plus Jakarta Sans', sans-serif;
+  background:var(--surface-page);
+  color:var(--text-primary);
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior:none;
+}
+h1,h2,h3,p{margin:0;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+::selection{background:var(--brand-accent-soft); color:var(--text-primary);}
+
+.h-display{font-size:28px;line-height:34px;font-weight:800;}
+.h1{font-size:22px;line-height:28px;font-weight:700;}
+.h2{font-size:18px;line-height:24px;font-weight:700;}
+.h3{font-size:16px;line-height:22px;font-weight:600;}
+.body-txt{font-size:14px;line-height:20px;font-weight:400;}
+.body-emphasis{font-size:14px;line-height:20px;font-weight:600;}
+.caption{font-size:12px;line-height:16px;font-weight:500;color:var(--text-muted);}
+.cta-label{font-size:12px;line-height:16px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;}
+
+@media(min-width:1024px){
+  .h-display{font-size:40px;line-height:48px;}
+  .h1{font-size:30px;line-height:38px;}
+  .h2{font-size:22px;line-height:30px;}
+  .h3{font-size:18px;line-height:26px;}
+  .body-txt,.body-emphasis{font-size:15px;line-height:22px;}
+  .cta-label{font-size:13px;line-height:18px;}
+}
+
+/* ============ BUTTON ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--radius-sm); border:1.5px solid transparent;
+  padding:0 16px; height:44px; white-space:nowrap;
+  transition:background .15s ease, border-color .15s ease, opacity .15s ease, transform .05s ease;
+  font-weight:800; text-transform:uppercase; letter-spacing:.04em; font-size:12px;
+}
+.btn:active{transform:translateY(1px);}
+.btn svg{width:16px;height:16px;flex-shrink:0;}
+.btn-sm{height:32px;padding:0 12px;font-size:11px;}
+.btn-lg{height:52px;padding:0 24px;font-size:13px;}
+.btn-primary{background:var(--brand-primary); color:#fff;}
+.btn-primary:hover{background:var(--brand-primary-hover);}
+.btn-secondary{background:var(--brand-accent); color:var(--brand-primary);}
+.btn-secondary:hover{background:var(--brand-accent-strong); color:#fff;}
+.btn-ghost{background:transparent; color:var(--brand-primary); border-color:var(--border-subtle);}
+.btn-ghost:hover{background:rgba(15,40,84,0.05); border-color:var(--border-strong);}
+.btn-destructive{background:transparent; color:var(--state-critical); border-color:var(--state-critical);}
+.btn-destructive:hover{background:var(--state-critical); color:#fff;}
+.btn[disabled], .btn.is-disabled{opacity:.4; pointer-events:none;}
+.btn-block{width:100%;}
+.btn.is-loading{position:relative; color:transparent !important;}
+.btn.is-loading::after{
+  content:''; position:absolute; width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.5); border-top-color:#fff; animation:spin .7s linear infinite;
+}
+.btn-ghost.is-loading::after{border:2px solid rgba(15,40,84,.3); border-top-color:var(--brand-primary);}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ============ CARD ============ */
+.card{
+  background:var(--surface-panel); border-radius:var(--radius-md);
+  box-shadow:var(--shadow-raised); padding:16px;
+}
+@media(min-width:1024px){.card{padding:24px;}}
+.card-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+
+/* ============ FORM ============ */
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
+.field label{font-size:13px; font-weight:600; color:var(--text-primary);}
+.field .opt{color:var(--text-muted); font-weight:400;}
+.field input, .field select, .field textarea{
+  min-height:44px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm);
+  background:#fff; padding:10px 12px; font-size:14px; color:var(--text-primary); outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.field textarea{min-height:88px; resize:vertical;}
+.field input:focus, .field select:focus, .field textarea:focus{
+  border-color:var(--border-strong); box-shadow:0 0 0 3px rgba(15,40,84,0.12);
+}
+.field.has-error input{border-color:var(--state-critical);}
+.field .err{color:var(--state-critical); font-size:12px; display:none;}
+.field.has-error .err{display:block;}
+.field .charcount{align-self:flex-end; font-size:11px; color:var(--text-muted);}
+
+/* ============ TOGGLE ============ */
+.toggle-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 0;}
+.toggle-row .lbl{display:flex; flex-direction:column; gap:2px;}
+.switch{position:relative; width:44px; height:26px; border-radius:999px; background:#D5DBE3; flex-shrink:0; border:none; padding:0; cursor:pointer; transition:background .15s;}
+.switch::after{content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s;}
+.switch.on{background:var(--brand-primary);}
+.switch.on::after{transform:translateX(18px); box-shadow:0 0 0 2px var(--brand-accent);}
+
+/* ============ CHIP / BADGE ============ */
+.badge{display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:500;}
+.badge-ai{background:#FFF3DC; color:var(--brand-accent-strong);}
+.badge-published{background:var(--state-success-bg); color:var(--state-success-text);}
+.badge-draft{background:#E4E9F2; color:var(--brand-primary);}
+.badge-alert{background:#FBE1DE; color:var(--state-critical);}
+.badge-scheduled{background:#EFE6FF; color:#6836C6;}
+
+.chip{
+  display:inline-flex; align-items:center; gap:6px; border-radius:999px; border:1px solid var(--border-subtle);
+  padding:8px 14px; font-size:13px; font-weight:600; background:#fff; color:var(--text-primary); cursor:pointer;
+  transition:all .15s ease; white-space:nowrap;
+}
+.chip.selected{background:var(--brand-primary); border-color:var(--brand-primary); color:#fff;}
+.chip:hover:not(.selected){border-color:var(--border-strong);}
+
+/* ============ GAUGE ============ */
+.gauge{position:relative; width:120px; height:120px;}
+.gauge svg{transform:rotate(-90deg);}
+.gauge .val{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:700; color:var(--brand-primary);}
+.progress-linear{height:8px; border-radius:999px; background:#E4E9F2; overflow:hidden;}
+.progress-linear > i{display:block; height:100%; background:var(--brand-accent); border-radius:999px; transition:width .4s ease;}
+
+/* ============ MODAL / DRAWER / SCRIM ============ */
+.scrim{position:fixed; inset:0; background:rgba(15,40,84,0.4); z-index:40; opacity:0; pointer-events:none; transition:opacity .2s ease;}
+.scrim.show{opacity:1; pointer-events:auto;}
+.modal{
+  position:fixed; z-index:41; background:#fff; border-radius:var(--radius-lg); box-shadow:var(--shadow-overlay);
+  left:50%; top:50%; transform:translate(-50%,-46%) scale(.97); width:min(560px,92vw); max-height:86vh; overflow:auto;
+  opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+}
+.modal.show{opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1);}
+@media(max-width:639px){
+  .modal{left:0;top:auto;bottom:0;transform:translateY(20px); width:100%; max-height:92vh; border-radius:16px 16px 0 0;}
+  .modal.show{transform:translateY(0);}
+}
+.modal-hd{display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--border-subtle); position:sticky; top:0; background:#fff;}
+.modal-bd{padding:24px;}
+.close-x{background:none;border:none;color:var(--text-muted);display:flex;padding:4px;border-radius:8px;}
+.close-x:hover{background:#F1F4F8;}
+
+.drawer{
+  position:fixed; z-index:41; background:#fff; box-shadow:var(--shadow-overlay);
+  top:0; right:0; height:100%; width:420px; max-width:92vw;
+  transform:translateX(100%); transition:transform .25s ease; overflow:auto;
+}
+.drawer.show{transform:translateX(0);}
+@media(max-width:767px){
+  .drawer{top:auto; bottom:0; right:0; width:100%; height:auto; max-height:85vh; border-radius:16px 16px 0 0; transform:translateY(100%);}
+  .drawer.show{transform:translateY(0);}
+  .drawer .drag-handle{width:40px;height:4px;background:var(--border-subtle);border-radius:999px;margin:10px auto 0;}
+}
+.drawer-hd{position:sticky; top:0; background:#fff; padding:16px 20px; border-bottom:1px solid var(--border-subtle); z-index:2;}
+.drawer-bd{padding:20px;}
+
+/* ============ TOAST ============ */
+.toast-wrap{position:fixed; z-index:60; bottom:88px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; align-items:center;}
+@media(min-width:1024px){.toast-wrap{left:auto; right:24px; bottom:24px; transform:none; align-items:flex-end;}}
+.toast{
+  background:var(--brand-primary); color:#fff; padding:12px 18px; border-radius:var(--radius-sm); box-shadow:var(--shadow-overlay);
+  display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600;
+  animation:toast-in .25s ease, toast-out .25s ease 3.6s forwards;
+}
+@keyframes toast-in{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+@keyframes toast-out{to{opacity:0; transform:translateY(-6px);}}
+.toast svg{color:var(--brand-accent-soft); width:16px;height:16px;flex-shrink:0;}
+
+.banner{display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:var(--radius-sm); border-left:4px solid; font-size:13px; margin-bottom:16px;}
+.banner-error{background:#FDEDEC; border-color:var(--state-critical); color:var(--state-critical);}
+.banner-warning{background:var(--state-warning-bg); border-color:var(--state-critical-alt); color:#8A4B0B;}
+.banner-success{background:var(--state-success-bg); border-color:var(--state-success-text); color:var(--state-success-text);}
+.banner-info{background:#EAF0FB; border-color:var(--brand-primary); color:var(--brand-primary);}
+.banner .close-x{margin-left:auto;}
+
+/* ============ APP SHELL ============ */
+.app-shell{display:none; min-height:100vh;}
+html[data-view]:not([data-view="login"]):not([data-view="onboarding"]) .app-shell{display:flex;}
+html[data-view="login"] #view-login{display:flex;}
+html[data-view="onboarding"] #view-onboarding{display:block;}
+#view-login, #view-onboarding{display:none;}
+
+.sidebar{
+  display:none; flex-direction:column; width:240px; background:var(--brand-primary); color:#fff; flex-shrink:0;
+  padding:20px 0; transition:width .2s ease;
+}
+@media(min-width:1024px){.sidebar{display:flex;}}
+.sidebar.collapsed{width:72px;}
+.sb-brand{display:flex; align-items:center; gap:10px; padding:0 20px 24px; }
+.sb-brand .mark{width:32px;height:32px;border-radius:8px;background:var(--brand-accent);display:flex;align-items:center;justify-content:center;color:var(--brand-primary);font-weight:800; flex-shrink:0;}
+.sb-brand .word{font-weight:800; font-size:17px; white-space:nowrap;}
+.sidebar.collapsed .word, .sidebar.collapsed .sb-biz{display:none;}
+.sb-nav{display:flex; flex-direction:column; gap:2px; padding:0 12px; flex:1;}
+.sb-item{
+  display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:#B9C5DA;
+  text-decoration:none; position:relative; font-size:14px; font-weight:600; border:none; background:none; width:100%; text-align:left;
+}
+.sb-item svg{width:20px;height:20px; flex-shrink:0;}
+.sb-item:hover{background:rgba(255,255,255,0.06); color:#fff;}
+.sb-item.active{background:rgba(255,255,255,0.1); color:#fff;}
+.sb-item.active::before{content:'';position:absolute; left:-12px; top:8px; bottom:8px; width:3px; background:var(--brand-accent); border-radius:0 4px 4px 0;}
+.sb-item .dot{margin-left:auto; width:8px;height:8px;border-radius:50%; background:var(--brand-accent);}
+.sb-item .count{margin-left:auto; background:var(--brand-accent); color:var(--brand-primary); font-size:11px; font-weight:800; min-width:18px; height:18px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 5px;}
+.sb-foot{padding:12px; border-top:1px solid rgba(255,255,255,.12); margin-top:8px;}
+.sb-collapse{display:flex; align-items:center; gap:10px; color:#B9C5DA; background:none;border:none;padding:10px 12px;width:100%;border-radius:10px;font-size:13px;font-weight:600;}
+.sb-collapse:hover{background:rgba(255,255,255,0.06); color:#fff;}
+
+.main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--surface-panel);
+  border-bottom:1px solid var(--border-subtle); position:sticky; top:0; z-index:20;
+}
+@media(min-width:1024px){.topbar{padding:16px 32px;}}
+.topbar-biz{display:flex; align-items:center; gap:10px;}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--surface-sand);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--brand-primary); flex-shrink:0;}
+.bell-btn{position:relative; background:none;border:none; color:var(--brand-primary); padding:8px; border-radius:10px;}
+.bell-btn:hover{background:#F1F4F8;}
+.bell-dot{position:absolute; top:6px; right:6px; width:8px;height:8px;border-radius:50%; background:var(--brand-accent); border:2px solid #fff;}
+
+.screen{padding:16px; max-width:1440px; margin:0 auto; width:100%; padding-bottom:96px;}
+@media(min-width:1024px){.screen{padding:32px; padding-bottom:32px;}}
+.screen-hd{margin-bottom:24px;}
+.screen-hd .kicker{color:var(--brand-accent-strong); font-weight:700;}
+
+.bottom-tabs{
+  display:flex; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border-subtle);
+  z-index:30; padding-bottom:env(safe-area-inset-bottom);
+}
+@media(min-width:1024px){.bottom-tabs{display:none;}}
+.bt-item{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 8px; background:none; border:none;
+  color:var(--text-muted); position:relative;
+}
+.bt-item svg{width:22px;height:22px;}
+.bt-item.active{color:var(--brand-primary);}
+.bt-item .lbl{font-size:10px; font-weight:700; display:none;}
+.bt-item.active .lbl{display:block;}
+.bt-item .dot{position:absolute; top:6px; right:calc(50% - 16px); width:8px;height:8px;border-radius:50%;background:var(--brand-accent); border:2px solid #fff;}
+
+.grid-2{display:grid; grid-template-columns:1fr; gap:16px;}
+@media(min-width:1024px){.grid-2{grid-template-columns:1fr 1fr; gap:24px;}}
+
+.hscroll{display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch;}
+.hscroll::-webkit-scrollbar{height:6px;}
+.hscroll::-webkit-scrollbar-thumb{background:var(--border-subtle); border-radius:99px;}
+
+.sparkline{width:100%; height:32px;}
+
+.empty-state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:48px 16px; color:var(--text-muted);}
+.empty-state .ic{width:56px;height:56px;border-radius:50%;background:var(--surface-sand); display:flex;align-items:center;justify-content:center; color:var(--brand-accent-strong);}
+
+.skeleton{background:linear-gradient(90deg,#EEF1F5 25%,#F7F9FB 37%,#EEF1F5 63%); background-size:400% 100%; animation:sk 1.4s ease infinite; border-radius:8px;}
+@keyframes sk{0%{background-position:100% 0;}100%{background-position:0 0;}}
+
+.kanban{display:grid; grid-template-columns:1fr; gap:16px;}
+@media(min-width:900px){.kanban{grid-template-columns:repeat(3,1fr);}}
+.kanban-col-hd{display:flex;align-items:center;justify-content:space-between; margin-bottom:10px;}
+.kanban-col{background:#F3F1EA; border-radius:var(--radius-md); padding:12px; min-height:120px;}
+.post-card{background:#fff; border-radius:10px; padding:10px; box-shadow:var(--shadow-raised); margin-bottom:10px; display:flex; gap:10px; cursor:grab;}
+.post-thumb{width:44px;height:44px;border-radius:8px;background:var(--surface-sand); flex-shrink:0; display:flex;align-items:center;justify-content:center;color:var(--brand-accent-strong);}
+
+/* ============ LOGIN ============ */
+#view-login{min-height:100vh;}
+.login-wrap{flex:1; display:flex; align-items:center; justify-content:center; background:var(--surface-sand); padding:24px;}
+.login-card{width:100%; max-width:400px;}
+.login-logo{display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:28px;}
+.login-logo .mark{width:40px;height:40px;border-radius:10px;background:var(--brand-primary);display:flex;align-items:center;justify-content:center;color:var(--brand-accent);font-weight:800;font-size:18px;}
+.login-tagline{text-align:center; color:var(--text-muted); margin-bottom:28px;}
+.login-tabs{display:flex; background:#fff; border-radius:999px; padding:4px; margin-bottom:24px; border:1px solid var(--border-subtle);}
+.login-tab{flex:1; text-align:center; padding:9px; border-radius:999px; font-weight:700; font-size:13px; border:none; background:none; color:var(--text-muted);}
+.login-tab.active{background:var(--brand-primary); color:#fff;}
+.divider{display:flex; align-items:center; gap:10px; color:var(--text-muted); font-size:12px; margin:16px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border-subtle);}
+.login-photo{display:none; flex:1; background:linear-gradient(160deg,var(--brand-primary),#132D5E 60%, #0A1B39); position:relative; overflow:hidden;}
+@media(min-width:1024px){.login-photo{display:block;} .login-wrap{background:var(--surface-page);}}
+.login-photo::before{content:'';position:absolute; inset:0; background:
+  radial-gradient(circle at 20% 20%, rgba(244,162,22,0.18), transparent 40%),
+  radial-gradient(circle at 80% 70%, rgba(244,162,22,0.12), transparent 45%);}
+.login-photo .quote{position:absolute; bottom:56px; left:56px; right:56px; color:#fff;}
+.login-photo .quote .h2{color:#fff; margin-bottom:8px;}
+.login-photo .quote .body-txt{color:#C6D2E6;}
+.stamp{position:absolute; top:56px; left:56px; border:2px solid rgba(244,162,22,.5); border-radius:50%; width:90px; height:90px; display:flex; align-items:center;justify-content:center; transform:rotate(-14deg); color:var(--brand-accent-soft); font-weight:800; font-size:11px; text-align:center; letter-spacing:.08em;}
+
+/* ============ ONBOARDING ============ */
+#view-onboarding{min-height:100vh;}
+.ob-wrap{display:flex; min-height:100vh;}
+.ob-side{display:none; width:360px; background:var(--surface-sand); padding:48px 40px; flex-direction:column;}
+@media(min-width:1024px){.ob-side{display:flex;}}
+.ob-steps{display:flex; flex-direction:column; gap:4px; margin-top:40px;}
+.ob-step-item{display:flex; align-items:center; gap:12px; padding:10px 0; color:var(--text-muted); font-weight:600; font-size:14px;}
+.ob-step-item .num{width:26px;height:26px;border-radius:50%;border:2px solid var(--border-strong); display:flex;align-items:center;justify-content:center; font-size:12px; flex-shrink:0;}
+.ob-step-item.done{color:var(--text-primary);}
+.ob-step-item.done .num{background:var(--brand-primary); border-color:var(--brand-primary); color:#fff;}
+.ob-step-item.current{color:var(--text-primary);}
+.ob-step-item.current .num{background:var(--brand-accent); border-color:var(--brand-accent); color:var(--brand-primary);}
+.ob-main{flex:1; display:flex; flex-direction:column;}
+.ob-topbar{display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid var(--border-subtle);}
+.ob-back{background:none;border:none;color:var(--brand-primary); display:flex; padding:6px; border-radius:8px;}
+.ob-back:hover{background:#F1F4F8;}
+.ob-progress{flex:1;}
+.ob-body{flex:1; display:flex; align-items:flex-start; justify-content:center; padding:32px 20px 120px;}
+.ob-panel{width:100%; max-width:480px;}
+.ob-cta-bar{position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border-subtle); padding:14px 20px; display:flex; gap:12px;}
+@media(min-width:1024px){.ob-cta-bar{position:static; border:none; padding:24px 0 0; max-width:480px; margin:0 auto;}}
+.chip-grid{display:flex; flex-wrap:wrap; gap:10px;}
+.tag-input{display:flex; flex-wrap:wrap; gap:8px; border:1px solid var(--border-subtle); border-radius:8px; padding:8px; min-height:44px;}
+.tag-input .tag{background:var(--surface-sand); color:var(--brand-primary); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px;}
+.tag-input input{border:none; outline:none; flex:1; min-width:100px; font-size:14px;}
+.upload-zone{border:2px dashed var(--border-subtle); border-radius:12px; padding:24px; text-align:center; color:var(--text-muted); cursor:pointer; transition:border-color .15s;}
+.upload-zone:hover{border-color:var(--brand-accent);}
+.reveal-wrap{text-align:center;}
+.reveal-gauge{margin:0 auto 20px;}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ LOGIN ============================================================ -->
+<div id="view-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo"><div class="mark">CV</div></div>
+      <h1 class="h1" style="text-align:center;margin-bottom:6px;">Welcome back</h1>
+      <p class="login-tagline body-txt">Marketing intelligence for Cebu's small businesses</p>
+
+      <div class="login-tabs">
+        <button class="login-tab active" id="tab-signin" onclick="setAuthTab('signin')">Sign In</button>
+        <button class="login-tab" id="tab-register" onclick="setAuthTab('register')">Register</button>
+      </div>
+
+      <div class="banner banner-error" id="auth-error" style="display:none;">
+        <span data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;"></span>
+        <span>Incorrect email or password. Please try again.</span>
+        <button class="close-x" onclick="hide('auth-error')"><span data-lucide="x" style="width:14px;height:14px;"></span></button>
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" style="background:#fff;color:var(--text-primary);border:1px solid var(--border-subtle); margin-bottom:12px;" onclick="goApp('dashboard')">
+        <span data-lucide="chrome" style="width:18px;height:18px;"></span> Sign in with Google
+      </button>
+      <div class="divider">or continue with email</div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" placeholder="you@business.com" value="owner@sunsetdive.ph">
+      </div>
+      <div class="field" id="pw-field">
+        <label>Password</label>
+        <input type="password" placeholder="••••••••" value="••••••••">
+        <span class="err">Password must be at least 8 characters.</span>
+      </div>
+      <div class="field" id="pw-confirm-field" style="display:none;">
+        <label>Confirm Password</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" id="auth-submit" onclick="submitAuth()">Sign In</button>
+      <p style="text-align:center;margin-top:14px;"><a href="#" class="caption" style="color:var(--brand-primary);font-weight:700;">Forgot password?</a></p>
+    </div>
+  </div>
+  <div class="login-photo">
+    <div class="stamp">CEBU<br>PH ✦ EST.</div>
+    <div class="quote">
+      <p class="h2">"I knew Korean divers were coming before my competitors did."</p>
+      <p class="body-txt">— Sunset Dive Co., Mactan</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ ONBOARDING ============================================================ -->
+<div id="view-onboarding">
+  <div class="ob-wrap">
+    <div class="ob-side">
+      <div class="login-logo" style="justify-content:flex-start;"><div class="mark" style="background:var(--brand-primary);color:var(--brand-accent);">CV</div><span class="h3">CeView</span></div>
+      <h2 class="h1" style="margin-top:24px;">Let's set up your business</h2>
+      <p class="body-txt" style="color:var(--text-muted); margin-top:8px;">A few quick steps so our AI can speak your brand's language.</p>
+      <div class="ob-steps" id="ob-step-list"></div>
+    </div>
+    <div class="ob-main">
+      <div class="ob-topbar">
+        <button class="ob-back" onclick="obPrev()"><span data-lucide="arrow-left"></span></button>
+        <div class="ob-progress"><div class="progress-linear"><i id="ob-progress-bar" style="width:20%;"></i></div></div>
+        <span class="caption" id="ob-step-count">Step 1 of 5</span>
+      </div>
+      <div class="ob-body">
+        <div class="ob-panel" id="ob-panel"><!-- injected --></div>
+      </div>
+      <div class="ob-cta-bar">
+        <button class="btn btn-ghost" onclick="obPrev()" id="ob-back-btn" style="display:none;">Back</button>
+        <button class="btn btn-primary btn-block btn-lg" id="ob-next-btn" onclick="obNext()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ APP SHELL ============================================================ -->
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="mark">CV</div>
+      <span class="word">CeView</span>
+    </div>
+    <nav class="sb-nav" id="sb-nav"></nav>
+    <div class="sb-foot">
+      <button class="sb-collapse" onclick="toggleSidebar()"><span data-lucide="panel-left-close" id="collapse-ic"></span><span class="sb-biz">Collapse</span></button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <div class="topbar-biz">
+        <div class="avatar">SD</div>
+        <div>
+          <div class="body-emphasis" style="line-height:1.1;">Sunset Dive Co.</div>
+          <div class="caption" style="margin:0;">Mactan, Cebu</div>
+        </div>
+      </div>
+      <button class="bell-btn" onclick="openDrawer('notif-drawer')">
+        <span data-lucide="bell"></span>
+        <span class="bell-dot"></span>
+      </button>
+    </div>
+
+    <!-- ---------- DASHBOARD ---------- -->
+    <section class="screen" id="screen-dashboard">
+      <div class="screen-hd">
+        <div class="caption kicker">GOOD AFTERNOON</div>
+        <h1 class="h1">Here's what's happening today</h1>
+      </div>
+      <div class="grid-2" style="align-items:start;">
+        <div>
+          <div class="h2" style="margin-bottom:12px;">Surge Alerts</div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="card" style="border-left:4px solid var(--brand-accent); cursor:pointer;" onclick="openDrawer('radar-drawer')">
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <div style="font-size:22px;">🇰🇷</div>
+                <div style="flex:1;">
+                  <div class="body-emphasis">Korean traveler searches up 34% this week</div>
+                  <div class="caption" style="margin-top:4px;">2 hours ago</div>
+                </div>
+                <span style="width:9px;height:9px;border-radius:50%;background:var(--brand-accent); margin-top:6px;"></span>
+              </div>
+            </div>
+            <div class="card" style="border-left:4px solid var(--border-subtle); cursor:pointer;">
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <div style="font-size:22px;">🇺🇸</div>
+                <div style="flex:1;">
+                  <div class="body-emphasis">US interest steady ahead of long weekend</div>
+                  <div class="caption" style="margin-top:4px;">Yesterday</div>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="border-left:4px solid var(--border-subtle); cursor:pointer;">
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <div style="font-size:22px;">🇯🇵</div>
+                <div style="flex:1;">
+                  <div class="body-emphasis">Golden Week prep window opens in 12 days</div>
+                  <div class="caption" style="margin-top:4px;">2 days ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="h2" style="margin-bottom:12px;">Target Markets</div>
+          <div class="hscroll" id="market-cards" style="display:flex;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- CONTENT STUDIO ---------- -->
+    <section class="screen" id="screen-content"></section>
+
+    <!-- ---------- CALENDAR ---------- -->
+    <section class="screen" id="screen-calendar"></section>
+
+    <!-- ---------- PERFORMANCE ---------- -->
+    <section class="screen" id="screen-performance"></section>
+
+    <!-- ---------- SETTINGS ---------- -->
+    <section class="screen" id="screen-settings"></section>
+
+    <nav class="bottom-tabs" id="bottom-tabs"></nav>
+  </div>
+</div>
+
+<!-- ---------- Market Radar Drawer ---------- -->
+<div class="drawer" id="radar-drawer">
+  <div class="drag-handle"></div>
+  <div class="drawer-hd">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="h2">🇰🇷 Korea Market Radar</div>
+      <button class="close-x" onclick="closeDrawer('radar-drawer')"><span data-lucide="x"></span></button>
+    </div>
+  </div>
+  <div class="drawer-bd">
+    <button class="btn btn-secondary btn-block btn-lg" style="margin-bottom:20px;" onclick="targetThisMarket()">
+      <span data-lucide="target"></span> Target This Market
+    </button>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><span class="h3">Demand Trend</span><span class="badge badge-published">+34%</span></div>
+      <svg viewBox="0 0 300 80" class="sparkline" style="height:70px;">
+        <polyline fill="none" stroke="#F4A216" stroke-width="3" points="0,60 40,55 80,58 120,40 160,44 200,25 240,30 300,10"/>
+      </svg>
+      <div class="caption">Last 30 days · search + inquiry volume</div>
+    </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="h3" style="margin-bottom:10px;">Top Keywords</div>
+      <div class="chip-grid">
+        <span class="chip selected">세부 다이빙</span>
+        <span class="chip selected">막탄 스노클링</span>
+        <span class="chip selected">필리핀 여행</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="h3" style="margin-bottom:8px;">Seasonal Note</div>
+      <p class="body-txt" style="color:var(--text-muted);">Korean school break begins in 3 weeks — historically a 2x booking window for dive operators.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Notifications Drawer ---------- -->
+<div class="drawer" id="notif-drawer">
+  <div class="drag-handle"></div>
+  <div class="drawer-hd">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="h2">Notifications</div>
+      <button class="close-x" onclick="closeDrawer('notif-drawer')"><span data-lucide="x"></span></button>
+    </div>
+  </div>
+  <div class="drawer-bd" style="display:flex;flex-direction:column;gap:10px;">
+    <div class="card"><div class="body-emphasis">🇰🇷 Korean traveler searches up 34%</div><div class="caption">2 hours ago</div></div>
+    <div class="card"><div class="body-emphasis">Post "Reef cleanup dive" published to Instagram</div><div class="caption">Yesterday</div></div>
+    <div class="card"><div class="body-emphasis">Weekly performance report is ready</div><div class="caption">3 days ago</div></div>
+  </div>
+</div>
+
+<!-- ---------- Analytics Modal ---------- -->
+<div class="scrim" id="scrim-analytics" onclick="closeModal('analytics-modal')"></div>
+<div class="modal" id="analytics-modal">
+  <div class="modal-hd">
+    <span class="h2">Post Performance</span>
+    <button class="close-x" onclick="closeModal('analytics-modal')"><span data-lucide="x"></span></button>
+  </div>
+  <div class="modal-bd">
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:20px;">
+      <div class="post-thumb" style="width:56px;height:56px;"><span data-lucide="image"></span></div>
+      <div>
+        <div class="body-emphasis">"Golden hour dive briefing 🌅" </div>
+        <div class="caption">Instagram · Published Jul 29</div>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="card" style="box-shadow:none;border:1px solid var(--border-subtle);">
+        <div class="caption">Engagements</div>
+        <div class="h1">2,412</div>
+        <div class="badge badge-published"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> +18%</div>
+      </div>
+      <div class="card" style="box-shadow:none;border:1px solid var(--border-subtle);">
+        <div class="caption">Reach</div>
+        <div class="h1">9,880</div>
+        <div class="badge badge-published"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> +9%</div>
+      </div>
+    </div>
+    <svg viewBox="0 0 400 120" style="width:100%;height:120px;">
+      <polyline fill="none" stroke="#0F2854" stroke-width="2.5" points="0,100 50,90 100,95 150,60 200,70 250,40 300,50 350,20 400,30"/>
+      <polyline fill="none" stroke="#F4A216" stroke-width="2.5" points="0,110 50,108 100,100 150,95 200,88 250,80 300,70 350,65 400,55"/>
+    </svg>
+    <div style="display:flex;gap:16px; margin-top:8px;">
+      <span class="caption"><span style="display:inline-block;width:8px;height:8px;background:#0F2854;border-radius:50%;margin-right:4px;"></span>Engagement</span>
+      <span class="caption"><span style="display:inline-block;width:8px;height:8px;background:#F4A216;border-radius:50%;margin-right:4px;"></span>Reach</span>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- Invite Member Modal ---------- -->
+<div class="scrim" id="scrim-invite" onclick="closeModal('invite-modal')"></div>
+<div class="modal" id="invite-modal">
+  <div class="modal-hd">
+    <span class="h2">Invite Team Member</span>
+    <button class="close-x" onclick="closeModal('invite-modal')"><span data-lucide="x"></span></button>
+  </div>
+  <div class="modal-bd">
+    <div class="field"><label>Email address</label><input type="email" placeholder="teammate@business.com"></div>
+    <div class="field"><label>Role</label>
+      <select><option>Editor</option><option>Viewer</option><option>Admin</option></select>
+    </div>
+    <button class="btn btn-primary btn-block btn-lg" onclick="sendInvite()">Send Invite</button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ============================================================ ICONS ============================================================ */
+function renderIcons(){ if(window.lucide) lucide.createIcons(); }
+
+/* ============================================================ NAV DATA ============================================================ */
+const NAV = [
+  {id:'dashboard', label:'Dashboard', icon:'layout-dashboard', badge:3},
+  {id:'content', label:'Content Studio', icon:'sparkles'},
+  {id:'calendar', label:'Calendar', icon:'calendar-days'},
+  {id:'performance', label:'Performance', icon:'bar-chart-3'},
+  {id:'settings', label:'Settings', icon:'settings'},
+];
+
+function buildNav(){
+  const sb = document.getElementById('sb-nav');
+  sb.innerHTML = NAV.map(n => `
+    <button class="sb-item" data-nav="${n.id}" onclick="goApp('${n.id}')">
+      <span data-lucide="${n.icon}"></span><span class="word">${n.label}</span>
+      ${n.badge ? `<span class="count word">${n.badge}</span>` : ''}
+    </button>`).join('');
+
+  const bt = document.getElementById('bottom-tabs');
+  bt.innerHTML = NAV.map(n => `
+    <button class="bt-item" data-nav="${n.id}" onclick="goApp('${n.id}')">
+      <span data-lucide="${n.icon}"></span>
+      <span class="lbl">${n.label.split(' ')[0]}</span>
+      ${n.badge ? `<span class="dot"></span>` : ''}
+    </button>`).join('');
+}
+
+function goApp(view){
+  document.documentElement.setAttribute('data-view', view);
+  document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
+  const target = document.getElementById('screen-'+view);
+  if(target) target.style.display='block';
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav===view);
+  });
+  window.scrollTo({top:0, behavior:'instant'});
+  renderIcons();
+}
+
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  document.getElementById('collapse-ic').setAttribute('data-lucide', sb.classList.contains('collapsed') ? 'panel-left-open':'panel-left-close');
+  renderIcons();
+}
+
+/* ============================================================ LOGIN ============================================================ */
+function setAuthTab(t){
+  document.getElementById('tab-signin').classList.toggle('active', t==='signin');
+  document.getElementById('tab-register').classList.toggle('active', t==='register');
+  document.getElementById('pw-confirm-field').style.display = t==='register' ? 'flex' : 'none';
+  document.getElementById('auth-submit').textContent = t==='register' ? 'Create Account' : 'Sign In';
+  hide('auth-error');
+}
+function hide(id){ document.getElementById(id).style.display='none'; }
+function submitAuth(){
+  const btn = document.getElementById('auth-submit');
+  btn.classList.add('is-loading'); btn.disabled = true;
+  setTimeout(()=>{
+    btn.classList.remove('is-loading'); btn.disabled=false;
+    goApp('dashboard');
+  }, 900);
+}
+
+/* ============================================================ ONBOARDING ============================================================ */
+const OB_STEPS = ['Basic Info','Brand Identity','Structured Inputs','Assets & Links','Uniqueness Score'];
+let obIndex = 0;
+
+function obRenderSideList(){
+  document.getElementById('ob-step-list').innerHTML = OB_STEPS.map((s,i)=>`
+    <div class="ob-step-item ${i<obIndex?'done':''} ${i===obIndex?'current':''}">
+      <span class="num">${i<obIndex ? '✓' : i+1}</span><span>${s}</span>
+    </div>`).join('');
+}
+
+function obPanelHTML(i){
+  if(i===0) return `
+    <h2 class="h1" style="margin-bottom:6px;">Tell us about your business</h2>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">The basics — we'll use this everywhere your brand shows up.</p>
+    <div class="field"><label>Business Name</label><input placeholder="e.g. Sunset Dive Co." value="Sunset Dive Co."></div>
+    <div class="field"><label>Industry</label><select><option>Dive Shop</option><option>Café</option><option>Tour Operator</option><option>Craft Shop</option></select></div>
+    <div class="field"><label>Slogan <span class="opt">(optional)</span></label><input placeholder="e.g. Chase the current."></div>`;
+  if(i===1) return `
+    <h2 class="h1" style="margin-bottom:6px;">What's your brand's vibe?</h2>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">Pick up to 3 — this shapes the tone of your AI-generated content.</p>
+    <div class="field"><label>Vibe / Theme</label>
+      <div class="chip-grid" id="vibe-chips">
+        ${['Adventurous','Relaxed','Luxury','Family-friendly','Rustic','Modern'].map((v,idx)=>`<span class="chip ${idx===0?'selected':''}" onclick="toggleChip(this)">${v}</span>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>Core Services</label>
+      <div class="tag-input">
+        <span class="tag">Guided Reef Dives <span data-lucide="x" style="width:10px;height:10px;"></span></span>
+        <span class="tag">PADI Certification <span data-lucide="x" style="width:10px;height:10px;"></span></span>
+        <input placeholder="Add a service…">
+      </div>
+    </div>`;
+  if(i===2) return `
+    <h2 class="h1" style="margin-bottom:6px;">Describe your business</h2>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">The more detail, the sharper your AI content will be.</p>
+    <div class="field">
+      <label>Full Description</label>
+      <textarea placeholder="e.g. We're a family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels...">Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation.</textarea>
+      <span class="charcount">128 / 500</span>
+    </div>
+    <div class="field"><label>Unique Value Proposition</label><input placeholder="What makes you different in one sentence?" value="Every dive funds a coral restoration project."></div>`;
+  if(i===3) return `
+    <h2 class="h1" style="margin-bottom:6px;">Assets & links</h2>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">All optional — add what you have, skip the rest.</p>
+    <div class="field"><label>Instagram handle <span class="opt">(optional)</span></label><input placeholder="@yourbusiness"></div>
+    <div class="field"><label>TikTok handle <span class="opt">(optional)</span></label><input placeholder="@yourbusiness"></div>
+    <div class="field"><label>Website URL <span class="opt">(optional)</span></label><input placeholder="https://"></div>
+    <div class="field"><label>Logo <span class="opt">(optional)</span></label>
+      <div class="upload-zone"><span data-lucide="upload-cloud" style="width:24px;height:24px;margin-bottom:6px;"></span><div class="body-txt">Tap to upload or drag & drop</div></div>
+    </div>`;
+  if(i===4) return `
+    <div class="reveal-wrap">
+      <h2 class="h1" style="margin-bottom:20px;">Your Uniqueness Score</h2>
+      <div class="gauge reveal-gauge">
+        <svg width="120" height="120"><circle cx="60" cy="60" r="52" stroke="#E4E9F2" stroke-width="12" fill="none"/>
+        <circle cx="60" cy="60" r="52" stroke="#F4A216" stroke-width="12" fill="none" stroke-dasharray="326" stroke-dashoffset="70" stroke-linecap="round"/></svg>
+        <div class="val">82</div>
+      </div>
+      <p class="body-txt" style="max-width:360px;margin:0 auto 8px;">Your coral-conservation angle and PADI-certified team put you well ahead of nearby dive operators on distinctiveness.</p>
+      <span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span> AI-assisted insight</span>
+    </div>`;
+}
+
+function obRender(){
+  obRenderSideList();
+  document.getElementById('ob-panel').innerHTML = obPanelHTML(obIndex);
+  document.getElementById('ob-progress-bar').style.width = ((obIndex+1)/OB_STEPS.length*100)+'%';
+  document.getElementById('ob-step-count').textContent = `Step ${obIndex+1} of ${OB_STEPS.length}`;
+  document.getElementById('ob-back-btn').style.display = obIndex===0 ? 'none':'inline-flex';
+  document.getElementById('ob-next-btn').textContent = obIndex===OB_STEPS.length-1 ? 'Go to Dashboard' : 'Next';
+  renderIcons();
+}
+function obNext(){
+  if(obIndex < OB_STEPS.length-1){ obIndex++; obRender(); }
+  else { goApp('dashboard'); }
+}
+function obPrev(){
+  if(obIndex>0){ obIndex--; obRender(); }
+  else { document.documentElement.setAttribute('data-view','login'); }
+}
+function toggleChip(el){ el.classList.toggle('selected'); }
+
+/* ============================================================ DASHBOARD: market cards ============================================================ */
+const MARKETS = [
+  {flag:'🇰🇷', name:'Korea', trend:'+34%', up:true, pts:"0,30 20,28 40,29 60,20 80,22 100,10"},
+  {flag:'🇺🇸', name:'USA', trend:'+6%', up:true, pts:"0,25 20,24 40,20 60,22 80,18 100,15"},
+  {flag:'🇯🇵', name:'Japan', trend:'-2%', up:false, pts:"0,15 20,18 40,16 60,20 80,22 100,24"},
+];
+function buildMarketCards(){
+  document.getElementById('market-cards').innerHTML = MARKETS.map(m=>`
+    <div class="card" style="min-width:220px; cursor:pointer;" onclick="openDrawer('radar-drawer')">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="font-size:20px;">${m.flag}</span><span class="body-emphasis">${m.name}</span>
+      </div>
+      <svg viewBox="0 0 100 34" class="sparkline"><polyline fill="none" stroke="${m.up?'#0F7A4E':'#A70000'}" stroke-width="2.5" points="${m.pts}"/></svg>
+      <div class="badge ${m.up?'badge-published':'badge-alert'}" style="margin-top:8px;">
+        <span data-lucide="${m.up?'trending-up':'trending-down'}" style="width:12px;height:12px;"></span> ${m.trend}
+      </div>
+    </div>`).join('');
+  renderIcons();
+}
+
+/* ============================================================ CONTENT STUDIO ============================================================ */
+function buildContentStudio(){
+  document.getElementById('screen-content').innerHTML = `
+    <div class="screen-hd">
+      <div class="caption kicker">CONTENT STUDIO</div>
+      <h1 class="h1">Draft a post</h1>
+    </div>
+    <div class="grid-2" style="align-items:start;">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="chip selected" style="width:fit-content;">🇰🇷 Targeting Korea <span data-lucide="x" style="width:12px;height:12px;"></span></div>
+
+        <div class="card">
+          <div class="card-header"><span class="h3">Caption</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
+          <textarea id="cs-caption" style="width:100%;min-height:100px;border:1px solid var(--border-subtle);border-radius:8px;padding:10px 12px;font-size:14px;" >안녕하세요! 🌊 Discover Mactan's coral gardens on our sunrise reef dive — PADI-certified guides, small groups, and a portion of every booking funds local coral restoration. Book your golden-hour dive today.</textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+            <button class="btn btn-ghost btn-sm" onclick="regenCaption()" id="regen-btn"><span data-lucide="refresh-cw"></span> Regenerate</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="h3">Visual Guide</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
+          <p class="body-txt" style="color:var(--text-muted);">Warm golden-hour lighting, wide shot of divers descending over coral. Palette: deep teal water + amber sun flare. Avoid flash-lit close-ups — this market responds to natural light, aspirational framing.</p>
+        </div>
+
+        <div class="card">
+          <div class="h3" style="margin-bottom:10px;">Pubmat Upload</div>
+          <div class="upload-zone"><span data-lucide="image-plus" style="width:24px;height:24px;margin-bottom:6px;"></span><div class="body-txt">Tap to upload your photo or video</div></div>
+        </div>
+
+        <div class="card">
+          <div class="h3" style="margin-bottom:10px;">Platforms</div>
+          <div class="chip-grid">
+            <span class="chip selected" onclick="toggleChip(this)"><span data-lucide="music-2" style="width:14px;height:14px;"></span>TikTok</span>
+            <span class="chip selected" onclick="toggleChip(this)"><span data-lucide="facebook" style="width:14px;height:14px;"></span>Facebook</span>
+            <span class="chip" onclick="toggleChip(this)"><span data-lucide="instagram" style="width:14px;height:14px;"></span>Instagram</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="toggle-row">
+            <div class="lbl"><span class="body-emphasis">Public Visibility</span><span class="caption">Anyone can see this post</span></div>
+            <button class="switch on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="lbl"><span class="body-emphasis">Allow Comments</span><span class="caption">Viewers can comment</span></div>
+            <button class="switch on" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="toggle-row">
+            <div class="lbl"><span class="body-emphasis">Boosted / Paid</span><span class="caption">Promote with ad spend</span></div>
+            <button class="switch" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+
+        <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text-muted);">
+          <input type="checkbox" id="agree-check" onchange="checkPublishReady()" style="margin-top:3px;">
+          I've reviewed this content and confirm it's accurate and ready to publish.
+        </label>
+
+        <div style="display:flex; gap:12px;">
+          <button class="btn btn-primary btn-lg btn-block is-disabled" id="publish-btn" onclick="publishPost()">Publish Now</button>
+          <button class="btn btn-ghost btn-lg">Save as Draft</button>
+        </div>
+      </div>
+
+      <div class="card" style="position:sticky; top:88px;">
+        <div class="h3" style="margin-bottom:12px;">Live Preview</div>
+        <div style="border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border-subtle);">
+            <div class="avatar" style="width:26px;height:26px;font-size:11px;">SD</div>
+            <span class="body-emphasis" style="font-size:13px;">sunsetdive.ph</span>
+          </div>
+          <div style="aspect-ratio:1/1;background:linear-gradient(160deg,#0F2854,#F4A216 130%); display:flex;align-items:center;justify-content:center;color:#fff;">
+            <span data-lucide="waves" style="width:40px;height:40px;opacity:.8;"></span>
+          </div>
+          <div style="padding:10px 12px;">
+            <p class="caption" style="color:var(--text-primary);">안녕하세요! 🌊 Discover Mactan's coral gardens on our sunrise reef dive...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px;">
+      <div class="h2" style="margin-bottom:14px;">Board</div>
+      <div class="kanban">
+        <div class="kanban-col">
+          <div class="kanban-col-hd"><span class="body-emphasis">Draft</span><span class="badge badge-draft">2</span></div>
+          <div class="post-card"><div class="post-thumb"><span data-lucide="image"></span></div><div><div class="body-emphasis" style="font-size:13px;">Coral dive teaser</div><span class="badge badge-draft">Draft</span></div></div>
+          <div class="post-card"><div class="post-thumb"><span data-lucide="image"></span></div><div><div class="body-emphasis" style="font-size:13px;">Café weekend combo</div><span class="badge badge-draft">Draft</span></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-hd"><span class="body-emphasis">Scheduled</span><span class="badge badge-scheduled">1</span></div>
+          <div class="post-card"><div class="post-thumb"><span data-lucide="image"></span></div><div><div class="body-emphasis" style="font-size:13px;">Golden Week promo</div><span class="badge badge-scheduled">Aug 12</span></div></div>
+        </div>
+        <div class="kanban-col">
+          <div class="kanban-col-hd"><span class="body-emphasis">Published</span><span class="badge badge-published">3</span></div>
+          <div class="post-card"><div class="post-thumb"><span data-lucide="image"></span></div><div><div class="body-emphasis" style="font-size:13px;">Reef cleanup dive</div><span class="badge badge-published">Published</span></div></div>
+        </div>
+      </div>
+    </div>`;
+  renderIcons();
+}
+function checkPublishReady(){
+  const ready = document.getElementById('agree-check').checked;
+  document.getElementById('publish-btn').classList.toggle('is-disabled', !ready);
+}
+function regenCaption(){
+  const btn = document.getElementById('regen-btn');
+  const ta = document.getElementById('cs-caption');
+  btn.classList.add('is-loading');
+  const before = ta.value;
+  ta.value = '';
+  ta.placeholder='Generating…';
+  setTimeout(()=>{
+    btn.classList.remove('is-loading');
+    ta.value = "Chase the sunrise 🌅 Join our small-group reef dive around Mactan's coral gardens — PADI guides, easy pace, big payoff. Every booking helps fund reef restoration nearby.";
+  }, 1100);
+}
+function publishPost(){
+  showToast('Post published to 2 platforms', 'check-circle');
+}
+
+/* ============================================================ CALENDAR ============================================================ */
+function buildCalendar(){
+  const days = [];
+  for(let i=1;i<=31;i++){
+    const hasContent = [3,7,12,18,21,27].includes(i);
+    const isSeason = [10,11,12].includes(i);
+    days.push(`<div style="aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+      background:${isSeason?'#FFF5DF':'#fff'}; border:1px solid var(--border-subtle); cursor:pointer; position:relative;"
+      ${hasContent? `onclick="openModal('analytics-modal')"`:''}>
+      <span class="caption" style="color:var(--text-primary);">${i}</span>
+      ${hasContent? `<span style="display:flex;gap:2px;">${i%2===0?'<i style="width:5px;height:5px;border-radius:50%;background:#0F2854;"></i>':'<i style="width:5px;height:5px;border-radius:50%;background:#F4A216;"></i>'}</span>`:''}
+    </div>`);
+  }
+  document.getElementById('screen-calendar').innerHTML = `
+    <div class="screen-hd" style="display:flex;align-items:center;justify-content:space-between;">
+      <div><div class="caption kicker">CALENDAR</div><h1 class="h1">August 2026</h1></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" id="cal-toggle" onclick="toggleCalView()">List View</button>
+      </div>
+    </div>
+    <div class="banner banner-warning">
+      <span data-lucide="calendar-clock" style="width:16px;height:16px;flex-shrink:0;"></span>
+      <span>Golden Week Prep (JP) window: Aug 10–12 — highlighted below.</span>
+    </div>
+    <div class="grid-2" style="grid-template-columns:1fr; gap:24px;" id="cal-layout">
+      <div class="card">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px;">
+          ${['S','M','T','W','T','F','S'].map(d=>`<div class="caption" style="text-align:center;">${d}</div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">${days.join('')}</div>
+      </div>
+    </div>`;
+  renderIcons();
+}
+function toggleCalView(){ showToast('List view (prototype)', 'list'); }
+
+/* ============================================================ PERFORMANCE ============================================================ */
+function buildPerformance(){
+  document.getElementById('screen-performance').innerHTML = `
+    <div class="screen-hd">
+      <div class="caption kicker">PERFORMANCE</div>
+      <h1 class="h1">How your content is doing</h1>
+    </div>
+    <div class="hscroll" style="margin-bottom:24px;">
+      ${[
+        {label:'Engagement Rate', val:'6.8%', trend:'+1.2%', up:true, pts:"0,20 20,18 40,15 60,17 80,10 100,8"},
+        {label:'Reach', val:'12.4k', trend:'+9%', up:true, pts:"0,22 20,20 40,18 60,15 80,17 100,12"},
+        {label:'Performance Score', val:'78', trend:'-3', up:false, pts:"0,10 20,12 40,14 60,16 80,20 100,22"},
+      ].map(s=>`<div class="card" style="min-width:180px;">
+        <div class="caption">${s.label}</div>
+        <div class="h1" style="margin:2px 0 6px;">${s.val}</div>
+        <svg viewBox="0 0 100 24" class="sparkline" style="height:24px;"><polyline fill="none" stroke="${s.up?'#0F7A4E':'#A70000'}" stroke-width="2" points="${s.pts}"/></svg>
+        <div class="badge ${s.up?'badge-published':'badge-alert'}" style="margin-top:8px;"><span data-lucide="${s.up?'trending-up':'trending-down'}" style="width:12px;height:12px;"></span> ${s.trend}</div>
+      </div>`).join('')}
+    </div>
+    <div class="hscroll" style="margin-bottom:16px;">
+      ${['All','TikTok','Instagram','Facebook'].map((p,i)=>`<span class="chip ${i===0?'selected':''}" onclick="filterPills(this)">${p}</span>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${[
+        {t:'Reef cleanup dive 🌊', p:'Instagram', d:'Jul 29', m:'2.4k engagements'},
+        {t:'PADI cert weekend special', p:'Facebook', d:'Jul 24', m:'980 engagements'},
+        {t:'Behind the scenes: boat prep', p:'TikTok', d:'Jul 18', m:'5.1k engagements'},
+      ].map(c=>`<div class="card" style="display:flex; gap:12px; align-items:center; cursor:pointer;" onclick="openModal('analytics-modal')">
+        <div class="post-thumb" style="width:52px;height:52px;"><span data-lucide="image"></span></div>
+        <div style="flex:1;">
+          <div class="body-emphasis">${c.t}</div>
+          <div class="caption">${c.p} · ${c.d}</div>
+        </div>
+        <div class="body-emphasis" style="color:var(--brand-primary);">${c.m}</div>
+      </div>`).join('')}
+    </div>`;
+  renderIcons();
+}
+function filterPills(el){
+  el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* ============================================================ SETTINGS ============================================================ */
+function buildSettings(){
+  document.getElementById('screen-settings').innerHTML = `
+    <div class="screen-hd">
+      <div class="caption kicker">SETTINGS</div>
+      <h1 class="h1">Business & account</h1>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-header"><span class="h2">Business Profile</span><span data-lucide="chevron-right" style="color:var(--text-muted);"></span></div>
+        <p class="body-txt" style="color:var(--text-muted);">Sunset Dive Co. · Dive Shop · Mactan, Cebu</p>
+      </div>
+      <div class="card">
+        <div class="h2" style="margin-bottom:14px;">Platforms</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span data-lucide="instagram" style="color:var(--brand-primary);"></span>
+            <div style="flex:1;"><div class="body-emphasis">Instagram</div><div class="caption">@sunsetdive.ph</div></div>
+            <span class="badge badge-published">Connected</span>
+            <button class="btn btn-ghost btn-sm">Disconnect</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span data-lucide="facebook" style="color:var(--brand-primary);"></span>
+            <div style="flex:1;"><div class="body-emphasis">Facebook</div><div class="caption">Sunset Dive Co.</div></div>
+            <span class="badge badge-published">Connected</span>
+            <button class="btn btn-ghost btn-sm">Disconnect</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span data-lucide="music-2" style="color:var(--text-muted);"></span>
+            <div style="flex:1;"><div class="body-emphasis">TikTok</div><div class="caption">Not connected</div></div>
+            <button class="btn btn-secondary btn-sm">Connect</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="h2">Workspace</span><button class="btn btn-primary btn-sm" onclick="openModal('invite-modal')"><span data-lucide="user-plus"></span>Invite Member</button></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar" style="width:32px;height:32px;font-size:12px;">MA</div>
+            <div style="flex:1;"><div class="body-emphasis" style="font-size:13px;">Maria Alcantara</div><div class="caption">maria@sunsetdive.ph</div></div>
+            <span class="badge badge-draft">Owner</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar" style="width:32px;height:32px;font-size:12px;">JP</div>
+            <div style="flex:1;"><div class="body-emphasis" style="font-size:13px;">JP Reyes</div><div class="caption">jp@sunsetdive.ph</div></div>
+            <span class="badge badge-scheduled">Pending</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  renderIcons();
+}
+function sendInvite(){ closeModal('invite-modal'); showToast('Invite sent', 'mail-check'); }
+
+/* ============================================================ DRAWERS / MODALS / TOASTS ============================================================ */
+function openDrawer(id){ document.getElementById(id).classList.add('show'); ensureScrimFor(id); }
+function closeDrawer(id){ document.getElementById(id).classList.remove('show'); removeScrimFor(id); }
+function ensureScrimFor(id){
+  let s = document.getElementById('scrim-'+id);
+  if(!s){ s = document.createElement('div'); s.id='scrim-'+id; s.className='scrim'; s.onclick=()=>closeDrawer(id); document.body.appendChild(s); }
+  requestAnimationFrame(()=>s.classList.add('show'));
+}
+function removeScrimFor(id){ const s = document.getElementById('scrim-'+id); if(s) s.classList.remove('show'); }
+
+function openModal(id){ document.getElementById(id).classList.add('show'); document.getElementById('scrim-'+id.replace('-modal','')).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); document.getElementById('scrim-'+id.replace('-modal','')).classList.remove('show'); }
+
+function targetThisMarket(){
+  closeDrawer('radar-drawer');
+  goApp('content');
+  showToast('Targeting Korea in Content Studio', 'target');
+}
+
+function showToast(msg, icon){
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className='toast';
+  t.innerHTML = `<span data-lucide="${icon||'check-circle'}"></span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  renderIcons();
+  setTimeout(()=>t.remove(), 4000);
+}
+
+/* ============================================================ INIT ============================================================ */
+buildNav();
+buildMarketCards();
+buildContentStudio();
+buildCalendar();
+buildPerformance();
+buildSettings();
+obRender();
+renderIcons();
+
+/* dev shortcut bar */
+(function(){
+  const bar = document.createElement('div');
+  bar.style.cssText='position:fixed;bottom:10px;left:10px;z-index:100;background:rgba(10,35,66,.9);backdrop-filter:blur(4px);border-radius:10px;padding:6px;display:flex;gap:4px;box-shadow:0 4px 12px rgba(0,0,0,.3);flex-wrap:wrap;max-width:calc(100vw - 20px);';
+  bar.innerHTML = ['login','onboarding','dashboard','content','calendar','performance','settings'].map(v=>
+    `<button onclick="window.__jump('${v}')" style="background:none;border:none;color:#B9C5DA;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.03em;">${v}</button>`
+  ).join('');
+  document.body.appendChild(bar);
+  window.__jump = function(v){
+    if(v==='login'){ document.documentElement.setAttribute('data-view','login'); }
+    else if(v==='onboarding'){ document.documentElement.setAttribute('data-view','onboarding'); obIndex=0; obRender(); }
+    else { document.documentElement.setAttribute('data-view', v); goApp(v); }
+  };
+})();
+</script>
+</body>
+</html>
