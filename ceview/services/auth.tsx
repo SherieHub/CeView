@@ -2,9 +2,10 @@
  * Frontend auth context: owns the JWT + operatorId session, backed by
  * localStorage so a page refresh doesn't force a fresh login. Login/register
  * calls reuse the same BASE/ApiError error-shape conventions as apiClient.ts's
- * req<T>() without importing it directly, since auth precedes the rest of the
- * API surface and apiClient.ts is intentionally left unwired to the JWT until
- * Task 11.
+ * req<T>() without routing through it, since a failed login/register attempt
+ * (e.g. bad credentials, 401) is expected/normal and must NOT trigger the
+ * "session expired, log out" handling that apiClient.ts's req<T>() applies to
+ * 401s from already-authenticated requests (see setUnauthorizedHandler below).
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ApiError, setUnauthorizedHandler } from './apiClient';
