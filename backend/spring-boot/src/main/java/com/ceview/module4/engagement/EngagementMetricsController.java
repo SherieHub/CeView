@@ -1,6 +1,7 @@
 package com.ceview.module4.engagement;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.pes.PESComputationService;
 import org.slf4j.Logger;
@@ -36,16 +37,19 @@ public class EngagementMetricsController {
     private final PESComputationService     pesSvc;
     private final AIInferenceGatewayService ai;
     private final CampaignRecordRepository  campaignRepo;
+    private final CurrentBusinessProfile    currentBusinessProfile;
 
     public EngagementMetricsController(
             MetricsCalculationService metricsSvc,
             PESComputationService pesSvc,
             AIInferenceGatewayService ai,
-            CampaignRecordRepository campaignRepo) {
+            CampaignRecordRepository campaignRepo,
+            CurrentBusinessProfile currentBusinessProfile) {
         this.metricsSvc   = metricsSvc;
         this.pesSvc       = pesSvc;
         this.ai           = ai;
         this.campaignRepo = campaignRepo;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     // ─── GET /metrics ─────────────────────────────────────────────────────────
@@ -88,6 +92,7 @@ public class EngagementMetricsController {
 
         // ── 2. Persist raw inputs + derived KPIs ─────────────────────────────
         CampaignRecord record = CampaignRecord.from(in);
+        record.setBusinessProfileId(currentBusinessProfile.resolveProfileId());
         record.enrichWithKpis(
                 mr.metrics().ctr().value(),
                 mr.metrics().cpc().value(),
@@ -141,8 +146,9 @@ public class EngagementMetricsController {
     public CampaignHistoryResponse history(
             @RequestParam(required = false, defaultValue = "4") int weeks) {
         int limit = (weeks == 8) ? 8 : 4;
-        List<CampaignRecord> records = campaignRepo.findAllByOrderByCreatedAtDesc(
-                PageRequest.of(0, limit));
+        UUID profileId = currentBusinessProfile.resolveProfileId();
+        List<CampaignRecord> records = campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(
+                profileId, PageRequest.of(0, limit));
         Collections.reverse(records);
         List<CampaignSnapshot> snapshots = records.stream()
                 .map(r -> new CampaignSnapshot(
