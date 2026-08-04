@@ -1,5 +1,6 @@
 package com.ceview.module3;
 
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module3.dto.CreativeDirectionDtos.CreativeDirectionDto;
 import com.ceview.module3.submodule32.CreativeApprovalService;
 import com.ceview.module3.submodule32.CreativeDirectionService;
@@ -20,6 +21,10 @@ import java.util.UUID;
  *                              generates visual direction via Gemini (FR3.13-FR3.16),
  *                              persists output (FR3.19).
  * POST /approve/{profileId}  — marks generated output as approved (FR3.19 / UC-3.2 step 11).
+ *
+ * Ownership: URL shape is unchanged (profileId stays a path variable), but it's
+ * now validated against {@link CurrentBusinessProfile} instead of trusted outright.
+ * See Task 8 (mirrors Task 7 for Module 2).
  */
 @RestController
 @RequestMapping("/api/v1/creative-direction")
@@ -29,11 +34,14 @@ public class CreativeDirectionController {
 
     private final CreativeDirectionService directionService;
     private final CreativeApprovalService approvalService;
+    private final CurrentBusinessProfile currentBusinessProfile;
 
     public CreativeDirectionController(CreativeDirectionService directionService,
-                                       CreativeApprovalService approvalService) {
+                                       CreativeApprovalService approvalService,
+                                       CurrentBusinessProfile currentBusinessProfile) {
         this.directionService = directionService;
         this.approvalService  = approvalService;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     /**
@@ -45,11 +53,15 @@ public class CreativeDirectionController {
     public ResponseEntity<?> generate(
             @PathVariable UUID profileId,
             @RequestParam(required = false) String market) {
+        // URL shape unchanged (frontend routing change is a later task) — but the
+        // path-variable profileId is now validated against the JWT-resolved profile
+        // instead of trusted outright.
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String resolvedMarket = market == null ? "korea" : market;
         log.info("creative.generate received profileId={} market={}", profileId, resolvedMarket);
 
         try {
-            CreativeDirectionDto dto = directionService.generate(profileId, resolvedMarket);
+            CreativeDirectionDto dto = directionService.generate(resolvedProfileId, resolvedMarket);
             return ResponseEntity.ok(dto);
         } catch (IllegalStateException e) {
             if ("missing_dependency".equals(e.getMessage())) {
@@ -71,10 +83,11 @@ public class CreativeDirectionController {
     public ResponseEntity<Map<String, Object>> approve(
             @PathVariable UUID profileId,
             @RequestParam(required = false) String market) {
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String resolvedMarket = market == null ? "korea" : market;
         log.info("creative.approve received profileId={} market={}", profileId, resolvedMarket);
 
-        Optional<UUID> approvedId = approvalService.approveLatest(profileId, resolvedMarket);
+        Optional<UUID> approvedId = approvalService.approveLatest(resolvedProfileId, resolvedMarket);
 
         if (approvedId.isEmpty()) {
             return ResponseEntity.notFound().build();

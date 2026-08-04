@@ -36,8 +36,9 @@ public interface CampaignRecordRepository extends JpaRepository<CampaignRecord, 
     List<CampaignRecord> findTop10ByOrderByCreatedAtDesc();
 
     /**
-     * Retrieve the N most recent campaign records (newest-first).
-     * Used by GET /history to populate the weekly PES trend line chart.
+     * Retrieve the N most recent campaign records for a single business profile
+     * (newest-first). Used by GET /history to populate the weekly PES trend line
+     * chart scoped to the authenticated operator (Task 9).
      */
-    List<CampaignRecord> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    List<CampaignRecord> findByBusinessProfileIdOrderByCreatedAtDesc(UUID businessProfileId, Pageable pageable);
 }

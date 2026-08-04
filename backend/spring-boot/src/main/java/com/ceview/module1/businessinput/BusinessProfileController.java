@@ -1,11 +1,14 @@
 package com.ceview.module1.businessinput;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.auth.CurrentOperator;
 import com.ceview.module1.businessinput.dto.BusinessProfileDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -17,15 +20,19 @@ public class BusinessProfileController {
 
     private final BusinessProfileRepository repo;
     private final AIInferenceGatewayService ai;
+    private final CurrentOperator currentOperator;
 
-    public BusinessProfileController(BusinessProfileRepository repo, AIInferenceGatewayService ai) {
+    public BusinessProfileController(BusinessProfileRepository repo, AIInferenceGatewayService ai,
+                                      CurrentOperator currentOperator) {
         this.repo = repo;
         this.ai = ai;
+        this.currentOperator = currentOperator;
     }
 
-    /** GET current operator's profile. operatorId via query for scaffolding; later from JWT. */
+    /** GET the authenticated operator's own profile, resolved server-side from the JWT. */
     @GetMapping
-    public ResponseEntity<BusinessProfileDto> get(@RequestParam(required = false) UUID operatorId) {
+    public ResponseEntity<BusinessProfileDto> get() {
+        UUID operatorId = currentOperator.resolve();
         return repo.findFirstByUserId(operatorId)
             .map(this::toDto)
             .map(ResponseEntity::ok)
@@ -34,10 +41,24 @@ public class BusinessProfileController {
 
     /** PUT upsert profile (frontend BusinessProfile "Save"). */
     @PutMapping
-    public BusinessProfileDto save(@RequestBody BusinessProfileDto in,
-                                   @RequestParam(required = false) UUID operatorId) {
-        var p = (in.businessProfileId() != null ? repo.findById(in.businessProfileId()) : Optional.<BusinessProfile>empty())
-            .orElseGet(BusinessProfile::new);
+    public BusinessProfileDto save(@RequestBody BusinessProfileDto in) {
+        UUID operatorId = currentOperator.resolve();
+        var existing = in.businessProfileId() != null ? repo.findById(in.businessProfileId()) : Optional.<BusinessProfile>empty();
+        // Reject silent ownership takeover: a client could otherwise pass another
+        // operator's businessProfileId and overwrite it via this upsert.
+        existing.ifPresent(p -> {
+            if (p.getUserId() != null && !p.getUserId().equals(operatorId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "business profile belongs to a different operator");
+            }
+            // A null userId means an orphaned/pre-auth row (user_id has always been
+            // nullable) rather than another operator's data, so it's fair game to adopt:
+            // businessProfileId is an unguessable UUID, so reaching this branch requires
+            // already knowing the id. Logged so an unexpected adoption is traceable.
+            if (p.getUserId() == null) {
+                log.warn("adopting ownerless business profile {} into operator {}", p.getBusinessProfileId(), operatorId);
+            }
+        });
+        var p = existing.orElseGet(BusinessProfile::new);
         p.setUserId(operatorId);
         p.setBusinessName(in.businessName());
         p.setBusinessDescription(in.description());

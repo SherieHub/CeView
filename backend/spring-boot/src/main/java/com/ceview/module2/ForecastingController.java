@@ -1,5 +1,6 @@
 package com.ceview.module2;
 
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module2.dto.MarketDtos.MarketsResponse;
 import com.ceview.module2.submodule22.ForecastingService;
 import org.springframework.http.ResponseEntity;
@@ -17,22 +18,34 @@ import java.util.UUID;
  * Error handling: AI failures (Gemini quota, XGBoost missing model, network) are
  * propagated as structured JSON {"code": "...", "message": "..."} so the frontend
  * ApiError class can surface the specific reason in the UI.
+ *
+ * Ownership: every profileId here — query param or path variable — is derived from
+ * or validated against {@link CurrentBusinessProfile}, which resolves the caller's
+ * own profile from the JWT. This closes the spoofing hole where a client could pass
+ * an arbitrary profileId to read/trigger forecasts for another operator's business.
  */
 @RestController
 @RequestMapping("/api/v1/forecasting")
 public class ForecastingController {
 
     private final ForecastingService forecastingService;
+    private final CurrentBusinessProfile currentBusinessProfile;
 
-    public ForecastingController(ForecastingService forecastingService) {
+    public ForecastingController(ForecastingService forecastingService,
+                                  CurrentBusinessProfile currentBusinessProfile) {
         this.forecastingService = forecastingService;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     /** Ranked markets for MarketRadarView — pure DB read, no AI calls. */
     @GetMapping("/markets")
     public ResponseEntity<?> markets(@RequestParam(required = false) UUID profileId) {
+        // Resolved/validated outside the try block so a 401/403/409 from ownership
+        // checks reaches ApiExceptionHandler's standard shape rather than being
+        // swallowed by the generic catch below and reported as a 503 markets failure.
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.loadMarketsFromDb(profileId);
+            MarketsResponse result = forecastingService.loadMarketsFromDb(resolvedProfileId);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(503)
@@ -48,8 +61,12 @@ public class ForecastingController {
     @PostMapping("/ensure/{profileId}")
     public ResponseEntity<?> ensure(@PathVariable UUID profileId,
                                     @RequestParam(defaultValue = "12") long maxAgeHours) {
+        // URL shape unchanged (frontend routing change is a later task) — but the
+        // path-variable profileId is now validated against the JWT-resolved profile
+        // instead of trusted outright.
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.ensureFreshForecast(profileId, maxAgeHours);
+            MarketsResponse result = forecastingService.ensureFreshForecast(resolvedProfileId, maxAgeHours);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
@@ -67,8 +84,9 @@ public class ForecastingController {
     /** Re-analyze for a specific profile (the "Refresh Forecast" CTA). */
     @PostMapping("/analyze/{profileId}")
     public ResponseEntity<?> analyze(@PathVariable UUID profileId) {
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.forecastForProfile(profileId, true);
+            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");

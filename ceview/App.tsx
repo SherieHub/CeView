@@ -4,7 +4,8 @@ import Sidebar from './layout/Sidebar';
 import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 import { api } from './services/apiClient';
-import { OPERATOR_ID } from './services/identity';
+import { useAuth } from './services/auth';
+import AuthGate from './components/auth/AuthGate';
 
 import BusinessProfile from './components/module-1/1.1-business-input/BusinessProfile';
 import UniquenessCalibrationView from './components/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
@@ -36,6 +37,7 @@ export interface ProfileSetters {
 }
 
 const App: React.FC = () => {
+  const { isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -51,7 +53,9 @@ const App: React.FC = () => {
   const [selectedMarketId, setSelectedMarketId] = useState<string>('');
 
   useEffect(() => {
-    api.loadProfile(OPERATOR_ID)
+    if (!isAuthenticated) return;
+
+    api.loadProfile()
       .then(dto => {
         setBusinessProfileId(dto.businessProfileId);
         setBusinessName(dto.businessName ?? '');
@@ -63,7 +67,7 @@ const App: React.FC = () => {
         setUniquenessScore(dto.uniquenessScore);
       })
       .catch(err => console.error('loadProfile failed', err));
-  }, []);
+  }, [isAuthenticated]);
 
   const profile: ProfileData = {
     businessProfileId, businessName, categories, coreServices,
@@ -73,6 +77,10 @@ const App: React.FC = () => {
     setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
     setDescription, setUvp, setImagePreview, setUniquenessScore,
   };
+
+  if (!isAuthenticated) {
+    return <AuthGate />;
+  }
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: COLORS.OFF_WHITE }}>
@@ -96,6 +104,7 @@ const App: React.FC = () => {
         setIsCollapsed={setIsCollapsed}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
+        onLogout={logout}
       />
 
       <main
