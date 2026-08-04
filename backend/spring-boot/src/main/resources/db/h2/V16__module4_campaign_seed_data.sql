@@ -4,7 +4,7 @@
 -- anonymous business) with 9 distinct per-operator campaign histories, one per Cebu
 -- MSME seeded in V2/h2-V2 (business_profile_id 20000000-...-0000000000N, N=1..9).
 -- Every row is now linked via tbl_campaign_records.business_profile_id (added in
--- V17/h2-V14) — no row here has a NULL business_profile_id.
+-- V14.1/h2-V14) — no row here has a NULL business_profile_id.
 --
 -- Mixed performance distribution (so Module 4 dashboards/alerts/prescriptive
 -- reports differ meaningfully per operator, not all success stories):
