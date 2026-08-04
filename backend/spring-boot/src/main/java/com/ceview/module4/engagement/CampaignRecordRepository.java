@@ -38,6 +38,18 @@ public interface CampaignRecordRepository extends JpaRepository<CampaignRecord, 
     /**
      * Retrieve the N most recent campaign records (newest-first).
      * Used by GET /history to populate the weekly PES trend line chart.
+     *
+     * @deprecated unscoped across all operators — use
+     * {@link #findByBusinessProfileIdOrderByCreatedAtDesc} instead so history is
+     * scoped to the authenticated operator's own business profile (Task 9).
      */
+    @Deprecated
     List<CampaignRecord> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * Retrieve the N most recent campaign records for a single business profile
+     * (newest-first). Used by GET /history to populate the weekly PES trend line
+     * chart scoped to the authenticated operator (Task 9).
+     */
+    List<CampaignRecord> findByBusinessProfileIdOrderByCreatedAtDesc(UUID businessProfileId, Pageable pageable);
 }
