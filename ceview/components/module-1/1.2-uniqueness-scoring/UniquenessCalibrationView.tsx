@@ -5,7 +5,6 @@ import { CategoryAllocation } from '../1.1-business-input/components/InferredCat
 import { COLORS } from '../../../constants';
 import { ProfileData, ProfileSetters } from '../../../App';
 import { api, ApiError } from '../../../services/apiClient';
-import { OPERATOR_ID } from '../../../services/identity';
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
 
@@ -95,7 +94,7 @@ const UniquenessCalibrationView: React.FC<UniquenessCalibrationViewProps> = ({ p
     const overallScore = calibrationResult?.overallScore ?? null;
 
     try {
-      const saved = await api.saveProfile(OPERATOR_ID, {
+      const saved = await api.saveProfile({
         businessProfileId: profile?.businessProfileId ?? null,
         businessName: payload.businessName,
         categories: activeCats,

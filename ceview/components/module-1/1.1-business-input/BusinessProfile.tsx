@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { COLORS, BUSINESS_CATEGORIES } from '../../../constants';
 import { api } from '../../../services/apiClient';
-import { OPERATOR_ID } from '../../../services/identity';
 import { ProfileData, ProfileSetters } from '../../../App';
 import ServerErrorBanner from '../../shared/ServerErrorBanner';
 
@@ -89,7 +88,7 @@ const BusinessProfile: React.FC<BusinessProfileProps> = ({ profile, setters }) =
     setServerError(null);
     setTimeout(() => setIsSaved(false), 3000);
 
-    api.saveProfile(OPERATOR_ID, {
+    api.saveProfile({
       businessProfileId,
       businessName: tempBusinessName,
       categories: tempCategories,

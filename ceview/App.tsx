@@ -4,7 +4,6 @@ import Sidebar from './layout/Sidebar';
 import CalendarView from './old-components/CalendarView';
 import { COLORS } from './constants';
 import { api } from './services/apiClient';
-import { OPERATOR_ID } from './services/identity';
 import { useAuth } from './services/auth';
 import AuthGate from './components/auth/AuthGate';
 
@@ -56,7 +55,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    api.loadProfile(OPERATOR_ID)
+    api.loadProfile()
       .then(dto => {
         setBusinessProfileId(dto.businessProfileId);
         setBusinessName(dto.businessName ?? '');
