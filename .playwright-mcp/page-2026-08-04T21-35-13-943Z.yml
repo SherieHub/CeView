@@ -1,0 +1,137 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e2]:
+    - generic [ref=f12e4]:
+      - generic [ref=f12e5]: CV
+      - heading "Welcome back" [level=1] [ref=f12e7]
+      - paragraph [ref=f12e8]: Marketing intelligence for Cebu's small businesses
+      - generic [ref=f12e9]:
+        - button "Sign In" [ref=f12e10] [cursor=pointer]
+        - button "Register" [ref=f12e11] [cursor=pointer]
+      - button "Sign in with Google" [ref=f12e12] [cursor=pointer]
+      - generic [ref=f12e18]: or continue with email
+      - generic [ref=f12e19]:
+        - generic [ref=f12e20]: Email
+        - textbox "you@business.com" [ref=f12e21]: owner@sunsetdive.ph
+      - generic [ref=f12e22]:
+        - generic [ref=f12e23]: Password
+        - textbox "••••••••" [ref=f12e24]
+      - button "Sign In" [ref=f12e25] [cursor=pointer]
+      - paragraph [ref=f12e26]:
+        - link "Forgot password?" [ref=f12e27] [cursor=pointer]:
+          - /url: "#"
+    - generic [ref=f12e28]:
+      - generic [ref=f12e29]: CEBUPH ✦ EST.
+      - generic [ref=f12e31]:
+        - paragraph [ref=f12e32]: "\"I knew Korean divers were coming before my competitors did.\""
+        - paragraph [ref=f12e33]: — Sunset Dive Co., Mactan
+  - generic [ref=f12e34]:
+    - generic [ref=f12e36]:
+      - generic [ref=f12e37]: 🇰🇷 Korea Market Radar
+      - button [ref=f12e38] [cursor=pointer]
+    - generic [ref=f12e42]:
+      - button "Target This Market" [ref=f12e43] [cursor=pointer]
+      - generic [ref=f12e48]:
+        - generic [ref=f12e49]:
+          - generic [ref=f12e50]: Demand Trend
+          - generic [ref=f12e51]: +34%
+        - generic [ref=f12e54]: Last 30 days · search + inquiry volume
+      - generic [ref=f12e55]:
+        - generic [ref=f12e56]: Top Keywords
+        - generic [ref=f12e57]:
+          - generic [ref=f12e58] [cursor=pointer]: 세부 다이빙
+          - generic [ref=f12e59] [cursor=pointer]: 막탄 스노클링
+          - generic [ref=f12e60] [cursor=pointer]: 필리핀 여행
+      - generic [ref=f12e61]:
+        - generic [ref=f12e62]: Seasonal Note
+        - paragraph [ref=f12e63]: Korean school break begins in 3 weeks — historically a 2x booking window for dive operators.
+  - generic [ref=f12e64]:
+    - generic [ref=f12e66]:
+      - generic [ref=f12e67]: Notifications
+      - button [ref=f12e68] [cursor=pointer]
+    - generic [ref=f12e72]:
+      - generic [ref=f12e73]:
+        - generic [ref=f12e74]: 🇰🇷 Korean traveler searches up 34%
+        - generic [ref=f12e75]: 2 hours ago
+      - generic [ref=f12e76]:
+        - generic [ref=f12e77]: Post "Reef cleanup dive" published to Instagram
+        - generic [ref=f12e78]: Yesterday
+      - generic [ref=f12e79]:
+        - generic [ref=f12e80]: Weekly performance report is ready
+        - generic [ref=f12e81]: 3 days ago
+  - generic:
+    - generic:
+      - generic: Post Performance
+      - button
+    - generic:
+      - generic:
+        - generic:
+          - generic: "\"Golden hour dive briefing 🌅\""
+          - generic: Instagram · Published Jul 29
+      - generic:
+        - generic:
+          - generic: Engagements
+          - generic: 2,412
+          - generic: +18%
+        - generic:
+          - generic: Reach
+          - generic: 9,880
+          - generic: +9%
+      - generic:
+        - generic: Engagement
+        - generic: Reach
+  - generic:
+    - generic:
+      - generic: Invite Team Member
+      - button
+    - generic:
+      - generic:
+        - generic: Email address
+        - textbox "teammate@business.com"
+      - generic:
+        - generic: Role
+        - combobox:
+          - option "Editor" [selected]
+          - option "Viewer"
+          - option "Admin"
+      - button "Send Invite"
+  - generic:
+    - generic:
+      - generic: Edit Business Profile
+      - button
+    - generic:
+      - generic:
+        - generic: Business Name
+        - textbox: Sunset Dive Co.
+      - generic:
+        - generic: Industry
+        - combobox:
+          - option "Dive Shop" [selected]
+          - option "Café"
+          - option "Tour Operator"
+          - option "Craft Shop"
+      - generic:
+        - generic: Vibe / Theme
+        - textbox: Adventurous, warm, community-rooted
+      - generic:
+        - generic: Core Services
+        - generic:
+          - generic: Guided Reef Dives
+          - generic: PADI Certification
+          - textbox "Add a service…"
+      - generic:
+        - generic: Full Description
+        - textbox: Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through.
+        - generic: 0 / 50 words
+      - generic:
+        - generic: Unique Value Proposition
+        - textbox: "Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later — something no other PADI-certified operator on Mactan currently offers guests, and a big part of why people come back to dive with us more than once."
+        - generic: 0 / 50 words
+  - generic [ref=f12e82]:
+    - button "login" [ref=f12e83] [cursor=pointer]
+    - button "onboarding" [ref=f12e84] [cursor=pointer]
+    - button "onboarding-low" [ref=f12e85] [cursor=pointer]
+    - button "dashboard" [ref=f12e86] [cursor=pointer]
+    - button "content" [ref=f12e87] [cursor=pointer]
+    - button "calendar" [ref=f12e88] [cursor=pointer]
+    - button "performance" [ref=f12e89] [cursor=pointer]
+    - button "settings" [ref=f12e90] [cursor=pointer]

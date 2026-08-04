@@ -578,20 +578,20 @@ html[data-view="onboarding"] #view-onboarding{display:block;}
     <div style="display:flex; gap:12px; align-items:center; margin-bottom:20px;">
       <div class="post-thumb" style="width:56px;height:56px;"><span data-lucide="image"></span></div>
       <div>
-        <div class="body-emphasis">"Golden hour dive briefing 🌅" </div>
-        <div class="caption">Instagram · Published Jul 29</div>
+        <div class="body-emphasis" id="am-title">"Golden hour dive briefing 🌅"</div>
+        <div class="caption" id="am-meta">Instagram · Published Jul 29</div>
       </div>
     </div>
     <div class="grid-2" style="margin-bottom:20px;">
       <div class="card" style="box-shadow:none;border:1px solid var(--border-subtle);">
         <div class="caption">Engagements</div>
-        <div class="h1">2,412</div>
-        <div class="badge badge-published"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> +18%</div>
+        <div class="h1" id="am-eng">2,412</div>
+        <div class="badge badge-published" id="am-eng-badge"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> <span id="am-eng-trend">+18%</span></div>
       </div>
       <div class="card" style="box-shadow:none;border:1px solid var(--border-subtle);">
         <div class="caption">Reach</div>
-        <div class="h1">9,880</div>
-        <div class="badge badge-published"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> +9%</div>
+        <div class="h1" id="am-reach">9,880</div>
+        <div class="badge badge-published" id="am-reach-badge"><span data-lucide="trending-up" style="width:12px;height:12px;"></span> <span id="am-reach-trend">+9%</span></div>
       </div>
     </div>
     <svg viewBox="0 0 400 120" style="width:100%;height:120px;">
@@ -621,11 +621,69 @@ html[data-view="onboarding"] #view-onboarding{display:block;}
   </div>
 </div>
 
+<!-- ---------- Business Profile Edit Modal ---------- -->
+<div class="scrim" id="scrim-profile" onclick="closeModal('profile-modal')"></div>
+<div class="modal" id="profile-modal">
+  <div class="modal-hd">
+    <span class="h2">Edit Business Profile</span>
+    <button class="close-x" onclick="closeModal('profile-modal')"><span data-lucide="x"></span></button>
+  </div>
+  <div class="modal-bd">
+    <div class="field"><label>Business Name</label><input id="pf-name" value="Sunset Dive Co." oninput="pfMarkDirty()"></div>
+    <div class="field"><label>Industry</label>
+      <select id="pf-industry" onchange="pfMarkDirty()"><option>Dive Shop</option><option>Café</option><option>Tour Operator</option><option>Craft Shop</option></select>
+    </div>
+    <div class="field"><label>Vibe / Theme</label><input id="pf-vibe" value="Adventurous, warm, community-rooted" oninput="pfMarkDirty()"></div>
+    <div class="field"><label>Core Services</label>
+      <div class="tag-input">
+        <span class="tag">Guided Reef Dives <span data-lucide="x" style="width:10px;height:10px;"></span></span>
+        <span class="tag">PADI Certification <span data-lucide="x" style="width:10px;height:10px;"></span></span>
+        <input placeholder="Add a service…" oninput="pfMarkDirty()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Full Description</label>
+      <textarea id="pf-desc" oninput="pfMarkDirty()">Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through.</textarea>
+      <span class="charcount" id="pf-desc-count">0 / 50 words</span>
+    </div>
+    <div class="field">
+      <label>Unique Value Proposition</label>
+      <textarea id="pf-uvp" oninput="pfMarkDirty()">Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later — something no other PADI-certified operator on Mactan currently offers guests, and a big part of why people come back to dive with us more than once.</textarea>
+      <span class="charcount" id="pf-uvp-count">0 / 50 words</span>
+    </div>
+  </div>
+  <div id="pf-save-bar" style="display:none; position:sticky; bottom:0; background:#fff; border-top:1px solid var(--border-subtle); padding:14px 24px; gap:12px; justify-content:flex-end;">
+    <button class="btn btn-ghost" onclick="closeModal('profile-modal')">Cancel</button>
+    <button class="btn btn-primary" onclick="pfSaveChanges()">Save Changes</button>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <script>
 /* ============================================================ ICONS ============================================================ */
 function renderIcons(){ if(window.lucide) lucide.createIcons(); }
+
+/* ============================================================ SHARED APP STATE ============================================================ */
+/** Platform connection state — shared by Onboarding step 4, Settings → Platforms, and
+ *  Performance's filter chips, so connecting/disconnecting in one place reflects everywhere. */
+const APP_STATE = {
+  connections: { instagram: true, facebook: true, tiktok: false }
+};
+
+/** Counts words in a string (whitespace-separated, trimmed). Empty/whitespace-only -> 0. */
+function wordCount(str){
+  const t = (str || '').trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
+/** Updates a word-count caption element's text and color against a minimum threshold. */
+function updateWordCounter(elId, count, min){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.textContent = `${count} / ${min} words`;
+  el.style.color = count >= min ? 'var(--state-success-text)' : 'var(--text-muted)';
+}
 
 /* ============================================================ NAV DATA ============================================================ */
 const NAV = [
@@ -693,6 +751,18 @@ function submitAuth(){
 /* ============================================================ ONBOARDING ============================================================ */
 const OB_STEPS = ['Basic Info','Brand Identity','Structured Inputs','Assets & Links','Uniqueness Score'];
 let obIndex = 0;
+/** Drives the Uniqueness Score reveal's scripted demo path. `path` is 'high' (score starts at
+ *  82, standard celebratory reveal) or 'low' (score starts at 42, triggers 3 guided questions
+ *  before revealing a boosted final score). Reset via resetOnboardingDemo(). */
+let obScoreState = { path: 'high', qIndex: 0, answers: [], finished: false };
+function resetOnboardingDemo(path){
+  obScoreState = { path: path || 'high', qIndex: 0, answers: [], finished: false };
+}
+const LOW_SCORE_QUESTIONS = [
+  "What do customers thank you for most often, unprompted?",
+  "What's something you do that most competitors skip?",
+  "If a guest could only remember one thing about you, what would you want it to be?"
+];
 
 function obRenderSideList(){
   document.getElementById('ob-step-list').innerHTML = OB_STEPS.map((s,i)=>`
@@ -710,11 +780,11 @@ function obPanelHTML(i){
     <div class="field"><label>Slogan <span class="opt">(optional)</span></label><input placeholder="e.g. Chase the current."></div>`;
   if(i===1) return `
     <h2 class="h1" style="margin-bottom:6px;">What's your brand's vibe?</h2>
-    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">Pick up to 3 — this shapes the tone of your AI-generated content.</p>
-    <div class="field"><label>Vibe / Theme</label>
-      <div class="chip-grid" id="vibe-chips">
-        ${['Adventurous','Relaxed','Luxury','Family-friendly','Rustic','Modern'].map((v,idx)=>`<span class="chip ${idx===0?'selected':''}" onclick="toggleChip(this)">${v}</span>`).join('')}
-      </div>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">Describe it in your own words — this shapes the tone of your AI-generated content.</p>
+    <div class="field">
+      <label>Vibe / Theme</label>
+      <input id="vibe-input" placeholder="e.g. warm, adventurous, community-rooted" value="Adventurous, warm, community-rooted" oninput="obUpdateNextState()">
+      <span class="caption">At least 1 word required.</span>
     </div>
     <div class="field"><label>Core Services</label>
       <div class="tag-input">
@@ -725,33 +795,83 @@ function obPanelHTML(i){
     </div>`;
   if(i===2) return `
     <h2 class="h1" style="margin-bottom:6px;">Describe your business</h2>
-    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">The more detail, the sharper your AI content will be.</p>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">The more detail, the sharper your AI content will be. Full Description and UVP each need at least 50 words.</p>
     <div class="field">
       <label>Full Description</label>
-      <textarea placeholder="e.g. We're a family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels...">Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation.</textarea>
-      <span class="charcount">128 / 500</span>
+      <textarea id="desc-textarea" oninput="obUpdateNextState()" placeholder="e.g. We're a family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels...">Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through, not just with a card in their wallet.</textarea>
+      <span class="charcount" id="desc-count">0 / 50 words</span>
     </div>
-    <div class="field"><label>Unique Value Proposition</label><input placeholder="What makes you different in one sentence?" value="Every dive funds a coral restoration project."></div>`;
-  if(i===3) return `
-    <h2 class="h1" style="margin-bottom:6px;">Assets & links</h2>
-    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">All optional — add what you have, skip the rest.</p>
-    <div class="field"><label>Instagram handle <span class="opt">(optional)</span></label><input placeholder="@yourbusiness"></div>
-    <div class="field"><label>TikTok handle <span class="opt">(optional)</span></label><input placeholder="@yourbusiness"></div>
-    <div class="field"><label>Website URL <span class="opt">(optional)</span></label><input placeholder="https://"></div>
-    <div class="field"><label>Logo <span class="opt">(optional)</span></label>
-      <div class="upload-zone"><span data-lucide="upload-cloud" style="width:24px;height:24px;margin-bottom:6px;"></span><div class="body-txt">Tap to upload or drag & drop</div></div>
+    <div class="field">
+      <label>Unique Value Proposition</label>
+      <textarea id="uvp-textarea" oninput="obUpdateNextState()" placeholder="What makes you different? (at least 50 words)">Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later, which nobody else offering PADI courses on Mactan currently does.</textarea>
+      <span class="charcount" id="uvp-count">0 / 50 words</span>
     </div>`;
-  if(i===4) return `
+  if(i===3) return `
+    <h2 class="h1" style="margin-bottom:6px;">Connect your platforms</h2>
+    <p class="body-txt" style="color:var(--text-muted);margin-bottom:24px;">Connect the accounts you want CeView to publish to — you can add more later in Settings.</p>
+    ${obConnectionRow('instagram','Instagram','instagram')}
+    ${obConnectionRow('facebook','Facebook','facebook')}
+    ${obConnectionRow('tiktok','TikTok','music-2')}
+    <div class="field" style="margin-top:20px;"><label>Logo <span class="opt">(optional)</span></label>
+      <div class="upload-zone"><span data-lucide="upload-cloud" style="width:24px;height:24px;margin-bottom:6px;"></span><div class="body-txt">Tap to upload or drag & drop</div></div>
+    </div>
+    <div class="field"><label>Website URL <span class="opt">(optional)</span></label><input placeholder="https://"></div>`;
+  if(i===4){
+    if(obScoreState.path==='low' && !obScoreState.finished) return obLowScorePanelHTML();
+    const score = obScoreState.path==='low' ? 78 : 82;
+    const insight = obScoreState.path==='low'
+      ? "After a few tweaks, your coral-restoration program and hands-on PADI teaching style stand out clearly against nearby dive shops."
+      : "Your coral-conservation angle and PADI-certified team put you well ahead of nearby dive operators on distinctiveness.";
+    const offset = 326 - (326 * score / 100);
+    return `
     <div class="reveal-wrap">
       <h2 class="h1" style="margin-bottom:20px;">Your Uniqueness Score</h2>
       <div class="gauge reveal-gauge">
         <svg width="120" height="120"><circle cx="60" cy="60" r="52" stroke="#E4E9F2" stroke-width="12" fill="none"/>
-        <circle cx="60" cy="60" r="52" stroke="#F4A216" stroke-width="12" fill="none" stroke-dasharray="326" stroke-dashoffset="70" stroke-linecap="round"/></svg>
-        <div class="val">82</div>
+        <circle cx="60" cy="60" r="52" stroke="#F4A216" stroke-width="12" fill="none" stroke-dasharray="326" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>
+        <div class="val">${score}</div>
       </div>
-      <p class="body-txt" style="max-width:360px;margin:0 auto 8px;">Your coral-conservation angle and PADI-certified team put you well ahead of nearby dive operators on distinctiveness.</p>
+      <p class="body-txt" style="max-width:360px;margin:0 auto 8px;">${insight}</p>
       <span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span> AI-assisted insight</span>
     </div>`;
+  }
+}
+
+/** Renders the low-score path's current guided question (progressive, one at a time) with a
+ *  "Skip for now" escape hatch. Shown while obScoreState.path==='low' and not yet finished. */
+function obLowScorePanelHTML(){
+  const q = obScoreState.qIndex;
+  const offset = 326 - (326 * 42 / 100);
+  return `
+    <div class="reveal-wrap">
+      <h2 class="h1" style="margin-bottom:12px;">Your Uniqueness Score</h2>
+      <div class="gauge reveal-gauge">
+        <svg width="120" height="120"><circle cx="60" cy="60" r="52" stroke="#E4E9F2" stroke-width="12" fill="none"/>
+        <circle cx="60" cy="60" r="52" stroke="#F4A216" stroke-width="12" fill="none" stroke-dasharray="326" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>
+        <div class="val">42</div>
+      </div>
+      <p class="body-txt" style="max-width:360px;margin:0 auto 20px;">Let's sharpen this a bit — a few quick questions can reveal what makes you different.</p>
+    </div>
+    <div class="caption" style="text-align:center;margin-bottom:6px;">Question ${q+1} of 3</div>
+    <div class="field">
+      <label>${LOW_SCORE_QUESTIONS[q]}</label>
+      <input id="ob-lowscore-answer" placeholder="Type your answer…">
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <a href="#" class="caption" style="color:var(--brand-primary);font-weight:700;" onclick="obLowScoreAdvance(false);return false;">Skip for now</a>
+    </div>`;
+}
+
+/** Advances the low-score question sequence. Called by the "Next Question" primary button
+ *  (answered=true, via obNext) or the "Skip for now" link (answered=false). */
+function obLowScoreAdvance(answered){
+  if(answered){
+    const input = document.getElementById('ob-lowscore-answer');
+    obScoreState.answers.push(input ? input.value : '');
+  }
+  obScoreState.qIndex++;
+  if(obScoreState.qIndex >= 3) obScoreState.finished = true;
+  obRender();
 }
 
 function obRender(){
@@ -760,10 +880,39 @@ function obRender(){
   document.getElementById('ob-progress-bar').style.width = ((obIndex+1)/OB_STEPS.length*100)+'%';
   document.getElementById('ob-step-count').textContent = `Step ${obIndex+1} of ${OB_STEPS.length}`;
   document.getElementById('ob-back-btn').style.display = obIndex===0 ? 'none':'inline-flex';
-  document.getElementById('ob-next-btn').textContent = obIndex===OB_STEPS.length-1 ? 'Go to Dashboard' : 'Next';
+  document.getElementById('ob-next-btn').textContent =
+    (obIndex===4 && obScoreState.path==='low' && !obScoreState.finished) ? 'Next Question' :
+    (obIndex===OB_STEPS.length-1 ? 'Go to Dashboard' : 'Next');
+  obUpdateNextState();
   renderIcons();
 }
+
+/** Gates the Next button on the current step's validation rules. Steps without rules are
+ *  always valid. Also refreshes the word-count captions on step 3 (Structured Inputs). */
+function obUpdateNextState(){
+  const btn = document.getElementById('ob-next-btn');
+  let valid = true;
+  if(obIndex===1){
+    const vibe = document.getElementById('vibe-input');
+    if(vibe) valid = wordCount(vibe.value) >= 1;
+  } else if(obIndex===2){
+    const desc = document.getElementById('desc-textarea');
+    const uvp = document.getElementById('uvp-textarea');
+    if(desc && uvp){
+      const dWords = wordCount(desc.value);
+      const uWords = wordCount(uvp.value);
+      updateWordCounter('desc-count', dWords, 50);
+      updateWordCounter('uvp-count', uWords, 50);
+      valid = dWords >= 50 && uWords >= 50;
+    }
+  }
+  if(btn) btn.classList.toggle('is-disabled', !valid);
+}
 function obNext(){
+  if(obIndex===4 && obScoreState.path==='low' && !obScoreState.finished){
+    obLowScoreAdvance(true);
+    return;
+  }
   if(obIndex < OB_STEPS.length-1){ obIndex++; obRender(); }
   else { goApp('dashboard'); }
 }
@@ -772,6 +921,28 @@ function obPrev(){
   else { document.documentElement.setAttribute('data-view','login'); }
 }
 function toggleChip(el){ el.classList.toggle('selected'); }
+
+/** Renders one Connect/Connected row for Onboarding step 4, reading/writing APP_STATE.connections
+ *  so it stays in sync with Settings → Platforms. */
+function obConnectionRow(key, label, icon){
+  const connected = APP_STATE.connections[key];
+  return `<div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span data-lucide="${icon}" style="color:${connected?'var(--brand-primary)':'var(--text-muted)'};"></span>
+    <div style="flex:1;">
+      <div class="body-emphasis">${label}</div>
+      <div class="caption">${connected ? '@sunsetdive.ph' : 'Not connected'}</div>
+    </div>
+    ${connected
+      ? `<span class="badge badge-published">Connected</span><button class="btn btn-ghost btn-sm" onclick="obToggleConnect('${key}')">Disconnect</button>`
+      : `<button class="btn btn-secondary btn-sm" onclick="obToggleConnect('${key}')">Connect</button>`}
+  </div>`;
+}
+function obToggleConnect(key){
+  APP_STATE.connections[key] = !APP_STATE.connections[key];
+  obRender();
+  showToast(APP_STATE.connections[key] ? `${label(key)} connected` : `${label(key)} disconnected`, 'link');
+  function label(k){ return k==='tiktok' ? 'TikTok' : k.charAt(0).toUpperCase()+k.slice(1); }
+}
 
 /* ============================================================ DASHBOARD: market cards ============================================================ */
 const MARKETS = [
@@ -794,6 +965,183 @@ function buildMarketCards(){
 }
 
 /* ============================================================ CONTENT STUDIO ============================================================ */
+const CS_PLATFORM_META = {
+  tiktok:    { label: 'TikTok',    icon: 'music-2' },
+  facebook:  { label: 'Facebook',  icon: 'facebook' },
+  instagram: { label: 'Instagram', icon: 'instagram' }
+};
+/** Current caption text per platform, in that platform's voice. Mutated directly as the user
+ *  types (csUpdateCaption) or regenerates (regenCaption). */
+const CS_CAPTIONS = {
+  instagram: "안녕하세요! 🌊 Sunrise reef dive around Mactan's coral gardens — PADI-certified guides, small groups, big payoff. Every booking funds local coral restoration. 📍 Book your golden-hour dive today. #CebuDiving #MactanReef #PADICebu",
+  tiktok: "POV: your alarm says 5am but the reef says worth it 🌅🤿 small-group sunrise dive, PADI guides, zero crowds. link in bio to book",
+  facebook: "Good morning from Mactan! 🌅 Our sunrise reef dive is back — small groups, PADI-certified guides, and every booking helps fund the coral restoration project we run with local fisherfolk. Come see what we've been growing. Message us to book your spot this week."
+};
+/** "Regenerate" swaps in these alternates rather than calling a real AI. */
+const CS_CAPTION_ALTS = {
+  instagram: "Chase the sunrise 🌅 Small-group reef dive around Mactan's coral gardens — PADI guides, easy pace, big payoff. Every booking funds reef restoration nearby. #CebuDiving #MactanReef #PADICebu",
+  tiktok: "the ocean at 6am hits different 🤿🌊 small group, PADI-certified, reef restoration funded by your booking. book the sunrise dive, link in bio",
+  facebook: "There's something about the reef at sunrise that photos don't quite capture. Join our small-group dive this week — PADI-certified guides, easy pace for all levels, and every booking helps fund the coral nursery we're growing with local fisherfolk. Message us to reserve your spot."
+};
+const VISUAL_GUIDE_ASPECTS = [
+  { name: 'Lighting',          def: 'How light shapes the mood and clarity of your shot.',        apply: 'Shoot at golden hour (5:30–6:30pm), warm backlight behind divers.' },
+  { name: 'Composition',       def: 'How elements are arranged within the frame.',                 apply: 'Rule-of-thirds — keep the diver off-center, let the reef lead toward the horizon.' },
+  { name: 'Color Palette',     def: 'The dominant tones that set your brand feel.',                 apply: 'Deep teal water + amber highlights. Avoid oversaturated blue filters.' },
+  { name: 'Framing & Angle',   def: 'Camera distance and perspective.',                             apply: 'Wide shot from just above the water surface, full group included for scale.' },
+  { name: 'Mood & Styling',    def: 'The overall emotional tone of the image.',                     apply: 'Aspirational and adventurous — candid smiles, not posed stares.' }
+];
+/** Platforms currently selected in the Platforms card — drives which Caption and Live Preview
+ *  tabs exist. Starts matching the prototype's original default (TikTok + Facebook selected). */
+let csSelectedPlatforms = ['tiktok','facebook'];
+/** Which selected platform's caption/preview is currently shown. */
+let csActiveTab = 'tiktok';
+
+function csCaptureFormState(){
+  const agree = document.getElementById('agree-check');
+  const switches = document.querySelectorAll('#screen-content .switch');
+  return {
+    agree: agree ? agree.checked : false,
+    switches: Array.from(switches).map(s=>s.classList.contains('on'))
+  };
+}
+function csApplyFormState(state){
+  const agree = document.getElementById('agree-check');
+  if(agree){ agree.checked = state.agree; checkPublishReady(); }
+  const switches = document.querySelectorAll('#screen-content .switch');
+  switches.forEach((s,i)=>{ if(state.switches[i]) s.classList.add('on'); else s.classList.remove('on'); });
+}
+function csTogglePlatform(key){
+  const idx = csSelectedPlatforms.indexOf(key);
+  if(idx>-1) csSelectedPlatforms.splice(idx,1);
+  else csSelectedPlatforms.push(key);
+  if(!csSelectedPlatforms.includes(csActiveTab)) csActiveTab = csSelectedPlatforms[0] || null;
+  const formState = csCaptureFormState();
+  buildContentStudio();
+  csApplyFormState(formState);
+}
+function csSetActiveTab(key){
+  csActiveTab = key;
+  const formState = csCaptureFormState();
+  buildContentStudio();
+  csApplyFormState(formState);
+}
+function csUpdateCaption(val){
+  CS_CAPTIONS[csActiveTab] = val;
+  csUpdatePreview();
+}
+function csUpdatePreview(){
+  const capEl = document.getElementById('cs-preview-caption');
+  if(capEl) capEl.textContent = CS_CAPTIONS[csActiveTab];
+}
+
+function csCaptionCardHTML(){
+  if(csSelectedPlatforms.length===0){
+    return `<div class="card">
+      <div class="card-header"><span class="h3">Caption</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
+      <div class="empty-state" style="padding:24px 12px;">
+        <div class="ic"><span data-lucide="megaphone"></span></div>
+        <p class="body-txt">Select a platform below to generate a caption.</p>
+      </div>
+    </div>`;
+  }
+  return `<div class="card">
+    <div class="card-header"><span class="h3">Caption</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
+    <div class="chip-grid" style="margin-bottom:12px;">
+      ${csSelectedPlatforms.map(k=>`<span class="chip ${k===csActiveTab?'selected':''}" onclick="csSetActiveTab('${k}')"><span data-lucide="${CS_PLATFORM_META[k].icon}" style="width:14px;height:14px;"></span>${CS_PLATFORM_META[k].label}</span>`).join('')}
+    </div>
+    <textarea id="cs-caption" oninput="csUpdateCaption(this.value)" style="width:100%;min-height:100px;border:1px solid var(--border-subtle);border-radius:8px;padding:10px 12px;font-size:14px;">${CS_CAPTIONS[csActiveTab]}</textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+      <button class="btn btn-ghost btn-sm" onclick="regenCaption()" id="regen-btn"><span data-lucide="refresh-cw"></span> Regenerate</button>
+    </div>
+  </div>`;
+}
+
+function csVisualGuideHTML(){
+  return `<div class="card">
+    <div class="card-header"><span class="h3">Visual Guide</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${VISUAL_GUIDE_ASPECTS.map((a,idx)=>`
+        <div style="display:flex;gap:12px;">
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--surface-sand);color:var(--brand-accent-strong);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;">${idx+1}</div>
+          <div>
+            <div class="body-emphasis">${a.name}</div>
+            <div class="caption" style="margin:2px 0 4px;">${a.def}</div>
+            <div class="body-txt">${a.apply}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function csPreviewHTML(){
+  if(csSelectedPlatforms.length===0){
+    return `<div class="card">
+      <div class="h3" style="margin-bottom:12px;">Live Preview</div>
+      <div class="empty-state" style="padding:24px 12px;">
+        <div class="ic"><span data-lucide="eye"></span></div>
+        <p class="body-txt">Select a platform below to see a preview.</p>
+      </div>
+    </div>`;
+  }
+  const tab = csActiveTab;
+  const caption = CS_CAPTIONS[tab];
+  let inner;
+  if(tab==='instagram'){
+    inner = `<div style="border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border-subtle);">
+        <div class="avatar" style="width:26px;height:26px;font-size:11px;">SD</div>
+        <span class="body-emphasis" style="font-size:13px;">sunsetdive.ph</span>
+      </div>
+      <div style="aspect-ratio:1/1;background:linear-gradient(160deg,#0F2854,#F4A216 130%); display:flex;align-items:center;justify-content:center;color:#fff;">
+        <span data-lucide="waves" style="width:40px;height:40px;opacity:.8;"></span>
+      </div>
+      <div style="padding:10px 12px 4px;display:flex;gap:12px;color:var(--brand-primary);">
+        <span data-lucide="heart" style="width:18px;height:18px;"></span><span data-lucide="message-circle" style="width:18px;height:18px;"></span><span data-lucide="send" style="width:18px;height:18px;"></span>
+      </div>
+      <div style="padding:6px 12px 12px;">
+        <p class="caption" id="cs-preview-caption" style="color:var(--text-primary);">${caption}</p>
+      </div>
+    </div>`;
+  } else if(tab==='tiktok'){
+    inner = `<div style="border-radius:12px; overflow:hidden; position:relative; aspect-ratio:9/16; max-width:220px; margin:0 auto; background:linear-gradient(200deg,#0F2854,#132D5E 60%,#0A1B39);">
+      <div style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;color:#fff;">
+        <div class="avatar" style="width:22px;height:22px;font-size:9px;">SD</div>
+        <span class="caption" style="color:#fff;">@sunsetdive.ph</span>
+      </div>
+      <div style="position:absolute;right:8px;bottom:70px;display:flex;flex-direction:column;gap:14px;color:#fff;align-items:center;">
+        <span data-lucide="heart"></span><span data-lucide="message-circle"></span><span data-lucide="share-2"></span>
+      </div>
+      <div style="position:absolute;left:10px;right:44px;bottom:14px;color:#fff;display:flex;flex-direction:column;gap:6px;">
+        <p class="caption" id="cs-preview-caption" style="color:#fff;">${caption}</p>
+        <div style="display:flex;align-items:center;gap:4px;"><span data-lucide="music-2" style="width:12px;height:12px;"></span><span class="caption" style="color:#fff;">original sound — Sunset Dive Co.</span></div>
+      </div>
+    </div>`;
+  } else {
+    inner = `<div style="border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;">
+        <div class="avatar" style="width:32px;height:32px;font-size:12px;">SD</div>
+        <div><div class="body-emphasis" style="font-size:13px;">Sunset Dive Co.</div><div class="caption">Just now · 🌐</div></div>
+      </div>
+      <div style="padding:0 12px 10px;"><p class="body-txt" id="cs-preview-caption">${caption}</p></div>
+      <div style="aspect-ratio:16/10;background:linear-gradient(160deg,#0F2854,#F4A216 130%); display:flex;align-items:center;justify-content:center;color:#fff;">
+        <span data-lucide="waves" style="width:40px;height:40px;opacity:.8;"></span>
+      </div>
+      <div style="padding:10px 12px;display:flex;gap:16px;border-top:1px solid var(--border-subtle);">
+        <span class="caption" style="display:flex;gap:4px;align-items:center;"><span data-lucide="thumbs-up" style="width:14px;height:14px;"></span>Like</span>
+        <span class="caption" style="display:flex;gap:4px;align-items:center;"><span data-lucide="message-circle" style="width:14px;height:14px;"></span>Comment</span>
+        <span class="caption" style="display:flex;gap:4px;align-items:center;"><span data-lucide="share-2" style="width:14px;height:14px;"></span>Share</span>
+      </div>
+    </div>`;
+  }
+  return `<div class="card" style="position:sticky; top:88px;">
+    <div class="h3" style="margin-bottom:12px;">Live Preview</div>
+    <div class="chip-grid" style="margin-bottom:12px;">
+      ${csSelectedPlatforms.map(k=>`<span class="chip ${k===csActiveTab?'selected':''}" onclick="csSetActiveTab('${k}')">${CS_PLATFORM_META[k].label}</span>`).join('')}
+    </div>
+    ${inner}
+  </div>`;
+}
+
 function buildContentStudio(){
   document.getElementById('screen-content').innerHTML = `
     <div class="screen-hd">
@@ -804,18 +1152,8 @@ function buildContentStudio(){
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="chip selected" style="width:fit-content;">🇰🇷 Targeting Korea <span data-lucide="x" style="width:12px;height:12px;"></span></div>
 
-        <div class="card">
-          <div class="card-header"><span class="h3">Caption</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
-          <textarea id="cs-caption" style="width:100%;min-height:100px;border:1px solid var(--border-subtle);border-radius:8px;padding:10px 12px;font-size:14px;" >안녕하세요! 🌊 Discover Mactan's coral gardens on our sunrise reef dive — PADI-certified guides, small groups, and a portion of every booking funds local coral restoration. Book your golden-hour dive today.</textarea>
-          <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-            <button class="btn btn-ghost btn-sm" onclick="regenCaption()" id="regen-btn"><span data-lucide="refresh-cw"></span> Regenerate</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="h3">Visual Guide</span><span class="badge badge-ai"><span data-lucide="sparkles" style="width:12px;height:12px;"></span>AI-generated</span></div>
-          <p class="body-txt" style="color:var(--text-muted);">Warm golden-hour lighting, wide shot of divers descending over coral. Palette: deep teal water + amber sun flare. Avoid flash-lit close-ups — this market responds to natural light, aspirational framing.</p>
-        </div>
+        ${csCaptionCardHTML()}
+        ${csVisualGuideHTML()}
 
         <div class="card">
           <div class="h3" style="margin-bottom:10px;">Pubmat Upload</div>
@@ -825,9 +1163,7 @@ function buildContentStudio(){
         <div class="card">
           <div class="h3" style="margin-bottom:10px;">Platforms</div>
           <div class="chip-grid">
-            <span class="chip selected" onclick="toggleChip(this)"><span data-lucide="music-2" style="width:14px;height:14px;"></span>TikTok</span>
-            <span class="chip selected" onclick="toggleChip(this)"><span data-lucide="facebook" style="width:14px;height:14px;"></span>Facebook</span>
-            <span class="chip" onclick="toggleChip(this)"><span data-lucide="instagram" style="width:14px;height:14px;"></span>Instagram</span>
+            ${Object.keys(CS_PLATFORM_META).map(k=>`<span class="chip ${csSelectedPlatforms.includes(k)?'selected':''}" onclick="csTogglePlatform('${k}')"><span data-lucide="${CS_PLATFORM_META[k].icon}" style="width:14px;height:14px;"></span>${CS_PLATFORM_META[k].label}</span>`).join('')}
           </div>
         </div>
 
@@ -857,21 +1193,7 @@ function buildContentStudio(){
         </div>
       </div>
 
-      <div class="card" style="position:sticky; top:88px;">
-        <div class="h3" style="margin-bottom:12px;">Live Preview</div>
-        <div style="border:1px solid var(--border-subtle); border-radius:12px; overflow:hidden;">
-          <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border-subtle);">
-            <div class="avatar" style="width:26px;height:26px;font-size:11px;">SD</div>
-            <span class="body-emphasis" style="font-size:13px;">sunsetdive.ph</span>
-          </div>
-          <div style="aspect-ratio:1/1;background:linear-gradient(160deg,#0F2854,#F4A216 130%); display:flex;align-items:center;justify-content:center;color:#fff;">
-            <span data-lucide="waves" style="width:40px;height:40px;opacity:.8;"></span>
-          </div>
-          <div style="padding:10px 12px;">
-            <p class="caption" style="color:var(--text-primary);">안녕하세요! 🌊 Discover Mactan's coral gardens on our sunrise reef dive...</p>
-          </div>
-        </div>
-      </div>
+      ${csPreviewHTML()}
     </div>
 
     <div style="margin-top:32px;">
@@ -901,13 +1223,17 @@ function checkPublishReady(){
 function regenCaption(){
   const btn = document.getElementById('regen-btn');
   const ta = document.getElementById('cs-caption');
+  const tab = csActiveTab;
   btn.classList.add('is-loading');
-  const before = ta.value;
   ta.value = '';
   ta.placeholder='Generating…';
+  const previewCapEl = document.getElementById('cs-preview-caption');
+  if(previewCapEl) previewCapEl.textContent = 'Generating…';
   setTimeout(()=>{
     btn.classList.remove('is-loading');
-    ta.value = "Chase the sunrise 🌅 Join our small-group reef dive around Mactan's coral gardens — PADI guides, easy pace, big payoff. Every booking helps fund reef restoration nearby.";
+    CS_CAPTIONS[tab] = CS_CAPTION_ALTS[tab];
+    ta.value = CS_CAPTIONS[tab];
+    csUpdatePreview();
   }, 1100);
 }
 function publishPost(){
@@ -915,23 +1241,92 @@ function publishPost(){
 }
 
 /* ============================================================ CALENDAR ============================================================ */
-function buildCalendar(){
+/** Hardcoded post data keyed by day-of-month (August 2026). Published posts carry real mock
+ *  stats and open the Analytics Modal; draft/scheduled posts show a routing toast instead. */
+const CALENDAR_POSTS = {
+  3:  { title: 'Sunrise dive teaser',          platform: 'TikTok',            status: 'published', date: 'Aug 3',  engagements: '1.1k', engTrend: '+5%',  reach: '4.6k',  reachTrend: '+3%'  },
+  7:  { title: 'PADI cert weekend special',    platform: 'Facebook',          status: 'published', date: 'Aug 7',  engagements: '980',  engTrend: '+2%',  reach: '3.9k',  reachTrend: '+1%'  },
+  12: { title: 'Golden Week promo',            platform: 'Facebook · TikTok', status: 'scheduled', date: 'Aug 12', engagements: '—',    engTrend: '',     reach: '—',     reachTrend: ''     },
+  18: { title: 'Reef cleanup dive',            platform: 'Instagram',         status: 'published', date: 'Aug 18', engagements: '2.4k', engTrend: '+18%', reach: '9.9k',  reachTrend: '+9%'  },
+  21: { title: 'Behind the scenes: boat prep', platform: 'TikTok',            status: 'published', date: 'Aug 21', engagements: '5.1k', engTrend: '+22%', reach: '14.2k', reachTrend: '+11%' },
+  27: { title: 'Café weekend combo',           platform: 'Draft',             status: 'draft',     date: 'Aug 27', engagements: '—',    engTrend: '',     reach: '—',     reachTrend: ''     }
+};
+/** Single source of truth for status → visual mapping, shared by calGridHTML (dot color)
+ *  and calListHTML (badge class) so the two renderers can't drift out of sync. */
+const CAL_STATUS_META = {
+  published: { dot: '#0F2854', badgeClass: 'badge-published' },
+  scheduled: { dot: '#F4A216', badgeClass: 'badge-scheduled' },
+  draft:     { dot: '#98A7B9', badgeClass: 'badge-draft' }
+};
+let calViewMode = 'grid';
+
+function calendarDayClick(day){
+  const post = CALENDAR_POSTS[day];
+  if(!post) return;
+  if(post.status === 'published') openAnalyticsFor(post);
+  else showToast(`Opening "${post.title}" in Content Studio…`, 'edit-3');
+}
+
+/** Fills in the Analytics Modal's dynamic fields and opens it. Shared by Calendar and
+ *  Performance so both surfaces show real per-post numbers instead of one static example. */
+function openAnalyticsFor(post){
+  document.getElementById('am-title').textContent = `"${post.title}"`;
+  document.getElementById('am-meta').textContent = `${post.platform} · Published ${post.date}`;
+  document.getElementById('am-eng').textContent = post.engagements;
+  document.getElementById('am-reach').textContent = post.reach;
+  document.getElementById('am-eng-trend').textContent = post.engTrend;
+  document.getElementById('am-reach-trend').textContent = post.reachTrend;
+  document.getElementById('am-eng-badge').style.display = post.engTrend ? 'inline-flex' : 'none';
+  document.getElementById('am-reach-badge').style.display = post.reachTrend ? 'inline-flex' : 'none';
+  openModal('analytics-modal');
+}
+
+function calGridHTML(){
   const days = [];
   for(let i=1;i<=31;i++){
-    const hasContent = [3,7,12,18,21,27].includes(i);
+    const post = CALENDAR_POSTS[i];
     const isSeason = [10,11,12].includes(i);
     days.push(`<div style="aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
       background:${isSeason?'#FFF5DF':'#fff'}; border:1px solid var(--border-subtle); cursor:pointer; position:relative;"
-      ${hasContent? `onclick="openModal('analytics-modal')"`:''}>
+      ${post ? `onclick="calendarDayClick(${i})"` : ''}>
       <span class="caption" style="color:var(--text-primary);">${i}</span>
-      ${hasContent? `<span style="display:flex;gap:2px;">${i%2===0?'<i style="width:5px;height:5px;border-radius:50%;background:#0F2854;"></i>':'<i style="width:5px;height:5px;border-radius:50%;background:#F4A216;"></i>'}</span>`:''}
+      ${post ? `<span style="display:flex;gap:2px;"><i style="width:5px;height:5px;border-radius:50%;background:${CAL_STATUS_META[post.status].dot};"></i></span>` : ''}
     </div>`);
   }
+  return `<div class="card">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px;">
+      ${['S','M','T','W','T','F','S'].map(d=>`<div class="caption" style="text-align:center;">${d}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">${days.join('')}</div>
+  </div>`;
+}
+
+function calListHTML(){
+  const days = Object.keys(CALENDAR_POSTS).map(Number).sort((a,b)=>a-b);
+  return `<div style="display:flex;flex-direction:column;gap:20px;">
+    ${days.map(day=>{
+      const post = CALENDAR_POSTS[day];
+      return `<div>
+        <div class="caption" style="margin-bottom:8px;">AUG ${day}</div>
+        <div class="card" style="display:flex;gap:12px;align-items:center;cursor:pointer;" onclick="calendarDayClick(${day})">
+          <div class="post-thumb"><span data-lucide="image"></span></div>
+          <div style="flex:1;">
+            <div class="body-emphasis">${post.title}</div>
+            <div class="caption">${post.platform}</div>
+          </div>
+          <span class="badge ${CAL_STATUS_META[post.status].badgeClass}">${post.status.charAt(0).toUpperCase()+post.status.slice(1)}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function buildCalendar(){
   document.getElementById('screen-calendar').innerHTML = `
     <div class="screen-hd" style="display:flex;align-items:center;justify-content:space-between;">
       <div><div class="caption kicker">CALENDAR</div><h1 class="h1">August 2026</h1></div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" id="cal-toggle" onclick="toggleCalView()">List View</button>
+        <button class="btn btn-ghost btn-sm" id="cal-toggle" onclick="toggleCalView()">${calViewMode==='grid' ? 'List View' : 'Grid View'}</button>
       </div>
     </div>
     <div class="banner banner-warning">
@@ -939,18 +1334,28 @@ function buildCalendar(){
       <span>Golden Week Prep (JP) window: Aug 10–12 — highlighted below.</span>
     </div>
     <div class="grid-2" style="grid-template-columns:1fr; gap:24px;" id="cal-layout">
-      <div class="card">
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px;">
-          ${['S','M','T','W','T','F','S'].map(d=>`<div class="caption" style="text-align:center;">${d}</div>`).join('')}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">${days.join('')}</div>
-      </div>
+      ${calViewMode==='grid' ? calGridHTML() : calListHTML()}
     </div>`;
   renderIcons();
 }
-function toggleCalView(){ showToast('List view (prototype)', 'list'); }
+function toggleCalView(){
+  calViewMode = calViewMode === 'grid' ? 'list' : 'grid';
+  buildCalendar();
+}
 
 /* ============================================================ PERFORMANCE ============================================================ */
+/** "All" plus one chip per platform currently connected in Settings (APP_STATE.connections). */
+function performanceFilterChips(){
+  const labels = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok' };
+  const connected = Object.keys(APP_STATE.connections).filter(k=>APP_STATE.connections[k]).map(k=>labels[k]);
+  return ['All', ...connected];
+}
+/** Mock published-post data, structured for openAnalyticsFor (shared with Calendar). */
+const PERFORMANCE_POSTS = [
+  { title: 'Sunrise paddle & snorkel intro', platform: 'Instagram', date: 'Jul 29', engagements: '2.4k', engTrend: '+18%', reach: '9.9k',  reachTrend: '+9%',  metric: '2.4k engagements' },
+  { title: 'Open Water refresher course',    platform: 'Facebook',  date: 'Jul 24', engagements: '980',  engTrend: '+6%',  reach: '3.9k',  reachTrend: '+2%',  metric: '980 engagements'  },
+  { title: 'Meet the dive crew',             platform: 'TikTok',    date: 'Jul 18', engagements: '5.1k', engTrend: '+22%', reach: '14.2k', reachTrend: '+11%', metric: '5.1k engagements' }
+];
 function buildPerformance(){
   document.getElementById('screen-performance').innerHTML = `
     <div class="screen-hd">
@@ -970,20 +1375,16 @@ function buildPerformance(){
       </div>`).join('')}
     </div>
     <div class="hscroll" style="margin-bottom:16px;">
-      ${['All','TikTok','Instagram','Facebook'].map((p,i)=>`<span class="chip ${i===0?'selected':''}" onclick="filterPills(this)">${p}</span>`).join('')}
+      ${performanceFilterChips().map((p,i)=>`<span class="chip ${i===0?'selected':''}" onclick="filterPills(this)">${p}</span>`).join('')}
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${[
-        {t:'Reef cleanup dive 🌊', p:'Instagram', d:'Jul 29', m:'2.4k engagements'},
-        {t:'PADI cert weekend special', p:'Facebook', d:'Jul 24', m:'980 engagements'},
-        {t:'Behind the scenes: boat prep', p:'TikTok', d:'Jul 18', m:'5.1k engagements'},
-      ].map(c=>`<div class="card" style="display:flex; gap:12px; align-items:center; cursor:pointer;" onclick="openModal('analytics-modal')">
+      ${PERFORMANCE_POSTS.map((c,idx)=>`<div class="card" style="display:flex; gap:12px; align-items:center; cursor:pointer;" onclick="openAnalyticsFor(PERFORMANCE_POSTS[${idx}])">
         <div class="post-thumb" style="width:52px;height:52px;"><span data-lucide="image"></span></div>
         <div style="flex:1;">
-          <div class="body-emphasis">${c.t}</div>
-          <div class="caption">${c.p} · ${c.d}</div>
+          <div class="body-emphasis">${c.title}</div>
+          <div class="caption">${c.platform} · ${c.date}</div>
         </div>
-        <div class="body-emphasis" style="color:var(--brand-primary);">${c.m}</div>
+        <div class="body-emphasis" style="color:var(--brand-primary);">${c.metric}</div>
       </div>`).join('')}
     </div>`;
   renderIcons();
@@ -1001,30 +1402,16 @@ function buildSettings(){
       <h1 class="h1">Business & account</h1>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px;">
-      <div class="card">
+      <div class="card" style="cursor:pointer;" onclick="openProfileModal()">
         <div class="card-header"><span class="h2">Business Profile</span><span data-lucide="chevron-right" style="color:var(--text-muted);"></span></div>
         <p class="body-txt" style="color:var(--text-muted);">Sunset Dive Co. · Dive Shop · Mactan, Cebu</p>
       </div>
       <div class="card">
         <div class="h2" style="margin-bottom:14px;">Platforms</div>
         <div style="display:flex;flex-direction:column;gap:14px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span data-lucide="instagram" style="color:var(--brand-primary);"></span>
-            <div style="flex:1;"><div class="body-emphasis">Instagram</div><div class="caption">@sunsetdive.ph</div></div>
-            <span class="badge badge-published">Connected</span>
-            <button class="btn btn-ghost btn-sm">Disconnect</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span data-lucide="facebook" style="color:var(--brand-primary);"></span>
-            <div style="flex:1;"><div class="body-emphasis">Facebook</div><div class="caption">Sunset Dive Co.</div></div>
-            <span class="badge badge-published">Connected</span>
-            <button class="btn btn-ghost btn-sm">Disconnect</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span data-lucide="music-2" style="color:var(--text-muted);"></span>
-            <div style="flex:1;"><div class="body-emphasis">TikTok</div><div class="caption">Not connected</div></div>
-            <button class="btn btn-secondary btn-sm">Connect</button>
-          </div>
+          ${settingsPlatformRow('instagram','Instagram','instagram')}
+          ${settingsPlatformRow('facebook','Facebook','facebook')}
+          ${settingsPlatformRow('tiktok','TikTok','music-2')}
         </div>
       </div>
       <div class="card">
@@ -1046,6 +1433,44 @@ function buildSettings(){
   renderIcons();
 }
 function sendInvite(){ closeModal('invite-modal'); showToast('Invite sent', 'mail-check'); }
+
+/** Business Profile edit modal — reuses Onboarding's word-count pattern for Description/UVP.
+ *  The Save Changes bar only appears once a field has been touched (dirty-gated per spec). */
+function openProfileModal(){
+  document.getElementById('pf-save-bar').style.display = 'none';
+  updateWordCounter('pf-desc-count', wordCount(document.getElementById('pf-desc').value), 50);
+  updateWordCounter('pf-uvp-count', wordCount(document.getElementById('pf-uvp').value), 50);
+  openModal('profile-modal');
+}
+function pfMarkDirty(){
+  document.getElementById('pf-save-bar').style.display = 'flex';
+  updateWordCounter('pf-desc-count', wordCount(document.getElementById('pf-desc').value), 50);
+  updateWordCounter('pf-uvp-count', wordCount(document.getElementById('pf-uvp').value), 50);
+}
+function pfSaveChanges(){
+  document.getElementById('pf-save-bar').style.display = 'none';
+  closeModal('profile-modal');
+  showToast('Profile changes saved', 'check-circle');
+}
+
+function settingsPlatformRow(key, label, icon){
+  const connected = APP_STATE.connections[key];
+  return `<div style="display:flex;align-items:center;gap:12px;">
+    <span data-lucide="${icon}" style="color:${connected?'var(--brand-primary)':'var(--text-muted)'};"></span>
+    <div style="flex:1;"><div class="body-emphasis">${label}</div><div class="caption">${connected ? '@sunsetdive.ph' : 'Not connected'}</div></div>
+    ${connected
+      ? `<span class="badge badge-published">Connected</span><button class="btn btn-ghost btn-sm" onclick="settingsToggleConnect('${key}')">Disconnect</button>`
+      : `<button class="btn btn-secondary btn-sm" onclick="settingsToggleConnect('${key}')">Connect</button>`}
+  </div>`;
+}
+/** Flips connection state and re-renders both Settings and Performance, so Performance's
+ *  connection-driven filter chips (see performanceFilterChips) update live in the same session. */
+function settingsToggleConnect(key){
+  APP_STATE.connections[key] = !APP_STATE.connections[key];
+  buildSettings();
+  buildPerformance();
+  showToast(APP_STATE.connections[key] ? `${key.charAt(0).toUpperCase()+key.slice(1)} connected` : `${key.charAt(0).toUpperCase()+key.slice(1)} disconnected`, 'link');
+}
 
 /* ============================================================ DRAWERS / MODALS / TOASTS ============================================================ */
 function openDrawer(id){ document.getElementById(id).classList.add('show'); ensureScrimFor(id); }
@@ -1090,13 +1515,14 @@ renderIcons();
 (function(){
   const bar = document.createElement('div');
   bar.style.cssText='position:fixed;bottom:10px;left:10px;z-index:100;background:rgba(10,35,66,.9);backdrop-filter:blur(4px);border-radius:10px;padding:6px;display:flex;gap:4px;box-shadow:0 4px 12px rgba(0,0,0,.3);flex-wrap:wrap;max-width:calc(100vw - 20px);';
-  bar.innerHTML = ['login','onboarding','dashboard','content','calendar','performance','settings'].map(v=>
+  bar.innerHTML = ['login','onboarding','onboarding-low','dashboard','content','calendar','performance','settings'].map(v=>
     `<button onclick="window.__jump('${v}')" style="background:none;border:none;color:#B9C5DA;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.03em;">${v}</button>`
   ).join('');
   document.body.appendChild(bar);
   window.__jump = function(v){
     if(v==='login'){ document.documentElement.setAttribute('data-view','login'); }
-    else if(v==='onboarding'){ document.documentElement.setAttribute('data-view','onboarding'); obIndex=0; obRender(); }
+    else if(v==='onboarding'){ resetOnboardingDemo('high'); document.documentElement.setAttribute('data-view','onboarding'); obIndex=0; obRender(); }
+    else if(v==='onboarding-low'){ resetOnboardingDemo('low'); document.documentElement.setAttribute('data-view','onboarding'); obIndex=0; obRender(); }
     else { document.documentElement.setAttribute('data-view', v); goApp(v); }
   };
 })();

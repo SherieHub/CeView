@@ -1,0 +1,168 @@
+- generic [ref=f12e1]:
+  - generic [ref=f12e92]:
+    - generic [ref=f12e93]:
+      - generic [ref=f12e94]:
+        - generic [ref=f12e95]: CV
+        - generic [ref=f12e96]: CeView
+      - heading "Let's set up your business" [level=2] [ref=f12e97]
+      - paragraph [ref=f12e98]: A few quick steps so our AI can speak your brand's language.
+      - generic [ref=f12e99]:
+        - generic [ref=f12e1146]:
+          - generic [ref=f12e1147]: ✓
+          - generic [ref=f12e1148]: Basic Info
+        - generic [ref=f12e1149]:
+          - generic [ref=f12e1150]: ✓
+          - generic [ref=f12e1151]: Brand Identity
+        - generic [ref=f12e1152]:
+          - generic [ref=f12e1153]: ✓
+          - generic [ref=f12e1154]: Structured Inputs
+        - generic [ref=f12e1155]:
+          - generic [ref=f12e1156]: "4"
+          - generic [ref=f12e1157]: Assets & Links
+        - generic [ref=f12e1158]:
+          - generic [ref=f12e1159]: "5"
+          - generic [ref=f12e1160]: Uniqueness Score
+    - generic [ref=f12e115]:
+      - generic [ref=f12e116]:
+        - button [ref=f12e117] [cursor=pointer]
+        - generic [ref=f12e123]: Step 4 of 5
+      - generic [ref=f12e125]:
+        - heading "Connect your platforms" [level=2] [ref=f12e1163]
+        - paragraph [ref=f12e1164]: Connect the accounts you want CeView to publish to — you can add more later in Settings.
+        - generic [ref=f12e1165]:
+          - generic [ref=f12e1169]:
+            - generic [ref=f12e1170]: Instagram
+            - generic [ref=f12e1171]: Not connected
+          - button "Connect" [ref=f12e1172] [cursor=pointer]
+        - generic [ref=f12e1173]:
+          - generic [ref=f12e1176]:
+            - generic [ref=f12e1177]: Facebook
+            - generic [ref=f12e1178]: "@sunsetdive.ph"
+          - generic [ref=f12e1179]: Connected
+          - button "Disconnect" [ref=f12e1180] [cursor=pointer]
+        - generic [ref=f12e1181]:
+          - generic [ref=f12e1185]:
+            - generic [ref=f12e1186]: TikTok
+            - generic [ref=f12e1187]: "@sunsetdive.ph"
+          - generic [ref=f12e1188]: Connected
+          - button "Disconnect" [ref=f12e1189] [cursor=pointer]
+        - generic [ref=f12e1190]:
+          - generic [ref=f12e1191]: Logo (optional)
+          - generic [ref=f12e1192] [cursor=pointer]: Tap to upload or drag & drop
+        - generic [ref=f12e1197]:
+          - generic [ref=f12e1198]: Website URL (optional)
+          - textbox "https://" [ref=f12e1199]
+      - generic [ref=f12e137]:
+        - button "Back" [ref=f12e1098] [cursor=pointer]
+        - button "Next" [active] [ref=f12e138] [cursor=pointer]
+  - generic [ref=f12e34]:
+    - generic [ref=f12e36]:
+      - generic [ref=f12e37]: 🇰🇷 Korea Market Radar
+      - button [ref=f12e38] [cursor=pointer]
+    - generic [ref=f12e42]:
+      - button "Target This Market" [ref=f12e43] [cursor=pointer]
+      - generic [ref=f12e48]:
+        - generic [ref=f12e49]:
+          - generic [ref=f12e50]: Demand Trend
+          - generic [ref=f12e51]: +34%
+        - generic [ref=f12e54]: Last 30 days · search + inquiry volume
+      - generic [ref=f12e55]:
+        - generic [ref=f12e56]: Top Keywords
+        - generic [ref=f12e57]:
+          - generic [ref=f12e58] [cursor=pointer]: 세부 다이빙
+          - generic [ref=f12e59] [cursor=pointer]: 막탄 스노클링
+          - generic [ref=f12e60] [cursor=pointer]: 필리핀 여행
+      - generic [ref=f12e61]:
+        - generic [ref=f12e62]: Seasonal Note
+        - paragraph [ref=f12e63]: Korean school break begins in 3 weeks — historically a 2x booking window for dive operators.
+  - generic [ref=f12e64]:
+    - generic [ref=f12e66]:
+      - generic [ref=f12e67]: Notifications
+      - button [ref=f12e68] [cursor=pointer]
+    - generic [ref=f12e72]:
+      - generic [ref=f12e73]:
+        - generic [ref=f12e74]: 🇰🇷 Korean traveler searches up 34%
+        - generic [ref=f12e75]: 2 hours ago
+      - generic [ref=f12e76]:
+        - generic [ref=f12e77]: Post "Reef cleanup dive" published to Instagram
+        - generic [ref=f12e78]: Yesterday
+      - generic [ref=f12e79]:
+        - generic [ref=f12e80]: Weekly performance report is ready
+        - generic [ref=f12e81]: 3 days ago
+  - generic:
+    - generic:
+      - generic: Post Performance
+      - button
+    - generic:
+      - generic:
+        - generic:
+          - generic: "\"Golden hour dive briefing 🌅\""
+          - generic: Instagram · Published Jul 29
+      - generic:
+        - generic:
+          - generic: Engagements
+          - generic: 2,412
+          - generic: +18%
+        - generic:
+          - generic: Reach
+          - generic: 9,880
+          - generic: +9%
+      - generic:
+        - generic: Engagement
+        - generic: Reach
+  - generic:
+    - generic:
+      - generic: Invite Team Member
+      - button
+    - generic:
+      - generic:
+        - generic: Email address
+        - textbox "teammate@business.com"
+      - generic:
+        - generic: Role
+        - combobox:
+          - option "Editor" [selected]
+          - option "Viewer"
+          - option "Admin"
+      - button "Send Invite"
+  - generic:
+    - generic:
+      - generic: Edit Business Profile
+      - button
+    - generic:
+      - generic:
+        - generic: Business Name
+        - textbox: Sunset Dive Co.
+      - generic:
+        - generic: Industry
+        - combobox:
+          - option "Dive Shop" [selected]
+          - option "Café"
+          - option "Tour Operator"
+          - option "Craft Shop"
+      - generic:
+        - generic: Vibe / Theme
+        - textbox: Adventurous, warm, community-rooted
+      - generic:
+        - generic: Core Services
+        - generic:
+          - generic: Guided Reef Dives
+          - generic: PADI Certification
+          - textbox "Add a service…"
+      - generic:
+        - generic: Full Description
+        - textbox: Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through.
+        - generic: 0 / 50 words
+      - generic:
+        - generic: Unique Value Proposition
+        - textbox: "Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later — something no other PADI-certified operator on Mactan currently offers guests, and a big part of why people come back to dive with us more than once."
+        - generic: 0 / 50 words
+  - generic [ref=f12e82]:
+    - button "login" [ref=f12e83] [cursor=pointer]
+    - button "onboarding" [ref=f12e84] [cursor=pointer]
+    - button "onboarding-low" [ref=f12e85] [cursor=pointer]
+    - button "dashboard" [ref=f12e86] [cursor=pointer]
+    - button "content" [ref=f12e87] [cursor=pointer]
+    - button "calendar" [ref=f12e88] [cursor=pointer]
+    - button "performance" [ref=f12e89] [cursor=pointer]
+    - button "settings" [ref=f12e90] [cursor=pointer]

@@ -1,0 +1,257 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e187]:
+    - complementary [ref=f12e188]:
+      - generic [ref=f12e189]:
+        - generic [ref=f12e190]: CV
+        - generic [ref=f12e191]: CeView
+      - navigation [ref=f12e192]:
+        - button "Dashboard 3" [ref=f12e193] [cursor=pointer]:
+          - generic [ref=f12e199]: Dashboard
+          - generic [ref=f12e200]: "3"
+        - button "Content Studio" [ref=f12e201] [cursor=pointer]
+        - button "Calendar" [ref=f12e205] [cursor=pointer]
+        - button "Performance" [ref=f12e209] [cursor=pointer]
+        - button "Settings" [ref=f12e213] [cursor=pointer]
+      - button "Collapse" [ref=f12e219] [cursor=pointer]
+    - generic [ref=f12e224]:
+      - generic [ref=f12e225]:
+        - generic [ref=f12e226]:
+          - generic [ref=f12e227]: SD
+          - generic [ref=f12e228]:
+            - generic [ref=f12e229]: Sunset Dive Co.
+            - generic [ref=f12e230]: Mactan, Cebu
+        - button [ref=f12e231] [cursor=pointer]
+      - generic [ref=f12e326]:
+        - generic [ref=f12e1318]:
+          - generic [ref=f12e1319]: CONTENT STUDIO
+          - heading "Draft a post" [level=1] [ref=f12e1320]
+        - generic [ref=f12e1321]:
+          - generic [ref=f12e1322]:
+            - generic [ref=f12e1323] [cursor=pointer]: 🇰🇷 Targeting Korea
+            - generic [ref=f12e1327]:
+              - generic [ref=f12e1328]:
+                - generic [ref=f12e1329]: Caption
+                - generic [ref=f12e1330]: AI-generated
+              - generic [ref=f12e1333]:
+                - generic [ref=f12e1334] [cursor=pointer]: TikTok
+                - generic [ref=f12e1338] [cursor=pointer]: Facebook
+                - generic [ref=f12e1341] [cursor=pointer]: Instagram
+              - textbox [ref=f12e1345]: "POV: your alarm says 5am but the reef says worth it 🌅🤿 small-group sunrise dive, PADI guides, zero crowds. link in bio to book"
+              - button "Regenerate" [ref=f12e1347] [cursor=pointer]
+            - generic [ref=f12e1353]:
+              - generic [ref=f12e1354]:
+                - generic [ref=f12e1355]: Visual Guide
+                - generic [ref=f12e1356]: AI-generated
+              - generic [ref=f12e1359]:
+                - generic [ref=f12e1360]:
+                  - generic [ref=f12e1361]: "1"
+                  - generic [ref=f12e1362]:
+                    - generic [ref=f12e1363]: Lighting
+                    - generic [ref=f12e1364]: How light shapes the mood and clarity of your shot.
+                    - generic [ref=f12e1365]: Shoot at golden hour (5:30–6:30pm), warm backlight behind divers.
+                - generic [ref=f12e1366]:
+                  - generic [ref=f12e1367]: "2"
+                  - generic [ref=f12e1368]:
+                    - generic [ref=f12e1369]: Composition
+                    - generic [ref=f12e1370]: How elements are arranged within the frame.
+                    - generic [ref=f12e1371]: Rule-of-thirds — keep the diver off-center, let the reef lead toward the horizon.
+                - generic [ref=f12e1372]:
+                  - generic [ref=f12e1373]: "3"
+                  - generic [ref=f12e1374]:
+                    - generic [ref=f12e1375]: Color Palette
+                    - generic [ref=f12e1376]: The dominant tones that set your brand feel.
+                    - generic [ref=f12e1377]: Deep teal water + amber highlights. Avoid oversaturated blue filters.
+                - generic [ref=f12e1378]:
+                  - generic [ref=f12e1379]: "4"
+                  - generic [ref=f12e1380]:
+                    - generic [ref=f12e1381]: Framing & Angle
+                    - generic [ref=f12e1382]: Camera distance and perspective.
+                    - generic [ref=f12e1383]: Wide shot from just above the water surface, full group included for scale.
+                - generic [ref=f12e1384]:
+                  - generic [ref=f12e1385]: "5"
+                  - generic [ref=f12e1386]:
+                    - generic [ref=f12e1387]: Mood & Styling
+                    - generic [ref=f12e1388]: The overall emotional tone of the image.
+                    - generic [ref=f12e1389]: Aspirational and adventurous — candid smiles, not posed stares.
+            - generic [ref=f12e1390]:
+              - generic [ref=f12e1391]: Pubmat Upload
+              - generic [ref=f12e1392] [cursor=pointer]: Tap to upload your photo or video
+            - generic [ref=f12e1398]:
+              - generic [ref=f12e1399]: Platforms
+              - generic [ref=f12e1400]:
+                - generic [ref=f12e1401] [cursor=pointer]: TikTok
+                - generic [ref=f12e1405] [cursor=pointer]: Facebook
+                - generic [ref=f12e1408] [cursor=pointer]: Instagram
+            - generic [ref=f12e1412]:
+              - generic [ref=f12e1413]:
+                - generic [ref=f12e1414]:
+                  - generic [ref=f12e1415]: Public Visibility
+                  - generic [ref=f12e1416]: Anyone can see this post
+                - button [ref=f12e1417] [cursor=pointer]
+              - generic [ref=f12e1418]:
+                - generic [ref=f12e1419]:
+                  - generic [ref=f12e1420]: Allow Comments
+                  - generic [ref=f12e1421]: Viewers can comment
+                - button [ref=f12e1422] [cursor=pointer]
+              - generic [ref=f12e1423]:
+                - generic [ref=f12e1424]:
+                  - generic [ref=f12e1425]: Boosted / Paid
+                  - generic [ref=f12e1426]: Promote with ad spend
+                - button [ref=f12e1427] [cursor=pointer]
+            - generic [ref=f12e1428]:
+              - checkbox "I've reviewed this content and confirm it's accurate and ready to publish." [ref=f12e1429]
+              - text: I've reviewed this content and confirm it's accurate and ready to publish.
+            - generic [ref=f12e1430]:
+              - button "Publish Now"
+              - button "Save as Draft" [ref=f12e1431] [cursor=pointer]
+          - generic [ref=f12e1432]:
+            - generic [ref=f12e1433]: Live Preview
+            - generic [ref=f12e1434]:
+              - generic [ref=f12e1435] [cursor=pointer]: TikTok
+              - generic [ref=f12e1436] [cursor=pointer]: Facebook
+              - generic [ref=f12e1437] [cursor=pointer]: Instagram
+            - generic [ref=f12e1438]:
+              - generic [ref=f12e1439]:
+                - generic [ref=f12e1440]: SD
+                - generic [ref=f12e1441]: "@sunsetdive.ph"
+              - generic [ref=f12e1453]:
+                - paragraph [ref=f12e1454]: "POV: your alarm says 5am but the reef says worth it 🌅🤿 small-group sunrise dive, PADI guides, zero crowds. link in bio to book"
+                - generic [ref=f12e1455]: original sound — Sunset Dive Co.
+        - generic [ref=f12e1460]:
+          - generic [ref=f12e1461]: Board
+          - generic [ref=f12e1462]:
+            - generic [ref=f12e1463]:
+              - generic [ref=f12e1464]:
+                - generic [ref=f12e1465]: Draft
+                - generic [ref=f12e1466]: "2"
+              - generic [ref=f12e1473]:
+                - generic [ref=f12e1474]: Coral dive teaser
+                - generic [ref=f12e1475]: Draft
+              - generic [ref=f12e1482]:
+                - generic [ref=f12e1483]: Café weekend combo
+                - generic [ref=f12e1484]: Draft
+            - generic [ref=f12e1485]:
+              - generic [ref=f12e1486]:
+                - generic [ref=f12e1487]: Scheduled
+                - generic [ref=f12e1488]: "1"
+              - generic [ref=f12e1495]:
+                - generic [ref=f12e1496]: Golden Week promo
+                - generic [ref=f12e1497]: Aug 12
+            - generic [ref=f12e1498]:
+              - generic [ref=f12e1499]:
+                - generic [ref=f12e1500]: Published
+                - generic [ref=f12e1501]: "3"
+              - generic [ref=f12e1508]:
+                - generic [ref=f12e1509]: Reef cleanup dive
+                - generic [ref=f12e1510]: Published
+  - generic [ref=f12e34]:
+    - generic [ref=f12e36]:
+      - generic [ref=f12e37]: 🇰🇷 Korea Market Radar
+      - button [ref=f12e38] [cursor=pointer]
+    - generic [ref=f12e42]:
+      - button "Target This Market" [ref=f12e43] [cursor=pointer]
+      - generic [ref=f12e48]:
+        - generic [ref=f12e49]:
+          - generic [ref=f12e50]: Demand Trend
+          - generic [ref=f12e51]: +34%
+        - generic [ref=f12e54]: Last 30 days · search + inquiry volume
+      - generic [ref=f12e55]:
+        - generic [ref=f12e56]: Top Keywords
+        - generic [ref=f12e57]:
+          - generic [ref=f12e58] [cursor=pointer]: 세부 다이빙
+          - generic [ref=f12e59] [cursor=pointer]: 막탄 스노클링
+          - generic [ref=f12e60] [cursor=pointer]: 필리핀 여행
+      - generic [ref=f12e61]:
+        - generic [ref=f12e62]: Seasonal Note
+        - paragraph [ref=f12e63]: Korean school break begins in 3 weeks — historically a 2x booking window for dive operators.
+  - generic [ref=f12e64]:
+    - generic [ref=f12e66]:
+      - generic [ref=f12e67]: Notifications
+      - button [ref=f12e68] [cursor=pointer]
+    - generic [ref=f12e72]:
+      - generic [ref=f12e73]:
+        - generic [ref=f12e74]: 🇰🇷 Korean traveler searches up 34%
+        - generic [ref=f12e75]: 2 hours ago
+      - generic [ref=f12e76]:
+        - generic [ref=f12e77]: Post "Reef cleanup dive" published to Instagram
+        - generic [ref=f12e78]: Yesterday
+      - generic [ref=f12e79]:
+        - generic [ref=f12e80]: Weekly performance report is ready
+        - generic [ref=f12e81]: 3 days ago
+  - generic:
+    - generic:
+      - generic: Post Performance
+      - button
+    - generic:
+      - generic:
+        - generic:
+          - generic: "\"Golden hour dive briefing 🌅\""
+          - generic: Instagram · Published Jul 29
+      - generic:
+        - generic:
+          - generic: Engagements
+          - generic: 2,412
+          - generic: +18%
+        - generic:
+          - generic: Reach
+          - generic: 9,880
+          - generic: +9%
+      - generic:
+        - generic: Engagement
+        - generic: Reach
+  - generic:
+    - generic:
+      - generic: Invite Team Member
+      - button
+    - generic:
+      - generic:
+        - generic: Email address
+        - textbox "teammate@business.com"
+      - generic:
+        - generic: Role
+        - combobox:
+          - option "Editor" [selected]
+          - option "Viewer"
+          - option "Admin"
+      - button "Send Invite"
+  - generic:
+    - generic:
+      - generic: Edit Business Profile
+      - button
+    - generic:
+      - generic:
+        - generic: Business Name
+        - textbox: Sunset Dive Co.
+      - generic:
+        - generic: Industry
+        - combobox:
+          - option "Dive Shop" [selected]
+          - option "Café"
+          - option "Tour Operator"
+          - option "Craft Shop"
+      - generic:
+        - generic: Vibe / Theme
+        - textbox: Adventurous, warm, community-rooted
+      - generic:
+        - generic: Core Services
+        - generic:
+          - generic: Guided Reef Dives
+          - generic: PADI Certification
+          - textbox "Add a service…"
+      - generic:
+        - generic: Full Description
+        - textbox: Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through.
+        - generic: 0 / 50 words
+      - generic:
+        - generic: Unique Value Proposition
+        - textbox: "Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later — something no other PADI-certified operator on Mactan currently offers guests, and a big part of why people come back to dive with us more than once."
+        - generic: 0 / 50 words
+  - generic [ref=f12e82]:
+    - button "login" [ref=f12e83] [cursor=pointer]
+    - button "onboarding" [ref=f12e84] [cursor=pointer]
+    - button "onboarding-low" [ref=f12e85] [cursor=pointer]
+    - button "dashboard" [ref=f12e86] [cursor=pointer]
+    - button "content" [ref=f12e87] [cursor=pointer]
+    - button "calendar" [ref=f12e88] [cursor=pointer]
+    - button "performance" [ref=f12e89] [cursor=pointer]
+    - button "settings" [ref=f12e90] [cursor=pointer]

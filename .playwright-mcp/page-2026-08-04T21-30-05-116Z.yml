@@ -1,0 +1,180 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e91]:
+    - complementary [ref=f10e92]:
+      - generic [ref=f10e93]:
+        - generic [ref=f10e94]: CV
+        - generic [ref=f10e95]: CeView
+      - navigation [ref=f10e96]:
+        - button "Dashboard 3" [ref=f10e97] [cursor=pointer]:
+          - generic [ref=f10e103]: Dashboard
+          - generic [ref=f10e104]: "3"
+        - button "Content Studio" [ref=f10e105] [cursor=pointer]
+        - button "Calendar" [ref=f10e109] [cursor=pointer]
+        - button "Performance" [ref=f10e113] [cursor=pointer]
+        - button "Settings" [ref=f10e117] [cursor=pointer]
+      - button "Collapse" [ref=f10e123] [cursor=pointer]
+    - generic [ref=f10e128]:
+      - generic [ref=f10e129]:
+        - generic [ref=f10e130]:
+          - generic [ref=f10e131]: SD
+          - generic [ref=f10e132]:
+            - generic [ref=f10e133]: Sunset Dive Co.
+            - generic [ref=f10e134]: Mactan, Cebu
+        - button [ref=f10e135] [cursor=pointer]
+      - generic [ref=f10e140]:
+        - generic [ref=f10e141]:
+          - generic [ref=f10e142]: SETTINGS
+          - heading "Business & account" [level=1] [ref=f10e143]
+        - generic [ref=f10e144]:
+          - generic [ref=f10e145] [cursor=pointer]:
+            - generic [ref=f10e146]: Business Profile
+            - paragraph [ref=f10e150]: Sunset Dive Co. · Dive Shop · Mactan, Cebu
+          - generic [ref=f10e151]:
+            - generic [ref=f10e152]: Platforms
+            - generic [ref=f10e153]:
+              - generic [ref=f10e154]:
+                - generic [ref=f10e158]:
+                  - generic [ref=f10e159]: Instagram
+                  - generic [ref=f10e160]: "@sunsetdive.ph"
+                - generic [ref=f10e161]: Connected
+                - button "Disconnect" [ref=f10e162] [cursor=pointer]
+              - generic [ref=f10e163]:
+                - generic [ref=f10e166]:
+                  - generic [ref=f10e167]: Facebook
+                  - generic [ref=f10e168]: "@sunsetdive.ph"
+                - generic [ref=f10e169]: Connected
+                - button "Disconnect" [ref=f10e170] [cursor=pointer]
+              - generic [ref=f10e171]:
+                - generic [ref=f10e175]:
+                  - generic [ref=f10e176]: TikTok
+                  - generic [ref=f10e177]: Not connected
+                - button "Connect" [ref=f10e178] [cursor=pointer]
+          - generic [ref=f10e179]:
+            - generic [ref=f10e180]:
+              - generic [ref=f10e181]: Workspace
+              - button "Invite Member" [ref=f10e182] [cursor=pointer]
+            - generic [ref=f10e186]:
+              - generic [ref=f10e187]:
+                - generic [ref=f10e188]: MA
+                - generic [ref=f10e189]:
+                  - generic [ref=f10e190]: Maria Alcantara
+                  - generic [ref=f10e191]: maria@sunsetdive.ph
+                - generic [ref=f10e192]: Owner
+              - generic [ref=f10e193]:
+                - generic [ref=f10e194]: JP
+                - generic [ref=f10e195]:
+                  - generic [ref=f10e196]: JP Reyes
+                  - generic [ref=f10e197]: jp@sunsetdive.ph
+                - generic [ref=f10e198]: Pending
+  - generic [ref=f10e34]:
+    - generic [ref=f10e36]:
+      - generic [ref=f10e37]: 🇰🇷 Korea Market Radar
+      - button [ref=f10e38] [cursor=pointer]
+    - generic [ref=f10e42]:
+      - button "Target This Market" [ref=f10e43] [cursor=pointer]
+      - generic [ref=f10e48]:
+        - generic [ref=f10e49]:
+          - generic [ref=f10e50]: Demand Trend
+          - generic [ref=f10e51]: +34%
+        - generic [ref=f10e54]: Last 30 days · search + inquiry volume
+      - generic [ref=f10e55]:
+        - generic [ref=f10e56]: Top Keywords
+        - generic [ref=f10e57]:
+          - generic [ref=f10e58] [cursor=pointer]: 세부 다이빙
+          - generic [ref=f10e59] [cursor=pointer]: 막탄 스노클링
+          - generic [ref=f10e60] [cursor=pointer]: 필리핀 여행
+      - generic [ref=f10e61]:
+        - generic [ref=f10e62]: Seasonal Note
+        - paragraph [ref=f10e63]: Korean school break begins in 3 weeks — historically a 2x booking window for dive operators.
+  - generic [ref=f10e64]:
+    - generic [ref=f10e66]:
+      - generic [ref=f10e67]: Notifications
+      - button [ref=f10e68] [cursor=pointer]
+    - generic [ref=f10e72]:
+      - generic [ref=f10e73]:
+        - generic [ref=f10e74]: 🇰🇷 Korean traveler searches up 34%
+        - generic [ref=f10e75]: 2 hours ago
+      - generic [ref=f10e76]:
+        - generic [ref=f10e77]: Post "Reef cleanup dive" published to Instagram
+        - generic [ref=f10e78]: Yesterday
+      - generic [ref=f10e79]:
+        - generic [ref=f10e80]: Weekly performance report is ready
+        - generic [ref=f10e81]: 3 days ago
+  - generic:
+    - generic:
+      - generic: Post Performance
+      - button
+    - generic:
+      - generic:
+        - generic:
+          - generic: "\"Golden hour dive briefing 🌅\""
+          - generic: Instagram · Published Jul 29
+      - generic:
+        - generic:
+          - generic: Engagements
+          - generic: 2,412
+          - generic: +18%
+        - generic:
+          - generic: Reach
+          - generic: 9,880
+          - generic: +9%
+      - generic:
+        - generic: Engagement
+        - generic: Reach
+  - generic:
+    - generic:
+      - generic: Invite Team Member
+      - button
+    - generic:
+      - generic:
+        - generic: Email address
+        - textbox "teammate@business.com"
+      - generic:
+        - generic: Role
+        - combobox:
+          - option "Editor" [selected]
+          - option "Viewer"
+          - option "Admin"
+      - button "Send Invite"
+  - generic:
+    - generic:
+      - generic: Edit Business Profile
+      - button
+    - generic:
+      - generic:
+        - generic: Business Name
+        - textbox: Sunset Dive Co. Updated
+      - generic:
+        - generic: Industry
+        - combobox:
+          - option "Dive Shop" [selected]
+          - option "Café"
+          - option "Tour Operator"
+          - option "Craft Shop"
+      - generic:
+        - generic: Vibe / Theme
+        - textbox: Adventurous, warm, community-rooted
+      - generic:
+        - generic: Core Services
+        - generic:
+          - generic: Guided Reef Dives
+          - generic: PADI Certification
+          - textbox "Add a service…"
+      - generic:
+        - generic: Full Description
+        - textbox: Short new description with fewer words now.
+        - generic: 7 / 50 words
+      - generic:
+        - generic: Unique Value Proposition
+        - textbox: "Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later."
+        - generic: 43 / 50 words
+  - generic [ref=f10e293]: Profile changes saved
+  - generic [ref=f10e82]:
+    - button "login" [ref=f10e83] [cursor=pointer]
+    - button "onboarding" [ref=f10e84] [cursor=pointer]
+    - button "onboarding-low" [ref=f10e85] [cursor=pointer]
+    - button "dashboard" [ref=f10e86] [cursor=pointer]
+    - button "content" [ref=f10e87] [cursor=pointer]
+    - button "calendar" [ref=f10e88] [cursor=pointer]
+    - button "performance" [ref=f10e89] [cursor=pointer]
+    - button "settings" [ref=f10e90] [cursor=pointer]
