@@ -1,0 +1,140 @@
+/**
+ * Frontend auth context: owns the JWT + operatorId session, backed by
+ * localStorage so a page refresh doesn't force a fresh login. Login/register
+ * calls reuse the same BASE/ApiError error-shape conventions as apiClient.ts's
+ * req<T>() without importing it directly, since auth precedes the rest of the
+ * API surface and apiClient.ts is intentionally left unwired to the JWT until
+ * Task 11.
+ */
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { ApiError } from './apiClient';
+
+const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+const TOKEN_KEY = 'ceview_token';
+const OPERATOR_ID_KEY = 'ceview_operator_id';
+
+interface AuthResponse {
+  operatorId: string;
+  token: string;
+}
+
+async function authReq(path: string, body: unknown): Promise<AuthResponse> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new ApiError({
+      code: 'CLIENT_NETWORK_FAIL',
+      traceId: null,
+      status: 0,
+      message: `Backend unreachable: ${(e as Error).message}`,
+    });
+  }
+
+  const raw = await res.text();
+  let parsed: any = null;
+  try { parsed = raw ? JSON.parse(raw) : null; } catch { /* not JSON */ }
+
+  if (!res.ok) {
+    const traceHeader = res.headers.get('X-Trace-Id');
+    throw new ApiError({
+      code: parsed?.code ?? `HTTP_${res.status}`,
+      traceId: parsed?.traceId ?? traceHeader ?? null,
+      status: res.status,
+      message: parsed?.message ?? parsed?.error ?? `${res.status} ${res.statusText}`,
+    });
+  }
+
+  return parsed as AuthResponse;
+}
+
+interface AuthContextValue {
+  token: string | null;
+  operatorId: string | null;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    contactNumber?: string,
+  ) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [operatorId, setOperatorId] = useState<string | null>(() => localStorage.getItem(OPERATOR_ID_KEY));
+
+  // Hydrate is done synchronously in useState initializers above; this effect
+  // is a no-op safety net in case either key is present without the other.
+  useEffect(() => {
+    if (!token || !operatorId) {
+      setToken(null);
+      setOperatorId(null);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(OPERATOR_ID_KEY);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applySession = useCallback((session: AuthResponse) => {
+    localStorage.setItem(TOKEN_KEY, session.token);
+    localStorage.setItem(OPERATOR_ID_KEY, session.operatorId);
+    setToken(session.token);
+    setOperatorId(session.operatorId);
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const session = await authReq('/api/v1/auth/login', { email, password });
+    applySession(session);
+  }, [applySession]);
+
+  const register = useCallback(async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    contactNumber?: string,
+  ) => {
+    const session = await authReq('/api/v1/auth/register', {
+      firstName, lastName, email, password,
+      ...(contactNumber ? { contactNumber } : {}),
+    });
+    applySession(session);
+  }, [applySession]);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(OPERATOR_ID_KEY);
+    setToken(null);
+    setOperatorId(null);
+  }, []);
+
+  const value: AuthContextValue = {
+    token,
+    operatorId,
+    isAuthenticated: !!token,
+    login,
+    register,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return ctx;
+}

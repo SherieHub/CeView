@@ -9,6 +9,7 @@ interface SidebarProps {
   setIsCollapsed: (v: boolean) => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (v: boolean) => void;
+  onLogout: () => void;
 }
 
 const menuItems = [
@@ -26,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsCollapsed,
   isMobileOpen,
   setIsMobileOpen,
+  onLogout,
 }) => {
   const handleNavClick = (id: string) => {
     setActiveTab(id);
@@ -94,6 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Footer */}
         <div className="p-3 border-t border-white/10 space-y-1">
           <button
+            onClick={onLogout}
             className={`flex items-center text-white/60 hover:text-white transition-colors w-full px-3 py-2 rounded-xl hover:bg-white/5 ${isCollapsed ? 'justify-center' : 'space-x-3'}`}
             title={isCollapsed ? 'Sign Out' : undefined}
           >
