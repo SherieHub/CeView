@@ -54,6 +54,8 @@ const App: React.FC = () => {
   const [selectedMarketId, setSelectedMarketId] = useState<string>('');
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     api.loadProfile(OPERATOR_ID)
       .then(dto => {
         setBusinessProfileId(dto.businessProfileId);
@@ -66,7 +68,7 @@ const App: React.FC = () => {
         setUniquenessScore(dto.uniquenessScore);
       })
       .catch(err => console.error('loadProfile failed', err));
-  }, []);
+  }, [isAuthenticated]);
 
   const profile: ProfileData = {
     businessProfileId, businessName, categories, coreServices,

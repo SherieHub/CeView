@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserPlus, Mail, Lock, User, Phone } from 'lucide-react';
 import { COLORS } from '../../constants';
+import { ApiError } from '../../services/apiClient';
 import { useAuth } from '../../services/auth';
 import PrimaryButton from '../shared/PrimaryButton';
 import ServerErrorBanner from '../shared/ServerErrorBanner';
@@ -25,8 +26,9 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
     setIsLoading(true);
     try {
       await register(firstName, lastName, email, password, contactNumber || undefined);
-    } catch (err: any) {
-      setError(err?.message || 'Registration failed. Please try again.');
+    } catch (err) {
+      const ae = err instanceof ApiError ? err : null;
+      setError(ae?.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +69,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Juan"
-                    className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                    className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                     style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                   />
                 </div>
@@ -83,7 +85,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Dela Cruz"
-                  className="w-full px-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full px-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>
@@ -102,7 +104,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>
@@ -122,7 +124,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>
@@ -140,7 +142,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onSwitchToLogin }) => {
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
                   placeholder="+63 900 000 0000"
-                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none"
+                  className="w-full pl-9 pr-3 py-3 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-2"
                   style={{ borderColor: COLORS.LIGHT_GREY, color: COLORS.TEXT_MAIN }}
                 />
               </div>

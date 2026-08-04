@@ -50,6 +50,15 @@ async function authReq(path: string, body: unknown): Promise<AuthResponse> {
     });
   }
 
+  if (!parsed || typeof parsed.token !== 'string' || typeof parsed.operatorId !== 'string') {
+    throw new ApiError({
+      code: 'CLIENT_BAD_RESPONSE',
+      traceId: res.headers.get('X-Trace-Id'),
+      status: res.status,
+      message: 'Server returned an unexpected response shape.',
+    });
+  }
+
   return parsed as AuthResponse;
 }
 
