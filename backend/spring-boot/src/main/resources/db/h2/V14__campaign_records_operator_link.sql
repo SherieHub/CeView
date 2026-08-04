@@ -1,4 +1,4 @@
--- H2 mirror of db/migration/V17.
+-- H2 mirror of db/migration/V14_1.
 -- H2 2.x does not accept an inline REFERENCES clause on ADD COLUMN the way
 -- Postgres does here, so the column and the FK constraint are added in two
 -- separate statements (same pattern as the FKs in db/h2/V1__init_schema.sql).

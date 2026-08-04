@@ -1,4 +1,4 @@
--- ─── V17: Module 4 — link tbl_campaign_records to tbl_business_profile ────────
+-- ─── V14.1: Module 4 — link tbl_campaign_records to tbl_business_profile ──────
 -- tbl_campaign_records (V14) currently has no link to any operator/business —
 -- it is flat global data. This adds business_profile_id so campaign histories
 -- can be scoped per-operator (prerequisite for seed data + API access scoping).
