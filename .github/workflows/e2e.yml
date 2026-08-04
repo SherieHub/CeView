@@ -50,6 +50,19 @@ jobs:
           echo "Waiting for fastapi-transformer on :8001..."
           timeout 60 bash -c 'until curl -sf http://localhost:8001/healthz; do sleep 5; done'
 
+      - name: Dump container logs on health-check failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ps
+          echo "::endgroup::"
+          for svc in postgres fastapi fastapi-transformer spring-boot; do
+            echo "::group::logs: $svc"
+            docker compose logs "$svc" || true
+            echo "::endgroup::"
+          done
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
