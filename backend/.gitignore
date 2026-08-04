@@ -1,7 +1,6 @@
 .env.example
 .env
 spring-boot/target/
-spring-boot/.mvn/
 spring-boot/.idea/
 fastapi/__pycache__/
 fastapi/.venv/
