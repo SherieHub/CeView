@@ -7,12 +7,10 @@
  * Task 11.
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { ApiError } from './apiClient';
+import { ApiError, setUnauthorizedHandler } from './apiClient';
+import { TOKEN_KEY, OPERATOR_ID_KEY } from './authStorage';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
-const TOKEN_KEY = 'ceview_token';
-const OPERATOR_ID_KEY = 'ceview_operator_id';
 
 interface AuthResponse {
   operatorId: string;
@@ -127,6 +125,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
     setOperatorId(null);
   }, []);
+
+  // Register once so apiClient.ts can trigger a logout when any authenticated
+  // request comes back 401 (expired/invalid token), without depending on React.
+  useEffect(() => {
+    setUnauthorizedHandler(logout);
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
 
   const value: AuthContextValue = {
     token,

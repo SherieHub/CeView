@@ -10,7 +10,21 @@ import type {
   CampaignHistoryResponse, OmcsAuditResultDTO, PesAnalysisReport,
 } from '../types';
 
+import { TOKEN_KEY } from './authStorage';
+
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Registered once by AuthProvider on mount so that a 401 response from any
+ * authenticated request (expired/invalid token) can trigger a logout /
+ * redirect back to the login screen, without apiClient.ts needing to import
+ * React or call useAuth() directly.
+ */
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  unauthorizedHandler = fn;
+}
 
 export class ApiError extends Error {
   readonly code: string;
@@ -26,11 +40,16 @@ export class ApiError extends Error {
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem(TOKEN_KEY);
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers || {}),
+      },
     });
   } catch (e) {
     throw new ApiError({
@@ -42,6 +61,9 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
+    if (res.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
     const traceHeader = res.headers.get('X-Trace-Id');
     const raw = await res.text();
     let parsed: any = null;
@@ -77,11 +99,11 @@ export interface BusinessProfileDTO {
 }
 
 export const api = {
-  loadProfile: (operatorId: string) =>
-    req<BusinessProfileDTO>(`/api/v1/business-profile?operatorId=${encodeURIComponent(operatorId)}`),
+  loadProfile: () =>
+    req<BusinessProfileDTO>('/api/v1/business-profile'),
 
-  saveProfile: (operatorId: string, body: BusinessProfileDTO) =>
-    req<BusinessProfileDTO>(`/api/v1/business-profile?operatorId=${encodeURIComponent(operatorId)}`, {
+  saveProfile: (body: BusinessProfileDTO) =>
+    req<BusinessProfileDTO>('/api/v1/business-profile', {
       method: 'PUT', body: JSON.stringify(body),
     }),
 
