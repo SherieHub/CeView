@@ -23,7 +23,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22 LTS, not 20 — some Node 20.x patch levels resolved by
+          # setup-node have a jsdom/undici incompatibility that crashes
+          # Vitest's forked workers with "webidl.util.markAsUncloneable is
+          # not a function" (thrown from undici's CacheStorage, required
+          # transitively by jsdom). Node 22 doesn't hit this.
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: ceview/package-lock.json
 
