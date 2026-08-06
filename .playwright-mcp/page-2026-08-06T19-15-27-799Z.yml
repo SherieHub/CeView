@@ -1,0 +1,136 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - generic [ref=f7e4]:
+      - generic [ref=f7e5]: CV
+      - heading "Welcome back" [level=1] [ref=f7e7]
+      - paragraph [ref=f7e8]: Marketing intelligence for Cebu's small businesses
+      - generic [ref=f7e9]:
+        - button "Sign In" [ref=f7e10] [cursor=pointer]
+        - button "Register" [ref=f7e11] [cursor=pointer]
+      - button "Sign in with Google" [ref=f7e12] [cursor=pointer]
+      - generic [ref=f7e18]: or continue with email
+      - generic [ref=f7e19]:
+        - generic [ref=f7e20]: Email
+        - textbox "you@business.com" [ref=f7e21]: owner@sunsetdive.ph
+      - generic [ref=f7e22]:
+        - generic [ref=f7e23]: Password
+        - textbox "••••••••" [ref=f7e24]
+      - button "Sign In" [ref=f7e25] [cursor=pointer]
+      - paragraph [ref=f7e26]:
+        - link "Forgot password?" [ref=f7e27] [cursor=pointer]:
+          - /url: "#"
+    - generic [ref=f7e28]:
+      - generic [ref=f7e29]: CEBUPH ✦ EST.
+      - generic [ref=f7e31]:
+        - paragraph [ref=f7e32]: "\"I knew Korean divers were coming before my competitors did.\""
+        - paragraph [ref=f7e33]: — Sunset Dive Co., Mactan
+  - generic [ref=f7e34]:
+    - button [ref=f7e37] [cursor=pointer]
+    - generic [ref=f7e41]:
+      - button "Target This Market" [ref=f7e42] [cursor=pointer]
+      - table [ref=f7e48]:
+        - rowgroup [ref=f7e49]:
+          - row [ref=f7e50]:
+            - columnheader "Airline" [ref=f7e51]
+            - columnheader "Code" [ref=f7e52]
+            - columnheader "Frequency" [ref=f7e53]
+            - columnheader "Direct" [ref=f7e54]
+            - columnheader "Duration" [ref=f7e55]
+            - columnheader "Tier" [ref=f7e56]
+        - rowgroup
+  - generic [ref=f7e57]:
+    - generic [ref=f7e59]:
+      - generic [ref=f7e60]: Notifications
+      - button [ref=f7e61] [cursor=pointer]
+    - generic [ref=f7e65]:
+      - generic [ref=f7e66]:
+        - generic [ref=f7e67]:
+          - generic [ref=f7e68]: KR
+          - text: Korean traveler searches up 34%
+        - generic [ref=f7e69]: 2 hours ago
+      - generic [ref=f7e70]:
+        - generic [ref=f7e71]: Post "Reef cleanup dive" published to Instagram
+        - generic [ref=f7e72]: Yesterday
+      - generic [ref=f7e73]:
+        - generic [ref=f7e74]: Weekly performance report is ready
+        - generic [ref=f7e75]: 3 days ago
+  - generic:
+    - generic:
+      - generic: Post Performance
+      - button
+    - generic:
+      - generic:
+        - generic:
+          - generic: "\"Golden hour dive briefing 🌅\""
+          - generic: Instagram · Published Jul 29
+      - generic:
+        - generic:
+          - generic: Engagements
+          - generic: 2,412
+          - generic: +18%
+        - generic:
+          - generic: Reach
+          - generic: 9,880
+          - generic: +9%
+      - generic:
+        - generic: Engagement
+        - generic: Reach
+  - generic:
+    - generic:
+      - generic: Invite Team Member
+      - button
+    - generic:
+      - generic:
+        - generic: Email address
+        - textbox "teammate@business.com"
+      - generic:
+        - generic: Role
+        - combobox:
+          - option "Editor" [selected]
+          - option "Viewer"
+          - option "Admin"
+      - button "Send Invite"
+  - generic:
+    - generic:
+      - generic: Edit Business Profile
+      - button
+    - generic:
+      - generic:
+        - generic: Business Name
+        - textbox: Sunset Dive Co.
+      - generic:
+        - generic: Industry
+        - combobox:
+          - option "Dive Shop" [selected]
+          - option "Café"
+          - option "Tour Operator"
+          - option "Craft Shop"
+      - generic:
+        - generic: Vibe / Theme
+        - textbox: Adventurous, warm, community-rooted
+      - generic:
+        - generic: Core Services
+        - generic:
+          - generic: Guided Reef Dives
+          - generic: PADI Certification
+          - textbox "Add a service…"
+      - generic:
+        - generic: Full Description
+        - textbox: Family-run dive shop on Mactan offering PADI courses and reef tours for all skill levels, with a focus on marine conservation. We work with local fisherfolk associations to run monthly reef cleanups, and every certification course includes a half-day session on coral identification so guests leave understanding what they just swam through.
+        - generic: 0 / 50 words
+      - generic:
+        - generic: Unique Value Proposition
+        - textbox: "Every dive funds a coral restoration project: a fixed portion of each booking goes directly to the reef nursery we maintain with the local fisherfolk cooperative, and guests can see the actual coral fragments they helped fund on a follow-up dive months later — something no other PADI-certified operator on Mactan currently offers guests, and a big part of why people come back to dive with us more than once."
+        - generic: 0 / 50 words
+  - generic [ref=f7e76]:
+    - button "login" [ref=f7e77] [cursor=pointer]
+    - button "onboarding" [ref=f7e78] [cursor=pointer]
+    - button "onboarding-low" [ref=f7e79] [cursor=pointer]
+    - button "dashboard" [ref=f7e80] [cursor=pointer]
+    - button "dashboard-loading" [ref=f7e81] [cursor=pointer]
+    - button "dashboard-empty" [ref=f7e82] [cursor=pointer]
+    - button "dashboard-ai-down" [ref=f7e83] [cursor=pointer]
+    - button "content" [ref=f7e84] [cursor=pointer]
+    - button "calendar" [ref=f7e85] [cursor=pointer]
+    - button "performance" [ref=f7e86] [cursor=pointer]
+    - button "settings" [ref=f7e87] [cursor=pointer]
