@@ -496,9 +496,10 @@ html[data-view]:not([data-view="login"]):not([data-view="onboarding"]) .app-shel
    ============================================================ */
 .dash-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-5);align-items:start;}
 .dash-grid > section{min-width:0;}
-/* Rest state: alert feed alone, generously capped so it reads as an
-   editorial inbox rather than stretching full-bleed on wide screens. */
-.alert-feed-solo{max-width:640px;}
+/* Rest state: no markets column yet, so each alert card takes the full
+   content width — wide cards read as a command-center feed rather than a
+   cramped list, and there's no second column competing for the space. */
+.alert-feed-solo{width:100%;}
 /* Split state: markets column fades/slides in beside the feed once an
    alert is selected — reuses the shared .reveal keyframe (fadeUp) so the
    motion language matches onboarding's score cards and fresh board cards. */
