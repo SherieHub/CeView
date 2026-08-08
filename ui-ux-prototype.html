@@ -496,9 +496,23 @@ html[data-view]:not([data-view="login"]):not([data-view="onboarding"]) .app-shel
    ============================================================ */
 .dash-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-5);align-items:start;}
 .dash-grid > section{min-width:0;}
+/* Rest state: alert feed alone, generously capped so it reads as an
+   editorial inbox rather than stretching full-bleed on wide screens. */
+.alert-feed-solo{max-width:640px;}
+/* Split state: markets column fades/slides in beside the feed once an
+   alert is selected — reuses the shared .reveal keyframe (fadeUp) so the
+   motion language matches onboarding's score cards and fresh board cards. */
+.markets-reveal{animation:fadeUp .38s var(--ease) both;}
 .alert-card{
   width:100%;text-align:left;padding:var(--sp-5);border-radius:var(--r-md);border:1px solid var(--line);
   background:var(--panel);box-shadow:var(--sh-1);transition:all .2s var(--ease);position:relative;display:block;
+}
+.alert-card.selected{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,40,84,.10);}
+/* Thin gold rule on the trailing edge of a selected alert — a subtle
+   visual thread pointing at the revealed markets column beside it. */
+.alert-card.selected::after{
+  content:'';position:absolute;top:14px;bottom:14px;right:-1px;width:3px;border-radius:3px;
+  background:var(--gold);
 }
 .alert-card:hover{border-color:var(--navy-muted);box-shadow:var(--sh-2);transform:translateY(-2px);}
 .alert-card.unread{border-left:3px solid var(--gold);}
@@ -1166,26 +1180,82 @@ const MOCK_MARKETS = [
   }
 ];
 
+/**
+ * Per-category market affinity — mirrors the real (category, market) signal
+ * grid Module 2 actually computes (see MACRO_TREND_MAPPING in
+ * docs/module-2). `Accommodation & Staycation` intentionally reuses
+ * MOCK_MARKETS' own matchScores (87/79/64) so the default demo profile's
+ * numbers are unchanged; every other category is hand-authored to reflect
+ * a plausible, distinct market lean rather than a flat re-use of one score.
+ */
+const CATEGORY_MARKET_SCORES = {
+  'Coastal & Island':            { korea:71, japan:83, usa:86 },
+  'Adventure & Nature':          { korea:66, japan:74, usa:90 },
+  'Cultural & Heritage':         { korea:68, japan:89, usa:57 },
+  'Theme Parks / Entertainment': { korea:84, japan:80, usa:55 },
+  'Urban & City':                { korea:79, japan:85, usa:52 },
+  'Culinary & Gastronomy':       { korea:88, japan:82, usa:60 },
+  'Accommodation & Staycation':  { korea:87, japan:79, usa:64 }
+};
+
+/** Re-ranks MOCK_MARKETS for one category's affinity scores. All other
+ *  per-market detail (directive, chart, insights, flight data) is reused
+ *  as-is — only the displayed score and rank are category-scoped, which is
+ *  the actual claim being made ("these markets matter most for THIS
+ *  category"), not a full re-authoring of every market's detail content. */
+function marketsForCategory(category){
+  const scores = CATEGORY_MARKET_SCORES[category] || {};
+  return MOCK_MARKETS
+    .map(m => ({ ...m, matchScore: scores[m.id] != null ? scores[m.id] : m.matchScore }))
+    .sort((a,b) => b.matchScore - a.matchScore)
+    .map((m,i) => ({ ...m, rank:i+1 }));
+}
+
 /* ------------------------------------------------------------
    MOCK DATA — Module 2 notifications (tbl_demand_alert)
    ------------------------------------------------------------ */
+/**
+ * Each alert is scoped to exactly one (category, market) pair — mirroring
+ * how MarketDataIngestionService / TrendFetchSchedulerService actually
+ * compute signals in Module 2 (21 combinations: 7 categories × 3 markets).
+ * The Dashboard filters this list to the business's own `categories`, and
+ * clicking an alert ranks markets for THAT alert's category specifically
+ * (see CATEGORY_MARKET_SCORES / marketsForCategory below) — there is no
+ * single fixed "top 3 markets" independent of category.
+ */
 const MOCK_NOTIFICATIONS = [
   { id:'n1', date:'Week of Aug 3, 2026', title:'Demand Window Opening — South Korea',
-    market:'South Korea', marketId:'korea', trend:'Healing / 힐링여행', isRead:false,
-    alertLevel:'WARNING',
+    market:'South Korea', marketId:'korea', category:'Accommodation & Staycation',
+    trend:'Healing / 힐링여행', isRead:false, alertLevel:'WARNING',
     alertMessage:'Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach.' },
   { id:'n2', date:'Week of Jul 27, 2026', title:'Rising Trend: Private Beachfront Escapes',
-    market:'Japan', marketId:'japan', trend:'Beachfront Luxury', isRead:false,
-    alertLevel:'INFO',
+    market:'Japan', marketId:'japan', category:'Coastal & Island',
+    trend:'Beachfront Luxury', isRead:false, alertLevel:'INFO',
     alertMessage:'Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks.' },
   { id:'n3', date:'Week of Jul 20, 2026', title:'Summer Planning Window — United States',
-    market:'United States', marketId:'usa', trend:'Bucket-list Diving', isRead:true,
-    alertLevel:'INFO',
+    market:'United States', marketId:'usa', category:'Adventure & Nature',
+    trend:'Bucket-list Diving', isRead:true, alertLevel:'INFO',
     alertMessage:'US long-haul planners book 6–10 weeks ahead. Demand is rising steadily but seasonality remains unconfirmed at 0.61 — treat as an emerging signal, not a peak.' },
   { id:'n4', date:'Week of Jul 13, 2026', title:'Forex Shift Favours Korean Visitors',
-    market:'South Korea', marketId:'korea', trend:'Purchasing Power', isRead:true,
-    alertLevel:'INFO',
-    alertMessage:'PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month.' }
+    market:'South Korea', marketId:'korea', category:'Accommodation & Staycation',
+    trend:'Purchasing Power', isRead:true, alertLevel:'INFO',
+    alertMessage:'PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month.' },
+  { id:'n5', date:'Week of Jul 6, 2026', title:'New Interest: Cebu Heritage & Old Town Walks',
+    market:'Japan', marketId:'japan', category:'Cultural & Heritage',
+    trend:'Heritage Walking Tours', isRead:false, alertLevel:'INFO',
+    alertMessage:'Japanese searches for "セブ 歴史 観光" (Cebu historical tourism) are up 19% over two weeks — tracking with the 非日常 (non-daily) framing Japanese travel content responds to.' },
+  { id:'n6', date:'Jun 29, 2026', title:'Emerging: Family Entertainment Bookings',
+    market:'South Korea', marketId:'korea', category:'Theme Parks / Entertainment',
+    trend:'Family Entertainment', isRead:true, alertLevel:'INFO',
+    alertMessage:'Korean family-segment searches for entertainment-adjacent Cebu itineraries are climbing ahead of the school-break window — still below the 2σ surge threshold.' },
+  { id:'n7', date:'Week of Jun 22, 2026', title:'Steady Climb: Cebu City Weekend Breaks',
+    market:'Japan', marketId:'japan', category:'Urban & City',
+    trend:'Urban Weekend Breaks', isRead:true, alertLevel:'INFO',
+    alertMessage:'Japanese interest in short Cebu City itineraries (2–3 nights) has held a steady upward slope for four consecutive weeks — a recurring, not spiking, pattern.' },
+  { id:'n8', date:'Week of Jun 15, 2026', title:'Rising: 세부 맛집 (Cebu Restaurant Guide) Searches',
+    market:'South Korea', marketId:'korea', category:'Culinary & Gastronomy',
+    trend:'Food Tourism', isRead:false, alertLevel:'WARNING',
+    alertMessage:'Korean food-tourism search volume broke above μ + 2σ this week, and last year showed the same calendar-window pattern (YoY 1.14) — a confirmed seasonal surge, not a one-off.' }
 ];
 
 /* ------------------------------------------------------------
@@ -1425,6 +1495,7 @@ const APP_STATE = {
   connections:{ instagram:true, facebook:true, tiktok:false, naver:false },
   activeMarketId:'korea',
   targetedMarketId:null,
+  selectedAlertId:null,   // Dashboard: which surge alert is expanded, drives the category-scoped market reveal
   content:{
     platform:'instagram',
     approved:{},          // platform -> option index
@@ -2252,6 +2323,14 @@ function syncIdentity(){
    ============================================================ */
 function setDashMode(m){ APP_STATE.dash = m; renderDashboard(); }
 
+function selectAlert(id){
+  if(APP_STATE.selectedAlertId === id){ APP_STATE.selectedAlertId = null; renderDashboard(); return; }
+  const n = MOCK_NOTIFICATIONS.find(x=>x.id===id);
+  if(n) n.isRead = true;      // matches HomeView: viewing an alert's forecast marks it read
+  APP_STATE.selectedAlertId = id;
+  renderDashboard();
+}
+
 function renderDashboard(){
   const mode = APP_STATE.dash;
   const p = APP_STATE.profile;
@@ -2266,6 +2345,18 @@ function renderDashboard(){
          <div><b>AI Forecast Service Unavailable.</b> The alerts and rankings below are read from your last successful forecast run. Refreshing will not produce new predictions until the service recovers.</div>
        </div>` : '';
 
+  // Alerts are scoped to the business's own categories — this IS the
+  // (category, market) signal grid Module 2 actually computes; there is no
+  // undifferentiated "all alerts" feed in the real system either.
+  const myAlerts = MOCK_NOTIFICATIONS.filter(n => p.categories.includes(n.category));
+  const unreadCount = myAlerts.filter(n=>!n.isRead).length;
+
+  // A stale selection (e.g. the business's categories changed since it was
+  // picked) never renders the markets column.
+  const selected = APP_STATE.selectedAlertId
+    ? myAlerts.find(n => n.id === APP_STATE.selectedAlertId) : null;
+  const showMarkets = (mode==='normal' || mode==='ai-down') && !!selected;
+
   const alerts = mode==='loading'
     ? Array(3).fill(0).map(()=>`<div class="skel" style="height:150px;border-radius:var(--r-md)"></div>`).join('')
     : mode==='empty'
@@ -2274,66 +2365,91 @@ function renderDashboard(){
            <h3>No notifications yet</h3>
            <p>Market trend data will appear here once your profile has been analysed and the first forecast run completes.</p>
          </div></div>`
-      : MOCK_NOTIFICATIONS.map(n=>{
-          const m = marketById(n.marketId);
-          return `<button class="alert-card ${n.isRead?'':'unread'}" onclick="openRadar('${n.marketId}')">
-            <div class="alert-top">
-              ${n.isRead?'':'<span class="unread-dot"></span>'}
-              <span class="alert-date">${esc(n.date)}</span>
-              ${n.alertLevel==='WARNING'?'<span class="chip chip-red"><i data-lucide="zap"></i> Surge</span>':''}
-            </div>
-            <h4>${esc(n.title)}</h4>
-            <p class="body-sm" style="margin-top:7px;">${esc(n.alertMessage)}</p>
-            <div class="alert-meta">
-              <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(n.market)}</span>
-              <span class="chip"><i data-lucide="trending-up"></i> ${esc(n.trend)}</span>
-            </div>
-            <div class="alert-cta">View market forecast <i data-lucide="arrow-right"></i></div>
-          </button>`;
-        }).join('');
+      : myAlerts.length===0
+        ? `<div class="card"><div class="empty">
+             <div class="empty-glyph"><i data-lucide="tag"></i></div>
+             <h3>No surge alerts for your categories yet</h3>
+             <p>Nothing is currently trending for ${esc(p.categories.join(', ') || 'your business categories')}. Add another category in Settings → Business Profile to widen coverage.</p>
+           </div></div>`
+        : myAlerts.map(n=>{
+            const isSelected = n.id === APP_STATE.selectedAlertId;
+            return `<button class="alert-card ${n.isRead?'':'unread'} ${isSelected?'selected':''}" onclick="selectAlert('${n.id}')">
+              <div class="alert-top">
+                ${n.isRead?'':'<span class="unread-dot"></span>'}
+                <span class="alert-date">${esc(n.date)}</span>
+                ${n.alertLevel==='WARNING'?'<span class="chip chip-red"><i data-lucide="zap"></i> Surge</span>':''}
+                ${isSelected?'<span class="chip chip-navy" style="margin-left:auto;"><i data-lucide="circle-dot"></i> Selected</span>':''}
+              </div>
+              <h4>${esc(n.title)}</h4>
+              <p class="body-sm" style="margin-top:7px;">${esc(n.alertMessage)}</p>
+              <div class="alert-meta">
+                <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(n.market)}</span>
+                <span class="chip"><i data-lucide="tag"></i> ${esc(n.category)}</span>
+                <span class="chip"><i data-lucide="trending-up"></i> ${esc(n.trend)}</span>
+              </div>
+              <div class="alert-cta">${isSelected?'Hide target markets':'View target markets'} <i data-lucide="${isSelected?'chevron-up':'arrow-right'}"></i></div>
+            </button>`;
+          }).join('');
 
-  const ranks = mode==='loading'
-    ? Array(3).fill(0).map(()=>`<div class="skel" style="height:130px;border-radius:var(--r-md)"></div>`).join('')
-    : mode==='empty'
-      ? `<div class="card"><div class="empty">
-           <div class="empty-glyph"><i data-lucide="radar"></i></div>
-           <h3>No forecast data yet</h3>
-           <p>Run your first forecast to rank South Korea, Japan and the United States by market potential.</p>
-           <button class="btn btn-primary btn-sm" style="margin-top:var(--sp-5);" onclick="setDashMode('normal')">
-             <i data-lucide="refresh-cw"></i> Run first forecast</button>
-         </div></div>`
-      : MOCK_MARKETS.map(m=>{
-          const hasSpike = m.chartData.some(d=>d.spike===1);
-          return `<button class="rank-card" data-rank="${m.rank}" onclick="openRadar('${m.id}')">
-            <div class="rank-head">
-              <span class="rank-no">${m.rank}</span>
-              <div style="min-width:0;">
-                <h4>${esc(m.name)}</h4>
-                <p class="rank-sub">${esc(m.city)} · ${num(m.distanceKm)} km to Cebu</p>
-              </div>
-              <div class="rank-score"><b class="num">${m.matchScore}</b><span>Potential</span></div>
-            </div>
-            <div style="margin-top:var(--sp-4);">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
-                <span class="eyebrow">Market potential</span>
-                <span class="num" style="font-size:11.5px;font-weight:800;">${m.matchScore}/100</span>
-              </div>
-              <div class="bar ${m.rank===1?'gold':''}"><i style="width:${m.matchScore}%"></i></div>
-            </div>
-            <div class="rank-facts">
-              <span class="rank-fact"><i data-lucide="plane" style="stroke:${m.directFlight?'#0F7A4E':'#D48E15'}"></i>
-                <b>${m.directFlight?'Direct':'Via Manila'}</b> · ${esc(m.flightHours)}</span>
-              <span class="rank-fact"><i data-lucide="calendar-clock"></i> ${m.flightFrequency}x / week</span>
-              ${hasSpike?'<span class="chip chip-red" style="margin-left:auto;"><i data-lucide="zap"></i> Surge active</span>':''}
-            </div>
-          </button>`;
-        }).join('');
+  let marketsSection = '';
+  if(showMarkets){
+    const list = marketsForCategory(selected.category);
+    const ranks = list.map(m=>{
+      const hasSpike = m.chartData.some(d=>d.spike===1);
+      return `<button class="rank-card" data-rank="${m.rank}" onclick="openRadar('${m.id}')">
+        <div class="rank-head">
+          <span class="rank-no">${m.rank}</span>
+          <div style="min-width:0;">
+            <h4>${esc(m.name)}</h4>
+            <p class="rank-sub">${esc(m.city)} · ${num(m.distanceKm)} km to Cebu</p>
+          </div>
+          <div class="rank-score"><b class="num">${m.matchScore}</b><span>Potential</span></div>
+        </div>
+        <div style="margin-top:var(--sp-4);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <span class="eyebrow">Market potential</span>
+            <span class="num" style="font-size:11.5px;font-weight:800;">${m.matchScore}/100</span>
+          </div>
+          <div class="bar ${m.rank===1?'gold':''}"><i style="width:${m.matchScore}%"></i></div>
+        </div>
+        <div class="rank-facts">
+          <span class="rank-fact"><i data-lucide="plane" style="stroke:${m.directFlight?'#0F7A4E':'#D48E15'}"></i>
+            <b>${m.directFlight?'Direct':'Via Manila'}</b> · ${esc(m.flightHours)}</span>
+          <span class="rank-fact"><i data-lucide="calendar-clock"></i> ${m.flightFrequency}x / week</span>
+          ${hasSpike?'<span class="chip chip-red" style="margin-left:auto;"><i data-lucide="zap"></i> Surge active</span>':''}
+        </div>
+      </button>`;
+    }).join('');
+
+    marketsSection = `
+      <section class="markets-reveal">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--sp-4);flex-wrap:wrap;">
+          <h3 class="h-md">Top target markets</h3>
+          <span class="chip chip-gold"><i data-lucide="tag"></i> ${esc(selected.category)}</span>
+        </div>
+        <div style="display:grid;gap:var(--sp-3);">${ranks}</div>
+        <div class="card card-pad" style="margin-top:var(--sp-4);background:var(--panel-sunk);">
+          <p class="eyebrow" style="margin-bottom:8px;">How markets are ranked for this category</p>
+          <p class="body-xs mono" style="line-height:1.7;">
+            market_score = 0.40 × demand<sub>4w</sub>/100<br>
+            &nbsp;&nbsp;+ 0.35 × seasonality<br>
+            &nbsp;&nbsp;+ 0.25 × economic_viability
+          </p>
+          <p class="body-xs" style="margin-top:9px;">Click any market to open its full radar — demand trajectory, purchasing power and seasonal pattern.</p>
+        </div>
+      </section>`;
+  }
+
+  const subtitle = mode==='loading' ? 'Loading your latest surge alerts…'
+    : mode==='empty' ? 'No forecast data yet — run your first analysis to start receiving alerts.'
+    : myAlerts.length===0 ? 'No surge alerts match your business categories right now.'
+    : `${unreadCount} unread surge alert${unreadCount===1?'':'s'} across ${esc(p.categories.join(', '))}. Click one to see its top target markets.`;
 
   $('#screen-dashboard').innerHTML = `
     <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;">
       <div>
         <h2>Good morning${p.businessName?', '+esc(p.businessName):''}</h2>
-        <p>Two markets are moving this week. Korea's spike is year-over-year confirmed — that is a seasonal inflection, not a viral blip.</p>
+        <p>${subtitle}</p>
       </div>
       <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;">
         ${profilePill}
@@ -2343,32 +2459,24 @@ function renderDashboard(){
       </div>
     </div>
     ${banner}
-    <div class="dash-grid">
-      <section>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--sp-4);">
-          <h3 class="h-md">Surge alerts</h3>
-          <span class="chip"><i data-lucide="bell"></i> ${MOCK_NOTIFICATIONS.filter(n=>!n.isRead).length} unread</span>
-        </div>
-        <div style="display:grid;gap:var(--sp-3);">${alerts}</div>
-      </section>
-      <section>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--sp-4);">
-          <h3 class="h-md">Top target markets</h3>
-          <span class="body-xs">Ranked by market score</span>
-        </div>
-        <div style="display:grid;gap:var(--sp-3);">${ranks}</div>
-        ${mode==='normal'||mode==='ai-down'?`
-        <div class="card card-pad" style="margin-top:var(--sp-4);background:var(--panel-sunk);">
-          <p class="eyebrow" style="margin-bottom:8px;">How markets are ranked</p>
-          <p class="body-xs mono" style="line-height:1.7;">
-            market_score = 0.40 × demand<sub>4w</sub>/100<br>
-            &nbsp;&nbsp;+ 0.35 × seasonality<br>
-            &nbsp;&nbsp;+ 0.25 × economic_viability
-          </p>
-          <p class="body-xs" style="margin-top:9px;">Click any market to open its full radar — demand trajectory, purchasing power and seasonal pattern.</p>
-        </div>`:''}
-      </section>
-    </div>`;
+    ${showMarkets
+      ? `<div class="dash-grid">
+           <section>
+             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--sp-4);">
+               <h3 class="h-md">Surge alerts</h3>
+               <span class="chip"><i data-lucide="bell"></i> ${unreadCount} unread</span>
+             </div>
+             <div style="display:grid;gap:var(--sp-3);">${alerts}</div>
+           </section>
+           ${marketsSection}
+         </div>`
+      : `<div class="alert-feed-solo">
+           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--sp-4);">
+             <h3 class="h-md">Surge alerts</h3>
+             <span class="chip"><i data-lucide="bell"></i> ${unreadCount} unread</span>
+           </div>
+           <div style="display:grid;gap:var(--sp-3);">${alerts}</div>
+         </div>`}`;
   icons();
 }
 
