@@ -191,6 +191,7 @@ svg{display:block;}
 }
 .switch input:checked + .switch-track{background:var(--navy);}
 .switch input:checked + .switch-track::after{transform:translateX(17px);}
+.switch input:disabled + .switch-track{opacity:.4;cursor:not-allowed;}
 .switch-label{font-size:13px;font-weight:600;}
 
 /* Checkbox */
@@ -699,6 +700,116 @@ html[data-view]:not([data-view="login"]):not([data-view="onboarding"]) .app-shel
 .post-stat span{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;}
 
 /* ============================================================
+   CONTENT STUDIO (2) — per-platform pipeline
+   ============================================================ */
+.cs2-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;}
+.cs2-tabs::-webkit-scrollbar{display:none;}
+.cs2-tab{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:7px;padding:11px 16px;
+  font-size:13px;font-weight:700;color:var(--muted);border-bottom:2.5px solid transparent;
+  margin-bottom:-1px;transition:all .16s;position:relative;
+}
+.cs2-tab svg{width:14px;height:14px;}
+.cs2-tab:hover{color:var(--ink);}
+.cs2-tab[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold);}
+.cs2-tab.locked{color:#B7BEC9;}
+.cs2-tab.locked .lock-ic{width:11px;height:11px;stroke:#B7BEC9;}
+.cs2-tab .pdot{width:6px;height:6px;border-radius:50%;}
+
+.connect-panel{
+  text-align:center;padding:var(--sp-10) var(--sp-6);border:1.5px dashed var(--line-strong);
+  border-radius:var(--r-md);background:var(--panel-sunk);
+}
+.connect-panel .cp-icon{
+  width:54px;height:54px;border-radius:16px;display:grid;place-items:center;margin:0 auto var(--sp-4);
+  box-shadow:var(--sh-1);
+}
+.connect-panel .cp-icon svg{width:24px;height:24px;stroke:#fff;}
+.connect-panel h3{font-size:15px;font-weight:800;}
+.connect-panel p{font-size:12.5px;color:var(--muted);margin-top:6px;max-width:38ch;margin-inline:auto;}
+
+/* Composer accordion */
+.cs2-block{border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--panel);overflow:hidden;}
+.cs2-block + .cs2-block{margin-top:var(--sp-4);}
+.cs2-block.locked{opacity:.55;}
+.cs2-block-head{
+  width:100%;display:flex;align-items:center;gap:11px;padding:var(--sp-4) var(--sp-5);
+  text-align:left;background:var(--panel-sunk);transition:background .16s;
+}
+.cs2-block-head:hover{background:#F1ECE0;}
+.cs2-block-head svg.chev{width:15px;height:15px;transition:transform .18s;flex-shrink:0;margin-left:auto;}
+.cs2-block.open .cs2-block-head svg.chev{transform:rotate(180deg);}
+.cs2-block-body{display:none;padding:var(--sp-5);border-top:1px solid var(--line);}
+.cs2-block.open .cs2-block-body{display:block;}
+.readiness{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:var(--r-full);white-space:nowrap;}
+.readiness.locked{background:var(--panel);color:#9AA7B8;border:1px solid var(--line);}
+.readiness.unapproved{background:var(--gold-wash);color:#8A5B04;}
+.readiness.needs-audit{background:rgba(0,120,146,.09);color:var(--teal);}
+.readiness.auditing{background:rgba(15,40,84,.08);color:var(--navy);}
+.readiness.fail{background:#FDECEA;color:var(--critical);}
+.readiness.ready{background:var(--success-bg);color:var(--success);}
+
+.cs2-composer-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--sp-5);}
+.cs2-composer-grid > *{min-width:0;}
+
+/* Platform preview chrome */
+.prev-shell{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:#fff;max-width:300px;margin:0 auto;}
+.prev-media-box{position:relative;width:100%;background:#0A1220;overflow:hidden;}
+.prev-media-box img,.prev-media-box video{width:100%;height:100%;object-fit:cover;display:block;}
+.prev-media-box.r-4x5{aspect-ratio:4/5;}
+.prev-media-box.r-9x16{aspect-ratio:9/16;}
+.prev-media-box.r-16x9{aspect-ratio:16/9;}
+.prev-empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.35);}
+.prev-empty svg{width:26px;height:26px;}
+.prev-badge{
+  position:absolute;display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:var(--r-full);
+  background:rgba(10,18,32,.72);color:#fff;font-size:10px;font-weight:800;backdrop-filter:blur(2px);
+}
+.prev-badge svg{width:10px;height:10px;}
+.prev-badge.dur{bottom:8px;right:8px;}
+.prev-badge.muted{top:8px;right:8px;}
+
+/* Instagram chrome */
+.prev-ig-head{display:flex;align-items:center;gap:8px;padding:9px 11px;}
+.prev-ig-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--critical-alt));flex-shrink:0;}
+.prev-ig-head b{font-size:11.5px;font-weight:700;}
+.prev-ig-actions{display:flex;align-items:center;gap:12px;padding:9px 11px 4px;}
+.prev-ig-actions svg{width:19px;height:19px;stroke:var(--ink);stroke-width:1.8;}
+.prev-ig-actions svg:last-child{margin-left:auto;}
+.prev-ig-likes{padding:0 11px;font-size:11.5px;font-weight:700;}
+.prev-ig-caption{padding:5px 11px 12px;font-size:11.5px;line-height:1.5;}
+.prev-ig-caption b{font-weight:700;}
+.prev-ig-caption .more{color:var(--muted);}
+
+/* TikTok chrome */
+.prev-tt{background:#000;position:relative;}
+.prev-tt .prev-media-box{background:#000;}
+.prev-tt-rail{position:absolute;right:8px;bottom:46px;display:flex;flex-direction:column;align-items:center;gap:14px;z-index:2;}
+.prev-tt-rail .av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--teal));border:1.5px solid #fff;}
+.prev-tt-rail div{color:#fff;text-align:center;}
+.prev-tt-rail svg{width:24px;height:24px;stroke:#fff;fill:#fff;}
+.prev-tt-rail span{display:block;font-size:9.5px;font-weight:700;margin-top:2px;}
+.prev-tt-cap{position:absolute;left:10px;right:52px;bottom:14px;color:#fff;font-size:11px;line-height:1.5;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+.prev-tt-cap b{display:block;font-weight:700;margin-bottom:3px;}
+
+/* Facebook chrome */
+.prev-fb-head{display:flex;align-items:center;gap:8px;padding:10px 11px 6px;}
+.prev-fb-avatar{width:28px;height:28px;border-radius:9px;background:var(--navy);flex-shrink:0;}
+.prev-fb-head b{font-size:11.5px;font-weight:700;display:block;}
+.prev-fb-head span{font-size:9.5px;color:var(--muted);}
+.prev-fb-cap{padding:0 11px 9px;font-size:11.5px;line-height:1.55;}
+.prev-fb-cap .more{color:var(--muted);font-weight:700;}
+.prev-fb-actions{display:flex;padding:7px 11px;border-top:1px solid var(--line);gap:16px;}
+.prev-fb-actions span{font-size:10.5px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:5px;}
+.prev-fb-actions svg{width:14px;height:14px;}
+
+/* Naver chrome */
+.prev-nv{padding:13px 13px 4px;}
+.prev-nv-title{font-size:13px;font-weight:800;margin-bottom:3px;line-height:1.4;}
+.prev-nv-byline{font-size:10px;color:var(--muted);margin-bottom:10px;}
+.prev-nv-body{padding:11px 13px 14px;font-size:11.5px;line-height:1.7;white-space:pre-line;color:var(--ink-2);}
+
+/* ============================================================
    SETTINGS
    ============================================================ */
 .conn-row{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-4) 0;border-bottom:1px solid var(--line);}
@@ -905,6 +1016,7 @@ html[data-view]:not([data-view="login"]):not([data-view="onboarding"]) .app-shel
       <div class="wrap">
         <section class="screen" id="screen-dashboard"></section>
         <section class="screen" id="screen-content"></section>
+        <section class="screen" id="screen-content2"></section>
         <section class="screen" id="screen-calendar"></section>
         <section class="screen" id="screen-performance"></section>
         <section class="screen" id="screen-settings"></section>
@@ -1334,7 +1446,26 @@ const APP_STATE = {
   calYear:2026,
   calView:'month',
   members:MOCK_MEMBERS.slice(),
-  dash:'normal'           // normal | loading | empty | ai-down
+  dash:'normal',           // normal | loading | empty | ai-down
+
+  /** Content Studio (2) — per-platform pipeline. Deliberately separate from
+   *  `content` above so v1 cannot regress. See docs/superpowers/specs for the
+   *  design: connection-gated tabs, one caption per platform, one preview per
+   *  platform, one audit per platform, all-must-pass to publish. */
+  content2:{
+    platform:'instagram',
+    approved:{},          // platform -> approved option index
+    approvedText:{},      // platform -> that platform's own caption text
+    edits:{},             // "platform-idx" -> inline-edited text
+    media:null,           // { url, name, size, kind:'image'|'video', mime }
+    selected:[],          // platforms chosen for publishing
+    expanded:{},          // platform -> composer accordion open state
+    toggles:{ visibility:true, comments:true, paid:false },
+    agreed:false,
+    audits:{},            // platform -> OmcsAuditResultDTO
+    auditing:null,        // platform currently mid-audit, or null
+    auditStep:0
+  }
 };
 
 /* ------------------------------------------------------------
@@ -1584,6 +1715,7 @@ const NAV = [
   { id:'dashboard',   label:'Dashboard',     icon:'layout-dashboard', title:'Dashboard',      sub:'Alert command center', badge:2 },
   { section:'Create' },
   { id:'content',     label:'Content Studio',icon:'sparkles',         title:'Content Studio', sub:'Draft, audit and publish' },
+  { id:'content2',    label:'Content Studio (2)', icon:'layers',      title:'Content Studio (2)', sub:'Per-platform pipeline — connection-gated, previewed, individually audited' },
   { id:'calendar',    label:'Calendar',      icon:'calendar-days',    title:'Calendar',       sub:'Publishing schedule' },
   { section:'Measure' },
   { id:'performance', label:'Performance',   icon:'trending-up',      title:'Performance',    sub:'Campaign analytics & PES' },
@@ -1615,9 +1747,7 @@ function goApp(screen){
   if(meta){ $('#tb-title').textContent = meta.title; $('#tb-sub').textContent = meta.sub; }
   if(window.innerWidth < 1024){ $('#sidebar').classList.remove('on'); syncScrim(); }
   window.scrollTo({top:0,behavior:'instant'});
-  const R = { dashboard:renderDashboard, content:renderContent, calendar:renderCalendar,
-              performance:renderPerformance, settings:renderSettings };
-  if(R[screen]) R[screen]();
+  renderActiveScreen();
   icons();
 }
 function toggleSidebar(){
@@ -2805,6 +2935,579 @@ function renderContent(){
 }
 
 /* ============================================================
+   CONTENT STUDIO (2) — per-platform publishing pipeline
+   ============================================================
+   Fixes three gaps in v1's Content Studio:
+     1. v1 stages ONE shared caption and republishes it to every selected
+        platform even though MOCK_CONTENT.captions is already keyed per
+        platform. Here every platform keeps its own approved caption end
+        to end, including at publish time.
+     2. v1 ignores APP_STATE.connections. Here a disconnected platform's
+        tab is locked and cannot enter the publish selection until the
+        operator connects it (reusing the real Settings OAuth flow).
+     3. v1 has no preview. Here every platform renders realistic post
+        chrome from the one shared uploaded asset, cropped to that
+        platform's native ratio, so the operator can see how a 16:9 hero
+        loses its subject at TikTok's 9:16 before publishing.
+   Deliberately a separate state slice/render path from v1's `content` /
+   `renderContent()` — v1 is left completely alone.
+   ============================================================ */
+const C2 = () => APP_STATE.content2;
+
+function isConnected(p){ return !!APP_STATE.connections[p]; }
+
+/** Ideal caption-length window per platform — used only to derive a
+ *  plausible, varying "pubmat consistency" score for the audit; too far
+ *  outside the window reads as caption/image drift, same idea the real
+ *  OMCS rubric scores. */
+const CS2_IDEAL_LEN = { instagram:[150,520], tiktok:[30,190], facebook:[150,420], naver:[350,1500] };
+/** Baseline "recommendations × picture" score per platform — reflects
+ *  how much of the shared asset survives that platform's native crop
+ *  (Instagram 4:5 and Facebook 16:9 keep most of a landscape shot; TikTok's
+ *  9:16 crops hardest; Naver embeds the image inline at low visual weight). */
+const CS2_CROP_FIT = { instagram:88, facebook:86, tiktok:79, naver:81 };
+/** Same relative spread as MOCK_OMCS's own 7-dimension rubric (scores
+ *  88/82/90/79/86/84/75 against its total 83.4) — reapplied around any
+ *  base so every platform's rubric table looks internally consistent. */
+const CS2_RUBRIC_OFFSETS = [4.6,-1.4,6.6,-4.4,2.6,0.6,-8.4];
+
+function csKey2(p,i){ return p+'-'+i; }
+function csText2(p,i){
+  const k = csKey2(p,i);
+  return C2().edits[k] != null ? C2().edits[k] : MOCK_CONTENT.captions[p].options[i];
+}
+function csSetPlatform2(p){ C2().platform = p; renderContent2(); }
+
+function csEdit2(p,i,v){
+  C2().edits[csKey2(p,i)] = v;
+  const limit = PLATFORM_CHAR_LIMITS[p];
+  const el = document.getElementById('cc2-'+csKey2(p,i));
+  if(el){ el.textContent = v.length + ' / ' + num(limit); el.classList.toggle('over', v.length>limit); }
+  if(C2().approved[p] === i){
+    C2().approvedText[p] = v;
+    C2().audits[p] = null;               // caption changed — audit is stale
+    updatePreviewAndReadiness(p);
+  }
+}
+function csToggleReason2(p,i){
+  const el = document.getElementById('rz2-'+csKey2(p,i));
+  if(el) el.classList.toggle('on');
+}
+function csApprove2(p,i){
+  C2().approved[p] = i;
+  C2().approvedText[p] = csText2(p,i);
+  C2().audits[p] = null;
+  renderContent2();
+  showToast(PLATFORM_META[p].label + ' caption approved');
+}
+
+function csTogglePublishPlatform2(p){
+  if(!isConnected(p)) return;
+  const arr = C2().selected, i = arr.indexOf(p);
+  if(i>=0) arr.splice(i,1); else { arr.push(p); C2().expanded[p]=true; }
+  renderContent2();
+}
+function csToggle2(name, on){ C2().toggles[name] = on; }
+function csToggleExpand(p){ C2().expanded[p] = !C2().expanded[p]; renderContent2(); }
+
+function detectMediaKind(file){
+  if(file.type.startsWith('video/')) return 'video';
+  return 'image';
+}
+function csMediaPick2(e){
+  const f = e.target.files && e.target.files[0];
+  if(f) stageMedia2(f);
+}
+function csMediaDrop2(e){
+  e.preventDefault(); e.currentTarget.classList.remove('hot');
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) stageMedia2(f);
+}
+function stageMedia2(f){
+  readImage(f, url=>{
+    C2().media = { url, name:f.name, size:f.size, kind:detectMediaKind(f), mime:f.type };
+    // media changed — every previously-run audit's pubmat consistency is stale
+    Object.keys(C2().audits).forEach(p=>C2().audits[p]=null);
+    renderContent2();
+  });
+}
+function csClearMedia2(){
+  C2().media = null;
+  Object.keys(C2().audits).forEach(p=>C2().audits[p]=null);
+  renderContent2();
+}
+
+/* ---- readiness state machine (drives the composer block chip) ---- */
+function cs2Readiness(p){
+  if(!isConnected(p)) return 'locked';
+  if(C2().auditing === p) return 'auditing';
+  if(C2().approved[p] == null) return 'unapproved';
+  const a = C2().audits[p];
+  if(!a) return 'needs-audit';
+  return a.status === 'Pass' ? 'ready' : 'fail';
+}
+const CS2_READY_LABEL = {
+  locked:'Not connected', auditing:'Auditing…', unapproved:'Needs approval',
+  'needs-audit':'Needs audit', fail:'Audit failed', ready:'Ready'
+};
+
+/* ---- caption truncation rules mirrored from the real platform hooks ---- */
+function truncateAt(text, n){
+  if(text.length<=n) return {shown:text, cut:false};
+  return {shown:text.slice(0,n).replace(/\s+\S*$/,''), cut:true};
+}
+
+/* ---- realistic per-platform post-preview chrome ---- */
+function platformPreview(platform, media, caption, businessName){
+  const name = businessName || APP_STATE.profile.businessName || 'Your Business';
+  const handle = '@' + name.toLowerCase().replace(/[^a-z0-9]+/g,'');
+  const isVideo = media && media.kind==='video';
+  const mediaTag = (ratioClass)=> media
+    ? `<div class="prev-media-box ${ratioClass}">${
+        isVideo
+          ? `<video src="${media.url}" muted loop playsinline autoplay></video>`
+          : `<img src="${media.url}" alt="Pubmat preview">`
+      }</div>`
+    : `<div class="prev-media-box ${ratioClass}"><div class="prev-empty"><i data-lucide="image"></i></div></div>`;
+
+  if(platform==='instagram'){
+    const t = truncateAt(caption||'', 125);
+    return `<div class="prev-shell">
+      <div class="prev-ig-head"><span class="prev-ig-avatar"></span><b>${esc(handle)}</b></div>
+      <div style="position:relative;">
+        ${mediaTag('r-4x5')}
+        ${isVideo?'<span class="prev-badge dur"><i data-lucide="play"></i> 0:24</span>':''}
+      </div>
+      <div class="prev-ig-actions">
+        <i data-lucide="heart"></i><i data-lucide="message-circle"></i><i data-lucide="send"></i><i data-lucide="bookmark"></i>
+      </div>
+      <div class="prev-ig-likes">2,810 likes</div>
+      <div class="prev-ig-caption"><b>${esc(handle)}</b> ${esc(t.shown)}${t.cut?'<span class="more">… more</span>':''}</div>
+    </div>`;
+  }
+  if(platform==='tiktok'){
+    return `<div class="prev-shell prev-tt">
+      <div style="position:relative;">
+        ${mediaTag('r-9x16')}
+        ${isVideo?'':''}
+        <div class="prev-tt-rail">
+          <span class="av"></span>
+          <div><i data-lucide="heart"></i><span>3.5K</span></div>
+          <div><i data-lucide="message-circle"></i><span>120</span></div>
+          <div><i data-lucide="share"></i><span>890</span></div>
+        </div>
+        <div class="prev-tt-cap"><b>${esc(handle)}</b>${esc(caption||'')}</div>
+      </div>
+    </div>`;
+  }
+  if(platform==='facebook'){
+    const t = truncateAt(caption||'', 250);
+    return `<div class="prev-shell">
+      <div class="prev-fb-head"><span class="prev-fb-avatar"></span>
+        <div><b>${esc(name)}</b><span>Just now · <i data-lucide="globe" style="width:9px;height:9px;display:inline;vertical-align:-1px;"></i></span></div></div>
+      <div class="prev-fb-cap">${esc(t.shown)}${t.cut?' <span class="more">See more</span>':''}</div>
+      <div style="position:relative;">
+        ${mediaTag('r-16x9')}
+        ${isVideo?'<span class="prev-badge muted"><i data-lucide="volume-x"></i> Muted</span>':''}
+      </div>
+      <div class="prev-fb-actions">
+        <span><i data-lucide="thumbs-up"></i> Like</span>
+        <span><i data-lucide="message-circle"></i> Comment</span>
+        <span><i data-lucide="share-2"></i> Share</span>
+      </div>
+    </div>`;
+  }
+  // naver — editorial long-form, image inline, no engagement chrome
+  const lines = String(caption||'').split('\n');
+  const title = lines[0] || 'Untitled post';
+  const body = lines.slice(1).join('\n').trim();
+  return `<div class="prev-shell">
+    <div class="prev-nv">
+      <div class="prev-nv-title">${esc(title)}</div>
+      <div class="prev-nv-byline">${esc(name)} · Naver Blog · 방금 전</div>
+    </div>
+    ${mediaTag('r-16x9')}
+    <div class="prev-nv-body">${esc(body || caption || '')}</div>
+  </div>`;
+}
+
+function updatePreviewAndReadiness(p){ renderContent2(); }
+
+/* ---- per-platform OMCS audit — same weighted formula as the real
+   pipeline, scored against THIS platform's caption + the shared media ---- */
+function cs2ConsistencyScore(platform, caption){
+  const [lo,hi] = CS2_IDEAL_LEN[platform];
+  const len = (caption||'').trim().length;
+  const dist = len<lo ? lo-len : len>hi ? len-hi : 0;
+  // Steep enough that a caption genuinely mismatched to the platform (e.g. a
+  // two-line note staged where Naver expects 350+ chars of editorial copy)
+  // can pull the composite below the 70 pass threshold; a caption merely a
+  // little outside the ideal window still passes comfortably.
+  return Math.max(5, Math.min(92, Math.round(92 - dist/2)));
+}
+function cs2BuildRubric(base){
+  const keys = Object.keys(OMCS_RUBRIC_LABELS);
+  const scores = {};
+  keys.forEach((k,i)=>{ scores[k] = Math.max(0, Math.min(100, Math.round(base + CS2_RUBRIC_OFFSETS[i]))); });
+  return scores;
+}
+function cs2ComputeAudit(platform){
+  const caption = C2().approvedText[platform] || '';
+  const profileSemanticScore = 85.5;                      // node stub — matches MOCK_OMCS / spec §5.5
+  const recommendationsPictureScore = CS2_CROP_FIT[platform];
+  const pubmatConsistencyScore = cs2ConsistencyScore(platform, caption);
+  const omcsScore = +(0.35*profileSemanticScore + 0.45*recommendationsPictureScore + 0.20*pubmatConsistencyScore).toFixed(1);
+  const status = omcsScore>=70 ? 'Pass' : 'Fail';
+  const [lo,hi] = CS2_IDEAL_LEN[platform];
+  const len = caption.trim().length;
+  const lenNote = len<lo
+    ? `The caption runs shorter than ${esc(PLATFORM_META[platform].label)}'s effective window for this asset — the pubmat is doing more narrative work than the copy backs up.`
+    : len>hi
+      ? `The caption runs longer than what one static pubmat can visually substantiate on ${esc(PLATFORM_META[platform].label)} — consider a second asset or trimming the copy.`
+      : `Caption length sits inside the effective window for ${esc(PLATFORM_META[platform].label)}, so the pubmat and copy read as one coherent post.`;
+  return {
+    profileSemanticScore,
+    rubricEvaluationData:{ scores:cs2BuildRubric(recommendationsPictureScore), total:recommendationsPictureScore },
+    recommendationsPictureScore,
+    pubmatConsistencyScore,
+    consistencyExplanation:lenNote,
+    omcsScore, status,
+    feedback: status==='Pass'
+      ? `Passes for ${esc(PLATFORM_META[platform].label)} at ${omcsScore.toFixed(1)}.`
+      : `Falls short of the 70 threshold at ${omcsScore.toFixed(1)}. ${lenNote}`
+  };
+}
+
+const AUDIT_STEPS_2 = [
+  'Loading approved caption and shared pubmat',
+  'Cropping pubmat to this platform’s native ratio',
+  'Comparing pubmat against your business profile',
+  'Scoring the 7-dimension visual rubric',
+  'Checking caption ↔ image consistency for this platform',
+  'Resolving pass / fail outcome'
+];
+
+function runOmcsAudit2(platform){
+  C2().auditing = platform; C2().auditStep = 0;
+  renderContent2();
+  const tick = ()=>{
+    C2().auditStep++;
+    if(C2().auditStep >= AUDIT_STEPS_2.length){
+      C2().auditing = null;
+      C2().audits[platform] = cs2ComputeAudit(platform);
+      renderContent2();
+    } else { renderContent2(); setTimeout(tick, 360); }
+  };
+  setTimeout(tick, 360);
+}
+function runAllAudits2(){
+  const pending = C2().selected.filter(p=> cs2Readiness(p)==='needs-audit');
+  if(!pending.length) return;
+  const run = (idx)=>{
+    if(idx>=pending.length) return;
+    const p = pending[idx];
+    C2().auditing = p; C2().auditStep = 0;
+    renderContent2();
+    const tick = ()=>{
+      C2().auditStep++;
+      if(C2().auditStep >= AUDIT_STEPS_2.length){
+        C2().auditing = null;
+        C2().audits[p] = cs2ComputeAudit(p);
+        renderContent2();
+        run(idx+1);
+      } else { renderContent2(); setTimeout(tick, 360); }
+    };
+    setTimeout(tick, 360);
+  };
+  run(0);
+}
+function csAgree2(on){
+  C2().agreed = on;
+  if(on) runAllAudits2();
+  else renderContent2();
+}
+
+function csPublishReady2(){
+  const c = C2();
+  if(!c.media || !c.selected.length || !c.agreed) return false;
+  return c.selected.every(p=> cs2Readiness(p)==='ready');
+}
+function csPublishBlockReason2(){
+  const c = C2();
+  if(!c.media) return 'Upload a pubmat before publishing.';
+  if(!c.selected.length) return 'Select at least one connected platform.';
+  if(!c.agreed) return 'Tick the agreement to run each platform’s compliance audit.';
+  for(const p of c.selected){
+    const r = cs2Readiness(p);
+    if(r!=='ready') return PLATFORM_META[p].label + ': ' + CS2_READY_LABEL[r] + '.';
+  }
+  return '';
+}
+function csPublish2(){
+  if(!csPublishReady2()) return;
+  const c = C2();
+  const today = new Date();
+  const iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  c.selected.forEach(p=>{
+    APP_STATE.posts.unshift({
+      id:'p2'+Date.now()+'-'+p, date:iso, platform:p, caption:c.approvedText[p],
+      status:'published', reach:0, likes:0, comments:0, shares:0, engagementRate:0,
+      series:[], media:c.media.url, fresh:true
+    });
+  });
+  const n = c.selected.length;
+  APP_STATE.calMonth = today.getMonth(); APP_STATE.calYear = today.getFullYear();
+  c.selected = []; c.agreed = false; c.audits = {};
+  renderContent2();
+  showToast('Published ' + n + ' platform-specific post' + (n>1?'s':'') + ' — added to Calendar & Performance');
+}
+
+function renderContent2(){
+  const c = C2();
+  const plat = c.platform;
+  const connected = isConnected(plat);
+  const pc = MOCK_CONTENT.captions[plat];
+  const limit = PLATFORM_CHAR_LIMITS[plat];
+  const isNaver = plat === 'naver';
+
+  /* ---- caption matrix pane (locked-aware) ---- */
+  let matrixPane;
+  if(!connected){
+    matrixPane = `<div class="connect-panel">
+      <span class="cp-icon" style="background:${PLATFORM_META[plat].color}"><i data-lucide="${PLATFORM_META[plat].icon}"></i></span>
+      <h3>${esc(PLATFORM_META[plat].label)} isn’t connected</h3>
+      <p>Connect your ${esc(PLATFORM_META[plat].label)} account to see AI captions for this platform and include it when publishing.</p>
+      <button class="btn btn-primary btn-sm" style="margin-top:var(--sp-5);" onclick="connectPlatform('${plat}')">
+        <i data-lucide="link"></i> Connect ${esc(PLATFORM_META[plat].label)}</button>
+    </div>`;
+  } else {
+    const cards = pc.options.map((_,i)=>{
+      const text = csText2(plat,i);
+      const approved = c.approved[plat] === i;
+      const md = pc.optionMetadata && pc.optionMetadata[i];
+      const name = (pc.optionNames && pc.optionNames[i]) || ('Option '+(i+1));
+      const sub  = isNaver ? 'Curated Korean editorial template' : (ARCHETYPE_SUB[i]||'');
+      return `<div class="opt-card ${approved?'approved':''}">
+        <div class="opt-head">
+          <span class="opt-no">${i+1}</span>
+          <div style="min-width:0;flex:1;"><b>${esc(name)}</b><span>${esc(sub)}</span></div>
+          ${approved?'<span class="chip chip-gold"><i data-lucide="check"></i> Approved</span>':''}
+        </div>
+        <textarea class="caption-area" oninput="csEdit2('${plat}',${i},this.value)"
+          aria-label="Caption option ${i+1}">${esc(text)}</textarea>
+        <div class="opt-foot">
+          <span class="char-count ${text.length>limit?'over':''}" id="cc2-${csKey2(plat,i)}">${text.length} / ${num(limit)}</span>
+          ${md?`<button class="btn btn-quiet btn-sm" onclick="csToggleReason2('${plat}',${i})">
+            <i data-lucide="brain"></i> Why this caption</button>`:''}
+          <button class="btn ${approved?'btn-ghost':'btn-primary'} btn-sm" style="margin-left:auto;"
+            onclick="csApprove2('${plat}',${i})">
+            <i data-lucide="${approved?'check-check':'check'}"></i> ${approved?'Approved':'Approve for ' + esc(PLATFORM_META[plat].label)}
+          </button>
+        </div>
+        ${md?`<div class="reason" id="rz2-${csKey2(plat,i)}">
+          <dl>
+            <div><dt>Core business context</dt><dd>${esc(md.core_business_context)}</dd></div>
+            <div><dt>Market &amp; cultural localisation</dt><dd>${esc(md.market_cultural_localization)}</dd></div>
+            <div><dt>Psychological elements</dt><dd>${esc(md.psychological_elements)}</dd></div>
+            <div><dt>Creative tone &amp; atmosphere</dt><dd>${esc(md.creative_tone_atmosphere)}</dd></div>
+            <div><dt>Platform architecture</dt><dd>${esc(md.algorithmic_platform_architecture)}</dd></div>
+          </dl>
+        </div>`:''}
+      </div>`;
+    }).join('');
+    matrixPane = `<div style="display:grid;gap:var(--sp-4);">
+      ${isNaver?`<div class="banner banner-info"><i data-lucide="info"></i>
+        <div>Naver Blog uses curated long-form Korean templates rather than the caption agent — Naver rewards editorial depth, which the 3-platform model can’t produce reliably.</div></div>`:''}
+      ${cards}
+    </div>`;
+  }
+
+  /* ---- stacked composer, connected-first ---- */
+  const order = Object.keys(PLATFORM_META).slice().sort((a,b)=> isConnected(b)-isConnected(a));
+  const blocks = order.map(p=>{
+    const meta = PLATFORM_META[p];
+    const conn = isConnected(p);
+    const readiness = cs2Readiness(p);
+    const caption = c.approvedText[p] || '';
+    const open = !!c.expanded[p];
+    const audit = c.audits[p];
+    const auditingThis = c.auditing === p;
+
+    const body = !conn ? `
+      <div class="connect-panel" style="padding:var(--sp-6);">
+        <span class="cp-icon" style="background:${meta.color};width:40px;height:40px;border-radius:12px;"><i data-lucide="${meta.icon}" style="width:18px;height:18px;"></i></span>
+        <p style="margin-top:9px;">Connect ${esc(meta.label)} to compose and preview for it.</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:9px;" onclick="event.stopPropagation();connectPlatform('${p}')">
+          <i data-lucide="link"></i> Connect</button>
+      </div>`
+    : c.approved[p]==null ? `
+      <div class="empty" style="padding:var(--sp-5) 0;">
+        <div class="empty-glyph"><i data-lucide="file-text"></i></div>
+        <h3 style="font-size:13.5px;">No caption approved yet</h3>
+        <p>Open the ${esc(meta.label)} tab above and approve one of its three AI options.</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:var(--sp-4);" onclick="csSetPlatform2('${p}');renderContent2();document.querySelector('.cs2-tabs').scrollIntoView({behavior:'smooth',block:'center'})">
+          <i data-lucide="arrow-up-right"></i> Go to ${esc(meta.label)} captions</button>
+      </div>`
+    : `
+      <div style="display:grid;gap:var(--sp-4);grid-template-columns:1fr;">
+        <div>
+          <label class="field" style="margin-bottom:9px;">
+            <span class="field-label">${esc(meta.label)} caption
+              <span class="opt char-count ${caption.length>PLATFORM_CHAR_LIMITS[p]?'over':''}">${caption.length} / ${num(PLATFORM_CHAR_LIMITS[p])}</span></span>
+            <textarea class="textarea" style="min-height:96px" oninput="cs2EditApproved('${p}',this.value)">${esc(caption)}</textarea>
+          </label>
+        </div>
+        <div style="display:flex;justify-content:center;">
+          ${platformPreview(p, c.media, caption)}
+        </div>
+        <div>
+          ${auditingThis ? `
+            <div class="audit-steps">
+              ${AUDIT_STEPS_2.map((s,i)=>`<div class="audit-step ${i<c.auditStep?'done':i===c.auditStep?'run':''}">
+                <span class="ring"><i data-lucide="check"></i></span>${esc(s)}</div>`).join('')}
+            </div>`
+          : audit ? `
+            <div style="display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap;">
+              ${radialGauge(audit.omcsScore,{color:audit.status==='Pass'?'#0F7A4E':'#ED3F27', size:100, fontSize:22, sub:'OMCS', fmt:v=>v.toFixed(1)})}
+              <div style="flex:1;min-width:180px;">
+                <span class="chip ${audit.status==='Pass'?'chip-green':'chip-red'}">
+                  <i data-lucide="${audit.status==='Pass'?'shield-check':'shield-alert'}"></i> ${esc(audit.status)} — threshold 70</span>
+                <p class="body-xs" style="margin-top:8px;">${esc(audit.feedback)}</p>
+                ${audit.status!=='Pass'?`<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="event.stopPropagation();runOmcsAudit2('${p}')">
+                  <i data-lucide="refresh-cw"></i> Re-run audit</button>`:''}
+              </div>
+            </div>`
+          : `<div class="banner banner-info"><i data-lucide="shield"></i>
+              <div>Audit pending — tick the publish agreement below to score every selected platform.</div></div>`}
+        </div>
+      </div>`;
+
+    return `<div class="cs2-block ${!conn?'locked':''} ${open?'open':''}">
+      <button class="cs2-block-head" onclick="csToggleExpand('${p}')">
+        <span class="pdot" style="background:${meta.color};width:9px;height:9px;border-radius:3px;"></span>
+        <b style="font-size:13px;">${esc(meta.label)}</b>
+        <label class="switch" style="margin-left:9px;" onclick="event.stopPropagation()">
+          <input type="checkbox" ${c.selected.includes(p)?'checked':''} ${conn?'':'disabled'}
+            onchange="csTogglePublishPlatform2('${p}')">
+          <span class="switch-track"></span>
+        </label>
+        <span class="readiness ${readiness}" style="margin-left:auto;">${esc(CS2_READY_LABEL[readiness])}</span>
+        <i data-lucide="chevron-down" class="chev"></i>
+      </button>
+      <div class="cs2-block-body">${body}</div>
+    </div>`;
+  }).join('');
+
+  const ready = csPublishReady2();
+  const reason = csPublishBlockReason2();
+  const connectedCount = Object.keys(PLATFORM_META).filter(isConnected).length;
+
+  $('#screen-content2').innerHTML = `
+    <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;">
+      <div>
+        <h2>Content Studio (2)</h2>
+        <p>Every platform keeps its own caption, its own preview and its own compliance audit — nothing crosses over, and locked platforms can’t be selected until connected.</p>
+      </div>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;">
+        <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(MOCK_CONTENT.market.country)}</span>
+        <span class="chip ${connectedCount?'chip-teal':'chip-red'}"><i data-lucide="link"></i> ${connectedCount} / ${Object.keys(PLATFORM_META).length} connected</span>
+      </div>
+    </div>
+
+    <div class="cs-grid">
+      <section style="display:grid;gap:var(--sp-5);">
+        <div class="card">
+          <div class="card-head">
+            <div><h3 class="h-md">AI copywriting matrix</h3>
+              <p class="body-xs">Locked tabs need a platform connection first</p></div>
+          </div>
+          <div class="cs2-tabs">
+            ${Object.keys(PLATFORM_META).map(k=>{
+              const conn = isConnected(k);
+              return `<button class="cs2-tab ${conn?'':'locked'}" aria-selected="${plat===k}" onclick="csSetPlatform2('${k}')">
+                <i data-lucide="${PLATFORM_META[k].icon}"></i> ${esc(PLATFORM_META[k].label)}
+                ${conn ? (c.approved[k]!=null?'<span class="pdot" style="background:var(--gold)"></span>':'')
+                       : '<i data-lucide="lock" class="lock-ic"></i>'}
+              </button>`;
+            }).join('')}
+          </div>
+          <div class="card-body">${matrixPane}</div>
+        </div>
+      </section>
+
+      <section style="display:grid;gap:var(--sp-5);">
+        <div class="card">
+          <div class="card-head">
+            <div><h3 class="h-md">Publish composer</h3>
+              <p class="body-xs">One block per platform — toggle to include it</p></div>
+          </div>
+          <div class="card-body" style="display:grid;gap:0;">
+            <div class="field">
+              <span class="field-label">Shared pubmat <span class="opt">Image or video — cropped per platform below</span></span>
+              ${c.media?`<div class="media-preview">
+                  ${c.media.kind==='video'
+                    ? `<video src="${c.media.url}" muted loop playsinline autoplay style="width:74px;height:74px;object-fit:cover;border-radius:9px;flex-shrink:0;border:1px solid var(--line);"></video>`
+                    : `<img src="${c.media.url}" alt="Pubmat preview">`}
+                  <div style="flex:1;min-width:0;">
+                    <b style="font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.media.name)}</b>
+                    <span class="body-xs">${c.media.kind==='video'?'Video':'Image'} · ${(c.media.size/1024).toFixed(0)} KB</span>
+                  </div>
+                  <button class="x-btn" onclick="csClearMedia2()" aria-label="Remove"><i data-lucide="trash-2"></i></button>
+                </div>`
+                :`<div class="drop" onclick="$('#cs2-media').click()"
+                    ondragover="event.preventDefault();this.classList.add('hot')"
+                    ondragleave="this.classList.remove('hot')" ondrop="csMediaDrop2(event)">
+                    <i data-lucide="film"></i>
+                    <p class="h-sm">Drop an image or video</p>
+                    <p class="body-xs" style="margin-top:4px;">PNG, JPG, WEBP, MP4, MOV, WEBM</p>
+                  </div>`}
+              <input type="file" id="cs2-media" accept="image/*,video/*" hidden onchange="csMediaPick2(event)">
+            </div>
+
+            <div style="margin:var(--sp-2) 0 var(--sp-5);">${blocks}</div>
+
+            <div class="field" style="display:grid;gap:11px;">
+              <span class="field-label" style="margin-bottom:0;">Post configuration</span>
+              ${[['visibility','Public visibility','Anyone can see this post'],
+                 ['comments','Allow comments','Replies stay open'],
+                 ['paid','Paid promotion','Flag as sponsored content']].map(([k,l,d])=>`
+                <label class="switch" style="justify-content:space-between;">
+                  <span><span class="switch-label">${l}</span><br><span class="body-xs">${d}</span></span>
+                  <input type="checkbox" ${c.toggles[k]?'checked':''} onchange="csToggle2('${k}',this.checked)">
+                  <span class="switch-track"></span>
+                </label>`).join('')}
+            </div>
+
+            <div style="padding:13px;border:1.5px solid ${c.agreed?'var(--navy)':'var(--line-strong)'};border-radius:var(--r-sm);background:${c.agreed?'rgba(15,40,84,.03)':'var(--panel)'};margin-top:var(--sp-5);">
+              <label class="check">
+                <input type="checkbox" ${c.agreed?'checked':''} onchange="csAgree2(this.checked)">
+                <span class="check-box"><i data-lucide="check"></i></span>
+                <span style="font-size:12.5px;line-height:1.55;">
+                  I confirm this content is accurate for every selected platform, that I hold rights to the pubmat, and I authorise CeView to audit and publish each platform’s caption independently.
+                </span>
+              </label>
+            </div>
+
+            <button class="btn btn-gold btn-lg btn-block" style="margin-top:var(--sp-5);"
+              ${ready?'':'disabled'} title="${esc(reason)}" onclick="csPublish2()">
+              <i data-lucide="send"></i> Publish to ${c.selected.length || 0} platform${c.selected.length===1?'':'s'}
+            </button>
+            ${reason?`<p class="body-xs" style="margin-top:8px;text-align:center;">${esc(reason)}</p>`:''}
+          </div>
+        </div>
+      </section>
+    </div>`;
+  icons();
+}
+function cs2EditApproved(p, v){
+  C2().approvedText[p] = v;
+  C2().audits[p] = null;
+  const idx = C2().approved[p];
+  if(idx!=null) C2().edits[csKey2(p,idx)] = v;
+  renderContent2();
+}
+
+/* ============================================================
    CALENDAR
    ============================================================ */
 const MONTH_NAMES = ['January','February','March','April','May','June',
@@ -3334,13 +4037,27 @@ function grantScope(key){
         <i data-lucide="shield-check"></i> Grant scope</button>
     </div>`);
 }
+/** Re-renders whichever screen is currently on-screen after a connection
+ *  change — Settings is the usual caller, but Content Studio (2) also
+ *  triggers connectPlatform() directly from its locked-tab connect panel,
+ *  and its unlocked view needs to reflect the new connection immediately. */
+function renderActiveScreen(){
+  const R = { dashboard:renderDashboard, content:renderContent, content2:renderContent2,
+              calendar:renderCalendar, performance:renderPerformance, settings:renderSettings };
+  if(R[APP_STATE.screen]) R[APP_STATE.screen]();
+}
 function finishConnect(key){
   APP_STATE.connections[key]=true;
-  closeModal(); renderSettings();
+  closeModal(); renderActiveScreen();
   showToast(PLATFORM_META[key].label + ' connected');
 }
 function disconnectPlatform(key){
-  APP_STATE.connections[key]=false; renderSettings();
+  APP_STATE.connections[key]=false;
+  if(APP_STATE.content2 && APP_STATE.content2.selected){
+    const i = APP_STATE.content2.selected.indexOf(key);
+    if(i>=0) APP_STATE.content2.selected.splice(i,1);
+  }
+  renderActiveScreen();
   showToast(PLATFORM_META[key].label + ' disconnected');
 }
 function sendInvite(e){
@@ -3491,6 +4208,11 @@ const DEV_LINKS = [
     ['Performance — empty', ()=>{ seedCompletedProfile(); APP_STATE.campaign=null; goApp('performance'); }],
     ['Performance — full',  ()=>{ seedCompletedProfile(); primeCampaign(); goApp('performance'); }],
     ['Settings',       ()=>{ seedCompletedProfile(); goApp('settings'); }]
+  ]],
+  ['Content Studio (2)', [
+    ['Default — partially connected', ()=>{ seedCompletedProfile(); goApp('content2'); }],
+    ['Ready to publish',   ()=>{ seedCompletedProfile(); primeContent2Ready(); goApp('content2'); }],
+    ['One platform failing', ()=>{ seedCompletedProfile(); primeContent2Fail(); goApp('content2'); }]
   ]]
 ];
 
@@ -3506,6 +4228,38 @@ function primeStudio(){
   c.media={url:PLACEHOLDER_PUBMAT, name:'sunset-cove-pubmat.png', size:184320};
   c.publishPlatforms=['instagram','facebook'];
   c.agreed=true; c.omcs=MOCK_OMCS; c.auditing=false;
+}
+/** Content Studio (2) — instagram + facebook approved, media staged, both
+ *  audited and passing, ready to hit Publish. Uses the default connection
+ *  state (instagram + facebook connected, tiktok + naver locked). */
+function primeContent2Ready(){
+  const c = C2();
+  c.media = { url:PLACEHOLDER_PUBMAT, name:'sunset-cove-pubmat.png', size:184320, kind:'image', mime:'image/svg+xml' };
+  c.approved = { instagram:0, facebook:1 };
+  c.approvedText = {
+    instagram: MOCK_CONTENT.captions.instagram.options[0],
+    facebook:  MOCK_CONTENT.captions.facebook.options[1]
+  };
+  c.selected = ['instagram','facebook'];
+  c.expanded = { instagram:true, facebook:true };
+  c.audits = { instagram: cs2ComputeAudit('instagram'), facebook: cs2ComputeAudit('facebook') };
+  c.agreed = true;
+}
+/** Same as above, plus Naver connected and approved but with its caption
+ *  overridden to a two-line note — far short of the long-form editorial
+ *  copy Naver's audit expects for a single static pubmat, so its audit
+ *  fails and Publish stays blocked on that platform specifically. */
+function primeContent2Fail(){
+  primeContent2Ready();
+  const c = C2();
+  APP_STATE.connections.naver = true;
+  c.approved.naver = 0;
+  c.approvedText.naver = 'Check us out at Sunset Cove! 🌴 Link in bio.';
+  c.selected.push('naver');
+  c.expanded.naver = true;
+  c.audits.instagram = cs2ComputeAudit('instagram');
+  c.audits.facebook  = cs2ComputeAudit('facebook');
+  c.audits.naver     = cs2ComputeAudit('naver');
 }
 function primeCampaign(){
   const k = computeMetrics(DEFAULT_CAMPAIGN_INPUT);
@@ -3568,9 +4322,10 @@ function init(){
   if(v==='onboarding'){ resetOnboarding(); setView('onboarding'); obRender(); return; }
   if(v==='login'){ setView('login'); return; }
   seedCompletedProfile();
-  if(['dashboard','content','calendar','performance','settings'].includes(v)){
+  if(['dashboard','content','content2','calendar','performance','settings'].includes(v)){
     if(v==='performance') primeCampaign();
     if(v==='content') primeStudio();
+    if(v==='content2') primeContent2Ready();
     goApp(v);
   } else setView('login');
 }
