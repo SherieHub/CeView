@@ -1,0 +1,2199 @@
+[
+  {
+    "id": 1,
+    "description": "Tucked along a crescent of pale sand on the southern coast, this beach club exists for one purpose: getting visitors into clear, shallow water within minutes of arrival. Bamboo loungers face a reef flat that stays calm even when the open channel beyond it churns. Most guests spend their afternoon drifting between the shoreline and a moored pontoon before gathering to watch the sky turn orange over the water.",
+    "uvp": "Unlike crowded resort beaches nearby, access here is capped at eighty guests a day, so the shallows never feel trampled. A resident marine guide free-dives ahead of snorkelers to point out seasonal turtle and ray activity that most operators simply miss.",
+    "services": [
+      "Guided reef snorkeling",
+      "Pontoon lounging access",
+      "Sunset viewing deck",
+      "Kayak rental"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 2,
+    "description": "A steep limestone ridge above the valley floor draws hikers who want more than a casual stroll. The trail climbs through dense secondary forest, crosses two rope bridges over a ravine, and finishes at a exposed summit ledge with sweeping views of the surrounding peaks. Most parties treat it as a half-day physical challenge rather than a leisurely walk.",
+    "uvp": "Trail guides here are trained rescue volunteers, not tour-desk staff, so groups get real mountain safety knowledge alongside the climb. The route is deliberately kept unpaved and technical, appealing to travelers who find manicured nature parks unsatisfying.",
+    "services": [
+      "Guided summit trek",
+      "Rope bridge crossing",
+      "Overnight ridge camping",
+      "Trail rescue briefing"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 3,
+    "description": "The old stone cathedral at the heart of the colonial quarter has stood since the 1730s and still holds daily mass alongside a steady flow of visitors. Its interior mixes baroque woodwork with faded murals that survived two earthquakes. A small adjoining museum displays vestments, processional icons, and photographs documenting the parish's continuous use across three centuries.",
+    "uvp": "Rather than roping the building off as a static landmark, the parish keeps it a living place of worship, letting visitors witness genuine ritual rather than a staged reenactment. Docent-led tours are given by elder parishioners with family memory of the site, not scripted guides.",
+    "services": [
+      "Docent-led heritage tour",
+      "Vestment and relic museum",
+      "Bell tower viewing",
+      "Sunday mass observation"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 4,
+    "description": "This ticketed waterpark occupies a former quarry site converted into a sprawling complex of slides, wave pools, and a looping family coaster ride threaded through the grounds. Loudspeakers announce hourly countdowns to synchronized wave releases while costumed mascots pose for photos near the entrance plaza. Fireworks close out the park most weekend evenings.",
+    "uvp": "The park distinguishes itself with a rotating slide lineup redesigned each season, so return visitors always find something new rather than the static layout typical of competitors. A single wristband covers every ride with no per-attraction ticketing hassle.",
+    "services": [
+      "Family coaster ride",
+      "Synchronized wave pool sessions",
+      "Weekend fireworks show",
+      "Slide tower circuit"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 5,
+    "description": "Perched on the fortieth floor of a glass tower downtown, this rooftop lounge overlooks the skyline and the harbor lights beyond it. DJs rotate through sets most nights while the crowd mixes business travelers with locals catching a concert or comedy act on the small side stage. The space fills quickly after office hours.",
+    "uvp": "Its curated resident-DJ roster and rotating gallery of local artists give the lounge a distinct identity beyond the generic hotel-bar formula found elsewhere in the district. Dress code and table-service pacing are tuned for a nightlife crowd, not casual tourists.",
+    "services": [
+      "Resident DJ nightly sets",
+      "Rooftop skyline seating",
+      "Live comedy showcase",
+      "Craft cocktail program"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 6,
+    "description": "A narrow shophouse kitchen has been slow-braising the same beef broth recipe for four generations, ladling it over hand-pulled noodles to a line that forms before opening. The dining room seats barely twenty, with cooks visible working the broth pots behind a low counter. Regulars order by habit rather than menu.",
+    "uvp": "The broth base is never restarted from scratch; it has simmered continuously since the shop opened, a technique the family treats as both craft and marketing. No franchise or delivery arm exists, keeping the experience tied to this single physical room.",
+    "services": [
+      "Hand-pulled noodle bowls",
+      "Counter-side broth viewing",
+      "Family recipe tasting set",
+      "House-brewed iced tea"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 7,
+    "description": "This boutique inn converts a row of restored 1920s townhouses into twelve individually furnished rooms, each named for a former resident of the street. A small courtyard garden serves breakfast each morning, and the front parlor doubles as a library lounge stocked with local history titles. The property markets itself purely on the overnight stay.",
+    "uvp": "Every room's furniture was sourced from estate sales tied to the building's original families, giving guests a stay that functions almost like a private museum. Staff maintain a house journal of guest stories going back a decade.",
+    "services": [
+      "Heritage room stay",
+      "Courtyard breakfast service",
+      "Local history library lounge",
+      "Estate furniture tour"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 8,
+    "description": "A resort complex spans a private cove where guest villas sit steps from the water and a dive center runs daily boat trips to nearby reef walls. Beyond the shoreline activities, the property backs onto a forested ridge with a marked trail leading to a small waterfall. Guests routinely split their stay between beach mornings and afternoon hikes.",
+    "uvp": "Few properties in the area pair a genuine dive operation with maintained forest trails on the same grounds, letting guests move between marine and mountain adventure without leaving the resort. Trail guides and dive masters cross-train so either activity gets expert oversight.",
+    "services": [
+      "Reef wall boat diving",
+      "Waterfall forest trek",
+      "Cove kayaking",
+      "Villa beachfront stay"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 9,
+    "description": "Set on a bluff above a fishing cove, this small hotel serves plated seafood dinners on a deck where the day's catch is visible arriving at the pier below. Rooms are simple but every one faces open water,. The kitchen sources almost entirely from boats that dock within sight of the dining room.",
+    "uvp": "The dinner menu changes daily based on what the fishing fleet brings in that afternoon, a level of sourcing transparency few coastal hotels attempt. Guests can watch their meal's origin from the same table where they eat it.",
+    "services": [
+      "Dockside catch dinner",
+      "Ocean-view room stay",
+      "Fishing boat viewing deck",
+      "Chef's daily catch tasting"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 10,
+    "description": "A converted rice terrace now hosts a scattering of A-frame cabins connected by raised wooden walkways above the paddies. Each morning farmers still work the fields below the cabins, and a communal kitchen teaches guests to cook regional dishes from produce grown on-site. Evenings end with a bonfire overlooking the terraced slope.",
+    "uvp": "Guests aren't spectators here; the farming continues regardless of tourism, so the terrace experience is genuinely working land rather than a staged backdrop. Cooking sessions use whatever the fields produced that week, so no two visits taste the same.",
+    "services": [
+      "Rice terrace cabin stay",
+      "Farm-to-table cooking class",
+      "Terrace walkway trek",
+      "Evening bonfire gathering"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 11,
+    "description": "Every February the old town square fills with paper lanterns, marching brass bands, and street stalls selling grilled skewers late into the night as the city marks its founding festival. Processions wind past the plaza's centuries-old church before converging for a closing fireworks display. The event draws visitors from across the region.",
+    "uvp": "Unlike commercialized city festivals elsewhere, the parade route and stall vendors are still organized by the same neighborhood associations that have run it for generations, keeping the event rooted in community rather than tourism boards. Locals outnumber visitors even during peak nights.",
+    "services": [
+      "Founding-day parade viewing",
+      "Street food stall crawl",
+      "Closing fireworks show",
+      "Historic plaza walking tour"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 12,
+    "description": "This vertical amusement complex occupies six floors of a downtown mall, stacking an indoor go-kart loop above an arcade hall and a rooftop Ferris wheel with skyline views. Families ride an escalator between levels rather than walking between separate attractions the way outdoor parks require. Weekend queues stretch into the mall atrium below.",
+    "uvp": "Compressing a full amusement park into a single downtown building lets visitors combine a ride day with shopping and dining without ever leaving the block, something suburban theme parks can't offer. The rooftop wheel gives a skyline view no ground-level park in the city can match.",
+    "services": [
+      "Indoor go-kart circuit",
+      "Rooftop Ferris wheel ride",
+      "Multi-floor arcade hall",
+      "Mall-adjacent dining access"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 13,
+    "description": "A weekend market takes over three blocks of a restored warehouse district, with stalls selling everything from artisanal cheese to grilled street skewers under strings of café lights. The surrounding buildings, once textile factories, now house galleries and design studios that stay open late during market hours. Live buskers rotate through the plaza between stalls.",
+    "uvp": "The market operates inside a genuinely repurposed industrial heritage site rather than a purpose-built venue, so browsing food stalls means walking through preserved factory architecture at the same time. No chain vendors are permitted, keeping every stall independently run.",
+    "services": [
+      "Warehouse market stall crawl",
+      "Artisanal cheese tasting",
+      "Gallery district walking tour",
+      "Live busker performances"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 14,
+    "description": "An oceanfront retreat offers a handful of private villas spaced along a low bluff, each with a plunge pool facing the horizon. Curated marine excursions depart from a private jetty each morning, timed to calm water conditions rather than a fixed schedule. The property keeps occupancy deliberately low to preserve the sense of seclusion.",
+    "uvp": "Excursions here are scheduled around real-time sea conditions rather than a printed itinerary, a level of flexibility larger resorts can't match with their fixed activity calendars. Villa spacing is generous enough that neighboring guests are rarely visible.",
+    "services": [
+      "Private jetty marine excursion",
+      "Villa plunge pool stay",
+      "Tide-timed boat outing",
+      "Horizon-facing terrace dining"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 15,
+    "description": "This mountain lodge sits at the treeline where guided groups depart each dawn for a summit push before returning to hot spring pools by afternoon. Rooms are simple timber cabins with wood stoves, and a spa annex offers massage therapy aimed at hikers recovering from the climb. The lodge markets itself equally to trekkers and wellness travelers.",
+    "uvp": "Few high-altitude lodges combine a genuine guided summit program with a proper spa recovery circuit on the same property, letting guests earn the hot spring soak rather than driving in for it separately. Guides double as first-aid certified wellness staff.",
+    "services": [
+      "Guided dawn summit trek",
+      "Hot spring pool access",
+      "Post-hike massage therapy",
+      "Timber cabin lodging"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 16,
+    "description": "A cave system beneath a limestone plateau opens into a series of chambers reachable only by rappel, with an underground river running through the lowest level. Guides lead small groups with headlamps and harnesses, pointing out rock formations that took millennia to form. The trip ends with a swim through a partially flooded passage.",
+    "uvp": "This is one of the few operators certified to rappel guests into the deepest chamber rather than stopping at the shallow tourist-accessible entrance most competitors use. Group sizes are capped at six to keep the descent genuinely safe.",
+    "services": [
+      "Guided cave rappel",
+      "Underground river swim",
+      "Headlamp chamber trek",
+      "Rock formation photography stop"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 17,
+    "description": "This travel insurance brokerage underwrites trip-cancellation and medical evacuation policies for outbound travelers, working through a network of regional agents. Claims processing runs through an in-house adjustment team, and policy pricing is calculated from actuarial data on destination risk. The firm does not operate any physical location travelers would visit.",
+    "uvp": "The brokerage differentiates through faster claims turnaround than larger national insurers, settling most medical evacuation claims within five business days. Its underwriting model factors real-time destination risk data that competitors update only annually.",
+    "services": [
+      "Trip cancellation policy underwriting",
+      "Medical evacuation claims processing",
+      "Regional agent network support",
+      "Destination risk actuarial modeling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 18,
+    "description": "This regional accounting firm handles bookkeeping, payroll, and tax filing for small and mid-sized businesses across the metro area, including a number of hotel and restaurant clients. Staff accountants work from a central office and rarely visit client premises. The firm's services are entirely back-office financial administration.",
+    "uvp": "The firm has built specific expertise in hospitality-sector tax credits and seasonal payroll fluctuations, giving hotel and restaurant clients more accurate filings than a generalist accountant would provide. All engagements are billed on fixed monthly retainers rather than hourly rates.",
+    "services": [
+      "Hospitality payroll administration",
+      "Small business tax filing",
+      "Monthly bookkeeping retainer",
+      "Seasonal tax credit consulting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 19,
+    "description": "This industrial laundry service washes and presses linens under contract for hotels, restaurants, and hospitals across the province, running a fleet of delivery trucks on fixed routes. Its facility operates around the clock with commercial-grade washers and pressing lines. Clients never interact with the plant itself.",
+    "uvp": "Turnaround time is guaranteed within twenty-four hours even for same-day emergency orders, a standard most competing laundry contractors can't match during peak tourist season. Contracts include automatic linen-count reconciliation to reduce disputes.",
+    "services": [
+      "Bulk hotel linen laundering",
+      "Scheduled delivery routing",
+      "24-hour rush turnaround",
+      "Linen inventory reconciliation"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 20,
+    "description": "A private dental clinic in the business district provides general and cosmetic dentistry, including implants and orthodontics, to a mostly local patient base. The clinic operates by appointment with two chairs and a small radiology room. Marketing focuses on payment plans and insurance partnerships rather than any destination appeal.",
+    "uvp": "The clinic's in-house lab produces same-day crowns, eliminating the multi-week wait typical of clinics that outsource fabrication. Extended evening hours accommodate patients who can't take time off during the workday.",
+    "services": [
+      "Same-day crown fabrication",
+      "Orthodontic consultation",
+      "Dental implant procedure",
+      "Evening appointment scheduling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 21,
+    "description": "This hardware retailer stocks construction materials, plumbing fixtures, and power tools across a two-floor warehouse showroom on the edge of town. Contractors make up most of its customer base, with bulk pricing tiers for repeat business accounts. The store also runs a small equipment rental counter for weekend DIY projects.",
+    "uvp": "Its contractor loyalty program offers tiered bulk discounts that scale automatically with purchase volume, removing the manual negotiation typical at competing suppliers. Same-day delivery covers the entire metro area for orders placed before noon.",
+    "services": [
+      "Bulk construction material sales",
+      "Power tool rental counter",
+      "Contractor loyalty pricing",
+      "Same-day delivery service"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 22,
+    "description": "A grand casino floor anchors a downtown high-rise, its neon-lit gaming tables surrounded by a rotating lineup of lounge singers and late-night DJ sets on an adjoining stage. Elevators connect the floor to a rooftop bar overlooking the city skyline. The building draws a mostly adult nightlife crowd rather than families.",
+    "uvp": "The property's blend of live entertainment programming with its gaming floor keeps guests moving between table games and stage acts all night, a format few standalone casinos in the district replicate. Its rooftop bar offers one of the highest vantage points in the skyline.",
+    "services": [
+      "Casino gaming floor access",
+      "Rooftop skyline bar",
+      "Late-night lounge performances",
+      "VIP table reservations"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 23,
+    "description": "A craft brewery occupies a converted grain silo on the edge of the historic district, pairing house-brewed ales with a taproom menu built around smoked meats. Brewing tanks are visible through a glass wall behind the bar, and tours run twice daily explaining the malting process. The building itself dates to the 1890s.",
+    "uvp": "Because the silo's original grain-handling equipment was preserved rather than gutted, tours double as an unintentional piece of industrial heritage alongside the tasting, something purpose-built breweries elsewhere can't offer. Small-batch seasonal releases rotate monthly.",
+    "services": [
+      "Brewery process tour",
+      "Taproom smoked meat pairing",
+      "Seasonal small-batch tasting",
+      "Silo heritage walkthrough"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 24,
+    "description": "This hillside glamping site sets canvas-walled tents on raised platforms overlooking a valley of coffee farms, each unit fitted with a proper bed and en-suite bathroom despite the outdoor setting. Mornings begin with a farm walk where guests pick and roast their own coffee beans before breakfast. Evening campfires overlook the terraced slopes.",
+    "uvp": "The property partners directly with the farming families whose land surrounds it, so the coffee walk is a real working farm visit rather than a demonstration plot built for tourists. Tents are spaced far enough apart that neighboring guests are never audible.",
+    "services": [
+      "Canvas glamping tent stay",
+      "Coffee farm harvest walk",
+      "Bean roasting workshop",
+      "Valley-view campfire evening"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 25,
+    "description": "A restored fort overlooking the harbor mouth now operates as a heritage site with cannon batteries, underground powder rooms. A small museum on colonial-era naval defense. Costumed interpreters demonstrate cannon-loading drills at scheduled times, and the ramparts offer sweeping views of ships entering the channel below.",
+    "uvp": "Interpreters here are trained historians rather than seasonal actors, so the cannon drill demonstrations are researched reconstructions rather than loose theatrical performances, a distinction serious history travelers notice immediately. The site's original masonry has never been replaced, only stabilized.",
+    "services": [
+      "Cannon drill demonstration",
+      "Underground powder room tour",
+      "Harbor rampart viewing",
+      "Naval defense museum visit"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 26,
+    "description": "A logistics firm handles freight forwarding and customs brokerage for import-export clients, including several hotel supply chains bringing in furniture and kitchen equipment. Its operations center coordinates container tracking and warehousing across three ports. The company has no consumer-facing storefront or destination of its own.",
+    "uvp": "The firm's proprietary tracking dashboard gives clients real-time container location down to the port terminal, a granularity most regional freight forwarders still can't offer. Customs clearance times average half of the industry benchmark.",
+    "services": [
+      "Freight forwarding coordination",
+      "Customs brokerage filing",
+      "Container tracking dashboard",
+      "Multi-port warehousing"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 27,
+    "description": "This community food market operates from a converted plaza in the old quarter, where vendors sell produce, grilled skewers, and heirloom pastries beneath the arches of a centuries-old arcade. The building's colonial-era stonework frames the stalls, and a small chapel at one end still holds weekly services. Locals shop here daily alongside curious visitors.",
+    "uvp": "Because the market operates inside a protected heritage structure rather than a modern pavilion, browsing the stalls happens under genuine centuries-old architecture, an atmosphere purpose-built food markets can't replicate. Vendor stalls are family-run and largely unchanged for decades.",
+    "services": [
+      "Heirloom pastry stall browsing",
+      "Arcade heritage walking tour",
+      "Grilled skewer tasting",
+      "Weekly chapel service viewing"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 28,
+    "description": "A karaoke and cinema complex spans two floors of a shopping district building, with private singing rooms rented by the hour alongside a boutique theater showing independent films. The rooftop terrace hosts occasional pop-up concerts on weekend nights. Foot traffic from the surrounding shopping strip keeps the venue busy after dark.",
+    "uvp": "Pairing an art-house cinema with karaoke rooms under one roof lets groups split between quiet film viewing and loud singing without leaving the building, a combination the district's other entertainment venues don't attempt. Rooftop pop-up concerts rotate weekly, keeping the lineup fresh.",
+    "services": [
+      "Private karaoke room rental",
+      "Independent film screening",
+      "Rooftop pop-up concert",
+      "Shopping district access"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 29,
+    "description": "This beachfront restaurant sits directly on the sand with tables arranged so every seat faces the water, serving grilled catch pulled from boats that dock a short walk away each morning. Diners can wade into the shallows between courses,. The kitchen's open grill fills the salt air with smoke through the evening service.",
+    "uvp": "Menu pricing is tied to that morning's actual catch volume, so the freshest fish is always the best value rather than a marked-up specialty item, an honesty rare among beachfront tourist restaurants. Guests are encouraged to walk barefoot to their table.",
+    "services": [
+      "Beachfront grilled catch dinner",
+      "Open-grill dining",
+      "Shallow water wading break",
+      "Morning boat-to-table sourcing"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 30,
+    "description": "A rugged 4x4 outfitter runs day-long river-crossing expeditions through a valley of loose rock and shallow fords, culminating at a hidden waterfall accessible only by a final scramble on foot. Vehicles are stripped-down and roll-caged, and every trip includes a safety briefing on river depth and vehicle recovery technique. Groups return caked in mud by design.",
+    "uvp": "Unlike scenic 4x4 tours that stick to graded roads, this outfitter deliberately routes through unmaintained river crossings that require genuine vehicle recovery skill, appealing to travelers seeking real off-road difficulty rather than a sanitized version of it. Every guide is a certified vehicle recovery technician.",
+    "services": [
+      "River crossing 4x4 expedition",
+      "Hidden waterfall scramble",
+      "Vehicle recovery briefing",
+      "Off-road mud trail circuit"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 31,
+    "description": "A modern software consultancy builds custom enterprise resource planning systems for manufacturing and logistics clients, with a delivery team split between an on-site office and remote contractors. Projects run on fixed-scope contracts with milestone billing. The firm occasionally builds booking software for hospitality clients but has no destination of its own.",
+    "uvp": "The consultancy's modular ERP framework cuts typical implementation timelines by a third compared to building from scratch, letting manufacturing clients go live faster than with competing integrators. A dedicated support desk handles post-launch issues around the clock.",
+    "services": [
+      "Custom ERP implementation",
+      "Milestone-based project delivery",
+      "Post-launch support desk",
+      "Manufacturing workflow integration"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 32,
+    "description": "A commercial bank branch in the financial district offers business loans, trade financing, and treasury management services to local companies, including several tourism operators seeking working capital. Tellers and relationship managers work from a standard branch floor with a small business lounge upstairs. The branch does not offer any consumer travel products.",
+    "uvp": "The branch's dedicated tourism-sector lending desk understands seasonal cash flow patterns unique to hotels and tour operators, structuring repayment schedules that generalist bank branches typically can't accommodate. Loan approval turnaround averages under two weeks.",
+    "services": [
+      "Business trade financing",
+      "Tourism-sector lending desk",
+      "Treasury management consultation",
+      "Working capital loan processing"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 33,
+    "description": "A wellness resort built into a hillside terraces its guest rooms above a series of geothermal pools fed directly from an underground spring. Spa treatments draw on local volcanic mud, and a meditation pavilion sits at the property's highest point overlooking the valley. Guests typically stay several days without leaving the grounds.",
+    "uvp": "The pools here are fed by an actual geothermal spring rather than heated municipal water, giving the mineral content and temperature a consistency spa resorts using artificial heating can't replicate. Treatments use mud harvested from the same hillside the resort sits on.",
+    "services": [
+      "Geothermal pool soak",
+      "Volcanic mud spa treatment",
+      "Hillside meditation pavilion",
+      "Multi-night wellness stay"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 34,
+    "description": "This walled old town sits atop a coastal headland, its cobblestone lanes lined with merchant houses converted into cafés and craft shops, while the ramparts above offer views of the sea crashing against the cliffs below. Descendants of the original trading families still live within the walls. A cathedral bell tower marks the town's center.",
+    "uvp": "Because the walls enclose an actively inhabited town rather than a preserved-in-amber museum district, wandering the lanes means passing real residents' homes alongside the historic architecture, a lived-in authenticity many restored old towns have lost. The cliffside ramparts offer views unavailable from any inland heritage site.",
+    "services": [
+      "Rampart cliff walk",
+      "Cobblestone lane wandering",
+      "Cathedral bell tower climb",
+      "Merchant house craft shopping"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 35,
+    "description": "A city-run public swimming complex includes a manmade wave basin, waterslides, and a lazy river threaded through landscaped grounds near the metro's central park. Ticket booths and lifeguard towers ring the perimeter, and a food court sits at the entrance plaza. It serves mostly local families rather than overnight visitors.",
+    "uvp": "As a municipally operated facility, ticket prices stay far below private waterpark competitors while still offering a full slide and wave-basin lineup. This makes it the accessible choice for residents rather than tourists chasing a premium experience.",
+    "services": [
+      "Wave basin swimming session",
+      "Lazy river float",
+      "Waterslide circuit",
+      "Entrance plaza food court"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 36,
+    "description": "A small farm outside the city raises heritage pigs and runs weekend butchery workshops where guests learn traditional curing and sausage-making techniques from the farmhands themselves. The property sells cured meats direct from a roadside stall. Visitors mostly come for the hands-on workshop rather than a general farm tour.",
+    "uvp": "Instruction comes from the farmhands who actually raise and butcher the animals, not hired demonstrators, giving the workshop a level of technical authenticity most agritourism programs simplify away. Every participant leaves with meat they cured themselves.",
+    "services": [
+      "Traditional curing workshop",
+      "Sausage-making class",
+      "Roadside cured meat stall",
+      "Heritage pig farm walkthrough"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 37,
+    "description": "This burger bar near the highway decorates its walls with surfboards, fishing nets, and a mural of a tropical shoreline, despite sitting nearly two hundred kilometers from the nearest coast. The menu leans on beach-themed names for standard grilled burgers and milkshakes. It functions as a roadside diner for passing motorists.",
+    "uvp": "The kitchen keeps ticket times under six minutes even during highway rush periods, a speed most sit-down diners along the route can't match. Its drive-through lane was purpose-built for long-haul trucking traffic rather than tourists.",
+    "services": [
+      "Highway drive-through service",
+      "Themed burger menu",
+      "Milkshake bar",
+      "Roadside diner seating"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 38,
+    "description": "A steakhouse called Savanna Grill occupies a mid-rise building in the financial district, its dining room decorated with framed safari photography and animal-print upholstery despite serving nothing but locally sourced beef and seafood. The restaurant caters mostly to business lunches and evening client dinners. No actual wildlife or nature activity is offered on-site.",
+    "uvp": "The kitchen's dry-aging program produces a depth of flavor that positions it above typical business-district steakhouses, and its private dining rooms are booked out weeks in advance for corporate entertaining. The safari theme is purely decorative branding.",
+    "services": [
+      "Dry-aged steak dinner",
+      "Private business dining room",
+      "Client entertaining package",
+      "Locally sourced seafood platter"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 39,
+    "description": "A staffing agency places seasonal hospitality workers with hotels, resorts, and event venues across the region, handling recruitment, background checks, and payroll administration on behalf of client properties. Its office matches candidates through an internal database rather than any physical destination. The agency itself is not a place travelers visit.",
+    "uvp": "The agency's database is filtered specifically for hospitality-trained candidates, cutting client onboarding time significantly compared to general staffing firms that place workers across unrelated industries. Background checks are completed within 48 hours.",
+    "services": [
+      "Seasonal hospitality staffing",
+      "Candidate background verification",
+      "Payroll administration service",
+      "Hotel recruitment matching"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 40,
+    "description": "A print and signage shop produces banners, menu boards, and vinyl wraps for local businesses, including a number of hotels and restaurants ordering seasonal promotional signage. Work is done on large-format printers in a warehouse unit, with delivery handled by the shop's own van. Clients rarely visit the production floor.",
+    "uvp": "The shop guarantees 24-hour turnaround on rush signage orders, a speed most competing print shops in the area can't match. This has made it the default vendor for last-minute event and promotional needs.",
+    "services": [
+      "Large-format vinyl printing",
+      "Rush signage turnaround",
+      "Business banner production",
+      "Menu board fabrication"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 41,
+    "description": "This night market sprawls across a reclaimed pier where food stalls, karaoke booths, and a small Ferris wheel operate against a backdrop of the harbor skyline lit up after dark. Vendors grill skewers over open flame while a live band plays covers from a stage near the water's edge. The crowd mixes tourists with office workers unwinding after hours.",
+    "uvp": "Its pier location puts diners directly over the water with the illuminated skyline as a backdrop, a setting no inland night market in the city can replicate. The market rotates its vendor lineup monthly to keep offerings from growing stale.",
+    "services": [
+      "Pier-side skewer grilling",
+      "Harbor Ferris wheel ride",
+      "Live cover band stage",
+      "Karaoke booth rental"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 42,
+    "description": "A remote surf camp sits behind a stretch of open-ocean beach known for consistent barreling swells, housing guests in simple beachfront huts with shared cold-water showers. Instructors run dawn sessions timed to tide charts. The camp's single communal kitchen serves a fixed meal plan built around whatever the market boat delivers that week.",
+    "uvp": "Session scheduling is built entirely around live swell and tide data rather than a fixed daily itinerary, meaning guests surf when conditions are actually good rather than when a printed schedule says to. This is a discipline few surf camps maintain.",
+    "services": [
+      "Dawn tide-timed surf session",
+      "Beachfront hut lodging",
+      "Communal fixed-menu meals",
+      "Swell forecast briefing"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 43,
+    "description": "A textile museum occupies a former weaving mill, its original looms still operational. Demonstrated by artisans who learned the craft from the mill's last generation of workers. Exhibit halls trace the region's weaving tradition from raw fiber to finished cloth, and a gift shop sells pieces woven on-site during visiting hours.",
+    "uvp": "The looms on display are the same machines that once produced the mill's commercial output, still run by artisans with direct lineage to the original workforce, an authenticity reconstructed museums elsewhere can't offer. Every piece sold was woven in front of visitors, not sourced externally.",
+    "services": [
+      "Live loom weaving demonstration",
+      "Textile heritage exhibit tour",
+      "Artisan-woven gift shop",
+      "Fiber-to-cloth process walkthrough"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 44,
+    "description": "This zipline park strings a series of cable runs across a forested canyon, with platforms built into century-old trees and a final line that drops riders across a river gorge before a controlled brake system slows them at the landing deck. Safety briefings run before every group departs. The park operates on a fixed daily schedule year-round.",
+    "uvp": "The final canyon-crossing line is the longest single run in the region, giving thrill-seekers a specific record-length experience competing parks with shorter, segmented courses can't match. Every platform and brake system is inspected before daily opening.",
+    "services": [
+      "Canyon-crossing zipline run",
+      "Tree-platform cable circuit",
+      "Pre-descent safety briefing",
+      "Controlled brake landing"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 45,
+    "description": "A shipping container conference center serves as headquarters for a regional logistics cooperative, hosting quarterly meetings for member freight companies and a small administrative staff. The building includes offices, a boardroom, and a warehouse annex for sample cargo storage. It has no public-facing services beyond member operations.",
+    "uvp": "The cooperative's shared warehousing model lets smaller freight members access bulk storage rates normally reserved for large logistics firms, a cost advantage independent operators can't negotiate alone. Membership dues are scaled to company size.",
+    "services": [
+      "Member logistics coordination",
+      "Shared cargo warehousing",
+      "Quarterly cooperative meetings",
+      "Freight company administration"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 46,
+    "description": "This lagoon-side eco-lodge places raised bamboo cabins along a mangrove channel where guides lead early paddle trips to spot herons and mudskippers before the tide turns. A boardwalk connects the cabins to a shared dining pavilion serving meals sourced from a small on-site vegetable plot. No motorized transport is allowed within the property.",
+    "uvp": "Guiding here follows tide charts rather than a fixed clock, so paddle excursions always coincide with the mangrove's most active wildlife window, a precision most eco-lodges skip in favor of convenient scheduling. The property's zero-motor policy keeps the channel genuinely quiet.",
+    "services": [
+      "Mangrove paddle excursion",
+      "Bamboo cabin lodging",
+      "Tide-timed wildlife spotting",
+      "Garden-to-table dining"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 47,
+    "description": "A vintage arcade hall downtown restores and operates coin-fed cabinets from the 1980s and 90s alongside a handful of modern rhythm games, drawing both nostalgic adults and curious younger visitors. A small bar in the back serves retro-branded cocktails while machines hum under neon signage original to the era. Tournaments run monthly on weekend nights.",
+    "uvp": "Every cabinet here is a restored original rather than a modern reproduction cabinet, giving collectors and nostalgic visitors an authenticity most retro-themed arcades that use emulator boxes can't offer. In-house technicians repair machines rather than replacing them.",
+    "services": [
+      "Restored cabinet gameplay",
+      "Monthly retro tournament",
+      "Retro cocktail bar",
+      "Cabinet restoration viewing"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 48,
+    "description": "A insurance actuarial consultancy models catastrophic risk for property insurers, building flood and windstorm exposure maps used to price coastal policies. Analysts work entirely with statistical software and geographic datasets. The firm has no client-facing location and its output feeds only into other companies' pricing decisions.",
+    "uvp": "The consultancy's proprietary flood modeling incorporates satellite elevation data updated quarterly, giving insurers more current risk pricing than competitors relying on older survey data. Turnaround on custom exposure reports averages one week.",
+    "services": [
+      "Catastrophic risk modeling",
+      "Flood exposure mapping",
+      "Windstorm pricing analysis",
+      "Insurer data consulting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 49,
+    "description": "A hillside vineyard produces small-batch wine from terraced slopes overlooking a river valley. Tasting flights are served on a stone terrace at sunset, and guided walks through the rows explain the region's growing conditions. A handful of guest rooms above the cellar let visitors extend their stay past a single afternoon tasting.",
+    "uvp": "Because every bottle is produced entirely from grapes grown on these terraces rather than blended with purchased fruit, the tasting flight reflects this specific valley's terroir in a way larger commercial wineries sourcing broadly cannot claim. Guided walks are led by the vineyard's own growers, not hired docents.",
+    "services": [
+      "Terrace wine tasting flight",
+      "Vineyard row walking tour",
+      "Cellar-adjacent room stay",
+      "Sunset harvest viewing"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 50,
+    "description": "A whitewater outfitter runs half-day rafting trips through a class III-IV river gorge, launching from a riverside base camp where guides fit clients with helmets. Safety vests before a mandatory paddling briefing. Trips end at a calm pool beneath a waterfall where rafts beach for a swim break before the return shuttle.",
+    "uvp": "Guides here are all certified swiftwater rescue technicians, not seasonal hires, giving the trip a safety standard beyond what smaller unlicensed operators on the same river provide. The waterfall swim stop is exclusive to this outfitter's permitted takeout point.",
+    "services": [
+      "Class IV whitewater rafting",
+      "Waterfall pool swim break",
+      "Safety briefing and gear fitting",
+      "Riverside base camp lodging"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 51,
+    "description": "This urban rooftop cinema projects films against the backdrop of the city's illuminated skyline, with beanbag seating and a small bar serving cocktails between screenings. Programming leans toward cult classics and local independent shorts curated by a rotating guest programmer each month. Screenings run rain or shine under a retractable canopy.",
+    "uvp": "Its rotating guest-programmer model means the film lineup changes monthly in ways fixed multiplex chains never do, drawing a repeat local crowd that treats the venue as a cultural fixture rather than a one-time novelty. The skyline backdrop is unmatched by any indoor theater in the district.",
+    "services": [
+      "Rooftop skyline film screening",
+      "Curated indie shorts program",
+      "Beanbag lounge seating",
+      "Between-film cocktail bar"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 52,
+    "description": "A remote island homestay places guests in a single family's spare rooms on a small fishing island reachable only by outrigger boat. Meals cooked over an open fire using the day's catch. There is no electricity after sunset beyond a generator run for a few hours, and guests join the household's daily rhythm of fishing and net-mending.",
+    "uvp": "This isn't a staged fishing-village experience; guests genuinely join the same household chores and boat runs the family would do regardless of visitors, an unfiltered authenticity resort-style island stays can't replicate. Only one group is hosted at a time.",
+    "services": [
+      "Outrigger boat island transfer",
+      "Open-fire catch dinner",
+      "Fishing household immersion",
+      "Net-mending participation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 53,
+    "description": "A dedicated construction firm builds mid-rise residential and commercial towers across the metro area, managing everything from site excavation to structural steel erection under long-term municipal contracts. Project teams operate from active job sites rather than any public-facing office. No completed building under this firm's portfolio serves a tourism purpose.",
+    "uvp": "The firm's in-house structural engineering team allows faster design-to-groundbreaking timelines than competitors who outsource engineering, consistently beating municipal permitting deadlines. Safety incident rates across its sites run well below the industry average.",
+    "services": [
+      "Mid-rise tower construction",
+      "Structural steel erection",
+      "Site excavation management",
+      "Municipal contract compliance"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 54,
+    "description": "A cliffside sky lounge sits at the edge of a coastal escarpment, its glass-floor viewing deck extending out over the rocks where waves break far below. The bar serves tropical cocktails as the sun drops toward the horizon. A small tasting menu highlights regional seafood plated for the view rather than heavy preparation.",
+    "uvp": "The glass-floor extension is engineered specifically to let guests stand directly over the crashing surf, a vantage point competing cliffside venues with solid decking simply don't offer. Seating is timed in reserved slots around sunset to guarantee the view isn't missed.",
+    "services": [
+      "Glass-floor cliffside viewing",
+      "Sunset cocktail service",
+      "Regional seafood tasting menu",
+      "Timed sunset seating reservation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 55,
+    "description": "This desert-adjacent adventure park offers dune buggy circuits and sandboarding runs across a stretch of towering dunes just outside the city. A base camp serving grilled lunch under shaded tents between sessions. Sunset camel rides close out most afternoon packages before guests are shuttled back to the city center.",
+    "uvp": "Buggy routes are re-graded weekly to keep the dune terrain challenging rather than worn smooth by repeated traffic, a maintenance discipline many dune operators skip. The sunset camel circuit follows a route timed precisely to the day's fading light.",
+    "services": [
+      "Dune buggy circuit",
+      "Sandboarding run",
+      "Sunset camel ride",
+      "Shaded base camp lunch"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 56,
+    "description": "A regional freight airline operates cargo charter flights for perishable goods and industrial equipment between secondary airports, coordinating logistics through a dispatch center rather than passenger terminals. Its fleet consists solely of converted freighter aircraft. The airline carries no passengers and has no tourism-facing operations.",
+    "uvp": "The airline's dedicated perishable-cargo handling protocol maintains cold-chain integrity across transfers better than general freight carriers, making it the preferred choice for time-sensitive agricultural exports. Charter scheduling is available on 24-hour notice.",
+    "services": [
+      "Perishable cargo charter",
+      "Industrial equipment freight",
+      "Cold-chain logistics coordination",
+      "24-hour charter scheduling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 57,
+    "description": "A converted lighthouse keeper's cottage now operates as a two-room guesthouse at the tip of a rocky headland, with the original lighthouse still functioning behind the property. Guests can climb the tower with the resident keeper at dusk to watch the beam sweep out over darkening water. Breakfast is served on a small terrace facing the open sea.",
+    "uvp": "This is one of the last inhabited lighthouse stations open to overnight guests in the region, offering an operational-lighthouse experience rather than a decommissioned tourist replica. The keeper personally leads the evening tower climb rather than delegating it to staff.",
+    "services": [
+      "Lighthouse tower climb",
+      "Keeper cottage overnight stay",
+      "Dusk beam-lighting viewing",
+      "Sea-facing terrace breakfast"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Cultural & Heritage",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 58,
+    "description": "A rooftop farm-to-table restaurant sits atop a converted grain elevator downtown, growing much of its produce in raised beds visible from the dining terrace. The kitchen runs a nightly tasting menu built entirely around what was harvested that morning. The building's industrial skeleton remains exposed throughout the dining room.",
+    "uvp": "Because the produce is grown on the same roof it's served on, the menu changes not seasonally but daily, a farm-to-table claim most restaurants using off-site suppliers can only approximate. The exposed grain-elevator architecture gives every table a genuine industrial heritage backdrop.",
+    "services": [
+      "Rooftop tasting menu dinner",
+      "Raised-bed farm viewing",
+      "Grain elevator dining room",
+      "Daily harvest-based menu"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 59,
+    "description": "A municipal water utility manages treatment plants and distribution pipelines serving the metro area's residential and commercial customers, including hotels and resorts along the coast. Engineers monitor water quality from a central control room, and field crews handle pipeline maintenance across the service area. The utility has no visitor-facing operations.",
+    "uvp": "The utility's real-time quality monitoring network flags contamination risks faster than the regional average response time, a reliability advantage that matters to hospitality clients dependent on consistent water service. Infrastructure upgrades are scheduled to minimize service interruptions during peak tourist season.",
+    "services": [
+      "Water treatment plant operation",
+      "Pipeline maintenance dispatch",
+      "Water quality monitoring",
+      "Hospitality-sector service coordination"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 60,
+    "description": "A high-ceilinged aquarium occupies a former customs warehouse on the waterfront, its main tank a slow-turning cylinder of reef fish visible from three viewing floors. A touch pool lets children handle sea cucumbers and small rays under staff supervision, and a nightly projection show turns the entrance hall into an immersive ocean scene. The building's dock-side location ties it visually to the harbor outside.",
+    "uvp": "The aquarium's central tank was engineered inside the warehouse's original loading bay, preserving the building's industrial shell rather than demolishing it for a purpose-built structure, giving visitors architecture and marine life in one space. Nightly projection shows change seasonally to match real migratory patterns in the wild reef.",
+    "services": [
+      "Central reef tank viewing",
+      "Supervised touch pool",
+      "Nightly ocean projection show",
+      "Waterfront warehouse tour"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 61,
+    "description": "A boutique capsule hotel near the transit hub stacks compact sleeping pods across four floors, each unit fitted with reading lights, charging ports, and blackout panels for travelers on tight layovers. A shared lounge on the ground floor serves coffee around the clock, and lockers replace full rooms for storage. The property markets almost exclusively to transit passengers.",
+    "uvp": "Pod placement is engineered for near-silent operation between floors, a soundproofing standard budget capsule chains skip, letting layover travelers actually sleep rather than merely rest. Check-in is fully automated for guests arriving on red-eye connections.",
+    "services": [
+      "Capsule pod overnight stay",
+      "24-hour lounge access",
+      "Automated late-night check-in",
+      "Transit-hub locker storage"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 62,
+    "description": "This downtown night bazaar closes off four city blocks each evening for stalls selling clothing, electronics. Souvenirs beneath strings of hanging lights, with street performers working the crowd between vendor rows. Traffic is rerouted nightly to accommodate foot traffic, and the surrounding office towers empty their workers directly into the market at closing time.",
+    "uvp": "Because the bazaar physically closes real traffic lanes rather than occupying a dedicated plaza, it transforms the working city center itself into the market space each night, an urban integration purpose-built night markets elsewhere don't achieve. Vendor rotation keeps roughly a third of stalls new each month.",
+    "services": [
+      "Street stall shopping crawl",
+      "Nightly street performer circuit",
+      "Blocked-lane bazaar walk",
+      "Electronics and apparel vendor rows"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 63,
+    "description": "A hilltop botanical garden showcases native flora across terraced beds connected by gravel paths, with a glasshouse conservatory housing orchid varieties collected from the surrounding mountains. A small café at the summit overlooks the valley below. School groups and researchers visit alongside casual tourists.",
+    "uvp": "Every specimen in the collection was sourced through the garden's own field expeditions into the surrounding mountains rather than purchased from commercial nurseries, giving the orchid conservatory a regional specificity generic botanical gardens lack. Guided walks are led by the botanists who collected the plants.",
+    "services": [
+      "Orchid conservatory tour",
+      "Terraced native garden walk",
+      "Botanist-led field talk",
+      "Summit café viewing"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 64,
+    "description": "A converted grain barge now operates as a floating restaurant moored permanently at the river's edge downtown, its deck seating swaying gently with the current while a covered lower deck hosts private events. The menu focuses on river-caught fish and produce from farms visible along the opposite bank. Diners board via a short gangway from the promenade.",
+    "uvp": "Because the barge genuinely floats and shifts with the river's current rather than sitting on a fixed pier, dining here carries a subtle motion no static riverside restaurant replicates. Its river-caught sourcing ties the menu directly to the water the restaurant sits on.",
+    "services": [
+      "Floating deck dining",
+      "River-caught fish tasting menu",
+      "Private lower-deck event hosting",
+      "Promenade gangway boarding"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 65,
+    "description": "A small business law firm specializes in franchise agreements and commercial leasing, representing a client roster that includes several restaurant chains and boutique hotel groups. Attorneys work from a suite of offices downtown and rarely appear at client properties themselves. The firm's output is entirely legal documentation and advisory work.",
+    "uvp": "The firm's franchise-specific template library lets restaurant and hospitality clients close new location agreements faster than firms drafting each contract from scratch, a speed advantage that matters for chains scaling quickly. Retainer clients get same-week response guarantees.",
+    "services": [
+      "Franchise agreement drafting",
+      "Commercial lease negotiation",
+      "Hospitality client advisory",
+      "Retainer legal support"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 66,
+    "description": "A century-old funicular railway climbs a steep hillside from the harbor to a hilltop plaza, its wooden cars original to the line's 1911 opening and still operated on the same cable system. Riders pass through a short tunnel midway before emerging to a view of the entire bay. The plaza above hosts a small market and a war memorial.",
+    "uvp": "The cars and cable mechanism have never been replaced with a modern system, making the ride itself a functioning piece of century-old engineering rather than a heritage-styled replica, a rarity among hillside transit lines that have modernized. The bay view from the summit plaza remains unobstructed by later development.",
+    "services": [
+      "Historic funicular ascent",
+      "Tunnel passage ride",
+      "Summit plaza market visit",
+      "War memorial viewing"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 67,
+    "description": "A private island retreat rents out its entire landmass to a single group at a time, with three guest cottages, a communal kitchen staffed by an on-call chef. A coral flat reachable by wading straight from the beach. No other guests or day-trippers are permitted while a booking is active.",
+    "uvp": "Because the entire island is booked exclusively, there is no shared beach, staggered mealtime, or rotating staff shift to negotiate around, a level of privacy multi-guest island resorts structurally cannot offer. The on-call chef's menu is built around whatever the booking party requests, not a fixed rotation.",
+    "services": [
+      "Exclusive island booking",
+      "Private coral flat wading",
+      "On-call chef dining",
+      "Cottage group accommodation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 68,
+    "description": "This alpine ropes course strings a network of aerial obstacles between pine trunks at increasing heights, culminating in a suspended zipline finish over a mountain stream. Safety harnesses clip into a continuous belay line so climbers can't unclip mid-course, and staff monitor each platform via radio. Sessions run in timed group waves.",
+    "uvp": "The continuous belay system means climbers physically cannot detach mid-course even if they wanted to, a fail-safe engineering standard several competing ropes courses in the region still lack. Platform heights increase progressively so the course builds confidence rather than front-loading the hardest obstacle.",
+    "services": [
+      "Aerial obstacle course climb",
+      "Stream-crossing zipline finish",
+      "Continuous belay safety system",
+      "Timed group wave sessions"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 69,
+    "description": "A heritage tram line still runs its original 1920s cars along the city's oldest boulevard, connecting the cathedral square to a riverside park past rows of preserved shopfronts. Conductors punch paper tickets by hand rather than using a modern fare system, and the cars' wooden interiors remain largely unrestored. Commuters and sightseers share the same cars.",
+    "uvp": "Because the tram still functions as genuine public transit rather than a tourist-only novelty loop, riders share the cars with actual daily commuters, giving the ride a texture of ordinary city life alongside its century-old engineering. Hand-punched paper tickets are unique to this line in the region.",
+    "services": [
+      "Heritage tram ride",
+      "Cathedral square to riverside route",
+      "Hand-punched ticket experience",
+      "Preserved shopfront viewing"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 70,
+    "description": "A distillery on the edge of town produces small-batch spirits from locally grown grain, running tours through the mash room. Barrel-aging warehouse before a tasting flight in an adjoining bar built from repurposed shipping pallets. The distillery also hosts a monthly cocktail-making class taught by the head distiller.",
+    "uvp": "Every bottle traces to grain grown within a fifty-kilometer radius, a sourcing radius the distillery publishes on each label, a transparency most spirits producers relying on bulk grain suppliers don't offer. The head distiller personally teaches every cocktail class rather than delegating it to bar staff.",
+    "services": [
+      "Mash room and barrel tour",
+      "Small-batch tasting flight",
+      "Cocktail-making class",
+      "Local grain sourcing walkthrough"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 71,
+    "description": "A regional freight rail operator maintains cargo lines connecting inland manufacturing plants to the coastal port, running scheduled container trains and coordinating with terminal cranes for loading. The operator's control center oversees rail traffic across the network. Its work is entirely industrial logistics with no passenger component.",
+    "uvp": "The operator's dynamic scheduling system reduces empty-car return trips more than the regional average, cutting costs it passes on to manufacturing clients shipping through the port. Loading coordination with terminal cranes is handled through a shared real-time system, not phone dispatch.",
+    "services": [
+      "Scheduled container rail transport",
+      "Terminal crane coordination",
+      "Inland-to-port freight logistics",
+      "Rail network traffic control"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 72,
+    "description": "A cliffside monastery accessible only by a narrow stone staircase carved into the rock face has housed a small community of monks for over six hundred years. Visitors climb roughly four hundred steps to reach the chapel, where frescoes cover walls blackened by centuries of candle smoke. The monks still maintain the site's gardens and library.",
+    "uvp": "The community here has lived and worked at the site continuously since its founding, so visitors encounter an active monastic life rather than a preserved museum shell, a continuity few cliffside heritage sites can claim. The climb itself is part of the traditional pilgrimage experience, not incidental access.",
+    "services": [
+      "Cliffside stair pilgrimage climb",
+      "Fresco chapel viewing",
+      "Monastery garden visit",
+      "Historic library access"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 73,
+    "description": "A speedway complex on the city's outskirts hosts weekly go-kart racing leagues alongside a drag-strip open to amateur racers on Saturday nights, with grandstand seating and a pit-lane viewing deck for spectators. Concession stands sell standard fair food between races. The venue draws mostly local racing enthusiasts rather than casual visitors.",
+    "uvp": "Amateur drivers can register and race the same night without prior league membership, a walk-in accessibility most organized speedways restrict to licensed competitors only. Pit-lane viewing access is included in general admission rather than sold as a premium upgrade.",
+    "services": [
+      "Amateur drag-strip racing",
+      "Weekly go-kart league",
+      "Pit-lane viewing deck",
+      "Grandstand race spectating"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 74,
+    "description": "A hospital network operates three general acute-care facilities across the metro area, providing emergency, surgical, and maternity services to residents. Administrative offices coordinate staffing and insurance billing across all locations. None of the network's facilities serve any tourism or leisure function.",
+    "uvp": "The network's shared electronic records system lets patients transfer between its three facilities without repeating diagnostic tests, reducing costs and wait times compared to unaffiliated hospital groups. Emergency department wait times are published publicly and audited quarterly.",
+    "services": [
+      "Emergency department care",
+      "Surgical service coordination",
+      "Maternity ward services",
+      "Insurance billing administration"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 75,
+    "description": "A former sugar plantation's great house and surrounding outbuildings now form a heritage estate open for tours, with docents explaining the site's agricultural and labor history through preserved ledgers and restored machinery. A small café operates in the former overseer's cottage. The estate grounds include the original cane-processing mill, now static.",
+    "uvp": "The estate presents the plantation's full labor history through original ledgers and worker testimonies rather than romanticizing only the great house's architecture, a candor many similarly restored estates avoid. The cane mill remains in its original mechanical state rather than being modernized for demonstration.",
+    "services": [
+      "Great house heritage tour",
+      "Cane mill mechanical viewing",
+      "Plantation ledger exhibit",
+      "Overseer cottage café"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 76,
+    "description": "A hidden cove accessible only by a fifteen-minute jungle path opens onto turquoise shallows framed by limestone cliffs. The trail's final descent requires guests to scramble down a short rope-assisted section before reaching the water. Once there, most visitors spend hours floating in the still water beneath the cliff walls.",
+    "uvp": "The rope-assisted approach naturally limits visitor volume compared to road-accessible beaches nearby, keeping the cove genuinely uncrowded even during peak season. This is an exclusivity that requires no membership fee, only the willingness to make the climb.",
+    "services": [
+      "Jungle trail cove access",
+      "Rope-assisted cliff descent",
+      "Cliff-framed shallow swimming",
+      "Limestone wall floating"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 77,
+    "description": "This retro drive-in theater screens double features on a giant outdoor screen at the edge of town, with cars parking on graded gravel rows and a snack bar housed in a repurposed gas station kiosk. Radio transmitters carry audio to car stereos, preserving the original 1960s format the venue opened with. Weekend nights regularly sell out.",
+    "uvp": "The venue still uses the original radio-transmission audio system from its 1960s opening rather than switching to modern speaker poles, preserving an authentic drive-in format that most surviving theaters of this type have abandoned. Double-feature programming is curated around genre theme nights.",
+    "services": [
+      "Double-feature outdoor screening",
+      "Radio-audio car parking",
+      "Gas-station kiosk snack bar",
+      "Genre theme night programming"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 78,
+    "description": "A wholesale seafood processing plant supplies frozen and fresh catch to supermarket chains and restaurant distributors across the region, running cold-storage facilities and a fleet of refrigerated trucks. Workers process incoming catch on an assembly line inside the plant. The facility does not sell directly to consumers or host visitors.",
+    "uvp": "The plant's blast-freezing line locks in catch within two hours of docking, a speed that preserves texture better than competitors relying on slower conventional freezing, which restaurant distributor clients specifically pay a premium for. Cold-chain tracking follows every shipment from dock to delivery.",
+    "services": [
+      "Bulk seafood processing",
+      "Blast-freezing preservation",
+      "Refrigerated distribution fleet",
+      "Restaurant supply contracting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 79,
+    "description": "A converted colonial-era customs house now operates as a boutique hotel on the harbor front, its original vaulted storage cellars turned into a wine bar. Its upper floors divided into ten suites overlooking the docks. Guests can still see the building's original cargo-hoist mechanism preserved in the lobby.",
+    "uvp": "The building's cargo-hoist and cellar vaults were restored rather than removed, so guests sleep inside a functioning piece of trade history rather than a generically themed heritage hotel, a distinction the property leans on heavily in its design. Harbor-facing suites offer direct views of the working docks below.",
+    "services": [
+      "Customs house suite stay",
+      "Vaulted cellar wine bar",
+      "Cargo-hoist lobby viewing",
+      "Harbor-facing room booking"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 80,
+    "description": "A downtown escape room complex spans six themed chambers, each built around a different puzzle narrative from a bank heist to a haunted asylum, with live game masters monitoring progress through hidden cameras. Groups book hour-long slots, and a lounge area between rooms serves drinks while waiting for the next session. The venue caters heavily to birthday and corporate team-building groups.",
+    "uvp": "Every room's puzzle set is redesigned annually rather than reused indefinitely, keeping repeat local customers coming back for new narratives instead of memorized solutions, a refresh cycle many escape room chains skip to cut costs. Live game masters can adjust hint pacing in real time based on group performance.",
+    "services": [
+      "Themed escape room session",
+      "Live game master monitoring",
+      "Corporate team-building package",
+      "Between-room lounge waiting area"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 81,
+    "description": "A remote research station on a volcanic island doubles as a limited-access lodge, housing a handful of paying guests alongside resident geologists studying the crater's active fumaroles. Guests join scientists on supervised hikes to the rim and sleep in dormitory-style rooms attached to the lab building. Access is restricted by weather and seismic activity.",
+    "uvp": "Guests here join genuine ongoing fieldwork rather than a tourism-oriented simulation of it, hiking alongside the same researchers publishing on the volcano's activity, an access level no conventional adventure tour can arrange. Bookings are capped low enough not to interfere with active research.",
+    "services": [
+      "Supervised crater rim hike",
+      "Research station dormitory stay",
+      "Fumarole field observation",
+      "Geologist-led briefing"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 82,
+    "description": "A pest control company services residential and commercial properties across the region, including a contract with several hotel chains for routine termite and rodent prevention. Technicians operate from service vans dispatched by a central scheduling office. The company has no location travelers would ever visit.",
+    "uvp": "The company's hotel-sector contracts include guaranteed same-day emergency response, a service level standard residential pest control providers don't offer. This has made it the preferred vendor among hospitality clients needing discretion and speed.",
+    "services": [
+      "Hotel termite prevention contract",
+      "Rodent control service",
+      "Same-day emergency dispatch",
+      "Commercial property treatment"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 83,
+    "description": "A restored galleon replica is permanently moored at the maritime museum's pier, its below-deck cargo holds. Captain's quarters open for self-guided tours alongside placards on the region's colonial-era trade routes. A rigging demonstration runs twice daily where costumed crew hoist sails to show period sailing technique.",
+    "uvp": "The rigging demonstrations use techniques verified against period shipping logs rather than generic tall-ship choreography, giving maritime enthusiasts a level of historical accuracy most replica ships on display don't attempt. The vessel remains seaworthy and is occasionally sailed for special events.",
+    "services": [
+      "Below-deck galleon tour",
+      "Period rigging demonstration",
+      "Trade route exhibit walkthrough",
+      "Captain's quarters viewing"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 84,
+    "description": "A hilltop stargazing lodge sits above the region's light pollution. A rooftop observatory housing a research-grade telescope and cabins spaced apart to keep sightlines clear. Astronomy staff run nightly viewing sessions timed to celestial events, and guests can request wake-up calls for meteor showers or planetary alignments visible before dawn.",
+    "uvp": "The observatory's telescope is research-grade rather than a consumer model typical of hotel stargazing decks, letting guests view planetary detail and deep-sky objects most lodge-based astronomy programs can't resolve. Session timing is built entirely around real celestial events, not a fixed nightly slot.",
+    "services": [
+      "Research telescope viewing session",
+      "Meteor shower wake-up call",
+      "Dark-sky cabin stay",
+      "Astronomy staff briefing"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 85,
+    "description": "A cathedral-adjacent chocolate house has operated from the same shopfront beside the old plaza for over a century. Staff still temper chocolate on marble slabs visible through the front window, using a recipe unchanged since the shop's founding. Tourists and churchgoers alike stop in after mass for a cup of the shop's thick drinking chocolate.",
+    "uvp": "The recipe and tempering method have been passed down within one family without modification since the shop opened. This gives the chocolate a specific historic character rather than a modernized reinterpretation, something newer artisanal chocolate shops in the plaza can't claim.",
+    "services": [
+      "Marble-slab chocolate tempering viewing",
+      "Thick drinking chocolate tasting",
+      "Century-old shopfront visit",
+      "Plaza-adjacent café seating"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 86,
+    "description": "A go-kart and mini-golf complex occupies a lot beside the interstate, offering a two-tier track for adults and children alongside an eighteen-hole course built around pirate-themed obstacles. A batting cage and snack bar round out the property. Families passing through on road trips make up most of the customer base.",
+    "uvp": "The two-tier kart track lets adults race at full speed on the upper level while children race separately below, a segregation most single-track family kart venues can't offer without shutting the track down between age groups. The course layout was designed to keep wait times under ten minutes even at peak hours.",
+    "services": [
+      "Two-tier go-kart racing",
+      "Pirate-themed mini-golf course",
+      "Batting cage session",
+      "Roadside snack bar"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 87,
+    "description": "A mountain village homestay network connects travelers with family-run guest rooms scattered across a terraced highland community, coordinated through a single village cooperative office. Guests choose from listed households, each offering home-cooked meals. Access to nearby hiking trails maintained by village volunteers.",
+    "uvp": "Because bookings route through a village cooperative rather than individual commercial listings, revenue is pooled and shared across households rather than concentrated in whichever family markets best. This is a structure that keeps the entire community invested in guest experience quality.",
+    "services": [
+      "Family homestay booking",
+      "Home-cooked meal service",
+      "Village-maintained trail access",
+      "Cooperative-coordinated lodging"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 88,
+    "description": "A corporate headquarters for a national telecom provider occupies a high-rise downtown, housing customer service call centers, network operations, and executive offices across twenty floors. The building includes a staff cafeteria but no facilities open to the public. Its function is entirely internal business operations.",
+    "uvp": "The company's centralized network operations floor allows faster fault diagnosis across its service area than competitors running regional satellite offices. This is a structural advantage reflected in its published uptime statistics.",
+    "services": [
+      "Network operations monitoring",
+      "Customer call center management",
+      "Executive office administration",
+      "Internal staff cafeteria"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 89,
+    "description": "A tidal flat known locally as the mirror shore turns into a vast reflective sheet at low tide, drawing photographers who wade out at sunset when the wet sand perfectly mirrors the sky. A small kiosk near the access point rents rubber boots. Offers tide-timing advice, but the flat itself has no built infrastructure.",
+    "uvp": "No man-made platform or walkway interrupts the flat, so the mirror effect stretches unbroken to the horizon in a way boardwalk-equipped viewing areas elsewhere disrupt. The kiosk's tide predictions are calibrated specifically to this shore's unusually flat gradient.",
+    "services": [
+      "Low-tide mirror shore wading",
+      "Sunset reflection photography",
+      "Rubber boot rental",
+      "Tide-timing kiosk advice"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 90,
+    "description": "A civic concert hall downtown hosts the regional symphony's season alongside touring opera productions, its gilded 1920s auditorium restored to original acoustics after a decade-long renovation. A pre-show lounge on the mezzanine serves wine,. Guided backstage tours run on non-performance afternoons.",
+    "uvp": "The renovation specifically prioritized restoring the hall's original 1920s acoustic engineering rather than modernizing it, giving performances a sound character that newer purpose-built concert halls in the city can't replicate. Backstage tours are led by working stagehands, not marketing staff.",
+    "services": [
+      "Symphony season performance",
+      "Backstage stagehand-led tour",
+      "Mezzanine pre-show lounge",
+      "Touring opera production viewing"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 91,
+    "description": "A jungle river outfitter leads inflatable-kayak descents through a stretch of mild rapids shaded almost entirely by rainforest canopy, stopping midway at a rope swing over a deep pool. Guides point out birdlife and medicinal plants along the banks between rapid sections. The trip ends at a riverside lunch spot serving grilled tilapia.",
+    "uvp": "The route was selected specifically for its continuous canopy cover, keeping paddlers shaded the entire descent in a way sun-exposed river trips elsewhere can't match during peak heat. Guides are trained in both rapid navigation and local ethnobotany, doubling the trip's educational value.",
+    "services": [
+      "Canopy-shaded kayak descent",
+      "Rope swing pool stop",
+      "Riverside grilled tilapia lunch",
+      "Guided riverbank ethnobotany walk"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 92,
+    "description": "A restored railway station now functions as a boutique hotel, with guest rooms built into the former ticketing hall and waiting rooms. The original platform canopy preserved as a covered breakfast terrace. A vintage locomotive sits on a short spur track beside the building as a static exhibit guests can tour.",
+    "uvp": "Guests sleep inside the actual structure travelers once queued in for tickets, with original signage and clock fixtures left intact rather than replicated, giving the stay a specificity generic railway-themed hotels built from scratch can't match. The locomotive exhibit is maintained by volunteer rail historians.",
+    "services": [
+      "Former ticketing hall room stay",
+      "Platform canopy breakfast terrace",
+      "Static locomotive exhibit tour",
+      "Volunteer historian rail talk"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 93,
+    "description": "A regional dairy cooperative processes raw milk from member farms into cheese, yogurt, and bottled milk sold through supermarket distribution contracts. Production runs through automated pasteurization and packaging lines at a single central plant. The cooperative has no retail storefront or public tour program.",
+    "uvp": "Because the cooperative pools output from over sixty member farms, it can guarantee supermarket clients consistent supply volume that individual dairies operating alone couldn't promise. This is a reliability that has secured it several long-term distribution contracts.",
+    "services": [
+      "Raw milk pasteurization processing",
+      "Cheese and yogurt production",
+      "Member farm supply coordination",
+      "Supermarket distribution contracting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 94,
+    "description": "A floating market operates from a network of narrow canals just outside the old city, with vendors paddling wooden boats loaded with produce, noodle soup. Fried snacks to customers waiting on canal-side platforms or in rented boats of their own. Trade begins before dawn and winds down by mid-morning.",
+    "uvp": "Commerce here happens entirely on the water using techniques the vendor families have used for generations, rather than a land-based market staged with boats for photographs, a distinction serious visitors of floating markets specifically seek out. Boat rental lets visitors paddle the transaction themselves rather than watching from a platform.",
+    "services": [
+      "Canal boat market browsing",
+      "Floating noodle soup vendor stop",
+      "Rented paddle boat access",
+      "Pre-dawn trade viewing"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 95,
+    "description": "A skydiving center on the edge of the airfield offers tandem jumps over a patchwork of farmland and coastline. A ground school briefing preceding every flight and a viewing deck for spectators watching canopies open in the distance. Video packages capture the freefall from a helmet-mounted camera worn by the instructor.",
+    "uvp": "Jump routes are planned to give tandem riders roughly ninety seconds of coastline in view during descent, a flight-path choice most inland-only drop zones can't replicate. Every instructor logs over a thousand tandem jumps before being cleared for solo client pairing.",
+    "services": [
+      "Tandem skydive jump",
+      "Ground school safety briefing",
+      "Helmet-cam freefall video package",
+      "Spectator canopy-viewing deck"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 96,
+    "description": "A restored opium-den alley in the old trading quarter now houses a row of tea houses and antique dealers, its low wooden ceilings. Narrow brick lanes largely unchanged from the district's 19th-century trading heyday. Guided lantern-lit walks recount the alley's smuggling history alongside its current shops.",
+    "uvp": "Rather than sanitizing the alley's smuggling-era history into vague heritage language, walking tours here address it directly, giving visitors a franker account of the district's past than the softened narration typical of similar restored quarters. The lanes' original brick and timber were preserved, not rebuilt.",
+    "services": [
+      "Lantern-lit heritage alley walk",
+      "Antique dealer browsing",
+      "Historic tea house visit",
+      "Smuggling history narration"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 97,
+    "description": "A coastal glamping resort places geodesic dome tents directly on the sand dunes, each fitted with a retractable ceiling panel for stargazing above a proper king bed. A beachfront infinity pool sits between the domes and the shoreline,. A dive shop on-site runs daily excursions to a nearby wreck site.",
+    "uvp": "The retractable dome ceilings let guests fall asleep watching stars while still sleeping on a proper mattress feet from the surf, blending genuine glamping novelty with resort-grade comfort that basic beach camping can't offer. The adjoining dive shop gives direct wreck access without a separate transfer.",
+    "services": [
+      "Dome tent stargazing stay",
+      "Beachfront infinity pool access",
+      "Wreck dive excursion",
+      "Dune-side glamping accommodation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 98,
+    "description": "A commercial fishing fleet cooperative manages licensing, fuel supply, and catch auctions for independent trawler owners operating out of the regional port. Its dockside office coordinates auction schedules and settles payments between buyers and captains. The cooperative exists to serve working fishermen, not visitors.",
+    "uvp": "The cooperative's auction system settles payments to captains within 24 hours of sale, a turnaround independent brokers in the region typically take a week to match. This has made it the preferred channel for smaller trawler operators needing faster cash flow.",
+    "services": [
+      "Catch auction coordination",
+      "Fuel supply licensing",
+      "Captain payment settlement",
+      "Trawler fleet administration"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 99,
+    "description": "A theme restaurant built to resemble a shipwrecked galleon serves a seafood buffet inside a hull-shaped dining room, with staff dressed as pirates and a treasure-hunt activity for children between courses. The building sits on a landlocked lot near the airport, with no ocean or waterway nearby. Its appeal is entirely the themed dining experience.",
+    "uvp": "The immersive galleon interior and staged pirate performances give diners a themed spectacle that a plain seafood buffet elsewhere can't match, positioning the restaurant as dinner theater as much as a meal. Birthday packages include a scripted treasure-hunt finale for kids.",
+    "services": [
+      "Themed galleon buffet dinner",
+      "Pirate performance dining show",
+      "Kids' treasure-hunt activity",
+      "Birthday package hosting"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 100,
+    "description": "A converted fire station now operates as a firefighting heritage museum, its original truck bays displaying restored engines dating back to horse-drawn pumpers. Retired firefighters volunteer as guides, recounting specific historic blazes the station responded to. A working brass pole remains in the building for visitors to try.",
+    "uvp": "Guides here are retired firefighters recounting fires they personally responded to rather than reciting scripted plaques, giving tours a first-person specificity most municipal heritage museums with hired docents can't offer. The brass pole is the original, still functional after a century of use.",
+    "services": [
+      "Restored engine bay tour",
+      "Retired firefighter storytelling",
+      "Historic brass pole demonstration",
+      "Horse-drawn pumper exhibit"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 101,
+    "description": "A saltwater lagoon separated from the open sea by a narrow reef opening stays calm enough for beginner kite surfers. A school on the shore renting gear and running lessons timed to the steady afternoon thermal winds. Advanced riders head past the reef gap when conditions allow, but most sessions stay inside the protected lagoon.",
+    "uvp": "The reef-protected lagoon gives beginners genuinely flat water to learn on, a rarity among kite schools that otherwise compromise on choppy open coastline, letting new riders progress faster than at less sheltered spots. Lesson timing is built entirely around the lagoon's predictable thermal wind window.",
+    "services": [
+      "Beginner kite surf lesson",
+      "Protected lagoon riding session",
+      "Gear rental and fitting",
+      "Thermal wind timing briefing"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 102,
+    "description": "A regional pharmaceutical distributor warehouses and delivers prescription medication to clinics and pharmacies across the province, operating a temperature-controlled fleet and a licensed storage facility. Orders are placed through a business portal by pharmacy clients. The company has no consumer storefront or public-facing site.",
+    "uvp": "Its cold-chain-certified fleet maintains medication stability across even the province's most remote delivery routes, a reliability smaller regional distributors without certified refrigeration can't guarantee. This makes it the preferred supplier for rural clinics.",
+    "services": [
+      "Temperature-controlled medication delivery",
+      "Licensed pharmaceutical warehousing",
+      "Business portal order processing",
+      "Rural clinic supply routing"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 103,
+    "description": "A converted watchtower on the old city walls now serves as a single-room boutique stay, reachable by a spiral stair that opens onto panoramic views of the surrounding rooftops and countryside. There is no elevator, and the room's stone walls are original to the tower's medieval construction. Modern plumbing discreetly added.",
+    "uvp": "Only one booking is accepted per night, making the entire medieval tower briefly a single guest's private lookout, a scale of exclusivity larger heritage hotels dividing similar towers into multiple rooms cannot replicate. The panoramic view remains unobstructed by any modern construction nearby.",
+    "services": [
+      "Single-booking tower stay",
+      "Panoramic rooftop viewing",
+      "Medieval spiral stair climb",
+      "Stone chamber overnight lodging"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 104,
+    "description": "A downtown food hall converts a former parking garage into two floors of independent vendor stalls, ranging from ramen counters to a rooftop bar with skyline views. Communal seating spans the open-plan ground floor, and a rotating pop-up stall program brings in guest chefs monthly. The building's concrete ramp structure remains visible throughout.",
+    "uvp": "Preserving the garage's raw concrete ramps and structural columns rather than covering them gives the food hall an industrial identity distinct from the polished mall-style food courts common elsewhere downtown. The monthly guest-chef pop-up keeps the vendor lineup from ever feeling static.",
+    "services": [
+      "Independent vendor stall dining",
+      "Rooftop skyline bar",
+      "Monthly guest-chef pop-up",
+      "Communal ground-floor seating"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 105,
+    "description": "A working salt farm along the coast lets visitors walk the shallow evaporation ponds where families have harvested sea salt by hand for generations. Workers rake crystallized salt into mounds under the afternoon sun as visitors watch and sometimes join in. A small stall at the farm's edge sells the day's harvest alongside flavored variations infused with local herbs.",
+    "uvp": "The ponds remain in continuous commercial production, so visitors watch and even help with a genuine harvest rather than a demonstration staged solely for tourists. That distinction matters to visitors seeking working agricultural tourism over performance, and every batch sold traces to a specific pond visitors can walk to.",
+    "services": [
+      "Salt pond harvest walk",
+      "Hand-raking demonstration participation",
+      "Flavored salt tasting stall",
+      "Working farm sun-drying viewing"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 106,
+    "description": "A vertical rock face rising straight from a turquoise cove has become a magnet for deep-water soloists, who climb without ropes since a fall simply drops them into the sea below. A small platform at the base rents chalk bags and offers route guidance. Boats ferry climbers to less accessible sections of the wall.",
+    "uvp": "Because falls land in deep water rather than on rock, climbers here attempt routes at a boldness level roped inland crags don't permit, drawing a specific deep-water soloing community that treats this wall as a pilgrimage site. Boat access opens sections of the wall unreachable from shore.",
+    "services": [
+      "Deep-water solo climbing",
+      "Boat transfer to remote wall sections",
+      "Chalk bag and route rental",
+      "Base platform route guidance"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 107,
+    "description": "A regional real estate brokerage lists residential and commercial properties across the metro area, including a growing portfolio of short-term rental units near tourist districts. Agents handle showings, contract negotiation, and closing coordination from a central office. The brokerage itself has no destination or venue of its own.",
+    "uvp": "Its dedicated short-term-rental division helps property owners navigate zoning restrictions specific to tourist-district listings, a specialization general residential brokerages in the area haven't developed. Closing timelines average under thirty days.",
+    "services": [
+      "Short-term rental listing management",
+      "Property showing coordination",
+      "Zoning compliance advisory",
+      "Contract closing administration"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 108,
+    "description": "A converted 19th-century opera house now runs a mixed program of touring musicals, comedy nights. The occasional boxing match, its ornate plaster ceiling and box seats preserved above a modern retractable stage floor. A backstage bar serves performers and VIP ticket holders after shows.",
+    "uvp": "The retractable stage floor lets the venue switch between a fixed proscenium show and an open floor plan for boxing or standing-room comedy without any structural rebuild. This is a flexibility purpose-built modern theaters rarely combine with genuine period architecture.",
+    "services": [
+      "Touring musical performance",
+      "Comedy night ticketing",
+      "Retractable-floor boxing event",
+      "Backstage VIP bar access"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 109,
+    "description": "A remote highland trek connects a chain of three volcanic crater lakes over four days. Porters carrying gear between basic trailside shelters and a support cook preparing meals at each camp. Altitude acclimatization stops are built into the itinerary, and the final day descends past active fumaroles before reaching the trailhead village.",
+    "uvp": "The four-day pacing includes mandatory acclimatization stops most competing trekking operators compress out to shorten the trip, resulting in a meaningfully lower altitude-sickness rate among clients according to the operator's own trip logs. Porters and cooks are hired exclusively from the trailhead village.",
+    "services": [
+      "Multi-day crater lake trek",
+      "Porter-supported camping",
+      "Altitude acclimatization stops",
+      "Fumarole field descent"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 110,
+    "description": "A boutique tailoring house in the old quarter has fitted suits for three generations of local families, its shopfront window displaying bolts of fabric sourced from regional weavers. Customers describe an occasion and the tailor sketches a design on the spot before cutting begins. Fittings scheduled over several visits.",
+    "uvp": "Every garment begins as a hand sketch drafted during the client consultation rather than pulled from a pattern catalog, giving each suit a bespoke originality mass-tailoring chains in the district can't replicate. Fabric sourcing stays entirely within the regional weaving network.",
+    "services": [
+      "Bespoke suit consultation",
+      "Hand-sketched garment design",
+      "Multi-fitting tailoring process",
+      "Regional fabric sourcing"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 111,
+    "description": "A sea cave accessible only at low tide cuts deep into a limestone headland, its interior chamber opening to a hidden pool lit by a natural skylight where the roof has partially collapsed. Kayak guides time trips precisely to the tide window, since the entrance floods completely at high water. The paddle in takes under ten minutes.",
+    "uvp": "The narrow tide window during which the cave is even accessible naturally limits visitor volume, and guides here are certified specifically in tidal cave navigation. This is a qualification most general kayak tour operators in the area don't hold.",
+    "services": [
+      "Tide-timed sea cave kayak entry",
+      "Skylight pool paddling",
+      "Certified cave navigation guiding",
+      "Limestone chamber exploration"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 112,
+    "description": "A restored art deco cinema downtown screens classic films on its original single large screen, its neon marquee and terrazzo lobby floor unchanged since the 1938 opening. An organist plays a period Wurlitzer before select evening screenings. The balcony seating remains original horsehair upholstery, reupholstered but structurally intact.",
+    "uvp": "The Wurlitzer organ predates the building's conversion to sound film and still plays live before select screenings. This is an experience modern multiplexes and even most restored single-screen cinemas elsewhere have no equivalent instrument to offer.",
+    "services": [
+      "Classic film screening",
+      "Live Wurlitzer organ performance",
+      "Art deco lobby tour",
+      "Original balcony seating access"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 113,
+    "description": "A backcountry fly-fishing lodge sits beside a spring-fed river known for wild trout. Guides wading alongside clients to read currents and match hatches rather than simply pointing out fishing spots. Evenings are spent tying flies in a lodge common room heated by a wood stove, and meals center on the day's catch when guests choose to keep fish.",
+    "uvp": "Guides here teach reading water and matching insect hatches as a skill clients take home, rather than simply positioning anglers over known fish. This is a teaching-first approach that distinguishes the lodge from outfitters focused purely on catch counts.",
+    "services": [
+      "Guided wild trout fly-fishing",
+      "Fly-tying evening workshop",
+      "Wood-stove lodge stay",
+      "Catch-based dinner preparation"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 114,
+    "description": "A shopping mall anchor department store occupies six floors of a downtown retail complex, selling clothing, electronics, and home goods to a mostly local customer base. Seasonal sales events draw larger crowds, and a small café on the top floor serves shoppers. The store operates purely as retail with no destination appeal beyond shopping.",
+    "uvp": "The store's loyalty program integrates across the entire mall complex, letting shoppers earn points at any tenant and redeem them here. This is a cross-store benefit most standalone department stores in the region don't offer.",
+    "services": [
+      "Multi-floor retail shopping",
+      "Cross-tenant loyalty rewards",
+      "Seasonal sale events",
+      "Top-floor café dining"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 115,
+    "description": "A shrine complex on a forested hillside marks the site of a centuries-old pilgrimage, its vermillion gates lining a stone stairway that pilgrims still climb barefoot during the annual festival. Resident caretakers maintain the grounds year-round. A small shop near the base sells amulets blessed during the morning ritual.",
+    "uvp": "The barefoot pilgrimage tradition continues unbroken since the shrine's founding, observed by devoted visitors rather than staged for tourists. Caretakers bless amulets in the same morning ritual practiced for generations, not a simplified retail version.",
+    "services": [
+      "Barefoot pilgrimage stair climb",
+      "Vermillion gate walkway tour",
+      "Morning blessing ritual observation",
+      "Amulet shop visit"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 116,
+    "description": "A converted industrial rooftop hosts an urban farm and adjoining brewery taproom, growing hops. Vegetables in raised beds that supply the kitchen below. Guests can climb a service stair to see the hop bines before descending to taste the seasonal ale brewed from that same harvest, paired with a small plates menu built around the rooftop produce.",
+    "uvp": "Because the hops used in the seasonal ale are grown on the same roof where it's served, the pairing menu ties directly to a visible, walkable source rather than an abstract farm-to-glass marketing claim. This is a specificity few urban breweries can back up physically.",
+    "services": [
+      "Rooftop hop farm tour",
+      "Seasonal harvest ale tasting",
+      "Small plates pairing menu",
+      "Urban farm-to-glass brewing"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 117,
+    "description": "A remote atoll accessible only by a six-hour boat crossing hosts a single small dive resort built on stilts over the lagoon. Its rooms connect by wooden walkways above the reef. Because of the crossing, most guests stay a minimum of five nights, diving twice daily on walls that see few other visitors due to the remoteness.",
+    "uvp": "The six-hour crossing that deters casual visitors is precisely what keeps the surrounding reef walls uncrowded. This gives the small number of guests who do commit to the journey access to dive sites large operators closer to the mainland can't offer in comparable condition.",
+    "services": [
+      "Overwater bungalow stay",
+      "Twice-daily reef wall diving",
+      "Remote atoll boat crossing",
+      "Lagoon walkway access"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 118,
+    "description": "A municipal wastewater treatment authority manages sewage processing and stormwater infrastructure for the metro region, including specific capacity contracts with the hotel district during peak tourist season. Engineers monitor treatment plant operations from a central facility. The authority has no public visitor program.",
+    "uvp": "The authority's seasonal capacity planning specifically models tourist-district demand spikes months in advance. This is an operational foresight that has prevented service disruptions during peak season that smaller regional utilities elsewhere have experienced.",
+    "services": [
+      "Sewage treatment plant operation",
+      "Stormwater infrastructure management",
+      "Seasonal capacity planning",
+      "Hotel-district utility contracting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 119,
+    "description": "A high desert stargazing yurt camp places canvas yurts on a plateau far from any town lights, each fitted with a woodstove and a retractable skylight panel. A resident astronomer runs a nightly telescope session pointing out constellations. Mornings begin with a short hike to a mesa overlook for sunrise.",
+    "uvp": "The plateau's elevation and distance from any settlement give it measurably darker skies than lower-altitude stargazing camps closer to town. This is a difference the resident astronomer can demonstrate directly through the telescope each night.",
+    "services": [
+      "Yurt stargazing stay",
+      "Nightly telescope constellation session",
+      "Sunrise mesa overlook hike",
+      "Woodstove-heated lodging"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 120,
+    "description": "This ambiguous-sounding retreat markets itself only as a place where guests spend their days moving between still water. Quiet forest, without naming any specific activity, letting visitors choose between floating in a spring-fed pool ringed by limestone boulders or following a shaded path deeper into the trees. Meals are served on a deck suspended above the pool's edge.",
+    "uvp": "The retreat deliberately avoids a fixed activity schedule, letting each guest's day form around whichever setting draws them that morning. This is an unstructured pacing that distinguishes it from itinerary-driven adventure lodges nearby.",
+    "services": [
+      "Spring-fed pool floating",
+      "Forest path wandering",
+      "Deck-suspended dining",
+      "Unstructured daily itinerary"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 121,
+    "description": "A converted grain mill by the river now operates as a heritage bakery. Its original millstones still grind flour used in the day's loaves, visible through a glass partition behind the counter. Customers line up before dawn for bread baked in a wood-fired oven built into the mill's original foundation.",
+    "uvp": "Flour milled on-site that same morning goes directly into that day's dough, a supply chain of literally a few meters that commercial bakeries sourcing flour externally cannot replicate. This gives the bread a freshness the shop markets as its defining trait.",
+    "services": [
+      "On-site stone-milled flour bread",
+      "Wood-fired oven baking",
+      "Millstone process viewing",
+      "Dawn bakery queue"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 122,
+    "description": "A converted quarry now holds a deep turquoise lake ringed by sheer rock walls, popular with cliff jumpers who leap from platforms carved into the stone at various heights. A rope swing near the shallow end caters to less adventurous swimmers. A snack van parks at the access road each weekend.",
+    "uvp": "The quarry's varied jump heights, from a beginner two-meter ledge to an advanced twelve-meter platform, let both casual swimmers and serious cliff jumpers use the same site. This is a range most single-height jump spots in the region don't offer.",
+    "services": [
+      "Cliff jumping platform access",
+      "Rope swing shallow-end swimming",
+      "Quarry lake wall climbing",
+      "Weekend snack van service"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 123,
+    "description": "A regional trucking company hauls consumer goods and construction materials between distribution centers, operating a fleet dispatched from a central logistics yard. Drivers work fixed routes on multi-day schedules. The company occasionally hauls supplies for hotel construction projects but has no consumer-facing service or destination.",
+    "uvp": "Its route-optimization software cuts average delivery time across the regional network compared to manually scheduled competitors. This is a margin construction clients on tight project timelines specifically value.",
+    "services": [
+      "Multi-day freight hauling",
+      "Distribution center logistics",
+      "Construction material delivery",
+      "Route-optimized dispatch"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 124,
+    "description": "A row of stilted fishing huts along a mangrove-fringed inlet has been converted into a string of simple guest rooms, each accessible only by a shared boardwalk above the water. Guests fish from their own porch at dawn alongside the fishing families who still live in neighboring huts. A communal fire pit hosts nightly gatherings.",
+    "uvp": "Because the huts sit within an active fishing community rather than a purpose-built resort mimicking one, guests share the boardwalk and daily rhythm with real fishing families. This is an authenticity staged stilt-hut resorts elsewhere can't replicate.",
+    "services": [
+      "Stilted hut overnight stay",
+      "Dawn porch fishing",
+      "Boardwalk mangrove access",
+      "Nightly communal fire pit"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 125,
+    "description": "A downtown planetarium projects immersive star-field shows onto a domed ceiling, pairing seasonal astronomy programming with a rotating exhibit hall on space exploration history. A gift shop sells telescopes and meteorite fragments near the entrance. School field trips make up much of its weekday attendance.",
+    "uvp": "The dome's projection system was upgraded to a resolution matching major national planetariums. This gives this comparatively small city facility a visual fidelity punching well above venues its size typically achieve.",
+    "services": [
+      "Immersive dome star show",
+      "Space exploration exhibit hall",
+      "Meteorite and telescope gift shop",
+      "School field trip programming"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 126,
+    "description": "A cheese cave carved into a limestone hillside ages regional wheels in constant cool, humid conditions unique to the rock's natural climate. Visitors descend a short stair into the cave to see racks of aging wheels before a tasting room above ground pairs samples with local wine. The cave has aged cheese here for over a century.",
+    "uvp": "The limestone cave's naturally stable humidity and temperature age the cheese in a way climate-controlled industrial aging rooms only approximate. This gives wheels from this cave a texture regional cheesemakers specifically seek out for their premium lines.",
+    "services": [
+      "Limestone cheese cave descent",
+      "Aging wheel viewing",
+      "Wine-paired tasting room",
+      "Century-old cave aging tour"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 127,
+    "description": "A ridge-top paragliding launch site sends tandem flights out over a patchwork valley of terraced farmland, with pilots timing launches to the day's thermal conditions from a grassy takeoff platform. Landing happens in a designated field where a van shuttles flyers back to the ridge. Morning flights are favored for calmer air.",
+    "uvp": "Launch scheduling is dictated entirely by real-time thermal readings rather than a fixed flight roster, meaning tandem pilots only fly when conditions are genuinely safe and scenic. This is a discipline some volume-driven paragliding operators compromise on.",
+    "services": [
+      "Tandem paragliding flight",
+      "Thermal-timed launch scheduling",
+      "Valley farmland aerial view",
+      "Shuttle return to ridge"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 128,
+    "description": "A downtown escape-the-ordinary spa occupies the basement level of a mixed-use tower, offering hammam-style steam treatments alongside a modern juice bar and rooftop pool one floor above. Memberships cater mostly to local professionals seeking a lunchtime reset. Day passes are sold to visitors staying nearby.",
+    "uvp": "Combining a traditional hammam steam ritual with a rooftop pool and juice bar under one membership gives time-pressed urban professionals a full wellness circuit within a single lunch break. This is a convenience standalone spas across town don't offer.",
+    "services": [
+      "Hammam steam treatment",
+      "Rooftop pool access",
+      "Juice bar service",
+      "Lunchtime membership pass"
+    ],
+    "labels": [
+      "Urban & City",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 129,
+    "description": "A dedicated e-commerce fulfillment warehouse packs and ships consumer orders for several online retailers, running conveyor-sorted picking lines and a same-day courier dispatch desk. The facility operates around the clock during peak shopping seasons. It has no retail front and is not open to the public.",
+    "uvp": "Its conveyor-sorted picking system processes orders significantly faster than manual-pick warehouses used by smaller competitors. This lets client retailers offer same-day shipping guarantees they couldn't otherwise promise.",
+    "services": [
+      "Conveyor-sorted order picking",
+      "Same-day courier dispatch",
+      "Peak-season warehouse operation",
+      "Multi-retailer fulfillment contracting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 130,
+    "description": "A cliffside via ferrata route bolts iron rungs and cable handholds directly into a limestone face above a fjord, letting climbers without technical rope skills ascend a genuinely exposed vertical route clipped to a continuous safety line. The final section crosses a suspended cable bridge before reaching a summit platform. From there, the full sweep of the fjord opens out below.",
+    "uvp": "The continuous clip-in cable system lets climbers without rock-climbing training safely attempt a route with real exposure. It opens genuine vertical adventure to visitors that unassisted rock climbing would otherwise exclude entirely.",
+    "services": [
+      "Via ferrata cliffside ascent",
+      "Suspended cable bridge crossing",
+      "Continuous safety-line climbing",
+      "Summit fjord viewing"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 131,
+    "description": "A converted double-decker bus operates as a rolling dinner theater, driving a fixed loop past the city's illuminated landmarks. A three-course meal is served and a small cast performs a mystery-dinner script timed to the route. Seating is limited to twenty-eight guests per departure.",
+    "uvp": "The mystery script is written and re-blocked around this specific route's landmark timing, something a static dinner-theater venue elsewhere can't replicate. This turns the drive itself into a structural part of the performance rather than incidental transport.",
+    "services": [
+      "Rolling dinner theater ride",
+      "Three-course served meal",
+      "Landmark night tour route",
+      "Mystery-dinner cast performance"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 132,
+    "description": "A regional office supply distributor delivers paper goods, printer equipment, and furniture to corporate clients across the province, including several hotel back-office accounts. Orders are placed through an account portal and fulfilled from a central warehouse. The distributor has no showroom open to walk-in customers.",
+    "uvp": "Its bulk-account pricing tiers automatically adjust as client order volume grows. This is a scaling discount structure smaller regional office suppliers without automated account systems can't match.",
+    "services": [
+      "Corporate office supply delivery",
+      "Bulk account pricing",
+      "Hotel back-office fulfillment",
+      "Central warehouse dispatch"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 133,
+    "description": "A converted lightship, once anchored offshore to warn passing vessels of a shoal, now sits permanently moored at the harbor promenade as a museum ship, its rotating beacon still operational for demonstration. Visitors climb into the cramped crew quarters below deck. Hear recorded accounts from former lightship keepers.",
+    "uvp": "The beacon mechanism remains fully operational and is lit for scheduled demonstrations rather than left as a static prop. This gives visitors a rare chance to see century-old maritime warning technology actually function.",
+    "services": [
+      "Below-deck crew quarters tour",
+      "Operational beacon demonstration",
+      "Recorded keeper account listening",
+      "Harbor promenade museum ship visit"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 134,
+    "description": "A sprawling indoor trampoline park occupies a converted warehouse, its interconnected pits, dodgeball courts, and foam-pit jump platforms drawing weekend birthday parties and after-school groups. Staff monitor jump zones from elevated stations, and a snack counter runs along one wall. The facility is entirely indoor and climate-controlled.",
+    "uvp": "The park's interconnected court layout lets groups move seamlessly between dodgeball, foam pits, and open jump zones without separate ticketing for each area. This is a flow most segmented trampoline parks in the region don't design for.",
+    "services": [
+      "Trampoline court jumping",
+      "Foam-pit dodgeball session",
+      "Birthday party hosting",
+      "Elevated safety monitoring"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 135,
+    "description": "A remote highland tea estate spreads across terraced slopes shrouded in morning mist. Pickers still hand-select leaves before processing them in a small on-site factory open for public tours. Guests can walk the terraces at dawn alongside the picking crews before a tasting session in the estate's colonial-era planter's bungalow.",
+    "uvp": "Because picking and processing both happen on the same visible property, the tasting session traces every cup back to terraces guests just walked. This is a transparency estates that ship leaves off-site for processing elsewhere cannot offer.",
+    "services": [
+      "Dawn tea terrace walk",
+      "Hand-picking crew observation",
+      "On-site factory tour",
+      "Planter's bungalow tasting session"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 136,
+    "description": "A converted missile silo decommissioned decades ago now operates as an underground boutique hotel, its blast doors preserved at the entrance. Guest suites are built into the original launch control levels far below the surface. A single elevator provides the only access, and thick concrete walls keep the interior silent and cool year-round.",
+    "uvp": "Sleeping inside an actual decommissioned launch facility, with original blast doors and control panels left in place rather than replicated, gives the property a specificity no themed underground hotel built from scratch elsewhere can claim. Guests tour the control levels as part of the stay, not as a separate paid add-on.",
+    "services": [
+      "Underground silo suite stay",
+      "Blast door entrance tour",
+      "Launch control level exploration",
+      "Single-elevator access experience"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 137,
+    "description": "A commercial printing press produces regional newspapers and magazine runs overnight on a rotary press line, with a small editorial floor upstairs. Delivery trucks load bundled papers before dawn for distribution across the province. The facility has no public tours or visitor program of any kind.",
+    "uvp": "Its rotary press throughput handles the province's largest circulation newspaper alongside several smaller regional titles on shared overnight runs. This is a capacity utilization that keeps per-unit printing costs lower than dedicated single-title presses.",
+    "services": [
+      "Overnight newspaper press run",
+      "Magazine printing production",
+      "Pre-dawn bundled distribution",
+      "Multi-title press scheduling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 138,
+    "description": "A converted double-hulled canoe replica sails guests along a traditional wayfinding route once used by ancestral navigators, using only stars, swells, and wind for navigation with no modern instruments aboard. Crew members undergo years of oral-tradition training before captaining a voyage. Trips run several hours along the coast.",
+    "uvp": "Navigation is genuinely non-instrumented, relying entirely on the crew's oral-tradition training in stars and swell reading, a practice actively preserved here rather than performed as staged reenactment for cameras. This distinguishes it from novelty canoe tours elsewhere.",
+    "services": [
+      "Traditional wayfinding voyage",
+      "Star and swell navigation demonstration",
+      "Ancestral canoe sailing",
+      "Oral-tradition crew briefing"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 139,
+    "description": "A vertical farm and event space occupies a converted parking structure downtown, growing leafy greens under LED racks on the upper levels. The ground floor hosts a rotating series of pop-up dinners and rooftop yoga sessions. Produce from the racks supplies the dinner series directly, and the structure's original ramp remains visible throughout.",
+    "uvp": "Growing the produce for its own pop-up dinner series inside the same building removes the supply chain entirely. This is a closed loop that gives the dinner series a sourcing claim few downtown pop-up dining concepts can substantiate as literally.",
+    "services": [
+      "Vertical farm tour",
+      "Pop-up dinner series",
+      "Rooftop yoga session",
+      "LED-grown produce tasting"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 140,
+    "description": "A coastal amusement pier extends far over the water, lined with a small rollercoaster, arcade games. A Ferris wheel positioned at the very end so riders hang directly above the surf at the top of each rotation. Fried food stalls line the boardwalk approach, and the pier lights up in neon each evening as the sun sets over the water.",
+    "uvp": "The Ferris wheel's position at the pier's furthest point puts riders directly over open water at the peak of the rotation. This is a vantage most coastal amusement piers with centrally placed wheels can't replicate.",
+    "services": [
+      "Over-water Ferris wheel ride",
+      "Boardwalk rollercoaster circuit",
+      "Pier arcade games",
+      "Sunset neon pier walk"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 141,
+    "description": "A regional veterinary hospital network provides surgical and emergency care for livestock and companion animals, running mobile units that visit rural farms alongside a fixed clinic in town. Staff coordinate scheduling through a central dispatch line. The network's work is entirely animal healthcare with no visitor-facing function.",
+    "uvp": "Its mobile livestock units reach farms across the province within hours of an emergency call. This is a rural response speed fixed-clinic-only veterinary practices elsewhere in the region can't match.",
+    "services": [
+      "Mobile livestock veterinary care",
+      "Companion animal surgery",
+      "Rural farm dispatch response",
+      "Fixed clinic emergency service"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 142,
+    "description": "A converted watermill beside a forest stream now operates as a countryside restaurant, its original waterwheel still turning. Driving a millstone visible through the dining room's glass floor panel. The menu leans on stream-caught trout and stone-ground flour from the same mill mechanism guests watch turn while they eat.",
+    "uvp": "The dining room's glass floor panel lets guests watch the same mechanism grinding their bread's flour while they eat. This is a literal farm-to-table connection few countryside restaurants using decorative or non-functional mill features can claim.",
+    "services": [
+      "Waterwheel-view dining",
+      "Stream-caught trout tasting",
+      "Stone-ground flour bread",
+      "Glass-floor millstone viewing"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 143,
+    "description": "A cluster of restored shepherd huts on a windswept moorland plateau offers minimalist overnight stays with no electricity, guests relying on oil lamps. A wood-fired stove for heat while wild ponies graze visible from the hut windows. A marked trail network departs directly from the huts into the surrounding moor.",
+    "uvp": "Deliberately withholding electricity keeps the stay close to how shepherds actually lived on this exposed plateau for centuries. This is an unplugged authenticity glamping operations that add modern amenities to rustic-styled huts elsewhere don't commit to.",
+    "services": [
+      "Off-grid shepherd hut stay",
+      "Oil lamp and wood-stove heating",
+      "Moorland trail access",
+      "Wild pony grazing viewing"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 144,
+    "description": "A downtown co-working and events venue rents desk space to remote workers by the day while its ground-floor auditorium hosts touring stand-up comedians and local open-mic nights. A rooftop terrace bar opens after work hours for members and ticket holders alike. The building caters to a mixed crowd of freelancers and nightlife visitors.",
+    "uvp": "Running co-working desks and a comedy venue in the same building lets freelance members transition directly from a workday to an evening show without leaving the block. This is a dual-use model most single-purpose venues downtown don't attempt.",
+    "services": [
+      "Day-pass co-working desk",
+      "Touring stand-up comedy show",
+      "Open-mic night hosting",
+      "Rooftop terrace bar access"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 145,
+    "description": "A remote canyon lodge sits at the mouth of a slot canyon known for shifting light patterns at midday, when sun beams cut through narrow gaps to illuminate the sandstone walls in shifting color. Guided walks time entry precisely to that midday window. The lodge's simple rooms overlook the canyon rim for sunrise and sunset viewing.",
+    "uvp": "Guided entries are scheduled to the exact midday window when light beams reach the canyon floor. This is a precision self-guided visitors relying on general opening hours regularly miss, making the guided timing itself the core value proposition.",
+    "services": [
+      "Midday light-beam canyon walk",
+      "Canyon rim lodge stay",
+      "Sunrise and sunset rim viewing",
+      "Timed slot-canyon guiding"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 146,
+    "description": "A converted colonial customs pier now anchors a promenade of souvenir shops and a small maritime history plaque trail. A row of food carts sells grilled skewers to visitors strolling along the harbor at sunset. Fishing boats still dock at the pier's far end, sharing the space with tourists.",
+    "uvp": "Because working fishing boats still dock alongside the tourist promenade rather than being relocated to a separate commercial pier, the sunset stroll passes real daily maritime activity instead of a purely decorative harbor front. Vendors along the plaque trail are drawn from the same fishing families working the pier.",
+    "services": [
+      "Harbor promenade sunset stroll",
+      "Maritime history plaque trail",
+      "Grilled skewer food cart tasting",
+      "Working fishing pier viewing"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy",
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 147,
+    "description": "A regional agricultural equipment dealership sells and services tractors, irrigation systems, and harvesting machinery to farms across the province, running a parts warehouse and a repair bay staffed by certified technicians. Sales reps visit client farms directly. The dealership has no destination appeal to travelers.",
+    "uvp": "Its mobile repair units reach breakdown sites within hours during harvest season. This is a response time competing dealerships without dedicated field service crews can't guarantee when farmers most need equipment running.",
+    "services": [
+      "Farm equipment sales",
+      "Mobile repair dispatch",
+      "Irrigation system servicing",
+      "Certified parts warehouse support"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 148,
+    "description": "A hillside amphitheater carved into a natural rock bowl hosts summer concerts under open sky, its stone seating original to a centuries-old design still used for its acoustic properties rather than any modern amplification trick. A small museum at the entrance explains the site's acoustic engineering. Touring orchestras and local folk ensembles both perform here.",
+    "uvp": "The bowl's acoustics rely on its original stone geometry rather than modern speaker arrays, meaning even the back rows hear the unamplified stage clearly. This is an engineering feat the entrance museum documents in detail for visitors curious about the physics.",
+    "services": [
+      "Open-air amphitheater concert",
+      "Acoustic engineering exhibit",
+      "Stone seating tour",
+      "Folk ensemble performance"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 149,
+    "description": "A remote cloud-forest lodge sits above the treeline where mist rolls through moss-draped branches most mornings. Guided pre-dawn walks track rare bird species along a network of raised boardwalk trails. Rooms are simple timber cabins without air conditioning, relying on the altitude's natural chill, and a shared dining hall serves meals grown in the lodge's own garden.",
+    "uvp": "Boardwalk trails were engineered specifically to keep foot traffic off the fragile forest floor. This is a conservation-first design that has kept the cloud forest's rare bird populations measurably more stable than at less carefully managed birding lodges nearby.",
+    "services": [
+      "Pre-dawn birding walk",
+      "Raised boardwalk trail access",
+      "Timber cabin lodging",
+      "Garden-grown communal dining"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 150,
+    "description": "A converted power station on the riverfront now houses a contemporary art museum, its original turbine hall left largely intact as the main exhibition space for large-scale installations. Smaller galleries occupy former control rooms upstairs,. A glass-walled café overlooks the river where cooling water once discharged.",
+    "uvp": "The scale of the preserved turbine hall lets the museum host installation art too large for conventional gallery ceilings. This is a physical advantage purpose-built museums without repurposed industrial architecture simply don't have.",
+    "services": [
+      "Turbine hall installation viewing",
+      "Former control room gallery tour",
+      "Riverfront café dining",
+      "Contemporary art exhibition access"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  }
+]
