@@ -1,18 +1,100 @@
-name: E2E (Playwright, full stack)
+name: E2E (Playwright, full stack, per-screen)
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Full, unfiltered run every night — the path-filtered PR checks below are
+    # a fast-feedback convenience, not a substitute for this safety net.
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
 
 jobs:
-  e2e:
+  # Determines which screens' spec files actually need to run for a given PR.
+  # Every leg of the `e2e` matrix below still always runs on push/schedule/
+  # workflow_dispatch — this job's output only narrows what runs on
+  # pull_request events. See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
+  # ("Testing strategy") for the reasoning.
+  changes:
     runs-on: ubuntu-latest
-    # fastapi-sbert downloads a ~1.1GB HuggingFace model on cold start with no
-    # persistent cache in CI, and docker-compose gates spring-boot on its
-    # health check — this job can take 10+ minutes. Free on this public repo,
-    # but worth knowing before you tune the timeout below.
+    outputs:
+      changes: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: none
+          filters: |
+            foundation:
+              - 'ceview/styles/**'
+              - 'ceview/layout/**'
+              - 'ceview/services/**'
+              - 'ceview/App.tsx'
+              - 'ceview/types.ts'
+              - 'e2e/tests/login.spec.ts'
+              - 'backend/**'
+            login:
+              - 'ceview/components/auth/**'
+              - 'e2e/tests/login.spec.ts'
+            onboarding-wizard:
+              - 'ceview/components/module-1/onboarding/**'
+              - 'e2e/tests/onboarding-wizard.spec.ts'
+            settings-business-profile:
+              - 'ceview/components/module-1/settings/**'
+              - 'e2e/tests/settings-business-profile.spec.ts'
+            dashboard:
+              - 'ceview/components/module-2/2.1-dashboard/**'
+              - 'e2e/tests/dashboard.spec.ts'
+            market-radar-drawer:
+              - 'ceview/components/module-2/2.2-market-radar/**'
+              - 'e2e/tests/market-radar-drawer.spec.ts'
+            content-studio:
+              - 'ceview/components/module-3/3.1-content-studio/**'
+              - 'e2e/tests/content-studio.spec.ts'
+            calendar:
+              - 'ceview/components/module-3/calendar/**'
+              - 'e2e/tests/calendar.spec.ts'
+            settings-platforms:
+              - 'ceview/components/module-3/settings/**'
+              - 'e2e/tests/settings-platforms.spec.ts'
+            settings-workspace:
+              - 'ceview/components/shared/settings/**'
+              - 'e2e/tests/settings-workspace.spec.ts'
+            performance:
+              - 'ceview/components/module-4/4.1-campaign-analytics/**'
+              - 'e2e/tests/performance.spec.ts'
+
+  e2e:
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        screen:
+          - login
+          - onboarding-wizard
+          - settings-business-profile
+          - dashboard
+          - market-radar-drawer
+          - content-studio
+          - calendar
+          - settings-platforms
+          - settings-workspace
+          - performance
+    # Runs unconditionally on push/schedule/workflow_dispatch (full safety-net
+    # run). On pull_request, only runs when this screen's own paths changed or
+    # a `foundation` path changed (shared infra can break any screen).
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(fromJSON(needs.changes.outputs.changes), matrix.screen) ||
+      contains(fromJSON(needs.changes.outputs.changes), 'foundation')
+    runs-on: ubuntu-latest
+    name: e2e-screen (${{ matrix.screen }})
+    # See the original workflow's note: fastapi-sbert's cold-start HF model
+    # download + docker-compose health-check gating can take 10+ minutes even
+    # for a single screen's spec file, since the whole stack still has to boot.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +117,8 @@ jobs:
           # Repo secret — see docs/DEPLOY_RENDER.md and the repo README for
           # setup notes. fastapi-transformer hard-fails at startup without a
           # real key; a placeholder is enough to boot but forecasting calls
-          # that actually reach Groq will fail, which the smoke test doesn't
-          # exercise.
+          # that actually reach Groq will fail, which most screen specs don't
+          # exercise directly.
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: docker compose up -d --build
@@ -85,15 +167,15 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests for this screen
         working-directory: e2e
-        run: npx playwright test
+        run: npx playwright test tests/${{ matrix.screen }}.spec.ts
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.screen }}
           path: e2e/playwright-report/
           retention-days: 7
 

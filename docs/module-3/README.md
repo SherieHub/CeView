@@ -1,63 +1,58 @@
 # Module 3 — Content Studio
 
-Content Studio is a sequential, **two-transaction** pipeline that generates and then visually directs market-localized social media content for Cebu tourism businesses. Transaction 3.1 must be approved before 3.2 can run.
+Generates market-localized social captions and visual direction, gates them behind a compliance
+audit, and publishes them to the operator's connected platforms.
 
-## Sequential Dependency
+## Screens
 
-| Step | Submodule | Transaction | Approval Gate |
-|------|-----------|-------------|---------------|
-| 1 | [3.1 Market-Localized Promotional Content Generation](3.1-content-generation/README.md) | Generate 3-platform × 3-archetype captions via LangGraph | `approval_status = true` on localized content |
-| 2 | [3.2 Creative Direction and Visual Recommendation Generation](3.2-creative-direction/README.md) | Generate visual shot list, moodboard, palette, and platform recommendations via Groq | `approval_status = true` on creative direction |
+| Screen | Route | Doc |
+|---|---|---|
+| Content Studio | `/content` | [`screens/content-studio.md`](screens/content-studio.md) |
+| Calendar | `/calendar` | [`screens/calendar.md`](screens/calendar.md) |
+| Settings → Platforms | `/settings/platforms` | [`screens/settings-platforms.md`](screens/settings-platforms.md) |
 
-## Technology Stack
+One screen (Content Studio) now surfaces what used to be three separate transactions — 3.1 content
+generation, 3.2 creative direction, 3.3 compliance — as one page's caption matrix, visual direction
+board, and compliance panel respectively. The transactions themselves, and their backend pipelines,
+are unchanged.
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + TypeScript (Vite) — `ContentStudioView.tsx` |
-| Backend API | Spring Boot 3 / Java 21 |
-| AI Agent (3.1) | LangGraph + Groq `llama-3.3-70b-versatile` (2-node StateGraph) |
-| Visual Direction (3.2) | Groq via OpenAI-compatible client (`gemini_client.py`) |
-| Internal Bridge | FastAPI (`fastapi-sbert`, port 8000) — same container as Module 1 |
-| Database | PostgreSQL 16 |
+## Backend
+
+| Component | Doc |
+|---|---|
+| `PlatformConnectionController` (specified, not implemented) | [`backend/PlatformConnectionController.md`](backend/PlatformConnectionController.md) |
+| `PublishingController` (specified, not implemented) | [`backend/PublishingController.md`](backend/PublishingController.md) |
+| Schema delta (`tbl_platform_connection`, `tbl_social_post`) | [`backend/schema-delta.md`](backend/schema-delta.md) |
+
+Existing, unchanged backend for content generation (3.1), creative direction (3.2), and compliance
+(3.3) — `ContentController`, `CreativeDirectionController`, `ComplianceController`, the LangGraph
+caption agent, Groq visual direction, and the OMCS audit pipeline — is documented in full in
+[`MODULE3_SYSTEM_DOCUMENTATION.md`](MODULE3_SYSTEM_DOCUMENTATION.md) and the transaction subfolders
+below.
+
+| Submodule | Endpoint | Scope |
+|---|---|---|
+| [`3.1-content-generation/`](3.1-content-generation/) | `POST /api/v1/content/generate` | LangGraph caption generation |
+| [`3.2-creative-direction/`](3.2-creative-direction/) | `POST /api/v1/creative-direction/generate/{profileId}` | Groq visual direction |
+| [`3.3-compliance/`](3.3-compliance/) | `POST /api/v1/compliance/evaluate` | OMCS audit |
 
 ## Diagrams
 
-Module-level PlantUML diagrams covering both transactions end-to-end:
+[`class.puml`](class.puml) · [`sequence.puml`](sequence.puml) · [`er.puml`](er.puml) — module-level,
+covering all three transactions. Per-submodule diagrams live inside each transaction folder above.
 
-| Diagram | File | Scope |
-|---------|------|-------|
-| Class | [class.puml](class.puml) | Frontend, Spring Boot, and FastAPI components across 3.1 + 3.2 |
-| Sequence | [sequence.puml](sequence.puml) | Full pipeline: 3.1 generate → approve → 3.2 generate → approve |
-| Entity-Relationship | [er.puml](er.puml) | All Module 3 tables and their relationships |
+## Changed in the UI/UX overhaul
 
-Per-submodule diagrams live in each submodule folder (`class.puml`, `sequence.puml`, `er.puml`).
+Source of truth: [`ui-ux-prototype.html`](../../ui-ux-prototype.html). Full rationale and card-by-card
+build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md)
+(Content Studio, Calendar, Platforms, Workspace cards: [`04-module-3.md`](../superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md)).
 
-## REST Endpoints — Spring Boot
-
-| Submodule | Method | Path | Description |
-|-----------|--------|------|-------------|
-| 3.1 | POST | `/api/v1/content/generate` | Generate captions via LangGraph agent |
-| 3.1 | POST | `/api/v1/content/approve` | Approve generated content (unlocks 3.2) |
-| 3.2 | POST | `/api/v1/creative-direction/generate/{profileId}` | Generate visual direction (requires 3.1 approval) |
-| 3.2 | POST | `/api/v1/creative-direction/approve/{profileId}` | Approve creative direction output |
-
-## FastAPI Internal Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/internal/generation/caption` | LangGraph 2-node caption generation agent (live path) |
-| POST | `/internal/content/generate` | Alternate caption endpoint (not used by the current Spring path) |
-| POST | `/internal/creative/generate` | Groq visual direction generation |
-
-## Database Tables
-
-| Table | Submodule | Purpose |
-|-------|-----------|---------|
-| `tbl_localized_promotional_content` | 3.1 | Generated captions — 4 rows per generation call (instagram / tiktok / facebook / naver) |
-| `tbl_content_generation_log` | 3.1 | Audit trail for each generation attempt |
-| `tbl_creative_direction_output` | 3.2 | Visual direction output — 1 row per profile + market |
-| `tbl_creative_direction_log` | 3.2 | Audit trail for each creative direction attempt |
-
-Schema migration: `V5__module3_content_creative_columns.sql`.
-
-See [`MODULE3_SYSTEM_DOCUMENTATION.md`](MODULE3_SYSTEM_DOCUMENTATION.md) for the complete system reference.
+- `ContentStudioView.tsx` now also owns publish gating (connected-platform check), a content board
+  (draft/published list), and the publish action itself — previously out of scope for this screen.
+- The prototype ships two Content Studio designs; **v1 (`screen-content`) is canonical**. Its
+  per-platform-shared-caption approach is kept, with one deviation ported from the alternate design:
+  the publish-to picker is gated on platform connection state. See
+  [`screens/content-studio.md`](screens/content-studio.md) for the full rationale.
+- Two screens are entirely new: [Calendar](screens/calendar.md) and
+  [Settings → Platforms](screens/settings-platforms.md). Both need backend that doesn't exist yet —
+  see [`backend/schema-delta.md`](backend/schema-delta.md).

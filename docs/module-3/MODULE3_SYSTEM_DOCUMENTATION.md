@@ -17,7 +17,24 @@ All diagrams are PlantUML (`.puml`), font size 12, portrait layout — render wi
 
 ## User Flows & Interaction (The Frontend)
 
-Module 3 is the **Content Studio** — a single-view, sequential workflow that takes a business profile and a target market and produces (1) culturally localised promotional captions for four social platforms and (2) AI-generated visual direction and shot lists. The entire module lives inside `ceview/components/module-3/3.1-content-studio/ContentStudioView.tsx` and is reached by navigating to the `'content'` tab from the Market Radar "Plan Content" CTA or directly from the sidebar.
+Module 3 is the **Content Studio** — a single-view, sequential workflow that takes a business profile
+and a target market and produces (1) culturally localised promotional captions for four social
+platforms and (2) AI-generated visual direction and shot lists. The entire module lives inside
+`ceview/components/module-3/3.1-content-studio/ContentStudioView.tsx` and is reached by navigating to
+`/content` from the Market Radar drawer's "Target this market" CTA or directly from the sidebar.
+
+As of the UI/UX overhaul, this same screen also owns publish gating, a content board, and the publish
+action itself, and two new screens (Calendar, Settings → Platforms) join it under Module 3. Full
+current screen-level detail lives in:
+
+- [`screens/content-studio.md`](screens/content-studio.md)
+- [`screens/calendar.md`](screens/calendar.md)
+- [`screens/settings-platforms.md`](screens/settings-platforms.md)
+
+The four sub-flows below describe the generation, creative-direction, and compliance-audit pipelines
+that back the Content Studio screen — unchanged by the overhaul except that Sub-Flow A's tab set now
+explicitly includes Naver's two-option branch (documented in point 10, still current) and captions are
+approved per-platform independently, matching [content-studio.md](screens/content-studio.md).
 
 ---
 

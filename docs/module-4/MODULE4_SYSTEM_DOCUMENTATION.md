@@ -4,7 +4,11 @@
 
 ## User Flows & Interaction (The Frontend)
 
-Module 4 is the **Campaign Analytics & Reporting** module. It accepts raw campaign data directly from the operator, computes five marketing KPIs, runs the Promotional Effectiveness Score (PES) formula, and generates an AI prescriptive report diagnosing every funnel bottleneck with urgency-ranked, 1-to-1 recommendations. The entire module lives in `ceview/components/module-4/4.1-campaign-analytics/CampaignAnalyticsView.tsx` and is reached via the `'reports'` sidebar tab.
+Module 4 is the **Campaign Analytics & Reporting** module. It accepts raw campaign data directly from the operator, computes five marketing KPIs, runs the Promotional Effectiveness Score (PES) formula, and generates an AI prescriptive report diagnosing every funnel bottleneck with urgency-ranked, 1-to-1 recommendations. The entire module lives in `ceview/components/module-4/4.1-campaign-analytics/CampaignAnalyticsView.tsx` and is reached via `/performance` in the sidebar.
+
+As of the UI/UX overhaul this screen also gains a "Previously published" post list with per-post
+analytics — see [`screens/performance.md`](screens/performance.md) for full current detail. The two
+sub-flows below (ingestion form entry state, dashboard) are unchanged by the overhaul.
 
 The view has two exclusive states managed by `dashboardActive` boolean:
 

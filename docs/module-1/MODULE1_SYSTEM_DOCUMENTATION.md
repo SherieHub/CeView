@@ -4,65 +4,18 @@
 
 ## User Flows & Interaction (The Frontend)
 
-Module 1 exposes two navigable sub-modules rendered in `ceview/App.tsx` under the `'profile'` and `'uniqueness'` sidebar tabs. Global profile state (`ProfileData`) is owned at the `App` root and passed down as props, enabling both sub-modules to share the same canonical data object.
+As of the UI/UX overhaul, Module 1's frontend flow is a first-run **Onboarding Wizard**
+(`/onboarding`, five gated steps ending in this module's analyze → uniqueness round-trip) followed by
+a permanent **Settings → Business Profile** edit surface. Full screen-level detail — layout, state
+shape, validation gates, and API call sequencing — lives in:
 
-**On application load**, `App.tsx` fires `api.loadProfile(OPERATOR_ID)` inside a `useEffect`, hydrating all profile fields from the Spring Boot backend before any module renders.
+- [`screens/onboarding-wizard.md`](screens/onboarding-wizard.md)
+- [`screens/settings-business-profile.md`](screens/settings-business-profile.md)
 
----
-
-### Sub-Flow A — Executive Profile View (Tab: `profile`)
-
-Handled by `ceview/components/module-1/1.1-business-input/BusinessProfile.tsx`.
-
-1. **Landing**: User arrives at the `profile` tab. The component reads `ProfileData` props (`businessName`, `categories`, `coreServices`, `description`, `uvp`, `imagePreview`, `uniquenessScore`) — already hydrated from the load-on-mount API call. If a `uniquenessScore` exists, a gold **"Uniqueness {score}"** badge appears in the header.
-2. **Identity Card Layout**: A read-only three-column card renders:
-   - **Left column (2/3 width)**: Cover image banner + avatar + `businessName` + `description` text + `uvp` text.
-   - **Right column (1/3 width)**: "Operational Domains" (categories as tags) + "Service Topology" (coreServices as items) + "API Social Hub" (platform connection states).
-3. **Edit Modal Trigger**: User clicks **"Edit Identity"** → temp state variables clone all current values (`tempBusinessName`, `tempCategories`, etc.) so edits are non-destructive until saved.
-4. **Within the Edit Modal**:
-   - **Cover Image**: `<input type="file" accept="image/*">` → `FileReader` reads as data URL and previews inline.
-   - **Business Entity Label**: Free text input.
-   - **Domain Classifications**: All 7 `BUSINESS_CATEGORIES` rendered as toggle buttons; user clicks to add/remove from `tempCategories[]`.
-   - **Core Service Offerings**: Tag-based input — user types a service and presses `Enter` or clicks "Add"; services appear as removable chips.
-   - **Marketing Profile Description**: `<textarea>` with live word count. Border transitions **red** when `< 50 words` typed, **green** when `≥ 50 words` met.
-   - **Unique Value Proposition**: Same pattern with `≥ 30 words` threshold.
-5. **Save Gate**: The **"Commit Profile Data"** button is `disabled` until both word-count thresholds pass. A `title` tooltip explains the remaining shortfall.
-6. **Optimistic Save**: On click, `handleSaveProfile()` immediately applies `tempState → setters` (UI updates at once) and flips an `isSaved` flag (green "Saved Successfully" badge for 3 s). Then `api.saveProfile()` fires async — any failures surface via `<ServerErrorBanner>`.
-7. **OAuth Social Hub**: Clicking "Connect" on a platform (Instagram, Facebook, TikTok, Naver) opens an in-app modal simulating OAuth 2.0 (`authStep: 'loading' → 'permission'`). "Grant Scope" toggles `isConnected: true` in local component state. This is **UI scaffolding only** — no real OAuth round-trip occurs in the current implementation.
-
----
-
-### Sub-Flow B — Uniqueness Calibration (Tab: `uniqueness`)
-
-Handled by:
-- `ceview/components/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView.tsx`
-- `ceview/components/module-1/1.1-business-input/components/UniquenessCalibrationForm.tsx`
-- `ceview/components/module-1/1.1-business-input/components/InferredCategoryBoard.tsx`
-- `ceview/components/module-1/1.2-uniqueness-scoring/components/CalibrationResultsDashboard.tsx`
-
-1. **Landing**: The view pre-populates the `payload` state from `profile` props — any previously saved profile data is already present in the form fields.
-2. **Form Validation** (client-side, computed on every render):
-   - Business name is required.
-   - At least one core service must exist.
-   - Description ≥ 50 words (word count shown live, turns red below threshold).
-   - UVP ≥ 30 words (same pattern).
-   - `<ValidationBanner>` lists all active violations inline. The primary action button is `disabled` while any violation remains.
-3. **Step 1 — Analyze**: User clicks **"Analyze Business Profile"** (only enabled when `isFormValid`).
-   - UI enters `isAnalyzing: true` → animated skeleton pulse replaces the category board section.
-   - `handleAnalyzeRequest()` calls `api.classifyAnalyze()` → `POST /api/v1/classification/analyze`.
-   - On success: `categories` state receives all 7 `CategoryAllocation` objects (`name`, `percentage`); `hasAnalyzed` flips `true`.
-   - On failure: `<ServerErrorBanner>` appears with error code and `traceId`.
-4. **Step 2 — Category Selection** (`InferredCategoryBoard`):
-   - All 7 categories display sorted by model-predicted percentage descending.
-   - Each card shows a **percentage bar** reflecting the AI's confidence level.
-   - User toggles categories to a "Selected" bucket. **At least one must remain selected** — the `toggleCategory` function prevents deselecting the last remaining item.
-5. **Step 3 — Compute**: User clicks **"Compute Final Uniqueness Score"** (gold button; enabled only when ≥ 1 category selected).
-   - `isComputing: true` → `CalibrationResultsDashboard` shows pulse animation with the message "Running semantic evaluation against regional MSME vectors..."
-   - `handleComputeRequest()` calls `api.classifyUniqueness()` → `POST /api/v1/classification/uniqueness`.
-   - On success: `CalibrationResultsDashboard` animates in with three score cards: **Overall Score** (large, primary), **Description Semantics Score** (teal), **Category Uniqueness Score** (gold).
-6. **Step 4 — Confirm & Register**: User clicks **"Confirm & Register Profile"**.
-   - `handleConfirmProfile()` calls `api.saveProfile()` → `PUT /api/v1/business-profile`.
-   - On success: **all** `ProfileSetters` in `App.tsx` are updated (synchronising global state), then `onNavigate('profile')` redirects to the Executive Profile tab so the user sees their persisted, scored identity.
+The request lifecycles, algorithms, and API contracts below are unchanged by the overhaul — only the
+screens that call them moved. `BusinessProfile.tsx` and `UniquenessCalibrationView.tsx` (described in
+prior revisions of this document) are retired as standalone routes; their behavior is redistributed
+into the two screens above, and their sub-components are reused unchanged.
 
 ---
 

@@ -29,6 +29,35 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/v1/analytics/report` | AIActionPlanReport "Generate" | `{ executiveSummary, lowestMetric, lowestMetricMeaning, recommendations, otherAreasImprove, weakestStage, secondaryLeaks }` |
 | GET  | `/api/v1/analytics/report/{id}/pdf` | "Download PDF" | application/pdf stream |
 
+## New endpoints — UI/UX overhaul (specified, not yet implemented)
+
+The screens introduced by [`ui-ux-prototype.html`](../ui-ux-prototype.html) need endpoints that don't
+exist above. Full detail — request/response shape, entities, migrations — is in each linked doc; this
+table is the flat index.
+
+| Method | Path | Frontend trigger | Doc |
+|---|---|---|---|
+| GET  | `/api/v1/platform-connections?operatorId=` | Settings → Platforms load; Content Studio publish-gate check | [`docs/module-3/backend/PlatformConnectionController.md`](../docs/module-3/backend/PlatformConnectionController.md) |
+| POST | `/api/v1/platform-connections/{platform}/connect` | Settings → Platforms "Connect" | same |
+| POST | `/api/v1/platform-connections/{platform}/callback` | OAuth redirect callback | same |
+| DELETE | `/api/v1/platform-connections/{platform}` | Settings → Platforms "Disconnect" | same |
+| GET  | `/api/v1/posts?operatorId=&from=&to=` | Calendar load | [`docs/module-3/backend/PublishingController.md`](../docs/module-3/backend/PublishingController.md) |
+| GET  | `/api/v1/posts?operatorId=&status=` | Content Studio content board | same |
+| POST | `/api/v1/posts/publish` | Content Studio "Publish now" | same |
+| GET  | `/api/v1/analytics/posts?operatorId=&platform=` | Performance "Previously published" | [`docs/module-4/backend/post-metrics.md`](../docs/module-4/backend/post-metrics.md) |
+| GET  | `/api/v1/analytics/posts/{postId}` | Post analytics modal | same |
+| GET  | `/api/v1/workspace/members?operatorId=` | Settings → Workspace load | [`docs/shared/workspace.md`](../docs/shared/workspace.md) |
+| POST | `/api/v1/workspace/invites` | Settings → Workspace "Send invite" | same |
+| DELETE | `/api/v1/workspace/members/{id}` | (gap — not in the prototype, needed for a real product) | same |
+
+Also required: `GET /api/v1/forecasting/markets?category=` (or an equivalent per-alert ranking) for
+the Dashboard's category-scoped market reveal — see
+[`docs/module-2/backend/category-scoped-ranking.md`](../docs/module-2/backend/category-scoped-ranking.md).
+
+Until these are implemented, the frontend runs against a fixture layer — see the
+[Fixture Data Layer card](../docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/01-foundation.md#card--foundation-fixture-data-layer)
+in the card-by-card [frontend implementation plan](../docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md).
+
 ## Notes
 
 - **Auth is open in scaffolding**: `SecurityConfig` permits everything under `/api/v1/**` so the existing frontend (which has no login flow yet) can hit endpoints. Lock this down once the React side has an auth screen.

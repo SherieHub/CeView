@@ -4,42 +4,20 @@
 
 ## User Flows & Interaction (The Frontend)
 
-Module 2 is the market intelligence layer. It surfaces ranked demand forecasts, seasonality patterns, and economic signals across three target source markets — South Korea, Japan, and the United States — that send tourists to Cebu. It exposes two navigable views: the **Home** notification feed (`tab: 'home'`) and the **Market Radar** detail view (`tab: 'radar'`).
+Module 2 is the market intelligence layer. It surfaces ranked demand forecasts, seasonality patterns,
+and economic signals across three target source markets — South Korea, Japan, and the United States
+— that send tourists to Cebu.
 
----
+As of the UI/UX overhaul, its two views are the **Dashboard** (route `/dashboard`, replacing
+`HomeView`) and the **Market Radar drawer** (opened from a dashboard rank card, replacing the
+standalone `MarketRadarView` screen). Full screen-level detail — layout, state shape, the five
+dashboard states, and the category-scoped market reveal — lives in:
 
-### Sub-Flow A — Home View (Tab: `home`)
+- [`screens/dashboard.md`](screens/dashboard.md)
+- [`screens/market-radar-drawer.md`](screens/market-radar-drawer.md)
 
-Handled by `ceview/components/module-2/2.1-home/HomeView.tsx`.
-
-1. **Landing**: The component mounts and immediately fires two concurrent requests:
-   - `api.listNotifications(businessProfileId)` → `GET /api/v1/notifications` — loads cached demand-alert cards from the database (always works even if the AI service is down).
-   - `api.listMarkets(businessProfileId)` (fire-and-forget probe) → `GET /api/v1/forecasting/markets` — used only to detect AI service health. If this fails with a `5xx`, a dismissible amber banner appears: "AI Forecast Service Unavailable — alerts below are from your last successful forecast run."
-2. **Loading state**: While notifications load, three `<TrendAlertCardSkeleton>` pulse animations fill the feed.
-3. **Notification feed**: Each `<TrendAlertCard>` shows: date, alert title (e.g., "Rising Trend: Private Beachfront Escapes"), target market, trend keyword, and a "View Market Forecast" CTA. An animated gold dot marks unread alerts.
-4. **Navigation**: Clicking any `TrendAlertCard` replaces the HomeView in-place with `<MarketRadarView initialMarketId={notif.marketId}>`, opening the Market Radar pre-filtered to the alert's market. The back button returns to the notification list.
-5. **Empty state**: If no notifications exist and no error occurred, a neutral message is shown: "No notifications yet. Market trend data will appear here once your profile is analysed."
-
----
-
-### Sub-Flow B — Market Radar (Tab: `radar`)
-
-Handled by `ceview/components/module-2/2.2-market-radar/MarketRadarView.tsx`.
-
-1. **Landing**: On mount, `loadMarkets()` fires `api.listMarkets(businessProfileId)` → `GET /api/v1/forecasting/markets`. This is a **pure DB read** — no AI calls are made — making it fast and reliable. The first market in the response is auto-selected.
-2. **Profile context pill**: If `businessName` and `categories` are set, displays "Profile: {Business Name} — Where Visitors Are Coming From". Otherwise shows a gold "demo profile" warning pill.
-3. **Market Rank Cards**: Three `<MarketRankCard>` components render side-by-side (one per market: South Korea, Japan, USA). Each shows:
-   - Rank badge, market name, city, distance to Cebu.
-   - Direct vs. connecting flight indicator (green/gold).
-   - Market Potential progress bar (`matchScore / 100`).
-   - A `<SurgeBadge>` overlay when any `chartData` point has `spike === 1`.
-4. **Refresh Forecast button**: Only enabled when `businessProfileId` is present. Clicking calls `api.analyzeMarkets(businessProfileId)` → `POST /api/v1/forecasting/analyze/{profileId}`. This triggers the full AI pipeline (ingestion + Groq `llama-3.3-70b-versatile` + XGBoost). The button shows a spinning `<RefreshCw>` icon during the request. Errors are surfaced via `<ServerErrorBanner>` with the structured AI error code.
-5. **Detail panel** (selected market):
-   - `<LiveAlertBanner>`: shows a spike-alert or strategic directive text.
-   - `<StrategicDirectivePanel>`: displays the AI-generated actionable directive + "Plan Content" CTA navigating to Module 3.
-   - Flight metrics row: distance in km, direct vs. via Manila routing.
-   - `<DemandForecastChart>`: the main multi-series chart.
-   - `<EconomicInsightsBoard>`: purchasing power and seasonality panels.
+The chart and insight sub-flows below (C, D) describe components reused unchanged by both the old and
+new screens.
 
 ---
 
