@@ -2,12 +2,12 @@ name: CI - Spring Boot
 
 on:
   push:
-    branches: [main]
+    branches: [main, task_allocation]
     paths:
       - 'backend/spring-boot/**'
       - '.github/workflows/ci-spring-boot.yml'
   pull_request:
-    branches: [main]
+    branches: [main, task_allocation]
     paths:
       - 'backend/spring-boot/**'
       - '.github/workflows/ci-spring-boot.yml'

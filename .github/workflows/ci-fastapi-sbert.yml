@@ -2,12 +2,12 @@ name: CI - fastapi-sbert
 
 on:
   push:
-    branches: [main]
+    branches: [main, task_allocation]
     paths:
       - 'backend/fastapi-sbert/**'
       - '.github/workflows/ci-fastapi-sbert.yml'
   pull_request:
-    branches: [main]
+    branches: [main, task_allocation]
     paths:
       - 'backend/fastapi-sbert/**'
       - '.github/workflows/ci-fastapi-sbert.yml'
