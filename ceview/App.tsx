@@ -1,19 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Menu } from 'lucide-react';
-import Sidebar from './layout/Sidebar';
-import CalendarView from './old-components/CalendarView';
-import { COLORS } from './constants';
-import { api } from './services/apiClient';
-import { useAuth } from './services/auth';
-import AuthGate from './components/auth/AuthGate';
+import React from 'react';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import AuthGate, { RedirectIfAuthenticated } from './components/auth/AuthGate';
+import LoginPage from './components/auth/LoginPage';
+import AppShell from './layout/AppShell';
+import RoutePlaceholder from './layout/RoutePlaceholder';
+import { ProfileProvider, ProfileGate } from './services/profileContext';
 
-import BusinessProfile from './components/module-1/1.1-business-input/BusinessProfile';
-import UniquenessCalibrationView from './components/module-1/1.2-uniqueness-scoring/UniquenessCalibrationView';
-import HomeView from './components/module-2/2.1-home/HomeView';
-import MarketRadarView from './components/module-2/2.2-market-radar/MarketRadarView';
-import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
-import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
-
+/**
+ * Back-compat type-only re-exports. BusinessProfile.tsx and
+ * UniquenessCalibrationView.tsx (both untouched, unused-for-now per this
+ * card's scope boundary — see 01-foundation.md) still import these two
+ * interfaces from './App' for their prop types. The runtime
+ * useState/ProfileSetters prop-drilling block that used to back them is
+ * gone (replaced by services/profileContext.tsx), but the shapes are kept
+ * here, type-only, so those files keep compiling untouched until a later
+ * card redistributes their internals.
+ */
 export interface ProfileData {
   businessProfileId: string | null;
   businessName: string;
@@ -36,137 +38,54 @@ export interface ProfileSetters {
   setUniquenessScore: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
-const App: React.FC = () => {
-  const { isAuthenticated, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>('home');
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+/**
+ * Real routes replacing the old activeTab state switch. Route tree:
+ *   /login                       - public
+ *   (AuthGate: redirects to /login when unauthenticated)
+ *     (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
+ *       /onboarding              - placeholder, no shell (wizard is a later card)
+ *       (AppShell: sidebar + topbar + <Outlet/>)
+ *         /dashboard, /content, /calendar, /performance, /settings/:tab
+ *
+ * Every route element below is an empty screen-shell placeholder per this
+ * card's scope boundary — the existing HomeView/MarketRadarView/etc.
+ * components are intentionally left unwired; later cards redistribute them.
+ */
+const router = createBrowserRouter([
+  { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
+  {
+    element: <AuthGate />,
+    children: [
+      {
+        element: <ProfileGate />,
+        children: [
+          {
+            path: '/onboarding',
+            element: <RoutePlaceholder title="Onboarding" sub="Set up your business profile" />,
+          },
+          {
+            element: <AppShell />,
+            children: [
+              { index: true, element: <Navigate to="/dashboard" replace /> },
+              { path: '/dashboard', element: <RoutePlaceholder navId="dashboard" /> },
+              { path: '/content', element: <RoutePlaceholder navId="content" /> },
+              { path: '/calendar', element: <RoutePlaceholder navId="calendar" /> },
+              { path: '/performance', element: <RoutePlaceholder navId="performance" /> },
+              { path: '/settings', element: <Navigate to="/settings/profile" replace /> },
+              { path: '/settings/:tab', element: <RoutePlaceholder navId="settings" /> },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
+]);
 
-  const [businessProfileId, setBusinessProfileId] = useState<string | null>(null);
-  const [businessName, setBusinessName] = useState<string>('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [coreServices, setCoreServices] = useState<string[]>([]);
-  const [description, setDescription] = useState<string>('');
-  const [uvp, setUvp] = useState<string>('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uniquenessScore, setUniquenessScore] = useState<number | null>(null);
-  const [selectedMarketId, setSelectedMarketId] = useState<string>('');
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    api.loadProfile()
-      .then(dto => {
-        setBusinessProfileId(dto.businessProfileId);
-        setBusinessName(dto.businessName ?? '');
-        setCategories(dto.categories ?? []);
-        setCoreServices(dto.coreServices ?? []);
-        setDescription(dto.description ?? '');
-        setUvp(dto.uvp ?? '');
-        setImagePreview(dto.imagePreview);
-        setUniquenessScore(dto.uniquenessScore);
-      })
-      .catch(err => console.error('loadProfile failed', err));
-  }, [isAuthenticated]);
-
-  const profile: ProfileData = {
-    businessProfileId, businessName, categories, coreServices,
-    description, uvp, imagePreview, uniquenessScore,
-  };
-  const setters: ProfileSetters = {
-    setBusinessProfileId, setBusinessName, setCategories, setCoreServices,
-    setDescription, setUvp, setImagePreview, setUniquenessScore,
-  };
-
-  if (!isAuthenticated) {
-    return <AuthGate />;
-  }
-
-  return (
-    <div className="flex h-screen" style={{ backgroundColor: COLORS.OFF_WHITE }}>
-      {/* Mobile top bar */}
-      <div className="fixed top-0 left-0 right-0 h-14 flex md:hidden items-center px-4 gap-3 z-30 shadow-sm" style={{ backgroundColor: COLORS.NAVY }}>
-        <button
-          onClick={() => setIsMobileOpen(true)}
-          className="text-white/80 hover:text-white transition-colors"
-        >
-          <Menu size={22} />
-        </button>
-        <h1 className="text-xl font-bold text-white tracking-tight">
-          Ce<span style={{ color: COLORS.LIGHT_GOLD }}>View</span>
-        </h1>
-      </div>
-
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isCollapsed={isCollapsed}
-        setIsCollapsed={setIsCollapsed}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-        onLogout={logout}
-      />
-
-      <main
-        className={`flex-1 overflow-y-auto pt-14 md:pt-0 p-4 md:p-8 transition-all duration-300 ${
-          isCollapsed ? 'md:ml-16' : 'md:ml-64'
-        }`}
-      >
-        <div className="max-w-6xl mx-auto">
-
-          {activeTab === 'home' && (
-            <HomeView
-              businessProfileId={businessProfileId}
-              businessName={businessName}
-              categories={categories}
-              onNavigateToContent={() => setActiveTab('content')}
-            />
-          )}
-
-          {activeTab === 'radar' && (
-            <MarketRadarView
-              businessProfileId={businessProfileId}
-              businessName={businessName}
-              categories={categories}
-              onNavigateToContent={(marketId) => {
-                setSelectedMarketId(marketId);
-                setActiveTab('content');
-              }}
-            />
-          )}
-
-          {activeTab === 'content' && (
-            <ContentStudioView
-              key={selectedMarketId}
-              onBack={() => setActiveTab('radar')}
-              businessProfileId={businessProfileId}
-              businessName={businessName}
-              description={description}
-              categories={categories}
-              initialMarketId={selectedMarketId || undefined}
-            />
-          )}
-
-          {activeTab === 'reports' && <CampaignAnalyticsView />}
-
-          {activeTab === 'profile' && (
-            <BusinessProfile profile={profile} setters={setters} />
-          )}
-
-          {activeTab === 'uniqueness' && (
-            <UniquenessCalibrationView
-              profile={profile}
-              setters={setters}
-              onNavigate={(tab) => setActiveTab(tab)}
-            />
-          )}
-
-          {activeTab === 'calendar' && <CalendarView />}
-
-        </div>
-      </main>
-    </div>
-  );
-};
+const App: React.FC = () => (
+  <ProfileProvider>
+    <RouterProvider router={router} />
+  </ProfileProvider>
+);
 
 export default App;

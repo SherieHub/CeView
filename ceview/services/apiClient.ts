@@ -8,9 +8,12 @@ import type {
   Market, Notification, ContentResponseDTO, CreativeDirectionDTO,
   MetricsResponse, PesResponse, PrescriptiveReport, ManualIngestResponse,
   CampaignHistoryResponse, OmcsAuditResultDTO, PesAnalysisReport,
+  SocialPost, SocialPlatformId, PlatformConnection, WorkspaceMember, PostMetric,
 } from '../types';
 
 import { TOKEN_KEY } from './authStorage';
+import { MOCK_POSTS } from './fixtures/posts';
+import { MOCK_MEMBERS } from './fixtures/members';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
@@ -78,6 +81,20 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * True when the frontend should serve fixture data instead of hitting a
+ * (possibly not-yet-implemented) backend endpoint. Vite env vars are always
+ * strings, so this is an explicit string comparison, not a truthiness check.
+ */
+function useFixtures(): boolean {
+  return import.meta.env.VITE_USE_FIXTURES === 'true';
+}
+
+/** Simulated network latency for fixture-mode responses. */
+function delay(ms = 250): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // ── Module 1 ────────────────────────────────────────────────────────────────
 export interface CategoryAllocation { name: string; percentage: number }
 export interface UniquenessResultDTO {
@@ -96,6 +113,19 @@ export interface BusinessProfileDTO {
   uvp: string;
   imagePreview: string | null;
   uniquenessScore: number | null;
+  // ── Onboarding-wizard fields (additive, optional — a fresh or pre-overhaul
+  // profile won't have these yet; later Onboarding cards populate them). ──
+  /** Short tagline shown under the business name. */
+  slogan?: string;
+  /** Free-text industry label distinct from `categories` (which is classification output). */
+  industry?: string;
+  /** Brand-voice / vibe tags picked during onboarding (e.g. "Laid-back", "Luxury"). */
+  vibes?: string[];
+  website?: string;
+  /** Data URL or hosted URL of the uploaded logo; null when none set. */
+  logo?: string | null;
+  /** Social handle/URL per platform, e.g. { instagram: '@sunsetcove', facebook: '...' }. */
+  socials?: Record<string, string>;
 }
 
 export const api = {
@@ -248,4 +278,99 @@ export const api = {
         metricsData ? { weeks, metrics_data: metricsData } : { weeks },
       ),
     }),
+
+  // ── Fixtures / Content Studio & Workspace Infra ────────────────────────────
+  // These endpoints don't have a real backend yet — later cards wire them up.
+  // Until then, VITE_USE_FIXTURES=true routes every method below to the
+  // matching services/fixtures/*.ts module (simulated network delay, no
+  // fetch call); otherwise they fall through to the same req<T>() pattern
+  // as every other module, hitting a plausible REST path under /api/v1.
+
+  /** List this business's social posts (published + draft) for the Posts screen. */
+  listPosts: (): Promise<{ posts: SocialPost[] }> => {
+    if (useFixtures()) {
+      return delay().then(() => ({ posts: MOCK_POSTS }));
+    }
+    return req<{ posts: SocialPost[] }>('/api/v1/posts');
+  },
+
+  /** Create a new post (draft or scheduled/published) for the Content Studio → Posts flow. */
+  createPost: (body: {
+    platform: SocialPlatformId; caption: string; status: 'published' | 'draft';
+  }): Promise<SocialPost> => {
+    if (useFixtures()) {
+      const created: SocialPost = {
+        id: `p-fixture-${Date.now()}`,
+        date: new Date().toISOString().slice(0, 10),
+        platform: body.platform,
+        caption: body.caption,
+        status: body.status,
+        reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0,
+        series: [],
+      };
+      return delay().then(() => created);
+    }
+    return req<SocialPost>('/api/v1/posts', { method: 'POST', body: JSON.stringify(body) });
+  },
+
+  /** List which social platforms are connected for Settings → Platforms. */
+  listPlatformConnections: (): Promise<{ connections: PlatformConnection[] }> => {
+    if (useFixtures()) {
+      const connections: PlatformConnection[] = [
+        { platform: 'instagram', connected: true, accountLabel: '@sunsetcove.ph' },
+        { platform: 'facebook', connected: true, accountLabel: 'Sunset Cove Beach Resort' },
+        { platform: 'tiktok', connected: false },
+        { platform: 'naver', connected: false },
+      ];
+      return delay().then(() => ({ connections }));
+    }
+    return req<{ connections: PlatformConnection[] }>('/api/v1/platform-connections');
+  },
+
+  /** Link a social platform account — Settings → Platforms "Connect". */
+  connectPlatform: (platform: SocialPlatformId, accountLabel?: string): Promise<PlatformConnection> => {
+    if (useFixtures()) {
+      const connection: PlatformConnection = { platform, connected: true, ...(accountLabel ? { accountLabel } : {}) };
+      return delay().then(() => connection);
+    }
+    return req<PlatformConnection>(`/api/v1/platform-connections/${encodeURIComponent(platform)}/connect`, {
+      method: 'POST', body: JSON.stringify({ accountLabel }),
+    });
+  },
+
+  /** Unlink a social platform account — Settings → Platforms "Disconnect". */
+  disconnectPlatform: (platform: SocialPlatformId): Promise<PlatformConnection> => {
+    if (useFixtures()) {
+      return delay().then(() => ({ platform, connected: false }));
+    }
+    return req<PlatformConnection>(`/api/v1/platform-connections/${encodeURIComponent(platform)}/disconnect`, {
+      method: 'POST',
+    });
+  },
+
+  /** List collaborators on this business's workspace — Settings → Team. */
+  listWorkspaceMembers: (): Promise<{ members: WorkspaceMember[] }> => {
+    if (useFixtures()) {
+      return delay().then(() => ({ members: MOCK_MEMBERS }));
+    }
+    return req<{ members: WorkspaceMember[] }>('/api/v1/workspace/members');
+  },
+
+  /** Per-post time-series performance detail for a post-drilldown view. */
+  getPostMetrics: (postId: string): Promise<{ metrics: PostMetric[] }> => {
+    if (useFixtures()) {
+      const post = MOCK_POSTS.find(p => p.id === postId);
+      const metrics: PostMetric[] = post
+        ? post.series.map((v, i) => ({
+            date: `Day ${i + 1}`,
+            reach: v * 400,
+            likes: Math.round(v * 32),
+            comments: Math.round(v * 1.6),
+            shares: Math.round(v * 10),
+          }))
+        : [];
+      return delay().then(() => ({ metrics }));
+    }
+    return req<{ metrics: PostMetric[] }>(`/api/v1/posts/${encodeURIComponent(postId)}/metrics`);
+  },
 };
