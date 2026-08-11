@@ -15,6 +15,8 @@ interface SidebarProps {
  * nav (Intelligence/Create/Measure/Account), a Dashboard unread badge, an
  * expandable Settings item with its 3 sub-tabs, and a footer identity block.
  */
+
+//trigger workflow
 const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
   const location = useLocation();
   const navigate = useNavigate();
