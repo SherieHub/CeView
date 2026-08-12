@@ -1,5 +1,11 @@
 # UI/UX Overhaul — Frontend Implementation Plan (Index)
 
+**Target directory:** `frontend/` — a fresh, greenfield rebuild, not `ceview/`. `ceview/` contains an
+earlier implementation of some of these Foundation cards (styling via hand-rolled CSS custom
+properties instead of Tailwind); it is legacy/reference only and is not touched by this plan set
+going forward. Every path in this file and in `01-foundation.md` … `05-module-4.md` is relative to
+`frontend/` unless stated otherwise.
+
 **Source of truth:** [`ui-ux-prototype.html`](../../../../ui-ux-prototype.html) (single-file
 vanilla-JS prototype, 4,471 lines).
 
@@ -25,23 +31,47 @@ Used identically for every card in every module file:
 
 **Depends on:** <card name(s), or "Foundation — X">
 **Summary:** <one line>
+**Prototype reference:** <screen id> / `<renderFn>()` — `ui-ux-prototype.html:<start>–<end>`
 
-**Steps:**
-- [ ] ...
+**Project files to add/implement:**
+- `<path/NewFile.tsx>` — <one-line purpose>
+
+**Related files:**
+- `<path/ExistingFile.ts>` — <why this card touches/imports/must match it>
+
+**Steps (pseudocode):**
+1. <short, single-purpose step>
+   - <sub-step / branch / edge case, only if needed>
+2. <next step>
 
 **Milestone (finished state):** <one concrete, observable sentence>
 
 **Definition of Done:**
 - [ ] `<Component>.test.tsx` covers <what>
-- [ ] `<screen-name>.spec.ts` → "<describe block>" passes
+- [ ] `<screen-name>.spec.ts` → "<describe block>" — deferred, not wired for `frontend/` yet (see
+      "Testing strategy" below)
 - [ ] Code review approved
 
 **Verification:**
 ```
 npm run test:unit -- <pattern>
-npx playwright test <screen-name>.spec.ts -g "<describe block>"
 ```
 ````
+
+**Field guide:**
+- **Prototype reference** — the prototype's own screen id (`screen-dashboard`, `view-onboarding`,
+  …) and render function (`renderDashboard()`, `obStepBasic()`, …), plus the exact line range in
+  `ui-ux-prototype.html` this card ports. One consistent, greppable anchor per card.
+- **Project files to add/implement** — every new file this card creates, each with a one-line
+  purpose. This is the only place file paths appear with a "what it is" description; `Steps` below
+  is pure behavior, no file paths.
+- **Related files** — existing files (already in the repo, or built by an earlier card) that this
+  card's new code reads, imports, or must stay consistent with (e.g. a shared type, a fixture module,
+  a context this card must re-sync). Not the screen's behavioral-spec doc — that's linked once in
+  this file's header, not repeated per card.
+- **Steps (pseudocode)** — language-agnostic, numbered control-flow/state-change description (not
+  TS/React code) — what happens on mount, on submit, on each branch — short enough to scan in
+  seconds per line.
 
 ## Decisions this plan assumes
 
@@ -67,21 +97,22 @@ work is chunked and verified, not what gets built:
 ## Testing strategy
 
 - **Unit (Vitest):** every card's own component/state-machine logic. Colocated `*.test.tsx`, run via
-  `npm run test:unit -- <pattern>` in `ceview/`.
-- **E2E (Playwright):** one spec file per screen under `e2e/tests/`, each pre-created with a
-  `test.describe` block per sub-screen card. A card's Definition of Done includes un-skipping (and
-  passing) its own block — the file only goes fully green once every card for that screen has landed;
-  a partially-skipped file mid-overhaul is expected, not a failure.
-- **CI:** PRs run only the Playwright specs for screens whose files changed (path-filtered — see
-  `changes` job in `.github/workflows/e2e.yml`), reported as separate named checks
-  (`e2e-screen (dashboard)`, `e2e-screen (content-studio)`, …). A change under a `foundation` path
-  (`ceview/styles/**`, `ceview/layout/**`, `ceview/services/**`, `ceview/App.tsx`) forces every screen
-  to run, since shared infra can break anything. Push to `main` and the nightly `schedule` trigger
-  always run the complete, unfiltered suite regardless of what changed — the fast path is a PR
-  convenience, not a substitute for the full safety net.
-- `.github/workflows/ci-frontend.yml` (Vitest) is unchanged — already scoped to `ceview/**` at the
-  workflow level, and cheap enough (jsdom, no docker-compose) that further splitting isn't worth the
-  matrix overhead.
+  `npm run test:unit -- <pattern>` in `frontend/`.
+- **CI:** `.github/workflows/ci-frontend-v2.yml`, scoped to `frontend/**`, runs `npm run test:unit`,
+  `npm run test:integration`, and `npm run build` on every push/PR to `main`. It is a fresh workflow,
+  not a rename of `.github/workflows/ci-frontend.yml` — that file stays scoped to `ceview/**` and
+  unchanged, since `ceview/` keeps deploying until cutover.
+- **E2E (Playwright):** deferred. `e2e/tests/*.spec.ts` and `.github/workflows/e2e.yml`'s path filters
+  still target `ceview/**` exclusively and are not touched by this plan set — wiring `frontend/` into
+  the e2e suite (new spec files or repointed filters) is a decision for a later plan, once enough
+  screens exist here to be worth the path-filtering rework the original strategy below describes.
+  The original design (kept for reference until that later plan supersedes it): one spec file per
+  screen under `e2e/tests/`, each pre-created with a `test.describe` block per sub-screen card; a
+  card's Definition of Done includes un-skipping (and passing) its own block; PRs run only the specs
+  for screens whose files changed (path-filtered — see the `changes` job in `.github/workflows/
+  e2e.yml`), reported as separate named checks (`e2e-screen (dashboard)`, `e2e-screen
+  (content-studio)`, …); a change under a `foundation` path forces every screen to run; push to `main`
+  and the nightly `schedule` trigger always run the complete, unfiltered suite.
 
 ## Dependency graph
 
@@ -92,9 +123,10 @@ list need Content Studio's publish action).
 
 | # | Card | File | Depends on |
 |---|---|---|---|
-| 1 | Design System | [`01-foundation.md`](01-foundation.md) | — |
+| 0 | Project Scaffold | [`01-foundation.md`](01-foundation.md) | — |
+| 1 | Design System | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
 | 2 | Shell & Routing | [`01-foundation.md`](01-foundation.md) | Design System |
-| 3 | Fixture Data Layer | [`01-foundation.md`](01-foundation.md) | — |
+| 3 | Fixture Data Layer | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
 | 4 | Onboarding — Wizard Shell & Step 1 Basic Info | [`02-module-1.md`](02-module-1.md) | Shell & Routing |
 | 5 | Onboarding — Step 2 Brand Identity | [`02-module-1.md`](02-module-1.md) | Card 4 |
 | 6 | Onboarding — Step 3 Structured Inputs | [`02-module-1.md`](02-module-1.md) | Card 4 |
