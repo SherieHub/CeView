@@ -1,0 +1,12 @@
+flowchart TD
+  Mount(["Mount"]) --> Loading["mode = 'loading':\n3 skeleton cards"]
+  Loading --> FetchResult{"apiClient.notifications\n.list() result?"}
+  FetchResult -->|success, empty list| Empty["mode = 'empty':\n'No notifications yet'"]
+  FetchResult -->|success, non-empty| Normal["mode = 'normal'"]
+  FetchResult -->|failure| AiDown["mode = 'ai-down':\namber banner,\nalerts from cache"]
+  Normal --> VisibleCheck{"visible.length === 0?"}
+  VisibleCheck -->|yes| NoAlerts["Empty state:\nname categories,\npoint at Settings"]
+  VisibleCheck -->|no| FeedOrReveal["Card 10 feed /\nCard 11 reveal"]
+  AiDown --> FeedOrReveal
+  FeedOrReveal -->|"Refresh forecast" click, mode!=ai-down| Refresh["running=true →\nspinner label"]
+  Refresh --> Refreshed(["apiClient.markets.list()\n→ running=false, toast"])

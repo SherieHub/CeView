@@ -1,0 +1,11 @@
+flowchart TD
+  Render(["Step 2 mounted"]) -->|click a vibe chip| ToggleVibe["toggleVibe(vibe):\nadd/remove from draft.vibes"]
+  Render -->|type + Enter in tag input| CheckTag{"value empty or\nalready present?"}
+  CheckTag -->|yes| SkipTag["No-op"]
+  CheckTag -->|no| AddTag["Append to draft.coreServices,\nclear input, refocus"]
+  Render -->|click ✕ on a tag| RemoveTag["Remove from draft.coreServices"]
+  ToggleVibe --> Gate{"vibes.length>=1 AND\ncoreServices.length>=1?"}
+  AddTag --> Gate
+  RemoveTag --> Gate
+  Gate -->|yes| ContinueEnabled(["Continue enabled"])
+  Gate -->|no| ContinueDisabled(["Continue disabled"])

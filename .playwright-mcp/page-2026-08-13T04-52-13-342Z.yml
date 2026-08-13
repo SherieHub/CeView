@@ -1,0 +1,209 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e49]:
+    - complementary [ref=f1e50]:
+      - generic [ref=f1e51]:
+        - generic [ref=f1e52]: Ce
+        - generic [ref=f1e53]:
+          - generic [ref=f1e54]: CeView
+          - text: Market Intelligence
+      - navigation [ref=f1e55]:
+        - generic [ref=f1e209]: Intelligence
+        - button "Dashboard 2" [ref=f1e210] [cursor=pointer]:
+          - generic [ref=f1e216]: Dashboard
+          - generic [ref=f1e217]: "2"
+        - generic [ref=f1e218]: Create
+        - button "Content Studio" [ref=f1e219] [cursor=pointer]
+        - button "Content Studio (2)" [ref=f1e223] [cursor=pointer]
+        - button "Calendar" [ref=f1e229] [cursor=pointer]
+        - generic [ref=f1e233]: Measure
+        - button "Performance" [ref=f1e234] [cursor=pointer]
+        - generic [ref=f1e239]: Account
+        - button "Settings" [ref=f1e240] [cursor=pointer]
+      - generic [ref=f1e95]:
+        - generic [ref=f1e96]: SC
+        - generic [ref=f1e97]:
+          - generic [ref=f1e98]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=f1e99]:
+      - banner [ref=f1e100]:
+        - generic [ref=f1e101]:
+          - generic [ref=f1e102]: Content Studio
+          - text: Draft, audit and publish
+        - generic [ref=f1e103]:
+          - button "Notifications" [ref=f1e104] [cursor=pointer]
+          - button "Search" [ref=f1e109] [cursor=pointer]
+      - generic [ref=f1e253]:
+        - generic [ref=f1e469]:
+          - generic [ref=f1e470]:
+            - heading "Content Studio" [level=2] [ref=f1e471]
+            - paragraph [ref=f1e472]: Localized copy generated for Japan — Coastal & Island, gated by a compliance audit before anything leaves the platform.
+          - generic [ref=f1e473]:
+            - generic [ref=f1e474]: Japan — Osaka
+            - generic [ref=f1e478]: SOR — Stimulus-Organism-Response
+            - button "Change target market" [ref=f1e483] [cursor=pointer]
+        - generic [ref=f1e489]:
+          - generic [ref=f1e490]:
+            - generic [ref=f1e491]:
+              - generic [ref=f1e493]:
+                - heading "AI copywriting matrix" [level=3] [ref=f1e494]
+                - paragraph [ref=f1e495]: Three demographic archetypes per platform · 2,200 character limit
+              - generic [ref=f1e496]:
+                - tab "Instagram" [selected] [ref=f1e497] [cursor=pointer]
+                - tab "TikTok" [ref=f1e501] [cursor=pointer]
+                - tab "Facebook" [ref=f1e506] [cursor=pointer]
+                - tab "Naver Blog" [ref=f1e509] [cursor=pointer]
+              - generic [ref=f1e513]:
+                - generic [ref=f1e514]:
+                  - generic [ref=f1e515]:
+                    - generic [ref=f1e516]: "1"
+                    - generic [ref=f1e517]: Witty, Trend-Conscious & High-Energy Gen Z / Younger Demographic
+                  - textbox "Caption option 1" [ref=f1e518]: "POV: you booked the 호캉스 you kept postponing 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon, zero notifications all day. Your 힐링여행 starts the moment the boat cuts the engine. Link in bio 🔗 #세부여행 #호캉스 #힐링여행 #모알보알 #세부자유여행 #스노클링 #südsee #CebuTravel #IslandLife #SardineRun"
+                  - generic [ref=f1e519]:
+                    - generic [ref=f1e520]: 290 / 2,200
+                    - button "Why this caption" [ref=f1e521] [cursor=pointer]
+                    - button "Approve" [ref=f1e532] [cursor=pointer]
+                - generic [ref=f1e535]:
+                  - generic [ref=f1e536]:
+                    - generic [ref=f1e537]: "2"
+                    - generic [ref=f1e538]: Formal, Educational & Value-Driven Mature Planners / Family
+                  - textbox "Caption option 2" [ref=f1e539]: "Sunset Cove Beach Resort — Moalboal, Cebu. 📍 Direct access to the Moalboal sardine run, a phenomenon visible year-round within 30 metres of our shoreline. 🐢 Certified marine biologist on site; every guided dive is briefed and logged. 📅 Peak Korean season: July–August and December–January. Booking six weeks ahead secures the best rates. We are the only eco-certified resort on this stretch of coast. Details and rates via the link in bio. #세부여행 #모알보알 #다이빙 #에코리조트 #CebuDiving"
+                  - generic [ref=f1e540]:
+                    - generic [ref=f1e541]: 481 / 2,200
+                    - button "Why this caption" [ref=f1e542] [cursor=pointer]
+                    - button "Approve" [ref=f1e553] [cursor=pointer]
+                - generic [ref=f1e556]:
+                  - generic [ref=f1e557]:
+                    - generic [ref=f1e558]: "3"
+                    - generic [ref=f1e559]: Storytelling, Immersive & Emotional Aspirational / Experiential
+                  - textbox "Caption option 3" [ref=f1e560]: "The water goes quiet first. Then the light shifts, and a wall of silver turns beneath you — a million sardines moving as one body, close enough to touch, thirty metres from where you had breakfast. You surface. Nobody says anything for a while. That is the moment people fly to Moalboal for. 힐링은 그렇게 시작됩니다. Sunset Cove — link in bio 🌊 #힐링여행 #세부여행 #모알보알 #사딘런 #OceanHealing"
+                  - generic [ref=f1e561]:
+                    - generic [ref=f1e562]: 377 / 2,200
+                    - button "Why this caption" [ref=f1e563] [cursor=pointer]
+                    - button "Approve" [ref=f1e574] [cursor=pointer]
+            - generic [ref=f1e577]:
+              - generic [ref=f1e578]:
+                - heading "Visual direction" [level=3] [ref=f1e579]
+                - generic [ref=f1e580]: Instagram
+              - generic [ref=f1e584]:
+                - generic [ref=f1e585]:
+                  - generic [ref=f1e586]: "1"
+                  - paragraph [ref=f1e587]: Aesthetic mood shot — open the balcony doors to the sea, shoot from inside looking out so the frame reads as an invitation.
+                - generic [ref=f1e588]:
+                  - generic [ref=f1e589]: "2"
+                  - paragraph [ref=f1e590]: Apply a warm, low-contrast golden filter. Korean feeds skew toward soft, desaturated warmth; avoid heavy saturation.
+                - generic [ref=f1e591]:
+                  - generic [ref=f1e592]: "3"
+                  - paragraph [ref=f1e593]: Use a 4:5 portrait ratio to claim maximum vertical feed real estate.
+                - generic [ref=f1e594]:
+                  - generic [ref=f1e595]: "4"
+                  - paragraph [ref=f1e596]: Include one human element — a hand, a silhouette, a towel left on a chair — so the viewer can project themselves in.
+                - generic [ref=f1e597]:
+                  - generic [ref=f1e598]: "5"
+                  - paragraph [ref=f1e599]: Underwater sardine-run footage is your strongest asset. Lead the carousel with it, not with the room.
+          - generic [ref=f1e600]:
+            - generic [ref=f1e601]:
+              - heading "Publish composer" [level=3] [ref=f1e603]
+              - generic [ref=f1e604]:
+                - generic [ref=f1e605]:
+                  - generic [ref=f1e606]:
+                    - text: Staged caption
+                    - generic [ref=f1e607]: approve an option to stage
+                  - textbox "Staged caption approve an option to stage" [ref=f1e608]:
+                    - /placeholder: Approve a caption on the left, or write your own here.
+                - generic [ref=f1e609]:
+                  - generic [ref=f1e610]:
+                    - text: Pubmat
+                    - generic [ref=f1e611]: PNG, JPG or WEBP · max 20 MB
+                  - generic [ref=f1e612] [cursor=pointer]:
+                    - paragraph [ref=f1e617]: Drop your pubmat here
+                    - paragraph [ref=f1e618]: or click to browse
+                - generic [ref=f1e619]:
+                  - generic [ref=f1e620]: Publish to
+                  - generic [ref=f1e621]:
+                    - button "Instagram" [ref=f1e622] [cursor=pointer]
+                    - button "TikTok" [ref=f1e626] [cursor=pointer]
+                    - button "Facebook" [ref=f1e630] [cursor=pointer]
+                    - button "Naver Blog" [ref=f1e634] [cursor=pointer]
+                - generic [ref=f1e638]:
+                  - generic [ref=f1e639]: Post configuration
+                  - generic [ref=f1e640] [cursor=pointer]:
+                    - generic [ref=f1e641]: Public visibilityAnyone can see this post
+                    - checkbox "Public visibility Anyone can see this post" [checked]
+                  - generic [ref=f1e643] [cursor=pointer]:
+                    - generic [ref=f1e644]: Allow commentsReplies stay open
+                    - checkbox "Allow comments Replies stay open" [checked]
+                  - generic [ref=f1e646] [cursor=pointer]:
+                    - generic [ref=f1e647]: Paid promotionFlag as sponsored content
+                    - checkbox "Paid promotion Flag as sponsored content"
+                - generic [ref=f1e650] [cursor=pointer]:
+                  - checkbox "I confirm this content is accurate, that I hold rights to the pubmat, and I authorise CeView to run a compliance audit and publish on my behalf."
+                  - generic [ref=f1e654]: I confirm this content is accurate, that I hold rights to the pubmat, and I authorise CeView to run a compliance audit and publish on my behalf.
+                - button "Publish now" [disabled] [ref=f1e655]
+                - paragraph [ref=f1e659]: Approve a caption first.
+            - generic [ref=f1e660]:
+              - generic [ref=f1e662]:
+                - heading "Compliance audit" [level=3] [ref=f1e663]
+                - paragraph [ref=f1e664]: OMCS — stateless, nothing is persisted
+              - generic [ref=f1e666]:
+                - heading "Audit not run" [level=3] [ref=f1e670]
+                - paragraph [ref=f1e671]: Stage a caption, upload a pubmat, then tick the agreement below to run the OMCS compliance audit.
+        - generic [ref=f1e672]:
+          - generic [ref=f1e673]:
+            - heading "Content board" [level=3] [ref=f1e674]
+            - generic [ref=f1e675]: 6 items
+          - generic [ref=f1e676]:
+            - tab "All" [selected] [ref=f1e677] [cursor=pointer]
+            - tab "Draft" [ref=f1e678] [cursor=pointer]
+            - tab "Published" [ref=f1e679] [cursor=pointer]
+          - generic [ref=f1e680]:
+            - generic [ref=f1e681]:
+              - generic [ref=f1e682]:
+                - generic [ref=f1e684]: Instagram
+                - generic [ref=f1e685]: published
+                - generic [ref=f1e686]: 2026-08-04
+              - paragraph [ref=f1e687]: "POV: you booked the 호캉스 you kept postponing 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon."
+              - generic [ref=f1e688]:
+                - generic [ref=f1e689]: 31,200
+                - generic [ref=f1e693]: 2,810
+            - generic [ref=f1e696]:
+              - generic [ref=f1e697]:
+                - generic [ref=f1e699]: TikTok
+                - generic [ref=f1e700]: published
+                - generic [ref=f1e701]: 2026-08-02
+              - paragraph [ref=f1e702]: no thoughts. just sardines. 🐟🌊 30m from breakfast, Moalboal
+              - generic [ref=f1e703]:
+                - generic [ref=f1e704]: 45,400
+                - generic [ref=f1e708]: 3,520
+            - generic [ref=f1e711]:
+              - generic [ref=f1e712]:
+                - generic [ref=f1e714]: Facebook
+                - generic [ref=f1e715]: published
+                - generic [ref=f1e716]: 2026-07-30
+              - paragraph [ref=f1e717]: Sunset Cove Beach Resort — Moalboal, Cebu. Direct shoreline access to the sardine run, visible year-round.
+              - generic [ref=f1e718]:
+                - generic [ref=f1e719]: 22,100
+                - generic [ref=f1e723]: 1,510
+            - generic [ref=f1e726]:
+              - generic [ref=f1e727]:
+                - generic [ref=f1e729]: Instagram
+                - generic [ref=f1e730]: published
+                - generic [ref=f1e731]: 2026-07-28
+              - paragraph [ref=f1e732]: The water goes quiet first. Then the light shifts, and a wall of silver turns beneath you.
+              - generic [ref=f1e733]:
+                - generic [ref=f1e734]: 18,600
+                - generic [ref=f1e738]: 1,180
+            - generic [ref=f1e741]:
+              - generic [ref=f1e742]:
+                - generic [ref=f1e744]: Facebook
+                - generic [ref=f1e745]: draft
+                - generic [ref=f1e746]: 2026-08-12
+              - paragraph [ref=f1e747]: Golden Week bundle — flight + stay + guided dive, one price. Draft pending rate confirmation.
+            - generic [ref=f1e748]:
+              - generic [ref=f1e749]:
+                - generic [ref=f1e751]: Naver Blog
+                - generic [ref=f1e752]: draft
+                - generic [ref=f1e753]: 2026-08-18
+              - paragraph [ref=f1e754]: 세부에서 찾은 나만의 힐링 스팟 🌴 모알보알 선셋코브 리조트 후기입니다.
+  - complementary [ref=f1e44]
+  - dialog
+  - button "Prototype" [ref=f1e46] [cursor=pointer]

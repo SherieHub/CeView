@@ -1,0 +1,8 @@
+flowchart TD
+  Render(["PreviouslyPublished mounted"]) -->|filter tab click| Filter["published = posts.filter(\nstatus='published' AND platform match)"]
+  Filter -->|click a published row| Open["openPostId = post.id"]
+  Open --> Modal["PostAnalyticsModal: header,\nstat grid"]
+  Modal --> ReachCheck{"post.reach > 0?"}
+  ReachCheck -->|yes| Chart(["7-day reach-accumulation\narea chart from post.series"])
+  ReachCheck -->|no| Empty(["'No data yet' empty state"])
+  DraftClick(["Click a draft/scheduled post\n(Calendar or Content Board)"]) --> NoModal(["Modal never offered"])

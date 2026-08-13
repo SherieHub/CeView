@@ -1,0 +1,12 @@
+flowchart TD
+  Mount(["Navigate to /onboarding"]) --> ReadDraft["draft ← useObDraft()"]
+  ReadDraft --> Render["Render side rail (5 steps),\nprogress bar, Step 1 panel"]
+  Render -->|business name input| UpdateName["setDraft(...businessName)"]
+  Render -->|industry select| UpdateIndustry["setDraft(...industry)"]
+  Render -->|"Fill with demo business" click| FillDemo["setDraft(...DEMO_BUSINESS)"]
+  UpdateName --> Valid{"businessName.length>1\nAND industry set?"}
+  UpdateIndustry --> Valid
+  FillDemo --> Valid
+  Valid -->|yes| ContinueEnabled["Continue enabled"]
+  Valid -->|no| ContinueDisabled["Continue disabled"]
+  ContinueEnabled -->|click Continue| NextStep(["currentStep → 1\n(Step 2, later card)"])

@@ -14,6 +14,11 @@ vanilla-JS prototype, 4,471 lines).
 matching `screens/*.md` doc for full behavioral detail (state shape, API calls, every empty/loading/
 error state). Cards stay short on purpose; they don't re-derive what's already written there.
 
+**Component diagrams:** [`diagrams/`](diagrams/) — one Mermaid `.mmd` per file below
+(`foundation.mmd`, `module-1.mmd` … `module-4.mmd`) showing that file's components, their
+render/mount tree, and their context/service dependencies. Each module file links its own diagram
+in its header.
+
 ## How to use this with a Kanban tool
 
 Every card in `01-foundation.md` … `05-module-4.md` is a self-contained, copy-paste-ready block:
@@ -39,10 +44,9 @@ Used identically for every card in every module file:
 **Related files:**
 - `<path/ExistingFile.ts>` — <why this card touches/imports/must match it>
 
-**Steps (pseudocode):**
-1. <short, single-purpose step>
-   - <sub-step / branch / edge case, only if needed>
-2. <next step>
+**Flow:** [`diagrams/cards/<module>/<slug>.mmd`](diagrams/cards/<module>/<slug>.mmd)
+
+**Steps (pseudocode):** [`pseudocode/<module>/<slug>.ts`](pseudocode/<module>/<slug>.ts)
 
 **Milestone (finished state):** <one concrete, observable sentence>
 
@@ -69,9 +73,14 @@ npm run test:unit -- <pattern>
   card's new code reads, imports, or must stay consistent with (e.g. a shared type, a fixture module,
   a context this card must re-sync). Not the screen's behavioral-spec doc — that's linked once in
   this file's header, not repeated per card.
-- **Steps (pseudocode)** — language-agnostic, numbered control-flow/state-change description (not
-  TS/React code) — what happens on mount, on submit, on each branch — short enough to scan in
-  seconds per line.
+- **Flow** — a link to `diagrams/cards/<module>/<slug>.mmd`, a `flowchart TD` depicting this card's own control-flow (states, decision branches, gates, terminal actions) — distinct from the module-level `diagrams/<module>.mmd`, which shows component *dependencies*, not logic.
+- **Steps (pseudocode)** — a link to `pseudocode/<module>/<slug>.ts`: typed-outline pseudocode (real import paths/type names for grounding, `on X → Y` event bullets, bare function signatures, no runnable bodies) — not copy-pasteable code. If a card spans multiple real project files, the one pseudocode file holds one `// ---- <path> ----` section per file, in build order.
+- **Diagrams** — each module file (`01-foundation.md` … `05-module-4.md`) links a
+  `diagrams/<module>.mmd` Mermaid component-dependency diagram in its header: components as nodes
+  (grouped into subgraphs by directory), solid edges for renders/mounts, dashed edges for
+  context/service dependencies (`-.->|useProfile()|`, `-.->|apiClient|`, …). Foundation pieces a
+  module depends on appear as single styled nodes, not expanded — full expansion lives only in
+  `diagrams/foundation.mmd`.
 
 ## Decisions this plan assumes
 

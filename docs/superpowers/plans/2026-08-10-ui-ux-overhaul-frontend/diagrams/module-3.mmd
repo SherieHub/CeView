@@ -1,0 +1,54 @@
+%% Module 3 — Content Studio, Calendar, Platforms, Workspace
+%% Content Studio (Cards 15-19), Calendar (Cards 20-21), Settings Platforms/Workspace (Cards 22-23).
+%% See 04-module-3.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+  classDef store fill:#fff2d6,stroke:#c8901f,color:#4a3308;
+
+  subgraph ContentStudio["components/module-3/3.1-content-studio/ (route: /content)"]
+    Matrix["AIContentMatrixPanel.tsx (Card 15)"]:::newfile
+    CaptionCard["CaptionOptionCard.tsx (Card 15)"]:::newfile
+    VisualBoard["VisualDirectionBoard.tsx (Card 16)"]:::newfile
+    Composer["PublishComposer.tsx (Card 17)"]:::newfile
+    Compliance["CompliancePanel.tsx (Card 18)"]:::newfile
+    Gauge["OmcsGauge.tsx (Card 18)"]:::newfile
+    Board["ContentBoard.tsx (Card 19)"]:::newfile
+  end
+  Matrix --> CaptionCard
+  Matrix -.->|active platform tab| VisualBoard
+  CaptionCard -->|Approve copies text to| Composer
+  Composer -->|agreement checked| Compliance --> Gauge
+  Composer --> Board
+
+  PostStore["services/postStore.ts (Card 19)\nshared post list"]:::store
+  Board -.->|writes on Publish| PostStore
+
+  subgraph Calendar["components/module-3/calendar/ (route: /calendar)"]
+    CalView["CalendarView.tsx (Card 20)"]:::newfile
+    CalCell["CalendarCell.tsx (Card 20)"]:::newfile
+    CalList["CalendarListView.tsx (Card 21)"]:::newfile
+    DayModal["DayPostsModal.tsx (Card 21)"]:::newfile
+  end
+  CalView --> CalCell
+  CalView --> CalList
+  CalCell -.->|day click| DayModal
+  CalView -.->|reads| PostStore
+
+  subgraph SettingsMod3["components/settings/ (Cards 22-23)"]
+    PlatSettings["PlatformsSettings.tsx (Card 22)"]:::newfile
+    ConnectModal["ConnectPlatformModal.tsx (Card 22)"]:::newfile
+    WorkSettings["WorkspaceSettings.tsx (Card 23)"]:::newfile
+  end
+  PlatSettings --> ConnectModal
+  PlatSettings -.->|connection state gates| Composer
+  PlatSettings -.->|disconnect prunes in-progress selection in| Composer
+
+  Matrix -.->|MOCK_CONTENT.captions| Fixtures["services/fixtures/content.ts"]:::foundation
+  Compliance -.->|MOCK_OMCS, OMCS_RUBRIC_LABELS| OmcsFixture["services/fixtures/omcs.ts"]:::foundation
+  Board -.->|posts.list| ApiClient["services/apiClient.ts"]:::foundation
+  PlatSettings -.->|connections.list/connect/disconnect| ApiClient
+  WorkSettings -.->|workspace.members/invite| ApiClient
+  Composer -.->|Toast on publish| Toast["components/shared/Toast.tsx"]:::foundation
+  DayModal -.->|built on| ModalPrimitive["components/shared/Modal.tsx"]:::foundation
+  ConnectModal -.->|built on| ModalPrimitive

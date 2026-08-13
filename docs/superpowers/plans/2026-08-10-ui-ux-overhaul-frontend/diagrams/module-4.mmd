@@ -1,0 +1,44 @@
+%% Module 4 — Campaign Analytics & Reporting
+%% Performance screen, Cards 24-27. See 05-module-4.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+  classDef store fill:#fff2d6,stroke:#c8901f,color:#4a3308;
+
+  subgraph Performance["components/module-4/4.1-campaign-analytics/ (route: /performance)"]
+    View["CampaignAnalyticsView.tsx\n(Cards 24-27 — entry state + full view)"]:::newfile
+    Ingest["IngestionForm.tsx (Card 24)"]:::newfile
+    Kpi["KpiCard.tsx (Card 25)"]:::newfile
+    Flag["FlaggedMetricBanner.tsx (Card 25)"]:::newfile
+    Pes["PesGauge.tsx (Card 25)"]:::newfile
+    Funnel["CustomerJourneyFunnel.tsx (Card 25)"]:::newfile
+    PesTrend["PesTrendChart.tsx (Card 26)"]:::newfile
+    EffTrend["EfficiencyTrendChart.tsx (Card 26)"]:::newfile
+    CostTrend["CostTrendChart.tsx (Card 26)"]:::newfile
+    ActionPlan["AiActionPlan.tsx (Card 26)"]:::newfile
+    PrevPub["PreviouslyPublished.tsx (Card 27)"]:::newfile
+    PostModal["PostAnalyticsModal.tsx (Card 27)"]:::newfile
+  end
+
+  View -->|no campaign yet| Ingest
+  View -->|campaign submitted| Kpi
+  View --> Flag
+  View --> Pes
+  View --> Funnel
+  View --> PesTrend
+  View --> EffTrend
+  View --> CostTrend
+  View --> ActionPlan
+  View --> PrevPub
+  PrevPub -.->|click published post| PostModal
+
+  Ingest -.->|DEFAULT_CAMPAIGN_INPUT| CampaignFixture["services/fixtures/campaign.ts"]:::foundation
+  PesTrend -.->|MOCK_HISTORY| CampaignFixture
+  EffTrend -.->|MOCK_HISTORY| CampaignFixture
+  CostTrend -.->|MOCK_HISTORY| CampaignFixture
+  ActionPlan -.->|MOCK_REPORT| CampaignFixture
+
+  PostStore["services/postStore.ts\n(Content Studio Card 19)"]:::store
+  PrevPub -.->|reads, filtered to status:'published'| PostStore
+  PostModal -.->|per-post metrics| PostStore
+  PostModal -.->|built on| ModalPrimitive["components/shared/Modal.tsx"]:::foundation

@@ -1,0 +1,183 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e73]:
+    - complementary [ref=f2e74]:
+      - generic [ref=f2e75]:
+        - generic [ref=f2e76]: Ce
+        - generic [ref=f2e77]:
+          - generic [ref=f2e78]: CeView
+          - text: Market Intelligence
+      - navigation [ref=f2e79]:
+        - generic [ref=f2e375]: Intelligence
+        - button "Dashboard 2" [ref=f2e376] [cursor=pointer]:
+          - generic [ref=f2e382]: Dashboard
+          - generic [ref=f2e383]: "2"
+        - generic [ref=f2e384]: Create
+        - button "Content Studio" [ref=f2e385] [cursor=pointer]
+        - button "Content Studio (2)" [ref=f2e389] [cursor=pointer]
+        - button "Calendar" [ref=f2e395] [cursor=pointer]
+        - generic [ref=f2e399]: Measure
+        - button "Performance" [ref=f2e400] [cursor=pointer]
+        - generic [ref=f2e405]: Account
+        - button "Settings" [ref=f2e406] [cursor=pointer]
+      - generic [ref=f2e119]:
+        - generic [ref=f2e120]: SC
+        - generic [ref=f2e121]:
+          - generic [ref=f2e122]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=f2e123]:
+      - banner [ref=f2e124]:
+        - generic [ref=f2e125]:
+          - generic [ref=f2e126]: Content Studio
+          - text: Draft, audit and publish
+        - generic [ref=f2e127]:
+          - button "Notifications" [ref=f2e128] [cursor=pointer]
+          - button "Search" [ref=f2e133] [cursor=pointer]
+      - generic [ref=f2e419]:
+        - generic [ref=f2e421]:
+          - heading "Content Studio" [level=2] [ref=f2e422]
+          - paragraph [ref=f2e423]: Step 1 of 2 — pick the surge alert you're creating content for.
+        - generic [ref=f2e424]:
+          - button "Week of Aug 3, 2026 Surge Demand Window Opening — South Korea Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach. South Korea Accommodation & Staycation Healing / 힐링여행 Pick this alert" [ref=f2e425] [cursor=pointer]:
+            - generic [ref=f2e426]:
+              - generic [ref=f2e428]: Week of Aug 3, 2026
+              - generic [ref=f2e429]: Surge
+            - heading "Demand Window Opening — South Korea" [level=4] [ref=f2e432]
+            - paragraph [ref=f2e433]: Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach.
+            - generic [ref=f2e434]:
+              - generic [ref=f2e435]: South Korea
+              - generic [ref=f2e439]: Accommodation & Staycation
+              - generic [ref=f2e443]: Healing / 힐링여행
+            - generic [ref=f2e447]: Pick this alert
+          - 'button "Week of Jul 27, 2026 Rising Trend: Private Beachfront Escapes Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks. Japan Coastal & Island Beachfront Luxury Pick this alert" [ref=f2e450] [cursor=pointer]':
+            - generic [ref=f2e451]: Week of Jul 27, 2026
+            - 'heading "Rising Trend: Private Beachfront Escapes" [level=4] [ref=f2e454]'
+            - paragraph [ref=f2e455]: Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks.
+            - generic [ref=f2e456]:
+              - generic [ref=f2e457]: Japan
+              - generic [ref=f2e461]: Coastal & Island
+              - generic [ref=f2e465]: Beachfront Luxury
+            - generic [ref=f2e469]: Pick this alert
+          - button "Week of Jul 13, 2026 Forex Shift Favours Korean Visitors PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month. South Korea Accommodation & Staycation Purchasing Power Pick this alert" [ref=f2e472] [cursor=pointer]:
+            - generic [ref=f2e473]: Week of Jul 13, 2026
+            - heading "Forex Shift Favours Korean Visitors" [level=4] [ref=f2e475]
+            - paragraph [ref=f2e476]: PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month.
+            - generic [ref=f2e477]:
+              - generic [ref=f2e478]: South Korea
+              - generic [ref=f2e482]: Accommodation & Staycation
+              - generic [ref=f2e486]: Purchasing Power
+            - generic [ref=f2e490]: Pick this alert
+  - complementary [ref=f2e44]:
+    - generic [ref=f2e232]:
+      - generic [ref=f2e233]:
+        - generic [ref=f2e234]:
+          - paragraph [ref=f2e235]: Market radar · Rank 1 of 3
+          - heading [level=2] [ref=f2e493]: South Korea
+          - paragraph [ref=f2e237]: Seoul → Cebu · 2,640 km · 3h 45m
+        - button [ref=f2e494] [cursor=pointer]
+      - button [active] [ref=f2e498] [cursor=pointer]: Target this market
+    - generic [ref=f2e245]:
+      - generic [ref=f2e246]: Surge detected. Current search interest broke above μ + 2σ and the year-over-year ratio confirms the pattern. Act within 48 hours.
+      - generic [ref=f2e250]:
+        - paragraph [ref=f2e251]: AI strategic directive
+        - paragraph [ref=f2e252]: South Korean demand is surging — the 2σ spike is YoY-confirmed, so this is a seasonal inflection, not a viral blip. Publish Korean-language healing/호캉스 content within 48 hours and raise weekend rates before the window peaks.
+      - generic [ref=f2e253]:
+        - generic [ref=f2e254]:
+          - generic [ref=f2e255]:
+            - heading [level=3] [ref=f2e503]: Demand forecast
+            - paragraph [ref=f2e257]: 1 surge point detected
+          - generic [ref=f2e258]:
+            - button [pressed] [ref=f2e504] [cursor=pointer]: 4 weeks
+            - button [ref=f2e505] [cursor=pointer]: 12 weeks
+        - generic [ref=f2e261]:
+          - img [ref=f2e506]:
+            - generic [ref=f2e266]: "0"
+            - generic [ref=f2e267]: "25"
+            - generic [ref=f2e268]: "50"
+            - generic [ref=f2e269]: "75"
+            - generic [ref=f2e270]: "100"
+            - generic [ref=f2e278]: Wk -4
+            - generic [ref=f2e279]: Wk -3
+            - generic [ref=f2e280]: Wk -2
+            - generic [ref=f2e281]: Wk -1
+            - generic [ref=f2e282]: Current
+            - generic [ref=f2e283]: Wk +1
+            - generic [ref=f2e284]: Wk +2
+            - generic [ref=f2e285]: Wk +3
+            - generic [ref=f2e286]: Wk +4
+          - generic [ref=f2e287]:
+            - generic [ref=f2e288]: Recorded history
+            - generic [ref=f2e290]: AI forecast
+            - generic [ref=f2e292]: Seasonality
+            - generic [ref=f2e294]: Surge (2σ)
+          - generic [ref=f2e296]:
+            - generic [ref=f2e297]:
+              - generic [ref=f2e299]: Low 0–30
+              - text: Normal traffic — hold current pricing.
+            - generic [ref=f2e300]:
+              - generic [ref=f2e302]: Moderate 31–70
+              - text: Good booking volume — run value-add promotions.
+            - generic [ref=f2e303]:
+              - generic [ref=f2e305]: High peak 71–100
+              - text: Surge territory — raise prices and launch flash promos.
+      - generic [ref=f2e306]:
+        - heading [level=3] [ref=f2e507]: Economic insights
+        - generic [ref=f2e309]:
+          - tab [selected] [ref=f2e508] [cursor=pointer]: Purchasing power
+          - tab [ref=f2e512] [cursor=pointer]: Seasonal patterns
+        - generic [ref=f2e317]:
+          - generic [ref=f2e318]:
+            - generic [ref=f2e319]:
+              - text: PHP per 1 KRW
+              - generic [ref=f2e320]: "23.80"
+            - generic [ref=f2e321]:
+              - text: GDP growth
+              - generic [ref=f2e322]: 2.2%
+            - generic [ref=f2e323]:
+              - text: Avg flight
+              - generic [ref=f2e324]: ₱8,000 – ₱15,000
+            - generic [ref=f2e325]:
+              - text: Accessibility
+              - generic [ref=f2e326]: 9/10
+          - paragraph [ref=f2e327]: GDP is growing at a moderate 2.2% and the Won is holding strong against the Peso — Korean visitors currently have roughly 15–20% more purchasing power in Cebu than a year ago. They will upgrade rooms, book premium dive packages and spend generously on dining. Upsell now rather than discount.
+          - generic [ref=f2e328]:
+            - generic [ref=f2e329]:
+              - paragraph [ref=f2e330]: Forex — 12 months (KRW)
+              - img [ref=f2e515]:
+                - generic [ref=f2e335]: "23.90"
+                - generic [ref=f2e336]: "23.10"
+                - generic [ref=f2e337]: 12mo ago
+                - generic [ref=f2e338]: now
+            - generic [ref=f2e339]:
+              - paragraph [ref=f2e340]: GDP growth — 5 years (World Bank)
+              - img [ref=f2e516]:
+                - generic [ref=f2e345]: 4.1%
+                - generic [ref=f2e346]: 1.4%
+                - generic [ref=f2e347]: "2021"
+                - generic [ref=f2e348]: "2025"
+      - generic [ref=f2e349]:
+        - paragraph [ref=f2e350]: Route & carriers
+        - generic [ref=f2e351]:
+          - generic [ref=f2e352]:
+            - paragraph [ref=f2e353]: From
+            - paragraph [ref=f2e354]: ICN — Incheon Int'l
+          - generic [ref=f2e355]:
+            - paragraph [ref=f2e356]: To
+            - paragraph [ref=f2e357]: CEB — Mactan-Cebu Int'l
+        - generic [ref=f2e358]:
+          - generic [ref=f2e359]: KE
+          - generic [ref=f2e360]: Korean Air
+          - generic [ref=f2e361]: 7x / week
+          - generic [ref=f2e362]: Direct
+        - generic [ref=f2e363]:
+          - generic [ref=f2e364]: 5J
+          - generic [ref=f2e365]: Cebu Pacific
+          - generic [ref=f2e366]: 5x / week
+          - generic [ref=f2e367]: Direct
+        - generic [ref=f2e368]:
+          - generic [ref=f2e369]: BX
+          - generic [ref=f2e370]: Air Busan
+          - generic [ref=f2e371]: 2x / week
+          - generic [ref=f2e372]: Direct
+  - dialog
+  - generic: Opening Content Studio for South Korea
+  - button "Prototype" [ref=f2e46] [cursor=pointer]

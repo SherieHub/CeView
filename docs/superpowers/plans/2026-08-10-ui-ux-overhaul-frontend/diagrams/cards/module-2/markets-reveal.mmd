@@ -1,0 +1,9 @@
+flowchart TD
+  AlertSelected(["Alert selected\n(from Card 10)"]) --> StaleCheck{"selectedAlert still\nin filtered `visible` list?"}
+  StaleCheck -->|no| NoReveal["rankedMarkets = null\n(single column)"]
+  StaleCheck -->|yes| ModeCheck{"mode is 'normal'\nor 'ai-down'?"}
+  ModeCheck -->|no| NoReveal
+  ModeCheck -->|yes| Rank["rankedMarkets =\nmarketsForCategory(category)"]
+  Rank --> TwoCol(["Two-column layout:\nfeed | ranked markets"])
+  TwoCol -->|click same alert again| Deselect["selectedId = null\n→ collapses to single column"]
+  TwoCol -->|click a RankCard| Open["navigate ?market=<id>\n→ opens Card 13 drawer"]

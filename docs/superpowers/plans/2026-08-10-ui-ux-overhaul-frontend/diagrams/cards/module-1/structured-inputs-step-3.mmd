@@ -1,0 +1,17 @@
+flowchart TD
+  Render(["Step 3 mounted"]) -->|type in description| CountDesc["wordCount(description)"]
+  Render -->|type in uvp| CountUvp["wordCount(uvp)"]
+  CountDesc --> DescBand{"count vs 50?"}
+  DescBand -->|0| DescNeutral["Neutral hint"]
+  DescBand -->|"1..49"| DescRed["Red: N/50 — X more needed"]
+  DescBand -->|">=50"| DescGreen["Green: threshold met"]
+  CountUvp --> UvpBand{"count vs 30?"}
+  UvpBand -->|0| UvpNeutral["Neutral hint"]
+  UvpBand -->|"1..29"| UvpRed["Red: N/30 — X more needed"]
+  UvpBand -->|">=30"| UvpGreen["Green: threshold met"]
+  DescGreen --> Gate{"both fields\n>= their minimum?"}
+  UvpGreen --> Gate
+  DescRed --> Gate
+  UvpRed --> Gate
+  Gate -->|yes| ContinueEnabled(["Continue enabled"])
+  Gate -->|no| ContinueDisabled(["Continue disabled"])

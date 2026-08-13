@@ -1,0 +1,11 @@
+flowchart TD
+  Render(["InsightsTabs mounted\n(activeTab from Card 13)"]) -->|"click 'Purchasing power'"| ShowEcon["onTabChange('economy')"]
+  Render -->|"click 'Seasonal patterns'"| ShowSeason["onTabChange('seasonal')"]
+  ShowEcon --> EconContent(["PurchasingPowerTab:\nKPIs, insight, forex+GDP charts"])
+  ShowSeason --> SeasonBand{"market.yoyRatio\nis null?"}
+  SeasonBand -->|yes, <59wk history| Na["YoY chip = 'N/A'"]
+  SeasonBand -->|no| Ratio["YoY chip = ratio value"]
+  Na --> SeasonContent(["SeasonalPatternsTab:\nscore+band, calendar,\ninsight, 24wk chart"])
+  Ratio --> SeasonContent
+  EconContent --> Shared(["Route & carriers list\n(not tab-specific, always shown)"])
+  SeasonContent --> Shared

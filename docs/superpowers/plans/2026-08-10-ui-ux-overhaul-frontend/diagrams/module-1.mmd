@@ -1,0 +1,52 @@
+%% Module 1 — Business Classification & Uniqueness Scoring
+%% Onboarding wizard (Cards 4-8) + Settings: Business Profile (Card 9). See 02-module-1.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+
+  subgraph Onboarding["components/module-1/onboarding/"]
+    Wizard["OnboardingWizard.tsx\n(Card 4 — side rail, progress bar, footer)"]:::newfile
+    ObDraft["obDraft.ts\n(wizard-wide draft state + setters)"]:::newfile
+
+    subgraph Steps["onboarding/steps/"]
+      Step1["BasicInfoStep.tsx (Card 4)"]:::newfile
+      Step2["BrandIdentityStep.tsx (Card 5)"]:::newfile
+      Step3["StructuredInputsStep.tsx (Card 6)"]:::newfile
+      Step4["AssetsLinksStep.tsx (Card 7)"]:::newfile
+      Step5["AnalysisStep.tsx (Card 8)"]:::newfile
+    end
+
+    Wizard --> Step1 --> Step2 --> Step3 --> Step4 --> Step5
+    Step1 -.->|reads/writes| ObDraft
+    Step2 -.->|reads/writes| ObDraft
+    Step3 -.->|reads/writes| ObDraft
+    Step4 -.->|reads/writes| ObDraft
+    Step5 -.->|reads/writes| ObDraft
+  end
+
+  subgraph AnalysisParts["components/module-1/ (Card 8)"]
+    CatBoard["InferredCategoryBoard.tsx"]:::newfile
+    CatItem["AdjustableCategoryItem.tsx"]:::newfile
+    OverallCard["OverallScoreCard.tsx"]:::newfile
+    ActionableCard["ActionableScoreCard.tsx"]:::newfile
+    ComputeBtn["ComputeUniquenessButton.tsx"]:::newfile
+    StatTypo["StatTypography.tsx"]:::newfile
+  end
+  Step5 --> CatBoard --> CatItem
+  Step5 --> ComputeBtn --> OverallCard
+  ComputeBtn --> ActionableCard
+  OverallCard -.->|uses| StatTypo
+  ActionableCard -.->|uses| StatTypo
+
+  Settings["components/settings/BusinessProfileSettings.tsx\n(Card 9 — /settings/profile)"]:::newfile
+
+  Step5 -.->|apiClient.markets/omcs classify+uniqueness calls| ApiClient["services/apiClient.ts"]:::foundation
+  Step5 -.->|writes finished profile, navigates to /dashboard| ProfileCtx["services/profileContext.tsx\nuseProfile()"]:::foundation
+  Step5 -.->|blocked-toggle toast| Toast["components/shared/Toast.tsx\nuseToast()"]:::foundation
+
+  Settings -.->|reads/writes| ProfileCtx
+  Settings -.->|saveProfile| ApiClient
+  Settings -.->|same categories toggle-grid pattern as| CatBoard
+
+  Wizard -.->|mounted at /onboarding by| RoutePlaceholder["App.tsx router\n(Foundation — Shell & Routing)"]:::foundation
+  Settings -.->|mounted at /settings/profile by| AppShell["layout/AppShell.tsx"]:::foundation

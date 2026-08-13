@@ -1,0 +1,47 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - complementary [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e5]: Ce
+        - generic [ref=f3e6]:
+          - generic [ref=f3e7]: CeView
+          - text: Tourism Demand Intelligence
+      - generic [ref=f3e8]:
+        - heading [level=1] [ref=f3e9]:
+          - text: Know which market is
+          - emphasis [ref=f3e10]: about to move
+          - text: — before your competitors do.
+        - paragraph [ref=f3e11]: CeView forecasts inbound-traveler demand surges into Cebu from Korea, Japan and the USA, then helps you draft, review and publish market-localized content around them.
+      - generic [ref=f3e12]:
+        - generic [ref=f3e13]:
+          - generic [ref=f3e14]: "3"
+          - text: Source markets tracked
+        - generic [ref=f3e15]:
+          - generic [ref=f3e16]: 12wk
+          - text: Demand forecast horizon
+        - generic [ref=f3e17]:
+          - generic [ref=f3e18]: 2σ
+          - text: Surge detection threshold
+    - main [ref=f3e19]:
+      - generic [ref=f3e20]:
+        - tablist [ref=f3e21]:
+          - tab "Sign in" [selected] [ref=f3e22] [cursor=pointer]
+          - tab "Create account" [ref=f3e23] [cursor=pointer]
+        - heading "Welcome back" [level=2] [ref=f3e24]
+        - paragraph [ref=f3e25]: Sign in to your CeView workspace.
+        - generic [ref=f3e26]:
+          - button "Continue with Google" [ref=f3e27] [cursor=pointer]
+          - paragraph [ref=f3e33]: Firebase handles sign-in; CeView issues a JWT for the Spring Boot API.
+        - generic [ref=f3e34]: OR
+        - generic [ref=f3e35]:
+          - generic [ref=f3e36]:
+            - generic [ref=f3e37]: Work email
+            - textbox "Work email" [ref=f3e38]: maria@sunsetcove.ph
+          - generic [ref=f3e39]:
+            - generic [ref=f3e40]: Password
+            - textbox "Password" [ref=f3e41]: demo-password
+          - button "Sign in" [ref=f3e42] [cursor=pointer]
+        - paragraph [ref=f3e43]: Prototype only — no credentials are transmitted or stored.
+  - complementary [ref=f3e44]
+  - dialog
+  - button "Prototype" [ref=f3e46] [cursor=pointer]

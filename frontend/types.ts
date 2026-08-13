@@ -43,6 +43,12 @@ export interface PlatformConnection {
   connectedAt: string | null;
 }
 
+/**
+ * Future real-backend member shape — not what apiClient.workspace.members() returns today.
+ * The fixture-backed path returns services/fixtures/members.ts's WorkspaceMemberFixture
+ * (role: 'Owner'|'Editor'|'Viewer', initials, no id/status) instead; apiClient.ts is typed
+ * against that fixture shape directly. Reconcile the two once a real endpoint exists.
+ */
 export interface WorkspaceMember {
   id: string;
   name: string;

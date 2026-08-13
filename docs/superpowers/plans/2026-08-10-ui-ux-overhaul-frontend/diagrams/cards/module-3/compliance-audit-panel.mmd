@@ -1,0 +1,12 @@
+flowchart TD
+  Idle(["Not run yet"]) -->|agreement checked,\ncaption+media staged| Start["auditRunning=true:\nstep=0, result=null"]
+  Start --> Tick["Every ~420ms: step++"]
+  Tick --> LastStep{"step reached\nAUDIT_STEPS.length?"}
+  LastStep -->|no| Tick
+  LastStep -->|yes| Evaluate["apiClient.omcs.evaluate()"]
+  Evaluate --> Result["setResult(r), onAuditComplete(r)"]
+  Result --> Band{"r.status === 'Pass'?\n(score >= 70)"}
+  Band -->|yes| Pass(["Pass chip, green/gold gauge,\npass banner"])
+  Band -->|no| Fail(["Fail chip, red gauge,\nfail banner"])
+  Pass -->|"Re-run" click| Start
+  Fail -->|"Re-run" click| Start

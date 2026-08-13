@@ -1,0 +1,73 @@
+- generic [ref=f4e1]:
+  - generic [ref=f4e2]:
+    - complementary [ref=f4e3]:
+      - generic [ref=f4e4]:
+        - generic [ref=f4e5]: Ce
+        - generic [ref=f4e6]:
+          - generic [ref=f4e7]: CeView
+          - text: Tourism Demand Intelligence
+      - generic [ref=f4e8]:
+        - heading [level=1] [ref=f4e9]:
+          - text: Know which market is
+          - emphasis [ref=f4e10]: about to move
+          - text: — before your competitors do.
+        - paragraph [ref=f4e11]: CeView forecasts inbound-traveler demand surges into Cebu from Korea, Japan and the USA, then helps you draft, review and publish market-localized content around them.
+      - generic [ref=f4e12]:
+        - generic [ref=f4e13]:
+          - generic [ref=f4e14]: "3"
+          - text: Source markets tracked
+        - generic [ref=f4e15]:
+          - generic [ref=f4e16]: 12wk
+          - text: Demand forecast horizon
+        - generic [ref=f4e17]:
+          - generic [ref=f4e18]: 2σ
+          - text: Surge detection threshold
+    - main [ref=f4e19]:
+      - generic [ref=f4e20]:
+        - tablist [ref=f4e21]:
+          - tab "Sign in" [selected] [ref=f4e22] [cursor=pointer]
+          - tab "Create account" [ref=f4e23] [cursor=pointer]
+        - heading "Welcome back" [level=2] [ref=f4e24]
+        - paragraph [ref=f4e25]: Sign in to your CeView workspace.
+        - generic [ref=f4e26]:
+          - button "Continue with Google" [ref=f4e27] [cursor=pointer]
+          - paragraph [ref=f4e33]: Firebase handles sign-in; CeView issues a JWT for the Spring Boot API.
+        - generic [ref=f4e34]: OR
+        - generic [ref=f4e35]:
+          - generic [ref=f4e36]:
+            - generic [ref=f4e37]: Work email
+            - textbox "Work email" [ref=f4e38]: maria@sunsetcove.ph
+          - generic [ref=f4e39]:
+            - generic [ref=f4e40]: Password
+            - textbox "Password" [ref=f4e41]: demo-password
+          - button "Sign in" [ref=f4e42] [cursor=pointer]
+        - paragraph [ref=f4e43]: Prototype only — no credentials are transmitted or stored.
+  - complementary [ref=f4e44]
+  - dialog
+  - generic [ref=f4e45]:
+    - button "Prototype" [active] [ref=f4e46] [cursor=pointer]
+    - generic [ref=f4e49]:
+      - generic [ref=f4e50]: Entry
+      - button "Login" [ref=f4e51] [cursor=pointer]
+      - button "Register" [ref=f4e52] [cursor=pointer]
+      - button "Onboarding — step 1" [ref=f4e53] [cursor=pointer]
+      - button "Onboarding — prefilled" [ref=f4e54] [cursor=pointer]
+      - button "Onboarding — analysis" [ref=f4e55] [cursor=pointer]
+      - generic [ref=f4e56]: Dashboard states
+      - button "Normal" [ref=f4e57] [cursor=pointer]
+      - button "Loading" [ref=f4e58] [cursor=pointer]
+      - button "Empty" [ref=f4e59] [cursor=pointer]
+      - button "AI service down" [ref=f4e60] [cursor=pointer]
+      - button "Radar — Korea" [ref=f4e61] [cursor=pointer]
+      - generic [ref=f4e62]: Screens
+      - button "Content Studio" [ref=f4e63] [cursor=pointer]
+      - button "Content Studio — picker" [ref=f4e64] [cursor=pointer]
+      - button "Content — audited" [ref=f4e65] [cursor=pointer]
+      - button "Calendar" [ref=f4e66] [cursor=pointer]
+      - button "Performance — empty" [ref=f4e67] [cursor=pointer]
+      - button "Performance — full" [ref=f4e68] [cursor=pointer]
+      - button "Settings" [ref=f4e69] [cursor=pointer]
+      - generic [ref=f4e70]: Content Studio (2)
+      - button "Default — partially connected" [ref=f4e71] [cursor=pointer]
+      - button "Ready to publish" [ref=f4e72] [cursor=pointer]
+      - button "One platform failing" [ref=f4e73] [cursor=pointer]

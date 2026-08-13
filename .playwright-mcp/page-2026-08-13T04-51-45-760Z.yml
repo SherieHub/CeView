@@ -1,0 +1,80 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e49]:
+    - complementary [ref=f1e50]:
+      - generic [ref=f1e51]:
+        - generic [ref=f1e52]: Ce
+        - generic [ref=f1e53]:
+          - generic [ref=f1e54]: CeView
+          - text: Market Intelligence
+      - navigation [ref=f1e55]:
+        - generic [ref=f1e56]: Intelligence
+        - button "Dashboard 2" [ref=f1e57] [cursor=pointer]:
+          - generic [ref=f1e63]: Dashboard
+          - generic [ref=f1e64]: "2"
+        - generic [ref=f1e65]: Create
+        - button "Content Studio" [ref=f1e66] [cursor=pointer]
+        - button "Content Studio (2)" [ref=f1e70] [cursor=pointer]
+        - button "Calendar" [ref=f1e76] [cursor=pointer]
+        - generic [ref=f1e80]: Measure
+        - button "Performance" [ref=f1e81] [cursor=pointer]
+        - generic [ref=f1e86]: Account
+        - button "Settings" [ref=f1e87] [cursor=pointer]
+      - generic [ref=f1e95]:
+        - generic [ref=f1e96]: SC
+        - generic [ref=f1e97]:
+          - generic [ref=f1e98]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=f1e99]:
+      - banner [ref=f1e100]:
+        - generic [ref=f1e101]:
+          - generic [ref=f1e102]: Dashboard
+          - text: Alert command center
+        - generic [ref=f1e103]:
+          - button "Notifications" [ref=f1e104] [cursor=pointer]
+          - button "Search" [ref=f1e109] [cursor=pointer]
+      - generic [ref=f1e115]:
+        - generic [ref=f1e116]:
+          - generic [ref=f1e117]:
+            - heading "Good morning, Sunset Cove Beach Resort" [level=2] [ref=f1e118]
+            - paragraph [ref=f1e119]: 2 unread surge alerts across Coastal & Island, Accommodation & Staycation. Click one to see its top target markets.
+          - generic [ref=f1e120]:
+            - generic [ref=f1e121]: Uniqueness 74
+            - button "Refresh forecast" [ref=f1e125] [cursor=pointer]
+        - generic [ref=f1e131]:
+          - generic [ref=f1e132]:
+            - heading "Surge alerts" [level=3] [ref=f1e133]
+            - generic [ref=f1e134]: 2 unread
+          - generic [ref=f1e138]:
+            - button "Week of Aug 3, 2026 Surge Demand Window Opening — South Korea Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach. South Korea Accommodation & Staycation Healing / 힐링여행 View target markets" [ref=f1e139] [cursor=pointer]:
+              - generic [ref=f1e140]:
+                - generic [ref=f1e142]: Week of Aug 3, 2026
+                - generic [ref=f1e143]: Surge
+              - heading "Demand Window Opening — South Korea" [level=4] [ref=f1e146]
+              - paragraph [ref=f1e147]: Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach.
+              - generic [ref=f1e148]:
+                - generic [ref=f1e149]: South Korea
+                - generic [ref=f1e153]: Accommodation & Staycation
+                - generic [ref=f1e157]: Healing / 힐링여행
+              - generic [ref=f1e161]: View target markets
+            - 'button "Week of Jul 27, 2026 Rising Trend: Private Beachfront Escapes Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks. Japan Coastal & Island Beachfront Luxury View target markets" [ref=f1e164] [cursor=pointer]':
+              - generic [ref=f1e165]: Week of Jul 27, 2026
+              - 'heading "Rising Trend: Private Beachfront Escapes" [level=4] [ref=f1e168]'
+              - paragraph [ref=f1e169]: Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks.
+              - generic [ref=f1e170]:
+                - generic [ref=f1e171]: Japan
+                - generic [ref=f1e175]: Coastal & Island
+                - generic [ref=f1e179]: Beachfront Luxury
+              - generic [ref=f1e183]: View target markets
+            - button "Week of Jul 13, 2026 Forex Shift Favours Korean Visitors PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month. South Korea Accommodation & Staycation Purchasing Power View target markets" [ref=f1e186] [cursor=pointer]:
+              - generic [ref=f1e187]: Week of Jul 13, 2026
+              - heading "Forex Shift Favours Korean Visitors" [level=4] [ref=f1e189]
+              - paragraph [ref=f1e190]: PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month.
+              - generic [ref=f1e191]:
+                - generic [ref=f1e192]: South Korea
+                - generic [ref=f1e196]: Accommodation & Staycation
+                - generic [ref=f1e200]: Purchasing Power
+              - generic [ref=f1e204]: View target markets
+  - complementary [ref=f1e44]
+  - dialog
+  - generic: Authenticated
+  - button "Prototype" [ref=f1e46] [cursor=pointer]

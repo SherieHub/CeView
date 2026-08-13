@@ -1,0 +1,67 @@
+%% Foundation — component/service dependency diagram
+%% Mounts (solid) vs. context/service reads (dashed). See 01-foundation.md.
+flowchart TD
+  classDef ctx fill:#e8ddff,stroke:#8a63d2,color:#2a1a4a;
+  classDef svc fill:#dcefff,stroke:#3b82c4,color:#12324d;
+  classDef overlay fill:#fff2d6,stroke:#c8901f,color:#4a3308;
+
+  Index["index.tsx"] --> AuthProvider["services/auth.tsx\nAuthProvider"]:::ctx
+  AuthProvider --> App["App.tsx"]
+
+  subgraph Providers["App.tsx provider stack"]
+    ProfileProvider["services/profileContext.tsx\nProfileProvider"]:::ctx
+    OverlayStackProvider["components/shared/useOverlayStack.tsx\nOverlayStackProvider"]:::ctx
+    ToastProvider["components/shared/Toast.tsx\nToastProvider"]:::ctx
+    Router["RouterProvider (react-router-dom)"]
+    ProfileProvider --> OverlayStackProvider --> ToastProvider --> Router
+  end
+  App --> ProfileProvider
+
+  subgraph Routes["Router tree"]
+    LoginRoute["/login"] --> RedirectIfAuthenticated["components/auth/AuthGate.tsx\nRedirectIfAuthenticated"]
+    RedirectIfAuthenticated --> LoginPage["components/auth/LoginPage.tsx"]
+
+    AuthGate["components/auth/AuthGate.tsx\nAuthGate"]
+    ProfileGate["services/profileContext.tsx\nProfileGate"]
+    Onboarding["/onboarding\nRoutePlaceholder"]
+    Shell["AppShell-wrapped routes"]
+
+    AuthGate --> ProfileGate
+    ProfileGate --> Onboarding
+    ProfileGate --> Shell
+  end
+  Router --> LoginRoute
+  Router --> AuthGate
+
+  subgraph ShellTree["layout/AppShell.tsx"]
+    AppShell["layout/AppShell.tsx"] --> Sidebar["layout/Sidebar.tsx"]
+    AppShell --> Topbar["layout/Topbar.tsx"]
+    AppShell --> Outlet["<Outlet/> → /dashboard, /content, /calendar,\n/performance, /settings/:tab (RoutePlaceholder for now)"]
+  end
+  Shell --> AppShell
+
+  Sidebar -.->|NAV| Nav["layout/nav.ts"]
+  Topbar -.->|navItemById| Nav
+  Onboarding -.->|navItemById| Nav
+
+  Sidebar -.->|useAuth| AuthProvider
+  LoginPage -.->|useAuth| AuthProvider
+  AuthGate -.->|useAuth| AuthProvider
+  RedirectIfAuthenticated -.->|useAuth| AuthProvider
+  AuthProvider -.->|loadTokens/saveTokens/clearTokens| AuthStorage["services/authStorage.ts"]:::svc
+  AuthProvider -.->|auth.login/auth.register| ApiClient["services/apiClient.ts"]:::svc
+
+  ProfileGate -.->|useProfile| ProfileProvider
+
+  subgraph Overlays["components/shared/*"]
+    Modal["Modal.tsx"]:::overlay
+    Drawer["Drawer.tsx"]:::overlay
+    Toast["Toast.tsx (useToast)"]:::overlay
+  end
+  Modal -.->|push/pop 'modal'| OverlayStackProvider
+  Drawer -.->|push/pop 'drawer'| OverlayStackProvider
+  Toast -.->|showToast| ToastProvider
+
+  ApiClient -.->|USE_FIXTURES=true| Fixtures["services/fixtures/*.ts\n(markets, notifications, content, omcs,\ncampaign, posts, members)"]:::svc
+  ApiClient -.->|USE_FIXTURES=false| Backend["Spring Boot API\n(BASE_URL, Bearer token)"]:::svc
+  ApiClient -.->|loadTokens| AuthStorage

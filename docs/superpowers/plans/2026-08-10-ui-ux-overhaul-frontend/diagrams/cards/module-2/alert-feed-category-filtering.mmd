@@ -1,0 +1,6 @@
+flowchart TD
+  Mount(["/dashboard mounted"]) --> Load["apiClient.notifications.list()"]
+  Load --> Filter["visible = notifications.filter(\nn => profile.categories.includes(n.category))"]
+  Filter --> Render(["Render one AlertCard per\nvisible notification"])
+  Render -->|click a card| Select["selectAlert(alert):\nmark isRead=true,\nsetSelectedId(alert.id)"]
+  Select --> Rerender(["Unread dot disappears;\ncard marked selected"])

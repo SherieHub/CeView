@@ -8,6 +8,8 @@ Screen docs: [`docs/module-1/screens/onboarding-wizard.md`](../../../module-1/sc
 [`settings-business-profile.md`](../../../module-1/screens/settings-business-profile.md). Spec file:
 `e2e/tests/onboarding-wizard.spec.ts` (Cards 4–8), `e2e/tests/settings-business-profile.spec.ts` (Card 9).
 
+**Component diagram:** [`diagrams/module-1.mmd`](diagrams/module-1.mmd)
+
 ---
 
 ### CARD — Onboarding: Wizard Shell & Step 1 Basic Info
@@ -29,28 +31,9 @@ Screen docs: [`docs/module-1/screens/onboarding-wizard.md`](../../../module-1/sc
   `obDraft` once Step 5 completes
 - `types.ts` — `BusinessProfile` fields the draft state must eventually match
 
-**Steps (pseudocode):**
-1. Define `obDraft` state: `businessName`, `industry`, `slogan`, `vibes` (string[]),
-   `coreServices` (string[]), `description`, `uvp`, `socials` (per-platform handle map), `logo`
-   (data URL or null), `website`. All fields start empty.
-2. Define a per-step validity function, one branch per step index:
-   - Step 1 (this card): valid when `businessName` is longer than 1 character AND `industry` is set.
-   - Steps 2–5: implemented by their own cards below; this card's gate only covers Step 1.
-3. `OnboardingWizard.tsx`:
-   - Render a side list of all 5 steps, marking each `done` / `current` / `pending` based on the
-     wizard's current step index.
-   - Render a progress bar sized to `(currentStep + 1) / 5`.
-   - Render the active step's panel (this card only implements Step 1's panel; later steps render a
-     placeholder until their own cards land).
-   - Footer: Back button (hidden on step 1), Continue button disabled unless the current step's
-     validity function returns true.
-4. `BasicInfoStep.tsx`:
-   - Business name: required text input, bound to `obDraft.businessName`.
-   - Industry: required select, one of the seven `BUSINESS_CATEGORIES`, bound to
-     `obDraft.industry`.
-   - Slogan: optional text input, bound to `obDraft.slogan`.
-   - A "Fill with demo business" button that populates every `obDraft` field with fixed demo values
-     in one action (useful for manually exercising later steps without re-typing).
+**Flow:** [`diagrams/cards/module-1/wizard-shell-step-1.mmd`](diagrams/cards/module-1/wizard-shell-step-1.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/wizard-shell-step-1.ts`](pseudocode/module-1/wizard-shell-step-1.ts)
 
 **Milestone (finished state):** Navigating to `/onboarding` shows Step 1; Continue is disabled until
 name + industry are filled; the side rail shows Step 1 as current, Steps 2–5 as pending.
@@ -80,15 +63,9 @@ cd frontend && npm run test:unit -- OnboardingWizard
 **Related files:**
 - `components/module-1/onboarding/obDraft.ts` (Card 4) — reads/writes `vibes`, `coreServices`
 
-**Steps (pseudocode):**
-1. Render a chip grid of the 8 fixed `VIBES` options; each chip toggles itself in/out of
-   `obDraft.vibes` on click (multi-select, no minimum enforced by the chip itself).
-2. Render a tag input for core services:
-   - Typing text and pressing Enter appends it to `obDraft.coreServices` (skip if already present or
-     empty), then clears and refocuses the input.
-   - Each existing tag renders with a ✕ button that removes it from `obDraft.coreServices`.
-3. Extend the wizard's per-step validity function: Step 2 is valid when `vibes.length >= 1` AND
-   `coreServices.length >= 1`.
+**Flow:** [`diagrams/cards/module-1/brand-identity-step-2.mmd`](diagrams/cards/module-1/brand-identity-step-2.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/brand-identity-step-2.ts`](pseudocode/module-1/brand-identity-step-2.ts)
 
 **Milestone (finished state):** Step 2 blocks Continue until both minimums are met; adding/removing a
 service tag updates the list live.
@@ -119,17 +96,9 @@ cd frontend && npm run test:unit -- BrandIdentityStep
 **Related files:**
 - `components/module-1/onboarding/obDraft.ts` (Card 4) — reads/writes `description`, `uvp`
 
-**Steps (pseudocode):**
-1. Render two textareas bound to `obDraft.description` (min 50 words) and `obDraft.uvp` (min 30
-   words).
-2. On every keystroke in either textarea, recompute its word count and:
-   - If the count is below the field's minimum and greater than 0: show a red "N / min words — X
-     more needed" hint, mark the field invalid.
-   - If the count meets the minimum: show a green "N words — threshold met" hint, mark the field
-     valid.
-   - If the count is 0: show a neutral placeholder hint, no red/green state yet.
-3. Extend the wizard's per-step validity function: Step 3 is valid when both fields independently
-   meet their minimum word count.
+**Flow:** [`diagrams/cards/module-1/structured-inputs-step-3.mmd`](diagrams/cards/module-1/structured-inputs-step-3.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/structured-inputs-step-3.ts`](pseudocode/module-1/structured-inputs-step-3.ts)
 
 **Milestone (finished state):** Typing below threshold shows the red "N more needed" hint; crossing
 the threshold shows the green check and unblocks Continue.
@@ -159,15 +128,9 @@ cd frontend && npm run test:unit -- StructuredInputsStep
 **Related files:**
 - `components/module-1/onboarding/obDraft.ts` (Card 4) — reads/writes `socials`, `logo`, `website`
 
-**Steps (pseudocode):**
-1. Render one text input per known platform (from a fixed platform-metadata list: icon, brand
-   color, label), each bound to `obDraft.socials[platform]`.
-2. Render a logo dropzone:
-   - Click opens a file picker; dragging a file over the zone highlights it; dropping or picking an
-     image file reads it via `FileReader` into a data URL and stores it in `obDraft.logo`.
-   - If `obDraft.logo` is already set, show the image preview instead of the empty-state prompt.
-3. Render a text input bound to `obDraft.website`.
-4. This step has no validity gate — Continue is always enabled regardless of field contents.
+**Flow:** [`diagrams/cards/module-1/assets-links-step-4.mmd`](diagrams/cards/module-1/assets-links-step-4.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/assets-links-step-4.ts`](pseudocode/module-1/assets-links-step-4.ts)
 
 **Milestone (finished state):** Dropping or picking an image file previews it inline; Continue is
 enabled with every field empty.
@@ -210,34 +173,9 @@ Fixture Data Layer
 - `components/shared/Toast.tsx` (Foundation — Shell & Routing) — used for the "at least one category"
   block message
 
-**Steps (pseudocode):**
-1. Track a step-local phase: `idle` → `analyzing` → `categories` → `computing` → `scored`.
-2. On entering this step (or on demand), set phase to `analyzing`, show a skeleton + an
-   embedding-pipeline banner, and call `apiClient`'s classify endpoint with the combined
-   description + UVP + core-services text.
-   - On response, store the returned categories (each with a name, a confidence percentage, and
-     whether it's pre-selected — the two highest-confidence categories start selected) and set phase
-     to `categories`.
-3. In the `categories` phase, render `InferredCategoryBoard`: rows sorted by confidence descending,
-   each toggleable.
-   - Toggling a category off when it's the only selected one is blocked: show a toast ("at least one
-     category must stay selected") instead of deselecting it.
-   - If the score was already computed and the operator changes the selection, drop back to the
-     `categories` phase and discard the stale score.
-   - A "Compute uniqueness score" button advances to the next phase.
-4. On Compute, set phase to `computing`, call `apiClient`'s uniqueness endpoint with the current
-   selection, then on response:
-   - Store `overallScore`, `semanticsScore` (from the description/UVP text), and `categoryScore`
-     (from the selected categories' confidence share).
-   - Set phase to `scored`.
-5. In the `scored` phase, render `OverallScoreCard` (the combined score) and two
-   `ActionableScoreCard`s (semantics, category):
-   - If `overallScore >= 70`: show a pass banner.
-   - If `overallScore < 70`: show a warning banner with a "Strengthen my UVP" link that navigates
-     back to Step 3.
-6. Wizard finish (leaving Step 5 successfully): write the full `obDraft` plus the selected
-   categories and computed scores into `ProfileContext`; mark any social handle the operator filled
-   in as "connected"; navigate to `/dashboard`.
+**Flow:** [`diagrams/cards/module-1/analysis-step-5.mmd`](diagrams/cards/module-1/analysis-step-5.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/analysis-step-5.ts`](pseudocode/module-1/analysis-step-5.ts)
 
 **Milestone (finished state):** Completing all 5 steps with the fixture-backed classify/uniqueness
 calls lands on `/dashboard` with the new profile's identity visible in the sidebar footer.
@@ -280,25 +218,9 @@ cd frontend && npm run test:unit -- AnalysisStep
   up
 - `types.ts` — `BusinessProfile` shape this form's fields must match
 
-**Steps (pseudocode):**
-1. Render an identity header: avatar, business name, industry, uniqueness-score chips — all read
-   from `ProfileContext`, not local state.
-2. Render a flat edit form, pre-filled from `ProfileContext`:
-   - Name, slogan (text inputs).
-   - Categories (toggle grid, same "≥1 must stay selected" rule as onboarding Step 5's category
-     board).
-   - Core services (read-only list — not editable here).
-   - Description, UVP (textareas, no word-count gate on this screen — the gate is onboarding-only).
-   - Website (text input).
-3. On Save:
-   - Call `apiClient.saveProfile(formValues)`.
-   - On success, update `ProfileContext` with the new values so the sidebar identity block re-renders
-     without a page reload.
-4. Known gap — flag, don't silently resolve: Save does not recompute the uniqueness score after an
-   edit, even though the copy under the Save button implies it does. Raise this in code review before
-   wiring it for real; see
-   [`settings-business-profile.md`](../../../module-1/screens/settings-business-profile.md)'s "Known
-   gap" section for the two resolution options.
+**Flow:** [`diagrams/cards/module-1/settings-business-profile.mmd`](diagrams/cards/module-1/settings-business-profile.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-1/settings-business-profile.ts`](pseudocode/module-1/settings-business-profile.ts)
 
 **Milestone (finished state):** Editing any field and clicking Save persists via
 `apiClient.saveProfile` and re-syncs the sidebar identity block without a page reload.

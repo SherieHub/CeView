@@ -13,7 +13,8 @@ import { OMCS_RUBRIC_LABELS, MOCK_OMCS } from './fixtures/omcs';
 import { DEFAULT_CAMPAIGN_INPUT, MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
 import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
-import type { PlatformConnection, WorkspaceMember, PostMetric } from '../types';
+import type { WorkspaceMemberFixture } from './fixtures/members';
+import type { PlatformConnection, PostMetric } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
@@ -95,7 +96,10 @@ export const apiClient = {
       USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/disconnect`, { method: 'POST' }),
   },
   workspace: {
-    members: () => (USE_FIXTURES ? delay(MOCK_MEMBERS) : request<WorkspaceMember[]>('/api/workspace/members')),
+    // Returns WorkspaceMemberFixture (fixtures/members.ts), not types.ts's WorkspaceMember —
+    // that type models a future real-backend member shape (id/status/lowercase role) that
+    // doesn't exist yet. Reconcile the two once a real /api/workspace/members lands.
+    members: () => (USE_FIXTURES ? delay(MOCK_MEMBERS) : request<WorkspaceMemberFixture[]>('/api/workspace/members')),
     invite: (email: string) =>
       USE_FIXTURES ? delay({ ok: true }) : request('/api/workspace/invite', { method: 'POST', body: JSON.stringify({ email }) }),
   },

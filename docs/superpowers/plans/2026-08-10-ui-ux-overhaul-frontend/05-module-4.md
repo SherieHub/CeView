@@ -8,6 +8,8 @@ Screen doc: [`docs/module-4/screens/performance.md`](../../../module-4/screens/p
 Component doc: [`_components/post-analytics-modal.md`](../../../module-4/screens/_components/post-analytics-modal.md).
 Spec file: `e2e/tests/performance.spec.ts` (Cards 24–27).
 
+**Component diagram:** [`diagrams/module-4.mmd`](diagrams/module-4.mmd)
+
 ---
 
 ### CARD — Performance: Ingestion Form Entry State
@@ -26,20 +28,9 @@ Spec file: `e2e/tests/performance.spec.ts` (Cards 24–27).
 - `services/fixtures/campaign.ts` (Foundation — Fixture Data Layer) — `DEFAULT_CAMPAIGN_INPUT`, used
   to pre-fill the form's placeholder values
 
-**Steps (pseudocode):**
-1. `CampaignAnalyticsView.tsx`: if no campaign has been submitted yet (local/session state, not
-   persisted), render only the ingestion form; once a campaign exists, render the full view (Card
-   25's scope).
-2. `IngestionForm.tsx`: render 7 numeric fields — impressions, clicks, ad spend, revenue,
-   conversions, bookings, new customers — each with an inline hint describing what it means.
-3. On submit:
-   - Validate every field is a non-negative number; if any fails, show an inline error banner
-     ("All fields must be non-negative numbers.") and do not proceed.
-   - Otherwise, disable the submit button with a "Computing analytics…" spinner label, then (after
-     a short simulated delay) hand the validated input off to the metrics computation the full view
-     (Card 25) consumes, and transition to the full view.
-4. A "New submission" ghost button (rendered by the full view, Card 25) clears the current campaign
-   and returns to this entry state.
+**Flow:** [`diagrams/cards/module-4/ingestion-form-entry-state.mmd`](diagrams/cards/module-4/ingestion-form-entry-state.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-4/ingestion-form-entry-state.ts`](pseudocode/module-4/ingestion-form-entry-state.ts)
 
 **Milestone (finished state):** `/performance` with no campaign submitted shows only the ingestion
 form; submitting valid values transitions to the full view (Card 25).
@@ -74,30 +65,9 @@ cd frontend && npm run test:unit -- CampaignAnalyticsView
 - `components/module-4/4.1-campaign-analytics/CampaignAnalyticsView.tsx` (Card 24) — mounts all four
   of this card's components once a campaign exists
 
-**Steps (pseudocode):**
-1. From the submitted campaign input, derive 5 metrics (each guarding against a zero denominator by
-   recording that metric's name in a "flagged" list instead of dividing by zero):
-   - CTR = clicks / impressions × 100 (flag if impressions = 0).
-   - CPC = ad spend / clicks (flag if clicks = 0).
-   - Conversion rate = bookings / clicks × 100 (flag if clicks = 0).
-   - ROAS = revenue / ad spend (flag if ad spend = 0).
-   - CAC = ad spend / new customers (flag if new customers = 0).
-2. Render one `KpiCard` per metric, each with a trend arrow — "good" direction differs per metric:
-   higher is better for CTR/ROAS/conversion rate, lower is better for CPC/CAC ("inverse-good").
-3. If the flagged list is non-empty, render `FlaggedMetricBanner` naming every flagged metric and
-   stating that its weight was redistributed in the PES calculation below.
-4. Compute PES (Promotional Effectiveness Score):
-   - Normalize each of ROAS/conversion-rate/CAC/CTR/CPC against fixed Cebu-MSME bounds, inverting
-     the two cost metrics (CAC, CPC) so "lower raw value" maps to "higher normalized score".
-   - Weight the normalized values (ROAS 35%, conversion rate 30%, CAC 15%, CTR 15%, CPC 5%) and sum
-     them into an overall score in `[0, 1]`.
-   - Map the overall score to a qualitative label: ≥0.80 Excellent, ≥0.60 Good, ≥0.40 Fair, else
-     Poor.
-5. Render `PesGauge`: the radial gauge (score + qualitative label), a contribution-breakdown bar per
-   weighted metric, and the weighted-sum formula shown verbatim beneath them.
-6. Render `CustomerJourneyFunnel`: 4 stages (Impressions → Clicks → Conversions → Bookings), each
-   after the first showing its drop-off percentage from the previous stage (or nothing if the
-   previous stage's value was zero).
+**Flow:** [`diagrams/cards/module-4/kpi-cards-pes-gauge-funnel.mmd`](diagrams/cards/module-4/kpi-cards-pes-gauge-funnel.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-4/kpi-cards-pes-gauge-funnel.ts`](pseudocode/module-4/kpi-cards-pes-gauge-funnel.ts)
 
 **Milestone (finished state):** Submitting the ingestion form with a zero denominator (e.g.
 `adSpend: 0`) shows the flagged banner naming the correct metric(s), and PES still renders a value in
@@ -136,20 +106,9 @@ cd frontend && npm run test:unit -- CampaignAnalyticsView
 - `services/fixtures/campaign.ts` (Foundation — Fixture Data Layer) — `MOCK_HISTORY` (trend charts'
   data source), `MOCK_REPORT` (the AI action plan's data source)
 
-**Steps (pseudocode):**
-1. Maintain a shared "weeks" toggle (4 or 8) for this screen; slice `MOCK_HISTORY` to the trailing N
-   weeks based on it.
-2. `PesTrendChart`: plot PES over the selected window, with dashed horizontal reference lines at each
-   qualitative-label threshold (0.40 / 0.60 / 0.80).
-3. `EfficiencyTrendChart`: plot ROAS, CTR, and conversion rate together over the same window.
-4. `CostTrendChart`: plot CPC and CAC together over the same window.
-5. `AiActionPlan`:
-   - Render the executive summary text from `MOCK_REPORT`.
-   - Render the 3 funnel diagnostics in the order `MOCK_REPORT` provides them — that order is
-     ranked by business impact (Weakest → Moderate → Alright), which does **not** necessarily match
-     sorting by raw drop-off percentage; render them as-given, don't re-sort by drop-size.
-   - Pair each diagnostic with its matching recommendation card (title, action text) and an urgency
-     chip (Most Urgent / Urgent / Not Very Urgent).
+**Flow:** [`diagrams/cards/module-4/trend-charts-ai-action-plan.mmd`](diagrams/cards/module-4/trend-charts-ai-action-plan.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-4/trend-charts-ai-action-plan.ts`](pseudocode/module-4/trend-charts-ai-action-plan.ts)
 
 **Milestone (finished state):** Toggling 4↔8 weeks updates both trend charts consistently; the 3
 diagnostics render in Weakest→Moderate→Alright order regardless of each stage's raw drop percentage.
@@ -187,18 +146,9 @@ cd frontend && npm run test:unit -- CampaignAnalyticsView
   prototype's hand-rolled SVG `miniLine()` helper, per the Design System card's decision to keep
   Recharts
 
-**Steps (pseudocode):**
-1. `PreviouslyPublished.tsx`: render filter tabs (All / TikTok / Instagram / Facebook) over the
-   shared post store, restricted to posts with `status: 'published'` — drafts and scheduled posts
-   never appear here and are not clickable into the modal.
-2. Clicking a published post opens `PostAnalyticsModal` for that post's id.
-3. `PostAnalyticsModal.tsx`:
-   - Header: platform, date, a truncated caption (first ~110 characters, ellipsized if longer).
-   - A stat grid: reach, likes, comments, shares, engagement rate, platform.
-   - If the post has non-zero reach: render a 7-day reach-accumulation line chart from its `series`
-     data (Recharts area/line, not the prototype's SVG helper).
-   - If the post has zero reach (no data has come back from the platform yet): render a "No data
-     yet" empty state instead of an empty chart.
+**Flow:** [`diagrams/cards/module-4/previously-published-post-analytics-modal.mmd`](diagrams/cards/module-4/previously-published-post-analytics-modal.mmd)
+
+**Steps (pseudocode):** [`pseudocode/module-4/previously-published-post-analytics-modal.ts`](pseudocode/module-4/previously-published-post-analytics-modal.ts)
 
 **Milestone (finished state):** Clicking a published post opens its analytics modal with the correct
 fixture data; clicking a draft post (in Calendar or the Content Board) does not offer this modal.

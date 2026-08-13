@@ -5,6 +5,8 @@ directory" note) — not `ceview/`. Block every screen card in the other four fi
 each other except where noted. See [`00-index.md`](00-index.md) for the card template legend and full
 dependency graph.
 
+**Component diagram:** [`diagrams/foundation.mmd`](diagrams/foundation.mmd)
+
 Because `frontend/` starts empty (unlike `ceview/`, which already had its build tooling in place when
 these cards were first written), a **Project Scaffold** card comes first — the other three Foundation
 cards all assume `npm install && npm run dev` already works.
@@ -34,32 +36,9 @@ build tooling.
   match where there's no reason to diverge (React 19.2, Vite 6, TS 5.8, Vitest 4, react-router-dom 7,
   recharts 3, lucide-react); read-only reference, not copied
 
-**Steps (pseudocode):**
-1. Create `package.json`:
-   - Name it `frontend`.
-   - Scripts: `dev` → `vite`; `build` → `vite build`; `preview` → `vite preview`; `test` →
-     `vitest run`; `test:unit` → `vitest run` excluding `tests/integration/**`; `test:integration` →
-     `vitest run tests/integration`.
-   - Runtime deps: `react`, `react-dom`, `react-router-dom`, `recharts`, `lucide-react`.
-   - Dev deps: `@vitejs/plugin-react`, `@tailwindcss/vite`, `tailwindcss`, `typescript`, `vite`,
-     `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/jest-dom`, `@types/react`,
-     `@types/react-dom`, `@types/node`.
-2. Create `vite.config.ts`:
-   - Register the React plugin and the Tailwind plugin.
-   - Add a `@` path alias pointing at the project root.
-   - Configure Vitest to use the `jsdom` environment and load `vitest.setup.ts`.
-3. Create `tsconfig.json` with `strict: true`, `jsx: "react-jsx"`, `moduleResolution: "bundler"`, and
-   the same `@/*` path mapping as the Vite alias.
-4. Create `index.html`:
-   - No Tailwind CDN `<script>`, no CDN import map (unlike `ceview/index.html`'s current leftover
-     setup — everything is a real npm dependency, bundled by Vite).
-   - Font `<link>` tags, a `<div id="root">`, and a module `<script>` pointing at `/index.tsx`.
-5. Create `index.tsx`:
-   - Import `./styles/index.css` (built by the Design System card).
-   - Mount `<App/>` wrapped in `<AuthProvider>` into `#root`.
-6. Create `.gitignore` (`node_modules/`) and `vitest.setup.ts` (imports jest-dom's Vitest matchers).
-7. Create `README.md` noting `frontend/` is the active app under development and `ceview/` remains
-   deployed until cutover.
+**Flow:** [`diagrams/cards/foundation/project-scaffold.mmd`](diagrams/cards/foundation/project-scaffold.mmd)
+
+**Steps (pseudocode):** [`pseudocode/foundation/project-scaffold.ts`](pseudocode/foundation/project-scaffold.ts)
 
 **Milestone (finished state):** `npm install && npm run dev` serves a blank page with no console
 errors; `npm run build` succeeds.
@@ -93,30 +72,13 @@ used — `frontend/` uses Tailwind (per project decision), not hand-rolled `.css
 - none yet — this is the first visual card; later cards become the "related files" that read this
   one's tokens/primitives
 
-**Steps (pseudocode):**
-1. At the top of `styles/index.css`, add `@import "tailwindcss";`.
-2. Add a Tailwind v4 `@theme` block transcribing the prototype's `:root` block
-   (`ui-ux-prototype.html:15–67`) 1:1:
-   - Brand, surface, ink, line, state, and platform colors → `--color-*`.
-   - Radii → `--radius-*`.
-   - Shadows → `--shadow-*`.
-   - Spacing scale → `--spacing-*`.
-   - `--sidebar-w` and `--ease-brand` as bare custom properties (Tailwind v4 has no first-class
-     "easing" or "sidebar width" theme namespace, so these stay outside `@theme`).
-3. Below the `@theme` block, add the reset + typography helpers as plain CSS
-   (`ui-ux-prototype.html:70–110`): `.eyebrow`, `.h-xl`/`.h-lg`/`.h-md`/`.h-sm`, `.body-sm`/
-   `.body-xs`, `.num`, `.mono`, `.sr`, focus-visible/selection styles.
-4. Leave the primitive component classes (`.btn`/`.card`/form primitives/`.chip`/`.tabs`/`.bar`/
-   `.switch`/`.check`/`.skel`/`.toast`/`.modal`/`.drawer`/`.banner`/`.empty`,
-   `ui-ux-prototype.html:112–302`) for incremental addition:
-   - Each consuming screen card adds the ones it needs, either as `@layer components` classes in
-     this file or as Tailwind utility compositions inlined at the call site.
-   - Decide per-primitive at implementation time, not up front.
-5. Exclude `.cs2-*`, `.prev-*`, `#devbar`/`.devbar-*` entirely — these belong to the dropped v2
-   Content Studio / dev-only jump bar, not the product.
-6. Wherever `frontend/`'s equivalent of `constants.ts` lands (a later card), decide and document
-   `COLORS`'s fate: kept as resolved hex (Recharts `stroke`/`fill` props need hex, not CSS vars), but
-   annotated "must match `styles/index.css`'s `@theme` block" and diffed against it in review.
+**Flow:** [`diagrams/cards/foundation/design-system.mmd`](diagrams/cards/foundation/design-system.mmd)
+
+**Steps (pseudocode):** [`pseudocode/foundation/design-system.ts`](pseudocode/foundation/design-system.ts)
+
+Wherever `frontend/`'s equivalent of `constants.ts` lands (a later card), decide and document
+`COLORS`'s fate: kept as resolved hex (Recharts `stroke`/`fill` props need hex, not CSS vars), but
+annotated `// must match styles/index.css's @theme block` and diffed against it in review.
 
 **Milestone (finished state):** A throwaway test page rendering one of every primitive class matches
 the prototype pixel-for-pixel at the token level (color, radius, shadow, spacing), and
@@ -169,60 +131,9 @@ screen card a place to mount.
   consume
 - `styles/index.css` (Design System card) — tokens this card's Tailwind classes reference
 
-**Steps (pseudocode):**
-1. `layout/nav.ts`: define the `NAV` table as an ordered list of section headers and items —
-   Intelligence (Dashboard, with an unread badge), Create (Content Studio, Calendar), Measure
-   (Performance), Account (Settings). Exclude the prototype's `content2` entry (superseded v2 draft,
-   not built).
-2. `components/shared/useOverlayStack.tsx`:
-   - Hold a stack (array) of open overlay kinds (`modal`, `drawer`, `sidebar`).
-   - `push(kind)` appends if not already present; `pop(kind)` removes it; `dismissTop()` removes only
-     the last entry.
-   - Expose `scrimVisible` = stack is non-empty.
-   - On mount, listen for `Escape` and call `dismissTop()`.
-3. `components/shared/Modal.tsx` / `Drawer.tsx`: on `open` becoming true, `push` their kind onto the
-   stack; on `open` becoming false or unmount, `pop` it.
-4. `components/shared/Toast.tsx`: hold a list of active toast messages; `showToast(message)` appends
-   one with a generated id and removes it again after ~2.6s.
-5. `services/authStorage.ts`: read/write/clear a JSON-serialized token object under one localStorage
-   key.
-6. `services/auth.tsx`:
-   - On mount, check `authStorage` for a persisted token; if present, treat the session as
-     authenticated.
-   - `login(email, password)` / `register(email, password)` call `apiClient.auth.*`, persist the
-     returned token, and set the current user.
-   - `logout()` clears the token and the current user.
-7. `components/auth/AuthGate.tsx`:
-   - `AuthGate`: if not authenticated, redirect to `/login`; otherwise render the nested route.
-   - `RedirectIfAuthenticated`: if authenticated, redirect to `/dashboard`; otherwise render children
-     (wraps `LoginPage`).
-8. `services/profileContext.tsx`:
-   - `ProfileProvider` holds the business profile in state (empty/default shape until onboarding
-     completes).
-   - `ProfileGate`: if `profile.uniquenessScore` is `null` and the current route isn't `/onboarding`,
-     redirect to `/onboarding`; if it's set and the route is `/onboarding`, redirect to `/dashboard`;
-     otherwise render the nested route.
-9. `layout/Sidebar.tsx`: render `NAV`'s sections and items; highlight the item matching the current
-   route; Settings expands inline to show its 3 sub-tabs (all living in the consolidated
-   `components/settings/` — see `02-module-1.md` Card 9 and `04-module-3.md` Cards 22–23 for why);
-   footer shows the signed-in user's identity + a sign-out action.
-10. `layout/Topbar.tsx`: look up the current route in `NAV`, render its title/subtitle; render a
-    burger button (mobile sidebar toggle) and inert notification/search buttons.
-11. `layout/AppShell.tsx`: render `Sidebar` + `Topbar` side by side with a scrollable `<Outlet/>`
-    beneath the topbar.
-12. `layout/RoutePlaceholder.tsx`: render a centered "not built yet" message, optionally sourcing its
-    title/subtitle from a `NAV` entry.
-13. `components/auth/LoginPage.tsx`: split-pane layout — brand panel with stat tiles on one side, a
-    Sign in / Create account tab switcher with an email+password form on the other; a Google OAuth
-    button rendered but disabled (no provider wired yet).
-14. `App.tsx`: build the router tree —
-    - `/login` → `RedirectIfAuthenticated(LoginPage)`.
-    - Everything else wrapped in `AuthGate` → `ProfileGate`:
-      - `/onboarding` → `RoutePlaceholder` (wizard internals are a later card).
-      - Everything else wrapped in `AppShell`: `/dashboard`, `/content`, `/calendar`,
-        `/performance`, `/settings` (redirects to `/settings/profile`), `/settings/:tab` — all
-        `RoutePlaceholder` for now.
-    - Wrap the whole tree in `ProfileProvider` → `OverlayStackProvider` → `ToastProvider`.
+**Flow:** [`diagrams/cards/foundation/shell-and-routing.mmd`](diagrams/cards/foundation/shell-and-routing.mmd)
+
+**Steps (pseudocode):** [`pseudocode/foundation/shell-and-routing.ts`](pseudocode/foundation/shell-and-routing.ts)
 
 **Milestone (finished state):** Every route renders an empty screen shell with correct sidebar
 highlight and topbar title; opening a test modal and a test drawer follows the stack rules (open
@@ -269,21 +180,9 @@ demoable before its real backend endpoint exists.
 - `services/authStorage.ts` (built by the Shell & Routing card, running in parallel) — `apiClient`
   attaches the persisted token as an `Authorization` header on real (non-fixture) requests
 
-**Steps (pseudocode):**
-1. For each fixture module (`markets`, `notifications`, `content`, `omcs`, `campaign`, `posts`,
-   `members`): transcribe the matching `MOCK_*` constant from `ui-ux-prototype.html` (lines
-   1130–1220, 1234–1267, 1272–1391, 1396–1426, 1431–1466, 1468–1475, 1477–1481 respectively) into a
-   typed TS module, exporting the constant plus any helper functions defined alongside it
-   (`buildChartData`, `marketsForCategory`).
-2. `types.ts`: define `AuthUser`, `AuthTokens`, `BusinessProfile` (including the onboarding-only
-   fields `slogan`, `industry`, `vibes`, `website`, `logo`, `socials`), `PlatformId`,
-   `PlatformConnection`, `WorkspaceMember`, `SocialPost`, `PostMetric`.
-3. `services/apiClient.ts`: for every resource (markets, notifications, content, omcs, campaign,
-   posts, connections, workspace, auth):
-   - Define a method that, if `import.meta.env.VITE_USE_FIXTURES` is `"true"`, returns the matching
-     fixture value after a short simulated delay.
-   - Otherwise, issue a real `fetch` to the equivalent backend endpoint, attaching the stored auth
-     token as a bearer header when present, and throwing on a non-2xx response.
+**Flow:** [`diagrams/cards/foundation/fixture-data-layer.mmd`](diagrams/cards/foundation/fixture-data-layer.mmd)
+
+**Steps (pseudocode):** [`pseudocode/foundation/fixture-data-layer.ts`](pseudocode/foundation/fixture-data-layer.ts)
 
 **Milestone (finished state):** With `VITE_USE_FIXTURES=true` and zero backend running, every fixture
 module returns data shaped exactly like its prototype source, and `apiClient`'s methods resolve
