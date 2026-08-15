@@ -2,9 +2,9 @@ name: E2E (Playwright, full stack, per-screen)
 
 on:
   push:
-    branches: [main, task_allocation]
+    branches: [main, task_allocation, ph1-dev]
   pull_request:
-    branches: [main, task_allocation]
+    branches: [main, task_allocation, ph1-dev]
   schedule:
     # Full, unfiltered run every night — the path-filtered PR checks below are
     # a fast-feedback convenience, not a substitute for this safety net.

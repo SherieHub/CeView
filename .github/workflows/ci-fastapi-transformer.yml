@@ -2,12 +2,12 @@ name: CI - fastapi-transformer
 
 on:
   push:
-    branches: [main, task_allocation]
+    branches: [main, task_allocation, ph1-dev]
     paths:
       - 'backend/fastapi-transformer/**'
       - '.github/workflows/ci-fastapi-transformer.yml'
   pull_request:
-    branches: [main, task_allocation]
+    branches: [main, task_allocation, ph1-dev]
     paths:
       - 'backend/fastapi-transformer/**'
       - '.github/workflows/ci-fastapi-transformer.yml'
