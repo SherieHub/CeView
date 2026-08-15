@@ -6,6 +6,34 @@ import RoutePlaceholder from './layout/RoutePlaceholder';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
+import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
+import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
+
+/**
+ * DEV-ONLY preview routes.
+ *
+ * Onboarding steps live behind AuthGate, and apiClient.auth.login has no
+ * fixture branch — it always hits the real backend — so a screen cannot be
+ * eyeballed locally without Spring Boot + Postgres running. These routes mount
+ * a step directly, outside both gates, purely so it can be checked in a
+ * browser. `import.meta.env.DEV` is statically false in `vite build`, so the
+ * whole array (and its imports) is tree-shaken out of production bundles.
+ *
+ * TEMPORARY: delete this once the wizard shell (Card 4, 02-module-1.md) mounts
+ * the steps for real.
+ */
+const devPreviewRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: '/preview/onboarding',
+        element: (
+          <ObDraftProvider initial={DEMO_OB_DRAFT}>
+            <OnboardingWizard />
+          </ObDraftProvider>
+        ),
+      },
+    ]
+  : [];
 
 /**
  * Route tree:
@@ -21,6 +49,7 @@ import { ToastProvider } from './components/shared/Toast';
  * (02-module-1.md … 05-module-4.md).
  */
 const router = createBrowserRouter([
+  ...devPreviewRoutes,
   { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
   {
     element: <AuthGate />,
