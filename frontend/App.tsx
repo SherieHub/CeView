@@ -6,17 +6,18 @@ import RoutePlaceholder from './layout/RoutePlaceholder';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
+import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
 
 /**
  * Route tree:
  *   /login                       - public
  *   (AuthGate: redirects to /login when unauthenticated)
  *     (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
- *       /onboarding              - placeholder, no shell (wizard is a later card)
+ *       /onboarding              - OnboardingWizard (m1c1), no AppShell
  *       (AppShell: sidebar + topbar + <Outlet/>)
  *         /dashboard, /content, /calendar, /performance, /settings/:tab
  *
- * Every route element below is an empty screen-shell placeholder per this
+ * Remaining route elements are empty screen-shell placeholders per this
  * Foundation card's scope boundary — screen components land in later cards
  * (02-module-1.md … 05-module-4.md).
  */
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
         children: [
           {
             path: '/onboarding',
-            element: <RoutePlaceholder title="Onboarding" sub="Set up your business profile" />,
+            element: <OnboardingWizard />,
           },
           {
             element: <AppShell />,
