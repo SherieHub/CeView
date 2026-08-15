@@ -215,11 +215,49 @@ svg {
   .num {
     font-variant-numeric: tabular-nums;
   }
+  .card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+  }
+  .empty {
+    text-align: center;
+    padding: var(--spacing-12) var(--spacing-5);
+  }
+  .empty-glyph {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+    background: var(--color-panel-sunk);
+    display: grid;
+    place-items: center;
+    margin: 0 auto var(--spacing-4);
+    border: 1px solid var(--color-line);
+  }
+  .empty-glyph svg {
+    width: 23px;
+    height: 23px;
+    stroke: var(--color-muted);
+  }
+  .empty h3 {
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .empty p {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-top: 6px;
+    max-width: 44ch;
+    margin-inline: auto;
+  }
 }
 
-/* Primitive component classes (.btn/.card/.chip/.tabs/.bar/.switch/.check/
-   .skel/.toast/.modal/.drawer/.banner/.empty — prototype lines 112–302) are
-   added incrementally as each consuming screen card needs them, per
-   01-foundation.md's Design System card. .cs2-*, .prev-*, #devbar/.devbar-*
-   are excluded — they belong to the dropped v2 Content Studio / dev-only
-   jump bar, not the product. */
+/* Primitive component classes (.btn/.chip/.tabs/.bar/.switch/.check/.skel/
+   .toast/.modal/.drawer/.banner — prototype lines 112–302) are added
+   incrementally as each consuming screen card needs them, per
+   01-foundation.md's Design System card. .card and .empty (+ .empty-glyph)
+   were added ahead of schedule because module-1..4 placeholder stubs
+   already reference them (see 01a-foundation-verification.md). .cs2-*,
+   .prev-*, #devbar/.devbar-* are excluded — they belong to the dropped v2
+   Content Studio / dev-only jump bar, not the product. */

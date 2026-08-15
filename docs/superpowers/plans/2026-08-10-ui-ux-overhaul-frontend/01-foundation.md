@@ -44,7 +44,7 @@ build tooling.
 errors; `npm run build` succeeds.
 
 **Definition of Done:**
-- [ ] No Vitest suite required for this card (pure scaffolding, no logic)
+- [x] No Vitest suite required for this card (pure scaffolding, no logic)
 - [ ] Code review approved
 
 **Verification:**
@@ -85,7 +85,7 @@ the prototype pixel-for-pixel at the token level (color, radius, shadow, spacing
 `npm run build` in `frontend/` succeeds with `styles/index.css` imported.
 
 **Definition of Done:**
-- [ ] No Vitest suite required for this card (pure CSS, no logic) — visual review substitutes
+- [x] No Vitest suite required for this card (pure CSS, no logic) — visual review substitutes
 - [ ] Code review approved (side-by-side screenshot vs. prototype for at least `.btn`, `.card`,
       `.chip`, `.banner` variants)
 
@@ -141,7 +141,7 @@ drawer → open modal over it → Esc closes modal only → Esc again closes dra
 credentials → lands on `/dashboard`.
 
 **Definition of Done:**
-- [ ] `useOverlayStack.test.ts` covers push/pop/dismissTop ordering
+- [x] `useOverlayStack.test.ts` covers push/pop/dismissTop ordering
 - [ ] Playwright coverage (`login.spec.ts`-equivalent) — deferred, not wired for `frontend/` yet (see
       `00-index.md`'s Testing Strategy). Manual verification (unauthenticated redirect, login
       success) substitutes until that later plan lands.
@@ -189,7 +189,7 @@ module returns data shaped exactly like its prototype source, and `apiClient`'s 
 without a network call.
 
 **Definition of Done:**
-- [ ] `apiClient.fixtures.test.ts` asserts each method returns the fixture shape when
+- [x] `apiClient.fixtures.test.ts` asserts each method returns the fixture shape when
       `VITE_USE_FIXTURES=true`
 - [ ] No dedicated Playwright spec (this card has no UI) — its correctness is proven transitively by
       every screen spec that depends on it, once `frontend/` is wired into `e2e/`
