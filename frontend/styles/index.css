@@ -9,7 +9,7 @@
 
 @theme {
   /* Brand */
-  --color-navy: #0f2854;
+  --color-navy: rgb(0,120,146);
   --color-navy-light: #183c7b;
   --color-blue: #06388e;
   --color-skyblue: #7fbfff;

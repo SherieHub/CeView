@@ -101,6 +101,36 @@ card.
 7. **Report.** What you built, test output, and — unchanged from the plan — every flagged gap you
    did *not* touch, so the user knows what still needs a human (or a different card) to close it.
 
+8. **Output a copy-pasteable PR comment.** After the report, emit one more fenced `markdown` block —
+   the same copy-paste convention as step 3's blocked-status comment — summarizing the finished card
+   for a GitHub PR description or review comment. Keep it to **one single flat fence, no fences
+   nested inside it** — a nested ``` block breaks copy-paste (the inner fence reads as closing the
+   outer one), so render command output as a plain `` `command` `` → result line, not as its own code
+   block:
+
+   ````markdown
+   ## ✅ `<token>` — <card name>
+
+   **Summary:** <one line: what this card added, in outcome terms>
+
+   **Files:**
+   - `<path>` — new file | stub replaced
+   - ...
+
+   **Tests:**
+   - `<verification command run>` → <real pass/fail result, condensed — not the full log>
+   - `<next command, if any>` → <result>
+
+   **Flagged gaps (not touched):**
+   - `<file>` — <why it's out of scope, per this card's plan>
+
+   <or, if none: "None — this card is fully self-contained.">
+   ````
+
+   Use the real token, card name, files, and verification output from this run — never placeholder
+   text. This block is additive: it doesn't replace step 7's report, it packages the same facts for
+   pasting directly into GitHub as a single unbroken block.
+
 ## Scope: only the card's own new files
 
 **Never edit a file that isn't either (a) explicitly listed in this card's "Project files to
