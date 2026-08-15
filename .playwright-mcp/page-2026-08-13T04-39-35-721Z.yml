@@ -1,0 +1,47 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: Ce
+        - generic [ref=e6]:
+          - generic [ref=e7]: CeView
+          - text: Tourism Demand Intelligence
+      - generic [ref=e8]:
+        - heading [level=1] [ref=e9]:
+          - text: Know which market is
+          - emphasis [ref=e10]: about to move
+          - text: — before your competitors do.
+        - paragraph [ref=e11]: CeView forecasts inbound-traveler demand surges into Cebu from Korea, Japan and the USA, then helps you draft, review and publish market-localized content around them.
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: "3"
+          - text: Source markets tracked
+        - generic [ref=e15]:
+          - generic [ref=e16]: 12wk
+          - text: Demand forecast horizon
+        - generic [ref=e17]:
+          - generic [ref=e18]: 2σ
+          - text: Surge detection threshold
+    - main [ref=e19]:
+      - generic [ref=e20]:
+        - tablist [ref=e21]:
+          - tab "Sign in" [selected] [ref=e22] [cursor=pointer]
+          - tab "Create account" [ref=e23] [cursor=pointer]
+        - heading "Welcome back" [level=2] [ref=e24]
+        - paragraph [ref=e25]: Sign in to your CeView workspace.
+        - generic [ref=e26]:
+          - button "Continue with Google" [ref=e27] [cursor=pointer]
+          - paragraph [ref=e33]: Firebase handles sign-in; CeView issues a JWT for the Spring Boot API.
+        - generic [ref=e34]: OR
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic [ref=e37]: Work email
+            - textbox "Work email" [ref=e38]: maria@sunsetcove.ph
+          - generic [ref=e39]:
+            - generic [ref=e40]: Password
+            - textbox "Password" [ref=e41]: demo-password
+          - button "Sign in" [ref=e42] [cursor=pointer]
+        - paragraph [ref=e43]: Prototype only — no credentials are transmitted or stored.
+  - complementary [ref=e44]
+  - dialog
+  - button "Prototype" [ref=e46] [cursor=pointer]

@@ -1,0 +1,37 @@
+%% Module 2 — Market Radar & Notifications
+%% Dashboard (Cards 10-12) + Market Radar Drawer (Cards 13-14). See 03-module-2.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+
+  subgraph Dashboard["components/module-2/2.1-dashboard/ (route: /dashboard)"]
+    DashView["DashboardView.tsx\n(Cards 10-12 — 6 states, page head, alert feed, markets reveal)"]:::newfile
+    AlertCard["AlertCard.tsx (Card 10)"]:::newfile
+    RankCard["RankCard.tsx (Card 11)"]:::newfile
+    RankingFormula["RankingFormulaCard.tsx (Card 11)"]:::newfile
+    RefreshBtn["RefreshForecastButton.tsx (Card 12)"]:::newfile
+  end
+  DashView --> AlertCard
+  DashView -->|on alert selected| RankCard --> RankingFormula
+  DashView --> RefreshBtn
+
+  subgraph Radar["components/module-2/2.2-market-radar/ (mounted via ?market=<id>)"]
+    Drawer["MarketRadarDrawer.tsx (Card 13)"]:::newfile
+    Chart["DemandForecastChart.tsx (Card 13)"]:::newfile
+    Tabs["InsightsTabs.tsx (Card 14)"]:::newfile
+    PurchTab["PurchasingPowerTab.tsx (Card 14)"]:::newfile
+    SeasonTab["SeasonalPatternsTab.tsx (Card 14)"]:::newfile
+  end
+  Drawer --> Chart
+  Drawer --> Tabs --> PurchTab
+  Tabs --> SeasonTab
+
+  RankCard -.->|click sets ?market=<id>, opens| Drawer
+  Drawer -.->|"Target this market" -> navigate /content| ContentStudio["/content route\n(Module 3)"]:::foundation
+
+  DashView -.->|apiClient.notifications.list| ApiClient["services/apiClient.ts"]:::foundation
+  DashView -.->|profile.categories filter| ProfileCtx["services/profileContext.tsx\nuseProfile()"]:::foundation
+  RankCard -.->|marketsForCategory| Fixtures["services/fixtures/markets.ts"]:::foundation
+  Drawer -.->|MOCK_MARKETS fields| Fixtures
+  RefreshBtn -.->|completion toast| Toast["components/shared/Toast.tsx\nuseToast()"]:::foundation
+  Drawer -.->|built on| DrawerPrimitive["components/shared/Drawer.tsx"]:::foundation

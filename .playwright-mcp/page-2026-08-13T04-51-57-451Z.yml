@@ -1,0 +1,71 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e49]:
+    - complementary [ref=f1e50]:
+      - generic [ref=f1e51]:
+        - generic [ref=f1e52]: Ce
+        - generic [ref=f1e53]:
+          - generic [ref=f1e54]: CeView
+          - text: Market Intelligence
+      - navigation [ref=f1e55]:
+        - generic [ref=f1e209]: Intelligence
+        - button "Dashboard 2" [ref=f1e210] [cursor=pointer]:
+          - generic [ref=f1e216]: Dashboard
+          - generic [ref=f1e217]: "2"
+        - generic [ref=f1e218]: Create
+        - button "Content Studio" [ref=f1e219] [cursor=pointer]
+        - button "Content Studio (2)" [ref=f1e223] [cursor=pointer]
+        - button "Calendar" [ref=f1e229] [cursor=pointer]
+        - generic [ref=f1e233]: Measure
+        - button "Performance" [ref=f1e234] [cursor=pointer]
+        - generic [ref=f1e239]: Account
+        - button "Settings" [ref=f1e240] [cursor=pointer]
+      - generic [ref=f1e95]:
+        - generic [ref=f1e96]: SC
+        - generic [ref=f1e97]:
+          - generic [ref=f1e98]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=f1e99]:
+      - banner [ref=f1e100]:
+        - generic [ref=f1e101]:
+          - generic [ref=f1e102]: Content Studio
+          - text: Draft, audit and publish
+        - generic [ref=f1e103]:
+          - button "Notifications" [ref=f1e104] [cursor=pointer]
+          - button "Search" [ref=f1e109] [cursor=pointer]
+      - generic [ref=f1e253]:
+        - generic [ref=f1e255]:
+          - heading "Content Studio" [level=2] [ref=f1e256]
+          - paragraph [ref=f1e257]: Step 1 of 2 — pick the surge alert you're creating content for.
+        - generic [ref=f1e258]:
+          - button "Week of Aug 3, 2026 Surge Demand Window Opening — South Korea Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach. South Korea Accommodation & Staycation Healing / 힐링여행 Pick this alert" [ref=f1e259] [cursor=pointer]:
+            - generic [ref=f1e260]:
+              - generic [ref=f1e262]: Week of Aug 3, 2026
+              - generic [ref=f1e263]: Surge
+            - heading "Demand Window Opening — South Korea" [level=4] [ref=f1e266]
+            - paragraph [ref=f1e267]: Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach.
+            - generic [ref=f1e268]:
+              - generic [ref=f1e269]: South Korea
+              - generic [ref=f1e273]: Accommodation & Staycation
+              - generic [ref=f1e277]: Healing / 힐링여행
+            - generic [ref=f1e281]: Pick this alert
+          - 'button "Week of Jul 27, 2026 Rising Trend: Private Beachfront Escapes Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks. Japan Coastal & Island Beachfront Luxury Pick this alert" [ref=f1e284] [cursor=pointer]':
+            - generic [ref=f1e285]: Week of Jul 27, 2026
+            - 'heading "Rising Trend: Private Beachfront Escapes" [level=4] [ref=f1e288]'
+            - paragraph [ref=f1e289]: Japanese search interest for セブ島 ホテル is accelerating — the 7-day rolling average has crossed above the 30-day baseline for three straight weeks.
+            - generic [ref=f1e290]:
+              - generic [ref=f1e291]: Japan
+              - generic [ref=f1e295]: Coastal & Island
+              - generic [ref=f1e299]: Beachfront Luxury
+            - generic [ref=f1e303]: Pick this alert
+          - button "Week of Jul 13, 2026 Forex Shift Favours Korean Visitors PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month. South Korea Accommodation & Staycation Purchasing Power Pick this alert" [ref=f1e306] [cursor=pointer]:
+            - generic [ref=f1e307]: Week of Jul 13, 2026
+            - heading "Forex Shift Favours Korean Visitors" [level=4] [ref=f1e309]
+            - paragraph [ref=f1e310]: PHP per KRW has moved to 23.80, the strongest level in the tracked 12-month window. Korean guests have materially more spending headroom this month.
+            - generic [ref=f1e311]:
+              - generic [ref=f1e312]: South Korea
+              - generic [ref=f1e316]: Accommodation & Staycation
+              - generic [ref=f1e320]: Purchasing Power
+            - generic [ref=f1e324]: Pick this alert
+  - complementary [ref=f1e44]
+  - dialog
+  - button "Prototype" [ref=f1e46] [cursor=pointer]

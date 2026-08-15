@@ -1,0 +1,13 @@
+flowchart TD
+  Render(["Step 4 mounted"]) -->|social handle input| UpdateSocials["setDraft(...socials)"]
+  Render -->|click dropzone| OpenPicker["Open file picker"]
+  Render -->|drag file over dropzone| Highlight["dragOver = true"]
+  Render -->|drag leaves| Unhighlight["dragOver = false"]
+  OpenPicker -->|file selected| HandleFile["FileReader.readAsDataURL"]
+  Render -->|drop file| HandleFile
+  HandleFile --> SetLogo["setDraft(...logo: dataURL)"]
+  SetLogo --> ShowPreview(["Render image preview\ninstead of empty prompt"])
+  Render -->|website input| UpdateWebsite["setDraft(...website)"]
+  UpdateSocials --> AlwaysValid(["Continue always enabled\n— no gate"])
+  UpdateWebsite --> AlwaysValid
+  SetLogo --> AlwaysValid

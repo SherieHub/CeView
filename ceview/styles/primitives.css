@@ -1,0 +1,213 @@
+/* ============================================================
+   PRIMITIVE — BUTTON
+   ported verbatim from ui-ux-prototype.html:112-302
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:700;
+  letter-spacing:-.005em;transition:all .18s var(--ease);white-space:nowrap;
+  border:1px solid transparent;
+}
+.btn svg{width:15px;height:15px;stroke-width:2.2;}
+.btn-primary{background:var(--navy);color:#fff;box-shadow:var(--sh-1);}
+.btn-primary:hover:not(:disabled){background:var(--navy-light);transform:translateY(-1px);box-shadow:var(--sh-2);}
+.btn-gold{background:var(--gold);color:var(--navy);box-shadow:var(--sh-1);}
+.btn-gold:hover:not(:disabled){background:var(--gold-light);transform:translateY(-1px);box-shadow:var(--sh-2);}
+.btn-ghost{background:var(--panel);color:var(--ink);border-color:var(--line-strong);}
+.btn-ghost:hover:not(:disabled){border-color:var(--navy);background:var(--panel-sunk);}
+.btn-quiet{background:transparent;color:var(--muted);padding:8px 12px;}
+.btn-quiet:hover{color:var(--navy);background:var(--panel-sunk);}
+.btn-danger{background:var(--critical);color:#fff;}
+.btn:disabled{opacity:.42;cursor:not-allowed;transform:none!important;box-shadow:none;}
+.btn-sm{padding:7px 13px;font-size:12px;}
+.btn-lg{padding:13px 24px;font-size:14px;}
+.btn-block{width:100%;}
+
+/* ============================================================
+   PRIMITIVE — CARD / PANEL
+   ============================================================ */
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);
+  box-shadow:var(--sh-1);
+}
+.card-pad{padding:var(--sp-6);}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);
+  padding:var(--sp-5) var(--sp-6);border-bottom:1px solid var(--line);
+}
+.card-body{padding:var(--sp-6);}
+.card-navy{background:var(--navy);border-color:var(--navy);color:#fff;}
+.card-navy .body-sm,.card-navy .eyebrow,.card-navy .body-xs{color:rgba(255,255,255,.68);}
+.divider{height:1px;background:var(--line);border:0;margin:var(--sp-5) 0;}
+
+/* ============================================================
+   PRIMITIVE — FORM
+   ============================================================ */
+.field{display:block;margin-bottom:var(--sp-5);}
+.field-label{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  font-size:12px;font-weight:700;color:var(--ink);margin-bottom:7px;
+}
+.field-label .opt{font-size:11px;font-weight:600;color:var(--muted);}
+.input,.select,.textarea{
+  width:100%;padding:11px 13px;border:1.5px solid var(--line-strong);
+  border-radius:var(--r-sm);background:var(--panel);font-size:13.5px;
+  transition:border-color .16s,box-shadow .16s;
+}
+.input:focus,.select:focus,.textarea:focus{
+  outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,40,84,.10);
+}
+.input::placeholder,.textarea::placeholder{color:#9AA7B8;}
+.textarea{resize:vertical;min-height:120px;line-height:1.6;}
+.select{appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+.is-invalid{border-color:var(--critical-alt)!important;box-shadow:0 0 0 3px rgba(237,63,39,.10)!important;}
+.is-valid{border-color:var(--success)!important;box-shadow:0 0 0 3px rgba(15,122,78,.10)!important;}
+.field-hint{display:flex;align-items:center;gap:6px;font-size:11.5px;margin-top:6px;color:var(--muted);}
+.field-hint.bad{color:var(--critical-alt);font-weight:600;}
+.field-hint.good{color:var(--success);font-weight:600;}
+.field-hint svg{width:13px;height:13px;}
+
+/* Toggle switch */
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;}
+.switch input{position:absolute;opacity:0;pointer-events:none;}
+.switch-track{
+  width:40px;height:23px;border-radius:var(--r-full);background:var(--line-strong);
+  position:relative;transition:background .2s var(--ease);flex-shrink:0;
+}
+.switch-track::after{
+  content:'';position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s var(--ease);
+}
+.switch input:checked + .switch-track{background:var(--navy);}
+.switch input:checked + .switch-track::after{transform:translateX(17px);}
+.switch input:disabled + .switch-track{opacity:.4;cursor:not-allowed;}
+.switch-label{font-size:13px;font-weight:600;}
+
+/* Checkbox */
+.check{display:flex;align-items:flex-start;gap:10px;cursor:pointer;}
+.check input{position:absolute;opacity:0;pointer-events:none;}
+.check-box{
+  width:19px;height:19px;border:1.5px solid var(--line-strong);border-radius:5px;
+  flex-shrink:0;margin-top:1px;display:grid;place-items:center;transition:all .16s;background:var(--panel);
+}
+.check-box svg{width:12px;height:12px;stroke:#fff;stroke-width:3.5;opacity:0;transition:opacity .14s;}
+.check input:checked + .check-box{background:var(--navy);border-color:var(--navy);}
+.check input:checked + .check-box svg{opacity:1;}
+
+/* ============================================================
+   PRIMITIVE — CHIP / BADGE / TAB / BAR
+   ============================================================ */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--r-full);
+  font-size:11.5px;font-weight:700;background:var(--panel-sunk);color:var(--ink);
+  border:1px solid var(--line);white-space:nowrap;
+}
+.chip svg{width:12px;height:12px;}
+.chip-gold{background:var(--gold-wash);border-color:#F0DCAE;color:#8A5B04;}
+.chip-navy{background:rgba(15,40,84,.07);border-color:rgba(15,40,84,.14);color:var(--navy);}
+.chip-teal{background:rgba(0,120,146,.08);border-color:rgba(0,120,146,.2);color:var(--teal);}
+.chip-red{background:#FDECEA;border-color:#F6C9C2;color:var(--critical);}
+.chip-green{background:var(--success-bg);border-color:#B9E0CE;color:var(--success);}
+.chip-btn{cursor:pointer;transition:all .16s var(--ease);}
+.chip-btn:hover{border-color:var(--navy);}
+.chip-btn[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tabs > *{flex-shrink:0;}
+.tab{
+  padding:11px 16px;font-size:13px;font-weight:700;color:var(--muted);
+  border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:all .16s;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.tab svg{width:14px;height:14px;}
+.tab:hover{color:var(--ink);}
+.tab[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold);}
+
+.seg{display:inline-flex;background:var(--panel-sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:3px;}
+.seg button{padding:6px 14px;border-radius:7px;font-size:11.5px;font-weight:700;color:var(--muted);transition:all .16s;}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--navy);box-shadow:var(--sh-1);}
+
+.bar{height:7px;border-radius:var(--r-full);background:var(--panel-sunk);overflow:hidden;}
+.bar > i{display:block;height:100%;border-radius:var(--r-full);background:var(--navy);transition:width .6s var(--ease);}
+.bar.gold > i{background:var(--gold);}
+.bar.teal > i{background:var(--teal);}
+
+/* ============================================================
+   PRIMITIVE — SKELETON / TOAST / SCRIM / MODAL / DRAWER
+   ============================================================ */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drawIn{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+.skel{background:var(--panel-sunk);border-radius:var(--r-sm);animation:pulse 1.4s ease-in-out infinite;}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;}
+.spinner.dark{border-color:rgba(15,40,84,.2);border-top-color:var(--navy);}
+.reveal{animation:fadeUp .4s var(--ease) both;}
+
+#scrim{
+  position:fixed;inset:0;background:rgba(10,35,66,.42);
+  opacity:0;pointer-events:none;transition:opacity .25s var(--ease);z-index:80;
+}
+#scrim.on{opacity:1;pointer-events:auto;}
+
+.modal{
+  position:fixed;z-index:90;top:50%;left:50%;transform:translate(-50%,-46%) scale(.97);
+  width:min(620px,calc(100vw - 32px));max-height:86vh;overflow:auto;
+  background:var(--panel);border-radius:var(--r-lg);box-shadow:var(--sh-3);
+  opacity:0;pointer-events:none;transition:opacity .22s var(--ease),transform .22s var(--ease);
+}
+.modal.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:var(--sp-6);border-bottom:1px solid var(--line);}
+.modal-body{padding:var(--sp-6);}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:var(--sp-5) var(--sp-6);border-top:1px solid var(--line);background:var(--panel-sunk);border-radius:0 0 var(--r-lg) var(--r-lg);}
+.x-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted);flex-shrink:0;transition:all .16s;}
+.x-btn:hover{background:var(--panel-sunk);color:var(--ink);}
+.x-btn svg{width:17px;height:17px;}
+
+.drawer{
+  position:fixed;z-index:90;top:0;right:0;height:100dvh;width:min(720px,94vw);
+  background:var(--page);box-shadow:var(--sh-3);transform:translateX(102%);
+  transition:transform .34s var(--ease);display:flex;flex-direction:column;
+}
+.drawer.on{transform:none;}
+.drawer-head{
+  padding:var(--sp-5) var(--sp-6);border-bottom:1px solid var(--line);background:var(--panel);
+  display:flex;flex-direction:column;gap:var(--sp-4);flex-shrink:0;
+}
+.drawer-body{flex:1;overflow-y:auto;padding:var(--sp-6);display:flex;flex-direction:column;gap:var(--sp-5);}
+/* Column flex children must keep their intrinsic height — without this they
+   shrink to their borders while their SVG content overflows under clip. */
+.drawer-body > *{flex-shrink:0;}
+
+#toasts{position:fixed;z-index:120;bottom:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
+.toast{
+  display:flex;align-items:center;gap:10px;padding:11px 18px;border-radius:var(--r-full);
+  background:var(--navy);color:#fff;font-size:13px;font-weight:700;box-shadow:var(--sh-3);
+  animation:fadeUp .3s var(--ease) both;
+}
+.toast svg{width:15px;height:15px;stroke:var(--gold);}
+
+/* ============================================================
+   PRIMITIVE — BANNERS / EMPTY STATES
+   ported verbatim from ui-ux-prototype.html:491-504
+   (out of numeric sequence with the block above, but named alongside it
+   in the plan's primitive class list — grouped here rather than in
+   shell.css since these are content primitives, not shell layout)
+   ============================================================ */
+.banner{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.55;border:1px solid;}
+.banner svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
+.banner-warn{background:var(--gold-wash);border-color:#F0DCAE;color:#7A5104;}
+.banner-warn svg{stroke:var(--gold-dark);}
+.banner-err{background:#FDECEA;border-color:#F6C9C2;color:var(--critical);}
+.banner-err svg{stroke:var(--critical);}
+.banner-info{background:rgba(0,120,146,.06);border-color:rgba(0,120,146,.22);color:#065064;}
+.banner-info svg{stroke:var(--teal);}
+.banner b{font-weight:800;}
+.empty{text-align:center;padding:var(--sp-12) var(--sp-5);}
+.empty-glyph{width:52px;height:52px;border-radius:15px;background:var(--panel-sunk);display:grid;place-items:center;margin:0 auto var(--sp-4);border:1px solid var(--line);}
+.empty-glyph svg{width:23px;height:23px;stroke:var(--muted);}
+.empty h3{font-size:16px;font-weight:800;}
+.empty p{font-size:13px;color:var(--muted);margin-top:6px;max-width:44ch;margin-inline:auto;}

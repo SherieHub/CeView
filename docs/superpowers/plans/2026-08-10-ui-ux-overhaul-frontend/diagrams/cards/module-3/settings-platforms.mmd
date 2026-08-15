@@ -1,0 +1,10 @@
+flowchart TD
+  Mount(["/settings/platforms mounted"]) --> Load["apiClient.connections.list()"]
+  Load --> Render(["Render one row per platform"])
+  Render -->|click Connect| OpenModal["connectingPlatform = platform"]
+  OpenModal --> Redirecting["Modal: 'Redirecting to <platform>…'"]
+  Redirecting -->|~800ms| ScopeGrant["Modal: permissions list\n+ 'Grant scope' button"]
+  ScopeGrant -->|click Grant scope| Connect["Mark connected,\nclose modal, toast"]
+  Render -->|click Disconnect| Disconnect["Immediate — no confirm modal:\nmark disconnected, toast"]
+  Disconnect --> Prune(["onDisconnect(platform):\nprune from Content Studio's\nin-progress selection (Card 17)"])
+  Connect --> Unlock(["Content Studio picker\nunlocked, no reload"])

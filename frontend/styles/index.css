@@ -1,0 +1,263 @@
+/* ============================================================
+   TOKENS — transcribed 1:1 from ui-ux-prototype.html's :root block
+   (itself transcribed from ceview/constants.ts COLORS), re-expressed as a
+   Tailwind v4 @theme so every token is available both as a CSS custom
+   property (--color-navy, --radius-md, ...) and as generated utility
+   classes (bg-navy, rounded-md, shadow-1, ...).
+   ============================================================ */
+@import "tailwindcss";
+
+@theme {
+  /* Brand */
+  --color-navy: #0f2854;
+  --color-navy-light: #183c7b;
+  --color-blue: #06388e;
+  --color-skyblue: #7fbfff;
+  --color-navy-muted: #98a7b9;
+  --color-teal: #007892;
+  --color-cyan: #71eeff;
+  --color-gold: #f4a216;
+  --color-gold-dark: #d48e15;
+  --color-gold-light: #ffb941;
+  --color-gold-wash: #fff5df;
+  --color-yellow: #ffd664;
+  --color-sand: #f5e5d1;
+  --color-foliage: #506e53;
+
+  /* Surfaces */
+  --color-page: #fdfbf7;
+  --color-panel: #ffffff;
+  --color-panel-sunk: #f7f4ee;
+
+  /* Ink */
+  --color-ink: #0a2342;
+  --color-ink-2: #1e293b;
+  --color-muted: #64748b;
+  --color-grey: #3c4247;
+
+  /* Lines */
+  --color-line: #e4ded2;
+  --color-line-strong: #c7d3e2;
+  --color-line-navy: #98a7b9;
+
+  /* State */
+  --color-critical: #a70000;
+  --color-critical-alt: #ed3f27;
+  --color-success: #0f7a4e;
+  --color-success-bg: #e6f4ee;
+
+  /* Platform */
+  --color-ig: #c13584;
+  --color-tt: #010101;
+  --color-fb: #1877f2;
+  --color-nv: #03c75a;
+
+  /* Geometry */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  --shadow-1: 0 1px 2px rgba(15, 40, 84, 0.06), 0 1px 3px rgba(15, 40, 84, 0.08);
+  --shadow-2: 0 4px 12px rgba(15, 40, 84, 0.08), 0 2px 4px rgba(15, 40, 84, 0.05);
+  --shadow-3: 0 18px 48px rgba(10, 35, 66, 0.22);
+
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  --sidebar-w: 248px;
+  --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ============================================================
+   RESET / BASE — prototype lines 70–110
+   ============================================================ */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-page);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  display: block;
+}
+
+/* Grid/flex items default to min-width:auto, which lets wide content (long
+   tab labels, textareas, tables) force the item past its track and overflow
+   the page. Layout-wide safety net; opt back in with explicit width/flex
+   rules where growth is wanted. */
+.content * {
+  min-width: 0;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-navy);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   TYPOGRAPHY HELPERS — prototype lines ~96–110
+   ============================================================ */
+@layer components {
+  .eyebrow {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .h-xl {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+  .h-lg {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .h-md {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .h-sm {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .body-sm {
+    font-size: 13px;
+    color: var(--color-muted);
+    line-height: 1.6;
+  }
+  .body-xs {
+    font-size: 12px;
+    color: var(--color-muted);
+    line-height: 1.55;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+  }
+  .empty {
+    text-align: center;
+    padding: var(--spacing-12) var(--spacing-5);
+  }
+  .empty-glyph {
+    width: 52px;
+    height: 52px;
+    border-radius: 15px;
+    background: var(--color-panel-sunk);
+    display: grid;
+    place-items: center;
+    margin: 0 auto var(--spacing-4);
+    border: 1px solid var(--color-line);
+  }
+  .empty-glyph svg {
+    width: 23px;
+    height: 23px;
+    stroke: var(--color-muted);
+  }
+  .empty h3 {
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .empty p {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin-top: 6px;
+    max-width: 44ch;
+    margin-inline: auto;
+  }
+}
+
+/* Primitive component classes (.btn/.chip/.tabs/.bar/.switch/.check/.skel/
+   .toast/.modal/.drawer/.banner — prototype lines 112–302) are added
+   incrementally as each consuming screen card needs them, per
+   01-foundation.md's Design System card. .card and .empty (+ .empty-glyph)
+   were added ahead of schedule because module-1..4 placeholder stubs
+   already reference them (see 01a-foundation-verification.md). .cs2-*,
+   .prev-*, #devbar/.devbar-* are excluded — they belong to the dropped v2
+   Content Studio / dev-only jump bar, not the product. */

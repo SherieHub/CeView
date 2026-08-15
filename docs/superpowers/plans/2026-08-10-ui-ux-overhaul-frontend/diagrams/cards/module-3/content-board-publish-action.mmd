@@ -1,0 +1,10 @@
+flowchart TD
+  Click(["Publish button clicked\n(Card 17)"]) --> Enabled{"publishEnabled?\n(blockReason===null)"}
+  Enabled -->|no| NoOp(["No-op"])
+  Enabled -->|yes| Publish["publish(publishPlatforms, staged):\none new post per platform,\nstatus='published'"]
+  Publish --> Append["posts = [...posts, ...newPosts]"]
+  Append --> Reset["onPublished():\nclear composer transient state\n(approved captions stay intact)"]
+  Reset --> Toast(["Confirmation toast:\nN platforms published"])
+  Append --> Readers(["Calendar, Performance\nboth re-render from posts"])
+
+  FilterClick(["Click All/Draft/Published tab"]) --> Filter["visible = posts.filter(status)"]

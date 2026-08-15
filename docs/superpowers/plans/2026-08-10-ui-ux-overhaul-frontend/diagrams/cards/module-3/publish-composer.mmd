@@ -1,0 +1,19 @@
+flowchart TD
+  Check(["Publish button\ntooltip/disabled state"]) --> C1{"staged empty?"}
+  C1 -->|yes| R1(["'caption'"])
+  C1 -->|no| C2{"pubmat missing?"}
+  C2 -->|yes| R2(["'media'"])
+  C2 -->|no| C3{"publishPlatforms\nempty?"}
+  C3 -->|yes| R3(["'platform'"])
+  C3 -->|no| C4{"agreed === false?"}
+  C4 -->|yes| R4(["'agreement'"])
+  C4 -->|no| C5{"auditRunning?"}
+  C5 -->|yes| R5(["'audit-running'"])
+  C5 -->|no| C6{"omcs missing?"}
+  C6 -->|yes| R6(["'audit-missing'"])
+  C6 -->|no| C7{"omcs.status\n!== 'Pass'?"}
+  C7 -->|yes| R7(["'audit-failed'"])
+  C7 -->|no| R8(["null — Publish enabled"])
+
+  Toggle(["Toggle platform /\nchange pubmat / edit staged"]) --> ResetAudit["resetAudit():\nomcs=null, agreed=false"]
+  AgreeCheck(["Check agreement,\nstaged+pubmat set"]) --> Trigger["auditRunning = true\n(Card 18 starts)"]
