@@ -6,10 +6,8 @@ import BasicInfoStep from './steps/BasicInfoStep';
 import BrandIdentityStep from './steps/BrandIdentityStep';
 import StructuredInputsStep from './steps/StructuredInputsStep';
 import AssetsLinksStep from './steps/AssetsLinksStep';
-import AnalysisStep, {
-  DEFAULT_DEMO_DRAFT,
-  type InferredCategory,
-} from './steps/AnalysisStep';
+import AnalysisStep, { DEFAULT_DEMO_DRAFT } from './steps/AnalysisStep';
+import type { InferredCategory } from '../InferredCategoryBoard';
 import { useProfile } from '../../../services/profileContext';
 
 export default function OnboardingWizard() {

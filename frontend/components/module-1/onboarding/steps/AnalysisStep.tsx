@@ -13,6 +13,7 @@ import ComputeUniquenessButton from '../../ComputeUniquenessButton';
 import InferredCategoryBoard, {
   type InferredCategory,
 } from '../../InferredCategoryBoard';
+export type { InferredCategory };
 import OverallScoreCard from '../../OverallScoreCard';
 import { useToast } from '../../../shared/Toast';
 
