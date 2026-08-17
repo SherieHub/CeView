@@ -7,12 +7,14 @@ import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 
+import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
+
 /**
  * Route tree:
  *   /login                       - public
  *   (AuthGate: redirects to /login when unauthenticated)
  *     (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
- *       /onboarding              - placeholder, no shell (wizard is a later card)
+ *       /onboarding              - OnboardingWizard (5-step onboarding flow)
  *       (AppShell: sidebar + topbar + <Outlet/>)
  *         /dashboard, /content, /calendar, /performance, /settings/:tab
  *
@@ -30,7 +32,7 @@ const router = createBrowserRouter([
         children: [
           {
             path: '/onboarding',
-            element: <RoutePlaceholder title="Onboarding" sub="Set up your business profile" />,
+            element: <OnboardingWizard />,
           },
           {
             element: <AppShell />,
