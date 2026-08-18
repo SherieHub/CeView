@@ -105,14 +105,26 @@ export const apiClient = {
   },
   auth: {
     login: (email: string, password: string) =>
-      request<{ accessToken: string; user: { id: string; email: string; businessName: string | null } }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
-    register: (email: string, password: string) =>
-      request<{ accessToken: string; user: { id: string; email: string; businessName: string | null } }>('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      }),
+      USE_FIXTURES
+        ? delay({ accessToken: 'mock-access-token-123', user: { id: 'usr-1', email, businessName: null } })
+        : request<{ token: string; operatorId: string }>('/api/v1/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+          }).then(({ token, operatorId }) => ({
+            accessToken: token,
+            // No /me endpoint yet — businessName isn't returned by login, only
+            // populated once one exists (see AuthProvider's mount comment).
+            user: { id: operatorId, email, businessName: null },
+          })),
+    register: (email: string, password: string, firstName: string, lastName: string) =>
+      USE_FIXTURES
+        ? delay({ accessToken: 'mock-access-token-123', user: { id: 'usr-1', email, businessName: null } })
+        : request<{ token: string; operatorId: string }>('/api/v1/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ email, password, firstName, lastName }),
+          }).then(({ token, operatorId }) => ({
+            accessToken: token,
+            user: { id: operatorId, email, businessName: null },
+          })),
   },
 };

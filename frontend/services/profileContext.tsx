@@ -6,7 +6,7 @@
  */
 import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { BusinessProfile } from '../types';
 
 const EMPTY_PROFILE: BusinessProfile = {
@@ -48,7 +48,8 @@ export function useProfile(): ProfileContextValue {
 /** Redirects /onboarding <-> /dashboard based on profile.uniquenessScore. */
 export function ProfileGate() {
   const { profile } = useProfile();
-  const onOnboardingRoute = window.location.pathname.startsWith('/onboarding');
+  const { pathname } = useLocation();
+  const onOnboardingRoute = pathname.startsWith('/onboarding');
   const complete = profile.uniquenessScore != null;
 
   if (!complete && !onOnboardingRoute) return <Navigate to="/onboarding" replace />;

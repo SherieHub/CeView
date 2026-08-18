@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +23,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'signin') await login(email, password);
-      else await register(email, password);
+      else await register(email, password, firstName, lastName);
     } catch {
       setError('Something went wrong. Check your details and try again.');
     } finally {
@@ -77,6 +79,30 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === 'signup' && (
+              <>
+                <label className="flex flex-col gap-1">
+                  <span className="body-xs">First name</span>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="rounded-md border border-line px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="body-xs">Last name</span>
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="rounded-md border border-line px-3 py-2"
+                  />
+                </label>
+              </>
+            )}
             <label className="flex flex-col gap-1">
               <span className="body-xs">Email</span>
               <input
