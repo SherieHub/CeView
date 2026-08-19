@@ -12,7 +12,7 @@ territory.
 
 ## Tech Stack
 
-- **Frontend:** React 19 + TypeScript + Vite, Tailwind — lives in `ceview/`
+- **Frontend:** React 19 + TypeScript + Vite, Tailwind — lives in `frontend/`
 - **Orchestration API:** Spring Boot 3.3 (Java 21), JWT auth — `backend/spring-boot/`
 - **AI microservices (Python 3.12, FastAPI):**
   - `backend/fastapi-sbert/` — SBERT business classification, LangGraph content generation, Groq
@@ -42,7 +42,8 @@ per business operator. Local dev ships with 9 seeded demo MSME operator profiles
 
 ## Repo Layout
 
-- `ceview/` — React frontend (components organized by module: `components/module-1` … `module-4`, plus `auth/`, `shared/`; `services/` for API clients; `old-components/` is legacy/unused)
+- `frontend/` — React frontend (components organized by module: `components/module-1` … `module-4`, plus `auth/`, `shared/`; `services/` for API clients)
+- `ceview/` — an earlier, now-frozen frontend build (including working old-generation screens for modules 1–4 that `frontend/` only has as unbuilt stubs for). Not developed further; don't add new work here. Kept around only until anything still unique to it is ported into `frontend/`.
 - `backend/spring-boot/` — Java orchestration API
 - `backend/fastapi-sbert/`, `backend/fastapi-transformer/` — Python AI microservices
 - `docs/` — per-module deep dives, deployment guide, and `docs/superpowers/` (specs/plans from the brainstorming→writing-plans workflow)
@@ -61,7 +62,7 @@ before debugging local environment issues rather than guessing.
 - **Never run `git commit` or `git push` in this repository, under any circumstances, even if explicitly asked mid-task.** Reading history is fine (`git log`, `git show`, `git diff`, `git blame`) — writing to history is not. If a task seems to require a commit, stop and hand it back to the user to run themselves.
 - Don't run destructive git operations (`reset --hard`, `checkout --`, `clean -f`, force-push) — not your call to make in this repo.
 - Don't add abstractions, refactors, or "while I'm here" cleanup beyond what the task asked for.
-- Don't touch `ceview/old-components/` unless a task specifically calls for it — it's legacy.
+- Don't add new work to `ceview/` (including `ceview/old-components/`) — it's a frozen, earlier frontend build superseded by `frontend/`. See Repo Layout above.
 
 **Do:**
 - Follow the module boundaries above when placing new code — a Module 3 change belongs in `components/module-3`, `docs/module-3`, etc., not scattered.

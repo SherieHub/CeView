@@ -14,6 +14,13 @@ export interface AuthUser {
 export interface AuthTokens {
   accessToken: string;
   refreshToken?: string;
+  /**
+   * Whether the operator still needs to go through the one-time "complete
+   * your profile" step (missing contactNumber — always true for password
+   * signups since /register requires it, sometimes false for a freshly
+   * provisioned Google sign-in). See services/auth.tsx's profileCompleted.
+   */
+  profileCompleted: boolean;
 }
 
 export interface BusinessProfile {
@@ -33,6 +40,19 @@ export interface BusinessProfile {
   logo: string | null;
   socials: Record<string, string>;
 }
+
+/**
+ * The real backend's shape (com.ceview.module1.businessinput.dto.BusinessProfileDto,
+ * GET/PUT /api/v1/business-profile) — a strict subset of BusinessProfile. The
+ * onboarding-only fields (slogan/industry/vibes/website/logo/socials) don't
+ * exist in the backend schema yet (see docs/module-1/backend/schema-delta.md),
+ * so ProfileProvider merges a fetched BusinessProfileDto over EMPTY_PROFILE
+ * rather than assuming the backend returns those fields.
+ */
+export type BusinessProfileDto = Pick<
+  BusinessProfile,
+  'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
+>;
 
 export type PlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
 

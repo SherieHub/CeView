@@ -1,6 +1,7 @@
 package com.ceview.config;
 
 import com.ceview.auth.JwtAuthenticationFilter;
+import com.ceview.auth.ProfileCompletionFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -19,10 +20,13 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final ProfileCompletionFilter profileCompletionFilter;
     private final ObjectMapper objectMapper;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter, ObjectMapper objectMapper) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, ProfileCompletionFilter profileCompletionFilter,
+                           ObjectMapper objectMapper) {
         this.jwtFilter = jwtFilter;
+        this.profileCompletionFilter = profileCompletionFilter;
         this.objectMapper = objectMapper;
     }
 
@@ -35,7 +39,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**", "/actuator/**", "/error").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint()))
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(profileCompletionFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 

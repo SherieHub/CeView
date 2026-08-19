@@ -14,10 +14,10 @@ import { DEFAULT_CAMPAIGN_INPUT, MOCK_HISTORY, MOCK_REPORT } from './fixtures/ca
 import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
 import type { WorkspaceMemberFixture } from './fixtures/members';
-import type { PlatformConnection, PostMetric } from '../types';
+import type { PlatformConnection, PostMetric, BusinessProfileDto } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 /** Simulated network delay so fixture-backed UI still exercises loading states. */
 function delay<T>(value: T, ms = 250): Promise<T> {
@@ -56,7 +56,26 @@ const MOCK_POST_METRICS: PostMetric[] = MOCK_POSTS.map((p, i) => ({
   engagementRate: Number((0.04 + i * 0.006).toFixed(3)),
 }));
 
+const EMPTY_BUSINESS_PROFILE_DTO: BusinessProfileDto = {
+  businessProfileId: null,
+  businessName: '',
+  categories: [],
+  coreServices: [],
+  description: '',
+  uvp: '',
+  imagePreview: null,
+  uniquenessScore: null,
+};
+
 export const apiClient = {
+  /** The operator's real, persisted business profile — see ProfileProvider. */
+  businessProfile: {
+    load: () =>
+      USE_FIXTURES
+        ? delay(EMPTY_BUSINESS_PROFILE_DTO)
+        : request<BusinessProfileDto>('/api/v1/business-profile'),
+  },
+
   markets: {
     list: () => (USE_FIXTURES ? delay(MOCK_MARKETS) : request('/api/markets')),
     chartData: (marketId: string) =>
@@ -106,25 +125,49 @@ export const apiClient = {
   auth: {
     login: (email: string, password: string) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string }>('/api/v1/auth/login', {
+        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
+        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/v1/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
-          }).then(({ token, operatorId }) => ({
+          }).then(({ token, operatorId, profileCompleted }) => ({
             accessToken: token,
+            profileCompleted,
             // No /me endpoint yet — businessName isn't returned by login, only
             // populated once one exists (see AuthProvider's mount comment).
             user: { id: operatorId, email, businessName: null },
           })),
-    register: (email: string, password: string, firstName: string, lastName: string) =>
+    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string }>('/api/v1/auth/register', {
+        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
+        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/v1/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, firstName, lastName }),
-          }).then(({ token, operatorId }) => ({
+            body: JSON.stringify({ email, password, firstName, lastName, contactNumber }),
+          }).then(({ token, operatorId, profileCompleted }) => ({
             accessToken: token,
+            profileCompleted,
             user: { id: operatorId, email, businessName: null },
           })),
+    /** Verifies a Firebase ID token server-side and mints the same session shape as login/register. */
+    google: (idToken: string) =>
+      USE_FIXTURES
+        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: false, user: { id: 'usr-1', email: null, businessName: null } })
+        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/v1/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ idToken }),
+          }).then(({ token, operatorId, profileCompleted }) => ({
+            accessToken: token,
+            profileCompleted,
+            // Google sign-in's email comes back inside the JWT, not this
+            // response body — callers that need it read it off the token.
+            user: { id: operatorId, email: null, businessName: null },
+          })),
+    /** The one-time "complete your profile" step (see ProfileCompletionGate). */
+    completeProfile: (contactNumber: string) =>
+      USE_FIXTURES
+        ? delay({ profileCompleted: true })
+        : request<{ profileCompleted: boolean }>('/api/v1/auth/profile', {
+            method: 'PATCH',
+            body: JSON.stringify({ contactNumber }),
+          }),
   },
 };

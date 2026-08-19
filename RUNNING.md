@@ -186,7 +186,7 @@ cd backend\spring-boot
     --spring.profiles.active=h2 `
     --ceview.fastapi.sbert.base-url=http://127.0.0.1:8000 `
     --ceview.fastapi.transformer.base-url=http://127.0.0.1:8001 `
-    --ceview.cors.allowed-origins=http://localhost:3000
+    --ceview.cors.allowed-origins=http://localhost:3001
 ```
 
 Wait for `Started CeViewApplication in N seconds`. Health at
@@ -204,12 +204,12 @@ H2 console: http://localhost:8080/h2 — JDBC URL `jdbc:h2:mem:ceview`, user
 ## 4. Frontend
 
 ```powershell
-cd ceview
+cd frontend
 npm install       # first time only
 npm run dev
 ```
 
-Vite reports `http://localhost:3000/`. Open that in your browser.
+Vite reports `http://localhost:3001/`. Open that in your browser.
 
 By default it talks to the backend at `http://localhost:8080`
 (`VITE_API_BASE_URL` env var overrides this if you need to point it
@@ -228,9 +228,11 @@ never commit real keys.** Start from `backend/.env.example`.
 | `GROQ_API_KEY` | **Required** for `fastapi-transformer` | `fastapi-transformer`, `fastapi-sbert` | `fastapi-transformer` raises `RuntimeError` and refuses to start without it — no stub mode. `fastapi-sbert` degrades gracefully instead: without it, AI calls (captions, prescriptive reports) return a deterministic fallback tagged `"source": "fallback"`. Get one at https://console.groq.com/keys. |
 | `HF_TOKEN` | Optional | `fastapi-sbert` | Used to download the SBERT/E5 encoder from HuggingFace. **Use a read-only token** — nothing in this codebase writes to HuggingFace. Get one at https://huggingface.co/settings/tokens. |
 | `JWT_SECRET` | Recommended (has a dev default) | `spring-boot` | Signs/verifies login JWTs. Defaults to `dev-secret-change-me-please-32chars-min` if unset — fine for local dev, must be a real 32+ char secret in any shared/deployed environment. |
-| `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3000`/`5173`. Add your frontend's actual origin if it differs. |
+| `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3001`/`5173`. Add your frontend's actual origin if it differs. |
+| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/v1/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
+| `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
 
 ---
 
@@ -272,13 +274,39 @@ profile instead of pre-seeded data.
   `Authorization` header returns `401` — the API is genuinely locked down,
   not just the frontend UI.
 
+### Google Sign-In setup (optional)
+
+The "Continue with Google" button on the login page works without any setup
+— it's just disabled-looking until configured, and `POST /api/v1/auth/google`
+returns `503` if hit without a Firebase credential. To turn it on:
+
+1. In the [Firebase Console](https://console.firebase.google.com/), create
+   (or reuse) a project, add a **Web App**, and enable the **Google**
+   provider under Authentication → Sign-in method.
+2. Copy the web app config (`apiKey`, `authDomain`, `projectId`, `appId`)
+   into the frontend's env as `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
+   `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` (see `frontend/.env.example`).
+3. Project Settings → Service Accounts → **Generate new private key** — this
+   downloads a JSON file. Put its full contents (minified to one line) into
+   `backend/.env` as `FIREBASE_CREDENTIALS_JSON`. **Never commit this file or
+   its contents.**
+4. Add `localhost` (both frontend dev ports) and your deployed domain as
+   authorized origins in the Firebase Auth settings / Google Cloud OAuth
+   consent screen.
+
+A brand-new Google sign-in provisions an operator with no contact number yet
+— they're routed to a one-time "complete your profile" screen
+(`/complete-profile`) before reaching the rest of the app; a Google sign-in
+whose verified email matches an existing password account links to that
+account instead of creating a duplicate.
+
 ---
 
 ## 7. End-to-end smoke test (manual)
 
 With the backend (Path A or B) and frontend both running:
 
-1. Open **http://localhost:3000** — you should land on the **Sign In** page,
+1. Open **http://localhost:3001** — you should land on the **Sign In** page,
    not the app.
 2. Log in with a seeded account from §6.
 3. Open DevTools (F12) → **Network** tab, filter by `localhost:8080`.
@@ -332,7 +360,7 @@ frontend + backend.
 cd e2e
 npm install          # first time only
 npx playwright install   # first time only — downloads browser binaries
-npx playwright test      # runs against http://localhost:3000 by default
+npx playwright test      # runs against http://localhost:3001 by default
 ```
 
 Set `E2E_BASE_URL` to point at a different frontend URL if needed (see
@@ -372,7 +400,7 @@ Get-Process node   | Stop-Process -Force
 | Every screen shows blank/login-prompts you never expected | You're not logged in, or your token expired — the app auto-logs-out on any `401` from the backend. Log back in with a seeded account (§6). |
 | `curl`/API calls return `401 {"error":"unauthorized",...}` | Expected if you didn't send `Authorization: Bearer <token>` — see §7's "Direct API testing" for how to get one. |
 | `curl`/API calls return `403 {"error":"forbidden",...}` | You're authenticated but requested a resource (business profile / campaign / market data) that belongs to a **different** operator than the one in your token — this is the per-operator isolation working as intended, not a bug. |
-| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3000`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
+| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
 | `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
 | Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/v1/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
@@ -386,7 +414,7 @@ Get-Process node   | Stop-Process -Force
 
 ```
 CeView/
-├── ceview/                       # React 19 + Vite frontend
+├── frontend/                       # React 19 + Vite frontend
 │   ├── components/auth/          # LoginPage, RegisterPage, AuthGate
 │   └── services/
 │       ├── apiClient.ts          # all backend calls live here, attaches JWT

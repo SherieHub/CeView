@@ -29,8 +29,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         <Menu size={20} />
       </button>
 
-      <div className="flex-1">
-        <h1 className="h-md">{active?.title ?? 'CeView'}</h1>
+      <div className="topbar-title flex-1">
+        <h1 className="h-md"><b>{active?.title ?? 'CeView'}</b></h1>
         {active?.sub && <p className="body-xs">{active.sub}</p>}
       </div>
 

@@ -2,15 +2,17 @@
 
 This pass scaffolds the Spring Boot + FastAPI backend specified by the CeView SDD.
 All endpoints exist; behavior is wired to FastAPI stubs that return data shaped
-exactly like the frontend's existing types in `ceview/types.ts` and `ceview/constants.ts`.
+exactly like the frontend's existing types in `frontend/types.ts`.
 The frontend can be pointed at `http://localhost:8080` and continue to work.
 
 ## Endpoints
 
 | Method | Path | Frontend trigger | Returns |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | (future signup) | `{ operatorId, token }` |
-| POST | `/api/v1/auth/login` | (future login) | `{ operatorId, token }` |
+| POST | `/api/v1/auth/register` | Create Account form | `{ operatorId, token, profileCompleted }` |
+| POST | `/api/v1/auth/login` | Sign In form | `{ operatorId, token, profileCompleted }` |
+| POST | `/api/v1/auth/google` | "Continue with Google" — body `{ idToken }` (a Firebase ID token) | `{ operatorId, token, profileCompleted }`, or 503 if Google sign-in isn't configured (no `FIREBASE_CREDENTIALS_JSON`), 401 on an invalid/expired token |
+| PATCH | `/api/v1/auth/profile` | CompleteProfilePage — body `{ contactNumber }` | `{ profileCompleted: true }` |
 | POST | `/api/v1/classification/analyze` | UniquenessCalibrationForm "Analyze" | `{ categories: CategoryAllocation[] }` |
 | POST | `/api/v1/classification/uniqueness` | UniquenessCalibrationForm "Compute" | `DetailedCalibrationResultDTO` |
 | GET  | `/api/v1/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
