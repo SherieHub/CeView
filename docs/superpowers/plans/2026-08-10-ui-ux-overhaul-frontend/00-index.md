@@ -82,6 +82,20 @@ npm run test:unit -- <pattern>
   module depends on appear as single styled nodes, not expanded — full expansion lives only in
   `diagrams/foundation.mmd`.
 
+**Card IDs:** `M<n>-F[<k>]` for a module's foundation card(s), `M<n>-<k>` for regular cards, `M<n>-B<k>`
+for a module's backend track (when its work spans a frontend/backend split). Foundation cards keep the
+`Foundation — <Name>` naming already used above (e.g. `Foundation — Shell & Routing`); `M<n>-F` is the
+id column shorthand for cross-referencing, not a rename of that convention.
+
+**Binding rule — one prerequisite per module:** every module file must open with one or more
+`Foundation — <Name>` card(s) that every other card in that module depends on directly, and — aside
+from a module's own independent track roots (e.g. a backend track parallel to the frontend track) —
+that is the *only* thing sibling cards may depend on within the module. Sibling cards must never list
+the same file under "Project files to add/implement"; if two features would naturally share a file,
+the foundation card owns that file (creating typed stubs/slots for the pieces sibling cards will fill
+in) and each sibling card fully owns replacing its one assigned stub. This keeps every card after the
+foundation buildable in full parallel — see `03-module-2.md` for a worked example.
+
 ## Decisions this plan assumes
 
 Carried forward unchanged from the original single-file plan — this restructure only changes how the
@@ -125,28 +139,33 @@ work is chunked and verified, not what gets built:
 
 ## Dependency graph
 
-Foundation cards have no dependencies and block every screen card. Within a module, cards are mostly
-linear (later chunks build on earlier ones); cross-module dependencies are called out explicitly
-(Content Studio's Publish Composer needs Settings — Platforms; Calendar and Performance's published
-list need Content Studio's publish action).
+Foundation cards have no dependencies and block every screen card. Within a module, cards depend only
+on their module's foundation card(s) unless cross-module-linked below (Content Studio's Publish
+Composer needs Settings — Platforms; Calendar and Performance's published list need Content Studio's
+publish action). Module 2 uses the new module-scoped ID scheme end to end (see `03-module-2.md`);
+Modules 1/3/4 below keep their legacy local numbers for now — retrofitting them is future work, not
+done in this pass.
 
-| # | Card | File | Depends on |
+| ID | Card | File | Depends on |
 |---|---|---|---|
-| 0 | Project Scaffold | [`01-foundation.md`](01-foundation.md) | — |
-| 1 | Design System | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
-| 2 | Shell & Routing | [`01-foundation.md`](01-foundation.md) | Design System |
-| 3 | Fixture Data Layer | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
+| — | Project Scaffold | [`01-foundation.md`](01-foundation.md) | — |
+| — | Design System | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
+| — | Shell & Routing | [`01-foundation.md`](01-foundation.md) | Design System |
+| — | Fixture Data Layer | [`01-foundation.md`](01-foundation.md) | Project Scaffold |
 | 4 | Onboarding — Wizard Shell & Step 1 Basic Info | [`02-module-1.md`](02-module-1.md) | Shell & Routing |
 | 5 | Onboarding — Step 2 Brand Identity | [`02-module-1.md`](02-module-1.md) | Card 4 |
 | 6 | Onboarding — Step 3 Structured Inputs | [`02-module-1.md`](02-module-1.md) | Card 4 |
 | 7 | Onboarding — Step 4 Assets & Links | [`02-module-1.md`](02-module-1.md) | Card 4 |
 | 8 | Onboarding — Step 5 Analysis | [`02-module-1.md`](02-module-1.md) | Cards 5, 6, Fixture Data Layer |
 | 9 | Settings — Business Profile | [`02-module-1.md`](02-module-1.md) | Shell & Routing, Fixture Data Layer |
-| 10 | Dashboard — Alert Feed & Category Filtering | [`03-module-2.md`](03-module-2.md) | Shell & Routing, Fixture Data Layer |
-| 11 | Dashboard — Markets Reveal | [`03-module-2.md`](03-module-2.md) | Card 10 |
-| 12 | Dashboard — States & Refresh Forecast | [`03-module-2.md`](03-module-2.md) | Card 10 |
-| 13 | Market Radar Drawer — Shell, Directive & Demand Chart | [`03-module-2.md`](03-module-2.md) | Card 10 |
-| 14 | Market Radar Drawer — Economic & Seasonal Insights Tabs | [`03-module-2.md`](03-module-2.md) | Card 13 |
+| M2-F | Foundation — Dashboard & Radar Shell | [`03-module-2.md`](03-module-2.md) | Shell & Routing, Fixture Data Layer |
+| M2-1 | Dashboard — Alert Feed & Category Filtering | [`03-module-2.md`](03-module-2.md) | M2-F |
+| M2-2 | Dashboard — Markets Reveal | [`03-module-2.md`](03-module-2.md) | M2-F |
+| M2-3 | Dashboard — AI Status Banner & Refresh Forecast | [`03-module-2.md`](03-module-2.md) | M2-F |
+| M2-4 | Market Radar Drawer — Directive & Demand Chart | [`03-module-2.md`](03-module-2.md) | M2-F |
+| M2-5 | Market Radar Drawer — Economic & Seasonal Insights Tabs | [`03-module-2.md`](03-module-2.md) | M2-F |
+| M2-B1 | Category-Scoped Market Ranking — Query & Endpoint | [`03-module-2.md`](03-module-2.md) | — |
+| M2-B2 | Category-Scoped Market Ranking — Alert-Time Rank Embed | [`03-module-2.md`](03-module-2.md) | M2-B1 |
 | 15 | Content Studio — AI Copywriting Matrix (incl. Naver) | [`04-module-3.md`](04-module-3.md) | Shell & Routing, Fixture Data Layer |
 | 16 | Content Studio — Visual Direction Board | [`04-module-3.md`](04-module-3.md) | Card 15 |
 | 17 | Content Studio — Publish Composer (connection-gated) | [`04-module-3.md`](04-module-3.md) | Card 15, Settings — Platforms |
@@ -168,8 +187,8 @@ list need Content Studio's publish action).
 | `e2e/tests/login.spec.ts` | Foundation — Shell & Routing |
 | `e2e/tests/onboarding-wizard.spec.ts` | Cards 4–8 |
 | `e2e/tests/settings-business-profile.spec.ts` | Card 9 |
-| `e2e/tests/dashboard.spec.ts` | Cards 10–12 |
-| `e2e/tests/market-radar-drawer.spec.ts` | Cards 13–14 |
+| `e2e/tests/dashboard.spec.ts` | M2-F, M2-1, M2-2, M2-3 |
+| `e2e/tests/market-radar-drawer.spec.ts` | M2-F, M2-4, M2-5 |
 | `e2e/tests/content-studio.spec.ts` | Cards 15–19 |
 | `e2e/tests/calendar.spec.ts` | Cards 20–21 |
 | `e2e/tests/settings-platforms.spec.ts` | Card 22 |

@@ -1,8 +1,11 @@
 // ---- components/module-2/2.2-market-radar/InsightsTabs.tsx ----
-props: { market, activeTab, onTabChange }  // activeTab owned by Card 13's drawer, not local state
+// Replaces the M2-F stub. Implements DrawerInsightsSlotProps from radarTypes.ts.
+// activeTab/onTabChange are owned by MarketRadarDrawer (M2-F), not local state — this is what
+// makes this card a true sibling of M2-4 instead of depending on it.
+props: { market, activeTab, onTabChange }
 imports: PurchasingPowerTab, SeasonalPatternsTab
 
-render: two-tab switcher ("Purchasing power"/"Seasonal patterns") +
+render: two-tab switcher ("Purchasing power"/"Seasonal patterns", onClick calls onTabChange) +
         activeTab === 'economy' ? PurchasingPowerTab(market) : SeasonalPatternsTab(market) +
         route & carriers list (market.airlines) below both tabs, not tab-specific
 

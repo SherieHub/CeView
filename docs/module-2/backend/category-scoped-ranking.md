@@ -38,6 +38,19 @@ Whichever is chosen, the Dashboard needs, for a given category: the same `Market
 returned by `listMarkets` (rank, matchScore, chart data, insights, flight/route data), just re-scored
 and re-sorted for that category. No new fields are needed on `MarketDto` itself.
 
+## Implementation status
+
+Implemented by [M2-B1](../../superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/03-module-2.md#card--category-scoped-market-ranking-query--endpoint)
+and [M2-B2](../../superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/03-module-2.md#card--category-scoped-market-ranking-alert-time-rank-embed)
+as option 1 above (parameterized endpoint), re-ranking the existing per-market results via
+`CategoryRankNotificationService`'s existing `rankMarketsForCategory()` call rather than a new
+`(category, market)` scoring table. **Correction to "Option 2" above:** `DemandAlert` has no
+`category` column in the actual schema — alerts are generated per `(profile, market)` only, not per
+`(category, market)`; there is no 21-job category×market grid feeding `DemandAlert` — that grid,
+`TrendFetchSchedulerService`'s, feeds `TrendFetchJob`/keyword-trend notifications instead. M2-B2
+embeds `categoryMarketRanks` on the keyword-trend `NotificationDto` — which already is generated once
+per profile category — achieving the same round-trip savings without a schema change.
+
 ## Fixture stand-in
 
 Until built, the frontend computes this client-side against fixture data using the same
