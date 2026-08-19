@@ -1,19 +1,28 @@
 /**
  * Split brand/pane login screen — ports ui-ux-prototype.html:900–959 (brand
- * panel with stat tiles + Sign in/Create account tabs). Google OAuth button
- * is inert (no provider wired yet) per this card's scope.
+ * panel with stat tiles + Sign in/Create account tabs). Google Sign-In uses
+ * the Firebase JS SDK client-side (services/firebase.ts) to get an ID token,
+ * which the backend verifies before minting the same session shape as
+ * password login/register (see services/apiClient.ts's auth.google).
  */
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth';
+import { signInWithGooglePopup } from '../../services/firebase';
 
 export default function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -21,11 +30,25 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'signin') await login(email, password);
-      else await register(email, password);
+      else await register(email, password, firstName, lastName, contactNumber);
     } catch {
       setError('Something went wrong. Check your details and try again.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleGoogleClick() {
+    setError(null);
+    setGoogleSubmitting(true);
+    try {
+      const idToken = await signInWithGooglePopup();
+      await loginWithGoogle(idToken);
+      navigate('/dashboard', { replace: true });
+    } catch {
+      setError('Something went wrong signing in with Google. Please try again.');
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -55,9 +78,11 @@ export default function LoginPage() {
 
       <div className="flex items-center justify-center p-10">
         <div className="w-full max-w-sm">
-          <div className="tabs mb-6 flex gap-2 rounded-full bg-panel-sunk p-1">
+          <div className="tabs mb-6 flex gap-2 rounded-full bg-panel-sunk p-1" role="tablist">
             <button
               type="button"
+              role="tab"
+              aria-selected={mode === 'signin'}
               onClick={() => setMode('signin')}
               className="h-sm flex-1 rounded-full py-2"
               data-active={mode === 'signin'}
@@ -67,6 +92,8 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={mode === 'signup'}
               onClick={() => setMode('signup')}
               className="h-sm flex-1 rounded-full py-2"
               data-active={mode === 'signup'}
@@ -76,7 +103,43 @@ export default function LoginPage() {
             </button>
           </div>
 
+          <h2 className="h-lg mb-4">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === 'signup' && (
+              <>
+                <label className="flex flex-col gap-1">
+                  <span className="body-xs">First name</span>
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="rounded-md border border-line px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="body-xs">Last name</span>
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="rounded-md border border-line px-3 py-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="body-xs">Contact number</span>
+                  <input
+                    type="tel"
+                    required
+                    value={contactNumber}
+                    onChange={(e) => setContactNumber(e.target.value)}
+                    className="rounded-md border border-line px-3 py-2"
+                  />
+                </label>
+              </>
+            )}
             <label className="flex flex-col gap-1">
               <span className="body-xs">Email</span>
               <input
@@ -85,6 +148,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="rounded-md border border-line px-3 py-2"
+                placeholder="you@example.com"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -95,6 +159,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="rounded-md border border-line px-3 py-2"
+                placeholder="••••••••"
               />
             </label>
             {error && <p className="body-xs text-critical">{error}</p>}
@@ -109,12 +174,11 @@ export default function LoginPage() {
 
           <button
             type="button"
-            disabled
-            aria-disabled
-            className="body-sm mt-4 w-full rounded-full border border-line py-2.5 opacity-60"
-            title="Google OAuth not wired yet"
+            onClick={handleGoogleClick}
+            disabled={googleSubmitting}
+            className="body-sm mt-4 w-full rounded-full border border-line py-2.5 disabled:opacity-60"
           >
-            Continue with Google
+            {googleSubmitting ? 'Signing in…' : 'Continue with Google'}
           </button>
         </div>
       </div>

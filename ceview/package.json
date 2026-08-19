@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.31.0",
+    "firebase": "^12.17.1",
     "lucide-react": "^0.556.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",

@@ -24,7 +24,7 @@ export default function Drawer({ open, onClose, children }: DrawerProps) {
 
   return (
     <div
-      className="fixed inset-y-0 right-0 z-30 w-full max-w-md translate-x-full bg-panel shadow-3 transition-transform data-[open=true]:translate-x-0"
+      className={`drawer fixed inset-y-0 right-0 z-30 w-full max-w-md translate-x-full bg-panel shadow-3 transition-transform data-[open=true]:translate-x-0 ${open ? 'on' : ''}`}
       data-open={open}
       aria-hidden={!open}
     >

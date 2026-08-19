@@ -4,7 +4,7 @@
  * ui-ux-prototype.html's buildNav()/toggleSbSettingsExpand().
  */
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { NAV } from './nav';
 import { useAuth } from '../services/auth';
@@ -18,6 +18,8 @@ const SETTINGS_TABS = [
 export default function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   return (
     <nav className="flex h-full w-[var(--sidebar-w)] flex-col border-r border-line bg-panel">
@@ -50,13 +52,12 @@ export default function Sidebar() {
                   <ChevronDown size={14} className={settingsOpen ? 'rotate-180' : ''} />
                 </button>
               ) : (
-                <NavLink
-                  to={`/${entry.id}`}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 rounded-md px-2 py-2 hover:bg-panel-sunk ${
-                      isActive ? 'bg-gold-wash text-navy' : ''
-                    }`
-                  }
+                <button
+                  type="button"
+                  onClick={() => navigate(`/${entry.id}`)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-panel-sunk ${
+                    pathname.startsWith(`/${entry.id}`) ? 'bg-gold-wash text-navy' : ''
+                  }`}
                 >
                   <Icon size={16} />
                   <span className="h-sm flex-1">{entry.label}</span>
@@ -65,21 +66,22 @@ export default function Sidebar() {
                       {entry.badge}
                     </span>
                   )}
-                </NavLink>
+                </button>
               )}
 
               {isSettings && settingsOpen && (
                 <ul className="ml-6 border-l border-line pl-2">
                   {SETTINGS_TABS.map((s) => (
                     <li key={s.tab}>
-                      <NavLink
-                        to={`/settings/${s.tab}`}
-                        className={({ isActive }) =>
-                          `body-sm block rounded-md px-2 py-1.5 hover:bg-panel-sunk ${isActive ? 'text-navy font-semibold' : ''}`
-                        }
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/settings/${s.tab}`)}
+                        className={`body-sm block w-full rounded-md px-2 py-1.5 text-left hover:bg-panel-sunk ${
+                          pathname === `/settings/${s.tab}` ? 'text-navy font-semibold' : ''
+                        }`}
                       >
                         {s.label}
-                      </NavLink>
+                      </button>
                     </li>
                   ))}
                 </ul>

@@ -129,6 +129,12 @@ export interface BusinessProfileDTO {
 }
 
 export const api = {
+  /** The one-time "complete your profile" step (see ProfileCompletionGate). */
+  completeProfile: (contactNumber: string) =>
+    req<{ profileCompleted: boolean }>('/api/v1/auth/profile', {
+      method: 'PATCH', body: JSON.stringify({ contactNumber }),
+    }),
+
   loadProfile: () =>
     req<BusinessProfileDTO>('/api/v1/business-profile'),
 

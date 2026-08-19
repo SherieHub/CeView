@@ -63,7 +63,7 @@ describe('ProfileProvider request-ordering race guard', () => {
 
     (fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
-      text: async () => JSON.stringify({ operatorId: 'op-A', token: 'tok-A' }),
+      text: async () => JSON.stringify({ operatorId: 'op-A', token: 'tok-A', profileCompleted: true }),
       headers: { get: () => null },
     });
 
