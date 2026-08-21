@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { ObDraftProvider, useObDraft, stepValid } from './obDraft';
 import BasicInfoStep from './steps/BasicInfoStep';
+import StructuredInputsStep from './steps/StructuredInputsStep';
 
 const STEPS = [
   { title: 'Basic Info', sub: 'Name, industry, slogan' },
@@ -35,7 +36,7 @@ function ComingLaterPanel({ title }: { title: string }) {
 }
 
 function OnboardingWizardInner() {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(2);
   const { draft } = useObDraft();
   const canContinue = stepValid(currentStep, draft);
   const isLastStep = currentStep === STEPS.length - 1;
@@ -89,7 +90,13 @@ function OnboardingWizardInner() {
         </div>
 
         <div className="max-w-[640px] flex-1">
-          {currentStep === 0 ? <BasicInfoStep /> : <ComingLaterPanel title={STEPS[currentStep].title} />}
+          {currentStep === 0 ? (
+            <BasicInfoStep />
+          ) : currentStep === 2 ? (
+            <StructuredInputsStep />
+          ) : (
+            <ComingLaterPanel title={STEPS[currentStep].title} />
+          )}
         </div>
 
         <div className="mt-8 flex items-center justify-between border-t border-line pt-6">

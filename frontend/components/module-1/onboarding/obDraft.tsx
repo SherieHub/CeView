@@ -16,6 +16,18 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
+export type StructuredField = 'description' | 'uvp';
+
+export const MIN_WORDS: Record<StructuredField, number> = {
+  description: 50,
+  uvp: 30,
+};
+
+export function wordCount(text: string): number {
+  const trimmed = String(text ?? '').trim();
+  return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
+}
+
 export interface ObDraft {
   businessName: string;
   industry: string;
@@ -77,7 +89,8 @@ export function stepValid(step: number, draft: ObDraft): boolean {
     case 1:
       return false; // Card 5 — Brand Identity
     case 2:
-      return false; // Card 6 — Structured Inputs
+      return wordCount(draft.description) >= MIN_WORDS.description
+          && wordCount(draft.uvp) >= MIN_WORDS.uvp; // Card 6 — Structured Inputs
     case 3:
       return true; // Card 7 — Assets & Links, no gate
     case 4:
