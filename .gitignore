@@ -1,1 +1,5 @@
 backend/.env
+
+node_modules/
+dist/
+.vite/
