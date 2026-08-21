@@ -83,8 +83,8 @@ services:
   - type: web
     name: ceview-frontend
     runtime: static
-    buildCommand: cd ceview && npm install && npm run build
-    staticPublishPath: ./ceview/dist
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
         fromService:

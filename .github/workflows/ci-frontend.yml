@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, task_allocation, ph1-dev]
     paths:
-      - 'ceview/**'
+      - 'frontend/**'
       - '.github/workflows/ci-frontend.yml'
   pull_request:
     branches: [main, task_allocation, ph1-dev]
     paths:
-      - 'ceview/**'
+      - 'frontend/**'
       - '.github/workflows/ci-frontend.yml'
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ceview
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +30,7 @@ jobs:
           # transitively by jsdom). Node 22 doesn't hit this.
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: ceview/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci

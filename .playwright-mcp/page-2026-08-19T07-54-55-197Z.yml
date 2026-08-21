@@ -1,0 +1,59 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - generic [ref=f5e6]: Required steps
+      - generic [ref=f5e7]:
+        - generic [ref=f5e8]:
+          - generic [ref=f5e9]: "1"
+          - generic [ref=f5e10]:
+            - generic [ref=f5e11]: Basic Info
+            - text: Name, industry, slogan
+        - generic [ref=f5e12]:
+          - generic [ref=f5e13]: "2"
+          - generic [ref=f5e14]:
+            - generic [ref=f5e15]: Brand Identity
+            - text: Vibe and core services
+        - generic [ref=f5e16]:
+          - generic [ref=f5e17]: "3"
+          - generic [ref=f5e18]:
+            - generic [ref=f5e19]: Structured Inputs
+            - text: Description and UVP
+        - generic [ref=f5e20]:
+          - generic [ref=f5e21]: "4"
+          - generic [ref=f5e22]:
+            - generic [ref=f5e23]: Assets & Links
+            - text: Socials, logo, website
+        - generic [ref=f5e24]:
+          - generic [ref=f5e25]: "5"
+          - generic [ref=f5e26]:
+            - generic [ref=f5e27]: Analysis
+            - text: Categories and uniqueness
+  - main [ref=f5e28]:
+    - generic [ref=f5e31]:
+      - paragraph [ref=f5e32]: Step 1 — Required
+      - heading "Tell us about your business" [level=2] [ref=f5e33]
+      - paragraph [ref=f5e34]: These three fields anchor every AI prompt CeView runs on your behalf — classification, forecasting and caption generation all read from them.
+      - generic [ref=f5e35]:
+        - generic [ref=f5e36]:
+          - generic [ref=f5e37]: Business name
+          - textbox "Business name" [ref=f5e38]:
+            - /placeholder: e.g. Sunset Cove Beach Resort
+        - generic [ref=f5e39]:
+          - generic [ref=f5e40]: Industry Primary tourism category
+          - combobox "Industry Primary tourism category" [ref=f5e41]:
+            - option "Select your primary category…" [selected]
+            - option "Coastal & Island"
+            - option "Adventure & Nature"
+            - option "Cultural & Heritage"
+            - option "Theme Parks / Entertainment"
+            - option "Urban & City"
+            - option "Culinary & Gastronomy"
+            - option "Accommodation & Staycation"
+        - generic [ref=f5e42]:
+          - generic [ref=f5e43]: Slogan Optional
+          - textbox "Slogan Optional" [ref=f5e44]:
+            - /placeholder: One line that captures what you offer
+        - button "Fill with demo business" [ref=f5e45] [cursor=pointer]
+    - generic [ref=f5e47]:
+      - generic [ref=f5e48]: Step 1 of 5
+      - button "Continue" [disabled] [ref=f5e49] [cursor=pointer]

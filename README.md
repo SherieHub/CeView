@@ -38,9 +38,9 @@ docker-compose up --build
 Frontend:
 
 ```bash
-cd ceview
+cd frontend
 npm install
-npm run dev   # http://localhost:3000
+npm run dev   # http://localhost:3001
 ```
 
 For the native/H2 path (no Docker), the full environment variable reference, seeded demo accounts, troubleshooting, and end-to-end tests, see **[RUNNING.md](RUNNING.md)** — the complete setup guide.

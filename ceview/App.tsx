@@ -2,6 +2,8 @@ import React from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import AuthGate, { RedirectIfAuthenticated } from './components/auth/AuthGate';
 import LoginPage from './components/auth/LoginPage';
+import CompleteProfilePage from './components/auth/CompleteProfilePage';
+import ProfileCompletionGate from './components/auth/ProfileCompletionGate';
 import AppShell from './layout/AppShell';
 import RoutePlaceholder from './layout/RoutePlaceholder';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
@@ -42,10 +44,12 @@ export interface ProfileSetters {
  * Real routes replacing the old activeTab state switch. Route tree:
  *   /login                       - public
  *   (AuthGate: redirects to /login when unauthenticated)
- *     (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
- *       /onboarding              - placeholder, no shell (wizard is a later card)
- *       (AppShell: sidebar + topbar + <Outlet/>)
- *         /dashboard, /content, /calendar, /performance, /settings/:tab
+ *     (ProfileCompletionGate: complete-profile <-> rest-of-app redirect on profileCompleted)
+ *       /complete-profile        - one-time contact-number step for Google-provisioned operators
+ *       (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
+ *         /onboarding            - placeholder, no shell (wizard is a later card)
+ *         (AppShell: sidebar + topbar + <Outlet/>)
+ *           /dashboard, /content, /calendar, /performance, /settings/:tab
  *
  * Every route element below is an empty screen-shell placeholder per this
  * card's scope boundary — the existing HomeView/MarketRadarView/etc.
@@ -57,22 +61,28 @@ const router = createBrowserRouter([
     element: <AuthGate />,
     children: [
       {
-        element: <ProfileGate />,
+        element: <ProfileCompletionGate />,
         children: [
+          { path: '/complete-profile', element: <CompleteProfilePage /> },
           {
-            path: '/onboarding',
-            element: <RoutePlaceholder title="Onboarding" sub="Set up your business profile" />,
-          },
-          {
-            element: <AppShell />,
+            element: <ProfileGate />,
             children: [
-              { index: true, element: <Navigate to="/dashboard" replace /> },
-              { path: '/dashboard', element: <RoutePlaceholder navId="dashboard" /> },
-              { path: '/content', element: <RoutePlaceholder navId="content" /> },
-              { path: '/calendar', element: <RoutePlaceholder navId="calendar" /> },
-              { path: '/performance', element: <RoutePlaceholder navId="performance" /> },
-              { path: '/settings', element: <Navigate to="/settings/profile" replace /> },
-              { path: '/settings/:tab', element: <RoutePlaceholder navId="settings" /> },
+              {
+                path: '/onboarding',
+                element: <RoutePlaceholder title="Onboarding" sub="Set up your business profile" />,
+              },
+              {
+                element: <AppShell />,
+                children: [
+                  { index: true, element: <Navigate to="/dashboard" replace /> },
+                  { path: '/dashboard', element: <RoutePlaceholder navId="dashboard" /> },
+                  { path: '/content', element: <RoutePlaceholder navId="content" /> },
+                  { path: '/calendar', element: <RoutePlaceholder navId="calendar" /> },
+                  { path: '/performance', element: <RoutePlaceholder navId="performance" /> },
+                  { path: '/settings', element: <Navigate to="/settings/profile" replace /> },
+                  { path: '/settings/:tab', element: <RoutePlaceholder navId="settings" /> },
+                ],
+              },
             ],
           },
         ],
