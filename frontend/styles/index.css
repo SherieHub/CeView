@@ -781,7 +781,16 @@
       top: 0;
       align-self: start;
       height: 100dvh;
+      /* The rail's content is a fixed five-item list, so it only overflows on
+         short viewports. Keep it scrollable there so the note stays reachable,
+         but hide the scrollbar chrome: a permanent gutter running down a list
+         that almost fits reads as a defect rather than an affordance. */
       overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .ob-rail::-webkit-scrollbar {
+      display: none;
     }
     /* Side margins scale with the viewport instead of sitting at a flat 80px.
        --space-xl is the floor at ~1024px, growing to 180px on wide displays.

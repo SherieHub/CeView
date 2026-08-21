@@ -10,7 +10,7 @@ import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
-import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
+import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
 
 /**
  * DEV-ONLY preview routes.
@@ -28,10 +28,25 @@ import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard'
 const devPreviewRoutes = import.meta.env.DEV
   ? [
       {
+        // Prefilled with the demo business so steps 1-3 already satisfy
+        // stepValid() and Assets & Links (step 4) is reachable in three clicks.
         path: '/preview/onboarding',
         element: (
           <ObDraftProvider initial={DEMO_OB_DRAFT}>
             <OnboardingWizard />
+          </ObDraftProvider>
+        ),
+      },
+      {
+        // Step 4 in isolation, with no rail or wizard chrome — handy for
+        // working on the step itself. Use /preview/onboarding above to see it
+        // in place. Padding mirrors the wizard's own .ob-panel.
+        path: '/preview/onboarding/assets',
+        element: (
+          <ObDraftProvider>
+            <div className="mx-auto max-w-[640px] p-6 md:p-10">
+              <AssetsLinksStep />
+            </div>
           </ObDraftProvider>
         ),
       },
@@ -70,7 +85,11 @@ const router = createBrowserRouter([
             children: [
               {
                 path: 'onboarding',
-                element: <OnboardingWizard />,
+                element: (
+                  <ObDraftProvider>
+                    <OnboardingWizard />
+                  </ObDraftProvider>
+                ),
               },
               {
                 element: <AppShell />,
