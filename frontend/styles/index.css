@@ -85,7 +85,14 @@
 
 /* ============================================================
    RESET / BASE — prototype lines 70–110
+   Wrapped in @layer base so these rules sit below Tailwind's utility
+   layer in the cascade — unlayered CSS otherwise beats every layered
+   utility regardless of specificity, which was silently nulling out
+   border/background utilities (e.g. bg-gold, border-line, the
+   aria-pressed: variants) on every <button> in the app via the plain
+   `button { border: none; background: none; }` reset below.
    ============================================================ */
+@layer base {
 html,
 body {
   height: 100%;
@@ -170,6 +177,7 @@ svg {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
 }
 
 /* ============================================================

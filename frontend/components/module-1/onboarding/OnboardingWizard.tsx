@@ -5,17 +5,26 @@
  * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/02-module-1.md
  *
  * The 5-step wizard shell: side step rail, progress bar, active step panel,
- * Back/Continue footer. Only Step 1 (Basic Info) is real — Steps 2-5 render a
- * "coming in a later card" placeholder until Cards 5-8 land, matching those
- * steps' own still-unimplemented stub files. Styled with Tailwind utilities
- * plus the design tokens that already exist (.h-xl/.h-lg/.body-sm/.eyebrow/
- * .card/.empty) rather than the prototype's .ob-* classes, which aren't
- * defined in styles/index.css yet and are out of this card's file scope.
+ * Back/Continue footer. Styled with Tailwind utilities plus the design tokens
+ * that already exist (.h-xl/.h-lg/.body-sm/.eyebrow/.card/.empty) rather than
+ * the prototype's .ob-* classes, which aren't defined in styles/index.css yet
+ * and are out of this card's file scope.
+ *
+ * SCOPE NOTE: rendering is a STEP_PANELS[currentStep] lookup rather than a
+ * single-step ternary, so Step 2 (Brand Identity, Card 5 — committed
+ * 0c36ede3) actually mounts instead of a generic placeholder. Steps 3-5 still
+ * import their own not-yet-implemented stub components (Cards 6-8) and render
+ * unchanged. This lookup touches a Card 4 file from a later card, same
+ * precedent as feat/assets-and-links's identical fix for its own step.
  */
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { ObDraftProvider, useObDraft, stepValid } from './obDraft';
 import BasicInfoStep from './steps/BasicInfoStep';
+import BrandIdentityStep from './steps/BrandIdentityStep';
+import StructuredInputsStep from './steps/StructuredInputsStep';
+import AssetsLinksStep from './steps/AssetsLinksStep';
+import AnalysisStep from './steps/AnalysisStep';
 
 const STEPS = [
   { title: 'Basic Info', sub: 'Name, industry, slogan' },
@@ -25,20 +34,14 @@ const STEPS = [
   { title: 'Analysis', sub: 'Categories and uniqueness' },
 ];
 
-function ComingLaterPanel({ title }: { title: string }) {
-  return (
-    <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">{title}</h2>
-      <p className="body-sm">Coming in a later card.</p>
-    </div>
-  );
-}
+const STEP_PANELS = [BasicInfoStep, BrandIdentityStep, StructuredInputsStep, AssetsLinksStep, AnalysisStep];
 
 function OnboardingWizardInner() {
   const [currentStep, setCurrentStep] = useState(0);
   const { draft } = useObDraft();
   const canContinue = stepValid(currentStep, draft);
   const isLastStep = currentStep === STEPS.length - 1;
+  const Panel = STEP_PANELS[currentStep];
 
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-[290px_1fr]">
@@ -89,7 +92,7 @@ function OnboardingWizardInner() {
         </div>
 
         <div className="max-w-[640px] flex-1">
-          {currentStep === 0 ? <BasicInfoStep /> : <ComingLaterPanel title={STEPS[currentStep].title} />}
+          <Panel />
         </div>
 
         <div className="mt-8 flex items-center justify-between border-t border-line pt-6">

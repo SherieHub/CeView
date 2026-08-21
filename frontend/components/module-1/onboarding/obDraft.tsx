@@ -65,17 +65,19 @@ export function useObDraft(): ObDraftContextValue {
 }
 
 /**
- * Per-step Continue gate. Only step 0 (Basic Info) is implemented by this
- * card — steps 1/2/4 are hardcoded false placeholders until Cards 5/6/8 land
- * with their own real validity rules; step 3 (Assets & Links) has no gate at
- * all per the prototype (obValid(3) === true — every field there is optional).
+ * Per-step Continue gate. Steps 0 (Basic Info) and 1 (Brand Identity) are
+ * implemented — step 1's formula matches brand-identity-step-2.ts's
+ * pseudocode (>=1 vibe AND >=1 core service). Steps 2/4 are hardcoded false
+ * placeholders until Cards 6/8 land with their own real validity rules; step
+ * 3 (Assets & Links) has no gate at all per the prototype (obValid(3) ===
+ * true — every field there is optional).
  */
 export function stepValid(step: number, draft: ObDraft): boolean {
   switch (step) {
     case 0:
       return draft.businessName.trim().length > 1 && !!draft.industry;
     case 1:
-      return false; // Card 5 — Brand Identity
+      return draft.vibes.length >= 1 && draft.coreServices.length >= 1;
     case 2:
       return false; // Card 6 — Structured Inputs
     case 3:
