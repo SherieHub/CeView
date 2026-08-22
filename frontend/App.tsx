@@ -54,30 +54,6 @@ const devPreviewRoutes = import.meta.env.DEV
   : [];
 
 /**
- * DEV-ONLY preview route. `/onboarding` sits behind AuthGate + ProfileGate,
- * and apiClient.auth.login always hits the real backend (no fixture branch),
- * so the wizard can't be eyeballed locally without Spring Boot + Postgres
- * running. This route mounts it directly, outside both gates, purely so
- * in-progress steps can be checked in a browser — same fix as
- * feat/assets-and-links's identical `/preview/onboarding` route.
- * `import.meta.env.DEV` is statically false under `vite build`, so the whole
- * array (and its imports) is tree-shaken out of production bundles.
- *
- * TEMPORARY: delete once every wizard step (Cards 5-8) is real and there's no
- * further need to preview a still-landing step without auth.
- */
-const devPreviewRoutes = import.meta.env.DEV
-  ? [
-      {
-        // OnboardingWizard's own default export already wraps ObDraftProvider
-        // internally — no need to supply one here.
-        path: '/preview/onboarding',
-        element: <OnboardingWizard />,
-      },
-    ]
-  : [];
-
-/**
  * Route tree:
  *   /login                       - public
  *   (AuthGate: redirects to /login when unauthenticated)
