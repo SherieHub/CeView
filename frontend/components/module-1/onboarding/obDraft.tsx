@@ -13,6 +13,8 @@
  */
 import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { PlatformId } from "../../../types";
+
 
 export interface ObDraft {
   /** Step 1 — Basic Info (Card 4) */
