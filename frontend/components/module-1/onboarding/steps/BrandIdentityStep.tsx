@@ -1,21 +1,124 @@
 /**
  * CARD — Onboarding: Step 2 Brand Identity
  * Depends on: Card 4 (Wizard Shell & Step 1)
- * Prototype reference: obStepBrand() — ui-ux-prototype.html:2035–2073
+ * Prototype reference: obStepBrand() — ui-ux-prototype.html:2038-2074
  * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/02-module-1.md
  *
- * TODO:
- * - Vibe chip grid (8 options), core-services tag input (type + Enter to add, x to remove)
- * - Gate: >=1 vibe AND >=1 core service
- * - BrandIdentityStep.test.tsx: cover the gate and tag add/remove
+ * Step 2 of the onboarding wizard — vibe multi-select plus a core-services tag
+ * input. No per-chip minimum is enforced here; the >=1 vibe / >=1 service gate
+ * lives in obDraft.ts's stepValid() (out of this card's file scope — see the
+ * card's flagged gap).
  */
+import { useRef, useState } from 'react';
+import { X } from 'lucide-react';
+import { useObDraft } from '../obDraft';
+
+const VIBES = [
+  'Serene & Restorative',
+  'Adventurous',
+  'Luxury & Exclusive',
+  'Family-Friendly',
+  'Eco-Conscious',
+  'Local & Authentic',
+  'Youthful & Social',
+  'Romantic',
+];
+
 export default function BrandIdentityStep() {
+  const { draft, setDraft } = useObDraft();
+  const [tagInput, setTagInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function toggleVibe(vibe: string) {
+    const vibes = draft.vibes.includes(vibe)
+      ? draft.vibes.filter((v) => v !== vibe)
+      : [...draft.vibes, vibe];
+    setDraft({ ...draft, vibes });
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const value = tagInput.trim();
+    if (!value || draft.coreServices.includes(value)) return;
+    setDraft({ ...draft, coreServices: [...draft.coreServices, value] });
+    setTagInput('');
+    inputRef.current?.focus();
+  }
+
+  function removeService(service: string) {
+    setDraft({ ...draft, coreServices: draft.coreServices.filter((s) => s !== service) });
+  }
+
   return (
-    <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Brand Identity</h2>
-      <p className="body-sm">
-        Not implemented yet — see CARD — Onboarding: Step 2 Brand Identity in 02-module-1.md.
+    <>
+      <p className="eyebrow">Step 2 — Required</p>
+      <h2 className="h-xl" style={{ margin: '6px 0 8px' }}>
+        How should you sound and what do you sell?
+      </h2>
+      <p className="body-sm" style={{ marginBottom: 24, maxWidth: '56ch' }}>
+        Vibe sets the tone of every generated caption. Core services are sorted by the AI into
+        primary offerings and unexpected differentiators before any copy is written.
       </p>
-    </div>
+
+      <div className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="body-xs font-semibold">
+            Vibe <span className="text-muted font-normal">— Pick one or more</span>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {VIBES.map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={draft.vibes.includes(v)}
+                onClick={() => toggleVibe(v)}
+                className="rounded-full border border-line px-3 py-1.5 body-sm aria-pressed:border-navy aria-pressed:bg-gold-wash aria-pressed:font-semibold"
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="body-xs font-semibold">
+            Core services <span className="text-muted font-normal">— At least one</span>
+          </span>
+          <div
+            className="flex flex-wrap items-center gap-2 rounded-md border border-line px-3 py-2"
+            onClick={() => inputRef.current?.focus()}
+          >
+            {draft.coreServices.map((s) => (
+              <span key={s} className="flex items-center gap-1 rounded-full bg-panel px-2.5 py-1 body-xs">
+                {s}
+                <button
+                  type="button"
+                  aria-label={`Remove ${s}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeService(s);
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+            <input
+              ref={inputRef}
+              type="text"
+              className="min-w-[160px] flex-1 border-0 p-1 outline-none"
+              placeholder="Type a service and press Enter…"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+            />
+          </div>
+          <span className="body-xs text-muted">
+            e.g. Scuba Diving, Island Hopping, Sunset Cruise, Farm-to-table Dining
+          </span>
+        </label>
+      </div>
+    </>
   );
 }
