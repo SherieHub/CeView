@@ -9,27 +9,46 @@ import RoutePlaceholder from './layout/RoutePlaceholder';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
+import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
+import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
 
 /**
- * DEV-ONLY preview route. `/onboarding` sits behind AuthGate + ProfileGate,
- * and apiClient.auth.login always hits the real backend (no fixture branch),
- * so the wizard can't be eyeballed locally without Spring Boot + Postgres
- * running. This route mounts it directly, outside both gates, purely so
- * in-progress steps can be checked in a browser — same fix as
- * feat/assets-and-links's identical `/preview/onboarding` route.
- * `import.meta.env.DEV` is statically false under `vite build`, so the whole
- * array (and its imports) is tree-shaken out of production bundles.
+ * DEV-ONLY preview routes.
  *
- * TEMPORARY: delete once every wizard step (Cards 5-8) is real and there's no
- * further need to preview a still-landing step without auth.
+ * Onboarding steps live behind AuthGate, and apiClient.auth.login has no
+ * fixture branch — it always hits the real backend — so a screen cannot be
+ * eyeballed locally without Spring Boot + Postgres running. These routes mount
+ * a step directly, outside both gates, purely so it can be checked in a
+ * browser. `import.meta.env.DEV` is statically false in `vite build`, so the
+ * whole array (and its imports) is tree-shaken out of production bundles.
+ *
+ * TEMPORARY: delete this once the wizard shell (Card 4, 02-module-1.md) mounts
+ * the steps for real.
  */
 const devPreviewRoutes = import.meta.env.DEV
   ? [
       {
-        // OnboardingWizard's own default export already wraps ObDraftProvider
-        // internally — no need to supply one here.
+        // Prefilled with the demo business so steps 1-3 already satisfy
+        // stepValid() and Assets & Links (step 4) is reachable in three clicks.
         path: '/preview/onboarding',
-        element: <OnboardingWizard />,
+        element: (
+          <ObDraftProvider initial={DEMO_OB_DRAFT}>
+            <OnboardingWizard />
+          </ObDraftProvider>
+        ),
+      },
+      {
+        // Step 4 in isolation, with no rail or wizard chrome — handy for
+        // working on the step itself. Use /preview/onboarding above to see it
+        // in place. Padding mirrors the wizard's own .ob-panel.
+        path: '/preview/onboarding/assets',
+        element: (
+          <ObDraftProvider>
+            <div className="mx-auto max-w-[640px] p-6 md:p-10">
+              <AssetsLinksStep />
+            </div>
+          </ObDraftProvider>
+        ),
       },
     ]
   : [];
@@ -67,7 +86,11 @@ const router = createBrowserRouter([
             children: [
               {
                 path: 'onboarding',
-                element: <OnboardingWizard />,
+                element: (
+                  <ObDraftProvider>
+                    <OnboardingWizard />
+                  </ObDraftProvider>
+                ),
               },
               {
                 element: <AppShell />,
