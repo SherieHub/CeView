@@ -1,9 +1,0 @@
-flowchart TD
-  RankCardClick(["Click a Dashboard\nRankCard"]) --> SetUrl["URL → ?market=<id>"]
-  SetUrl --> Lookup["market = MOCK_MARKETS.find(id)"]
-  Lookup --> Reset["Reset: timeframe='4WK',\nactiveTab='economy'"]
-  Reset --> Render["Render Drawer: header,\nsurge/no-surge banner,\ndirective, chart, tabs"]
-  Render -->|toggle 4WK/12WK| Slice["data = chartData.slice(-weeks)"]
-  Render -->|"Target this market" click| Target["close() →\nnavigate /content with\ntargetedMarketId, activeMarketId"]
-  Render -->|scrim / Esc / back| Close["close(): clear ?market="]
-  Lookup -->|market not found| Null(["Render null"])

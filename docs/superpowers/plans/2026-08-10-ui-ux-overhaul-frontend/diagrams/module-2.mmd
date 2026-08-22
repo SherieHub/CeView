@@ -1,37 +1,58 @@
 %% Module 2 — Market Radar & Notifications
-%% Dashboard (Cards 10-12) + Market Radar Drawer (Cards 13-14). See 03-module-2.md.
+%% Foundation (M2-F) owns the shells + typed slot stubs; M2-1..M2-5 each replace exactly one stub,
+%% independent of each other; M2-B1/M2-B2 (backend track) are independent of every frontend card.
+%% See 03-module-2.md.
 flowchart TD
   classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef shell fill:#eaf2fb,stroke:#4a76a8,color:#1c3a5e;
   classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+  classDef backend fill:#fbeee6,stroke:#b8632f,color:#4a2510;
 
   subgraph Dashboard["components/module-2/2.1-dashboard/ (route: /dashboard)"]
-    DashView["DashboardView.tsx\n(Cards 10-12 — 6 states, page head, alert feed, markets reveal)"]:::newfile
-    AlertCard["AlertCard.tsx (Card 10)"]:::newfile
-    RankCard["RankCard.tsx (Card 11)"]:::newfile
-    RankingFormula["RankingFormulaCard.tsx (Card 11)"]:::newfile
-    RefreshBtn["RefreshForecastButton.tsx (Card 12)"]:::newfile
+    DashView["DashboardView.tsx (M2-F)\nlayout grid, useDashboardState(), composes 4 slots"]:::shell
+    AlertFeed["AlertFeed.tsx (M2-1)\nreplaces M2-F stub — owns loading/empty/zero-match states"]:::newfile
+    AlertCard["AlertCard.tsx (M2-1)"]:::newfile
+    MarketsReveal["MarketsRevealPanel.tsx (M2-2)\nreplaces M2-F stub"]:::newfile
+    RankCard["RankCard.tsx (M2-2)"]:::newfile
+    RankingFormula["RankingFormulaCard.tsx (M2-2)"]:::newfile
+    AiBanner["AiStatusBanner.tsx (M2-3)\nreplaces M2-F stub"]:::newfile
+    RefreshBtn["RefreshForecastButton.tsx (M2-3)\nreplaces M2-F stub"]:::newfile
   end
-  DashView --> AlertCard
-  DashView -->|on alert selected| RankCard --> RankingFormula
+  DashView --> AlertFeed --> AlertCard
+  DashView --> MarketsReveal
+  MarketsReveal --> RankCard --> RankingFormula
+  DashView --> AiBanner
   DashView --> RefreshBtn
 
   subgraph Radar["components/module-2/2.2-market-radar/ (mounted via ?market=<id>)"]
-    Drawer["MarketRadarDrawer.tsx (Card 13)"]:::newfile
-    Chart["DemandForecastChart.tsx (Card 13)"]:::newfile
-    Tabs["InsightsTabs.tsx (Card 14)"]:::newfile
-    PurchTab["PurchasingPowerTab.tsx (Card 14)"]:::newfile
-    SeasonTab["SeasonalPatternsTab.tsx (Card 14)"]:::newfile
+    Drawer["MarketRadarDrawer.tsx (M2-F)\nheader, owns activeTab/timeframe state, composes 2 slots"]:::shell
+    ChartPanel["DrawerChartPanel.tsx (M2-4)\nreplaces M2-F stub"]:::newfile
+    Chart["DemandForecastChart.tsx (M2-4)"]:::newfile
+    Tabs["InsightsTabs.tsx (M2-5)\nreplaces M2-F stub — sibling of M2-4, not its child"]:::newfile
+    PurchTab["PurchasingPowerTab.tsx (M2-5)"]:::newfile
+    SeasonTab["SeasonalPatternsTab.tsx (M2-5)"]:::newfile
   end
-  Drawer --> Chart
+  Drawer --> ChartPanel --> Chart
   Drawer --> Tabs --> PurchTab
   Tabs --> SeasonTab
+
+  subgraph Backend["backend/spring-boot/.../module2/ (independent track, no frontend dependency)"]
+    Controller["ForecastingController.markets() (M2-B1)\n?category= query param"]:::backend
+    Service["ForecastingService.loadMarketsFromDb\n(profileId, category) overload (M2-B1)"]:::backend
+    Ranker["CategoryMarketRanker.java (M2-B1)"]:::backend
+    NotifSvc["NotificationService.java (M2-B2)"]:::backend
+    CatRankSvc["CategoryRankNotificationService.java (M2-B2)\ncategoryMarketRanks on DetailsDto"]:::backend
+  end
+  Controller --> Service --> Ranker
+  NotifSvc --> CatRankSvc
+  CatRankSvc -.->|calls M2-B1's loadMarketsFromDb overload| Service
 
   RankCard -.->|click sets ?market=<id>, opens| Drawer
   Drawer -.->|"Target this market" -> navigate /content| ContentStudio["/content route\n(Module 3)"]:::foundation
 
-  DashView -.->|apiClient.notifications.list| ApiClient["services/apiClient.ts"]:::foundation
+  AlertFeed -.->|apiClient.notifications.list, markRead| ApiClient["services/apiClient.ts"]:::foundation
   DashView -.->|profile.categories filter| ProfileCtx["services/profileContext.tsx\nuseProfile()"]:::foundation
-  RankCard -.->|marketsForCategory| Fixtures["services/fixtures/markets.ts"]:::foundation
+  MarketsReveal -.->|"marketsForCategory (fixture stand-in for M2-B1)"| Fixtures["services/fixtures/markets.ts"]:::foundation
   Drawer -.->|MOCK_MARKETS fields| Fixtures
   RefreshBtn -.->|completion toast| Toast["components/shared/Toast.tsx\nuseToast()"]:::foundation
   Drawer -.->|built on| DrawerPrimitive["components/shared/Drawer.tsx"]:::foundation

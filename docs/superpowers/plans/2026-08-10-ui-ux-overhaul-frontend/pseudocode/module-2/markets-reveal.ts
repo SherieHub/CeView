@@ -1,20 +1,17 @@
-// ---- components/module-2/2.1-dashboard/DashboardView.tsx (additions) ----
-imports: useNavigate, useSearchParams, marketsForCategory, RankCard, RankingFormulaCard
+// ---- components/module-2/2.1-dashboard/MarketsRevealPanel.tsx ----
+// Replaces the M2-F stub. Implements MarketsRevealSlotProps from dashboardTypes.ts.
+props: { selectedAlert }
+imports: useNavigate, marketsForCategory, RankCard, RankingFormulaCard
 
-selectedAlert ← visible.find(n => n.id === selectedId) ?? null
-  // a stale selection (e.g. from before categories changed) is only non-null if still in `visible`
+rankedMarkets ← selectedAlert ? marketsForCategory(selectedAlert.category) : null
+  // marketsForCategory is the Foundation — Fixture Data Layer fixture stand-in for the real
+  // GET /forecasting/markets?category= endpoint (backend track M2-B1/M2-B2) — swap-in is a
+  // separate, later, non-blocking integration task, not part of this card
 
-rankedMarkets ← (selectedAlert AND mode in ['normal','ai-down'])
-  ? marketsForCategory(selectedAlert.category) : null
+openMarket(marketId): navigate(`/dashboard?market=${marketId}`)  // opens M2-F's drawer shell
 
-selectAlert(alert):  // extends Card 10's version
-  setSelectedId(id => id === alert.id ? null : alert.id)  // clicking same alert again deselects
-  // ...mark-read side effect from Card 10
-
-openMarket(marketId): navigate(`/dashboard?market=${marketId}`)  // opens Card 13's drawer
-
-render: if rankedMarkets → two-column layout (feed | rankedMarkets.map(RankCard) + RankingFormulaCard)
-        else → Card 10's single column
+if !rankedMarkets → render null   // DashboardView's grid (M2-F) collapses to single-column automatically
+render: rankedMarkets.map(m => <RankCard market={m} onClick={() => openMarket(m.id)}/>) + <RankingFormulaCard/>
 
 // ---- components/module-2/2.1-dashboard/RankCard.tsx ----
 props: { market, onClick }

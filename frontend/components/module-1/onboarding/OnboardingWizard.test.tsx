@@ -1,55 +1,122 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+/**
+ * CARD — Onboarding: Wizard Shell
+ * Definition of Done: "cover the step-1 validity gate".
+ *
+ * Also covers the rail's defining property — it is a progress indicator, not
+ * navigation, so its state is derived from the current index and its rows do
+ * not move the wizard.
+ */
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import OnboardingWizard from './OnboardingWizard';
+import { DEMO_OB_DRAFT, EMPTY_OB_DRAFT, ObDraftProvider, stepValid } from './obDraft';
+import type { ObDraft } from './obDraft';
 
-describe('OnboardingWizard — Step 1 validity gate', () => {
-  it('shows Step 1 (Basic Info) by default with Back hidden and Continue disabled', () => {
-    render(<OnboardingWizard />);
+function renderWizard(initial: ObDraft) {
+  return render(
+    <ObDraftProvider initial={initial}>
+      <OnboardingWizard />
+    </ObDraftProvider>
+  );
+}
 
-    expect(screen.getByText('Tell us about your business')).toBeInTheDocument();
-    expect(screen.getByText('Back').closest('button')).not.toBeVisible();
-    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled();
+/**
+ * Scoped to the rail — step titles also appear as headings inside the step
+ * panels, so an unscoped getByText matches twice.
+ */
+function railRow(title: string) {
+  const rail = screen.getByRole('list', { name: 'Onboarding progress' });
+  return within(rail).getByText(title).closest('[data-state]');
+}
+
+describe('stepValid', () => {
+  it('gates step 1 on a business name longer than one character plus an industry', () => {
+    expect(stepValid(EMPTY_OB_DRAFT, 0)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, businessName: 'A' }, 0)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, businessName: 'Ab' }, 0)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, businessName: 'Ab', industry: 'Cafe' }, 0)).toBe(true);
   });
 
-  it('enables Continue once business name and industry are both filled', () => {
-    render(<OnboardingWizard />);
-
-    fireEvent.change(screen.getByLabelText(/business name/i), { target: { value: 'Sunset Cove Beach Resort' } });
-    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText(/industry/i), { target: { value: 'Accommodation & Staycation' } });
-    expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
+  it('gates step 2 on at least one vibe and one core service', () => {
+    expect(stepValid({ ...EMPTY_OB_DRAFT, vibes: ['Serene'] }, 1)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, coreServices: ['Diving'] }, 1)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, vibes: ['Serene'], coreServices: ['Diving'] }, 1)).toBe(
+      true
+    );
   });
 
-  it('re-disables Continue if business name is cleared after being valid', () => {
-    render(<OnboardingWizard />);
-
-    fireEvent.change(screen.getByLabelText(/business name/i), { target: { value: 'Sunset Cove Beach Resort' } });
-    fireEvent.change(screen.getByLabelText(/industry/i), { target: { value: 'Accommodation & Staycation' } });
-    expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
-
-    fireEvent.change(screen.getByLabelText(/business name/i), { target: { value: '' } });
-    expect(screen.getByRole('button', { name: /continue/i })).toBeDisabled();
+  it('gates step 3 on the 50-word description and 30-word UVP thresholds', () => {
+    const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ');
+    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(49), uvp: words(30) }, 2)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(50), uvp: words(29) }, 2)).toBe(false);
+    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(50), uvp: words(30) }, 2)).toBe(true);
   });
 
-  it('the "Fill with demo business" button fills the required fields and enables Continue', () => {
-    render(<OnboardingWizard />);
+  it('never gates step 4 — every Assets & Links field is optional', () => {
+    expect(stepValid(EMPTY_OB_DRAFT, 3)).toBe(true);
+  });
+});
 
-    fireEvent.click(screen.getByRole('button', { name: /fill with demo business/i }));
-
-    expect(screen.getByLabelText(/business name/i)).toHaveValue('Sunset Cove Beach Resort');
-    expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
+describe('OnboardingWizard', () => {
+  it('disables Continue until step 1 is valid', () => {
+    renderWizard(EMPTY_OB_DRAFT);
+    expect(screen.getByRole('button', { name: /Continue/ })).toBeDisabled();
   });
 
-  it('shows the side rail with step 1 current and the other four pending', () => {
-    render(<OnboardingWizard />);
+  it('enables Continue once step 1 is satisfied', () => {
+    renderWizard(DEMO_OB_DRAFT);
+    expect(screen.getByRole('button', { name: /Continue/ })).toBeEnabled();
+  });
 
-    const current = screen.getByText('Basic Info').closest('[data-state]');
-    expect(current).toHaveAttribute('data-state', 'current');
+  it('disables Back on the first step', () => {
+    renderWizard(DEMO_OB_DRAFT);
+    expect(screen.getByRole('button', { name: /Back/ })).toBeDisabled();
+  });
 
-    for (const title of ['Brand Identity', 'Structured Inputs', 'Assets & Links', 'Analysis']) {
-      const pending = screen.getByText(title).closest('[data-state]');
-      expect(pending).toHaveAttribute('data-state', 'pending');
+  it('marks earlier rail steps done and later ones pending as the index advances', () => {
+    renderWizard(DEMO_OB_DRAFT);
+
+    expect(railRow('Basic Info')).toHaveAttribute('data-state', 'current');
+    expect(railRow('Brand Identity')).toHaveAttribute('data-state', 'pending');
+    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+
+    expect(railRow('Basic Info')).toHaveAttribute('data-state', 'done');
+    expect(railRow('Brand Identity')).toHaveAttribute('data-state', 'current');
+    expect(screen.getByText('Step 2 of 5')).toBeInTheDocument();
+  });
+
+  it('reaches Assets & Links after three Continues and renders that step', () => {
+    renderWizard(DEMO_OB_DRAFT);
+
+    for (let i = 0; i < 3; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     }
+
+    expect(screen.getByText('Step 4 of 5')).toBeInTheDocument();
+    expect(railRow('Assets & Links')).toHaveAttribute('data-state', 'current');
+    expect(screen.getByLabelText('Instagram handle or page name')).toBeInTheDocument();
+  });
+
+  it('does not let a rail row navigate — it is an indicator, not a link', () => {
+    renderWizard(DEMO_OB_DRAFT);
+
+    const rail = screen.getByRole('list', { name: 'Onboarding progress' });
+    fireEvent.click(within(rail).getByText('Analysis'));
+
+    expect(screen.getByText('Step 1 of 5')).toBeInTheDocument();
+    expect(railRow('Analysis')).toHaveAttribute('data-state', 'pending');
+  });
+
+  it('blocks Finish on the terminal step until the analysis card lands', () => {
+    renderWizard(DEMO_OB_DRAFT);
+
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    }
+
+    expect(screen.getByText('Step 5 of 5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Finish/ })).toBeDisabled();
   });
 });

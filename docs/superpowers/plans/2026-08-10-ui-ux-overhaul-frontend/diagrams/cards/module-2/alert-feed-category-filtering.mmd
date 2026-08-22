@@ -1,6 +1,11 @@
 flowchart TD
-  Mount(["/dashboard mounted"]) --> Load["apiClient.notifications.list()"]
-  Load --> Filter["visible = notifications.filter(\nn => profile.categories.includes(n.category))"]
-  Filter --> Render(["Render one AlertCard per\nvisible notification"])
-  Render -->|click a card| Select["selectAlert(alert):\nmark isRead=true,\nsetSelectedId(alert.id)"]
+  Mount(["AlertFeed slot rendered"]) --> Check{"notifications === null?"}
+  Check -->|yes| Loading(["3 skeleton cards"])
+  Check -->|no| Empty{"notifications.length === 0?"}
+  Empty -->|yes| EmptyMsg(["\"No notifications yet\""])
+  Empty -->|no| Filter["visible = notifications.filter(\nn => profileCategories.includes(n.category))"]
+  Filter --> ZeroMatch{"visible.length === 0?"}
+  ZeroMatch -->|yes| ZeroMsg(["\"No surge alerts for <categories> yet\""])
+  ZeroMatch -->|no| Render(["Render one AlertCard per\nvisible notification"])
+  Render -->|click a card| Select["selectAlert(alert):\nmarkRead(alert.id), onSelect(alert.id)"]
   Select --> Rerender(["Unread dot disappears;\ncard marked selected"])

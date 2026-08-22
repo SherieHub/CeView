@@ -1,70 +1,117 @@
 /* ============================================================
-   TOKENS — transcribed 1:1 from ui-ux-prototype.html's :root block
-   (itself transcribed from ceview/constants.ts COLORS), re-expressed as a
-   Tailwind v4 @theme so every token is available both as a CSS custom
-   property (--color-navy, --radius-md, ...) and as generated utility
-   classes (bg-navy, rounded-md, shadow-1, ...).
+   DESIGN TOKENS — tourism-app-branding skill, §1 (palette), §2
+   (fonts), §5 (spacing/radius/elevation).
+   Expressed as a Tailwind v4 @theme so every token is available both
+   as a CSS custom property and as generated utilities
+   (bg-mint-primary, rounded-pill, shadow-card, ...).
+
+   The skill is the single source of truth for colour, type, buttons and
+   spacing. ui-ux-prototype.html remains authoritative for app flow,
+   logic and structural detail — never for visuals.
+
+   LEGACY tokens from ui-ux-prototype.html are retained in the marked
+   block below ONLY until the call-site migration finishes; Phase 7 of
+   docs/superpowers/plans/2026-08-15-frontend-branding-alignment.md
+   deletes them. Do not add new usages.
    ============================================================ */
 @import "tailwindcss";
 
 @theme {
-  /* Brand */
-  --color-navy: #0f2854;
-  --color-navy-light: #183c7b;
-  --color-blue: #06388e;
-  --color-skyblue: #7fbfff;
-  --color-navy-muted: #98a7b9;
-  --color-teal: #007892;
-  --color-cyan: #71eeff;
-  --color-gold: #f4a216;
-  --color-gold-dark: #d48e15;
-  --color-gold-light: #ffb941;
-  --color-gold-wash: #fff5df;
-  --color-yellow: #ffd664;
-  --color-sand: #f5e5d1;
-  --color-foliage: #506e53;
+  /* ---- Anchor / Structural ---- */
+  --color-navy-primary: #1B3A5C;
+  --color-navy-dark: #16304D;
 
-  /* Surfaces */
-  --color-page: #fdfbf7;
-  --color-panel: #ffffff;
-  --color-panel-sunk: #f7f4ee;
+  /* ---- Primary Accent (cool) ---- */
+  --color-mint-primary: #5FD6A6;
+  --color-mint-light: #7FE0B8;
+  --color-mint-pale: #E4F6EF;
+  --color-mint-pale-alt: #EFFAF5;
 
-  /* Ink */
-  --color-ink: #0a2342;
-  --color-ink-2: #1e293b;
-  --color-muted: #64748b;
-  --color-grey: #3c4247;
+  /* ---- Luminous accent (cool) ----
+     The bright end of the cool ramp. teal-accent and mint-primary are both
+     desaturated sage tones; neither can produce the luminous aqua the accent
+     gradient needs, so cyan is its own stop. Use it only in gradients and
+     indicators — never as a flat fill behind text, where it fails contrast. */
+  --color-cyan-accent: #2ED9DA;
 
-  /* Lines */
-  --color-line: #e4ded2;
-  --color-line-strong: #c7d3e2;
-  --color-line-navy: #98a7b9;
+  /* Darker end of the cyan ramp — the only cyan safe to put white text on
+     (5.1:1). --color-cyan-accent under white is 1.7:1 and unreadable. */
+  --color-cyan-deep: #0E7A7C;
 
-  /* State */
-  --color-critical: #a70000;
-  --color-critical-alt: #ed3f27;
-  --color-success: #0f7a4e;
-  --color-success-bg: #e6f4ee;
+  /* ---- Travel Accent (warm) ---- */
+  --color-teal-accent: #3CBDB1;
+  --color-coral-cta: #FF8C69;
+  --color-coral-cta-hover: #FF7550;
+  --color-sand: #FFB88C;
 
-  /* trigger workflow */
+  /* ---- Neutrals ---- */
+  --color-white: #FFFFFF;
+  --color-off-white: #F7F9FA;
+  --color-gray-text: #6B7B8C;
+  --color-gray-light: #C9D6DE;
 
-  /* Platform */
-  --color-ig: #c13584;
+  /* ---- Text ---- */
+  --color-text-heading: #1B3A5C;
+  --color-text-body: #5A6B7A;
+  --color-text-inverse: #FFFFFF;
+  --color-text-accent: #5FD6A6;
+  --color-text-muted: #8A97A3;
+
+  /* ADAPTATION: the skill defines --color-text-inverse for headings on dark
+     but no muted body tone for dark backgrounds. Flagged for a
+     tourism-app-branding update.
+     Brightened from #A9BCCB when the chrome gradient moved to lighter teal —
+     the old value fell to 2.4:1 there. At #D7EAEF it reaches 3.8:1, which
+     clears AA for large text but not for the 15px rail subtitles. See the
+     handoff note. */
+  --color-text-inverse-muted: #D7EAEF;
+
+  /* ---- Functional / non-brand ----
+     The skill is silent on semantic state and platform colours. These are NOT
+     brand tokens; they are retuned from the legacy palette to sit alongside
+     mint/coral without clashing. */
+  --color-critical: #D64545;      /* was #a70000 — lifted to read beside coral */
+  --color-critical-bg: #FDECEC;
+  --color-success: #2FA37A;       /* was #0f7a4e — pulled toward mint's hue */
+  --color-success-bg: #E4F6EF;
+
+  /* Platform brand marks — these are the platforms' own colours and are never
+     rebranded. Values per ui-ux-prototype.html:1086-1091 (PLATFORM_META). */
+  --color-ig: #C13584;
   --color-tt: #010101;
-  --color-fb: #1877f2;
-  --color-nv: #03c75a;
+  --color-fb: #1877F2;
+  --color-nv: #03C75A;
 
-  /* Geometry */
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  /* ---- Chrome surface stops (§5 "Surface & gradient system") ----
+     Rails and nav run a teal ramp rather than navy, keeping the chrome in the
+     same family as the cyan/mint accents.
+     --color-chrome-light is the ceiling for this surface: white text on it is
+     4.7:1, and anything lighter drops below AA for the rail's labels. */
+  --color-chrome-light: #157F94;
+  --color-chrome-deep: #0B5163;
+
+  /* ---- Geometry (§5) ---- */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-pill: 24px;
   --radius-full: 999px;
 
-  --shadow-1: 0 1px 2px rgba(15, 40, 84, 0.06), 0 1px 3px rgba(15, 40, 84, 0.08);
-  --shadow-2: 0 4px 12px rgba(15, 40, 84, 0.08), 0 2px 4px rgba(15, 40, 84, 0.05);
-  --shadow-3: 0 18px 48px rgba(10, 35, 66, 0.22);
+  --shadow-card: 0 4px 20px rgba(27, 58, 92, 0.08);
+  --shadow-card-hover: 0 8px 28px rgba(27, 58, 92, 0.14);
+  /* ADDED: §5 defines only the two card shadows; overlays need a heavier step. */
+  --shadow-overlay: 0 18px 48px rgba(27, 58, 92, 0.22);
 
+  /* Named brand spacing (§5). Tailwind v4 generates utilities only from the
+     --spacing-* namespace, so the skill's --space-* names are aliased in
+     :root below. */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 48px;
+  --spacing-xl: 80px;
+
+  /* Tailwind's numeric utility scale — retained so p-6/gap-4 keep resolving.
+     Not brand vocabulary; prefer the named scale above in new code. */
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -79,262 +126,987 @@
   --sidebar-w: 248px;
   --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* ---- Fonts (§2) ---- */
+  --font-heading: 'Poppins', 'Montserrat', sans-serif;
+  --font-body: 'Inter', 'Open Sans', sans-serif;
+  --font-sans: 'Inter', 'Open Sans', sans-serif;
+
+  /* ======= LEGACY — deleted in Phase 7. Do not add usages. ======= */
+  --color-navy: #0f2854;
+  --color-navy-light: #183c7b;
+  --color-blue: #06388e;
+  --color-skyblue: #7fbfff;
+  --color-navy-muted: #98a7b9;
+  --color-teal: #007892;
+  --color-cyan: #71eeff;
+  --color-gold: #f4a216;
+  --color-gold-dark: #d48e15;
+  --color-gold-light: #ffb941;
+  --color-gold-wash: #fff5df;
+  --color-yellow: #ffd664;
+  --color-foliage: #506e53;
+  --color-page: #fdfbf7;
+  --color-panel: #ffffff;
+  --color-panel-sunk: #f7f4ee;
+  --color-ink: #0a2342;
+  --color-ink-2: #1e293b;
+  --color-muted: #64748b;
+  --color-grey: #3c4247;
+  --color-line: #e4ded2;
+  --color-line-strong: #c7d3e2;
+  --color-line-navy: #98a7b9;
+  --shadow-1: 0 1px 2px rgba(15, 40, 84, 0.06), 0 1px 3px rgba(15, 40, 84, 0.08);
+  --shadow-2: 0 4px 12px rgba(15, 40, 84, 0.08), 0 2px 4px rgba(15, 40, 84, 0.05);
+  --shadow-3: 0 18px 48px rgba(10, 35, 66, 0.22);
+  --radius-xs: 6px;
+  --radius-lg: 20px;
+  /* ======= END LEGACY ======= */
+}
+
+/* Skill-literal aliases (§5 names them --space-*), available to hand-written
+   CSS. Tailwind utilities come from the --spacing-* namespace above. */
+:root {
+  --space-xs: var(--spacing-xs);
+  --space-sm: var(--spacing-sm);
+  --space-md: var(--spacing-md);
+  --space-lg: var(--spacing-lg);
+  --space-xl: var(--spacing-xl);
+
+  /* ---- Gradients (§5 "Surface & gradient system") ----
+     Two surfaces, always paired: dark chrome against a pale mint canvas.
+     Never place one dark gradient next to another, and never use a gradient
+     on a control — buttons stay flat except --gradient-cta. */
+  --gradient-chrome: linear-gradient(165deg, var(--color-chrome-light) 0%, var(--color-chrome-deep) 100%);
+  --gradient-canvas: linear-gradient(135deg, var(--color-mint-pale) 0%, var(--color-white) 55%, var(--color-mint-pale-alt) 100%);
+  --gradient-accent: linear-gradient(90deg, var(--color-cyan-accent) 0%, var(--color-mint-primary) 100%);
+  --gradient-cta: linear-gradient(135deg, var(--color-coral-cta) 0%, var(--color-coral-cta-hover) 100%);
+
+  /* Overlay tints for content sitting ON the chrome gradient. Raised from
+     0.08/0.14 — against the lighter teal a faint white tint disappeared. */
+  --chrome-raised: rgba(255, 255, 255, 0.15);
+  --chrome-line: rgba(255, 255, 255, 0.26);
+
+  /* Focus ring for form surfaces. Drawn as a box-shadow so it hugs the
+     control's own border-radius instead of stacking a second outlined
+     rectangle inside it. */
+  --ring-focus: 0 0 0 3px rgba(95, 214, 166, 0.32);
 }
 
 /* ============================================================
-   RESET / BASE — prototype lines 70–110
+   RESET / BASE — tourism-app-branding §3
    ============================================================ */
-html,
-body {
-  height: 100%;
-}
-
-body {
-  font-family: var(--font-sans);
-  background: var(--color-page);
-  color: var(--color-ink);
-  -webkit-font-smoothing: antialiased;
-  font-size: 14px;
-  line-height: 1.55;
-  overflow-x: hidden;
-}
-
-h1,
-h2,
-h3,
-h4,
-p,
-figure {
-  margin: 0;
-}
-
-ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-}
-
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-svg {
-  display: block;
-}
-
-/* Grid/flex items default to min-width:auto, which lets wide content (long
-   tab labels, textareas, tables) force the item past its track and overflow
-   the page. Layout-wide safety net; opt back in with explicit width/flex
-   rules where growth is wanted. */
-.content * {
-  min-width: 0;
-}
-
-::selection {
-  background: var(--color-gold);
-  color: var(--color-navy);
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.mono {
-  font-family: var(--font-mono);
-}
-
-.sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-/* ============================================================
-   TYPOGRAPHY HELPERS — prototype lines ~96–110
-   ============================================================ */
-@layer components {
-  .eyebrow {
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-muted);
+@layer base {
+  html,
+  body {
+    height: 100%;
   }
-  .h-xl {
-    font-size: 30px;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
+
+  body {
+    font-family: var(--font-body);
+    background: var(--color-off-white);
+    color: var(--color-text-body);
+    -webkit-font-smoothing: antialiased;
+    font-size: 1rem; /* §3: base 16px */
+    line-height: 1.6;
+    overflow-x: hidden;
   }
-  .h-lg {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--font-heading);
+    color: var(--color-text-heading);
   }
-  .h-md {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+
+  p,
+  figure {
+    margin: 0;
   }
-  .h-sm {
-    font-size: 14px;
-    font-weight: 700;
-  }
-  .body-sm {
-    font-size: 13px;
-    color: var(--color-muted);
+
+  p {
+    color: var(--color-text-body);
+    font-size: 1rem;
     line-height: 1.6;
   }
-  .body-xs {
-    font-size: 12px;
-    color: var(--color-muted);
-    line-height: 1.55;
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--color-text-heading);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  a {
+    color: var(--color-mint-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-mint-light);
+  }
+
+  /* ADAPTATION: §5's alternating white/mint-pale section rhythm is a
+     landing-page pattern. The rule is defined for future marketing surfaces;
+     the authenticated dashboard shell does not use <section> for layout. */
+  section {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  svg {
+    display: block;
+  }
+
+  /* Grid/flex items default to min-width:auto, which lets wide content (long
+     tab labels, textareas, tables) force the item past its track and overflow
+     the page. Layout-wide safety net; opt back in with explicit width/flex
+     rules where growth is wanted. */
+  .content * {
+    min-width: 0;
+  }
+
+  ::selection {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-mint-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Form surfaces draw their own focus ring instead (--ring-focus, defined in
+     @layer components) so it follows the control's border-radius rather than
+     stacking a second rectangle inside it.
+     This reset MUST stay unlayered. Unlayered rules beat layered ones no matter
+     the specificity, so the rule above would otherwise win over
+     `.field-row .input:focus-visible` even though that selector is far more
+     specific. Focus is not removed here — it is relocated. */
+  .input:focus-visible,
+  .upload-zone:focus-visible,
+  .field-row .input:focus-visible,
+  .field-row .input:focus {
+    outline: none;
+  }
+
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* ============================================================
+     TYPOGRAPHY — tourism-app-branding §3, mapped onto the existing
+     helper class names so call sites keep working.
+     ============================================================ */
+}
+
+@layer components {
+  /* §3 "Hero H1 (on dark bg)" — the brand panel had no correct class. */
+  .h-hero {
+    font-family: var(--font-heading);
+    font-size: 2.75rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--color-text-inverse);
+  }
+  .h-xl {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-text-heading);
+  }
+  .h-lg {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-text-heading);
+  }
+  .h-md {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-text-heading);
+  }
+  .h-sm {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-text-heading);
+  }
+
+  /* §3 "Subhead / accent tagline" */
+  .subhead-accent {
+    font-family: var(--font-heading);
+    color: var(--color-text-accent);
+    font-weight: 500;
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+
+  /* §3 "Small/meta text" */
+  .text-meta {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  /* .body-sm carries descriptive paragraph copy -> §3 Body.
+     .body-xs carries captions/meta -> §3 Small/meta. */
+  .body-sm {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--color-text-body);
+  }
+  .body-xs {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+
+  /* §3 Nav link */
+  .nav-link {
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  /* ADAPTATION: sidebar section dividers have no §3 equivalent. Retuned from
+     10.5px/800 to the meta size at the 600 weight cap. */
+  .eyebrow {
+    font-family: var(--font-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
   .num {
     font-variant-numeric: tabular-nums;
   }
+
+  /* §5 card: 16px radius, soft navy-tinted shadow, no border, space-md
+     padding, hover elevation. */
   .card {
-    background: var(--color-panel);
-    border: 1px solid var(--color-line);
+    background: var(--color-white);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-1);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-md);
+    transition: box-shadow 0.2s ease;
   }
-  .empty {
-    text-align: center;
-    padding: var(--spacing-12) var(--spacing-5);
+  .card:hover {
+    box-shadow: var(--shadow-card-hover);
   }
 
-  .field {
-    display: block;
-    margin-bottom: var(--spacing-5);
+  .empty {
+    text-align: center;
+    padding: var(--space-lg) var(--space-md);
   }
-  .field-label {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--color-ink);
-    margin-bottom: 7px;
-  }
-  .field-label .opt {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--color-muted);
-  }
-  .input,
-  .select,
-  .textarea {
-    width: 100%;
-    padding: 11px 13px;
-    border: 1.5px solid var(--color-line-strong);
-    border-radius: var(--radius-sm);
-    background: var(--color-panel);
-    font-size: 13.5px;
-    transition: border-color 0.16s, box-shadow 0.16s;
-  }
-  .input:focus,
-  .select:focus,
-  .textarea:focus {
-    outline: none;
-    border-color: var(--color-navy);
-    box-shadow: 0 0 0 3px rgba(15, 40, 84, 0.1);
-  }
-  .input::placeholder,
-  .textarea::placeholder {
-    color: #9aa7b8;
-  }
-  .textarea {
-    resize: vertical;
-    min-height: 120px;
-    line-height: 1.6;
-  }
-  .is-invalid {
-    border-color: var(--color-critical-alt) !important;
-    box-shadow: 0 0 0 3px rgba(237, 63, 39, 0.1) !important;
-  }
-  .is-valid {
-    border-color: var(--color-success) !important;
-    box-shadow: 0 0 0 3px rgba(15, 122, 78, 0.1) !important;
-  }
-  .field-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11.5px;
-    margin-top: 6px;
-    color: var(--color-muted);
-  }
-  .field-hint.bad {
-    color: var(--color-critical-alt);
-    font-weight: 600;
-  }
-  .field-hint.good {
-    color: var(--color-success);
-    font-weight: 600;
-  }
-  .field-hint svg {
-    width: 13px;
-    height: 13px;
-  }
+  /* §5/§6: icon badge — radius-md container, mint fill, navy iconography. */
   .empty-glyph {
     width: 52px;
     height: 52px;
-    border-radius: 15px;
-    background: var(--color-panel-sunk);
+    border-radius: var(--radius-md);
+    background: var(--color-mint-pale);
     display: grid;
     place-items: center;
-    margin: 0 auto var(--spacing-4);
-    border: 1px solid var(--color-line);
+    margin: 0 auto var(--space-sm);
   }
   .empty-glyph svg {
     width: 23px;
     height: 23px;
-    stroke: var(--color-muted);
+    stroke: var(--color-navy-primary);
   }
   .empty h3 {
-    font-size: 16px;
-    font-weight: 800;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
   }
   .empty p {
-    font-size: 13px;
-    color: var(--color-muted);
-    margin-top: 6px;
+    font-size: 1rem;
+    color: var(--color-text-body);
+    line-height: 1.6;
+    margin-top: var(--space-xs);
     max-width: 44ch;
     margin-inline: auto;
   }
 }
 
-/* Primitive component classes (.btn/.chip/.tabs/.bar/.switch/.check/.skel/
-   .toast/.modal/.drawer/.banner — prototype lines 112–302) are added
-   incrementally as each consuming screen card needs them, per
-   01-foundation.md's Design System card. .card and .empty (+ .empty-glyph)
-   were added ahead of schedule because module-1..4 placeholder stubs
-   already reference them (see 01a-foundation-verification.md). .cs2-*,
-   .prev-*, #devbar/.devbar-* are excluded — they belong to the dropped v2
-   Content Studio / dev-only jump bar, not the product. */
+/* ============================================================
+   BUTTONS — §4. Exactly three variants; do not invent a fourth.
+   All pill-shaped (--radius-pill, 24px). No square buttons.
+   ============================================================ */
+@layer components {
+  /* Brand actions: Explore, Search, Learn More, Sign Up */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    background-color: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 12px 32px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-mint-light);
+  }
+  .btn-primary:disabled {
+    background-color: var(--color-gray-light);
+    color: var(--color-gray-text);
+    cursor: not-allowed;
+  }
+
+  /* High-intent conversion: Book Now, Reserve, Checkout.
+     §4: max one per view; always visually dominant over .btn-primary. */
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    background: var(--color-cyan-deep);
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  /* Brightens up the cyan ramp on hover. The label flips to navy-dark because
+     the bright cyan can't carry white text (1.7:1); on navy it's 7.7:1. */
+  .btn-cta:hover:not(:disabled) {
+    background: var(--color-cyan-accent);
+    color: var(--color-navy-dark);
+  }
+  .btn-cta:disabled {
+    background: var(--color-gray-light);
+    color: var(--color-gray-text);
+    cursor: not-allowed;
+  }
+
+  /* Secondary actions, light or dark background */
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    background-color: transparent;
+    border: 1.5px solid currentColor;
+    color: var(--color-navy-primary);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    border-radius: var(--radius-pill);
+    padding: 11px 30px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  /* Outline and label only — no fill. The border is `currentColor`, so setting
+     the text colour carries the border with it. Uses the deep cyan, not
+     --color-cyan-accent: on this light canvas the bright cyan is 1.7:1, while
+     the deep one is 5.1:1. */
+  .btn-outline:hover:not(:disabled) {
+    color: var(--color-cyan-deep);
+  }
+  .btn-outline:disabled {
+    border-color: var(--color-gray-light);
+    color: var(--color-gray-text);
+    cursor: not-allowed;
+  }
+  .btn-outline--inverse {
+    color: var(--color-white);
+  }
+  /* On dark chrome the bright cyan is the readable one (7.7:1); the deep cyan
+     would disappear into the gradient. Still outline-and-label only. */
+  .btn-outline--inverse:hover:not(:disabled) {
+    color: var(--color-cyan-accent);
+  }
+}
+
+/* ============================================================
+   FORM & OVERLAY PRIMITIVES
+   ============================================================ */
+@layer components {
+  /* Form control — §5: inputs use --radius-sm; §3: 1rem / text-heading. */
+  .input {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--color-text-heading);
+    background: var(--color-white);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 13px var(--space-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .input::placeholder {
+    color: var(--color-text-muted);
+  }
+  .input:hover:not(:disabled) {
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--shadow-card-hover);
+  }
+  /* Focus lives on the field's own shape — no second outlined rectangle. */
+  .input:focus,
+  .input:focus-visible {
+    outline: none;
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--ring-focus), var(--shadow-card);
+  }
+  .input:disabled {
+    background: var(--color-gray-light);
+    color: var(--color-gray-text);
+    cursor: not-allowed;
+  }
+
+  /* §3 Form label. Flex so an optional-marker child is pushed to the field's
+     right edge rather than trailing the label text; a label with no marker is
+     unaffected and stays left-aligned. */
+  .field-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-text-heading);
+    margin-bottom: 10px;
+  }
+
+  /* Field wrapper. Rhythm is deliberately stepped so grouping reads at a
+     glance: 10px label->control, 12px between sibling controls, 40px between
+     whole groups. A single flat gap everywhere makes a form look like a list. */
+  .field {
+    display: block;
+    margin-bottom: 40px;
+  }
+  .field:last-child {
+    margin-bottom: 0;
+  }
+
+  /* "Optional" qualifier — sits at the right edge of the field label row.
+     No margin: .field-label's space-between does the positioning. */
+  .opt {
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  /* Tag/badge — §1: secondary badges use --color-sand or --color-teal-accent;
+     §5: small tags use --radius-sm. */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-navy-dark);
+    background: var(--color-sand);
+    border-radius: var(--radius-sm);
+    padding: 3px var(--space-xs);
+  }
+  .badge--teal {
+    background: var(--color-teal-accent);
+    color: var(--color-white);
+  }
+
+  /* Icon-only control — §6: rounded (--radius-md) container. */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    color: var(--color-navy-primary);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .icon-btn:hover:not(:disabled) {
+    background: var(--color-mint-pale);
+  }
+  .icon-btn:disabled {
+    color: var(--color-gray-text);
+    cursor: not-allowed;
+  }
+
+  /* Platform icon chip — §6 icon badge. Unified pale-mint fill with a teal
+     glyph rather than each platform's own brand colour: four saturated brand
+     hues in a column fought the mint/coral system. Recognition comes from the
+     glyph and the adjacent label. */
+  .conn-ico {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    color: var(--color-teal-accent);
+  }
+  .conn-ico svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Field row wrapping an icon chip + control as one elevated white card. */
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--color-white);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 10px var(--space-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .field-row:hover {
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--shadow-card-hover);
+  }
+  /* The row is the focus surface, so focus reads as one ring around the whole
+     row rather than a ring nested inside a bordered row. */
+  .field-row:focus-within {
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--ring-focus), var(--shadow-card);
+  }
+  /* The control inside a row is bare — the row itself is the surface. */
+  .field-row .input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+  }
+  .field-row .input:hover:not(:disabled),
+  .field-row .input:focus,
+  .field-row .input:focus-visible {
+    outline: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  /* ==========================================================
+     ONBOARDING WIZARD SHELL — structure and states transcribed from
+     ui-ux-prototype.html:353-382 (.ob-*); all colour, type and radius
+     per the tourism-app-branding skill. The prototype's gold highlight
+     and 11-12.5px rail type are deliberately NOT carried over.
+     ========================================================== */
+
+  /* Standalone full-screen view — onboarding is NOT inside the app shell,
+     so the app sidebar never appears here (prototype line 305).
+
+     Full-bleed per the skill's "Page width & full-bleed layout" rule: no
+     centred max-width container, so the rail sits flush against the viewport
+     edge and the main column consumes everything left over. The prototype's
+     `max-width:1180px; margin:0 auto` is deliberately NOT carried over. */
+  .ob-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    min-height: 100dvh;
+  }
+  @media (min-width: 1024px) {
+    .ob-wrap {
+      /* 320px rather than the prototype's 290px: at the §3 type scale, step
+         subtitles like "Categories and uniqueness" wrapped to two lines. */
+      grid-template-columns: 320px minmax(0, 1fr);
+    }
+    /* Rail is pinned — it stays put while the step panel scrolls. `sticky`
+       rather than `fixed` so it keeps its grid track and the layout needs no
+       compensating offset; `align-self: start` stops the grid stretching the
+       item, which would defeat sticky. */
+    .ob-rail {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100dvh;
+      /* The rail's content is a fixed five-item list, so it only overflows on
+         short viewports. Keep it scrollable there so the note stays reachable,
+         but hide the scrollbar chrome: a permanent gutter running down a list
+         that almost fits reads as a defect rather than an affordance. */
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .ob-rail::-webkit-scrollbar {
+      display: none;
+    }
+    /* Side margins scale with the viewport instead of sitting at a flat 80px.
+       --space-xl is the floor at ~1024px, growing to 180px on wide displays.
+       Below the 880px content cap this padding is what sets the margins, so
+       widening it here is what actually moves them. */
+    .ob-main {
+      padding: var(--space-lg) clamp(var(--space-xl), 11vw, 180px);
+    }
+  }
+
+  .ob-rail {
+    padding: var(--space-lg) var(--space-md);
+    /* Dot grid layered over the chrome gradient. 8% white at a 1.2px radius on
+       a 20px pitch — enough to read as texture up close without becoming a
+       pattern you actively look at. Raising the alpha much past this starts
+       competing with the step labels. */
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.2px, transparent 1.3px),
+      var(--gradient-chrome);
+    background-size: 20px 20px, auto;
+    background-position: 0 0, 0 0;
+    color: var(--color-text-inverse);
+  }
+  .ob-rail .eyebrow {
+    color: var(--color-text-inverse-muted);
+  }
+  .ob-rail-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: var(--space-md);
+  }
+  .ob-rail-mark .g {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: var(--radius-md);
+    background: var(--gradient-accent);
+    color: var(--color-navy-dark);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .ob-rail-mark b {
+    color: var(--color-text-inverse);
+  }
+  .ob-rail-mark .text-meta {
+    color: var(--color-text-inverse-muted);
+  }
+
+  /* Progress indicator, NOT navigation — rows are not links and cannot be
+     clicked to jump. Movement happens only via the Back/Continue footer,
+     gated by stepValid(). */
+  .ob-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  .ob-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    transition: background-color 0.16s ease, border-color 0.16s ease;
+  }
+  .ob-step[data-state='current'] {
+    background: var(--chrome-raised);
+    border-left-color: var(--color-mint-primary);
+  }
+  .ob-dot {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    border-radius: var(--radius-full);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1.5px solid var(--chrome-line);
+    color: var(--color-text-inverse-muted);
+    background: transparent;
+  }
+  .ob-dot svg {
+    width: 13px;
+    height: 13px;
+  }
+  .ob-step[data-state='current'] .ob-dot,
+  .ob-step[data-state='done'] .ob-dot {
+    background: var(--gradient-accent);
+    border-color: transparent;
+    color: var(--color-navy-dark);
+  }
+  .ob-step b {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-text-inverse);
+  }
+  .ob-step span {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--color-text-inverse-muted);
+  }
+  .ob-step[data-state='pending'] b {
+    color: var(--color-text-inverse-muted);
+    font-weight: 500;
+  }
+
+  /* Supporting note at the foot of the rail — raised tint, not a light card,
+     so it stays part of the dark chrome. */
+  .ob-note {
+    display: flex;
+    gap: var(--space-xs);
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--chrome-raised);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-inverse-muted);
+  }
+  .ob-note svg {
+    flex: none;
+    color: var(--color-mint-primary);
+  }
+
+  .ob-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md);
+    background: var(--gradient-canvas);
+    /* Clips the palms where they run past the column edges. */
+    overflow: hidden;
+  }
+
+  /* Decorative palm silhouettes anchored to the bottom corners of the canvas.
+     Inline SVG data URI — no network request, no extra asset to ship. Purely
+     ornamental, so they are pseudo-elements (invisible to assistive tech) and
+     pointer-events: none. */
+  .ob-main::before,
+  .ob-main::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    z-index: 0;
+    width: 300px;
+    height: 480px;
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-size: contain;
+    opacity: 0.07;
+    pointer-events: none;
+  }
+
+  /* Short palm — 200-unit viewBox, rendered 480px tall, so one SVG unit is
+     2.4px. The tall variant below is drawn to render at that same 2.4, which
+     is what keeps the two crowns the same physical size. */
+  .ob-main::before {
+    left: -70px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 200'%3E%3Cg fill='rgb(11,81,99)'%3E%3Cpath d='M54 72c-4 48 2 93 8 128h12c-8-36-12-82-10-128z'/%3E%3Cpath d='M59 70C40 48 18 42 2 50c18 0 38 8 54 26z'/%3E%3Cpath d='M59 74C38 70 18 78 6 94c16-10 36-14 51-12z'/%3E%3Cpath d='M61 70c19-24 43-30 57-20-18 0-38 8-54 26z'/%3E%3Cpath d='M61 74c23-4 43 4 55 20-16-10-36-14-51-12z'/%3E%3Cpath d='M60 68c-4-24 2-46 14-58-10 18-12 38-11 60z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  /* Mirrored so the pair reads as two different trees rather than a repeat,
+     and deliberately taller than its partner — a matched pair reads as a frame
+     around the form, whereas an uneven one reads as scenery behind it. Both
+     stay anchored to the bottom, so the extra height pushes the crown higher
+     up the canvas. */
+  /* Tall palm — its own artwork, NOT the short one scaled up. Same crown
+     geometry, but the viewBox is 400 units instead of 200 with the extra
+     length all in the trunk. Rendered at full canvas height (~950px) that
+     works out to ~2.4px per unit, matching ::before exactly — so the two
+     crowns are the same physical size while this trunk runs to the top.
+     Scaling the short palm to this height instead made every frond double
+     size, which is what read as oversized and messy.
+
+     Width only needs ~285px now (120 units x 2.4) rather than the ~570px the
+     doubled art demanded, so the tree sits in the right margin instead of
+     reaching across the form. */
+  .ob-main::after {
+    top: 0;
+    bottom: 0;
+    /* Hangs off the right edge so the trunk clears the form column and sits in
+       open margin. The trunk is the centre of the artwork (fronds spread both
+       ways), so at right: 0 it stayed ~165px inboard, tucked behind the field
+       cards; the negative offset brings it to ~75px. The cost is the outermost
+       right frond losing ~60px — a tree running off the page edge, which reads
+       as intentional in a way the earlier mid-frond shear did not. */
+    right: -90px;
+    width: 330px;
+    height: auto;
+    background-size: auto 100%;
+    background-position: center bottom;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 400'%3E%3Cg fill='rgb(11,81,99)'%3E%3Cpath d='M54 72C48 180 54 300 62 400L74 400C66 300 60 180 64 72Z'/%3E%3Cpath d='M59 70C40 48 18 42 2 50c18 0 38 8 54 26z'/%3E%3Cpath d='M59 74C38 70 18 78 6 94c16-10 36-14 51-12z'/%3E%3Cpath d='M61 70c19-24 43-30 57-20-18 0-38 8-54 26z'/%3E%3Cpath d='M61 74c23-4 43 4 55 20-16-10-36-14-51-12z'/%3E%3Cpath d='M60 68c-4-24 2-46 14-58-10 18-12 38-11 60z'/%3E%3C/g%3E%3C/svg%3E");
+    transform: scaleX(-0.9);
+  }
+
+  /* Content sits above the silhouettes. */
+  .ob-main > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Below the two-column breakpoint the column is too narrow for the palms to
+     sit clear of the form — they would read as smudges behind the fields. */
+  @media (max-width: 1023px) {
+    .ob-main::before,
+    .ob-main::after {
+      display: none;
+    }
+  }
+
+  /* Step eyebrow — deep cyan, matching the Continue action so the step's
+     identity and its forward action share one accent. */
+  .ob-step-eyebrow {
+    display: block;
+    margin-bottom: 10px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-cyan-deep);
+  }
+
+  /* Step intro block — heading plus its supporting paragraph, separated from
+     the first field group by the same 40px used between groups. */
+  .ob-step-intro {
+    margin-bottom: 40px;
+  }
+  .ob-step-intro h2 {
+    margin-bottom: 12px;
+  }
+  /* Content measure. The chrome (rail) stays full-bleed against the viewport
+     edge, but the content inside the main column is capped and centred — a
+     form running the full width of a 1900px screen is unusable. 880px is a
+     comfortable form measure; --space-xl padding on .ob-main is the floor on
+     smaller screens, this cap takes over on large ones. */
+  .ob-progress,
+  .ob-panel,
+  .ob-foot {
+    max-width: 880px;
+    margin-inline: auto;
+  }
+
+  .ob-progress {
+    height: 3px;
+    background: var(--color-gray-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+    width: 100%;
+  }
+  .ob-progress i {
+    display: block;
+    height: 100%;
+    background: var(--gradient-accent);
+    transition: width 0.45s var(--ease-brand);
+  }
+  .ob-panel {
+    width: 100%;
+    flex: 1;
+  }
+  .ob-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    width: 100%;
+    margin-top: var(--space-md);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-gray-light);
+  }
+
+  /* Drag-and-drop upload target. Dashed border reads as "drop here" without a
+     third colour; the active state uses the mint accent per §1. */
+  .upload-zone {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--color-white);
+    border: 1.5px dashed var(--color-gray-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-md);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .upload-zone:hover,
+  .upload-zone[data-drag='true'] {
+    border-color: var(--color-mint-primary);
+    background: var(--color-mint-pale-alt);
+    box-shadow: var(--shadow-card-hover);
+  }
+  /* Same ring treatment as .input — the dropzone is keyboard-operable. */
+  .upload-zone:focus-visible {
+    outline: none;
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--ring-focus), var(--shadow-card);
+  }
+  /* Icon sits in a mint chip, matching .conn-ico so both form surfaces agree. */
+  .upload-glyph {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: 0 auto var(--space-xs);
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    color: var(--color-teal-accent);
+  }
+}

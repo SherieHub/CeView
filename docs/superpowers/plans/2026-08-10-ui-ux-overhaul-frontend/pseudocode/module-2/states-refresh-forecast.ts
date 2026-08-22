@@ -1,23 +1,15 @@
-// ---- components/module-2/2.1-dashboard/DashboardView.tsx (additions) ----
-imports: useToast, RefreshForecastButton
-
-type Mode: 'loading' | 'empty' | 'normal' | 'ai-down'
-state: mode ← 'loading'
-
-on mount:
-  apiClient.notifications.list()
-    → success: setNotifications, mode ← (list empty ? 'empty' : 'normal')
-    → failure: mode ← 'ai-down'  // alerts still render from cache
-
-render (6 mutually exclusive branches):
-  mode === 'loading' → 3 skeleton cards
-  mode === 'empty' → "No notifications yet"
-  mode === 'normal' AND visible.length === 0 → "No surge alerts for <categories> — widen coverage in Settings"
-  mode === 'normal', visible non-empty → Card 10 feed / Card 11 reveal (per rankedMarkets)
-  mode === 'ai-down' → amber "AI Forecast Service Unavailable" banner + same feed/reveal rendering
+// ---- components/module-2/2.1-dashboard/AiStatusBanner.tsx ----
+// Replaces the M2-F stub. Implements AiStatusBannerSlotProps from dashboardTypes.ts.
+// The 2 states this card owns (of the dashboard's 6 total): the other 4 — loading, empty,
+// zero-matching, and the alert-feed-with-cards state — belong to M2-1's AlertFeed.tsx.
+props: { visible }
+render: visible ? amber "AI Forecast Service Unavailable — alerts shown are from cache; refresh
+        will not produce new predictions" banner : null
 
 // ---- components/module-2/2.1-dashboard/RefreshForecastButton.tsx ----
+// Replaces the M2-F stub. Implements RefreshForecastSlotProps from dashboardTypes.ts.
 props: { disabled? }
+imports: apiClient, useToast
 state: running ← false
 
 handleRefresh():

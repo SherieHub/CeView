@@ -1,0 +1,8 @@
+flowchart TD
+  Req(["GET /forecasting/markets?category=<c>&profileId=<id>"]) --> Resolve["resolveOrValidate(profileId)"]
+  Resolve --> Base["ForecastingService.loadMarketsFromDb(profileId)\n(existing global-score MarketDto list, unchanged)"]
+  Base --> Empty{"markets empty?"}
+  Empty -->|yes| ReturnBase(["return base unchanged"])
+  Empty -->|no| Rank["ai.rankMarketsForCategory(category)\n(same call CategoryRankNotificationService already makes)"]
+  Rank --> Reorder["CategoryMarketRanker.reorder(markets, ranking):\nsort by ranked_markets order, renumber rank 1..N"]
+  Reorder --> Return(["return re-ranked MarketDto list"])

@@ -7,7 +7,10 @@
 
 export interface AuthUser {
   id: string;
-  email: string;
+  // Nullable because Google sign-in's response body carries no email — it
+  // lives inside the JWT instead (see apiClient.auth.google). Read sites must
+  // handle the absent case rather than assuming a string.
+  email: string | null;
   businessName: string | null;
 }
 
