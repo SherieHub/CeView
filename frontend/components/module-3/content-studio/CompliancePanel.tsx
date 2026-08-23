@@ -16,7 +16,7 @@
 export default function CompliancePanel() {
   return (
     <div className="card empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Compliance Audit</h2>
+      <h2 className="heading-lg">Compliance Audit</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Content Studio: Compliance Audit Panel in
         04-module-3.md.

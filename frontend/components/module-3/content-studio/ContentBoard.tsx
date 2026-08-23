@@ -17,7 +17,7 @@
 export default function ContentBoard() {
   return (
     <div className="card empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Content Board</h2>
+      <h2 className="heading-lg">Content Board</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Content Studio: Content Board &amp; Publish
         Action in 04-module-3.md.

@@ -78,7 +78,7 @@ export default function AssetsLinksStep() {
     <div>
       <div className="ob-step-intro">
         <p className="ob-step-eyebrow">Step 4 · All optional</p>
-        <h2 className="h-lg">Assets and links</h2>
+        <h2 className="heading-lg">Assets and links</h2>
         {/* No 56ch prose cap here — this is a one-line intro, not running
             prose, and the cap forced an awkward two-line wrap. It still wraps
             naturally below the content width on narrow screens. */}
@@ -111,7 +111,7 @@ export default function AssetsLinksStep() {
         ))}
       </div>
 
-      <div className="grid gap-lg md:grid-cols-2">
+      <div className="grid gap-12 md:grid-cols-2">
         <div className="field">
           <span className="field-label">
             <span>Logo</span>
@@ -142,7 +142,7 @@ export default function AssetsLinksStep() {
                 <img
                   src={draft.logo}
                   alt="Logo preview"
-                  className="mx-auto mb-xs max-h-[78px] rounded-sm"
+                  className="mx-auto mb-2 max-h-[78px] rounded-sm"
                 />
                 <p className="text-meta">Logo added — click to replace</p>
               </>
@@ -151,8 +151,8 @@ export default function AssetsLinksStep() {
                 <span className="upload-glyph">
                   <ImageUp size={20} aria-hidden="true" />
                 </span>
-                <p className="h-sm">Drop your logo</p>
-                <p className="text-meta mt-xs">PNG, JPG or SVG</p>
+                <p className="heading-sm">Drop your logo</p>
+                <p className="text-meta mt-2">PNG, JPG or SVG</p>
               </>
             )}
           </div>

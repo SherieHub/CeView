@@ -38,7 +38,7 @@ export default function CompleteProfilePage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-10">
       <div className="w-full max-w-sm">
-        <h1 className="h-lg mb-1">Complete your profile</h1>
+        <h1 className="heading-lg mb-1">Complete your profile</h1>
         <p className="body-sm text-navy-muted mb-6">
           One last thing — add a contact number so we can reach you about your account.
         </p>

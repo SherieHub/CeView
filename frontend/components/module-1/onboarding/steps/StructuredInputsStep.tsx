@@ -12,7 +12,7 @@
 export default function StructuredInputsStep() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Structured Inputs</h2>
+      <h2 className="heading-lg">Structured Inputs</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Onboarding: Step 3 Structured Inputs in
         02-module-1.md.

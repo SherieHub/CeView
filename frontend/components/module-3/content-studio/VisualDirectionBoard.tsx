@@ -12,7 +12,7 @@
 export default function VisualDirectionBoard() {
   return (
     <div className="card empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Visual Direction Board</h2>
+      <h2 className="heading-lg">Visual Direction Board</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Content Studio: Visual Direction Board in
         04-module-3.md.

@@ -39,7 +39,7 @@
 export default function DashboardView() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Dashboard</h2>
+      <h2 className="heading-lg">Dashboard</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Dashboard: Alert Feed &amp; Category Filtering in
         03-module-2.md.

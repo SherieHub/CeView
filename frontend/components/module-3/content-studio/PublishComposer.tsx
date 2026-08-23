@@ -21,7 +21,7 @@
 export default function PublishComposer() {
   return (
     <div className="card empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Publish Composer</h2>
+      <h2 className="heading-lg">Publish Composer</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Content Studio: Publish Composer
         (connection-gated) in 04-module-3.md.

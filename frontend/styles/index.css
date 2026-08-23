@@ -101,17 +101,15 @@
   /* ADDED: §5 defines only the two card shadows; overlays need a heavier step. */
   --shadow-overlay: 0 18px 48px rgba(27, 58, 92, 0.22);
 
-  /* Named brand spacing (§5). Tailwind v4 generates utilities only from the
-     --spacing-* namespace, so the skill's --space-* names are aliased in
-     :root below. */
-  --spacing-xs: 8px;
-  --spacing-sm: 16px;
-  --spacing-md: 24px;
-  --spacing-lg: 48px;
-  --spacing-xl: 80px;
+  /* Named brand spacing (§5) deliberately does NOT live here — see the
+     --space-* block in :root below. Putting xs/sm/md/lg/xl in Tailwind's
+     --spacing-* namespace redefines the built-in utilities of the same name:
+     max-w-sm resolved to 16px instead of 24rem, and h-xl/h-lg/h-sm became
+     height utilities that outranked the heading classes below. That silently
+     collapsed every layout using them. Keep this namespace numeric-only. */
 
   /* Tailwind's numeric utility scale — retained so p-6/gap-4 keep resolving.
-     Not brand vocabulary; prefer the named scale above in new code. */
+     This is the scale to use from markup. */
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -163,14 +161,18 @@
   /* ======= END LEGACY ======= */
 }
 
-/* Skill-literal aliases (§5 names them --space-*), available to hand-written
-   CSS. Tailwind utilities come from the --spacing-* namespace above. */
+/* Named brand spacing (§5), the skill's own --space-* vocabulary. Declared
+   here rather than in @theme on purpose: Tailwind builds the width, height,
+   max-width and padding utilities out of @theme's --spacing-* namespace, so
+   xs/sm/md/lg/xl names in there hijack the built-in utilities of the same
+   name. These are for hand-written CSS; use the numeric utilities (gap-4,
+   mt-2, ...) in markup. */
 :root {
-  --space-xs: var(--spacing-xs);
-  --space-sm: var(--spacing-sm);
-  --space-md: var(--spacing-md);
-  --space-lg: var(--spacing-lg);
-  --space-xl: var(--spacing-xl);
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 48px;
+  --space-xl: 80px;
 
   /* ---- Gradients (§5 "Surface & gradient system") ----
      Two surfaces, always paired: dark chrome against a pale mint canvas.
@@ -329,35 +331,35 @@
 
 @layer components {
   /* §3 "Hero H1 (on dark bg)" — the brand panel had no correct class. */
-  .h-hero {
+  .heading-hero {
     font-family: var(--font-heading);
     font-size: 2.75rem;
     font-weight: 700;
     line-height: 1.15;
     color: var(--color-text-inverse);
   }
-  .h-xl {
+  .heading-xl {
     font-family: var(--font-heading);
     font-size: 2.5rem;
     font-weight: 700;
     line-height: 1.2;
     color: var(--color-text-heading);
   }
-  .h-lg {
+  .heading-lg {
     font-family: var(--font-heading);
     font-size: 2rem;
     font-weight: 700;
     line-height: 1.25;
     color: var(--color-text-heading);
   }
-  .h-md {
+  .heading-md {
     font-family: var(--font-heading);
     font-size: 1.5rem;
     font-weight: 600;
     line-height: 1.3;
     color: var(--color-text-heading);
   }
-  .h-sm {
+  .heading-sm {
     font-family: var(--font-heading);
     font-size: 1.125rem;
     font-weight: 600;

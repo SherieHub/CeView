@@ -32,7 +32,7 @@
 export default function MarketRadarDrawer() {
   return (
     <div className="drawer empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Market Radar</h2>
+      <h2 className="heading-lg">Market Radar</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Market Radar Drawer: Shell, Directive &amp; Demand
         Chart in 03-module-2.md.

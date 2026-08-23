@@ -57,7 +57,7 @@ export default function LoginPage() {
       <div className="flex flex-col justify-between bg-navy p-10 text-white">
         <div className="eyebrow text-skyblue">CeView</div>
         <div>
-          <h1 className="h-xl mb-3">Know the surge before it lands.</h1>
+          <h1 className="heading-xl mb-3">Know the surge before it lands.</h1>
           <p className="body-sm text-navy-muted">
             Demand forecasting and market-localized content for Cebu's tourism businesses.
           </p>
@@ -69,7 +69,7 @@ export default function LoginPage() {
             ['24/7', 'surge monitoring'],
           ].map(([stat, label]) => (
             <div key={label}>
-              <div className="h-lg num text-gold">{stat}</div>
+              <div className="heading-lg num text-gold">{stat}</div>
               <div className="body-xs text-navy-muted">{label}</div>
             </div>
           ))}
@@ -84,7 +84,7 @@ export default function LoginPage() {
               role="tab"
               aria-selected={mode === 'signin'}
               onClick={() => setMode('signin')}
-              className="h-sm flex-1 rounded-full py-2"
+              className="heading-sm flex-1 rounded-full py-2"
               data-active={mode === 'signin'}
               style={mode === 'signin' ? { background: 'var(--color-panel)', boxShadow: 'var(--shadow-1)' } : undefined}
             >
@@ -95,7 +95,7 @@ export default function LoginPage() {
               role="tab"
               aria-selected={mode === 'signup'}
               onClick={() => setMode('signup')}
-              className="h-sm flex-1 rounded-full py-2"
+              className="heading-sm flex-1 rounded-full py-2"
               data-active={mode === 'signup'}
               style={mode === 'signup' ? { background: 'var(--color-panel)', boxShadow: 'var(--shadow-1)' } : undefined}
             >
@@ -103,7 +103,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <h2 className="h-lg mb-4">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
+          <h2 className="heading-lg mb-4">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {mode === 'signup' && (
