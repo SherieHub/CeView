@@ -17,7 +17,7 @@
 export default function PostAnalyticsModal() {
   return (
     <div className="modal empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Post Analytics</h2>
+      <h2 className="heading-lg">Post Analytics</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Performance: Previously Published &amp; Post
         Analytics Modal in 05-module-4.md.

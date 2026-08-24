@@ -30,7 +30,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       </button>
 
       <div className="topbar-title flex-1">
-        <h1 className="h-md"><b>{active?.title ?? 'CeView'}</b></h1>
+        <h1 className="heading-md"><b>{active?.title ?? 'CeView'}</b></h1>
         {active?.sub && <p className="body-xs">{active.sub}</p>}
       </div>
 

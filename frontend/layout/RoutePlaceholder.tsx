@@ -20,7 +20,7 @@ export default function RoutePlaceholder({ navId, title, sub }: RoutePlaceholder
   const nav = navId ? navItemById(navId) : undefined;
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">{title ?? nav?.title ?? 'Coming soon'}</h2>
+      <h2 className="heading-lg">{title ?? nav?.title ?? 'Coming soon'}</h2>
       <p className="body-sm">{sub ?? nav?.sub ?? 'This screen has not been built yet.'}</p>
       {/* Foundation — Shell & Routing overlay-stack e2e coverage (login.spec.ts).
           Exercises the shared Drawer/Modal/scrim stack generically since no real

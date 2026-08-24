@@ -34,7 +34,7 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
     >
       <div className="w-full max-w-lg rounded-lg bg-panel p-6 shadow-3">
         <div className="mb-4 flex items-center justify-between">
-          {title && <h2 className="h-md">{title}</h2>}
+          {title && <h2 className="heading-md">{title}</h2>}
           <button onClick={onClose} aria-label="Close" className="rounded-full p-1 hover:bg-panel-sunk">
             <X size={18} />
           </button>

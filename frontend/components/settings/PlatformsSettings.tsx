@@ -21,7 +21,7 @@
 export default function PlatformsSettings() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Platforms</h2>
+      <h2 className="heading-lg">Platforms</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Settings: Platforms in 04-module-3.md.
       </p>

@@ -51,7 +51,7 @@ export default function BasicInfoStep() {
   return (
     <>
       <p className="eyebrow">Step 1 — Required</p>
-      <h2 className="h-xl" style={{ margin: '6px 0 8px' }}>
+      <h2 className="heading-xl" style={{ margin: '6px 0 8px' }}>
         Tell us about your business
       </h2>
       <p className="body-sm" style={{ marginBottom: 24, maxWidth: '56ch' }}>

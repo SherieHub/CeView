@@ -38,11 +38,14 @@ const REQUIRED_GEOMETRY: Record<string, string> = {
   '--radius-sm': '8px',
   '--radius-md': '16px',
   '--radius-pill': '24px',
-  '--spacing-xs': '8px',
-  '--spacing-sm': '16px',
-  '--spacing-md': '24px',
-  '--spacing-lg': '48px',
-  '--spacing-xl': '80px',
+  // The skill's named spacing lives in --space-*, NOT Tailwind's --spacing-*
+  // namespace — names like sm/md/xl in there redefine the built-in max-w-*,
+  // h-*, w-* utilities. See the comment on @theme in styles/index.css.
+  '--space-xs': '8px',
+  '--space-sm': '16px',
+  '--space-md': '24px',
+  '--space-lg': '48px',
+  '--space-xl': '80px',
 };
 
 function declaredValue(name: string): string | undefined {
@@ -64,6 +67,15 @@ describe('brand tokens', () => {
     expect(declaredValue('--font-body')).toMatch(/Inter/);
     expect(css).not.toMatch(/JetBrains Mono/);
     expect(css).not.toMatch(/Plus Jakarta Sans/);
+  });
+
+  // Regression guard: a --spacing-<word> token (as opposed to --spacing-<number>)
+  // redefines Tailwind's built-in utility of that name. --spacing-sm: 16px made
+  // max-w-sm mean 16px instead of 24rem and collapsed the login form to a
+  // ~90px column; --spacing-xl gave h-xl a height that overrode .heading-xl.
+  it('keeps the Tailwind --spacing-* namespace numeric-only', () => {
+    const named = [...css.matchAll(/--spacing-([a-z]+)\s*:/g)].map((m) => m[1]);
+    expect(named).toEqual([]);
   });
 
   it('declares the two card shadows', () => {

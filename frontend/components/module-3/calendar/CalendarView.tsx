@@ -24,7 +24,7 @@
 export default function CalendarView() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Calendar</h2>
+      <h2 className="heading-lg">Calendar</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Calendar: Month Grid &amp; Navigation in
         04-module-3.md.

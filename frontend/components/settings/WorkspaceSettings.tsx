@@ -18,7 +18,7 @@
 export default function WorkspaceSettings() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="h-lg">Workspace</h2>
+      <h2 className="heading-lg">Workspace</h2>
       <p className="body-sm">
         Not implemented yet — see CARD — Settings: Workspace in 04-module-3.md.
       </p>

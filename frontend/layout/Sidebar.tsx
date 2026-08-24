@@ -48,7 +48,7 @@ export default function Sidebar() {
                   aria-expanded={settingsOpen}
                 >
                   <Icon size={16} />
-                  <span className="h-sm flex-1">{entry.label}</span>
+                  <span className="heading-sm flex-1">{entry.label}</span>
                   <ChevronDown size={14} className={settingsOpen ? 'rotate-180' : ''} />
                 </button>
               ) : (
@@ -60,7 +60,7 @@ export default function Sidebar() {
                   }`}
                 >
                   <Icon size={16} />
-                  <span className="h-sm flex-1">{entry.label}</span>
+                  <span className="heading-sm flex-1">{entry.label}</span>
                   {entry.badge != null && (
                     <span className="rounded-full bg-critical px-1.5 text-[10px] font-bold text-white">
                       {entry.badge}
@@ -92,7 +92,7 @@ export default function Sidebar() {
       </ul>
 
       <div className="border-t border-line px-5 py-4">
-        <div className="h-sm truncate">{user?.businessName ?? user?.email ?? 'Signed in'}</div>
+        <div className="heading-sm truncate">{user?.businessName ?? user?.email ?? 'Signed in'}</div>
         <button type="button" onClick={logout} className="body-xs text-muted underline">
           Sign out
         </button>

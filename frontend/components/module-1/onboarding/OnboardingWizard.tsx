@@ -5,7 +5,7 @@
  *
  * The 5-step wizard shell: side step rail, progress bar, active step panel,
  * Back/Continue footer. Styled with Tailwind utilities plus the design tokens
- * that already exist (.h-xl/.h-lg/.body-sm/.eyebrow/.card/.empty) rather than
+ * that already exist (.heading-xl/.heading-lg/.body-sm/.eyebrow/.card/.empty) rather than
  * the prototype's .ob-* classes, which aren't defined in styles/index.css yet
  * and are out of this card's file scope.
  *
@@ -47,12 +47,12 @@ export default function OnboardingWizard() {
         <div className="ob-rail-mark">
           <div className="g">Ce</div>
           <div>
-            <b className="h-sm block leading-tight">CeView</b>
+            <b className="heading-sm block leading-tight">CeView</b>
             <span className="text-meta">Set up your profile</span>
           </div>
         </div>
 
-        <p className="eyebrow mb-xs">Required steps</p>
+        <p className="eyebrow mb-2">Required steps</p>
 
         <ol className="ob-steps" aria-label="Onboarding progress">
           {OB_STEPS.map((step, i) => {
@@ -104,7 +104,7 @@ export default function OnboardingWizard() {
             <ArrowLeft size={16} aria-hidden="true" /> Back
           </button>
 
-          <div className="flex items-center gap-sm">
+          <div className="flex items-center gap-4">
             <span className="text-meta">
               Step {index + 1} of {OB_STEPS.length}
             </span>
