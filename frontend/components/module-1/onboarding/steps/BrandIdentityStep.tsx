@@ -52,8 +52,8 @@ export default function BrandIdentityStep() {
 
   return (
     <>
-      <p className="eyebrow">Step 2 — Required</p>
-      <h2 className="heading-xl" style={{ margin: '6px 0 8px' }}>
+      <p className="ob-step-eyebrow">Step 2 — Required</p>
+      <h2 className="heading-lg" style={{ margin: '6px 0 8px' }}>
         How should you sound and what do you sell?
       </h2>
       <p className="body-sm" style={{ marginBottom: 24, maxWidth: '56ch' }}>

@@ -8,6 +8,14 @@
  * wordCount/MIN_WORDS/StructuredField now live in obDraft.tsx (single source
  * of truth, since stepValid's case 2 needs them too) — imported here rather
  * than redefined.
+ *
+ * The intro block uses the shared .ob-step-intro / .ob-step-eyebrow pattern
+ * (same as Step 4) instead of inline margins. The previous markup reached for
+ * two names that do not exist in styles/index.css — .h-xl (removed when the
+ * heading classes were renamed to .heading-*, see the note at index.css:107)
+ * and var(--sp-8) — so the title rendered at body size and the lede had no
+ * space beneath it. .ob-step-intro carries the brand form rhythm: 10px
+ * eyebrow->heading, 12px heading->lede, 40px intro->first field group.
  */
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { useObDraft, wordCount, MIN_WORDS } from '../obDraft';
@@ -62,15 +70,15 @@ export default function StructuredInputsStep() {
 
   return (
     <div>
-      <p className="eyebrow">Step 3 — Required</p>
-      <h2 className="h-xl" style={{ margin: '6px 0 8px' }}>
-        The two fields the AI leans on hardest
-      </h2>
-      <p className="body-sm" style={{ marginBottom: 'var(--sp-8)', maxWidth: '56ch' }}>
-        These are embedded into a 768-dimension vector and compared against
-        every other Cebu MSME in the corpus. Thin answers produce a thin
-        uniqueness score — the thresholds below are enforced, not advisory.
-      </p>
+      <div className="ob-step-intro">
+        <p className="ob-step-eyebrow">Step 3 · Required</p>
+        <h2 className="heading-lg">The two fields the AI leans on hardest</h2>
+        <p className="body-sm" style={{ maxWidth: '56ch' }}>
+          These are embedded into a 768-dimension vector and compared against every other
+          Cebu MSME in the corpus. Thin answers produce a thin uniqueness score — the
+          thresholds below are enforced, not advisory.
+        </p>
+      </div>
 
       <div className="field">
         <span className="field-label">
