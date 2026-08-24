@@ -13,7 +13,8 @@
  */
 import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { PlatformId } from '../../../types';
+import type { PlatformId } from "../../../types";
+
 
 export interface ObDraft {
   /** Step 1 — Basic Info (Card 4) */
@@ -110,8 +111,22 @@ export const OB_STEPS = [
   { key: 'analysis', title: 'Analysis', sub: 'Categories and uniqueness' },
 ] as const;
 
-function wordCount(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length;
+/**
+ * Step 3 — Structured Inputs (Card 6) word-count thresholds. Exported (not
+ * kept private) since StructuredInputsStep.tsx imports these same constants
+ * for its live word-count hints, and stepValid's case 2 below needs them too
+ * — single source of truth rather than two independent copies.
+ */
+export type StructuredField = 'description' | 'uvp';
+
+export const MIN_WORDS: Record<StructuredField, number> = {
+  description: 50,
+  uvp: 30,
+};
+
+export function wordCount(text: string): number {
+  const trimmed = String(text ?? '').trim();
+  return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
 }
 
 /**
@@ -129,7 +144,8 @@ export function stepValid(draft: ObDraft, index: number): boolean {
     case 1:
       return draft.vibes.length > 0 && draft.coreServices.length > 0;
     case 2:
-      return wordCount(draft.description) >= 50 && wordCount(draft.uvp) >= 30;
+      return wordCount(draft.description) >= MIN_WORDS.description
+          && wordCount(draft.uvp) >= MIN_WORDS.uvp; // Card 6 — Structured Inputs
     case 3:
       return true; // Assets & Links — every field optional
     case 4:

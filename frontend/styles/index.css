@@ -1111,4 +1111,66 @@
     background: var(--color-mint-pale);
     color: var(--color-teal-accent);
   }
+
+    /* Step 3 — Structured Inputs (Card 6): textarea sizing, plus the
+     word-count validity states StructuredInputsStep.tsx renders live as the
+     user types. .field/.field-label/.opt above already cover the rest of
+     this step's markup. */
+     .textarea {
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--color-text-heading);
+      background: var(--color-white);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      padding: 13px var(--space-sm);
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .textarea::placeholder {
+      color: var(--color-text-muted);
+    }
+    .textarea:hover:not(:disabled) {
+      border-color: var(--color-mint-primary);
+      box-shadow: var(--shadow-card-hover);
+    }
+    .textarea:focus,
+    .textarea:focus-visible {
+      outline: none;
+      border-color: var(--color-mint-primary);
+      box-shadow: var(--ring-focus), var(--shadow-card);
+    }
+    .is-invalid {
+      border-color: var(--color-critical) !important;
+      box-shadow: 0 0 0 3px rgba(214, 69, 69, 0.12) !important;
+    }
+    .is-valid {
+      border-color: var(--color-success) !important;
+      box-shadow: 0 0 0 3px rgba(47, 163, 122, 0.12) !important;
+    }
+    .field-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      margin-top: 6px;
+      color: var(--color-text-muted);
+    }
+    .field-hint.bad {
+      color: var(--color-critical);
+      font-weight: 600;
+    }
+    .field-hint.good {
+      color: var(--color-success);
+      font-weight: 600;
+    }
+    .field-hint svg {
+      width: 13px;
+      height: 13px;
+    }
 }
