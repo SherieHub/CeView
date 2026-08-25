@@ -11,6 +11,8 @@ import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
 import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
+import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
+import CalendarView from './components/module-3/3.2-calendar/CalendarView';
 
 /**
  * DEV-ONLY preview routes.
@@ -49,6 +51,16 @@ const devPreviewRoutes = import.meta.env.DEV
             </div>
           </ObDraftProvider>
         ),
+      },
+      {
+        // Module 3 previews intentionally bypass auth/profile gates. They are
+        // DEV-only, so production users still enter through the normal shell.
+        path: '/preview/content',
+        element: <ContentStudioView />,
+      },
+      {
+        path: '/preview/calendar',
+        element: <CalendarView />,
       },
     ]
   : [];
@@ -97,8 +109,8 @@ const router = createBrowserRouter([
                 children: [
                   { index: true, element: <Navigate to="/dashboard" replace /> },
                   { path: 'dashboard', element: <RoutePlaceholder navId="dashboard" /> },
-                  { path: 'content', element: <RoutePlaceholder navId="content" /> },
-                  { path: 'calendar', element: <RoutePlaceholder navId="calendar" /> },
+                  { path: 'content', element: <ContentStudioView /> },
+                  { path: 'calendar', element: <CalendarView /> },
                   { path: 'performance', element: <RoutePlaceholder navId="performance" /> },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
                   { path: 'settings/:tab', element: <RoutePlaceholder navId="settings" /> },
