@@ -1,14 +1,11 @@
 flowchart TD
-  Mount(["/calendar mounted"]) --> Build["buildGrid(year, month):\nleading + month days + trailing"]
-  Build --> Render["Render 7-col grid,\ntoday ringed"]
-  Render -->|"Prev" click| ShiftPrev["shiftMonth(-1):\nwraps Jan→Dec"]
-  Render -->|"Next" click| ShiftNext["shiftMonth(1):\nwraps Dec→Jan"]
-  ShiftPrev --> Build
-  ShiftNext --> Build
-  Render -->|per cell| CellPosts{"cell.inMonth?"}
-  CellPosts -->|no| Greyed(["Greyed, inert cell"])
-  CellPosts -->|yes| Lookup["posts.filter(date===cell.date)"]
-  Lookup --> ChipCount{"posts.length > 3?"}
-  ChipCount -->|yes| Overflow(["3 chips + '+N more'"])
-  ChipCount -->|no| AllChips(["All posts as chips"])
-  PostPublished(["Post published\n(Content Studio)"]) --> Lookup
+  Props(["CalendarMonthGrid receives cells + postsByDate from the shell"]) --> Loop["for each GridCell"]
+  Loop -->|cell.inMonth = false| Inert(["render greyed, inert cell — no onClick"])
+  Loop -->|cell.inMonth = true| Cell["CalendarCell: posts = postsByDate[cell.date] ?? []"]
+  Cell --> Today{"cell.isToday?"}
+  Today -->|yes| Ring(["day number rendered with today ring"])
+  Today -->|no| Plain(["day number rendered plain"])
+  Cell --> Chips{"posts.length > 3?"}
+  Chips -->|yes| Overflow(["3 chips + '+N more'"])
+  Chips -->|no| All(["one chip per post"])
+  Cell -->|click| Emit(["onDayClick(cell.date) — shell decides whether to open the modal"])

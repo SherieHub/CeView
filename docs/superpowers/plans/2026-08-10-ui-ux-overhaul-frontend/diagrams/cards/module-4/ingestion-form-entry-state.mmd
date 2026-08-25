@@ -1,8 +1,0 @@
-flowchart TD
-  Mount(["/performance mounted,\nno campaign yet"]) --> ShowForm(["Render IngestionForm"])
-  ShowForm -->|Submit clicked| Validate{"Every field a\nnon-negative number?"}
-  Validate -->|no| ErrorBanner["Show error banner,\ndo not proceed"]
-  Validate -->|yes| Spinner["submitting=true:\n'Computing analytics…'"]
-  Spinner --> Delay["Short simulated delay"]
-  Delay --> Transition["onSubmit(parsed) →\ncampaign set → full view (Card 25)"]
-  FullView(["Full view: 'New submission'\nghost button clicked"]) --> Reset["campaign = null →\nback to entry state"]

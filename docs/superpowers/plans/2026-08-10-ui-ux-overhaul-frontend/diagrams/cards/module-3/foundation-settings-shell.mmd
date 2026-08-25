@@ -1,0 +1,9 @@
+flowchart TD
+  Route(["/settings/:tab mounted (replaces RoutePlaceholder)"]) --> Parse["tab = useParams().tab"]
+  Parse --> Valid{"tab in SETTINGS_TABS?"}
+  Valid -->|no| Redirect(["<Navigate to='/settings/profile' replace/>"])
+  Valid -->|yes| Shell(["render tab rail + active panel"])
+  Shell -->|tab='profile'| Profile(["BusinessProfileSettings (M1 Card 9, already built)"])
+  Shell -->|tab='platforms'| Platforms(["PlatformsSettings slot — stub until M3-9"])
+  Shell -->|tab='workspace'| Workspace(["WorkspaceSettings slot — stub until M3-10"])
+  Shell -->|tab click| Nav(["navigate('/settings/<tab>') — URL is the only tab state"])

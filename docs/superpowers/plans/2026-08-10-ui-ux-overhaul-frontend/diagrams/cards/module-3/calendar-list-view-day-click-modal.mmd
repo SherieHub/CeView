@@ -1,8 +1,0 @@
-flowchart TD
-  Toggle(["Month/List toggle"]) -->|Month| MonthView(["Render grid"])
-  Toggle -->|List| ListView(["Render CalendarListView:\nposts sorted by date desc"])
-  MonthView -->|click a day cell| DayClick{"dayPosts.length === 0?"}
-  DayClick -->|yes| NoOp(["No-op"])
-  DayClick -->|no| OpenModal["modalDate = cell.date"]
-  OpenModal --> Modal(["DayPostsModal:\nlist posts for that day,\nreach/likes if published"])
-  Modal -->|close| CloseModal["modalDate = null"]

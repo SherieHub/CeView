@@ -1,0 +1,10 @@
+flowchart TD
+  Mount(["/performance mounted"]) --> State["campaign=null, weeks=4"]
+  State --> Entry(["render IngestionForm slot only"])
+  Entry -->|onSubmit(input)| SetCampaign["campaign = input"]
+  SetCampaign --> Fetch["fetch history + report (apiClient.campaign.history/report)"]
+  Fetch --> Compute["computeMetrics(campaign) → metrics + flagged\ncomputePes(metrics) → score + label"]
+  Compute --> Full(["render full view: KpiCard slot, PesGauge slot, Funnel slot,\n3 trend-chart slots, AiActionPlan slot, PreviouslyPublished slot"])
+  Full -->|weeks toggle 4↔8| Compute
+  Full -->|New submission| State
+  Full -->|each slot is a stub until its owning card lands| Placeholder(["Slot renders its stub placeholder text"])

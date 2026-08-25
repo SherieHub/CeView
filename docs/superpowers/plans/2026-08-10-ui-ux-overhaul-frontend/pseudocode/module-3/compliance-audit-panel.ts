@@ -2,7 +2,12 @@
 imports: useEffect, useState, apiClient, OMCS_RUBRIC_LABELS + OmcsAuditResult type, OmcsGauge
 
 const AUDIT_STEPS: [6 fixed step labels]
-props: { auditRunning, onAuditComplete }  // auditRunning set by Card 17 on agreement-check
+props: ComplianceSlotProps from './contentStudioTypes'  // { draft, audit, onAuditChange }
+// The shell (M3-F1) owns audit state; this card drives it: on draft.agreementChecked
+// becoming true with a caption and media staged, it walks the 6 steps calling
+// onAuditChange({status:'running', step:n, result:null}) and finishes with
+// onAuditChange({status:'complete', step:6, result: MOCK_OMCS}).
+// It reads nothing from PublishComposer and no longer depends on M3-3.
 
 function CompliancePanel({auditRunning, onAuditComplete}):
   state: step ← 0, result ← null

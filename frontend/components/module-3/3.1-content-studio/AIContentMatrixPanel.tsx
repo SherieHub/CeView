@@ -1,8 +1,8 @@
 /**
  * CARD — Content Studio: AI Copywriting Matrix (incl. Naver)
- * Depends on: Foundation — Shell & Routing, Foundation — Fixture Data Layer
+ * Depends on: Foundation — Content Studio Shell (M3-F1)
  * Screen doc: docs/module-3/screens/content-studio.md
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-1)
  *
  * Reminder: builds prototype v1 (screen-content / renderContent) only.
  * screen-content2 is a superseded draft — not built, not referenced here.

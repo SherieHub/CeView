@@ -1,9 +1,9 @@
 /**
  * CARD — Settings: Workspace
- * Depends on: Foundation — Shell & Routing, Foundation — Fixture Data Layer
+ * Depends on: Foundation — Settings Shell (M3-F3)
  * Prototype reference: ui-ux-prototype.html:4203–4212
  * Screen doc: docs/shared/workspace.md
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-10)
  *
  * Route: /settings/workspace
  *
@@ -20,7 +20,7 @@ export default function WorkspaceSettings() {
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
       <h2 className="heading-lg">Workspace</h2>
       <p className="body-sm">
-        Not implemented yet — see CARD — Settings: Workspace in 04-module-3.md.
+        Not implemented yet — see CARD — Settings: Workspace (M3-10) in 04-module-3.md.
       </p>
     </div>
   );

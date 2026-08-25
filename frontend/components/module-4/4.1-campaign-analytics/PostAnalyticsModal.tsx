@@ -1,9 +1,8 @@
 /**
  * CARD — Performance: Previously Published & Post Analytics Modal
- * Depends on: Card 25 (KPI Cards, PES Gauge & Funnel), Content Studio Card 19 (shared
- * post store)
+ * Depends on: Foundation — Performance Shell & Ingestion (M4-F), Module 3's Foundation — Shared Stores (M3-F0)
  * Component doc: docs/module-4/screens/_components/post-analytics-modal.md
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/05-module-4.md
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/05-module-4.md (M4-6)
  *
  * TODO:
  * - Reach/likes/comments/shares/engagement-rate stat grid

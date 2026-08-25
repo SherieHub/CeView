@@ -1,11 +1,8 @@
 /**
- * CARD — Performance: Ingestion Form Entry State
- *   + Performance: KPI Cards, PES Gauge & Funnel
- *   + Performance: Trend Charts & AI Action Plan
- *   + Performance: Previously Published & Post Analytics Modal
- * Depends on: Foundation — Shell & Routing (Cards 25–27 build on Card 24 in turn)
+ * CARD — Foundation: Performance Shell & Ingestion
+ * Depends on: Foundation — Shell & Routing, Foundation — Fixture Data Layer
  * Screen doc: docs/module-4/screens/performance.md
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/05-module-4.md
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/05-module-4.md (M4-F)
  *
  * Route: /performance — re-skin of the legacy CampaignAnalyticsView
  *

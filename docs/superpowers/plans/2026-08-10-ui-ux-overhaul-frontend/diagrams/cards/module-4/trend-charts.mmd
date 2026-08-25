@@ -1,0 +1,5 @@
+flowchart TD
+  Props(["PesTrendChart / EfficiencyTrendChart / CostTrendChart receive window from the shell"]) --> Pes(["PesTrendChart: PES line + 0.40/0.60/0.80 reference lines"])
+  Props --> Eff(["EfficiencyTrendChart: ROAS + CTR + conversion rate"])
+  Props --> Cost(["CostTrendChart: CPC + CAC"])
+  Pes -->|4WK/8WK toggle| Emit(["onWeeksChange(w) — shell re-slices window and re-renders all three"])

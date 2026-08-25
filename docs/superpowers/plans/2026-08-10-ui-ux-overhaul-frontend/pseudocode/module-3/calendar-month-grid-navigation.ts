@@ -1,29 +1,18 @@
-// ---- components/module-3/calendar/CalendarView.tsx ----
-imports: useState, usePostStore, CalendarCell
+// ---- components/module-3/3.2-calendar/CalendarMonthGrid.tsx ----
+imports: MonthGridSlotProps from './calendarTypes', CalendarCell
 
-interface GridCell { date, inMonth, isToday }
+// The shell (M3-F2) owns year/month, buildGrid() and the day-click gate; this card owns
+// only the rendering of the 7-column grid and its cells.
 
-function buildGrid(year, month): GridCell[]
-  // leading cells: prev month's trailing days (greyed, inert, not clickable)
-  // one cell per day of target month
-  // trailing cells: next month's leading days (greyed, inert), padding to a multiple of 7
-  // cell matching today's real date → isToday: true
+function CalendarMonthGrid({ cells, postsByDate, onDayClick }: MonthGridSlotProps):
+  render: 7-column grid, one CalendarCell per cell —
+    <CalendarCell cell={cell} posts={cell.inMonth ? (postsByDate[cell.date] ?? []) : []}
+                  onClick={cell.inMonth ? () => onDayClick(cell.date) : undefined}/>
+  // out-of-month cells render greyed and inert (no onClick)
 
-function CalendarView():
-  { posts } ← usePostStore()
-  state: year ← current year, month ← current month
-  grid ← buildGrid(year, month)
-
-  shiftMonth(delta): month += delta; wraps Dec→Jan and Jan→Dec, adjusting year
-
-  counts ← per-status counts (published/scheduled/draft) across the WHOLE post store, not just
-           the visible month
-
-  render: header (prev/next buttons, year-month label, counts) +
-          7-col grid: grid.map → CalendarCell(cell, posts matching cell.date if inMonth)
-
-// ---- components/module-3/calendar/CalendarCell.tsx ----
-props: { cell, posts }
-shown ← posts.slice(0,3)  // up to 3 platform-colored chips (border-left colored by platform)
+// ---- components/module-3/3.2-calendar/CalendarCell.tsx ----
+props: { cell: GridCell; posts: PublishedPost[]; onClick?: () => void }
+shown ← posts.slice(0, 3)          // platform-colored chips (border-left colored by platform)
 overflow ← posts.length - shown.length
-render: date, shown chips, "+N more" indicator if overflow > 0 (instead of a 4th chip)
+render: day number (ringed when cell.isToday), shown chips,
+        "+N more" indicator when overflow > 0 instead of a 4th chip

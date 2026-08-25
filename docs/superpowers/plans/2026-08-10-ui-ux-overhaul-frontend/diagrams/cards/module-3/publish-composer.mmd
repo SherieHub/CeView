@@ -15,5 +15,5 @@ flowchart TD
   C7 -->|yes| R7(["'audit-failed'"])
   C7 -->|no| R8(["null — Publish enabled"])
 
-  Toggle(["Toggle platform /\nchange pubmat / edit staged"]) --> ResetAudit["resetAudit():\nomcs=null, agreed=false"]
-  AgreeCheck(["Check agreement,\nstaged+pubmat set"]) --> Trigger["auditRunning = true\n(Card 18 starts)"]
+  Toggle(["Toggle platform /\nchange pubmat / edit staged"]) --> ResetNote(["shell (M3-F1) resets audit\nto idle on draft change"])
+  AgreeCheck(["Check agreement,\ncaption+media staged"]) --> TriggerNote(["audit prop from the shell (M3-F1)\ntransitions to 'running'\n(M3-4 drives this)"])

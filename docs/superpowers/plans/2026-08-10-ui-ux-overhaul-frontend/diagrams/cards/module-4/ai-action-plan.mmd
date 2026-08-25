@@ -1,0 +1,5 @@
+flowchart TD
+  Props(["AiActionPlan receives report from the shell"]) --> Summary(["render executive summary"])
+  Props --> Diagnostics["report.funnelDiagnostics — already ranked Weakest → Moderate → Alright"]
+  Diagnostics --> Pair["zip each diagnostic with report.recommendations[i]"]
+  Pair --> Cards(["one card per pair: stage, rank, insight, recommendation title/action, urgency chip"])

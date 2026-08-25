@@ -1,6 +1,12 @@
 // ---- components/module-3/3.1-content-studio/AIContentMatrixPanel.tsx ----
 imports: useState, apiClient, PlatformId type, CaptionOptionCard
 
+props: MatrixSlotProps from './contentStudioTypes'
+       { activePlatform, onPlatformChange, onStageCaption, stagedCaption }
+// The shell (M3-F1) owns activePlatform and the staged draft; this card owns the tabs' and
+// option cards' own rendering plus per-platform approval state. "Approve" calls
+// onStageCaption(option.text) rather than writing any shared state itself.
+
 const CHAR_LIMITS: Record<PlatformId, number>  // instagram/tiktok 2200, facebook 63206, naver 100000
 
 function AIContentMatrixPanel():

@@ -1,8 +1,0 @@
-flowchart TD
-  Mount(["Full view mounted,\nweeks=4"]) --> Slice["window = history.slice(-weeks)"]
-  Slice --> Charts(["PesTrendChart, EfficiencyTrendChart,\nCostTrendChart all render `window`"])
-  Charts -->|toggle 4↔8 weeks| Slice
-  Mount --> ReportLoad["report = apiClient.campaign.report()"]
-  ReportLoad --> Diagnostics["funnelDiagnostics.map\n(render AS-GIVEN order)"]
-  Diagnostics --> Pair["Pair diagnostic[i] with\nrecommendations[i]"]
-  Pair --> Render(["Stage, rank, insight +\ntitle, action, urgency chip"])

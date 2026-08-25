@@ -1,8 +1,7 @@
 /**
- * CARD — Calendar: Month Grid & Navigation
- *   + Calendar: List View & Day-Click Modal
- * Depends on: Card 19 (Content Board & Publish Action — shared post store)
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * CARD — Foundation: Calendar Shell
+ * Depends on: Foundation — Shell & Routing, Foundation — Shared Stores (M3-F0)
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-F2)
  *
  * Does NOT reuse or extend frontend/old-components/CalendarView.tsx (legacy, untouched
  * per .claude/CLAUDE.md).

@@ -1,7 +1,7 @@
 /**
  * CARD — Content Studio: Content Board & Publish Action
- * Depends on: Card 17 (Publish Composer), Card 18 (Compliance Audit Panel)
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * Depends on: Foundation — Content Studio Shell (M3-F1), Foundation — Shared Stores (M3-F0)
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-5)
  *
  * TODO:
  * - All/Draft/Published tabs, cards show platform dot, status chip, date, caption

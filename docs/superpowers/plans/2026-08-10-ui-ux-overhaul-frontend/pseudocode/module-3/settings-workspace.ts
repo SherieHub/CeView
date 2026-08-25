@@ -1,5 +1,6 @@
 // ---- components/settings/WorkspaceSettings.tsx ----
-imports: useEffect, useState, apiClient, useToast, WorkspaceMemberFixture type
+// Mounted by SettingsView.tsx (M3-F3) as the 'workspace' tab; this card owns the panel body
+// only — no route wiring, no tab state.
 
 function deriveDisplayName(email): string  // local part split on ._- , title-cased
 function deriveInitials(name): string       // first letter of first 2 words, uppercased

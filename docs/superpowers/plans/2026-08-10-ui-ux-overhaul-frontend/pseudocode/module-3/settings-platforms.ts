@@ -1,26 +1,19 @@
 // ---- components/settings/PlatformsSettings.tsx ----
-imports: useEffect, useState, apiClient, useToast, PlatformConnection + PlatformId types,
-         ConnectPlatformModal
+imports: useState, useConnections from '../../services/connectionsStore', ConnectPlatformModal
 
-props: { onDisconnect }  // Card 17's composer prunes this platform from its selection
+// M3-F0 owns the store and the disconnect event; M3-F1's shell owns the pruning of an
+// in-progress publish selection. This card owns the Settings UI only.
 
-function PlatformsSettings({onDisconnect}):
-  state: connections ← [], connectingPlatform ← null
-  on mount → apiClient.connections.list() → setConnections
-
-  handleDisconnect(platform):
-    apiClient.connections.disconnect(platform)  // immediate, no confirmation modal
-    mark that connection disconnected
-    showToast(`${platform} disconnected`)
-    onDisconnect(platform)  // NEW rule: prune from Content Studio's in-progress selection
-
-  handleConnected(platform):
-    mark that connection connected
-    connectingPlatform ← null
-    showToast(`${platform} connected`)
-
-  render: one row per connection (Verified+Disconnect if connected, else Connect button) +
-          ConnectPlatformModal if connectingPlatform set
+function PlatformsSettings():
+  { connections, connect, disconnect } ← useConnections()
+  state: connecting ← null   // PlatformId currently going through ConnectPlatformModal
+  if connections === null → render the loading state
+  render: one row per PlatformId —
+    connected  → handle, connectedAt, "Verified" badge, Disconnect button → disconnect(p)
+    otherwise  → Connect button → connecting = p
+  connecting && <ConnectPlatformModal platform={connecting}
+                  onGranted={handle => { connect(connecting, handle); connecting = null }}
+                  onCancel={() => connecting = null}/>
 
 // ---- components/settings/ConnectPlatformModal.tsx ----
 props: { platform, onGranted, onClose }

@@ -1,0 +1,5 @@
+flowchart TD
+  Props(["CalendarListView receives the full post list from the shell"]) --> Empty{"posts.length === 0?"}
+  Empty -->|yes| EmptyState(["render 'No posts yet' empty state"])
+  Empty -->|no| Sort["sort by date descending"]
+  Sort --> Rows(["one row per post: platform dot, date, caption excerpt, status chip"])

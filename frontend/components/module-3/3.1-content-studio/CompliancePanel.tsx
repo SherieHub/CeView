@@ -1,7 +1,7 @@
 /**
  * CARD — Content Studio: Compliance Audit Panel
- * Depends on: Card 17 (Publish Composer)
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * Depends on: Foundation — Content Studio Shell (M3-F1)
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-4)
  *
  * TODO — 3 states:
  * - Not-run-yet empty state

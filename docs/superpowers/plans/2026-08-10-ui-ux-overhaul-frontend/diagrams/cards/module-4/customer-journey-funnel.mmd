@@ -1,0 +1,6 @@
+flowchart TD
+  Props(["CustomerJourneyFunnel receives the raw campaign input from the shell"]) --> Stages["Impressions → Clicks → Conversions → Bookings"]
+  Stages --> Loop["for each stage after the first"]
+  Loop --> Prev{"previous stage value > 0?"}
+  Prev -->|yes| DropOff(["show drop-off %"])
+  Prev -->|no| NoDropOff(["render nothing for that stage's drop-off"])

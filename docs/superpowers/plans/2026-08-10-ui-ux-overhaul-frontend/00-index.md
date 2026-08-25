@@ -87,14 +87,19 @@ for a module's backend track (when its work spans a frontend/backend split). Fou
 `Foundation — <Name>` naming already used above (e.g. `Foundation — Shell & Routing`); `M<n>-F` is the
 id column shorthand for cross-referencing, not a rename of that convention.
 
-**Binding rule — one prerequisite per module:** every module file must open with one or more
-`Foundation — <Name>` card(s) that every other card in that module depends on directly, and — aside
-from a module's own independent track roots (e.g. a backend track parallel to the frontend track) —
-that is the *only* thing sibling cards may depend on within the module. Sibling cards must never list
-the same file under "Project files to add/implement"; if two features would naturally share a file,
-the foundation card owns that file (creating typed stubs/slots for the pieces sibling cards will fill
-in) and each sibling card fully owns replacing its one assigned stub. This keeps every card after the
-foundation buildable in full parallel — see `03-module-2.md` for a worked example.
+**Binding rule — foundation cards gate every module:** every module file must open with a
+`Foundation — <Surface>` card for each distinct surface it builds, plus — where state crosses
+surfaces — one or more shared-root cards owning that state. Every other card in the module depends on
+exactly one of those roots and nothing else within the module (a module's independent tracks, e.g. a
+backend track parallel to the frontend track, are their own roots the same way). Sibling cards must
+never list the same file under "Project files to add/implement"; if two features would naturally share
+a file, the foundation card owns that file (creating typed stubs/slots for the pieces sibling cards
+will fill in) and each sibling card fully owns replacing its one assigned stub. State two sibling
+cards would both read or write belongs to their shared root, never to one of the siblings. This keeps
+every card after the foundations buildable in full parallel (a shared-root card is itself a
+`Foundation —` card, just one scoped to shared state rather than a single surface) — see
+`03-module-2.md` (single surface) and `04-module-3.md` (multi-surface, with a shared-store root) for
+worked examples.
 
 ## Decisions this plan assumes
 
@@ -140,11 +145,12 @@ work is chunked and verified, not what gets built:
 ## Dependency graph
 
 Foundation cards have no dependencies and block every screen card. Within a module, cards depend only
-on their module's foundation card(s) unless cross-module-linked below (Content Studio's Publish
-Composer needs Settings — Platforms; Calendar and Performance's published list need Content Studio's
-publish action). Module 2 uses the new module-scoped ID scheme end to end (see `03-module-2.md`);
-Modules 1/3/4 below keep their legacy local numbers for now — retrofitting them is future work, not
-done in this pass.
+on their module's foundation/root card(s). The two cross-surface stores live in `M3-F0`, so Calendar,
+Settings, and Module 4's published-post card depend on it directly rather than on a Content Studio
+feature card. Module 2 uses the module-scoped ID scheme end to end; Modules 3 and 4's dependency-graph
+rows below use it too, though their card files (`04-module-3.md`, `05-module-4.md`) are converted to
+match in a later pass of this same plan. Module 1 keeps its legacy local numbers for now —
+retrofitting it is future work, not done in this pass.
 
 | ID | Card | File | Depends on |
 |---|---|---|---|
@@ -166,19 +172,27 @@ done in this pass.
 | M2-5 | Market Radar Drawer — Economic & Seasonal Insights Tabs | [`03-module-2.md`](03-module-2.md) | M2-F |
 | M2-B1 | Category-Scoped Market Ranking — Query & Endpoint | [`03-module-2.md`](03-module-2.md) | — |
 | M2-B2 | Category-Scoped Market Ranking — Alert-Time Rank Embed | [`03-module-2.md`](03-module-2.md) | M2-B1 |
-| 15 | Content Studio — AI Copywriting Matrix (incl. Naver) | [`04-module-3.md`](04-module-3.md) | Shell & Routing, Fixture Data Layer |
-| 16 | Content Studio — Visual Direction Board | [`04-module-3.md`](04-module-3.md) | Card 15 |
-| 17 | Content Studio — Publish Composer (connection-gated) | [`04-module-3.md`](04-module-3.md) | Card 15, Settings — Platforms |
-| 18 | Content Studio — Compliance Audit Panel | [`04-module-3.md`](04-module-3.md) | Card 17 |
-| 19 | Content Studio — Content Board & Publish Action | [`04-module-3.md`](04-module-3.md) | Cards 17, 18 |
-| 20 | Calendar — Month Grid & Navigation | [`04-module-3.md`](04-module-3.md) | Card 19 (shared post store) |
-| 21 | Calendar — List View & Day-Click Modal | [`04-module-3.md`](04-module-3.md) | Card 20 |
-| 22 | Settings — Platforms | [`04-module-3.md`](04-module-3.md) | Shell & Routing, Fixture Data Layer |
-| 23 | Settings — Workspace | [`04-module-3.md`](04-module-3.md) | Shell & Routing, Fixture Data Layer |
-| 24 | Performance — Ingestion Form Entry State | [`05-module-4.md`](05-module-4.md) | Shell & Routing |
-| 25 | Performance — KPI Cards, PES Gauge & Funnel | [`05-module-4.md`](05-module-4.md) | Card 24 |
-| 26 | Performance — Trend Charts & AI Action Plan | [`05-module-4.md`](05-module-4.md) | Card 25 |
-| 27 | Performance — Previously Published & Post Analytics Modal | [`05-module-4.md`](05-module-4.md) | Card 25, Content Studio Card 19 |
+| M3-F0 | Foundation — Shared Stores | [`04-module-3.md`](04-module-3.md) | Fixture Data Layer |
+| M3-F1 | Foundation — Content Studio Shell | [`04-module-3.md`](04-module-3.md) | Shell & Routing, M3-F0 |
+| M3-1 | Content Studio — AI Copywriting Matrix (incl. Naver) | [`04-module-3.md`](04-module-3.md) | M3-F1 |
+| M3-2 | Content Studio — Visual Direction Board | [`04-module-3.md`](04-module-3.md) | M3-F1 |
+| M3-3 | Content Studio — Publish Composer (connection-gated) | [`04-module-3.md`](04-module-3.md) | M3-F1 |
+| M3-4 | Content Studio — Compliance Audit Panel | [`04-module-3.md`](04-module-3.md) | M3-F1 |
+| M3-5 | Content Studio — Content Board & Publish Action | [`04-module-3.md`](04-module-3.md) | M3-F1 |
+| M3-F2 | Foundation — Calendar Shell | [`04-module-3.md`](04-module-3.md) | Shell & Routing, M3-F0 |
+| M3-6 | Calendar — Month Grid & Navigation | [`04-module-3.md`](04-module-3.md) | M3-F2 |
+| M3-7 | Calendar — List View | [`04-module-3.md`](04-module-3.md) | M3-F2 |
+| M3-8 | Calendar — Day-Click Modal | [`04-module-3.md`](04-module-3.md) | M3-F2 |
+| M3-F3 | Foundation — Settings Shell | [`04-module-3.md`](04-module-3.md) | Shell & Routing, M3-F0 |
+| M3-9 | Settings — Platforms | [`04-module-3.md`](04-module-3.md) | M3-F3 |
+| M3-10 | Settings — Workspace | [`04-module-3.md`](04-module-3.md) | M3-F3 |
+| M4-F | Foundation — Performance Shell & Ingestion | [`05-module-4.md`](05-module-4.md) | Shell & Routing, Fixture Data Layer |
+| M4-1 | Performance — KPI Cards & Flagged Metrics | [`05-module-4.md`](05-module-4.md) | M4-F |
+| M4-2 | Performance — PES Gauge | [`05-module-4.md`](05-module-4.md) | M4-F |
+| M4-3 | Performance — Customer Journey Funnel | [`05-module-4.md`](05-module-4.md) | M4-F |
+| M4-4 | Performance — Trend Charts | [`05-module-4.md`](05-module-4.md) | M4-F |
+| M4-5 | Performance — AI Action Plan | [`05-module-4.md`](05-module-4.md) | M4-F |
+| M4-6 | Performance — Previously Published & Post Analytics Modal | [`05-module-4.md`](05-module-4.md) | M4-F, M3-F0 |
 
 ## Playwright spec ↔ card map
 
@@ -189,8 +203,8 @@ done in this pass.
 | `e2e/tests/settings-business-profile.spec.ts` | Card 9 |
 | `e2e/tests/dashboard.spec.ts` | M2-F, M2-1, M2-2, M2-3 |
 | `e2e/tests/market-radar-drawer.spec.ts` | M2-F, M2-4, M2-5 |
-| `e2e/tests/content-studio.spec.ts` | Cards 15–19 |
-| `e2e/tests/calendar.spec.ts` | Cards 20–21 |
-| `e2e/tests/settings-platforms.spec.ts` | Card 22 |
-| `e2e/tests/settings-workspace.spec.ts` | Card 23 |
-| `e2e/tests/performance.spec.ts` | Cards 24–27 |
+| `e2e/tests/content-studio.spec.ts` | M3-F1, M3-1–M3-5 |
+| `e2e/tests/calendar.spec.ts` | M3-F2, M3-6–M3-8 |
+| `e2e/tests/settings-platforms.spec.ts` | M3-F3, M3-9 |
+| `e2e/tests/settings-workspace.spec.ts` | M3-F3, M3-10 |
+| `e2e/tests/performance.spec.ts` | M4-F, M4-1–M4-6 |

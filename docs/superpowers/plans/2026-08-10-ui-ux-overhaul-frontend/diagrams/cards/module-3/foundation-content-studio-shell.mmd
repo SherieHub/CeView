@@ -1,0 +1,11 @@
+flowchart TD
+  Mount(["/content mounted"]) --> Init["useContentStudioState():\nactivePlatform='instagram', draft={caption:'', media:null, platforms:[]},\naudit={status:'idle', step:0, result:null}"]
+  Init --> Sub["subscribe connectionsStore.onDisconnect(p) → drop p from draft.platforms"]
+  Sub --> Render(["Render two-column layout"])
+  Render --> Left(["Left column: AIContentMatrixPanel slot + VisualDirectionBoard slot"])
+  Render --> Right(["Right column: PublishComposer slot + CompliancePanel slot"])
+  Render --> Below(["Full-width below: ContentBoard slot"])
+  Left -->|onPlatformChange / onStageCaption| Init
+  Right -->|onDraftChange, audit written back| Init
+  Below -->|onPublished after postStore.publish| Reset["clear draft + audit back to idle"]
+  Render -->|each slot is a stub until its owning card lands| Placeholder(["Slot renders its stub placeholder text"])

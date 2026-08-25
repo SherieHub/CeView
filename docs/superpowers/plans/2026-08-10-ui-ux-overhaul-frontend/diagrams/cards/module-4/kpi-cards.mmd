@@ -1,0 +1,8 @@
+flowchart TD
+  Props(["KpiCard × 5 + FlaggedMetricBanner receive metrics + flagged from the shell"]) --> Flag{"flagged.length > 0?"}
+  Flag -->|yes| Banner(["FlaggedMetricBanner renders naming every flagged metric"])
+  Flag -->|no| NoBanner(["FlaggedMetricBanner renders nothing"])
+  Props --> Cards["one KpiCard per metric — CTR, CPC, Conversion rate, ROAS, CAC"]
+  Cards --> Inverse{"metric is CPC or CAC?"}
+  Inverse -->|yes| DownGood(["trend arrow: lower value shown as improvement"])
+  Inverse -->|no| UpGood(["trend arrow: higher value shown as improvement"])

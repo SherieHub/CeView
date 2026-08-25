@@ -1,10 +1,13 @@
 // ---- components/module-4/4.1-campaign-analytics/PreviouslyPublished.tsx ----
-imports: useState, usePostStore, PlatformId type, PostAnalyticsModal
+imports: useState, usePosts from '../../../services/postStore', PlatformId type, PostAnalyticsModal
+
+// M3-F0 owns the shared post store; this card is a read-only consumer. No dependency on
+// Content Studio's feature cards — only on M3-F0 and M4-F.
 
 type Filter: 'all' | PlatformId
 
 function PreviouslyPublished():
-  { posts } ← usePostStore()
+  { posts } ← usePosts()
   state: filter ← 'all', openPostId ← null
 
   published ← posts filtered to status==='published' AND (filter==='all' OR platform matches)

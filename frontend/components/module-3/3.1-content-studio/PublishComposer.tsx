@@ -1,7 +1,7 @@
 /**
  * CARD — Content Studio: Publish Composer (connection-gated)
- * Depends on: Card 15 (AI Copywriting Matrix), Settings — Platforms (Card 22)
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md
+ * Depends on: Foundation — Content Studio Shell (M3-F1)
+ * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/04-module-3.md (M3-3)
  *
  * TODO:
  * - Staged caption textarea (editable independently of approved options), char count
