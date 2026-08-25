@@ -87,6 +87,35 @@ export const apiClient = {
   },
   notifications: {
     list: () => (USE_FIXTURES ? delay(MOCK_NOTIFICATIONS) : request('/api/notifications')),
+    /**
+     * Marks one alert read. Called optimistically and fire-and-forget by the
+     * dashboard — read state is already reflected locally, and a failed
+     * read-mark is not worth an error surface.
+     *
+     * The fixture branch deliberately does NOT mutate MOCK_NOTIFICATIONS. The
+     * prototype set `n.isRead = true` on its module-level array; doing that
+     * here would leak read state between tests and make the suite
+     * order-dependent. The dashboard tracks read ids in its own state.
+     */
+    markRead: (id: string) =>
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request(`/api/notifications/${id}/read`, { method: 'PATCH' }),
+  },
+  forecast: {
+    /**
+     * Re-runs the forecasting pipeline. The 2100ms fixture delay is the
+     * prototype's own `refreshForecast` timing (ui-ux-prototype.html:2523),
+     * moved here so the button owns no timer and tests can await it instead of
+     * driving fake timers.
+     */
+    analyze: () =>
+      USE_FIXTURES
+        ? delay({ rerankedMarkets: 3 }, 2100)
+        : request('/api/v1/forecasting/analyze', { method: 'POST' }),
+    /** Drives the dashboard's `ai-down` degraded mode. */
+    status: () =>
+      USE_FIXTURES ? delay({ available: true }) : request('/api/v1/forecasting/status'),
   },
   content: {
     list: () => (USE_FIXTURES ? delay(MOCK_CONTENT) : request('/api/content')),

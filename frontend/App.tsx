@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom';
 import AuthGate, { RedirectIfAuthenticated } from './components/auth/AuthGate';
 import LoginPage from './components/auth/LoginPage';
 import CompleteProfilePage from './components/auth/CompleteProfilePage';
@@ -11,6 +11,9 @@ import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
 import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
+import DashboardView from './components/module-2/2.1-dashboard/DashboardView';
+import { DEMO_PROFILE } from './services/fixtures/profile';
+import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
 
 /**
  * DEV-ONLY preview routes.
@@ -50,8 +53,50 @@ const devPreviewRoutes = import.meta.env.DEV
           </ObDraftProvider>
         ),
       },
+      // The dashboard in its real shell, seeded with a finished profile.
+      // Without this it is unreachable locally: businessProfile.load()'s
+      // fixture is an unonboarded operator, so ProfileGate redirects to
+      // /onboarding and the category filter would match nothing anyway.
+      //
+      // :mode is the state switcher — the React equivalent of the prototype's
+      // setDashMode(). Note `zero-match` is NOT a mode: it is the normal mode
+      // with a profile whose categories match no alert, so it is produced by
+      // swapping the seeded profile rather than forcing the machine.
+      {
+        path: '/preview/dashboard/:mode?',
+        element: <DashboardPreviewShell />,
+        children: [{ index: true, element: <DashboardPreviewScreen /> }],
+      },
     ]
   : [];
+
+/**
+ * DEV-ONLY. Re-seeds the profile for the subtree, then hands off to the real
+ * AppShell so the preview exercises the actual chrome rather than a copy of it.
+ * ProfileProvider is already mounted above the router; the nearest one wins.
+ */
+function DashboardPreviewShell() {
+  const { mode } = useParams();
+  const profile =
+    mode === 'zero-match'
+      ? { ...DEMO_PROFILE, categories: ['Wellness & Spa'] }
+      : DEMO_PROFILE;
+
+  return (
+    <ProfileProvider initial={profile}>
+      <AppShell />
+    </ProfileProvider>
+  );
+}
+
+/** DEV-ONLY. Maps the :mode segment onto the dashboard's state machine. */
+const FORCEABLE_MODES: DashMode[] = ['loading', 'empty', 'ai-down'];
+
+function DashboardPreviewScreen() {
+  const { mode } = useParams();
+  const forceMode = FORCEABLE_MODES.find((m) => m === mode);
+  return <DashboardView forceMode={forceMode} />;
+}
 
 /**
  * Route tree:
@@ -96,12 +141,17 @@ const router = createBrowserRouter([
                 element: <AppShell />,
                 children: [
                   { index: true, element: <Navigate to="/dashboard" replace /> },
-                  { path: 'dashboard', element: <RoutePlaceholder navId="dashboard" /> },
+                  { path: 'dashboard', element: <DashboardView /> },
                   { path: 'content', element: <RoutePlaceholder navId="content" /> },
                   { path: 'calendar', element: <RoutePlaceholder navId="calendar" /> },
                   { path: 'performance', element: <RoutePlaceholder navId="performance" /> },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
-                  { path: 'settings/:tab', element: <RoutePlaceholder navId="settings" /> },
+                  // One route serves all three Settings tabs, so it cannot map to a
+                  // single NAV entry — the placeholder is given its copy directly.
+                  {
+                    path: 'settings/:tab',
+                    element: <RoutePlaceholder title="Settings" sub="Profile, platforms and workspace" />,
+                  },
                 ],
               },
             ],

@@ -1056,6 +1056,26 @@ Expected: exit 0. No visual change yet — nothing consumes these classes.
 
 ## Phase 3: `frontend/layout/`
 
+> ⚠️ **SUPERSEDED (2026-08-26) — do not execute Tasks 8, 9 and 10 as written.**
+>
+> All three were completed on branch `CVW-15-ui-ux-overhaul-module-2`, but with a
+> different surface treatment than specified below. This section calls for a **flat
+> `bg-navy-primary` sidebar with a `bg-mint-primary` active pill**. The
+> `tourism-app-branding` skill's §5 "Surface & gradient system" — added after this
+> plan was written — instead assigns nav chrome `--gradient-chrome`, and active rows
+> `--chrome-raised` plus a 3px `--color-mint-primary` left border. The shipped
+> sidebar follows §5 and shares its rules with the onboarding rail
+> (`.ob-rail, .sb-rail` in `styles/index.css`), so the two surfaces cannot drift.
+>
+> Executing the steps below would revert that. Two further cautions if any of this
+> is reused:
+> - The snippets use `p-md`, `py-sm`, `gap-xs`, `mt-xs`. **Those utilities do not
+>   exist** — `--space-*` is deliberately kept out of Tailwind's `--spacing-*`
+>   namespace (guarded by `brand-tokens.test.ts`). Use `var(--space-*)` in CSS.
+> - `.h-sm` / `.h-lg` were renamed to `.heading-sm` / `.heading-lg` in `39597e3`.
+>
+> Phases 0–2 and 4–7 are unaffected.
+
 ### Task 8: `AppShell.tsx`
 
 **Files:**

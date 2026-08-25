@@ -21,6 +21,21 @@ function renderStep() {
   );
 }
 
+/**
+ * userEvent.type() sends one keystroke per character, and these fields take
+ * 50-80 word strings — ~450 characters, each one a React re-render. That made
+ * this file take ~40s on its own and time out at 10s per test once the suite
+ * grew enough to run it under real parallel load.
+ *
+ * These tests assert the word-count hint that results from a field's value,
+ * not per-keystroke behaviour, so a paste is the same assertion in one event.
+ * It is also the more realistic gesture for a long business description.
+ */
+async function pasteInto(element: HTMLElement, text: string): Promise<void> {
+  await userEvent.click(element);
+  await userEvent.paste(text);
+}
+
 function words(n: number, prefix = 'word'): string {
   return Array.from({ length: n }, (_, i) => `${prefix}${i}`).join(' ');
 }
@@ -34,29 +49,29 @@ describe('StructuredInputsStep — description gate (min 50 words)', () => {
   it('shows a red "X more needed" hint below the threshold', async () => {
     renderStep();
     const textarea = screen.getByPlaceholderText(/what is the property/i);
-    await userEvent.type(textarea, words(10));
+    await pasteInto(textarea, words(10));
 
     const hint = screen.getByTestId('hint-description');
     expect(hint).toHaveTextContent('10 / 50 words — 40 more needed');
-  }, 10000);
+  });
 
   it('shows the green "threshold met" hint at exactly 50 words', async () => {
     renderStep();
     const textarea = screen.getByPlaceholderText(/what is the property/i);
-    await userEvent.type(textarea, words(50));
+    await pasteInto(textarea, words(50));
 
     const hint = screen.getByTestId('hint-description');
     expect(hint).toHaveTextContent('50 words — threshold met');
-  }, 10000);
+  });
 
   it('stays green above the threshold', async () => {
     renderStep();
     const textarea = screen.getByPlaceholderText(/what is the property/i);
-    await userEvent.type(textarea, words(65));
+    await pasteInto(textarea, words(65));
 
     const hint = screen.getByTestId('hint-description');
     expect(hint).toHaveTextContent('65 words — threshold met');
-  }, 10000);
+  });
 });
 
 describe('StructuredInputsStep — uvp gate (min 30 words)', () => {
@@ -68,27 +83,27 @@ describe('StructuredInputsStep — uvp gate (min 30 words)', () => {
   it('shows a red "X more needed" hint below the threshold', async () => {
     renderStep();
     const textarea = screen.getByPlaceholderText(/what can a guest get here/i);
-    await userEvent.type(textarea, words(12));
+    await pasteInto(textarea, words(12));
 
     const hint = screen.getByTestId('hint-uvp');
     expect(hint).toHaveTextContent('12 / 30 words — 18 more needed');
-  }, 10000);
+  });
 
   it('shows the green "threshold met" hint at exactly 30 words', async () => {
     renderStep();
     const textarea = screen.getByPlaceholderText(/what can a guest get here/i);
-    await userEvent.type(textarea, words(30));
+    await pasteInto(textarea, words(30));
 
     const hint = screen.getByTestId('hint-uvp');
     expect(hint).toHaveTextContent('30 words — threshold met');
-  }, 10000);
+  });
 });
 
 describe('StructuredInputsStep — gates are independent', () => {
   it('description crossing its threshold does not affect the uvp hint', async () => {
     renderStep();
     const descTextarea = screen.getByPlaceholderText(/what is the property/i);
-    await userEvent.type(descTextarea, words(80));
+    await pasteInto(descTextarea, words(80));
 
     // uvp untouched — should still read the empty/neutral state
     expect(screen.getByTestId('hint-uvp')).toHaveTextContent('Min 30 words');
@@ -97,19 +112,19 @@ describe('StructuredInputsStep — gates are independent', () => {
   it('uvp crossing its threshold does not affect the description hint', async () => {
     renderStep();
     const uvpTextarea = screen.getByPlaceholderText(/what can a guest get here/i);
-    await userEvent.type(uvpTextarea, words(40));
+    await pasteInto(uvpTextarea, words(40));
 
     // description untouched — should still read the empty/neutral state
     expect(screen.getByTestId('hint-description')).toHaveTextContent('Min 50 words');
-  }, 10000);
+  });
 
   it('both fields can independently reach green at the same time', async () => {
     renderStep();
     const descTextarea = screen.getByPlaceholderText(/what is the property/i);
     const uvpTextarea = screen.getByPlaceholderText(/what can a guest get here/i);
 
-    await userEvent.type(descTextarea, words(50));
-    await userEvent.type(uvpTextarea, words(30));
+    await pasteInto(descTextarea, words(50));
+    await pasteInto(uvpTextarea, words(30));
 
     expect(screen.getByTestId('hint-description')).toHaveTextContent('threshold met');
     expect(screen.getByTestId('hint-uvp')).toHaveTextContent('threshold met');

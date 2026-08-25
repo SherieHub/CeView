@@ -60,10 +60,14 @@
   /* ADAPTATION: the skill defines --color-text-inverse for headings on dark
      but no muted body tone for dark backgrounds. Flagged for a
      tourism-app-branding update.
-     Brightened from #A9BCCB when the chrome gradient moved to lighter teal —
-     the old value fell to 2.4:1 there. At #D7EAEF it reaches 3.8:1, which
-     clears AA for large text but not for the 15px rail subtitles. See the
-     handoff note. */
+
+     Reaches 5.15:1 on --color-chrome-light now that the ramp is darkened, so
+     it clears AA for the 15px rail subtitles it is actually used on.
+
+     USAGE RULE — muted inverse text NEVER sits on a --chrome-raised surface.
+     On the composite it is only 3.70:1. Anything inside an active/current row
+     (.sb-item[aria-current], .ob-step[data-state='current']) takes
+     --color-text-inverse instead. */
   --color-text-inverse-muted: #D7EAEF;
 
   /* ---- Functional / non-brand ----
@@ -75,6 +79,19 @@
   --color-success: #2FA37A;       /* was #0f7a4e — pulled toward mint's hue */
   --color-success-bg: #E4F6EF;
 
+  /* Text tones for the state washes above. The fill colours were tuned to sit
+     beside mint/coral as *fills*, and neither is legible on its own wash:
+     --color-critical on --color-critical-bg is 3.83:1 and --color-success on
+     --color-success-bg is 2.82:1. These darker pairs clear AA (5.44:1 and
+     5.16:1) without changing either wash. Use the -text tone for the label and
+     glyph inside a chip or banner; keep the base tone for borders and fills. */
+  --color-critical-text: #B33030;
+  --color-success-text: #1B7355;
+
+  /* Soft warn fill. --color-sand at full strength works as a small chip but is
+     too loud across a full-width banner, where it reads as an error. */
+  --color-sand-wash: #FFF1E8;
+
   /* Platform brand marks — these are the platforms' own colours and are never
      rebranded. Values per ui-ux-prototype.html:1086-1091 (PLATFORM_META). */
   --color-ig: #C13584;
@@ -85,10 +102,22 @@
   /* ---- Chrome surface stops (§5 "Surface & gradient system") ----
      Rails and nav run a teal ramp rather than navy, keeping the chrome in the
      same family as the cyan/mint accents.
-     --color-chrome-light is the ceiling for this surface: white text on it is
-     4.7:1, and anything lighter drops below AA for the rail's labels. */
-  --color-chrome-light: #157F94;
-  --color-chrome-deep: #0B5163;
+
+     --color-chrome-light is the CEILING for this surface, and it is set by the
+     active-row case, not the bare gradient. An active row paints
+     --chrome-raised (15% white) over this stop, which lightens it: at the old
+     #157F94 that composite was #3892A4, where even pure white managed only
+     3.61:1 — a fail on the single highest-traffic label in the app. Darkening
+     the ramp to #116879 puts the composite at #357F8D and white at 4.59:1.
+
+     Measured at these values (see tests/integration/chrome-contrast.test.ts):
+       white   on light stop ............ 6.40:1
+       white   on light stop + raised ... 4.59:1
+       #D7EAEF on light stop ............ 5.15:1
+       #5FD6A6 on light stop ............ 3.55:1  (3:1 floor, non-text)
+     Do not lighten either stop without re-running that test. */
+  --color-chrome-light: #116879;
+  --color-chrome-deep: #08414F;
 
   /* ---- Geometry (§5) ---- */
   --radius-sm: 8px;
@@ -121,7 +150,19 @@
   --spacing-12: 48px;
   --spacing-16: 64px;
 
+  /* Back to §5's stated 248px. The 280px this used to carry was sized around
+     a 40px monogram and an 18px wordmark; both have since come down (34px and
+     15px), so the identity block no longer needs the extra track — and the
+     32px goes to the dashboard's two-column grid, which wants it more. */
   --sidebar-w: 248px;
+  --sidebar-w-collapsed: 76px;
+  --sb-edge: 9px;
+  --sb-notch: 22px;
+  /* Shared by the topbar and the sidebar's header block so the wordmark and
+     the topbar controls sit on one line across the whole shell. */
+  --topbar-h: 60px;
+  /* See the ADAPTATION note on .app-main. */
+  --content-max: 1440px;
   --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- Fonts (§2) ---- */
@@ -271,9 +312,15 @@
   }
 
   /* ADAPTATION: §5's alternating white/mint-pale section rhythm is a
-     landing-page pattern. The rule is defined for future marketing surfaces;
-     the authenticated dashboard shell does not use <section> for layout. */
-  section {
+     landing-page pattern, kept for future marketing surfaces.
+
+     Scoped to .marketing rather than styling bare <section> globally. The
+     original rule assumed the app shell "does not use <section> for layout",
+     which stopped being true the moment a screen reached for the correct
+     landmark element — it silently added 80px of padding inside the dashboard
+     feed and knocked the two columns out of alignment. An element selector
+     with a page-specific value has no business in the global base layer. */
+  .marketing section {
     padding: var(--space-xl) var(--space-md);
   }
 
@@ -703,7 +750,11 @@
     height: 38px;
     border-radius: var(--radius-sm);
     background: var(--color-mint-pale);
-    color: var(--color-teal-accent);
+    /* --color-teal-accent on --color-mint-pale is 2.06:1, under the 3:1 floor
+       for non-text UI (WCAG 1.4.11) — the glyph IS the platform affordance
+       here, so it has to clear it. --color-cyan-deep is 4.57:1 on the same
+       fill and keeps the cool family. */
+    color: var(--color-cyan-deep);
   }
   .conn-ico svg {
     width: 18px;
@@ -777,13 +828,17 @@
     /* Rail is pinned — it stays put while the step panel scrolls. `sticky`
        rather than `fixed` so it keeps its grid track and the layout needs no
        compensating offset; `align-self: start` stops the grid stretching the
-       item, which would defeat sticky. */
-    .ob-rail {
+       item, which would defeat sticky.
+
+       Shared with the app sidebar: identical requirement, and a shared
+       selector cannot drift the way two copies would. */
+    .ob-rail,
+    .sb-rail {
       position: sticky;
       top: 0;
       align-self: start;
       height: 100dvh;
-      /* The rail's content is a fixed five-item list, so it only overflows on
+      /* The rail's content is a short fixed list, so it only overflows on
          short viewports. Keep it scrollable there so the note stays reachable,
          but hide the scrollbar chrome: a permanent gutter running down a list
          that almost fits reads as a defect rather than an affordance. */
@@ -791,7 +846,8 @@
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
-    .ob-rail::-webkit-scrollbar {
+    .ob-rail::-webkit-scrollbar,
+    .sb-rail::-webkit-scrollbar {
       display: none;
     }
     /* Side margins scale with the viewport instead of sitting at a flat 80px.
@@ -803,7 +859,11 @@
     }
   }
 
-  .ob-rail {
+  /* THE chrome surface. Shared verbatim by the onboarding rail and the app
+     sidebar — one definition means the two are identical by construction, not
+     by anyone remembering to keep them in step. */
+  .ob-rail,
+  .sb-rail {
     padding: var(--space-lg) var(--space-md);
     /* Dot grid layered over the chrome gradient. 8% white at a 1.2px radius on
        a 20px pitch — enough to read as texture up close without becoming a
@@ -815,16 +875,23 @@
     background-position: 0 0, 0 0;
     color: var(--color-text-inverse);
   }
-  .ob-rail .eyebrow {
+  .ob-rail .eyebrow,
+  .sb-rail .eyebrow {
     color: var(--color-text-inverse-muted);
   }
-  .ob-rail-mark {
+
+  /* Brand mark. Shared so the identity block is pixel-identical wherever it
+     appears — an operator crossing from onboarding into the app should not see
+     the wordmark move or change weight. */
+  .ob-rail-mark,
+  .sb-head {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: var(--space-md);
   }
-  .ob-rail-mark .g {
+  .ob-rail-mark .g,
+  .sb-head .g {
     width: 40px;
     height: 40px;
     flex: none;
@@ -837,10 +904,12 @@
     font-weight: 700;
     font-size: 1rem;
   }
-  .ob-rail-mark b {
+  .ob-rail-mark b,
+  .sb-head b {
     color: var(--color-text-inverse);
   }
-  .ob-rail-mark .text-meta {
+  .ob-rail-mark .text-meta,
+  .sb-head .text-meta {
     color: var(--color-text-inverse-muted);
   }
 
@@ -908,9 +977,16 @@
     color: var(--color-text-inverse-muted);
     font-weight: 500;
   }
+  /* The current row paints --chrome-raised behind itself, where muted inverse
+     drops to 3.70:1. Per the usage rule on --color-text-inverse-muted, text on
+     a raised surface goes full white. */
+  .ob-step[data-state='current'] span {
+    color: var(--color-text-inverse);
+  }
 
-  /* Supporting note at the foot of the rail — raised tint, not a light card,
-     so it stays part of the dark chrome. */
+  /* Supporting block at the foot of a rail — raised tint, not a light card,
+     so it stays part of the dark chrome. Shared: "raised block on chrome" is
+     one treatment, whether it holds a note or the identity footer. */
   .ob-note {
     display: flex;
     gap: var(--space-xs);
@@ -1173,4 +1249,1048 @@
       width: 13px;
       height: 13px;
     }
+}
+
+/* ============================================================
+   SHARED PRIMITIVES — chip, bar, skeleton, spinner, banner,
+   segmented control.
+
+   Transcribed in spirit from ui-ux-prototype.html's .chip/.bar/.skel/.banner,
+   restyled onto the branding skill's palette. Tone modifiers are named for
+   the ROLE they play (--accent / --attention / --critical / --success /
+   --inverse), never for the colour, so the palette can move without touching
+   call sites.
+
+   Deliberately NOT folded into .badge: that is a numeric count pill
+   (min-width, --radius-sm, sand fill). A chip is a fully-rounded glyph+label.
+   Overloading .badge would force --gold/--navy/--red modifiers and drag the
+   legacy vocabulary back in.
+   ============================================================ */
+@layer components {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    background: var(--color-mint-pale);
+    color: var(--color-navy-dark);
+  }
+  /* --color-teal-accent on --color-mint-pale is 2.06:1, under the 3:1 floor
+     for non-text UI. Same fix as .conn-ico. */
+  .chip svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    color: var(--color-cyan-deep);
+  }
+
+  .chip--accent {
+    background: var(--color-mint-primary);
+  }
+  .chip--attention {
+    background: var(--color-sand);
+  }
+  .chip--critical {
+    background: var(--color-critical-bg);
+    color: var(--color-critical-text);
+  }
+  .chip--success {
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+  }
+  /* For chips sitting ON chrome (rail, dark surfaces). */
+  .chip--inverse {
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+  }
+
+  .chip--accent svg,
+  .chip--attention svg {
+    color: var(--color-navy-dark);
+  }
+  .chip--critical svg {
+    color: var(--color-critical-text);
+  }
+  .chip--success svg {
+    color: var(--color-success-text);
+  }
+  .chip--inverse svg {
+    color: var(--color-mint-primary);
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  /* Progress / score bar. §5 lists --gradient-accent for progress fills; the
+     flat teal is the resting tone and --bar--lead promotes the leader. */
+  .bar {
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    overflow: hidden;
+  }
+  .bar > i {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--color-teal-accent);
+    transition: width 0.6s var(--ease-brand);
+  }
+  /* Rank 1 — mirrors .ob-dot's current/done treatment so "leading" reads the
+     same way everywhere in the app. */
+  .bar--lead > i {
+    background: var(--gradient-accent);
+  }
+
+  /* Loading placeholders. */
+  @keyframes skel-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+  .skel {
+    background: var(--color-mint-pale);
+    border-radius: var(--radius-md);
+    animation: skel-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .spinner {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-gray-light);
+    border-top-color: var(--color-navy-primary);
+    border-radius: var(--radius-full);
+    animation: spin 0.7s linear infinite;
+  }
+  /* On a filled button the track has to read against the button, not the page. */
+  .spinner--inverse {
+    border-color: rgba(255, 255, 255, 0.35);
+    border-top-color: var(--color-white);
+  }
+
+  /* Full-width status message. The left border carries the severity so the
+     fills can stay soft enough to read a paragraph on. */
+  .banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px var(--space-sm);
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  .banner svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+  }
+  .banner b {
+    font-weight: 700;
+  }
+  .banner--warn {
+    background: var(--color-sand-wash);
+    border-left-color: var(--color-coral-cta);
+    color: var(--color-navy-dark);
+  }
+  .banner--critical {
+    background: var(--color-critical-bg);
+    border-left-color: var(--color-critical);
+    color: var(--color-critical-text);
+  }
+  .banner--info {
+    background: var(--color-mint-pale);
+    border-left-color: var(--color-teal-accent);
+    color: var(--color-navy-dark);
+  }
+
+  /* Segmented control. Selection is expressed with aria-pressed so the
+     control is announced correctly and the CSS has nothing to keep in sync.
+     Also serves the radar drawer's 4WK/12WK toggle. */
+  .seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+  .seg button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-body);
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .seg button:hover {
+    color: var(--color-navy-primary);
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+
+  /* The prototype ships no reduced-motion handling at all. Everything above
+     that moves is decorative, so it can all stop; the spinner only slows,
+     since a frozen spinner reads as a hung request. */
+  @media (prefers-reduced-motion: reduce) {
+    .skel {
+      animation: none;
+    }
+    .spinner {
+      animation-duration: 2s;
+    }
+    .bar > i {
+      transition: none;
+    }
+    .seg button {
+      transition: none;
+    }
+  }
+}
+
+/* ============================================================
+   APP SHELL — sidebar rail, topbar, canvas.
+
+   The sidebar runs the SAME chrome surface as the onboarding rail (see the
+   shared `.ob-rail, .sb-rail` rules above). This is a restoration, not an
+   invention: the prototype's own sidebar was dark chrome with a 3px active
+   left bar and a monogram (ui-ux-prototype.html:426-465). The React port
+   regressed it to flat white on the legacy cream/gold tokens.
+
+   What is NOT shared with the wizard: .ob-step/.ob-dot encode PROGRESS
+   (data-state done/current/pending, numbered dots, deliberately not
+   clickable). Sidebar rows are focusable navigation with hover, aria-current,
+   badges and a disclosure. One selector carrying both would mean a wizard
+   tweak silently changing navigation. The active-row DECLARATIONS are
+   duplicated below on purpose — the shared source of truth is the branding
+   skill's "active rows on chrome" rule, not a CSS class.
+   ============================================================ */
+@layer components {
+  .app-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+  @media (min-width: 768px) {
+    .app-wrap {
+      /* minmax(0, 1fr), never a bare 1fr: a bare track refuses to shrink below
+         its content, so one wide table or chart pushes the whole page into a
+         horizontal scroll. */
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      transition: grid-template-columns 0.22s var(--ease-brand);
+    }
+    .app-wrap[data-collapsed='true'] {
+      grid-template-columns: var(--sidebar-w-collapsed) minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+    .app-wrap {
+      transition: none;
+    }
+  }
+
+  .app-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Chrome meets canvas — never two dark surfaces side by side. Same canvas
+       the wizard's step panel uses. */
+    background: var(--gradient-canvas);
+  }
+
+  .app-main {
+    flex: 1;
+    padding: var(--space-md);
+  }
+  @media (min-width: 1024px) {
+    .app-main {
+      padding: var(--space-lg);
+    }
+  }
+  /* ADAPTATION: §5 caps the content stack at 880px, but that rule is framed
+     around form and prose measure ("a form or article running the full width
+     of a 1900px display is unusable"). A two-column master/detail command
+     center is neither, and at 880px the markets rail has nowhere to live.
+     Raised for a tourism-app-branding update. */
+  .app-main > * {
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  /* The wizard rail can afford a large wordmark; the app rail is carrying nine
+     destinations underneath it and cannot. Overrides only the type — the
+     monogram, colours and layout still come from the shared .ob-rail-mark
+     rules, so the two marks stay recognisably the same object. */
+  /* The rail's own top padding would drop the wordmark ~18px below the topbar
+     controls opposite it. Zeroing it and giving the header the topbar's height
+     puts both on the same optical line, and keeps them there if that height
+     ever changes. */
+  .sb-rail {
+    padding-top: 0;
+    /* Rounds the rail's outer edge, and the inset edge strip follows it — an
+       inset shadow is clipped by border-radius — so the strip gets curved caps
+       top and bottom instead of running square into the viewport edges. */
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+  .sb-head {
+    height: var(--topbar-h);
+    align-items: center;
+    /* A clear break before the first section label. At 8px the wordmark and
+       "INTELLIGENCE" read as one stacked block, so the mark looked like a
+       heading for the nav rather than the product's identity above it. */
+    margin-bottom: var(--space-md);
+  }
+  .sb-head .g {
+    width: 34px;
+    height: 34px;
+    font-size: 0.8125rem;
+  }
+  .sb-head b {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+  .sb-rail {
+    display: flex;
+    flex-direction: column;
+    /* Accent strip down the rail's right edge. An inset shadow rather than a
+       border or a pseudo-element: it costs no layout width (so the active pill
+       still reaches the edge), and it paints against the border box, so it
+       cannot scroll away with the nav's content the way an absolutely
+       positioned child would.
+       Same mint as the active pill, so the pill reads as connected to the
+       strip rather than as a separate block beside it. */
+    box-shadow: inset calc(var(--sb-edge) * -1) 0 0 var(--color-mint-primary);
+  }
+
+  .sb-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-inverse-muted);
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-toggle:hover {
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+  }
+
+  /* ---- Collapsed: icons only -------------------------------------------
+     Labels are hidden with the same clip technique as .sr rather than
+     display:none, so the nav still announces identically to a screen reader.
+     Nothing here applies below 768px, where the rail is a slide-over and
+     always shows its full self. */
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-rail {
+      /* Tighter than the expanded rail so the pill has more width to fill. */
+      padding-left: 12px;
+      padding-right: 12px;
+      overflow-x: hidden;
+    }
+    /* Roomier rows, so the pill is not gripping the glyph. Applied to every
+       item, not just the active one, so switching route cannot change a row's
+       height. */
+    .app-wrap[data-collapsed='true'] .sb-item {
+      padding-top: 13px;
+      padding-bottom: 13px;
+    }
+    .app-wrap[data-collapsed='true'] .sb-nav {
+      gap: 6px;
+    }
+    .app-wrap[data-collapsed='true'] .sb-label,
+    .app-wrap[data-collapsed='true'] .sb-head-text,
+    .app-wrap[data-collapsed='true'] .sb-sec {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* Collapsed, the toggle takes the monogram's place rather than stacking
+       under it. Two brand marks in a 76px column — one of them purely
+       decorative — cost a row and left the only interactive control in the
+       header pushed below the fold of the eye. */
+    .app-wrap[data-collapsed='true'] .sb-head {
+      justify-content: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-head .g {
+      display: none;
+    }
+    .app-wrap[data-collapsed='true'] .sb-toggle {
+      margin-left: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-item {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    /* The pill still runs out to the edge strip when collapsed — the join is
+       the whole point of the treatment, and dropping it left the active glyph
+       floating as an unrelated blob beside the strip. Only the left cap and the
+       bleed distance change, because the rail's padding is tighter here. */
+    .app-wrap[data-collapsed='true'] .sb-item:hover,
+    .app-wrap[data-collapsed='true'] .sb-item[aria-current='page'] {
+      width: calc(100% + 12px);
+      /* Matches the bleed exactly. Without it the glyph centres inside the
+         widened pill instead of the row, so the active icon sat off-axis from
+         every other icon in the rail. */
+      padding-right: 12px;
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+      min-width: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-badge {
+      position: absolute;
+      top: 2px;
+      right: 8px;
+      min-width: 16px;
+      padding: 0 4px;
+      font-size: 0.625rem;
+      text-align: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-nav li {
+      position: relative;
+    }
+    .app-wrap[data-collapsed='true'] .sb-foot {
+      align-items: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-signout {
+      align-self: center;
+      padding: 6px;
+      width: 32px;
+      min-width: 0;
+    }
+  }
+  /* The power glyph only stands in for the label once it is hidden. */
+  .sb-signout-short {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-signout-short {
+      display: inline;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Below the grid breakpoint the rail leaves the flow entirely and becomes a
+     slide-over. Left as a stacked grid row it would put a full screenful of
+     navigation above every page. */
+  .sb-veil {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .sb-rail {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 30;
+      width: min(300px, 84vw);
+      transform: translateX(-100%);
+      transition: transform 0.22s var(--ease-brand);
+      overflow-y: auto;
+    }
+    .app-wrap[data-sidebar-open='true'] .sb-rail {
+      transform: translateX(0);
+      /* Re-states the edge strip: a later box-shadow replaces the earlier one
+         wholesale rather than adding to it. */
+      box-shadow: var(--shadow-overlay), inset calc(var(--sb-edge) * -1) 0 0 var(--color-mint-primary);
+    }
+    .app-wrap[data-sidebar-open='true'] .sb-veil {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 29;
+      background: rgba(11, 65, 79, 0.45);
+      cursor: pointer;
+    }
+  }
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    .sb-rail {
+      transition: none;
+    }
+  }
+
+  .sb-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sb-sec {
+    margin-top: 14px;
+    margin-bottom: 2px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+  }
+  .sb-sec:first-child {
+    margin-top: 0;
+  }
+
+  .sb-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    color: var(--color-text-inverse-muted);
+    cursor: pointer;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-item svg {
+    flex: none;
+  }
+  /* ---- Row fill --------------------------------------------------------
+     Hover and active differ only in colour, so the fill is a single custom
+     property and every rule below reads it. That keeps one definition of the
+     bleed geometry and one of the notch arcs, instead of four near-identical
+     copies drifting apart.
+     --color-mint-primary is the palette's accent; --color-navy-dark on it is
+     7.45:1, well clear of AA, and it leaves the chrome gradient and dot grid
+     untouched around it. */
+  .sb-item {
+    --sb-fill: transparent;
+  }
+  .sb-item:hover {
+    --sb-fill: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-inverse);
+  }
+  .sb-item[aria-current='page'] {
+    --sb-fill: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+    font-weight: 600;
+  }
+  .sb-item[aria-current='page']:hover {
+    --sb-fill: var(--color-mint-light);
+    color: var(--color-navy-dark);
+  }
+
+  /* Any filled row runs out to the rail's right edge, so it reads as attached
+     to the content it opens rather than as one more entry in a list. */
+  .sb-item:hover,
+  .sb-item[aria-current='page'] {
+    position: relative;
+    background: var(--sb-fill);
+    border-left-color: transparent;
+    /* Grows through the rail's own padding. A negative margin cannot do this:
+       .sb-item is width:100%, so its used width stays the container's and the
+       margin only pulls what follows. */
+    width: calc(100% + var(--space-md));
+    padding-right: calc(var(--space-md) + 12px);
+    /* Square on the right so it merges flush into the edge strip; the concave
+       corners that carry it there are drawn by the pseudo-elements below.
+       --radius-md rather than --radius-pill on the left: at 24px on a 43px-tall
+       row the cap was very nearly a semicircle, which read as a lozenge stuck
+       to the rail rather than a panel growing out of it. */
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+
+  /* The concave corners joining a filled row to the edge strip.
+     Each is a small square pinned to the rail's edge, immediately above and
+     below the row, painted with a radial-gradient whose inner stop is
+     TRANSPARENT rather than a background colour. That is what makes this work
+     over a gradient with a dot grid: the cut-out is genuinely see-through, so
+     the rail paints through it, instead of needing a flat patch that would
+     match the surface in only one place.
+     The fill hugs the right and inner edges and the arc sweeps away from the
+     corner, so the strip appears to flare outwards into the row.
+
+     The stops are offset by half a pixel either side of the radius rather than
+     meeting at it: a zero-width transition gives the rasteriser nothing to
+     blend across and the arc renders stair-stepped. */
+  .sb-item:hover::before,
+  .sb-item:hover::after,
+  .sb-item[aria-current='page']::before,
+  .sb-item[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    width: var(--sb-notch);
+    height: var(--sb-notch);
+    pointer-events: none;
+  }
+  .sb-item:hover::before,
+  .sb-item[aria-current='page']::before {
+    bottom: 100%;
+    background: radial-gradient(
+      circle at top left,
+      transparent calc(var(--sb-notch) - 0.5px),
+      var(--sb-fill) calc(var(--sb-notch) + 0.5px)
+    );
+  }
+  .sb-item:hover::after,
+  .sb-item[aria-current='page']::after {
+    top: 100%;
+    background: radial-gradient(
+      circle at bottom left,
+      transparent calc(var(--sb-notch) - 0.5px),
+      var(--sb-fill) calc(var(--sb-notch) + 0.5px)
+    );
+  }
+
+  .sb-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  /* The badge now sits on a light mint fill, so it inverts to stay readable. */
+  .sb-item[aria-current='page'] .sb-badge {
+    background: var(--color-navy-dark);
+    color: var(--color-text-inverse);
+  }
+
+  /* Identity footer — deliberately NOT the raised block .ob-note uses. A card
+     and a bordered button cost ~40px of height between them, which the nav
+     needs more than the sign-out control does. A hairline rule is enough
+     separation on chrome. */
+  .sb-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: var(--space-sm);
+    /* --space-sm, not --space-xs: at 8px the identity line was crowding the
+       rule above it, which read as the divider belonging to the text rather
+       than separating it from the nav. */
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--chrome-line);
+  }
+  .sb-foot b {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-inverse);
+    /* Long business names must truncate rather than force the rail wider. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A real button, but not .btn-outline's 16px/30px — at that size it was the
+     heaviest element in the rail and cost the nav a row. Pill and 1.5px border
+     match .btn-outline so it still reads as the same family, scaled to the
+     rail's own 13px type. */
+  .sb-signout {
+    /* Fills the rail's content width rather than hugging its label — a short
+       pill floating in a wide footer left an obvious gap to its right, and the
+       footer has no other content to balance it against. */
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: var(--space-xs);
+    padding: 10px 16px;
+    border: 1.5px solid var(--chrome-line);
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-text-inverse);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-signout:hover {
+    border-color: var(--color-mint-primary);
+    background-color: var(--chrome-raised);
+  }
+
+  /* Topbar — a utility bar, not a title bar. Each screen owns its own <h1>
+     via layout/PageHead.tsx; stacking a second heading here cost ~140px above
+     the fold to say the same thing twice.
+     Stays light and translucent so the canvas gradient reads continuously
+     beneath it. */
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    height: var(--topbar-h);
+    padding: 0 var(--space-md);
+    /* No fill of its own — .app-col's canvas gradient paints straight through,
+       so the bar is seamless with the page at rest. A white wash here read as a
+       separate slab pasted over the top of the canvas.
+       The blur is what keeps it usable once the page scrolls: with no
+       background there is nothing to hide content behind, so the backdrop is
+       frosted instead. */
+    background: transparent;
+    backdrop-filter: blur(12px);
+    /* A hairline, not --color-gray-light: at 1px across the full width a solid
+       border reads as a hard rule against the soft canvas. A low-opacity navy
+       tint sits in the gradient rather than on top of it. */
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  @media (min-width: 1024px) {
+    .app-topbar {
+      padding: 0 var(--space-lg);
+    }
+  }
+
+  /* Screen heading + its actions on one baseline (layout/PageHead.tsx). */
+  .page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .page-head-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+}
+
+/* ============================================================
+   DASHBOARD — /dashboard, Module 2.1.
+   ============================================================ */
+@layer components {
+  /* The left column's row carries the filter pills and the right column's does
+     not, so without a shared floor the two headings sit at different heights.
+     44px is the pill control's own height — the taller of the two. */
+  .feed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    min-height: 44px;
+    /* Keeps the filter pills off the first card below them. */
+    margin-bottom: var(--space-md);
+  }
+
+  /* Signal summary strip. */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+    /* 40px, not --space-md's 24px: the summary strip and the feed are separate
+       zones, and at 24px they read as one continuous stack. */
+    margin-bottom: 40px;
+  }
+  @media (min-width: 720px) {
+    .stat-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .stat-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    text-align: left;
+  }
+  .stat-tile .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    /* One colour across all three tiles. The surge count used to go red, which
+       made the strip read as a severity row rather than a set of peer figures —
+       urgency is still carried where it is actionable, by the Surge chips on
+       the alerts themselves. */
+    color: var(--color-text-heading);
+    /* Long market names must not blow out the tile. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stat-tile--action {
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .stat-tile--action:hover:not(:disabled) {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .stat-tile--action:disabled {
+    cursor: default;
+  }
+
+  /* Master/detail grid. The markets track is RESERVED, not toggled: swapping
+     column counts on selection resized every card and moved the one just
+     clicked out from under the cursor. */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+  }
+
+  /* The markets column reads as its own surface rather than a second stack of
+     cards floating on the same canvas as the feed. A 5% wash of the sidebar
+     teal keeps it in the chrome family without competing with the white cards
+     sitting on it; color-mix keeps it tied to the token rather than a copied
+     hex. */
+  /* Matches .dash-markets' top padding so both columns begin on the same line;
+     the feed itself needs no side or bottom padding, only the shared offset. */
+  .dash-feed {
+    padding-top: var(--space-md);
+  }
+
+  .dash-markets {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-chrome-light) 5%, transparent);
+  }
+  @media (min-width: 1280px) {
+    .dash-grid {
+      grid-template-columns: minmax(0, 1fr) 420px;
+    }
+    /* Stays visible while a long feed scrolls past it. */
+    .dash-markets {
+      position: sticky;
+      top: calc(60px + var(--space-md));
+    }
+  }
+
+  /* The resting-state placeholder in the markets panel. Scoped rather than
+     changing .empty globally: the feed's empty states are the primary message
+     on a full-width column and keep their size, while this one is a prompt in
+     a 420px side panel, where the shared 24px heading and 52px glyph made an
+     idle placeholder the loudest thing on the screen. */
+  .dash-markets .card {
+    padding: var(--space-sm);
+  }
+  .dash-markets .empty {
+    padding: var(--space-md) var(--space-xs);
+  }
+  .dash-markets .empty-glyph {
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-xs);
+  }
+  .dash-markets .empty-glyph svg {
+    width: 18px;
+    height: 18px;
+  }
+  .dash-markets .empty h3 {
+    font-size: 1.125rem;
+  }
+  .dash-markets .empty p {
+    font-size: 0.875rem;
+    max-width: 34ch;
+  }
+
+  .alert-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.16s ease, transform 0.2s ease;
+  }
+  .alert-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  /* Same idiom as .sb-item[aria-current] and .ob-step[data-state='current'] —
+     one selection language across the app. */
+  .alert-card[data-selected='true'] {
+    border-left-color: var(--color-mint-primary);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Matches the sidebar nav labels (.sb-item, 0.9375rem) rather than
+     .heading-sm's 18px. Eight of these titles stack down the feed, and at 18px
+     they read as section headings competing with "Surge alerts" above them.
+     Still a step above the 14px body below, so the card keeps its hierarchy. */
+  .alert-card .heading-sm {
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  /* 14px rather than .body-sm's 16px. These paragraphs are dense predictive
+     prose sitting under a heading in a card — at body size they competed with
+     the title. Leading stays at 1.6 so the smaller size does not read as
+     tighter. */
+  .alert-card .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: 6px;
+  }
+  /* Unread is signalled here and nowhere else — the prototype also carried a
+     gold left border, which collided with the selected state. Coral is the
+     palette's attention accent. */
+  .alert-dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-coral-cta);
+  }
+  .alert-cta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-cyan-deep);
+  }
+
+  .rank-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .rank-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .rank-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .rank-no {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    color: var(--color-navy-dark);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  /* Rank 1 gets the accent gradient — the same treatment .ob-dot uses for the
+     current/done step, so "leading" reads consistently. */
+  .rank-no[data-lead='true'] {
+    background: var(--gradient-accent);
+  }
+  /* Drops below .text-meta's 14px so the city/distance line yields to the
+     score beside it instead of tying with it. */
+  .rank-card .text-meta {
+    font-size: 0.8125rem;
+  }
+
+  .rank-score {
+    flex: none;
+    text-align: right;
+    line-height: 1.15;
+  }
+  .rank-score b {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+  }
+  .rank-facts {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+  .rank-fact {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    /* --color-text-body, not --color-text-muted: muted is 2.98:1 on white and
+       fails AA. Muted stays for decorative labels only. */
+    color: var(--color-text-body);
+  }
+  .rank-fact b {
+    font-weight: 600;
+  }
+  .rank-fact[data-direct='true'] svg {
+    color: var(--color-success-text);
+  }
+  .rank-fact[data-direct='false'] svg {
+    color: var(--color-coral-cta-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .alert-card,
+    .rank-card,
+    .stat-tile--action {
+      transition: none;
+    }
+    .alert-card:hover,
+    .rank-card:hover,
+    .stat-tile--action:hover:not(:disabled) {
+      transform: none;
+    }
+  }
 }
