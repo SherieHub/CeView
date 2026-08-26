@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import CampaignAnalyticsView from './CampaignAnalyticsView';
 import { MOCK_HISTORY, MOCK_REPORT } from '../../../services/fixtures/campaign';
+import { PostStoreProvider } from '../../../services/postStore';
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
@@ -9,8 +10,23 @@ vi.mock('../../../services/apiClient', () => ({
       history: vi.fn(() => Promise.resolve(MOCK_HISTORY)),
       report: vi.fn(() => Promise.resolve(MOCK_REPORT)),
     },
+    // PreviouslyPublished (mounted for real by the full view since m4c7
+    // landed) reads usePosts(), which needs apiClient.posts.list() to
+    // resolve — not otherwise exercised by this shell-level test file, so an
+    // empty list is enough to satisfy PostStoreProvider's seed fetch.
+    posts: {
+      list: vi.fn(() => Promise.resolve([])),
+    },
   },
 }));
+
+function renderView() {
+  return render(
+    <PostStoreProvider>
+      <CampaignAnalyticsView />
+    </PostStoreProvider>
+  );
+}
 
 // PesTrendChart is a stub, but per the Trend Charts card text ("this card
 // only owns the toggle control and rendering"), the real 4/8-week toggle UI
@@ -41,14 +57,14 @@ describe('CampaignAnalyticsView', () => {
   });
 
   it('renders only the ingestion form when no campaign has been submitted', () => {
-    render(<CampaignAnalyticsView />);
+    renderView();
 
     expect(screen.getByText(/no campaign data found/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 
   it('blocks submission with an inline error when a field is negative', () => {
-    render(<CampaignAnalyticsView />);
+    renderView();
 
     const impressionsInput = screen.getByLabelText(/impressions/i);
     fireEvent.change(impressionsInput, { target: { value: '-5' } });
@@ -59,7 +75,7 @@ describe('CampaignAnalyticsView', () => {
   });
 
   it('transitions to the full view after a valid submission', async () => {
-    render(<CampaignAnalyticsView />);
+    renderView();
 
     submitDefaultCampaign();
     expect(screen.getByText(/computing analytics/i)).toBeInTheDocument();
@@ -78,7 +94,7 @@ describe('CampaignAnalyticsView', () => {
   });
 
   it('re-slices the trend window when weeks changes from 4 to 8', async () => {
-    render(<CampaignAnalyticsView />);
+    renderView();
 
     submitDefaultCampaign();
     // waitFor's own polling loop also runs on the timer clock, so it can
@@ -109,7 +125,7 @@ describe('CampaignAnalyticsView', () => {
   });
 
   it('"New submission" clears the campaign and returns to the ingestion form', async () => {
-    render(<CampaignAnalyticsView />);
+    renderView();
 
     submitDefaultCampaign();
     // waitFor's own polling loop also runs on the timer clock, so it can
