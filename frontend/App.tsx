@@ -11,6 +11,9 @@ import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
 import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
+import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
+import { PostStoreProvider } from './services/postStore';
+import { ConnectionsStoreProvider } from './services/connectionsStore';
 
 /**
  * DEV-ONLY preview routes.
@@ -64,12 +67,14 @@ const devPreviewRoutes = import.meta.env.DEV
  *                                   m1c2: Step 2 Brand Identity; Steps 3-5 render their own
  *                                   "not implemented yet" panel until Cards 6-8 land — see
  *                                   02-module-1.md)
+ *         (PostStoreProvider + ConnectionsStoreProvider: Module 3's Foundation — Shared
+ *          Stores, m3c1 — mounted here, above AppShell, per that card's own milestone, so
+ *          every AppShell child reads the same posts/connections state)
  *         (AppShell: sidebar + topbar + <Outlet/>)
- *           /dashboard, /content, /calendar, /performance, /settings/:tab
- *
- * Every route element below (besides /login, /complete-profile, /onboarding) is an
- * empty screen-shell placeholder per this Foundation card's scope boundary —
- * screen components land in later cards (02-module-1.md … 05-module-4.md).
+ *           /dashboard, /content, /calendar, /settings/:tab - still empty screen-shell
+ *             placeholders, land in later cards (03-module-2.md, 04-module-3.md)
+ *           /performance          - CampaignAnalyticsView (Module 4 — Campaign Analytics &
+ *                                   Reporting, all 7 cards done — see 05-module-4.md)
  */
 const router = createBrowserRouter([
   ...devPreviewRoutes,
@@ -93,13 +98,19 @@ const router = createBrowserRouter([
                 ),
               },
               {
-                element: <AppShell />,
+                element: (
+                  <PostStoreProvider>
+                    <ConnectionsStoreProvider>
+                      <AppShell />
+                    </ConnectionsStoreProvider>
+                  </PostStoreProvider>
+                ),
                 children: [
                   { index: true, element: <Navigate to="/dashboard" replace /> },
                   { path: 'dashboard', element: <RoutePlaceholder navId="dashboard" /> },
                   { path: 'content', element: <RoutePlaceholder navId="content" /> },
                   { path: 'calendar', element: <RoutePlaceholder navId="calendar" /> },
-                  { path: 'performance', element: <RoutePlaceholder navId="performance" /> },
+                  { path: 'performance', element: <CampaignAnalyticsView /> },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
                   { path: 'settings/:tab', element: <RoutePlaceholder navId="settings" /> },
                 ],
