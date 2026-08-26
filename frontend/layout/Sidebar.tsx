@@ -106,7 +106,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
       </ul>
 
       <div className="sb-foot">
-        <b className="sb-label">{user?.businessName ?? user?.email ?? 'Signed in'}</b>
+        {/* Only when there is a real identity to show. The old 'Signed in'
+            fallback told the operator nothing they did not already know, and it
+            was what rendered whenever the name had not loaded yet. */}
+        {(user?.businessName ?? user?.email) && (
+          <b className="sb-label">{user.businessName ?? user.email}</b>
+        )}
         <button
           type="button"
           onClick={logout}

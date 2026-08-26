@@ -22,9 +22,9 @@ export default function MarketsRevealPanel({
   onOpenMarket,
 }: MarketsRevealSlotProps) {
   return (
-    <section className="dash-markets" id="dash-markets-panel" aria-label="Target markets">
+    <section className="dash-markets" id="dash-markets-panel" aria-label="Top Target Markets">
       <div className="feed-head">
-        <h2 className="heading-md">Top target markets</h2>
+        <h2 className="heading-md">Top Target Markets</h2>
         {selectedAlert && (
           <span className="chip chip--attention">
             <Tag aria-hidden="true" /> {selectedAlert.category}
@@ -33,7 +33,7 @@ export default function MarketsRevealPanel({
       </div>
 
       {selectedAlert ? (
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {markets.map((market) => (
             <RankCard key={market.id} market={market} onOpen={onOpenMarket} />
           ))}

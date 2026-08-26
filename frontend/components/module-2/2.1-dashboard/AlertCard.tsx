@@ -50,7 +50,7 @@ export default function AlertCard({ alert, isRead, isSelected, onSelect }: Alert
       </div>
 
       <h3 className="heading-sm">{alert.title}</h3>
-      <p className="body-sm mt-1">{alert.alertMessage}</p>
+      <p className="body-sm">{alert.alertMessage}</p>
 
       <div className="chip-row mt-3">
         <span className="chip">

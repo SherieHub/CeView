@@ -11,8 +11,14 @@
  *
  * Every value is derived from data already loaded: no new endpoint, no new
  * fixture. The third tile also gives "Refresh forecast" a visible consequence.
+ *
+ * Layout: the glyph sits in a gradient block overlapping the card's top-left
+ * corner, with the label and figure right-aligned opposite it and the
+ * supporting line below a rule. The three gradients run blue -> cyan -> green
+ * across the row, all drawn from the brand ramp rather than the semantic
+ * state colours — these are identities for the metrics, not severities.
  */
-import { BellDot, Compass, Zap } from 'lucide-react';
+import { ArrowRight, BellDot, Compass, Zap } from 'lucide-react';
 import type { SignalSummarySlotProps } from './dashboardTypes';
 
 export default function SignalSummary({
@@ -28,7 +34,7 @@ export default function SignalSummary({
     return (
       <div className="stat-row" aria-busy="true">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="skel" style={{ height: 104 }} />
+          <div key={i} className="skel" style={{ height: 132 }} />
         ))}
       </div>
     );
@@ -37,23 +43,29 @@ export default function SignalSummary({
   return (
     <div className="stat-row">
       <div className="stat-tile">
-        <span className="eyebrow">
-          <BellDot size={13} aria-hidden="true" /> Unread alerts
+        <span className="stat-icon">
+          <BellDot size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
-        <b className="stat-value num">{unreadCount}</b>
-        <span className="text-meta">
+        <div className="stat-head">
+          <span className="stat-label">Unread alerts</span>
+          <b className="stat-value num">{unreadCount}</b>
+        </div>
+        <div className="stat-foot">
           {unreadCount === 0 ? 'You are all caught up' : 'Across your categories'}
-        </span>
+        </div>
       </div>
 
       <div className="stat-tile">
-        <span className="eyebrow">
-          <Zap size={13} aria-hidden="true" /> Confirmed surges
+        <span className="stat-icon">
+          <Zap size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
-        <b className="stat-value num">{surgeCount}</b>
-        <span className="text-meta">
+        <div className="stat-head">
+          <span className="stat-label">Confirmed surges</span>
+          <b className="stat-value num">{surgeCount}</b>
+        </div>
+        <div className="stat-foot">
           {surgeMarkets.length > 0 ? surgeMarkets.join(', ') : 'Nothing above threshold'}
-        </span>
+        </div>
       </div>
 
       {/* Clickable — the drawer is the natural next step from "this is your
@@ -64,14 +76,25 @@ export default function SignalSummary({
         onClick={() => topMarket && onOpenMarket(topMarket.id)}
         disabled={!topMarket}
       >
-        <span className="eyebrow">
-          <Compass size={13} aria-hidden="true" /> Top market now
-          {degraded && <span className="chip ml-2">cached</span>}
+        <span className="stat-icon">
+          <Compass size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
-        <b className="stat-value">{topMarket?.name ?? '—'}</b>
-        <span className="text-meta">
-          {topMarket ? `${topMarket.matchScore}/100 · ${topMarket.category}` : 'No markets ranked yet'}
-        </span>
+        <div className="stat-head">
+          <span className="stat-label">
+            Top market now
+            {degraded && <span className="chip ml-2">cached</span>}
+          </span>
+          <b className="stat-value">{topMarket?.name ?? '—'}</b>
+        </div>
+        <div className="stat-foot">
+          <span>
+            {topMarket ? `${topMarket.matchScore}/100 · ${topMarket.category}` : 'No markets ranked yet'}
+          </span>
+          {/* The only tile that does anything on click, so it is the only one
+              that gets an affordance. Same arrow the alert cards use for
+              "View target markets", so the gesture reads the same way. */}
+          {topMarket && <ArrowRight size={15} className="stat-go" aria-hidden="true" />}
+        </div>
       </button>
     </div>
   );

@@ -61,8 +61,19 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         actions={
           <>
             {profile.uniquenessScore != null ? (
-              <span className="chip chip--attention">
-                <Award aria-hidden="true" /> Uniqueness {profile.uniquenessScore}
+              /* Split badge: a solid orange block carrying the glyph, joined to
+                 a light panel with the label and score. The score is the one
+                 number on this screen that describes the operator rather than
+                 the market, so it gets its own object instead of another chip
+                 in the row. */
+              <span className="score-badge">
+                <span className="score-badge-icon">
+                  <Award size={16} strokeWidth={1.75} aria-hidden="true" />
+                </span>
+                <span className="score-badge-body">
+                  <span className="score-badge-label">Uniqueness</span>
+                  <b className="score-badge-value num">{profile.uniquenessScore}</b>
+                </span>
               </span>
             ) : (
               <span className="chip chip--attention">

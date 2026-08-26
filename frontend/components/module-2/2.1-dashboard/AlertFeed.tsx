@@ -33,9 +33,9 @@ export default function AlertFeed({
 }: AlertFeedSlotProps) {
   if (mode === 'loading') {
     return (
-      <section className="dash-feed" aria-busy="true" aria-label="Surge alerts">
-        <h2 className="heading-md mb-3">Surge alerts</h2>
-        <div className="grid gap-3">
+      <section className="dash-feed" aria-busy="true" aria-label="Surge Alerts">
+        <h2 className="heading-md mb-3">Surge Alerts</h2>
+        <div className="grid gap-4">
           {[0, 1, 2].map((i) => (
             <div key={i} className="skel" style={{ height: 150 }} />
           ))}
@@ -46,8 +46,8 @@ export default function AlertFeed({
 
   if (mode === 'empty') {
     return (
-      <section className="dash-feed" aria-label="Surge alerts">
-        <h2 className="heading-md mb-3">Surge alerts</h2>
+      <section className="dash-feed" aria-label="Surge Alerts">
+        <h2 className="heading-md mb-3">Surge Alerts</h2>
         <div className="card">
           <div className="empty">
             <div className="empty-glyph">
@@ -66,8 +66,8 @@ export default function AlertFeed({
 
   if (totalForProfile === 0) {
     return (
-      <section className="dash-feed" aria-label="Surge alerts">
-        <h2 className="heading-md mb-3">Surge alerts</h2>
+      <section className="dash-feed" aria-label="Surge Alerts">
+        <h2 className="heading-md mb-3">Surge Alerts</h2>
         <div className="card">
           <div className="empty">
             <div className="empty-glyph">
@@ -90,9 +90,9 @@ export default function AlertFeed({
   }
 
   return (
-    <section className="dash-feed" aria-label="Surge alerts">
+    <section className="dash-feed" aria-label="Surge Alerts">
       <div className="feed-head">
-        <h2 className="heading-md">Surge alerts</h2>
+        <h2 className="heading-md">Surge Alerts</h2>
         <FeedFilter
           value={filter}
           onChange={onFilterChange}
@@ -121,7 +121,7 @@ export default function AlertFeed({
           </div>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {alerts.map((alert) => (
             <AlertCard
               key={alert.id}

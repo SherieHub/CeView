@@ -59,7 +59,7 @@ describe('AlertFeed — states', () => {
     );
 
     expect(container.querySelectorAll('.skel')).toHaveLength(3);
-    expect(screen.getByLabelText('Surge alerts')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByLabelText('Surge Alerts')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('says no forecast has run when there are no alerts at all', () => {
