@@ -19,7 +19,14 @@ function readCollapsed(): boolean {
 }
 
 export default function AppShell() {
-  const { scrimVisible, dismissTop } = useOverlayStack();
+  const { scrimVisible, dismissTop, stack } = useOverlayStack();
+  // A drawer on its own is a side panel, not a modal: at desktop widths the
+  // screen makes room for it (see .dash-screen) rather than sliding underneath,
+  // so nothing is obscured and dimming would be claiming otherwise — while the
+  // scrim's own hit area silently swallowed every click on the content beside
+  // it. A modal, or a drawer on a narrow screen where it does cover the page,
+  // still gets one. CSS decides on width; this only reports what is open.
+  const onlyDrawer = stack.length === 1 && stack[0] === 'drawer';
   // Below 768px the rail is a slide-over rather than a grid column — otherwise
   // it stacks full-width above the content and every screen starts with a
   // screenful of navigation. Topbar's burger has always rendered; this is what
@@ -75,6 +82,7 @@ export default function AppShell() {
       <div
         id="scrim"
         className={`scrim fixed inset-0 z-20 bg-black/40 ${scrimVisible ? 'on' : 'invisible'}`}
+        data-panel={onlyDrawer}
         onClick={dismissTop}
       />
     </div>

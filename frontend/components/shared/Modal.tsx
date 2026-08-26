@@ -32,11 +32,11 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
       aria-modal="true"
       data-open={isOpen('modal')}
     >
-      <div className="w-full max-w-lg rounded-lg bg-panel p-6 shadow-3">
+      <div className="modal-panel">
         <div className="mb-4 flex items-center justify-between">
           {title && <h2 className="heading-md">{title}</h2>}
-          <button onClick={onClose} aria-label="Close" className="rounded-full p-1 hover:bg-panel-sunk">
-            <X size={18} />
+          <button type="button" onClick={onClose} aria-label="Close" className="icon-btn">
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
         {children}

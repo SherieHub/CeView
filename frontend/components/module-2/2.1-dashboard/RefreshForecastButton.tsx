@@ -34,14 +34,14 @@ export default function RefreshForecastButton({
   }
 
   return (
-    <button type="button" className="btn-outline" onClick={handleClick} disabled={isRefreshing}>
+    <button type="button" className="btn-outline btn-outline--sm" onClick={handleClick} disabled={isRefreshing}>
       {isRefreshing ? (
         <>
           <span className="spinner" aria-hidden="true" /> Running pipeline…
         </>
       ) : (
         <>
-          <RefreshCw size={16} aria-hidden="true" /> Refresh forecast
+          <RefreshCw size={14} aria-hidden="true" /> Refresh forecast
         </>
       )}
     </button>

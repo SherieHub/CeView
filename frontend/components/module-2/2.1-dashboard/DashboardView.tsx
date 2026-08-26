@@ -14,7 +14,7 @@
  * between a one- and two-column layout on selection, which resized every card
  * and moved the one just clicked out from under the cursor.
  */
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Award, AlertTriangle } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
@@ -25,6 +25,7 @@ import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
 import SignalSummary from './SignalSummary';
+import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
 
 interface DashboardViewProps {
   /** Dev-preview only — pins the state machine to one mode. */
@@ -33,7 +34,8 @@ interface DashboardViewProps {
 
 export default function DashboardView({ forceMode }: DashboardViewProps) {
   const { profile } = useProfile();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const state = useDashboardState({ forceMode });
 
   // The radar drawer reads ?market=<id>, so it is linkable and the browser back
@@ -53,26 +55,30 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           ? 'No surge alerts match your business categories right now.'
           : 'Select an alert to see the markets ranked for its category.';
 
+  // The radar is a right-hand overlay and the markets column is a right-hand
+  // column, so the drawer covered it completely at every desktop width — its
+  // rank cards were on screen but unclickable. The screen steps aside instead.
+  const radarOpen = searchParams.get('market') != null;
+
   return (
-    <>
+    <div className="dash-screen" data-radar-open={radarOpen}>
       <PageHead
         title={`Good morning${profile.businessName ? `, ${profile.businessName}` : ''}`}
         subtitle={subtitle}
         actions={
           <>
             {profile.uniquenessScore != null ? (
-              /* Split badge: a solid orange block carrying the glyph, joined to
-                 a light panel with the label and score. The score is the one
-                 number on this screen that describes the operator rather than
-                 the market, so it gets its own object instead of another chip
-                 in the row. */
+              /* A raised disc carrying the figure, overlapping the left end of
+                 an outlined capsule that names it. The score is the one number
+                 on this screen that describes the operator rather than the
+                 market, so it gets its own object rather than another chip in
+                 the row — and the disc is what makes it read as a score rather
+                 than a label with a number after it. */
               <span className="score-badge">
-                <span className="score-badge-icon">
-                  <Award size={16} strokeWidth={1.75} aria-hidden="true" />
-                </span>
+                <b className="score-badge-disc num">{profile.uniquenessScore}</b>
                 <span className="score-badge-body">
                   <span className="score-badge-label">Uniqueness</span>
-                  <b className="score-badge-value num">{profile.uniquenessScore}</b>
+                  <Award className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
                 </span>
               </span>
             ) : (
@@ -125,6 +131,11 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           />
         )}
       </div>
-    </>
+
+      {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
+          ?market= itself, so mounting it unconditionally is correct: with no
+          market in the URL it renders closed. */}
+      <MarketRadarDrawer onTargetMarket={() => navigate('/content')} />
+    </div>
   );
 }

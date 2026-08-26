@@ -129,6 +129,11 @@
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-pill: 24px;
+  /* Shared height for the header row's small controls — the compact outline
+     button and the uniqueness badge's capsule. */
+  --btn-sm-h: 32px;
+  /* The badge's disc overhangs its capsule, so it is deliberately taller. */
+  --score-disc: 40px;
   --radius-full: 999px;
 
   --shadow-card: 0 4px 20px rgba(27, 58, 92, 0.08);
@@ -626,6 +631,25 @@
      would disappear into the gradient. Still outline-and-label only. */
   .btn-outline--inverse:hover:not(:disabled) {
     color: var(--color-cyan-accent);
+  }
+
+  /* Compact size for a secondary action sitting in a header rather than
+     carrying a screen. Type stays at --text-sm, above the 14px floor, so this
+     shrinks the button and not its legibility. */
+  .btn-outline--sm {
+    font-size: 0.875rem;
+    /* Height is fixed rather than left to padding + line-height, so the
+       uniqueness badge beside it can match on the same token. */
+    height: var(--btn-sm-h);
+    padding: 0 18px;
+    border-width: 1.25px;
+  }
+  /* The busy state swaps a 14px icon for the 16px spinner, which grew the
+     button by 2px mid-refresh and nudged the row. Match the icon instead. */
+  .btn-outline--sm .spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 1.5px;
   }
 }
 
@@ -1309,8 +1333,13 @@
      by the border width so the chip stays level with its filled siblings. */
   .chip--attention {
     background: var(--color-white);
-    border: 2px solid var(--color-coral-cta);
-    padding: 3px 10px;
+    /* A whole pixel, not 1.5: browsers snap border-width to device pixels, so
+       a fractional value renders as 2px on a 1x display and 1px on a 3x one —
+       the same chip would be a different weight per monitor. */
+    border: 1px solid var(--color-coral-cta);
+    /* Padding absorbs the border so the box matches a plain .chip's 5px 12px
+       exactly. */
+    padding: 4px 11px;
     color: var(--color-coral-text);
   }
   .chip--critical {
@@ -1967,8 +1996,7 @@
   /* Topbar — a utility bar, not a title bar. Each screen owns its own <h1>
      via layout/PageHead.tsx; stacking a second heading here cost ~140px above
      the fold to say the same thing twice.
-     Stays light and translucent so the canvas gradient reads continuously
-     beneath it. */
+     Stays light, and opaque, so scrolled content passes cleanly behind it. */
   .app-topbar {
     position: sticky;
     top: 0;
@@ -1978,14 +2006,10 @@
     gap: var(--space-sm);
     height: var(--topbar-h);
     padding: 0 var(--space-md);
-    /* No fill of its own — .app-col's canvas gradient paints straight through,
-       so the bar is seamless with the page at rest. A white wash here read as a
-       separate slab pasted over the top of the canvas.
-       The blur is what keeps it usable once the page scrolls: with no
-       background there is nothing to hide content behind, so the backdrop is
-       frosted instead. */
-    background: transparent;
-    backdrop-filter: blur(12px);
+    /* Solid, not a frosted backdrop: content scrolling underneath stayed
+       faintly legible through the blur. An opaque fill hides it outright, and
+       the hairline below carries the edge. */
+    background: var(--color-white);
     /* A hairline, not --color-gray-light: at 1px across the full width a solid
        border reads as a hard rule against the soft canvas. A low-opacity navy
        tint sits in the gradient rather than on top of it. */
@@ -2021,47 +2045,77 @@
   /* The left column's row carries the filter pills and the right column's does
      not, so without a shared floor the two headings sit at different heights.
      44px is the pill control's own height — the taller of the two. */
-  /* Uniqueness score badge — a solid block joined to a light panel, rather
-     than a single filled chip. Coral carries the block; the glyph is
-     --color-navy-dark at 5.89:1, since white on coral is only 2.28:1. */
+  /* Uniqueness score badge — a raised disc holding the figure, overlapping
+     the left end of an outlined capsule that names it. The disc is the point:
+     it lifts the one operator-facing number out of a header row that is
+     otherwise all market data.
+
+     The disc sits outside the capsule's box (absolute, and the wrapper carries
+     its overhang as padding), so the capsule can keep a plain pill radius
+     instead of being notched around it. */
   .score-badge {
+    position: relative;
     display: inline-flex;
-    align-items: stretch;
-    overflow: hidden;
-    border-radius: var(--radius-sm);
-    background: var(--color-white);
-    box-shadow: var(--shadow-card);
+    align-items: center;
+    /* Half the disc — the other half overlaps the capsule. */
+    padding-left: calc(var(--score-disc) / 2);
+    /* The disc is taller than the capsule and is positioned out of flow, so
+       without this the badge would under-report its own height and the disc
+       would overlap whatever the row sits against. */
+    min-height: var(--score-disc);
   }
-  .score-badge-icon {
+  .score-badge-disc {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    top: 50%;
+    translate: 0 -50%;
     display: grid;
     place-items: center;
-    flex: none;
-    width: 34px;
-    background: var(--color-coral-cta);
-    color: var(--color-navy-dark);
+    width: var(--score-disc);
+    height: var(--score-disc);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card-hover);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    /* Not --color-coral-cta: that is 2.28:1 on white and this is the figure
+       the whole object exists to show. The text tone reaches 5.42. */
+    color: var(--color-coral-text);
   }
+  /* One element, so the outline and the wash are a single unbroken shape.
+     Splitting the capsule either side of the glyph left a seam where the two
+     halves' borders met. Its left cap sits behind the disc. */
   .score-badge-body {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1px;
-    padding: 5px 12px;
+    align-items: center;
+    gap: 8px;
+    /* Matches the compact outline button it sits beside, on the same token. */
+    height: var(--btn-sm-h);
+    /* Left padding clears the overlapping half of the disc. */
+    padding: 0 14px 0 calc(var(--score-disc) / 2 + 8px);
+    border: 1.25px solid var(--color-sand);
+    border-radius: var(--radius-pill);
+    background: var(--color-sand-wash);
   }
+  /* Closes the capsule opposite the disc — the same pairing the reference uses. */
+  .score-badge-glyph {
+    flex: none;
+    color: var(--color-coral-text);
+  }
+  /* The capsule's only line now, so it carries the object on its own and is
+     sized up from eyebrow scale accordingly. --color-coral-text on the wash is
+     4.94:1, clearing AA at this size. */
   .score-badge-label {
     font-family: var(--font-body);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.09em;
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     line-height: 1;
-    color: var(--color-text-body);
-  }
-  .score-badge-value {
-    font-family: var(--font-heading);
-    font-size: 0.9375rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--color-text-heading);
+    color: var(--color-coral-text);
   }
 
   .feed-head {
@@ -2073,6 +2127,29 @@
     min-height: 44px;
     /* Keeps the filter pills off the first card below them. */
     margin-bottom: var(--space-md);
+  }
+
+  /* Heading and category chip are stacked deliberately here rather than left
+     to wrap. The longest category ("Accommodation & Staycation") cannot share
+     a line with the heading in the 420px markets column, and letting the flex
+     wrap decide means short categories sit inline while long ones drop — the
+     hairline would appear and vanish with the selected alert. flex-basis:100%
+     pins the two rows, so the rule is always there.
+
+     margin-left keeps the chip on the right, which space-between cannot do
+     once the chip is alone on its row (it parks it left). */
+  .dash-markets .feed-head {
+    row-gap: 16px;
+  }
+  .dash-markets .feed-head h2 {
+    flex: 1 0 100%;
+    padding-bottom: 16px;
+    /* The stylesheet's standard hairline — same value as the card and drawer
+       dividers, not a new one. */
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .dash-markets .feed-head .chip {
+    margin-left: auto;
   }
 
   /* Signal summary strip.
@@ -2103,6 +2180,11 @@
     background: var(--color-white);
     box-shadow: var(--shadow-card);
     text-align: left;
+    /* Queried below. Has to be the tile and not the row: opening the radar
+       drawer narrows these tiles without touching the viewport, so a media
+       query cannot see it. Layout containment does not clip overflow, so the
+       glyph still hangs off the top edge. */
+    container-type: inline-size;
   }
 
   /* One gradient for all three. Per-metric colours read as a status legend —
@@ -2158,6 +2240,26 @@
     font-size: 0.8125rem;
     line-height: 1.45;
     color: var(--color-text-body);
+  }
+
+  /* Below this the right-aligned head can no longer pass to the right of the
+     overlapping glyph — the label ran underneath it ("Unread alerts" rendering
+     as "read alerts") and the figure collided with it. 52px glyph at a 24px
+     inset plus the longest label needs ~215px; 260 leaves room to spare.
+     Clear it vertically instead, and left-align, since there is no longer a
+     wide empty gutter for the text to sit opposite. */
+  @container (max-width: 260px) {
+    .stat-head {
+      align-items: flex-start;
+      /* The glyph reaches 32px into the tile (52px tall, 20px above it). */
+      padding-top: 40px;
+    }
+    .stat-value {
+      font-size: 1.25rem;
+      /* "United States" truncating to "United St…" in a tile whose whole job
+         is to name the market. There is vertical room here; take it. */
+      white-space: normal;
+    }
   }
 
   .stat-tile--action {
@@ -2473,5 +2575,651 @@
   }
   .seg button {
     font-size: 0.8125rem;
+  }
+}
+
+/* ============================================================
+   OVERLAYS — drawer, modal.
+   Both were previously styled only by legacy Tailwind utilities on the
+   components themselves (bg-panel / shadow-3 / panel-sunk). They now use
+   the brand card treatment so an overlay reads as part of the same product
+   as the screen behind it.
+   ============================================================ */
+@layer components {
+  .drawer {
+    position: fixed;
+    inset-block: 0;
+    right: 0;
+    z-index: 30;
+    width: min(560px, 100vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    box-shadow: var(--shadow-overlay);
+    /* Off-canvas until opened. `visibility` (not display) so the transition
+       runs, and so a closed drawer is out of the tab order. */
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.26s var(--ease-brand), visibility 0s linear 0.26s;
+  }
+  .drawer[data-open='true'] {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.26s var(--ease-brand), visibility 0s;
+  }
+  .drawer-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    z-index: 1;
+  }
+  /* Outside .drawer-body, so it does not scroll with the content. */
+  .drawer-foot {
+    flex: none;
+    padding: var(--space-sm) 40px var(--space-md);
+    background: var(--color-white);
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    /* Generous on all four edges — content that runs to the edge of a panel
+       this narrow reads as cramped, and the bottom needs the same air as the
+       top or the last section looks cut off.
+       Drops back at narrow widths, where the drawer is the full viewport and
+       40px a side would eat a sixth of the reading width. */
+    padding: 40px;
+  }
+  /* Placed after the base rules above, not before them: a media query carries
+     no extra specificity, so an override that sits earlier in the file simply
+     loses to the rule it means to override. */
+  @media (max-width: 640px) {
+    .drawer {
+      width: 100vw;
+    }
+    .drawer-body {
+      padding: var(--space-md);
+    }
+    .drawer-foot {
+      padding: var(--space-sm) var(--space-md) var(--space-md);
+    }
+    .drawer-close {
+      top: var(--space-sm);
+      right: var(--space-sm);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer {
+      transition: none;
+    }
+  }
+
+  .modal-panel {
+    width: 100%;
+    max-width: 520px;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+/* ============================================================
+   MARKET RADAR DRAWER — Module 2.2.
+   Reuses the Dashboard's cards, chips, tiles and .seg wholesale; only the
+   layout and the few pieces unique to this screen are defined here.
+   ============================================================ */
+@layer components {
+  .radar-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  /* Only the rows that actually run under the close button are inset for it.
+     Putting this on .radar-head instead shrank the whole column, so the CTA
+     below centred inside a box 44px narrower than the one it looks centred in
+     — visibly off to the left. */
+  .radar-head-top,
+  .radar-route {
+    padding-right: 44px;
+  }
+
+  /* Spans the content column, matching the banner and cards below it, so the
+     header's primary action lines up with everything else in the drawer rather
+     than floating narrower than its neighbours. */
+  .radar-head .btn-cta {
+    width: 100%;
+  }
+
+  /* Market switcher — the drawer covers the ranked list, so it carries its own.
+     Same segmented-control language as the timeframe and insight tabs. */
+  .radar-switch {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-right: 44px;
+    /* On top of .radar-head's own 16px gap, so the switcher reads as a control
+       sitting above the header rather than as the header's first line. Only
+       this gap grows; the rest of the header keeps its rhythm. */
+    margin-bottom: var(--space-xs);
+    border-radius: calc(var(--radius-sm) + 4px);
+    background: var(--color-off-white);
+  }
+  .radar-switch button {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-body);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .radar-switch button:hover {
+    color: var(--color-navy-primary);
+  }
+  .radar-switch button[aria-pressed='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  .radar-head-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .radar-route {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Each block of the drawer body, below the header. */
+  .radar-section {
+    padding-top: 28px;
+  }
+  .radar-section + .radar-section {
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+    margin-top: 28px;
+  }
+
+  .chart-frame {
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Zone key — the pricing action each demand band implies. */
+  .zone-key {
+    display: grid;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+  .zone-key li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-text-body);
+  }
+  .zone-key b {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+  .zone-swatch {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 4px;
+    border-radius: 3px;
+  }
+  .zone-key li[data-tone='low'] .zone-swatch {
+    background: var(--color-mint-pale);
+  }
+  .zone-key li[data-tone='mid'] .zone-swatch {
+    background: var(--color-teal-accent);
+  }
+  .zone-key li[data-tone='high'] .zone-swatch {
+    background: var(--color-coral-cta);
+  }
+
+  /* KPI tiles inside the drawer are narrower than the Dashboard's, so they go
+     two-up and drop the icon overhang that needs row padding to clear. */
+  .radar-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-sm);
+    padding-top: 20px;
+  }
+  .radar-trends {
+    display: grid;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  /* 12-month peak calendar. */
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .month-grid li {
+    padding: 7px 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-off-white);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text-body);
+  }
+  .month-grid li[data-peak='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+
+  .carrier-list {
+    display: grid;
+    gap: var(--space-xs);
+  }
+  .carrier-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .carrier-list b {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+  .carrier-code {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    padding: 4px 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-navy-dark);
+  }
+}
+
+/* ============================================================
+   DRAWER DENSITY
+   The drawer is a 560px column carrying charts, tiles, chips and three
+   paragraphs of prose. At the Dashboard's sizes — which are set for a
+   1000px-wide content area — everything landed at nearly the same weight
+   and the panel read as congested. One step down across the board, paired
+   with the larger block spacing above.
+   Scoped to .drawer so the Dashboard behind it is untouched.
+   ============================================================ */
+@layer components {
+  .drawer .radar-head h2,
+  .drawer .heading-md {
+    font-size: 1.125rem;
+  }
+  .drawer .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  /* The base layer sets `svg { display: block }`, so an icon inside a <p> drops
+     onto its own line. The Dashboard's stat tiles already work around this;
+     the drawer's labelled eyebrows need the same. */
+  .drawer .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6875rem;
+  }
+  .drawer .eyebrow svg {
+    flex: none;
+  }
+  .drawer .text-meta {
+    font-size: 0.8125rem;
+  }
+  .drawer .stat-value {
+    font-size: 1.25rem;
+  }
+  .drawer .stat-label,
+  .drawer .stat-foot {
+    font-size: 0.75rem;
+  }
+  .drawer .btn-cta {
+    font-size: 0.875rem;
+    padding: 12px 22px;
+  }
+  .drawer .banner {
+    font-size: 0.875rem;
+  }
+  .drawer .carrier-list b {
+    font-size: 0.8125rem;
+  }
+
+  /* Cards inside the drawer sit in a narrower column than the Dashboard's, so
+     they take slightly less inner padding but more separation from each other. */
+  .drawer .card {
+    padding: var(--space-sm);
+  }
+  .drawer .radar-kpis {
+    gap: var(--space-md);
+  }
+  .drawer .radar-trends {
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+  }
+  .drawer .zone-key {
+    gap: 10px;
+    margin-top: var(--space-md);
+  }
+  .drawer .month-grid {
+    gap: 8px;
+  }
+  .drawer .carrier-list {
+    gap: 14px;
+  }
+}
+
+/* ============================================================
+   DRAWER — review refinements.
+   ============================================================ */
+@layer components {
+  /* .seg is white on white inside the drawer, so its enclosure was invisible
+     and the pair read as one button beside some loose text. The switcher above
+     already sits on --color-off-white; matching it makes the grouping legible
+     and says the options are mutually exclusive. */
+  .drawer .seg {
+    background: var(--color-off-white);
+    box-shadow: none;
+  }
+  .drawer .seg button[aria-pressed='true'],
+  .drawer .seg button[aria-selected='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  /* Tabs get equal segments so neither reads as the primary of the two. */
+  .drawer [role='tablist'] {
+    display: flex;
+    width: 100%;
+  }
+  .drawer [role='tablist'] button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* The overhanging icon block belongs to the Dashboard's wide tiles. In the
+     drawer's narrow pair it hung off the corner and read as detached, so the
+     glyph comes inside as a circular header inline with the label. */
+  .drawer .stat-tile {
+    padding: var(--space-sm);
+  }
+  .drawer .stat-icon {
+    position: static;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    box-shadow: none;
+  }
+  .drawer .stat-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+  .drawer .stat-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0 10px;
+  }
+  .drawer .stat-head .stat-label {
+    order: -1;
+  }
+  /* Side by side with the label, a long value has far less room than it did
+     stacked — the flight-price range truncated to "₱8,000 – ₱…", which is worse
+     than useless for a range. Let it wrap onto its own line instead; the
+     Dashboard's wide tiles keep the ellipsis, where a market name genuinely
+     should not push the tile around. */
+  .drawer .stat-head {
+    flex-wrap: wrap;
+  }
+  .drawer .stat-value {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: right;
+  }
+  .drawer .stat-foot {
+    padding: 10px 0 0;
+  }
+  /* No overhang to clear any more. */
+  .drawer .radar-kpis {
+    padding-top: 0;
+  }
+
+  /* Reference material for the chart above, not a continuation of it. */
+  .drawer .zone-key {
+    margin-top: var(--space-lg);
+  }
+
+  /* Sparkline scale. */
+  .trend-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
+  }
+  .trend-now {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: none;
+    line-height: 1.2;
+  }
+  .trend-now b {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+  }
+  .trend-now .text-meta {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ============================================================
+   TABBED INFO CARD
+   A label tab sitting on the card's top-left corner, a white body, and a
+   colour block offset behind the right edge. Used for the radar's surge state
+   and its strategic directive: each is one short statement whose KIND matters
+   as much as its content, and the tab says the kind before the sentence is
+   read.
+   ============================================================ */
+@layer components {
+  .info-card {
+    position: relative;
+    /* Room for the tab, which sits entirely above the body. */
+    margin-top: 30px;
+  }
+  /* The visible gap is smaller than this number: the tab sits ~27px above its
+     own body and eats into the space, so 66px leaves roughly 35px of actual
+     air. Applies after any sibling, not just another info card — the bare 30px
+     above only reserves room for the tab and would leave ~3px of visible air. */
+  * + .info-card {
+    margin-top: 66px;
+  }
+
+  /* The offset block behind the right edge. Both this and .info-body are
+     positioned and z-indexed rather than using a negative z-index, which would
+     drop it behind the drawer's own background and vanish. */
+  .info-card::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    /* Flush top and bottom, offset only to the right: the block reads as a
+       coloured edge running down the card's side. Extending it below as well
+       left an L-shaped tail under the bottom-right corner. */
+    top: 0;
+    right: -9px;
+    bottom: 0;
+    width: 64px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+
+  .info-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: var(--space-sm);
+    /* Square at the top-left, where the tab lands. */
+    border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+    background: var(--color-white);
+    /* Heavier than --shadow-card: these sit on tinted panels and beside other
+       white surfaces, where the standard 8%-opacity card shadow left the edge
+       ambiguous. */
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .info-tab {
+    position: absolute;
+    z-index: 2;
+    bottom: 100%;
+    left: 0;
+    padding: 7px 18px;
+    /* Rounded on top only — it reads as a tab attached to the card, not a pill
+       floating above it. */
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-inverse);
+  }
+
+  /* Anything following an info card. No overhang to clear now that the block
+     is flush at the bottom, so this is plain separation. The drawer-scoped
+     twin is needed to outrank .drawer .radar-trends, which sets its own
+     (tighter) margin at equal specificity. */
+  .info-card + *,
+  .drawer .info-card + * {
+    margin-top: 36px;
+  }
+
+  .info-glyph {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Tones. Tab and block fills are the -text tones, not the base state
+     colours: white on --color-critical is 4.38:1, just under AA for a label
+     this small, while --color-critical-text reaches 6.21. */
+  .info-card[data-tone='critical'] .info-tab,
+  .info-card[data-tone='critical']::before {
+    background: var(--color-critical-text);
+  }
+  .info-card[data-tone='critical'] .info-glyph {
+    background: var(--color-critical-bg);
+    color: var(--color-critical-text);
+  }
+
+  .info-card[data-tone='accent'] .info-tab,
+  .info-card[data-tone='accent']::before,
+  .info-card[data-tone='calm'] .info-tab,
+  .info-card[data-tone='calm']::before {
+    background: var(--color-cyan-deep);
+  }
+  .info-card[data-tone='accent'] .info-glyph,
+  .info-card[data-tone='calm'] .info-glyph {
+    background: var(--color-mint-pale);
+    color: var(--color-cyan-deep);
+  }
+}
+
+/* ============================================================
+   DASHBOARD — making room for the radar drawer.
+   The drawer opens over the right of the screen and the markets column lives
+   there, so with the drawer open those rank cards were 100% covered at every
+   desktop width: visible in the DOM, impossible to click, and the obvious
+   thing to reach for when switching market.
+   The screen yields the drawer's width instead. The grid then has room for
+   only one column, so the markets panel drops below the feed — still on the
+   page, still clickable, just no longer underneath the thing covering it.
+   ============================================================ */
+@layer components {
+  .dash-screen {
+    transition: padding-right 0.26s var(--ease-brand);
+  }
+  @media (min-width: 1024px) {
+    .dash-screen[data-radar-open='true'] {
+      padding-right: min(560px, 45vw);
+    }
+    /* Whatever is left is too narrow for the two-column master/detail. */
+    .dash-screen[data-radar-open='true'] .dash-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-md);
+    }
+    /* Same for the summary tiles: the drawer takes 560px out of the content
+       column, and three tiles in what remains were 71px wide at 1100. Column
+       count steps back up as the screen gets wide enough to afford it. (Media
+       queries rather than a container query on .dash-screen — that would apply
+       `contain: layout`, and the fixed-position drawer lives inside it.) */
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 1200px) {
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1400px) {
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .dash-screen[data-radar-open='true'] .dash-markets {
+      position: static;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dash-screen {
+      transition: none;
+    }
+  }
+}
+
+@layer components {
+  /* Wide enough that .dash-screen steps aside for the drawer: with the content
+     fully visible beside it, the scrim would dim a pane that is still live and
+     block every click on it. Narrow screens keep it — there the drawer really
+     does cover the page. */
+  @media (min-width: 1024px) {
+    #scrim[data-panel='true'] {
+      opacity: 0;
+      pointer-events: none;
+    }
   }
 }

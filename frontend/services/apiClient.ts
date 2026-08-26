@@ -13,6 +13,8 @@ import { OMCS_RUBRIC_LABELS, MOCK_OMCS } from './fixtures/omcs';
 import { DEFAULT_CAMPAIGN_INPUT, MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
 import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
+import { MOCK_CONNECTIONS } from './fixtures/connections';
+import { MOCK_POST_METRICS } from './fixtures/postMetrics';
 import type { WorkspaceMemberFixture } from './fixtures/members';
 import type { PlatformConnection, PostMetric, BusinessProfileDto } from '../types';
 
@@ -40,21 +42,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
-
-const MOCK_CONNECTIONS: PlatformConnection[] = [
-  { platform: 'instagram', connected: true, handle: '@cebu.dive', connectedAt: '2026-05-01T00:00:00Z' },
-  { platform: 'tiktok', connected: false, handle: null, connectedAt: null },
-  { platform: 'facebook', connected: true, handle: 'Cebu Dive Co.', connectedAt: '2026-04-12T00:00:00Z' },
-  { platform: 'naver', connected: false, handle: null, connectedAt: null },
-];
-
-const MOCK_POST_METRICS: PostMetric[] = MOCK_POSTS.map((p, i) => ({
-  postId: p.id,
-  impressions: 1200 + i * 340,
-  engagements: 80 + i * 21,
-  clicks: 14 + i * 3,
-  engagementRate: Number((0.04 + i * 0.006).toFixed(3)),
-}));
 
 const EMPTY_BUSINESS_PROFILE_DTO: BusinessProfileDto = {
   businessProfileId: null,

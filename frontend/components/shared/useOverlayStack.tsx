@@ -43,6 +43,38 @@ export function OverlayStackProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [dismissTop]);
 
+  /**
+   * Lock the page behind any open overlay. Without this the drawer and the page
+   * scroll independently, showing two scrollbars side by side, and a wheel
+   * gesture past the end of the drawer scrolls the page underneath it.
+   *
+   * Lives here rather than in Drawer/Modal so nested overlays cannot fight over
+   * it — the lock follows "is anything open", and the last one to close
+   * restores the page.
+   *
+   * Removing the scrollbar frees its width, so the layout would jump right by
+   * ~15px as the overlay opens. Padding the body by the width that vanished
+   * holds everything still. Guarded on the scrollbar actually taking up space:
+   * it is zero on overlay-scrollbar platforms (macOS, mobile), where padding
+   * would itself be the jump.
+   */
+  useEffect(() => {
+    if (stack.length === 0) return;
+
+    const { body } = document;
+    const gutter = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = body.style.overflow;
+    const prevPadding = body.style.paddingRight;
+
+    body.style.overflow = 'hidden';
+    if (gutter > 0) body.style.paddingRight = `${gutter}px`;
+
+    return () => {
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPadding;
+    };
+  }, [stack.length]);
+
   const value = useMemo<OverlayStackValue>(
     () => ({
       stack,

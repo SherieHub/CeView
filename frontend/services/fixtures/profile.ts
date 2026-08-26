@@ -18,37 +18,20 @@
  * usa 90). A profile matching only one category would hide both behaviours.
  */
 import type { BusinessProfile } from '../../types';
+import { DEMO_BUSINESS } from './demoBusiness';
 
 export const DEMO_PROFILE: BusinessProfile = {
+  // Spread rather than restated: this is the same fictional business as the
+  // onboarding demo, so the identity fields have one definition. Only the
+  // fields BusinessProfile adds beyond ObDraft are set here.
+  ...DEMO_BUSINESS,
   businessProfileId: 'bp-demo-1',
-  businessName: 'Sunset Cove Beach Resort',
+  imagePreview: null,
+  uniquenessScore: 82,
   categories: [
     'Accommodation & Staycation',
     'Coastal & Island',
     'Adventure & Nature',
     'Culinary & Gastronomy',
   ],
-  coreServices: ['Scuba Diving', 'Island Hopping', 'Snorkeling', 'Beachfront Villas'],
-  description:
-    'Sunset Cove Beach Resort sits on the quiet southern stretch of Moalboal, a short walk from ' +
-    'the sardine run that draws divers from across the world. We run a small beachfront property ' +
-    'of twelve villas, a dive shop staffed entirely by local guides, and a kitchen that sources ' +
-    'its fish and produce from the municipality every morning.',
-  uvp:
-    'The only Moalboal resort where every dive guide is a Moalboal native, house reef access is ' +
-    'thirty metres from the villa door, and the entire kitchen is sourced within the municipality ' +
-    'each morning rather than trucked in from Cebu City.',
-  imagePreview: null,
-  uniquenessScore: 82,
-  slogan: 'Rest, thirty metres from the sardine run.',
-  industry: 'Accommodation & Staycation',
-  vibes: ['Serene & Restorative', 'Eco-Conscious'],
-  website: 'https://sunsetcove.ph',
-  logo: null,
-  socials: {
-    instagram: '@sunsetcove.ph',
-    tiktok: '@sunsetcove',
-    facebook: 'SunsetCoveMoalboal',
-    naver: '',
-  },
 };
