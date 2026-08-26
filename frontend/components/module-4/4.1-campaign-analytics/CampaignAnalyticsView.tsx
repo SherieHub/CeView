@@ -21,6 +21,7 @@ import { RotateCcw } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import type { CampaignInput, CampaignHistoryEntry, PrescriptiveReport } from '../../../services/fixtures/campaign';
 import { computeMetrics, computePes } from './campaignMetrics';
+import type { Metrics } from './campaignTypes';
 import IngestionForm from './IngestionForm';
 import KpiCard from './KpiCard';
 import FlaggedMetricBanner from './FlaggedMetricBanner';
@@ -31,6 +32,19 @@ import EfficiencyTrendChart from './EfficiencyTrendChart';
 import CostTrendChart from './CostTrendChart';
 import AiActionPlan from './AiActionPlan';
 import PreviouslyPublished from './PreviouslyPublished';
+
+/**
+ * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value,
+ * inverseGood} per metric, not the KpiSlotProps bundle — the shell mounts 5
+ * instances, one per metric, deriving each one's props from `metrics` here.
+ */
+const KPI_CARD_SPECS: { label: string; key: keyof Metrics; inverseGood?: boolean }[] = [
+  { label: 'CTR', key: 'ctr' },
+  { label: 'CPC', key: 'cpc', inverseGood: true },
+  { label: 'ROAS', key: 'roas' },
+  { label: 'CR', key: 'convRate' },
+  { label: 'CAC', key: 'cac', inverseGood: true },
+];
 
 export default function CampaignAnalyticsView() {
   const [campaign, setCampaign] = useState<CampaignInput | null>(null);
@@ -83,12 +97,14 @@ export default function CampaignAnalyticsView() {
       </div>
 
       <FlaggedMetricBanner flagged={flagged} />
-      <KpiCard metrics={metrics} flagged={flagged} />
+      {KPI_CARD_SPECS.map((spec) => (
+        <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
+      ))}
       <PesGauge score={score} label={label} metrics={metrics} />
       <CustomerJourneyFunnel input={campaign} />
       <PesTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
-      <EfficiencyTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
-      <CostTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
+      <EfficiencyTrendChart window={windowSlice} />
+      <CostTrendChart window={windowSlice} />
       {report && <AiActionPlan report={report} />}
       <PreviouslyPublished />
     </div>
