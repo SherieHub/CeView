@@ -1,3 +1,4 @@
+
 /**
  * Onboarding draft state — the shared container every wizard step reads and
  * writes. Ports the prototype's `obDraft` object
@@ -47,35 +48,12 @@ export const EMPTY_OB_DRAFT: ObDraft = {
 };
 
 /**
- * Demo business — ports obPrefill() (ui-ux-prototype.html:2023–2035). Used by
- * the dev preview route and by tests that need steps 1–3 to already satisfy
- * stepValid() so later steps are reachable.
+ * Demo business. Kept under this name so existing call sites (App.tsx's preview
+ * route, OnboardingWizard.test.tsx) are unaffected; the data itself lives with
+ * every other fixture, in services/fixtures/demoBusiness.ts, so it can be
+ * deleted with them at deploy.
  */
-export const DEMO_OB_DRAFT: ObDraft = {
-  businessName: 'Sunset Cove Beach Resort',
-  industry: 'Accommodation & Staycation',
-  slogan: 'Rest, thirty metres from the sardine run.',
-  vibes: ['Serene & Restorative', 'Eco-Conscious'],
-  coreServices: ['Scuba Diving', 'Island Hopping', 'Snorkeling', 'Beachfront Villas'],
-  description:
-    'Sunset Cove Beach Resort sits on the quiet southern stretch of Moalboal, a short walk from ' +
-    'the sardine run that draws divers from across the world. We run a small beachfront property ' +
-    'of twelve villas, a dive shop staffed entirely by local guides, and a kitchen that sources ' +
-    'its fish and produce from the municipality every morning. Guests come for the reef and stay ' +
-    'for the pace: no crowds, no scheduled entertainment, just clear water and long evenings.',
-  uvp:
-    'The only Moalboal resort where every dive guide is a Moalboal native, house reef access is ' +
-    'thirty metres from the villa door, and the entire kitchen is sourced within the municipality ' +
-    'each morning rather than trucked in from Cebu City.',
-  socials: {
-    instagram: '@sunsetcove.ph',
-    tiktok: '@sunsetcove',
-    facebook: 'SunsetCoveMoalboal',
-    naver: '',
-  },
-  logo: null,
-  website: 'https://sunsetcove.ph',
-};
+export { DEMO_BUSINESS as DEMO_OB_DRAFT } from '../../../services/fixtures/demoBusiness';
 
 interface ObDraftValue {
   draft: ObDraft;

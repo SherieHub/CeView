@@ -1,49 +1,141 @@
 /**
- * CARD — Dashboard: Alert Feed & Category Filtering
- *   + Dashboard: Markets Reveal
- *   + Dashboard: States & Refresh Forecast
- * Depends on: Foundation — Shell & Routing, Foundation — Fixture Data Layer
+ * CARD — Foundation: Dashboard & Radar Shell
  * Screen doc: docs/module-2/screens/dashboard.md
  * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/03-module-2.md
  *
- * Route: /dashboard — replaces the legacy HomeView.tsx
+ * Route: /dashboard — replaces the legacy HomeView.tsx.
  *
- * TODO (Alert Feed & Category Filtering):
- * - Base layout (page head, alert feed) + AlertCard.tsx (replaces TrendAlertCard)
- * - Filter: notifications.filter(n => profile.categories.includes(n.category))
- *   (ui-ux-prototype.html:2376)
- * - Selecting an alert marks it read as a side effect of viewing (not a separate action)
+ * A master/detail alert command center: alerts scoped to the operator's own
+ * business categories, and selecting one reveals a market ranking computed for
+ * THAT alert's category. Purely compositional — all state lives in
+ * useDashboardState, all rendering in the slot components.
  *
- * TODO (Markets Reveal):
- * - Two-column layout on selection: alert feed (left) + markets reveal (right);
- *   deselecting collapses back to single-column
- * - marketsForCategory-equivalent re-ranking per selected alert's category
- * - Rank cards: rank number, market-potential bar, city + distance, direct/via-Manila +
- *   flight hours, weekly frequency, surge chip if any chart point is spiking
- * - Ranking-formula footer card
- *   (market_score = 0.40*demand_4w + 0.35*seasonality + 0.25*economic_viability)
- * - Clicking a rank card opens the Market Radar drawer (?market=<id>) for that market
- *
- * TODO (States & Refresh Forecast) — 6 states total:
- * - loading: 3 skeleton cards
- * - empty: "No notifications yet" (no forecast run yet)
- * - normal, zero matching alerts: "No surge alerts for your categories yet", names the
- *   categories, points at Settings to widen coverage
- * - ai-down: amber "AI Forecast Service Unavailable" banner, alerts still render from
- *   cache, refresh does not produce new predictions
- * - "Refresh forecast" button — disables + spinner label during the call, toast on completion
- *
- * DashboardView.test.tsx: category-filter predicate, re-ranking across categories, one
- * assertion per state.
+ * The two-column grid is reserved rather than toggled. The prototype swapped
+ * between a one- and two-column layout on selection, which resized every card
+ * and moved the one just clicked out from under the cursor.
  */
-export default function DashboardView() {
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Award, AlertTriangle } from 'lucide-react';
+import PageHead from '../../../layout/PageHead';
+import { useProfile } from '../../../services/profileContext';
+import { useDashboardState } from './useDashboardState';
+import type { DashMode } from './useDashboardState';
+import AlertFeed from './AlertFeed';
+import AiStatusBanner from './AiStatusBanner';
+import MarketsRevealPanel from './MarketsRevealPanel';
+import RefreshForecastButton from './RefreshForecastButton';
+import SignalSummary from './SignalSummary';
+import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
+
+interface DashboardViewProps {
+  /** Dev-preview only — pins the state machine to one mode. */
+  forceMode?: DashMode;
+}
+
+export default function DashboardView({ forceMode }: DashboardViewProps) {
+  const { profile } = useProfile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const state = useDashboardState({ forceMode });
+
+  // The radar drawer reads ?market=<id>, so it is linkable and the browser back
+  // button closes it. See 03-module-2.md's M2-F card.
+  function openMarket(marketId: string) {
+    setSearchParams({ market: marketId });
+  }
+
+  const degraded = state.mode === 'ai-down';
+
+  const subtitle =
+    state.mode === 'loading'
+      ? 'Loading your latest surge alerts…'
+      : state.mode === 'empty'
+        ? 'No forecast data yet — run your first analysis to start receiving alerts.'
+        : state.myAlerts.length === 0
+          ? 'No surge alerts match your business categories right now.'
+          : 'Select an alert to see the markets ranked for its category.';
+
+  // The radar is a right-hand overlay and the markets column is a right-hand
+  // column, so the drawer covered it completely at every desktop width — its
+  // rank cards were on screen but unclickable. The screen steps aside instead.
+  const radarOpen = searchParams.get('market') != null;
+
   return (
-    <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">
-      <h2 className="heading-lg">Dashboard</h2>
-      <p className="body-sm">
-        Not implemented yet — see CARD — Dashboard: Alert Feed &amp; Category Filtering in
-        03-module-2.md.
-      </p>
+    <div className="dash-screen" data-radar-open={radarOpen}>
+      <PageHead
+        title={`Good morning${profile.businessName ? `, ${profile.businessName}` : ''}`}
+        subtitle={subtitle}
+        actions={
+          <>
+            {profile.uniquenessScore != null ? (
+              /* A raised disc carrying the figure, overlapping the left end of
+                 an outlined capsule that names it. The score is the one number
+                 on this screen that describes the operator rather than the
+                 market, so it gets its own object rather than another chip in
+                 the row — and the disc is what makes it read as a score rather
+                 than a label with a number after it. */
+              <span className="score-badge">
+                <b className="score-badge-disc num">{profile.uniquenessScore}</b>
+                <span className="score-badge-body">
+                  <span className="score-badge-label">Uniqueness</span>
+                  <Award className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
+                </span>
+              </span>
+            ) : (
+              <span className="chip chip--attention">
+                <AlertTriangle aria-hidden="true" /> Demo profile — scores not computed
+              </span>
+            )}
+            <RefreshForecastButton
+              isRefreshing={state.isRefreshing}
+              degraded={degraded}
+              onRefresh={state.refresh}
+            />
+          </>
+        }
+      />
+
+      <AiStatusBanner visible={degraded} />
+
+      <SignalSummary
+        loading={state.mode === 'loading'}
+        degraded={degraded}
+        unreadCount={state.unreadCount}
+        surgeCount={state.surgeCount}
+        surgeMarkets={state.surgeMarkets}
+        topMarket={state.topMarket}
+        onOpenMarket={openMarket}
+      />
+
+      <div className="dash-grid">
+        <AlertFeed
+          mode={state.mode}
+          alerts={state.visibleAlerts}
+          totalForProfile={state.myAlerts.length}
+          categories={profile.categories}
+          selectedAlertId={state.selectedAlertId}
+          isRead={state.isRead}
+          onSelect={state.selectAlert}
+          filter={state.feedFilter}
+          onFilterChange={state.setFeedFilter}
+          unreadCount={state.unreadCount}
+          surgeCount={state.surgeCount}
+        />
+
+        {/* Hidden in the states where there is nothing to rank against. */}
+        {state.mode !== 'loading' && state.mode !== 'empty' && state.myAlerts.length > 0 && (
+          <MarketsRevealPanel
+            selectedAlert={state.selectedAlert}
+            markets={state.rankedMarkets}
+            onOpenMarket={openMarket}
+          />
+        )}
+      </div>
+
+      {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
+          ?market= itself, so mounting it unconditionally is correct: with no
+          market in the URL it renders closed. */}
+      <MarketRadarDrawer onTargetMarket={() => navigate('/content')} />
     </div>
   );
 }

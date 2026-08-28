@@ -60,10 +60,14 @@
   /* ADAPTATION: the skill defines --color-text-inverse for headings on dark
      but no muted body tone for dark backgrounds. Flagged for a
      tourism-app-branding update.
-     Brightened from #A9BCCB when the chrome gradient moved to lighter teal —
-     the old value fell to 2.4:1 there. At #D7EAEF it reaches 3.8:1, which
-     clears AA for large text but not for the 15px rail subtitles. See the
-     handoff note. */
+
+     Reaches 5.15:1 on --color-chrome-light now that the ramp is darkened, so
+     it clears AA for the 15px rail subtitles it is actually used on.
+
+     USAGE RULE — muted inverse text NEVER sits on a --chrome-raised surface.
+     On the composite it is only 3.70:1. Anything inside an active/current row
+     (.sb-item[aria-current], .ob-step[data-state='current']) takes
+     --color-text-inverse instead. */
   --color-text-inverse-muted: #D7EAEF;
 
   /* ---- Functional / non-brand ----
@@ -75,6 +79,25 @@
   --color-success: #2FA37A;       /* was #0f7a4e — pulled toward mint's hue */
   --color-success-bg: #E4F6EF;
 
+  /* Text tones for the state washes above. The fill colours were tuned to sit
+     beside mint/coral as *fills*, and neither is legible on its own wash:
+     --color-critical on --color-critical-bg is 3.83:1 and --color-success on
+     --color-success-bg is 2.82:1. These darker pairs clear AA (5.44:1 and
+     5.16:1) without changing either wash. Use the -text tone for the label and
+     glyph inside a chip or banner; keep the base tone for borders and fills. */
+  --color-critical-text: #B33030;
+  --color-success-text: #1B7355;
+
+  /* Readable coral. --color-coral-cta is a fill tone: on white it is 2.28:1, so
+     it cannot carry text or an outline. This darkened coral is 5.37:1 and keeps
+     the same hue family. Use it for coral text, glyphs and borders; keep the
+     base tone for fills. */
+  --color-coral-text: #B34A18;
+
+  /* Soft warn fill. --color-sand at full strength works as a small chip but is
+     too loud across a full-width banner, where it reads as an error. */
+  --color-sand-wash: #FFF1E8;
+
   /* Platform brand marks — these are the platforms' own colours and are never
      rebranded. Values per ui-ux-prototype.html:1086-1091 (PLATFORM_META). */
   --color-ig: #C13584;
@@ -85,15 +108,32 @@
   /* ---- Chrome surface stops (§5 "Surface & gradient system") ----
      Rails and nav run a teal ramp rather than navy, keeping the chrome in the
      same family as the cyan/mint accents.
-     --color-chrome-light is the ceiling for this surface: white text on it is
-     4.7:1, and anything lighter drops below AA for the rail's labels. */
-  --color-chrome-light: #157F94;
-  --color-chrome-deep: #0B5163;
+
+     --color-chrome-light is the CEILING for this surface, and it is set by the
+     active-row case, not the bare gradient. An active row paints
+     --chrome-raised (15% white) over this stop, which lightens it: at the old
+     #157F94 that composite was #3892A4, where even pure white managed only
+     3.61:1 — a fail on the single highest-traffic label in the app. Darkening
+     the ramp to #116879 puts the composite at #357F8D and white at 4.59:1.
+
+     Measured at these values (see tests/integration/chrome-contrast.test.ts):
+       white   on light stop ............ 6.40:1
+       white   on light stop + raised ... 4.59:1
+       #D7EAEF on light stop ............ 5.15:1
+       #5FD6A6 on light stop ............ 3.55:1  (3:1 floor, non-text)
+     Do not lighten either stop without re-running that test. */
+  --color-chrome-light: #116879;
+  --color-chrome-deep: #08414F;
 
   /* ---- Geometry (§5) ---- */
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-pill: 24px;
+  /* Shared height for the header row's small controls — the compact outline
+     button and the uniqueness badge's capsule. */
+  --btn-sm-h: 32px;
+  /* The badge's disc overhangs its capsule, so it is deliberately taller. */
+  --score-disc: 40px;
   --radius-full: 999px;
 
   --shadow-card: 0 4px 20px rgba(27, 58, 92, 0.08);
@@ -121,7 +161,19 @@
   --spacing-12: 48px;
   --spacing-16: 64px;
 
+  /* Back to §5's stated 248px. The 280px this used to carry was sized around
+     a 40px monogram and an 18px wordmark; both have since come down (34px and
+     15px), so the identity block no longer needs the extra track — and the
+     32px goes to the dashboard's two-column grid, which wants it more. */
   --sidebar-w: 248px;
+  --sidebar-w-collapsed: 76px;
+  --sb-edge: 9px;
+  --sb-notch: 22px;
+  /* Shared by the topbar and the sidebar's header block so the wordmark and
+     the topbar controls sit on one line across the whole shell. */
+  --topbar-h: 60px;
+  /* See the ADAPTATION note on .app-main. */
+  --content-max: 1440px;
   --ease-brand: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* ---- Fonts (§2) ---- */
@@ -271,9 +323,15 @@
   }
 
   /* ADAPTATION: §5's alternating white/mint-pale section rhythm is a
-     landing-page pattern. The rule is defined for future marketing surfaces;
-     the authenticated dashboard shell does not use <section> for layout. */
-  section {
+     landing-page pattern, kept for future marketing surfaces.
+
+     Scoped to .marketing rather than styling bare <section> globally. The
+     original rule assumed the app shell "does not use <section> for layout",
+     which stopped being true the moment a screen reached for the correct
+     landmark element — it silently added 80px of padding inside the dashboard
+     feed and knocked the two columns out of alignment. An element selector
+     with a page-specific value has no business in the global base layer. */
+  .marketing section {
     padding: var(--space-xl) var(--space-md);
   }
 
@@ -574,6 +632,25 @@
   .btn-outline--inverse:hover:not(:disabled) {
     color: var(--color-cyan-accent);
   }
+
+  /* Compact size for a secondary action sitting in a header rather than
+     carrying a screen. Type stays at --text-sm, above the 14px floor, so this
+     shrinks the button and not its legibility. */
+  .btn-outline--sm {
+    font-size: 0.875rem;
+    /* Height is fixed rather than left to padding + line-height, so the
+       uniqueness badge beside it can match on the same token. */
+    height: var(--btn-sm-h);
+    padding: 0 18px;
+    border-width: 1.25px;
+  }
+  /* The busy state swaps a 14px icon for the 16px spinner, which grew the
+     button by 2px mid-refresh and nudged the row. Match the icon instead. */
+  .btn-outline--sm .spinner {
+    width: 14px;
+    height: 14px;
+    border-width: 1.5px;
+  }
 }
 
 /* ============================================================
@@ -703,7 +780,11 @@
     height: 38px;
     border-radius: var(--radius-sm);
     background: var(--color-mint-pale);
-    color: var(--color-teal-accent);
+    /* --color-teal-accent on --color-mint-pale is 2.06:1, under the 3:1 floor
+       for non-text UI (WCAG 1.4.11) — the glyph IS the platform affordance
+       here, so it has to clear it. --color-cyan-deep is 4.57:1 on the same
+       fill and keeps the cool family. */
+    color: var(--color-cyan-deep);
   }
   .conn-ico svg {
     width: 18px;
@@ -777,13 +858,17 @@
     /* Rail is pinned — it stays put while the step panel scrolls. `sticky`
        rather than `fixed` so it keeps its grid track and the layout needs no
        compensating offset; `align-self: start` stops the grid stretching the
-       item, which would defeat sticky. */
-    .ob-rail {
+       item, which would defeat sticky.
+
+       Shared with the app sidebar: identical requirement, and a shared
+       selector cannot drift the way two copies would. */
+    .ob-rail,
+    .sb-rail {
       position: sticky;
       top: 0;
       align-self: start;
       height: 100dvh;
-      /* The rail's content is a fixed five-item list, so it only overflows on
+      /* The rail's content is a short fixed list, so it only overflows on
          short viewports. Keep it scrollable there so the note stays reachable,
          but hide the scrollbar chrome: a permanent gutter running down a list
          that almost fits reads as a defect rather than an affordance. */
@@ -791,7 +876,8 @@
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
-    .ob-rail::-webkit-scrollbar {
+    .ob-rail::-webkit-scrollbar,
+    .sb-rail::-webkit-scrollbar {
       display: none;
     }
     /* Side margins scale with the viewport instead of sitting at a flat 80px.
@@ -803,7 +889,11 @@
     }
   }
 
-  .ob-rail {
+  /* THE chrome surface. Shared verbatim by the onboarding rail and the app
+     sidebar — one definition means the two are identical by construction, not
+     by anyone remembering to keep them in step. */
+  .ob-rail,
+  .sb-rail {
     padding: var(--space-lg) var(--space-md);
     /* Dot grid layered over the chrome gradient. 8% white at a 1.2px radius on
        a 20px pitch — enough to read as texture up close without becoming a
@@ -815,16 +905,23 @@
     background-position: 0 0, 0 0;
     color: var(--color-text-inverse);
   }
-  .ob-rail .eyebrow {
+  .ob-rail .eyebrow,
+  .sb-rail .eyebrow {
     color: var(--color-text-inverse-muted);
   }
-  .ob-rail-mark {
+
+  /* Brand mark. Shared so the identity block is pixel-identical wherever it
+     appears — an operator crossing from onboarding into the app should not see
+     the wordmark move or change weight. */
+  .ob-rail-mark,
+  .sb-head {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: var(--space-md);
   }
-  .ob-rail-mark .g {
+  .ob-rail-mark .g,
+  .sb-head .g {
     width: 40px;
     height: 40px;
     flex: none;
@@ -837,10 +934,12 @@
     font-weight: 700;
     font-size: 1rem;
   }
-  .ob-rail-mark b {
+  .ob-rail-mark b,
+  .sb-head b {
     color: var(--color-text-inverse);
   }
-  .ob-rail-mark .text-meta {
+  .ob-rail-mark .text-meta,
+  .sb-head .text-meta {
     color: var(--color-text-inverse-muted);
   }
 
@@ -908,9 +1007,16 @@
     color: var(--color-text-inverse-muted);
     font-weight: 500;
   }
+  /* The current row paints --chrome-raised behind itself, where muted inverse
+     drops to 3.70:1. Per the usage rule on --color-text-inverse-muted, text on
+     a raised surface goes full white. */
+  .ob-step[data-state='current'] span {
+    color: var(--color-text-inverse);
+  }
 
-  /* Supporting note at the foot of the rail — raised tint, not a light card,
-     so it stays part of the dark chrome. */
+  /* Supporting block at the foot of a rail — raised tint, not a light card,
+     so it stays part of the dark chrome. Shared: "raised block on chrome" is
+     one treatment, whether it holds a note or the identity footer. */
   .ob-note {
     display: flex;
     gap: var(--space-xs);
@@ -1173,4 +1279,1947 @@
       width: 13px;
       height: 13px;
     }
+}
+
+/* ============================================================
+   SHARED PRIMITIVES — chip, bar, skeleton, spinner, banner,
+   segmented control.
+
+   Transcribed in spirit from ui-ux-prototype.html's .chip/.bar/.skel/.banner,
+   restyled onto the branding skill's palette. Tone modifiers are named for
+   the ROLE they play (--accent / --attention / --critical / --success /
+   --inverse), never for the colour, so the palette can move without touching
+   call sites.
+
+   Deliberately NOT folded into .badge: that is a numeric count pill
+   (min-width, --radius-sm, sand fill). A chip is a fully-rounded glyph+label.
+   Overloading .badge would force --gold/--navy/--red modifiers and drag the
+   legacy vocabulary back in.
+   ============================================================ */
+@layer components {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    /* Sits beside 14px body copy; at the same size a chip reads as body text
+       in a box rather than as metadata. */
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    background: var(--color-mint-pale);
+    color: var(--color-navy-dark);
+  }
+  /* --color-teal-accent on --color-mint-pale is 2.06:1, under the 3:1 floor
+     for non-text UI. Same fix as .conn-ico. */
+  .chip svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    color: var(--color-cyan-deep);
+  }
+
+  .chip--accent {
+    background: var(--color-mint-primary);
+  }
+  /* Outlined pill: white fill, light-coral edge, coral label.
+     The border is --color-coral-cta, the light orange. The label is
+     --color-coral-text, a deeper shade of the same hue, because the light tone
+     is 2.28:1 on white and unreadable at 13px. At this size the two are hard to
+     tell apart, and the outline is what carries the colour. Padding is reduced
+     by the border width so the chip stays level with its filled siblings. */
+  .chip--attention {
+    background: var(--color-white);
+    /* A whole pixel, not 1.5: browsers snap border-width to device pixels, so
+       a fractional value renders as 2px on a 1x display and 1px on a 3x one —
+       the same chip would be a different weight per monitor. */
+    border: 1px solid var(--color-coral-cta);
+    /* Padding absorbs the border so the box matches a plain .chip's 5px 12px
+       exactly. */
+    padding: 4px 11px;
+    color: var(--color-coral-text);
+  }
+  .chip--critical {
+    background: var(--color-critical-bg);
+    color: var(--color-critical-text);
+  }
+  .chip--success {
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+  }
+  /* For chips sitting ON chrome (rail, dark surfaces). */
+  .chip--inverse {
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+  }
+
+  .chip--accent svg {
+    color: var(--color-navy-dark);
+  }
+  .chip--attention svg {
+    color: var(--color-coral-text);
+  }
+  .chip--critical svg {
+    color: var(--color-critical-text);
+  }
+  .chip--success svg {
+    color: var(--color-success-text);
+  }
+  .chip--inverse svg {
+    color: var(--color-mint-primary);
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  /* Progress / score bar. §5 lists --gradient-accent for progress fills; the
+     flat teal is the resting tone and --bar--lead promotes the leader. */
+  .bar {
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    overflow: hidden;
+  }
+  .bar > i {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--color-teal-accent);
+    transition: width 0.6s var(--ease-brand);
+  }
+  /* Rank 1 — mirrors .ob-dot's current/done treatment so "leading" reads the
+     same way everywhere in the app. */
+  .bar--lead > i {
+    background: var(--gradient-accent);
+  }
+
+  /* Loading placeholders. */
+  @keyframes skel-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.45;
+    }
+  }
+  .skel {
+    background: var(--color-mint-pale);
+    border-radius: var(--radius-md);
+    animation: skel-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .spinner {
+    display: inline-block;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-gray-light);
+    border-top-color: var(--color-navy-primary);
+    border-radius: var(--radius-full);
+    animation: spin 0.7s linear infinite;
+  }
+  /* On a filled button the track has to read against the button, not the page. */
+  .spinner--inverse {
+    border-color: rgba(255, 255, 255, 0.35);
+    border-top-color: var(--color-white);
+  }
+
+  /* Full-width status message. The left border carries the severity so the
+     fills can stay soft enough to read a paragraph on. */
+  .banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px var(--space-sm);
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  .banner svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+  }
+  .banner b {
+    font-weight: 700;
+  }
+  .banner--warn {
+    background: var(--color-sand-wash);
+    border-left-color: var(--color-coral-cta);
+    color: var(--color-navy-dark);
+  }
+  .banner--critical {
+    background: var(--color-critical-bg);
+    border-left-color: var(--color-critical);
+    color: var(--color-critical-text);
+  }
+  .banner--info {
+    background: var(--color-mint-pale);
+    border-left-color: var(--color-teal-accent);
+    color: var(--color-navy-dark);
+  }
+
+  /* Segmented control. Selection is expressed with aria-pressed so the
+     control is announced correctly and the CSS has nothing to keep in sync.
+     Also serves the radar drawer's 4WK/12WK toggle. */
+  .seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    /* The outer radius is the inner one plus the padding, so the container's
+       curve stays concentric with the selected segment's instead of the two
+       reading as different shapes. */
+    border-radius: calc(var(--radius-sm) + 4px);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+  .seg button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-body);
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .seg button:hover {
+    color: var(--color-navy-primary);
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+
+  /* The prototype ships no reduced-motion handling at all. Everything above
+     that moves is decorative, so it can all stop; the spinner only slows,
+     since a frozen spinner reads as a hung request. */
+  @media (prefers-reduced-motion: reduce) {
+    .skel {
+      animation: none;
+    }
+    .spinner {
+      animation-duration: 2s;
+    }
+    .bar > i {
+      transition: none;
+    }
+    .seg button {
+      transition: none;
+    }
+  }
+}
+
+/* ============================================================
+   APP SHELL — sidebar rail, topbar, canvas.
+
+   The sidebar runs the SAME chrome surface as the onboarding rail (see the
+   shared `.ob-rail, .sb-rail` rules above). This is a restoration, not an
+   invention: the prototype's own sidebar was dark chrome with a 3px active
+   left bar and a monogram (ui-ux-prototype.html:426-465). The React port
+   regressed it to flat white on the legacy cream/gold tokens.
+
+   What is NOT shared with the wizard: .ob-step/.ob-dot encode PROGRESS
+   (data-state done/current/pending, numbered dots, deliberately not
+   clickable). Sidebar rows are focusable navigation with hover, aria-current,
+   badges and a disclosure. One selector carrying both would mean a wizard
+   tweak silently changing navigation. The active-row DECLARATIONS are
+   duplicated below on purpose — the shared source of truth is the branding
+   skill's "active rows on chrome" rule, not a CSS class.
+   ============================================================ */
+@layer components {
+  .app-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+  @media (min-width: 768px) {
+    .app-wrap {
+      /* minmax(0, 1fr), never a bare 1fr: a bare track refuses to shrink below
+         its content, so one wide table or chart pushes the whole page into a
+         horizontal scroll. */
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+      transition: grid-template-columns 0.22s var(--ease-brand);
+    }
+    .app-wrap[data-collapsed='true'] {
+      grid-template-columns: var(--sidebar-w-collapsed) minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+    .app-wrap {
+      transition: none;
+    }
+  }
+
+  .app-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Chrome meets canvas — never two dark surfaces side by side. Same canvas
+       the wizard's step panel uses. */
+    background: var(--gradient-canvas);
+  }
+
+  .app-main {
+    flex: 1;
+    padding: var(--space-md);
+  }
+  @media (min-width: 1024px) {
+    .app-main {
+      padding: var(--space-lg);
+    }
+  }
+  /* ADAPTATION: §5 caps the content stack at 880px, but that rule is framed
+     around form and prose measure ("a form or article running the full width
+     of a 1900px display is unusable"). A two-column master/detail command
+     center is neither, and at 880px the markets rail has nowhere to live.
+     Raised for a tourism-app-branding update. */
+  .app-main > * {
+    max-width: var(--content-max);
+    margin-inline: auto;
+  }
+
+  /* The wizard rail can afford a large wordmark; the app rail is carrying nine
+     destinations underneath it and cannot. Overrides only the type — the
+     monogram, colours and layout still come from the shared .ob-rail-mark
+     rules, so the two marks stay recognisably the same object. */
+  /* The rail's own top padding would drop the wordmark ~18px below the topbar
+     controls opposite it. Zeroing it and giving the header the topbar's height
+     puts both on the same optical line, and keeps them there if that height
+     ever changes. */
+  .sb-rail {
+    padding-top: 0;
+    /* Rounds the rail's outer edge, and the inset edge strip follows it — an
+       inset shadow is clipped by border-radius — so the strip gets curved caps
+       top and bottom instead of running square into the viewport edges. */
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+  .sb-head {
+    height: var(--topbar-h);
+    align-items: center;
+    /* A clear break before the first section label. At 8px the wordmark and
+       "INTELLIGENCE" read as one stacked block, so the mark looked like a
+       heading for the nav rather than the product's identity above it. */
+    margin-bottom: var(--space-md);
+  }
+  .sb-head .g {
+    width: 34px;
+    height: 34px;
+    font-size: 0.8125rem;
+  }
+  .sb-head b {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+  .sb-rail {
+    display: flex;
+    flex-direction: column;
+    /* Accent strip down the rail's right edge. An inset shadow rather than a
+       border or a pseudo-element: it costs no layout width (so the active pill
+       still reaches the edge), and it paints against the border box, so it
+       cannot scroll away with the nav's content the way an absolutely
+       positioned child would.
+       Same mint as the active pill, so the pill reads as connected to the
+       strip rather than as a separate block beside it. */
+    box-shadow: inset calc(var(--sb-edge) * -1) 0 0 var(--color-mint-primary);
+  }
+
+  .sb-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-inverse-muted);
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-toggle:hover {
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+  }
+
+  /* ---- Collapsed: icons only -------------------------------------------
+     Labels are hidden with the same clip technique as .sr rather than
+     display:none, so the nav still announces identically to a screen reader.
+     Nothing here applies below 768px, where the rail is a slide-over and
+     always shows its full self. */
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-rail {
+      /* Tighter than the expanded rail so the pill has more width to fill. */
+      padding-left: 12px;
+      padding-right: 12px;
+      overflow-x: hidden;
+    }
+    /* Roomier rows, so the pill is not gripping the glyph. Applied to every
+       item, not just the active one, so switching route cannot change a row's
+       height. */
+    .app-wrap[data-collapsed='true'] .sb-item {
+      padding-top: 13px;
+      padding-bottom: 13px;
+    }
+    .app-wrap[data-collapsed='true'] .sb-nav {
+      gap: 6px;
+    }
+    .app-wrap[data-collapsed='true'] .sb-label,
+    .app-wrap[data-collapsed='true'] .sb-head-text,
+    .app-wrap[data-collapsed='true'] .sb-sec {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* Collapsed, the toggle takes the monogram's place rather than stacking
+       under it. Two brand marks in a 76px column — one of them purely
+       decorative — cost a row and left the only interactive control in the
+       header pushed below the fold of the eye. */
+    .app-wrap[data-collapsed='true'] .sb-head {
+      justify-content: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-head .g {
+      display: none;
+    }
+    .app-wrap[data-collapsed='true'] .sb-toggle {
+      margin-left: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-item {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    /* The pill still runs out to the edge strip when collapsed — the join is
+       the whole point of the treatment, and dropping it left the active glyph
+       floating as an unrelated blob beside the strip. Only the left cap and the
+       bleed distance change, because the rail's padding is tighter here. */
+    .app-wrap[data-collapsed='true'] .sb-item:hover,
+    .app-wrap[data-collapsed='true'] .sb-item[aria-current='page'] {
+      width: calc(100% + 12px);
+      /* Matches the bleed exactly. Without it the glyph centres inside the
+         widened pill instead of the row, so the active icon sat off-axis from
+         every other icon in the rail. */
+      padding-right: 12px;
+      border-radius: var(--radius-md) 0 0 var(--radius-md);
+      min-width: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-badge {
+      position: absolute;
+      top: 2px;
+      right: 8px;
+      min-width: 16px;
+      padding: 0 4px;
+      font-size: 0.625rem;
+      text-align: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-nav li {
+      position: relative;
+    }
+    .app-wrap[data-collapsed='true'] .sb-foot {
+      align-items: center;
+    }
+    .app-wrap[data-collapsed='true'] .sb-signout {
+      align-self: center;
+      padding: 6px;
+      width: 32px;
+      min-width: 0;
+    }
+  }
+  /* The power glyph only stands in for the label once it is hidden. */
+  .sb-signout-short {
+    display: none;
+  }
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-signout-short {
+      display: inline;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Below the grid breakpoint the rail leaves the flow entirely and becomes a
+     slide-over. Left as a stacked grid row it would put a full screenful of
+     navigation above every page. */
+  .sb-veil {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .sb-rail {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 30;
+      width: min(300px, 84vw);
+      transform: translateX(-100%);
+      transition: transform 0.22s var(--ease-brand);
+      overflow-y: auto;
+    }
+    .app-wrap[data-sidebar-open='true'] .sb-rail {
+      transform: translateX(0);
+      /* Re-states the edge strip: a later box-shadow replaces the earlier one
+         wholesale rather than adding to it. */
+      box-shadow: var(--shadow-overlay), inset calc(var(--sb-edge) * -1) 0 0 var(--color-mint-primary);
+    }
+    .app-wrap[data-sidebar-open='true'] .sb-veil {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 29;
+      background: rgba(11, 65, 79, 0.45);
+      cursor: pointer;
+    }
+  }
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    .sb-rail {
+      transition: none;
+    }
+  }
+
+  .sb-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sb-sec {
+    margin-top: 14px;
+    margin-bottom: 2px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+  }
+  .sb-sec:first-child {
+    margin-top: 0;
+  }
+
+  .sb-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    border-left: 3px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    color: var(--color-text-inverse-muted);
+    cursor: pointer;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-item svg {
+    flex: none;
+  }
+  /* ---- Row fill --------------------------------------------------------
+     Hover and active differ only in colour, so the fill is a single custom
+     property and every rule below reads it. That keeps one definition of the
+     bleed geometry and one of the notch arcs, instead of four near-identical
+     copies drifting apart.
+     --color-mint-primary is the palette's accent; --color-navy-dark on it is
+     7.45:1, well clear of AA, and it leaves the chrome gradient and dot grid
+     untouched around it. */
+  .sb-item {
+    --sb-fill: transparent;
+  }
+  .sb-item:hover {
+    --sb-fill: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-inverse);
+  }
+  .sb-item[aria-current='page'] {
+    --sb-fill: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+    font-weight: 600;
+  }
+  .sb-item[aria-current='page']:hover {
+    --sb-fill: var(--color-mint-light);
+    color: var(--color-navy-dark);
+  }
+
+  /* Any filled row runs out to the rail's right edge, so it reads as attached
+     to the content it opens rather than as one more entry in a list. */
+  .sb-item:hover,
+  .sb-item[aria-current='page'] {
+    position: relative;
+    background: var(--sb-fill);
+    border-left-color: transparent;
+    /* Grows through the rail's own padding. A negative margin cannot do this:
+       .sb-item is width:100%, so its used width stays the container's and the
+       margin only pulls what follows. */
+    width: calc(100% + var(--space-md));
+    padding-right: calc(var(--space-md) + 12px);
+    /* Square on the right so it merges flush into the edge strip; the concave
+       corners that carry it there are drawn by the pseudo-elements below.
+       --radius-md rather than --radius-pill on the left: at 24px on a 43px-tall
+       row the cap was very nearly a semicircle, which read as a lozenge stuck
+       to the rail rather than a panel growing out of it. */
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+
+  /* The concave corners joining a filled row to the edge strip.
+     Each is a small square pinned to the rail's edge, immediately above and
+     below the row, painted with a radial-gradient whose inner stop is
+     TRANSPARENT rather than a background colour. That is what makes this work
+     over a gradient with a dot grid: the cut-out is genuinely see-through, so
+     the rail paints through it, instead of needing a flat patch that would
+     match the surface in only one place.
+     The fill hugs the right and inner edges and the arc sweeps away from the
+     corner, so the strip appears to flare outwards into the row.
+
+     The stops are offset by half a pixel either side of the radius rather than
+     meeting at it: a zero-width transition gives the rasteriser nothing to
+     blend across and the arc renders stair-stepped. */
+  .sb-item:hover::before,
+  .sb-item:hover::after,
+  .sb-item[aria-current='page']::before,
+  .sb-item[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    width: var(--sb-notch);
+    height: var(--sb-notch);
+    pointer-events: none;
+  }
+  .sb-item:hover::before,
+  .sb-item[aria-current='page']::before {
+    bottom: 100%;
+    background: radial-gradient(
+      circle at top left,
+      transparent calc(var(--sb-notch) - 0.5px),
+      var(--sb-fill) calc(var(--sb-notch) + 0.5px)
+    );
+  }
+  .sb-item:hover::after,
+  .sb-item[aria-current='page']::after {
+    top: 100%;
+    background: radial-gradient(
+      circle at bottom left,
+      transparent calc(var(--sb-notch) - 0.5px),
+      var(--sb-fill) calc(var(--sb-notch) + 0.5px)
+    );
+  }
+
+  .sb-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--chrome-raised);
+    color: var(--color-text-inverse);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+  /* The badge now sits on a light mint fill, so it inverts to stay readable. */
+  .sb-item[aria-current='page'] .sb-badge {
+    background: var(--color-navy-dark);
+    color: var(--color-text-inverse);
+  }
+
+  /* Identity footer — deliberately NOT the raised block .ob-note uses. A card
+     and a bordered button cost ~40px of height between them, which the nav
+     needs more than the sign-out control does. A hairline rule is enough
+     separation on chrome. */
+  .sb-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: var(--space-sm);
+    /* --space-sm, not --space-xs: at 8px the identity line was crowding the
+       rule above it, which read as the divider belonging to the text rather
+       than separating it from the nav. */
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--chrome-line);
+  }
+  .sb-foot b {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-inverse);
+    /* Long business names must truncate rather than force the rail wider. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A real button, but not .btn-outline's 16px/30px — at that size it was the
+     heaviest element in the rail and cost the nav a row. Pill and 1.5px border
+     match .btn-outline so it still reads as the same family, scaled to the
+     rail's own 13px type. */
+  .sb-signout {
+    /* Fills the rail's content width rather than hugging its label — a short
+       pill floating in a wide footer left an obvious gap to its right, and the
+       footer has no other content to balance it against. */
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: var(--space-xs);
+    padding: 10px 16px;
+    border: 1.5px solid var(--chrome-line);
+    border-radius: var(--radius-pill);
+    background-color: transparent;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-text-inverse);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+  }
+  .sb-signout:hover {
+    border-color: var(--color-mint-primary);
+    background-color: var(--chrome-raised);
+  }
+
+  /* Topbar — a utility bar, not a title bar. Each screen owns its own <h1>
+     via layout/PageHead.tsx; stacking a second heading here cost ~140px above
+     the fold to say the same thing twice.
+     Stays light, and opaque, so scrolled content passes cleanly behind it. */
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    height: var(--topbar-h);
+    padding: 0 var(--space-md);
+    /* Solid, not a frosted backdrop: content scrolling underneath stayed
+       faintly legible through the blur. An opaque fill hides it outright, and
+       the hairline below carries the edge. */
+    background: var(--color-white);
+    /* A hairline, not --color-gray-light: at 1px across the full width a solid
+       border reads as a hard rule against the soft canvas. A low-opacity navy
+       tint sits in the gradient rather than on top of it. */
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  @media (min-width: 1024px) {
+    .app-topbar {
+      padding: 0 var(--space-lg);
+    }
+  }
+
+  /* Screen heading + its actions on one baseline (layout/PageHead.tsx). */
+  .page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .page-head-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+}
+
+/* ============================================================
+   DASHBOARD — /dashboard, Module 2.1.
+   ============================================================ */
+@layer components {
+  /* The left column's row carries the filter pills and the right column's does
+     not, so without a shared floor the two headings sit at different heights.
+     44px is the pill control's own height — the taller of the two. */
+  /* Uniqueness score badge — a raised disc holding the figure, overlapping
+     the left end of an outlined capsule that names it. The disc is the point:
+     it lifts the one operator-facing number out of a header row that is
+     otherwise all market data.
+
+     The disc sits outside the capsule's box (absolute, and the wrapper carries
+     its overhang as padding), so the capsule can keep a plain pill radius
+     instead of being notched around it. */
+  .score-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    /* Half the disc — the other half overlaps the capsule. */
+    padding-left: calc(var(--score-disc) / 2);
+    /* The disc is taller than the capsule and is positioned out of flow, so
+       without this the badge would under-report its own height and the disc
+       would overlap whatever the row sits against. */
+    min-height: var(--score-disc);
+  }
+  .score-badge-disc {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    top: 50%;
+    translate: 0 -50%;
+    display: grid;
+    place-items: center;
+    width: var(--score-disc);
+    height: var(--score-disc);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card-hover);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    /* Not --color-coral-cta: that is 2.28:1 on white and this is the figure
+       the whole object exists to show. The text tone reaches 5.42. */
+    color: var(--color-coral-text);
+  }
+  /* One element, so the outline and the wash are a single unbroken shape.
+     Splitting the capsule either side of the glyph left a seam where the two
+     halves' borders met. Its left cap sits behind the disc. */
+  .score-badge-body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Matches the compact outline button it sits beside, on the same token. */
+    height: var(--btn-sm-h);
+    /* Left padding clears the overlapping half of the disc. */
+    padding: 0 14px 0 calc(var(--score-disc) / 2 + 8px);
+    border: 1.25px solid var(--color-sand);
+    border-radius: var(--radius-pill);
+    background: var(--color-sand-wash);
+  }
+  /* Closes the capsule opposite the disc — the same pairing the reference uses. */
+  .score-badge-glyph {
+    flex: none;
+    color: var(--color-coral-text);
+  }
+  /* The capsule's only line now, so it carries the object on its own and is
+     sized up from eyebrow scale accordingly. --color-coral-text on the wash is
+     4.94:1, clearing AA at this size. */
+  .score-badge-label {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--color-coral-text);
+  }
+
+  .feed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    min-height: 44px;
+    /* Keeps the filter pills off the first card below them. */
+    margin-bottom: var(--space-md);
+  }
+
+  /* Heading and category chip are stacked deliberately here rather than left
+     to wrap. The longest category ("Accommodation & Staycation") cannot share
+     a line with the heading in the 420px markets column, and letting the flex
+     wrap decide means short categories sit inline while long ones drop — the
+     hairline would appear and vanish with the selected alert. flex-basis:100%
+     pins the two rows, so the rule is always there.
+
+     margin-left keeps the chip on the right, which space-between cannot do
+     once the chip is alone on its row (it parks it left). */
+  .dash-markets .feed-head {
+    row-gap: 16px;
+  }
+  .dash-markets .feed-head h2 {
+    flex: 1 0 100%;
+    padding-bottom: 16px;
+    /* The stylesheet's standard hairline — same value as the card and drawer
+       dividers, not a new one. */
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .dash-markets .feed-head .chip {
+    margin-left: auto;
+  }
+
+  /* Signal summary strip.
+     The glyph sits in a gradient block overlapping the card's top-left corner,
+     with the label and figure right-aligned opposite it. The row carries the
+     overhang as padding rather than the tiles carrying a margin, so the cards
+     still align on a single top edge. */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    /* Clears the icon block's overhang. */
+    padding-top: 20px;
+    margin-bottom: 40px;
+  }
+  @media (min-width: 720px) {
+    .stat-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .stat-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    text-align: left;
+    /* Queried below. Has to be the tile and not the row: opening the radar
+       drawer narrows these tiles without touching the viewport, so a media
+       query cannot see it. Layout containment does not clip overflow, so the
+       glyph still hangs off the top edge. */
+    container-type: inline-size;
+  }
+
+  /* One gradient for all three. Per-metric colours read as a status legend —
+     as though blue, cyan and green each meant something — when the tiles are
+     peers and the figures below them carry the meaning. Uniform blocks let the
+     numbers do the differentiating. */
+  .stat-icon {
+    position: absolute;
+    top: -20px;
+    left: var(--space-md);
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(145deg, var(--color-cyan-deep) 0%, var(--color-cyan-accent) 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 6px 16px rgba(27, 58, 92, 0.18);
+  }
+
+  /* Right-aligned so the label and figure clear the overlapping glyph without
+     needing a left indent that would shift with the icon's size. */
+  .stat-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    padding: var(--space-sm) var(--space-md) 14px;
+  }
+  .stat-label {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-body);
+  }
+  .stat-value {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--color-text-heading);
+    /* Long market names must not blow out the tile. */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stat-foot {
+    padding: 12px var(--space-md);
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--color-text-body);
+  }
+
+  /* Below this the right-aligned head can no longer pass to the right of the
+     overlapping glyph — the label ran underneath it ("Unread alerts" rendering
+     as "read alerts") and the figure collided with it. 52px glyph at a 24px
+     inset plus the longest label needs ~215px; 260 leaves room to spare.
+     Clear it vertically instead, and left-align, since there is no longer a
+     wide empty gutter for the text to sit opposite. */
+  @container (max-width: 260px) {
+    .stat-head {
+      align-items: flex-start;
+      /* The glyph reaches 32px into the tile (52px tall, 20px above it). */
+      padding-top: 40px;
+    }
+    .stat-value {
+      font-size: 1.25rem;
+      /* "United States" truncating to "United St…" in a tile whose whole job
+         is to name the market. There is vertical room here; take it. */
+      white-space: normal;
+    }
+  }
+
+  .stat-tile--action {
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  /* Only the actionable tile splits its footer, so the two static tiles keep a
+     plain line rather than an empty column reserved for an arrow. */
+  .stat-tile--action .stat-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+  }
+  .stat-go {
+    flex: none;
+    color: var(--color-cyan-deep);
+    transition: transform 0.2s var(--ease-brand);
+  }
+  .stat-tile--action:hover:not(:disabled) .stat-go {
+    transform: translateX(3px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stat-go {
+      transition: none;
+    }
+    .stat-tile--action:hover:not(:disabled) .stat-go {
+      transform: none;
+    }
+  }
+  .stat-tile--action:hover:not(:disabled) {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .stat-tile--action:disabled {
+    cursor: default;
+  }
+
+  /* Master/detail grid. The markets track is RESERVED, not toggled: swapping
+     column counts on selection resized every card and moved the one just
+     clicked out from under the cursor. */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: start;
+  }
+
+  /* The markets column reads as its own surface rather than a second stack of
+     cards floating on the same canvas as the feed. A 5% wash of the sidebar
+     teal keeps it in the chrome family without competing with the white cards
+     sitting on it; color-mix keeps it tied to the token rather than a copied
+     hex. */
+  /* Matches .dash-markets' top padding so both columns begin on the same line;
+     the feed itself needs no side or bottom padding, only the shared offset. */
+  .dash-feed {
+    padding-top: var(--space-md);
+  }
+
+  .dash-markets {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-chrome-light) 5%, transparent);
+  }
+  @media (min-width: 1280px) {
+    .dash-grid {
+      grid-template-columns: minmax(0, 1fr) 420px;
+    }
+    /* Stays visible while a long feed scrolls past it. */
+    .dash-markets {
+      position: sticky;
+      top: calc(60px + var(--space-md));
+    }
+  }
+
+  /* The resting-state placeholder in the markets panel. Scoped rather than
+     changing .empty globally: the feed's empty states are the primary message
+     on a full-width column and keep their size, while this one is a prompt in
+     a 420px side panel, where the shared 24px heading and 52px glyph made an
+     idle placeholder the loudest thing on the screen. */
+  .dash-markets .card {
+    padding: var(--space-sm);
+  }
+  .dash-markets .empty {
+    padding: var(--space-md) var(--space-xs);
+  }
+  .dash-markets .empty-glyph {
+    width: 40px;
+    height: 40px;
+    margin-bottom: var(--space-xs);
+  }
+  .dash-markets .empty-glyph svg {
+    width: 18px;
+    height: 18px;
+  }
+  .dash-markets .empty h3 {
+    font-size: 1.125rem;
+  }
+  .dash-markets .empty p {
+    font-size: 0.875rem;
+    max-width: 34ch;
+  }
+
+  .alert-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.16s ease, transform 0.2s ease;
+  }
+  .alert-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  /* Same idiom as .sb-item[aria-current] and .ob-step[data-state='current'] —
+     one selection language across the app. */
+  .alert-card[data-selected='true'] {
+    border-left-color: var(--color-mint-primary);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  /* Matches the sidebar nav labels (.sb-item, 0.9375rem) rather than
+     .heading-sm's 18px. Eight of these titles stack down the feed, and at 18px
+     they read as section headings competing with "Surge alerts" above them.
+     Still a step above the 14px body below, so the card keeps its hierarchy. */
+  /* 17px and heavy, against a 14px/400 description below a rule — three
+     signals separating heading from body instead of one.
+     NOT lightened description text: --color-text-body is already 5.50:1 on
+     white and every lighter tone in the palette drops under 4.5:1 at 14px
+     (--color-gray-text 4.34, --color-text-muted 2.98). The gap is widened
+     from the heading's side instead, which costs no legibility. */
+  .alert-card .heading-sm {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  /* 14px rather than .body-sm's 16px. These paragraphs are dense predictive
+     prose sitting under a heading in a card — at body size they competed with
+     the title. Leading stays at 1.6 so the smaller size does not read as
+     tighter. */
+  .alert-card .body-sm {
+    font-size: 0.875rem;
+    font-weight: 400;
+    /* Slightly tighter than the 1.6 elsewhere, so the description reads as one
+       secondary block rather than as continuing prose. */
+    line-height: 1.55;
+    /* The rule sits on the description rather than being its own element —
+       one border instead of an extra node in every card. */
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+  }
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: 6px;
+  }
+  /* Unread is signalled here and nowhere else — the prototype also carried a
+     gold left border, which collided with the selected state. Coral is the
+     palette's attention accent. */
+  .alert-dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-coral-cta);
+  }
+  .alert-cta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-sm);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-cyan-deep);
+  }
+
+  .rank-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .rank-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+  .rank-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .rank-no {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    color: var(--color-navy-dark);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  /* Rank 1 gets the accent gradient — the same treatment .ob-dot uses for the
+     current/done step, so "leading" reads consistently. */
+  .rank-no[data-lead='true'] {
+    background: var(--gradient-accent);
+  }
+  /* Drops below .text-meta's 14px so the city/distance line yields to the
+     score beside it instead of tying with it. */
+  .rank-card .text-meta {
+    font-size: 0.8125rem;
+  }
+
+  .rank-score {
+    flex: none;
+    text-align: right;
+    line-height: 1.15;
+  }
+  .rank-score b {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+  }
+  .rank-facts {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+  .rank-fact {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    /* --color-text-body, not --color-text-muted: muted is 2.98:1 on white and
+       fails AA. Muted stays for decorative labels only. */
+    color: var(--color-text-body);
+  }
+  .rank-fact b {
+    font-weight: 600;
+  }
+  .rank-fact[data-direct='true'] svg {
+    color: var(--color-success-text);
+  }
+  .rank-fact[data-direct='false'] svg {
+    color: var(--color-coral-cta-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .alert-card,
+    .rank-card,
+    .stat-tile--action {
+      transition: none;
+    }
+    .alert-card:hover,
+    .rank-card:hover,
+    .stat-tile--action:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+}
+
+/* ============================================================
+   DASHBOARD DENSITY
+   One step down the type scale across the screen, paired with the
+   larger card and grid spacing above. At the shell's default sizes the
+   headings, tiles and chips were all competing at close weights, which
+   read as congestion rather than hierarchy — the fix is fewer distinct
+   sizes and more space between them, not more contrast.
+   Scoped so the onboarding wizard and login keep the full scale.
+   ============================================================ */
+@layer components {
+  /* 28px: still a clear step above the section headings below it. */
+  .page-head h1 {
+    font-size: 1.75rem;
+  }
+  .page-head .body-sm {
+    font-size: 0.875rem;
+  }
+  /* Section headings — 24px was tying with the page title's weight. */
+  .feed-head h2,
+  .dash-feed h2 {
+    font-size: 1.25rem;
+  }
+  .rank-card .heading-sm {
+    font-size: 1rem;
+  }
+  .rank-card .rank-score b {
+    font-size: 1.125rem;
+  }
+  .rank-card .eyebrow {
+    font-size: 0.6875rem;
+  }
+  .seg button {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ============================================================
+   OVERLAYS — drawer, modal.
+   Both were previously styled only by legacy Tailwind utilities on the
+   components themselves (bg-panel / shadow-3 / panel-sunk). They now use
+   the brand card treatment so an overlay reads as part of the same product
+   as the screen behind it.
+   ============================================================ */
+@layer components {
+  .drawer {
+    position: fixed;
+    inset-block: 0;
+    right: 0;
+    z-index: 30;
+    width: min(560px, 100vw);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    box-shadow: var(--shadow-overlay);
+    /* Off-canvas until opened. `visibility` (not display) so the transition
+       runs, and so a closed drawer is out of the tab order. */
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.26s var(--ease-brand), visibility 0s linear 0.26s;
+  }
+  .drawer[data-open='true'] {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.26s var(--ease-brand), visibility 0s;
+  }
+  .drawer-close {
+    position: absolute;
+    top: var(--space-md);
+    right: var(--space-md);
+    z-index: 1;
+  }
+  /* Outside .drawer-body, so it does not scroll with the content. */
+  .drawer-foot {
+    flex: none;
+    padding: var(--space-sm) 40px var(--space-md);
+    background: var(--color-white);
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    /* Generous on all four edges — content that runs to the edge of a panel
+       this narrow reads as cramped, and the bottom needs the same air as the
+       top or the last section looks cut off.
+       Drops back at narrow widths, where the drawer is the full viewport and
+       40px a side would eat a sixth of the reading width. */
+    padding: 40px;
+  }
+  /* Placed after the base rules above, not before them: a media query carries
+     no extra specificity, so an override that sits earlier in the file simply
+     loses to the rule it means to override. */
+  @media (max-width: 640px) {
+    .drawer {
+      width: 100vw;
+    }
+    .drawer-body {
+      padding: var(--space-md);
+    }
+    .drawer-foot {
+      padding: var(--space-sm) var(--space-md) var(--space-md);
+    }
+    .drawer-close {
+      top: var(--space-sm);
+      right: var(--space-sm);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer {
+      transition: none;
+    }
+  }
+
+  .modal-panel {
+    width: 100%;
+    max-width: 520px;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+/* ============================================================
+   MARKET RADAR DRAWER — Module 2.2.
+   Reuses the Dashboard's cards, chips, tiles and .seg wholesale; only the
+   layout and the few pieces unique to this screen are defined here.
+   ============================================================ */
+@layer components {
+  .radar-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding-bottom: 28px;
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  /* Only the rows that actually run under the close button are inset for it.
+     Putting this on .radar-head instead shrank the whole column, so the CTA
+     below centred inside a box 44px narrower than the one it looks centred in
+     — visibly off to the left. */
+  .radar-head-top,
+  .radar-route {
+    padding-right: 44px;
+  }
+
+  /* Spans the content column, matching the banner and cards below it, so the
+     header's primary action lines up with everything else in the drawer rather
+     than floating narrower than its neighbours. */
+  .radar-head .btn-cta {
+    width: 100%;
+  }
+
+  /* Market switcher — the drawer covers the ranked list, so it carries its own.
+     Same segmented-control language as the timeframe and insight tabs. */
+  .radar-switch {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-right: 44px;
+    /* On top of .radar-head's own 16px gap, so the switcher reads as a control
+       sitting above the header rather than as the header's first line. Only
+       this gap grows; the rest of the header keeps its rhythm. */
+    margin-bottom: var(--space-xs);
+    border-radius: calc(var(--radius-sm) + 4px);
+    background: var(--color-off-white);
+  }
+  .radar-switch button {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-body);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: background-color 0.16s ease, color 0.16s ease;
+  }
+  .radar-switch button:hover {
+    color: var(--color-navy-primary);
+  }
+  .radar-switch button[aria-pressed='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  .radar-head-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .radar-route {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Each block of the drawer body, below the header. */
+  .radar-section {
+    padding-top: 28px;
+  }
+  .radar-section + .radar-section {
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+    margin-top: 28px;
+  }
+
+  .chart-frame {
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Zone key — the pricing action each demand band implies. */
+  .zone-key {
+    display: grid;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+  }
+  .zone-key li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-text-body);
+  }
+  .zone-key b {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+  .zone-swatch {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 4px;
+    border-radius: 3px;
+  }
+  .zone-key li[data-tone='low'] .zone-swatch {
+    background: var(--color-mint-pale);
+  }
+  .zone-key li[data-tone='mid'] .zone-swatch {
+    background: var(--color-teal-accent);
+  }
+  .zone-key li[data-tone='high'] .zone-swatch {
+    background: var(--color-coral-cta);
+  }
+
+  /* KPI tiles inside the drawer are narrower than the Dashboard's, so they go
+     two-up and drop the icon overhang that needs row padding to clear. */
+  .radar-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-sm);
+    padding-top: 20px;
+  }
+  .radar-trends {
+    display: grid;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  /* 12-month peak calendar. */
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .month-grid li {
+    padding: 7px 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-off-white);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-text-body);
+  }
+  .month-grid li[data-peak='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+
+  .carrier-list {
+    display: grid;
+    gap: var(--space-xs);
+  }
+  .carrier-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .carrier-list b {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+  }
+  .carrier-code {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    padding: 4px 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-navy-dark);
+  }
+}
+
+/* ============================================================
+   DRAWER DENSITY
+   The drawer is a 560px column carrying charts, tiles, chips and three
+   paragraphs of prose. At the Dashboard's sizes — which are set for a
+   1000px-wide content area — everything landed at nearly the same weight
+   and the panel read as congested. One step down across the board, paired
+   with the larger block spacing above.
+   Scoped to .drawer so the Dashboard behind it is untouched.
+   ============================================================ */
+@layer components {
+  .drawer .radar-head h2,
+  .drawer .heading-md {
+    font-size: 1.125rem;
+  }
+  .drawer .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  /* The base layer sets `svg { display: block }`, so an icon inside a <p> drops
+     onto its own line. The Dashboard's stat tiles already work around this;
+     the drawer's labelled eyebrows need the same. */
+  .drawer .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6875rem;
+  }
+  .drawer .eyebrow svg {
+    flex: none;
+  }
+  .drawer .text-meta {
+    font-size: 0.8125rem;
+  }
+  .drawer .stat-value {
+    font-size: 1.25rem;
+  }
+  .drawer .stat-label,
+  .drawer .stat-foot {
+    font-size: 0.75rem;
+  }
+  .drawer .btn-cta {
+    font-size: 0.875rem;
+    padding: 12px 22px;
+  }
+  .drawer .banner {
+    font-size: 0.875rem;
+  }
+  .drawer .carrier-list b {
+    font-size: 0.8125rem;
+  }
+
+  /* Cards inside the drawer sit in a narrower column than the Dashboard's, so
+     they take slightly less inner padding but more separation from each other. */
+  .drawer .card {
+    padding: var(--space-sm);
+  }
+  .drawer .radar-kpis {
+    gap: var(--space-md);
+  }
+  .drawer .radar-trends {
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+  }
+  .drawer .zone-key {
+    gap: 10px;
+    margin-top: var(--space-md);
+  }
+  .drawer .month-grid {
+    gap: 8px;
+  }
+  .drawer .carrier-list {
+    gap: 14px;
+  }
+}
+
+/* ============================================================
+   DRAWER — review refinements.
+   ============================================================ */
+@layer components {
+  /* .seg is white on white inside the drawer, so its enclosure was invisible
+     and the pair read as one button beside some loose text. The switcher above
+     already sits on --color-off-white; matching it makes the grouping legible
+     and says the options are mutually exclusive. */
+  .drawer .seg {
+    background: var(--color-off-white);
+    box-shadow: none;
+  }
+  .drawer .seg button[aria-pressed='true'],
+  .drawer .seg button[aria-selected='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  /* Tabs get equal segments so neither reads as the primary of the two. */
+  .drawer [role='tablist'] {
+    display: flex;
+    width: 100%;
+  }
+  .drawer [role='tablist'] button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* The overhanging icon block belongs to the Dashboard's wide tiles. In the
+     drawer's narrow pair it hung off the corner and read as detached, so the
+     glyph comes inside as a circular header inline with the label. */
+  .drawer .stat-tile {
+    padding: var(--space-sm);
+  }
+  .drawer .stat-icon {
+    position: static;
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    box-shadow: none;
+  }
+  .drawer .stat-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+  .drawer .stat-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding: var(--space-xs) 0 10px;
+  }
+  .drawer .stat-head .stat-label {
+    order: -1;
+  }
+  /* Side by side with the label, a long value has far less room than it did
+     stacked — the flight-price range truncated to "₱8,000 – ₱…", which is worse
+     than useless for a range. Let it wrap onto its own line instead; the
+     Dashboard's wide tiles keep the ellipsis, where a market name genuinely
+     should not push the tile around. */
+  .drawer .stat-head {
+    flex-wrap: wrap;
+  }
+  .drawer .stat-value {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: right;
+  }
+  .drawer .stat-foot {
+    padding: 10px 0 0;
+  }
+  /* No overhang to clear any more. */
+  .drawer .radar-kpis {
+    padding-top: 0;
+  }
+
+  /* Reference material for the chart above, not a continuation of it. */
+  .drawer .zone-key {
+    margin-top: var(--space-lg);
+  }
+
+  /* Sparkline scale. */
+  .trend-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
+  }
+  .trend-now {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex: none;
+    line-height: 1.2;
+  }
+  .trend-now b {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text-heading);
+  }
+  .trend-now .text-meta {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ============================================================
+   TABBED INFO CARD
+   A label tab sitting on the card's top-left corner, a white body, and a
+   colour block offset behind the right edge. Used for the radar's surge state
+   and its strategic directive: each is one short statement whose KIND matters
+   as much as its content, and the tab says the kind before the sentence is
+   read.
+   ============================================================ */
+@layer components {
+  .info-card {
+    position: relative;
+    /* Room for the tab, which sits entirely above the body. */
+    margin-top: 30px;
+  }
+  /* The visible gap is smaller than this number: the tab sits ~27px above its
+     own body and eats into the space, so 66px leaves roughly 35px of actual
+     air. Applies after any sibling, not just another info card — the bare 30px
+     above only reserves room for the tab and would leave ~3px of visible air. */
+  * + .info-card {
+    margin-top: 66px;
+  }
+
+  /* The offset block behind the right edge. Both this and .info-body are
+     positioned and z-indexed rather than using a negative z-index, which would
+     drop it behind the drawer's own background and vanish. */
+  .info-card::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    /* Flush top and bottom, offset only to the right: the block reads as a
+       coloured edge running down the card's side. Extending it below as well
+       left an L-shaped tail under the bottom-right corner. */
+    top: 0;
+    right: -9px;
+    bottom: 0;
+    width: 64px;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+
+  .info-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: var(--space-sm);
+    /* Square at the top-left, where the tab lands. */
+    border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+    background: var(--color-white);
+    /* Heavier than --shadow-card: these sit on tinted panels and beside other
+       white surfaces, where the standard 8%-opacity card shadow left the edge
+       ambiguous. */
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  .info-tab {
+    position: absolute;
+    z-index: 2;
+    bottom: 100%;
+    left: 0;
+    padding: 7px 18px;
+    /* Rounded on top only — it reads as a tab attached to the card, not a pill
+       floating above it. */
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-text-inverse);
+  }
+
+  /* Anything following an info card. No overhang to clear now that the block
+     is flush at the bottom, so this is plain separation. The drawer-scoped
+     twin is needed to outrank .drawer .radar-trends, which sets its own
+     (tighter) margin at equal specificity. */
+  .info-card + *,
+  .drawer .info-card + * {
+    margin-top: 36px;
+  }
+
+  .info-glyph {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Tones. Tab and block fills are the -text tones, not the base state
+     colours: white on --color-critical is 4.38:1, just under AA for a label
+     this small, while --color-critical-text reaches 6.21. */
+  .info-card[data-tone='critical'] .info-tab,
+  .info-card[data-tone='critical']::before {
+    background: var(--color-critical-text);
+  }
+  .info-card[data-tone='critical'] .info-glyph {
+    background: var(--color-critical-bg);
+    color: var(--color-critical-text);
+  }
+
+  .info-card[data-tone='accent'] .info-tab,
+  .info-card[data-tone='accent']::before,
+  .info-card[data-tone='calm'] .info-tab,
+  .info-card[data-tone='calm']::before {
+    background: var(--color-cyan-deep);
+  }
+  .info-card[data-tone='accent'] .info-glyph,
+  .info-card[data-tone='calm'] .info-glyph {
+    background: var(--color-mint-pale);
+    color: var(--color-cyan-deep);
+  }
+}
+
+/* ============================================================
+   DASHBOARD — making room for the radar drawer.
+   The drawer opens over the right of the screen and the markets column lives
+   there, so with the drawer open those rank cards were 100% covered at every
+   desktop width: visible in the DOM, impossible to click, and the obvious
+   thing to reach for when switching market.
+   The screen yields the drawer's width instead. The grid then has room for
+   only one column, so the markets panel drops below the feed — still on the
+   page, still clickable, just no longer underneath the thing covering it.
+   ============================================================ */
+@layer components {
+  .dash-screen {
+    transition: padding-right 0.26s var(--ease-brand);
+  }
+  @media (min-width: 1024px) {
+    .dash-screen[data-radar-open='true'] {
+      padding-right: min(560px, 45vw);
+    }
+    /* Whatever is left is too narrow for the two-column master/detail. */
+    .dash-screen[data-radar-open='true'] .dash-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-md);
+    }
+    /* Same for the summary tiles: the drawer takes 560px out of the content
+       column, and three tiles in what remains were 71px wide at 1100. Column
+       count steps back up as the screen gets wide enough to afford it. (Media
+       queries rather than a container query on .dash-screen — that would apply
+       `contain: layout`, and the fixed-position drawer lives inside it.) */
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 1200px) {
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1400px) {
+    .dash-screen[data-radar-open='true'] .stat-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .dash-screen[data-radar-open='true'] .dash-markets {
+      position: static;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dash-screen {
+      transition: none;
+    }
+  }
+}
+
+@layer components {
+  /* Wide enough that .dash-screen steps aside for the drawer: with the content
+     fully visible beside it, the scrim would dim a pane that is still live and
+     block every click on it. Narrow screens keep it — there the drawer really
+     does cover the page. */
+  @media (min-width: 1024px) {
+    #scrim[data-panel='true'] {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
 }

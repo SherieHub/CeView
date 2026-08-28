@@ -26,24 +26,14 @@ export const BUSINESS_CATEGORIES = [
 ];
 
 /**
- * Mirrors the prototype's obPrefill() — fills every ObDraft field, including
- * ones later cards (5-7) collect, so "Fill with demo business" stays useful
- * as those steps land instead of leaving them blank.
+ * Demo business for the "Fill with demo business" shortcut. Re-exported rather
+ * than defined here — one definition lives in services/fixtures/demoBusiness.ts
+ * alongside the other fixtures. BasicInfoStep.test.tsx imports it from this
+ * module, so the name stays.
  */
-export const DEMO_BUSINESS: ObDraft = {
-  businessName: 'Sunset Cove Beach Resort',
-  industry: 'Accommodation & Staycation',
-  slogan: 'Rest, thirty metres from the sardine run.',
-  vibes: ['Serene & Restorative', 'Eco-Conscious'],
-  coreServices: ['Scuba Diving', 'Island Hopping', 'Snorkeling', 'Beachfront Villas'],
-  description:
-    'Sunset Cove is a twelve-room beachfront property on the western coast of Moalboal, Cebu, built directly above the reef wall where the Moalboal sardine run gathers year round. Guests can walk from breakfast into the water and be inside a shoal of more than a million fish within thirty metres of the shoreline. The property runs on solar power, filters and refills its own drinking water, and employs its staff entirely from the surrounding barangay. Rooms are deliberately simple: no televisions, wide shaded balconies, and hammocks facing the channel.',
-  uvp:
-    'We are the only eco-certified resort on this stretch of coast with a certified marine biologist living on site, which means every guided dive is properly briefed, logged and conducted without touching the reef. Guests reach a world-class natural phenomenon in under a minute, without a boat transfer.',
-  website: 'https://sunsetcove.ph',
-  socials: { instagram: '@sunsetcove.ph', facebook: 'SunsetCoveMoalboal', tiktok: '@sunsetcove', naver: '' },
-  logo: null,
-};
+import { DEMO_BUSINESS } from '../../../../services/fixtures/demoBusiness';
+
+export { DEMO_BUSINESS };
 
 export default function BasicInfoStep() {
   const { draft, setDraft } = useObDraft();
@@ -102,13 +92,21 @@ export default function BasicInfoStep() {
           />
         </label>
 
-        <button
-          type="button"
-          className="body-sm w-fit rounded-full border border-line px-3 py-1.5"
-          onClick={() => setDraft({ ...draft, ...DEMO_BUSINESS })}
-        >
-          Fill with demo business
-        </button>
+        {/* DEV-ONLY. This overwrites the operator's own answers with a
+            fictional resort, which is a development shortcut, not a product
+            feature — a real operator on step 1 could click it and lose what
+            they had typed. `import.meta.env.DEV` is statically false in
+            `vite build`, so the button and its data are tree-shaken out of
+            production bundles. Same guard the /preview routes use. */}
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            className="body-sm w-fit rounded-full border border-line px-3 py-1.5"
+            onClick={() => setDraft({ ...draft, ...DEMO_BUSINESS })}
+          >
+            Fill with demo business
+          </button>
+        )}
       </div>
     </>
   );

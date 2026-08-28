@@ -1,0 +1,335 @@
+[
+  {
+    "id": 49,
+    "description": "A casual diner on the third level of a shopping mall in a landlocked inland city, decorated with driftwood panelling, netting, and surfboards mounted on the walls. The kitchen serves fried fish baskets, chowder, and frozen cocktails to shoppers and office workers. It has no connection to any coastline and sources everything frozen from a distributor.",
+    "uvp": "The nautical fit-out and generous portions make it a reliable family stop between shopping floors, and it holds the mall's only late licence. Its chowder recipe has been unchanged since the founder opened the first branch two decades ago.",
+    "services": [
+      "Fried seafood basket menu",
+      "Frozen cocktail and dessert bar",
+      "Mall late-night dining service",
+      "Children's meal and birthday seating"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 50,
+    "description": "A resort of sixty rooms on a headland, operating its own jetty and a climbing wall built into the sea cliff behind the property. A resident guiding team runs cliff traverses and kayak expeditions along the coast. Guests book three- to five-night stays and most take at least two guided activities.",
+    "uvp": "The headland gives the property both protected swimming water and a genuine climbing face within its own boundary, a pairing no flat beachfront hotel can offer. Guides are certified in both rock and sea rescue, letting the resort run activities others must decline.",
+    "services": [
+      "Headland room and suite stays",
+      "Sea cliff climbing and abseil sessions",
+      "Multi-hour coastal kayak expeditions",
+      "Sheltered cove swimming and snorkeling"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 51,
+    "description": "A twenty-four room lodge on a forested slope that pairs a guided hiking programme with a full treatment spa in a separate pavilion. Most guests hike a graded route in the morning and book recovery treatments in the afternoon. The lodge keeps its own trail crew and four therapists on staff year-round.",
+    "uvp": "Treatments are prescribed against the route each guest walked that day rather than sold from a generic menu, so the spa functions as recovery for real exertion. The lodge's trails climb above the treeline, giving guests genuine altitude rather than a landscaped garden walk.",
+    "services": [
+      "Graded morning summit and ridge hikes",
+      "Post-trek recovery massage programme",
+      "Lodge room stays with full board",
+      "Trail-condition briefings and gear loan"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 52,
+    "description": "A hotel occupying a restored 1920s commercial building on the main avenue of the old downtown, with thirty-eight rooms and a preserved art deco lobby. A rooftop bar overlooks the surrounding district. Staff run morning walking tours of the heritage streets for guests and walk-in visitors alike.",
+    "uvp": "The building's original terrazzo, ironwork, and signage were conserved rather than replaced, so the hotel doubles as the district's best-preserved interior. Its rooftop is the only public vantage point over the heritage avenue, tying the stay to the city around it.",
+    "services": [
+      "Restored art deco room stays",
+      "Morning heritage district walking tour",
+      "Rooftop bar with avenue views",
+      "Lobby conservation exhibit and archive display"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 53,
+    "description": "A ticketed family attraction built on farmland far from any coast, themed as a pirate settlement with a galleon-shaped play structure, a splash zone, and staged sword-fighting shows every two hours. Entry is by wristband and the site includes a costume shop and a snack pavilion. Nothing about the operation involves actual water access.",
+    "uvp": "The staged shows are performed by trained stunt actors on a purpose-built galleon set, giving a live spectacle most inland play parks cannot mount. Wristbands cover every attraction, so families budget one price for a full day.",
+    "services": [
+      "Galleon play structure and splash zone access",
+      "Scheduled stunt sword-fighting shows",
+      "All-day attraction wristbands",
+      "Costume hire and photo studio"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 54,
+    "description": "A restaurant seating forty inside a limestone chamber reached by a two hundred-metre lit passage. The kitchen serves a fixed multi-course menu at candle-lit tables, and guests are issued helmets for the walk in. The operator also runs a longer guided route through the unlit sections for diners who want it before service.",
+    "uvp": "Diners eat inside a genuine cave system with live formations rather than a themed room built to resemble one, which forces the kitchen to work from a satellite prep station above ground. The optional pre-dinner traverse turns a meal into a physical descent.",
+    "services": [
+      "Fixed multi-course underground dinner service",
+      "Guided pre-dinner cave traverse",
+      "Helmet and lamp issue with safety briefing",
+      "Private chamber hire for small events"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 55,
+    "description": "A day-tour operator running a boat circuit that stops at two offshore islets and a mainland fishing village with a four-hundred-year-old coral-stone church. Lunch is cooked beachside by a partner household. Groups are capped at sixteen and the full loop takes eight hours including the church visit.",
+    "uvp": "The circuit deliberately breaks from pure island hopping by putting a working parish and its coral-stone architecture in the middle of the day, so guests understand the communities the islets belong to. Lunch is cooked by the same households that host the church visit.",
+    "services": [
+      "Two-islet boat hopping with snorkel stops",
+      "Guided coral-stone church and village visit",
+      "Household-cooked beachside lunch",
+      "Small-group capped departures"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 56,
+    "description": "An operator that installed sixteen insulated sleeping pods with skylights on the roof deck of a mid-rise building in the central business district, sold as an overnight novelty stay. Guests use shared bathrooms on the floor below and order breakfast from the ground-floor cafe. The deck is enclosed and serviced nightly by hotel-standard housekeeping.",
+    "uvp": "Sleeping under a glass roof above the traffic gives visitors a genuinely unusual night in the metro without leaving it, and pods are priced below the district's hotels. The deck's skyline outlook is the product, replacing the view a standard room would give.",
+    "services": [
+      "Rooftop sleeping pod overnight stays",
+      "Skyline deck lounge access",
+      "Ground-floor cafe breakfast delivery",
+      "Shared bathroom and locker facilities"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 57,
+    "description": "A residential retreat venue on eighty hectares of second-growth forest, hosting corporate groups for two- and three-day programmes. Facilities include forty twin rooms, a dining hall, and a low- and high-ropes obstacle course used for facilitated team exercises. Bookings are exclusive-use, so only one organisation is on site at a time.",
+    "uvp": "Because the site takes one group at a time, facilitators can run exercises across the whole forest rather than a fenced activity yard. Programme design is done with the client's own objectives, so the course is a working tool rather than a recreational attraction.",
+    "services": [
+      "Exclusive-use residential retreat bookings",
+      "Facilitated high-ropes and obstacle exercises",
+      "Forest navigation and problem-solving courses",
+      "Full-board dining hall catering"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 58,
+    "description": "A shore-excursion company contracted by cruise lines to handle passengers during single-day port calls. Its standard programme moves groups from the pier to a bastioned stone fort, a museum of maritime trade, and a two-hour stop at a swimming beach before returning for departure. All logistics are timed to the ship's sailing window.",
+    "uvp": "The company holds pier-side dispatch rights, so passengers clear the terminal and reach the fort before independent taxis can form a queue. Guides are licensed for both the fort's interiors and small-boat beach transfers, which lets one operator run the whole day.",
+    "services": [
+      "Timed pier-to-fort excursion transfers",
+      "Guided bastion fort and maritime museum entry",
+      "Supervised beach swimming stop",
+      "Ship-schedule-guaranteed return logistics"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 59,
+    "description": "A wellness hotel of fifty-two rooms in a quiet street behind the financial district, built around a hydrotherapy circuit, treatment suites, and a rooftop yoga studio. It sells overnight wellness packages as well as day passes to city residents. Occupancy is highest on weekends and public holidays.",
+    "uvp": "The property is engineered for recovery inside the metro, with soundproofed rooms and blackout systems that turn a city-centre address into somewhere guests can actually sleep. Day-pass access lets residents use it without booking a night away.",
+    "services": [
+      "Overnight wellness and treatment packages",
+      "Hydrotherapy circuit day passes",
+      "Rooftop yoga and breathwork sessions",
+      "Soundproofed recovery room stays"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 60,
+    "description": "A sport-fishing charter operating two offshore boats rigged for trolling and deep jigging, taking small parties beyond the shelf edge on trips that can run twelve hours in open swell. Skippers hold offshore endorsements and the company enforces catch limits and tag-and-release on billfish. Clients are mostly experienced anglers.",
+    "uvp": "Trips run to seamounts three hours offshore that inshore bangka operators cannot safely reach, which is where the pelagic fishing actually is. Every boat carries a fighting chair and a mate trained to coach clients through hour-long billfish battles.",
+    "services": [
+      "Offshore trolling charters beyond the shelf",
+      "Deep jigging trips to seamounts",
+      "Tag-and-release billfish programme",
+      "Overnight open-water fishing runs"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 61,
+    "description": "A privately endowed museum of regional printing and typography, occupying a converted press building with four galleries, a working letterpress studio, and a research reading room. A small counter near the entrance sells coffee and pastries to visitors between galleries. Admission and archive access are the museum's revenue base.",
+    "uvp": "The museum still operates the presses it exhibits, so visitors watch nineteenth-century machinery pull sheets rather than viewing it behind rope. Its reading room holds the only complete run of the region's earliest newspaper, open to researchers by appointment.",
+    "services": [
+      "Four-gallery museum admission",
+      "Live letterpress printing demonstrations",
+      "Archive reading room research appointments",
+      "Typesetting workshops for visitors"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 62,
+    "description": "A hotel of three hundred and twenty rooms attached to a convention centre with a four-thousand-seat hall, hosting conferences on weekdays and touring concerts on weekends. The property sells delegate room blocks and concert-and-stay packages. Its location beside a transit interchange drives most of its walk-in trade.",
+    "uvp": "Guests move from a room to a concert floor without stepping outside, which the surrounding stand-alone hotels cannot match for late-finishing events. The hotel holds the interchange's only direct covered walkway, making it the practical base for city-wide event attendance.",
+    "services": [
+      "Delegate and event room blocks",
+      "Concert-and-stay weekend packages",
+      "Four-thousand-seat hall event hosting",
+      "Covered transit interchange access"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 63,
+    "description": "An observation venue occupying the top three floors of a skyscraper, selling timed tickets to a glass-floor walkway, a projection show about the city's growth, and a motion-simulator ride over the skyline. Visitor flow is managed in fifteen-minute waves. The operator is a separate company leasing the floors from the building owner.",
+    "uvp": "The deck combines a skyline vantage with a ticketed ride and show programme, so visitors get an attraction rather than a viewing platform they walk through in ten minutes. Its glass walkway extends beyond the building line, which no rival deck in the metro offers.",
+    "services": [
+      "Timed observation deck admission",
+      "Cantilevered glass floor walkway",
+      "Motion-simulator skyline flight ride",
+      "Projection show on the city's history"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 64,
+    "description": "An expedition operator running a liveaboard vessel on seven-night marine wildlife itineraries, sleeping sixteen guests in cabins and spending days in tenders tracking whale sharks, pilot whales, and manta aggregations. Guests are in the water several times daily and the boat sails overnight between remote atolls. A marine biologist sails with every departure.",
+    "uvp": "The vessel's range lets it reach atolls no day boat can serve, and sailing overnight puts guests on aggregation sites at dawn before any other craft arrives. Sightings feed a national research dataset, so guests contribute to survey work rather than just watching.",
+    "services": [
+      "Seven-night liveaboard cabin berths",
+      "Tender-based whale shark and manta encounters",
+      "Remote atoll snorkel and free-dive sessions",
+      "Onboard marine biology briefings and data logging"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 65,
+    "description": "A community-run homestay network in a terraced upland village listed for its centuries-old irrigation system, placing guests in eleven family houses. Visitors join households at meals and farm chores. Guided treks follow the stone irrigation channels between villages, involving several hours of steep walking on narrow banks.",
+    "uvp": "Guests sleep in working farming households rather than a purpose-built lodge, and trek fees are paid into the fund that maintains the ancient channels. The routes follow engineering that has been continuously farmed for generations, which no scenic viewpoint tour conveys.",
+    "services": [
+      "Family homestay overnight placement",
+      "Multi-hour guided terrace channel treks",
+      "Shared household meals with host families",
+      "Irrigation heritage interpretation walks"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 66,
+    "description": "A large buffet restaurant designed around a costumed mascot programme, with a stage where character shows run four times each service and a supervised play maze beside the dining floor. The kitchen serves eighty rotating dishes across international stations. Almost all bookings are children's birthday parties and extended family groups.",
+    "uvp": "The show schedule is built into the meal so parents get an entertainment programme they need not organise, while the kitchen keeps a full buffet running throughout. Its allergy-labelled station system lets families with dietary restrictions eat from the same line as everyone else.",
+    "services": [
+      "Eighty-dish international buffet service",
+      "Scheduled costumed character stage shows",
+      "Supervised indoor play maze",
+      "Birthday party packages with host"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 67,
+    "description": "An operator running sandboarding and dune-buggy sessions across a coastal dune field that separates a fishing town from the open sea. Sessions involve climbing the dune faces on foot before each descent, and buggies are driven by trained staff. The company also runs sunset sessions timed to the tide-exposed flats below.",
+    "uvp": "The dune field's proximity to the shoreline means runs finish at the waterline, letting guests cool off in the sea between climbs. Boards are waxed for the site's fine marine sand, which imported equipment handles poorly.",
+    "services": [
+      "Guided sandboard descents with uphill climbs",
+      "Staff-driven dune buggy circuits",
+      "Sunset session on the tidal flats",
+      "Board, goggle, and helmet hire"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 68,
+    "description": "A hundred-and-forty room hotel five minutes from the airport terminal, decorated throughout with tropical prints, rattan furniture, and a lobby water feature, branded as an island escape. It serves transiting passengers, airline crew on layover contracts, and delegates attending events at the nearby exhibition halls. The surrounding area is industrial and inland.",
+    "uvp": "Round-the-clock check-in and a five-minute shuttle loop make it the most reliable option for passengers on unpredictable schedules. Rooms are configured for daytime rest with blackout blinds and quiet corridors, which most airport hotels neglect.",
+    "services": [
+      "Twenty-four-hour check-in and day-use rooms",
+      "Continuous airport terminal shuttle",
+      "Airline crew layover contract rooms",
+      "Blackout-configured rest rooms"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 69,
+    "description": "A food heritage institution combining exhibition galleries on regional cooking history with a demonstration kitchen and a tasting gallery where visitors sample dishes reconstructed from archival recipes. Curators work with historians and cooks to research each display. Admission includes a tasting flight, and the institution also publishes a recipe archive.",
+    "uvp": "Dishes are reconstructed from dated manuscripts and served in the same room where their history is exhibited, so tasting is the interpretive method rather than a gift-shop add-on. The recipe archive is publicly searchable, which no restaurant or museum in the region maintains.",
+    "services": [
+      "Gallery admission with archival tasting flight",
+      "Reconstructed historical recipe demonstrations",
+      "Curator-led food history tours",
+      "Public access to the digitised recipe archive"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 70,
+    "description": "A large beachfront resort of two hundred and forty rooms that added a ticketed family entertainment zone with a wave-machine pool, three slides, and an arcade, open to outside visitors as well as guests. The shoreline in front of the property is used for swimming and non-motorised watercraft. Day-pass sales now rival room revenue.",
+    "uvp": "Selling day tickets to its attraction zone turns the resort into the coast's only amusement venue, serving families who are not staying overnight. Guests get both a natural shoreline and engineered rides on one site, which neither a beach hotel nor an inland waterpark provides.",
+    "services": [
+      "Beachfront room and suite stays",
+      "Ticketed wave pool and slide complex",
+      "Shoreline swimming and kayak hire",
+      "Arcade and family entertainment day passes"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Theme Parks / Entertainment"
+    ]
+  }
+]
