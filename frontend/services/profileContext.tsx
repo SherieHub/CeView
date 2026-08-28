@@ -44,9 +44,20 @@ interface ProfileContextValue {
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
-export function ProfileProvider({ children }: { children: ReactNode }) {
+export function ProfileProvider({
+  children,
+  initial = EMPTY_PROFILE,
+}: {
+  children: ReactNode;
+  /**
+   * Seed the profile instead of starting empty. Only the dev preview routes
+   * and tests pass this — the authenticated app always starts at EMPTY_PROFILE
+   * and lets the fetch below fill it in. Mirrors ObDraftProvider's `initial`.
+   */
+  initial?: BusinessProfile;
+}) {
   const { isAuthenticated } = useAuth();
-  const [profile, setProfile] = useState<BusinessProfile>(EMPTY_PROFILE);
+  const [profile, setProfile] = useState<BusinessProfile>(initial);
   // Starts true when already authenticated on mount (e.g. a fresh full page
   // load with a valid persisted token) so the very first render shows the
   // loading state instead of racing ahead with the still-empty profile —
@@ -60,12 +71,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   // fetch is still in flight must not let a stale response land after a
   // newer load (or a logout) has already superseded it.
   const requestToken = useRef(0);
+  // Held in a ref so the reset below can reach it without putting a caller-
+  // supplied object in the effect's dependency array, where a fresh literal
+  // each render would re-run the fetch forever.
+  const initialRef = useRef(initial);
 
   useEffect(() => {
     const token = ++requestToken.current;
 
     if (!isAuthenticated) {
-      setProfile(EMPTY_PROFILE);
+      // Back to the starting profile, not a hardcoded empty one — for the real
+      // app these are the same value, but a seeded provider (dev previews,
+      // tests) must not have its seed wiped just because there is no session.
+      setProfile(initialRef.current);
       setIsLoading(false);
       return;
     }

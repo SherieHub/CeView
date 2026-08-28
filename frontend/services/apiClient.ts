@@ -13,6 +13,8 @@ import { OMCS_RUBRIC_LABELS, MOCK_OMCS } from './fixtures/omcs';
 import { DEFAULT_CAMPAIGN_INPUT, MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
 import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
+import { MOCK_CONNECTIONS } from './fixtures/connections';
+import { MOCK_POST_METRICS } from './fixtures/postMetrics';
 import type { WorkspaceMemberFixture } from './fixtures/members';
 import type { PlatformConnection, PostMetric, BusinessProfileDto } from '../types';
 
@@ -40,21 +42,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
-
-const MOCK_CONNECTIONS: PlatformConnection[] = [
-  { platform: 'instagram', connected: true, handle: '@cebu.dive', connectedAt: '2026-05-01T00:00:00Z' },
-  { platform: 'tiktok', connected: false, handle: null, connectedAt: null },
-  { platform: 'facebook', connected: true, handle: 'Cebu Dive Co.', connectedAt: '2026-04-12T00:00:00Z' },
-  { platform: 'naver', connected: false, handle: null, connectedAt: null },
-];
-
-const MOCK_POST_METRICS: PostMetric[] = MOCK_POSTS.map((p, i) => ({
-  postId: p.id,
-  impressions: 1200 + i * 340,
-  engagements: 80 + i * 21,
-  clicks: 14 + i * 3,
-  engagementRate: Number((0.04 + i * 0.006).toFixed(3)),
-}));
 
 const EMPTY_BUSINESS_PROFILE_DTO: BusinessProfileDto = {
   businessProfileId: null,
@@ -87,6 +74,35 @@ export const apiClient = {
   },
   notifications: {
     list: () => (USE_FIXTURES ? delay(MOCK_NOTIFICATIONS) : request('/api/notifications')),
+    /**
+     * Marks one alert read. Called optimistically and fire-and-forget by the
+     * dashboard — read state is already reflected locally, and a failed
+     * read-mark is not worth an error surface.
+     *
+     * The fixture branch deliberately does NOT mutate MOCK_NOTIFICATIONS. The
+     * prototype set `n.isRead = true` on its module-level array; doing that
+     * here would leak read state between tests and make the suite
+     * order-dependent. The dashboard tracks read ids in its own state.
+     */
+    markRead: (id: string) =>
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request(`/api/notifications/${id}/read`, { method: 'PATCH' }),
+  },
+  forecast: {
+    /**
+     * Re-runs the forecasting pipeline. The 2100ms fixture delay is the
+     * prototype's own `refreshForecast` timing (ui-ux-prototype.html:2523),
+     * moved here so the button owns no timer and tests can await it instead of
+     * driving fake timers.
+     */
+    analyze: () =>
+      USE_FIXTURES
+        ? delay({ rerankedMarkets: 3 }, 2100)
+        : request('/api/v1/forecasting/analyze', { method: 'POST' }),
+    /** Drives the dashboard's `ai-down` degraded mode. */
+    status: () =>
+      USE_FIXTURES ? delay({ available: true }) : request('/api/v1/forecasting/status'),
   },
   content: {
     list: () => (USE_FIXTURES ? delay(MOCK_CONTENT) : request('/api/content')),

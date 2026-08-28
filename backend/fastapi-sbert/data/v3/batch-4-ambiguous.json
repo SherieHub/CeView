@@ -1,0 +1,322 @@
+[
+  {
+    "id": 71,
+    "description": "A small hospitality company operating fourteen private villas along a low bluff, each opening onto water that changes colour through the afternoon. Guests are met at a jetty rather than a road entrance, and the staff arrange excursions with the fishing families who work the shallows below. Stays average four nights.",
+    "uvp": "Guests fall asleep to surf breaking under their deck and wake to boats being pushed out below them, an immersion a landscaped garden property cannot manufacture. Excursions are arranged with working crews, so what guests see is the day's actual work.",
+    "services": [
+      "Private villa stays with jetty arrival",
+      "Morning outings with local fishing crews",
+      "Guided outings to shallow reef gardens",
+      "Evening service on the water-facing decks"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 72,
+    "description": "An outfitter working a vertical limestone amphitheatre, bolting and maintaining more than ninety routes across grades that run from beginner slabs to severely overhanging lines. It runs instruction, belay certification, and multi-day clinics from a small base hut. Clients arrive with chalk-worn hands or leave with them.",
+    "uvp": "The company sets and re-bolts its own routes, so the wall is maintained to a standard no unmanaged crag reaches. Its clinics move climbers from top-rope to lead in a structured progression rather than selling one-off supervised ascents.",
+    "services": [
+      "Route instruction across ninety graded lines",
+      "Lead climbing and belay certification clinics",
+      "Multi-pitch guided ascents",
+      "Harness, rope, and shoe hire from the base hut"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 73,
+    "description": "A two-vessel operation whose schedule is set entirely by tide tables and moon phase, carrying small groups out at dawn to watch a channel come alive as the water moves. The crew are former commercial fishermen who read current lines for a living. Trips are cancelled outright when the swell exceeds the company's own limit.",
+    "uvp": "Departures are timed to slack water so guests are in the channel during the one hour a day it is calm and full of feeding activity, which fixed-schedule operators simply miss. Crews interpret current and bird behaviour rather than following a set route.",
+    "services": [
+      "Dawn slack-water channel excursions",
+      "Guided in-water drift observation",
+      "Seabird and feeding-activity spotting",
+      "Small-group tide-timed private charters"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 74,
+    "description": "Seven quiet rooms arranged above an interior courtyard, run by a couple who take a maximum of one booking party per floor. There is no restaurant, no reception counter, and no organised programme. Guests are given a key, a courtyard to read in, and the owners' phone number for anything else.",
+    "uvp": "The property deliberately sells absence: no scheduled activities, no lobby traffic, and a one-party-per-floor rule that makes the building feel privately held. Returning guests book the same room for weeks at a time because nothing about it changes.",
+    "services": [
+      "Single-party floor bookings",
+      "Long-stay weekly and monthly rates",
+      "Courtyard reading and quiet-hours policy",
+      "Self-directed key collection and check-in"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 75,
+    "description": "A thirty-seat restaurant in a provincial capital whose entire menu reconstructs the cooking of coastal fishing settlements, working from interviews the chef recorded with elderly cooks along the shoreline. Ingredients are trucked in daily. The dining room itself sits in an inland commercial street with no water in sight.",
+    "uvp": "The kitchen preserves techniques, such as bamboo-tube smoking and seawater curing, that the originating households have largely stopped practising. Each dish is served with the name of the cook whose method it follows, turning the menu into an oral archive.",
+    "services": [
+      "Reconstructed coastal tasting menu",
+      "Seawater curing and smoking demonstrations",
+      "Cook-attributed dish documentation",
+      "Chef's counter seating with method commentary"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 76,
+    "description": "A company running evening circuits through a converted warehouse quarter where independent galleries, printmaking studios, and artist-run spaces open late on the same night each month. Groups of twelve move on foot between eight venues with a guide who works as a curator by day. Artists are usually present in their studios.",
+    "uvp": "Access is arranged directly with the artists, so groups enter working studios rather than public gallery fronts. Because the guide curates in the same scene, the commentary places each space within the quarter's ongoing arguments rather than reciting biographies.",
+    "services": [
+      "Monthly late-night gallery circuit",
+      "Working artist studio access",
+      "Printmaking demonstration stops",
+      "Curator-led contemporary art commentary"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 77,
+    "description": "An operator that supports pilgrims walking a two hundred-kilometre devotional route over eight days, covering roughly twenty-five kilometres of hill road daily. It handles luggage transfer, waypoint provisioning, and a support vehicle for those who cannot finish a stage. Walkers stay in parish halls arranged along the route.",
+    "uvp": "The company runs logistics for a route walked as an act of devotion rather than a marketed trek, so it works with parish wardens instead of hotels. Support vehicles shadow each stage, letting older or injured pilgrims complete the pilgrimage they came for.",
+    "services": [
+      "Eight-stage supported pilgrimage walk",
+      "Daily luggage transfer between waypoints",
+      "Parish hall accommodation arrangement",
+      "Route support vehicle and medical escort"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 78,
+    "description": "A retreat house of nine rooms in a stand of old-growth forest, running three-night silent programmes where guests walk marked forest loops at a deliberately slow pace, eat in silence, and attend guided attention sessions. Phones are surrendered at arrival. The walks involve no elevation gain or technical terrain.",
+    "uvp": "The programme's value lies in enforced quiet rather than exertion, and the house's isolation means guests hear nothing mechanical for three days. Facilitators are trained in clinical stress reduction, which distinguishes the retreat from a scenic lodge selling nature as decoration.",
+    "services": [
+      "Three-night silent residential programme",
+      "Slow-paced guided forest loop walks",
+      "Attention and stress-reduction sessions",
+      "Device surrender and full-board silent meals"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 79,
+    "description": "A tasting room operating in a tunnel that was dug as a wartime air-raid shelter and now holds a constant cool temperature ideal for ageing. The business bottles and pours its own fortified wines, seating twenty-four along the tunnel walls. Its trade is walk-in tastings and bottle sales to visitors.",
+    "uvp": "The tunnel's stable temperature lets the producer age stock without refrigeration, which measurably changes the finished wine compared with above-ground competitors. Tastings are poured directly beside the resting barrels, so guests taste the same lot at three different ages.",
+    "services": [
+      "Underground guided tasting flights",
+      "Barrel-side vertical age comparisons",
+      "Fortified wine bottle sales",
+      "Private tunnel table hire"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 80,
+    "description": "A production company that stages ticketed drone light shows and pyrotechnic finales in city parks and waterfront plazas, running a fleet of six hundred programmed aircraft. Each show is scored, choreographed, and sold as a seated evening event with staggered entry. Municipal partners contract the company for holiday programming.",
+    "uvp": "Owning its fleet and its flight-control software lets the company build sequences around a specific skyline rather than reusing a stock show. Seated ticketing with staggered entry solves the crowd crush that free public fireworks displays create.",
+    "services": [
+      "Ticketed choreographed drone light shows",
+      "Pyrotechnic finale programming",
+      "Reserved seating with staggered entry",
+      "Municipal holiday event contracts"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 81,
+    "description": "A family aquaculture business that added six sleeping cottages built on floats above its own grow-out pens, reached by a fifteen-minute boat ride from the shore road. Guests sleep over the water, help lift the morning harvest, and eat what comes up. The farm's main income remains its commercial shellfish contracts.",
+    "uvp": "Guests wake directly above the pens and eat shellfish pulled from under their own floor within the hour, a sequence no shore-based restaurant or hotel can compress. Because the farm still runs commercially, visitors work alongside a real harvest cycle.",
+    "services": [
+      "Floating cottage overnight stays",
+      "Morning shellfish harvest participation",
+      "Same-hour grilled harvest meals",
+      "Boat transfer from the shore road"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 82,
+    "description": "A workshop company that takes photographers to exposed ridgelines for first light, which means leaving base at three in the morning and climbing for two hours in the dark with packs. Instruction covers exposure blending and composition under fast-changing light. Participants must pass a fitness screening before booking.",
+    "uvp": "Sessions are scheduled around specific atmospheric conditions rather than a fixed calendar, so participants shoot inversions and cloud seas that day tours never see. The instructor carries mountain leader certification alongside a commercial photography practice.",
+    "services": [
+      "Pre-dawn ridgeline ascent photo sessions",
+      "Field instruction in exposure blending",
+      "Condition-triggered departure scheduling",
+      "Headlamp navigation and safety briefing"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 83,
+    "description": "A tea house operating in a wooden pavilion where guests are seated on tatami and served through a formal sequence that takes ninety minutes. The host is a certified practitioner of the ceremony's lineage and explains each utensil's role. The house also sells the whisked powdered tea it serves.",
+    "uvp": "The sequence is performed to lineage standard rather than shortened for visitors, so guests experience the ceremony as ritual practice instead of a demonstration. Utensils in daily use include pieces from the founding host's collection, dated and explained during the sitting.",
+    "services": [
+      "Ninety-minute formal tea ceremony sittings",
+      "Utensil and lineage interpretation",
+      "Seasonal confection pairing service",
+      "Powdered tea retail from the house selection"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 84,
+    "description": "A bicycle hire operator with three docking hubs across a dense inner district, renting commuter and cargo bikes by the hour. It supplies riders with printed route cards covering mural corridors, independent bookshops, and cafes on quiet backstreets. Most customers are visitors staying in the district for a few days.",
+    "uvp": "Route cards are redrawn every quarter with local input, steering riders onto low-traffic streets that mapping apps route them away from. Cargo bikes let visitors carry market purchases, which no conventional tourist bike rental in the district offers.",
+    "services": [
+      "Hourly commuter and cargo bike hire",
+      "Quarterly-updated backstreet route cards",
+      "Multi-hub pickup and return",
+      "Helmet, lock, and repair kit provision"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 85,
+    "description": "An operator that restored three 1950s rail carriages and runs them as a moving dining room on a provincial branch line, serving a five-course lunch across a four-hour return journey through farmland. Original fittings, livery, and dining car china were reproduced from railway archives. Seats are sold by the table.",
+    "uvp": "The carriages are certified heritage rolling stock running on a line that carries no other passengers, so the journey itself is a preserved artefact. The menu is built from crops grown within sight of the track, changing with what the fields are producing.",
+    "services": [
+      "Five-course dining journey by rail",
+      "Restored 1950s carriage table seating",
+      "Route-sourced seasonal menu",
+      "Railway heritage commentary between stations"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 86,
+    "description": "A company running eight themed puzzle rooms across two floors of a commercial building in the city centre, where teams of four to eight are locked in for sixty minutes to solve a scripted scenario. Rooms are rebuilt roughly every eighteen months. Corporate team bookings fill most weekday evening slots.",
+    "uvp": "Sets are built by working theatre designers, so rooms function as immersive stage environments rather than plywood puzzle boxes. A live game master adjusts difficulty in real time, keeping both first-timers and enthusiast teams inside the sixty-minute window.",
+    "services": [
+      "Sixty-minute themed escape room sessions",
+      "Live game master difficulty adjustment",
+      "Corporate team-building bookings",
+      "Rotating scenario releases"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 87,
+    "description": "A lodge of ten stilted rooms in a mangrove estuary, reachable only by a thirty-minute boat channel run. Guests paddle the narrow tidal channels with guides, wading and dragging kayaks where the water thins at low tide. The property runs on solar and treats all wastewater on site.",
+    "uvp": "The estuary position gives guests brackish channel systems that neither an open-water resort nor an inland lodge can reach, and paddling routes change completely between tides. Guides are estuary rangers who monitor the mangrove replanting the lodge funds.",
+    "services": [
+      "Stilted overwater room stays",
+      "Tidal channel kayak expeditions",
+      "Night paddle for estuary wildlife",
+      "Mangrove replanting participation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 88,
+    "description": "A ballooning company launching at first light from cut fields, carrying eight to twelve passengers per basket on flights of about an hour depending on wind. Pilots hold commercial balloon licences and a chase crew recovers the envelope wherever it lands. Flights are cancelled outright on unsuitable mornings.",
+    "uvp": "Launch sites are chosen each morning from wind soundings rather than fixed, which lets the company fly low over river bends and forest canopy instead of a set corridor. Passengers help crew the inflation and pack-down, making the flight a participatory outdoor morning.",
+    "services": [
+      "Sunrise hot air balloon flights",
+      "Passenger-assisted inflation and pack-down",
+      "Wind-sounding based launch site selection",
+      "Chase crew recovery and field landing service"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 89,
+    "description": "A working monastery that maintains a guest wing of sixteen cells for visitors willing to keep the community's hours, including a four-thirty morning office. Rooms are plain, meals are taken with the community in silence, and guests may join the chanted liturgy. Donations rather than room rates cover the stay.",
+    "uvp": "Guests are absorbed into a living monastic timetable that has run continuously for over two centuries, rather than observing it from outside. The guest master assigns a monk to each visitor for conversation, which no retreat hotel imitating the format can provide.",
+    "services": [
+      "Guest cell overnight stays on donation",
+      "Participation in the chanted daily office",
+      "Silent community meals",
+      "Assigned guest master conversations"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 90,
+    "description": "A listening bar in a converted ground-floor unit on a busy commercial street, built around a valve amplifier system and a wall of about nine thousand records. Conversation is kept low, staff play full album sides, and drinks are limited to a short list. Trade is almost entirely evening, mostly local residents and visiting record collectors.",
+    "uvp": "The room is acoustically treated and the system rebuilt by hand, so a played record sounds materially different from any bar in the district. Full-side listening rather than a shuffled playlist gives the venue a pace that ordinary nightlife venues cannot hold.",
+    "services": [
+      "Full-album side listening sessions",
+      "Valve system and vinyl archive access",
+      "Curated short-list drinks service",
+      "Guest selector evenings with collectors"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 91,
+    "description": "An operator running slow night cruises up a tidal river through mangrove banks, where thousands of insects light the trees in synchronised pulses. Boats are paddled rather than motorised for the final stretch, and lighting is prohibited on board. Departures are limited to four boats a night to protect the display.",
+    "uvp": "Restricting departures and banning artificial light preserves a display that heavier river traffic elsewhere has already dimmed, so guests see the phenomenon at full intensity. Boatmen are trained by the river conservation council and interpret the estuary's ecology as they paddle.",
+    "services": [
+      "Night paddle cruises to synchronised firefly banks",
+      "Zero-light onboard viewing protocol",
+      "Estuary ecology interpretation by trained boatmen",
+      "Capped four-boat nightly departures"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 92,
+    "description": "A pottery studio in a village where households have thrown the same red-clay water jars for generations, now offering visitors wheel sessions with the family's master potter. Clay is dug from the same riverbank the village has always used and fired in a wood kiln behind the workshop. Finished commercial orders still fill most of the kiln.",
+    "uvp": "Visitors learn the specific jar form the village is known for, using local clay and the family's throwing sequence rather than a generic beginner shape. Pieces are fired in the wood kiln alongside the workshop's commercial stock, so guests wait for a real firing cycle.",
+    "services": [
+      "Master potter wheel-throwing sessions",
+      "Riverbank clay preparation demonstration",
+      "Wood kiln firing observation",
+      "Shipping of fired pieces after the kiln cycle"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  }
+]

@@ -1,0 +1,365 @@
+[
+  {
+    "id": 25,
+    "description": "A forty-room resort built along a shallow bay, with low-rise cottages set back from the tideline and a dive shop operating off its own jetty. Guests book nightly stays that bundle boat access to nearby reefs. The property employs a resident marine guide alongside its housekeeping and front-desk teams.",
+    "uvp": "Because the dive operation is owned rather than subcontracted, guests can leave the reef and be back in their room within ten minutes, which fixed-schedule day-trippers cannot do. Cottage placement follows the reef line so every unit faces open water.",
+    "services": [
+      "Beachfront cottage nightly stays",
+      "House-reef guided snorkeling from the jetty",
+      "Two-tank boat dives for in-house guests",
+      "Sunset paddleboard hire"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 26,
+    "description": "A timber lodge at the head of a highland valley, offering eighteen rooms plus a guiding desk that runs trekking parties onto the surrounding ridges. Guests typically stay two to four nights and hike on at least one of them. The lodge maintains its own trail crew and a drying room for wet gear.",
+    "uvp": "Trek routes start from the lodge door instead of a two-hour transfer, so guests get onto the ridgeline at first light while day groups are still driving in. The in-house trail crew keeps four routes cleared year-round, including one closed to non-guests.",
+    "services": [
+      "Valley lodge room and full-board stays",
+      "Guided ridge summit trek with packed lunch",
+      "Dawn departure to the private trail",
+      "Boot, pack, and trekking pole rental"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 27,
+    "description": "An operator managing a covered market hall inside a nineteenth-century civic building in the downtown core. It leases stalls to sixty produce, spice, and cooked-food traders, runs guided tasting circuits, and hosts evening events under the original iron roof. Foot traffic mixes daily shoppers with visitors arriving on organised tours.",
+    "uvp": "The building's restoration was done to conservation standards, so traders work under original architecture rather than a themed rebuild. Guided circuits pair each stall's produce with the market's own documented history, something no adjacent supermarket or food court can offer.",
+    "services": [
+      "Guided market tasting circuit",
+      "Heritage building architectural tour",
+      "Evening supper-club events in the hall",
+      "Spice and regional produce retail stalls"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 28,
+    "description": "An island property running twenty-two bungalows, a dive centre, and a single open-air kitchen that serves all guests at communal tables. Supplies arrive twice weekly by boat, and the kitchen builds its menu around what the day's fishing lands. Most guests book five-night packages combining lodging, meals, and diving.",
+    "uvp": "Being the only operator on its side of the island, the property controls reef access, boat schedules, and the kitchen together, so a dive can finish with a meal cooked from a catch landed the same hour. Nothing here is outsourced to the mainland.",
+    "services": [
+      "Full-board bungalow packages",
+      "Daily two-dive boat trips on the house reef",
+      "Catch-of-the-day communal dinners",
+      "Beach barbecue and grilled seafood nights"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 29,
+    "description": "A boutique hotel occupying a restored ancestral house from the Spanish colonial period, with twelve rooms retaining original hardwood floors and capiz windows. The ground floor holds a small museum of the founding family's possessions, open to non-guests. Conservation architects supervise all maintenance work on the structure.",
+    "uvp": "Guests sleep inside a declared heritage structure rather than a replica built for atmosphere, with room interiors documented and approved by the national conservation office. The resident curator gives evening talks that place the house within the town's founding history.",
+    "services": [
+      "Heritage room nightly stays",
+      "Ground-floor house museum admission",
+      "Evening curator talk on the family archive",
+      "Conservation-focused guided house tour"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 30,
+    "description": "A restaurant and cocktail bar on the thirty-second floor of a business-district tower, seating a hundred and ten across an indoor dining room and a wraparound terrace. The kitchen runs a modern tasting menu and the bar programme changes quarterly. Reservations skew heavily toward evening service and corporate entertaining.",
+    "uvp": "The terrace sits above the district's tallest neighbouring roofline, so diners get an uninterrupted skyline that ground-level restaurants cannot sell at any price. The bar list is built around spirits distilled within the metro, pairing city produce with the city view.",
+    "services": [
+      "Seven-course evening tasting menu",
+      "Rooftop terrace cocktail service",
+      "Quarterly spirits pairing flights",
+      "Private corporate dining room hire"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 31,
+    "description": "A working vegetable and dairy farm that added eight guest cabins and a kitchen barn six years ago. Visitors stay overnight, join the morning milking, and eat meals cooked from produce harvested that day. The farm still sells the bulk of its output wholesale, with tourism supplementing rather than replacing agriculture.",
+    "uvp": "Guests eat at a table twenty metres from the beds the food was cut from, and the kitchen menu is set by that morning's harvest rather than a printed card. Because the farm remains commercially productive, visitors see real operations, not a staged demonstration plot.",
+    "services": [
+      "Overnight farm cabin stays",
+      "Harvest-driven set lunch and dinner",
+      "Morning milking and cheese-making session",
+      "Preserves and fermentation workshop"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 32,
+    "description": "A riverside eco-camp with sixteen raised tent platforms, composting facilities, and a boathouse holding twenty kayaks. Guests stay one to three nights and paddle sections of the river with camp guides. The operation runs off solar power and hauls out all waste under an agreement with the watershed authority.",
+    "uvp": "The camp sits above a stretch of whitewater no road reaches, so guests paddle water that day-trip operators can only access hours downstream. Guides are watershed rangers who fold river ecology and safety training into every descent.",
+    "services": [
+      "Raised platform tent overnight stays",
+      "Guided whitewater kayak descent",
+      "Night paddle under river canopy",
+      "River ecology briefing with camp rangers"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 33,
+    "description": "An amusement park operator that also owns the two hundred-room hotel at its gate, selling combined ride-and-stay packages. The park runs nine mechanical attractions and a nightly parade, while the hotel provides early park entry to registered guests. Marketing targets families travelling more than three hours to reach the site.",
+    "uvp": "Hotel guests enter the park an hour before public opening, which turns an overnight booking into measurably more ride time rather than just a bed. Rooms are themed to individual attractions, extending the park experience past closing time.",
+    "services": [
+      "Ride-and-stay overnight packages",
+      "Early gate access for hotel guests",
+      "Nightly parade and fireworks viewing",
+      "Attraction-themed family rooms"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 34,
+    "description": "An indoor amusement zone built into the top level of a downtown shopping complex, operating a suspended rollercoaster, a drop tower, and a two-storey arcade. Admission is by card-loaded ride credits. The venue draws mall shoppers, weekend family groups, and teenagers from surrounding city districts.",
+    "uvp": "Placing genuine mechanical thrill rides inside a metro shopping tower gives visitors a full amusement outing without leaving the city or spending a day travelling. Ride credits are shared with the mall's loyalty programme, so shopping and rides run on one account.",
+    "services": [
+      "Indoor rollercoaster and drop tower rides",
+      "Card-loaded ride credit packages",
+      "Two-storey arcade and prize redemption",
+      "School holiday group bookings"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 35,
+    "description": "An events company that stages an annual harvest festival built around a patron saint's feast, combining a religious procession with fifty cooking stalls run by parish households. It handles permits, stall allocation, judging of a heirloom-dish competition, and ticketed tasting sessions. The festival runs four days each October.",
+    "uvp": "Every stall is required to cook a dish documented in the town's parish recipe register, so the food is inseparable from the feast it commemorates. Visitors buy a single tasting pass that funds the procession, keeping the devotional core financed by the culinary programme.",
+    "services": [
+      "Multi-stall heirloom dish tasting pass",
+      "Patron saint procession viewing",
+      "Heirloom recipe cooking competition",
+      "Parish household kitchen visits"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 36,
+    "description": "A family distillery that has produced sugarcane spirit on the same site since 1912, now running visitor programmes through its original copper still house. Tours cover the milling yard, the ageing warehouse, and a tasting room in the founder's former office. Bottling remains the company's primary commercial activity.",
+    "uvp": "Visitors taste from barrels laid down before the war in a still house that has never been rebuilt, giving a production heritage no new craft distillery can claim. The company's ledgers are on display, tying each expression to a documented harvest year.",
+    "services": [
+      "Historic still house guided tour",
+      "Barrel-aged expression tasting flight",
+      "Archive ledger and heritage exhibit viewing",
+      "Single-cask bottling for visitors"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 37,
+    "description": "A cruise operator running a converted wooden vessel that departs each evening for a three-hour dinner sailing across a sheltered strait. The boat seats seventy at fixed tables and carries a working galley with two cooks. Bookings come mostly from couples, anniversary parties, and hotel concierge referrals.",
+    "uvp": "Dinner is plated on board from a galley rather than reheated from shore catering, and the departure is timed so the main course lands as the light goes off the water. The vessel's shallow draft lets it hug a coastline larger dinner boats must avoid.",
+    "services": [
+      "Three-hour sunset dinner sailing",
+      "Galley-cooked seafood set menu",
+      "Coastal close-in evening cruising route",
+      "Private charter for anniversaries and events"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 38,
+    "description": "A hostel occupying five floors of a converted office building two blocks from a metro station, with mixed dorms, private twins, and a ground-floor bar that non-guests can use. Staff run nightly outings into the surrounding nightlife district. Guests are predominantly solo travellers aged twenty to thirty-five.",
+    "uvp": "The property sells itself as a base for the district rather than a bed, staffing a nightly host who walks guests to venues hard to find or hard to enter alone. Its bar doubles as the neighbourhood's meeting point, so guests are mixing with residents.",
+    "services": [
+      "Dorm and private room nightly stays",
+      "Nightly hosted bar and live music crawl",
+      "Ground-floor bar open to the public",
+      "City transit and district orientation briefing"
+    ],
+    "labels": [
+      "Urban & City",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 39,
+    "description": "A surf camp offering week-long packages that combine dormitory or private lodging, three daily meals, and twice-daily coaching sessions at the break in front of the property. Video review happens each afternoon in a shaded deck area. Most guests arrive as solo travellers and stay the full seven nights.",
+    "uvp": "The week is structured as a progression rather than sold as separate lessons, so coaching, rest days, and tide-timed sessions are planned around each guest's improvement. Lodging sits close enough to the break that guests paddle out from their room in under two minutes.",
+    "services": [
+      "Seven-night surf and lodging package",
+      "Twice-daily tide-timed coaching sessions",
+      "Afternoon video technique review",
+      "Board quiver access for all guests"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 40,
+    "description": "A highland coffee estate that receives visitors for full-day programmes across its planted slopes. The day involves a steep two-hour walk uphill, hand-picking during harvest months, and a cupping session at the wet mill. The estate processes and roasts its own beans and sells directly to specialty buyers abroad.",
+    "uvp": "The walk is a genuine working ascent across terraced slopes rather than a shuttle to a viewing platform, so visitors reach altitude plots that determine the cup profile they later taste. Cupping is led by the estate's own licensed Q grader.",
+    "services": [
+      "Guided uphill plantation trek",
+      "Harvest-season hand-picking participation",
+      "Wet mill processing walkthrough",
+      "Q grader-led cupping session"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 41,
+    "description": "A tour company running electric shuttle circuits through the metro's oldest districts, linking a restored fort, two cathedrals, and a contemporary arts quarter built inside former warehouses. Circuits run hourly with recorded commentary in four languages and a live guide on board. Tickets are sold as hop-on day passes.",
+    "uvp": "The route deliberately threads colonial-era landmarks together with the working creative district that grew around them, showing continuity instead of treating heritage as a separate museum stop. Electric shuttles are permitted inside pedestrianised heritage streets closed to other tour vehicles.",
+    "services": [
+      "Hop-on hop-off heritage district day pass",
+      "Guided fort and cathedral interior stops",
+      "Warehouse arts quarter circuit",
+      "Four-language onboard commentary"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 42,
+    "description": "A glamping operator running twelve canvas suites on a forested plateau above a waterfall system, each with a proper bed, private bathroom, and deck. A guiding team leads guests down to the falls and along ridge trails during the day. The site is reached by a forty-minute four-wheel-drive transfer.",
+    "uvp": "The company pairs genuinely remote terrain with serviced lodging, so guests can complete a demanding falls descent and return to hot water and a made bed. Access is controlled by the operator, meaning the trails and pools are never shared with day crowds.",
+    "services": [
+      "Canvas suite overnight stays with private bath",
+      "Guided waterfall descent and swim",
+      "Ridge trail day hikes with packed meals",
+      "Four-wheel-drive mountain transfer"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 43,
+    "description": "A grill house built on stilts over the water at the end of a working fishing wharf, seating diners on open decks between the moored boats. The kitchen buys directly from the crews unloading below and cooks to order over charcoal. Service starts at four in the afternoon and runs until the catch is gone.",
+    "uvp": "Diners choose their fish from the landing crates and watch it go straight onto the coals, which no inland seafood restaurant working from a distributor can replicate. Deck tables sit level with the water, putting the working harbour in reach of the table.",
+    "services": [
+      "Choose-your-catch charcoal grilling",
+      "Over-water deck dining among moored boats",
+      "Shellfish and sea urchin seasonal counter",
+      "Dawn fish landing viewing for early bookings"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 44,
+    "description": "An oceanarium and entertainment complex in the city's reclamation district, holding a walk-through tunnel tank, a sea lion show arena, and a small ride area for younger children. Tickets are timed and bundled with neighbouring attractions. The venue runs school programmes on weekdays and family traffic on weekends.",
+    "uvp": "The complex delivers a full ticketed show-and-attraction day inside the metro, so families get an amusement outing without the travel a coastal trip requires. Its tunnel tank is the only one in the country with a scheduled diver feeding narrated live.",
+    "services": [
+      "Walk-through tunnel tank admission",
+      "Scheduled sea lion and diver feeding shows",
+      "Children's ride zone access",
+      "Bundled multi-attraction city tickets"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 45,
+    "description": "A ninety-key resort on a private cove, operating over-water villas, a spa pavilion, and two swimming pools cut into the shoreline rock. Guests book multi-night stays that include transfers by speedboat from the mainland jetty. The property runs at high occupancy through the northeast monsoon lull.",
+    "uvp": "Villas are built over the water on a cove the property owns outright, so guests swim straight off their deck into protected water no day visitor can enter. Spa treatment rooms open directly onto the sea rather than facing an internal garden.",
+    "services": [
+      "Over-water villa multi-night stays",
+      "Speedboat transfers from the mainland jetty",
+      "Seaside spa treatment pavilion",
+      "Private cove swimming and kayak access"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 46,
+    "description": "A ticketed adventure park built across a forested hillside, running eleven zipline spans, a suspension bridge circuit, and a high-ropes course with belay systems. Visitors buy timed entry and progress through graded courses with harnessed supervision. The site was purpose-built and engineered rather than adapted from existing trails.",
+    "uvp": "The park delivers genuine height and exposure with a continuous belay system, so first-timers get an adrenaline experience normally reserved for trained climbers. Its longest span crosses a river valley, a run no other commercial course in the region can offer.",
+    "services": [
+      "Eleven-span zipline circuit",
+      "High-ropes course with continuous belay",
+      "Suspension bridge canopy walk",
+      "Graded beginner-to-advanced course tickets"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 47,
+    "description": "An integrated resort in the metro's entertainment district combining a six hundred-room hotel, a gaming floor, a theatre staging nightly production shows, and a retail arcade. It operates under a regulated gaming licence and markets heavily to regional short-haul visitors. Most guests book two-night weekend packages.",
+    "uvp": "The property bundles accommodation, a resident production show, and the gaming floor under one roof, so guests never leave the building across a weekend. Its theatre runs a purpose-built residency rather than touring acts, giving the resort a show found nowhere else.",
+    "services": [
+      "Weekend hotel and entertainment packages",
+      "Nightly resident theatre production",
+      "Licensed gaming floor access",
+      "Retail arcade and late-night lounges"
+    ],
+    "labels": [
+      "Urban & City",
+      "Accommodation & Staycation",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 48,
+    "description": "A company that operates a nightly street market across four closed-off blocks in the city centre, managing eighty food carts, a stage for live acts, and crowd logistics with the local government. Vendors are curated and rotated quarterly. The market draws office workers on weekdays and heavy family traffic on weekends.",
+    "uvp": "Vendor slots are awarded by a tasting panel rather than sold to the highest bidder, which keeps the food quality above the usual street-market average. Closing the blocks turns an ordinary commercial street into a walkable night destination four evenings a week.",
+    "services": [
+      "Curated night food cart market",
+      "Live stage programming and busker slots",
+      "Pedestrianised street dining zones",
+      "Quarterly vendor rotation and tasting panel"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  }
+]

@@ -1,0 +1,1662 @@
+[
+  {
+    "id": 1,
+    "description": "A family-run dive operator working out of a two-storey shopfront a short walk from the municipal pier. The company runs three fibreglass bancas, maintains its own compressor and rental gear, and serves mostly certified divers on multi-day packages plus a smaller stream of first-timers doing discovery dives. Staff include four instructors and two boat crews.",
+    "uvp": "The outfit holds exclusive mooring rights at two offshore pinnacles that larger operators cannot legally anchor on, so groups reach them before the day-trip fleet arrives. Every guide logs sightings into a shared reef-health record clients receive after their trip.",
+    "services": [
+      "Two-tank offshore pinnacle dive",
+      "Open Water certification course",
+      "Night dive with reef torch guiding",
+      "Nitrox tank fills and gear servicing"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 2,
+    "description": "This charter company operates a fleet of six outrigger boats that ferry small groups between a cluster of offshore islets throughout the dry season. Bookings are handled from a beachfront kiosk, and each departure carries a maximum of twelve passengers with a boatman and a spotter. The business targets independent travellers rather than large tour wholesalers.",
+    "uvp": "Routes are re-planned every morning against tide and swell readings instead of running a fixed circuit, which lets the crew reach sandbars that only surface a few hours a day. Passengers get a smaller, quieter boat than the packed group vessels sold at hotel desks.",
+    "services": [
+      "Half-day three-islet hopping circuit",
+      "Sandbar landing at low tide",
+      "Snorkel gear issue and reef briefing",
+      "Private sunset cruise charter"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 3,
+    "description": "A surf school run from a wooden shack facing a consistent beach break, staffed by six local instructors who grew up riding the same peak. The business rents soft-top boards, runs graded lesson blocks from absolute beginner to turn coaching, and keeps a small repair bench for dinged boards. Most clients are weekend visitors from the capital.",
+    "uvp": "Instructors teach in the water alongside students rather than shouting from shore, and class sizes are held to three learners per coach. The school reads the sandbar each morning and moves its teaching zone so beginners never share a peak with experienced riders.",
+    "services": [
+      "Beginner three-day surf progression course",
+      "One-on-one turn and paddle coaching",
+      "Soft-top and shortboard rental",
+      "Board ding repair service"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 4,
+    "description": "A canyoneering outfitter that guides groups down a river gorge involving fixed-rope descents, controlled jumps into plunge pools, and several hours of scrambling over boulders. The company employs rope-access certified guides, maintains its own helmets and harnesses, and screens clients for fitness before confirming a booking. Trips run from a small mountain-road base camp.",
+    "uvp": "The team rigs its own anchor systems and rotates routes so no gorge section is run more than three days a week, keeping conditions safe and unworn. Guides carry swiftwater rescue certification, which almost no competing operator in the province holds.",
+    "services": [
+      "Full-day gorge descent with rappels",
+      "Guided cliff-jump progression",
+      "Swiftwater safety briefing and gear issue",
+      "Overnight base-camp bunk for early starts"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 5,
+    "description": "This guiding service specialises in multi-hour cave systems, taking small parties through narrow crawl passages, chest-deep underground streams, and chambers that require helmet lamps throughout. It operates under a permit from the local protected-area office and maintains a strict group cap. Clients are typically fit travellers looking for a physically demanding underground day.",
+    "uvp": "Each party is accompanied by two guides trained in confined-space rescue, allowing routes deeper than the standard tourist chamber most visitors are limited to. The company also runs a lamp-out silence stop that has become the trip's defining moment for repeat clients.",
+    "services": [
+      "Deep chamber traverse with stream wading",
+      "Crawl-passage caving for experienced groups",
+      "Headlamp and helmet issue with technique training",
+      "Cave conservation and safety orientation"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 6,
+    "description": "A mountain bike tour company running guided descents on forest singletrack across a ridge system, with a support van that shuttles riders and bikes to the upper trailheads. The workshop on site handles suspension setup and trailside repairs. Riders range from confident intermediates to racers using the terrain for off-season training.",
+    "uvp": "The company built and now maintains eleven kilometres of its own singletrack under a community land agreement, so its routes exist nowhere else. Shuttle logistics let riders complete four long descents in a day instead of one grinding climb.",
+    "services": [
+      "Shuttle-assisted singletrack descent day",
+      "Technical skills clinic on berms and drops",
+      "Full-suspension bike and armour rental",
+      "Trailside mechanical support"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 7,
+    "description": "A small walking-tour company whose guides are trained historians and long-time residents of the old quarter. Tours trace three centuries of civic and religious architecture, stopping at a stone fort, two plazas, and a working parish church. The business runs morning and late-afternoon departures and also handles school and academic group bookings.",
+    "uvp": "Every route is built from parish archives and oral histories rather than a generic script, and guides carry reproduction period maps that let visitors compare street patterns then and now. Group size never exceeds ten so conversation stays possible inside quiet interiors.",
+    "services": [
+      "Old quarter architecture walking tour",
+      "Archive-based colonial history route",
+      "Parish church and fort interior access",
+      "Academic and school group programmes"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 8,
+    "description": "A weaving cooperative of thirty-eight member households that opened its production floor to visitors five years ago. Guests watch backstrap looms in operation, learn how natural dyes are prepared, and can sit at a training loom under supervision. Sales of finished textiles and workshop fees are split among members under a written revenue agreement.",
+    "uvp": "Visitors work with the same master weavers who supply the cooperative's commercial orders, not demonstration staff hired for tourism. Each purchased piece carries the weaver's name and the pattern's clan meaning, which the cooperative documents to keep the motif tradition traceable.",
+    "services": [
+      "Backstrap loom demonstration and talk",
+      "Half-day hands-on weaving workshop",
+      "Natural dye preparation session",
+      "Named-weaver textile purchase"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 9,
+    "description": "This organisation produces and manages an annual town fiesta, coordinating street dance contingents, a devotional procession, and a week of community programmes. It works year-round with barangay councils, costume makers, and drum corps, and sells grandstand seating and hospitality packages to visitors. A small permanent staff runs logistics, permits, and sponsor relations.",
+    "uvp": "Because the group is community-owned rather than a hired events agency, its programme still follows the religious calendar that gave the fiesta its meaning instead of being reshaped for tourist convenience. Visitors can join rehearsal sessions with contingents in the weeks before the parade.",
+    "services": [
+      "Grandstand seating for the street dance parade",
+      "Devotional procession viewing programme",
+      "Contingent rehearsal observation visits",
+      "Costume atelier tours"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 10,
+    "description": "A ticketed waterpark operating eleven slides, a wave pool, and a lazy river across a fenced eight-hectare site. The company sells day passes, cabana upgrades, and annual memberships, and runs its own lifeguard training programme. Peak trade comes from school holidays, corporate outings, and birthday bookings from nearby residential districts.",
+    "uvp": "The park runs a timed-entry ride reservation system that removes most queueing, a rarity among regional waterparks. Its two tallest slides were engineered for the site rather than bought off the shelf, giving them drop profiles that cannot be ridden anywhere else in the country.",
+    "services": [
+      "Multi-slide day admission",
+      "Wave pool sessions on a timed cycle",
+      "Private cabana and locker rental",
+      "Birthday and corporate group packages"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 11,
+    "description": "An indoor entertainment centre occupying two floors of a commercial building, combining trampoline courts, a ninja obstacle course, an arcade floor, and party rooms. Admission is sold in timed blocks with mandatory grip socks. The operator markets primarily to families with children aged six to sixteen and to corporate team-building organisers.",
+    "uvp": "Court time is capped by sensor-counted occupancy rather than sold unlimited, so the jump floors never reach the crush that makes similar venues unusable on weekends. A quiet sensory hour each morning is reserved for children who cannot manage the standard noise and lighting.",
+    "services": [
+      "Timed trampoline court sessions",
+      "Ninja obstacle course runs",
+      "Redemption arcade and prize counter",
+      "Private party room hire with host"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 12,
+    "description": "A travelling carnival company that assembles a full midway of mechanical rides, game booths, and a nightly variety show, moving between provincial town plazas across a nine-month circuit. It owns its rides, employs its own inspection crew, and negotiates revenue splits with host municipalities. Attendance peaks during town fiesta weeks.",
+    "uvp": "The operator brings a genuine full-scale midway, including a forty-metre Ferris wheel, to towns that have no permanent amusement venue of their own. Its rides are re-certified by an independent engineer at every setup, and the report is posted at the gate.",
+    "services": [
+      "Ferris wheel and mechanical ride tickets",
+      "Midway game booth strip",
+      "Nightly variety and fireworks show",
+      "Unlimited-ride wristband nights"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 13,
+    "description": "A night-tour company that walks and shuttles visitors through the business district after dark, covering a rooftop viewing deck, a neon-lit side street of independent shops, and a late-night market of vinyl and secondhand traders. Groups of up to fourteen travel by chartered van between stops. Most clients are first-time visitors to the metro.",
+    "uvp": "The route is built around venues that only open after nine, giving visitors a version of the city that daytime tours structurally cannot show. Guides are working musicians and designers who live in the district, so commentary is current rather than guidebook-sourced.",
+    "services": [
+      "Guided after-dark district walk",
+      "Rooftop skyline viewing stop",
+      "Independent record and vintage shop crawl",
+      "Late-night van shuttle between quarters"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 14,
+    "description": "This company manages a mixed-use retail complex spanning four levels, with a cinema block, a karaoke floor, a concert-capable atrium, and roughly two hundred tenant units. Its in-house team handles leasing, events programming, and a visitor concierge desk serving out-of-town shoppers. Weekend footfall is driven by scheduled performances and seasonal sales.",
+    "uvp": "Unlike a passive landlord, the operator programmes the atrium with live acts and pop-up markets almost every weekend, turning the complex into a destination rather than a shopping errand. Its concierge arranges same-day delivery of purchases to hotels across the metro.",
+    "services": [
+      "Concert and pop-up programming in the atrium",
+      "Cinema and karaoke floor bookings",
+      "Visitor concierge and hotel delivery service",
+      "Tourist tax-refund processing desk"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 15,
+    "description": "An entertainment operator running a multi-room karaoke and lounge venue on the upper floors of a downtown tower. It offers twenty-six private rooms of varying size, a members' lounge, and a late licence that keeps the floor open until four in the morning. Corporate after-work groups make up much of its midweek trade.",
+    "uvp": "Rooms are acoustically isolated and fitted with studio-grade microphones and a licensed catalogue in nine languages, which lets the venue serve visiting business delegations that smaller neighbourhood outlets cannot. A soundproof booth lets groups take home a mastered recording.",
+    "services": [
+      "Private karaoke room hire by the hour",
+      "Multilingual song catalogue access",
+      "Studio booth recording of group tracks",
+      "Corporate after-hours function packages"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 16,
+    "description": "A cooking school operating from a purpose-built teaching kitchen with twelve induction stations and a demonstration counter. Classes cover regional braises, vinegar-based stews, and rice cake preparation, and each session ends with participants eating what they cooked. Enrolment is split between visiting travellers and residents taking evening courses.",
+    "uvp": "Recipes are collected from home cooks in surrounding towns and taught with their original technique intact rather than simplified for visitors. Each student leaves with a spice and vinegar kit measured to reproduce the same dishes with ingredients available abroad.",
+    "services": [
+      "Half-day regional braise cooking class",
+      "Rice cake and native sweets workshop",
+      "Market ingredient sourcing walk with the chef",
+      "Take-home vinegar and spice kit"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 17,
+    "description": "A craft brewery producing eight core beers on a fifteen-hectolitre system, with a taproom built directly against the glass wall of the brewhouse. Visitors can take a production tour, work through a guided flight, and buy growlers to take away. The business also supplies kegs to about forty accounts across the region.",
+    "uvp": "The brewery ferments with a house yeast isolated from local fruit, giving its beers a profile no contract brewer can replicate. Tour groups taste unfiltered samples pulled straight from the conditioning tanks, something the packaged range never shows.",
+    "services": [
+      "Guided brewhouse production tour",
+      "Eight-beer tasting flight with brewer commentary",
+      "Tank-side unfiltered sampling",
+      "Growler fills and keg supply"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 18,
+    "description": "A small-batch chocolate maker that buys cacao directly from twelve upland farming families, ferments and roasts on site, and sells bars through a tasting room attached to the production floor. Visitors book structured tastings that move from raw bean to finished bar. The company also runs a wholesale line for cafes and specialty grocers.",
+    "uvp": "Because fermentation happens in-house rather than being outsourced to a consolidator, the tasting room can pour single-farm lots side by side and show how one valley's beans differ from the next. Farmers are named on every wrapper with the price paid.",
+    "services": [
+      "Bean-to-bar guided tasting flight",
+      "Roasting and winnowing floor tour",
+      "Single-farm lot comparison session",
+      "Chocolate tempering workshop"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 19,
+    "description": "A food tour operator that walks small groups through six eating stops in a single afternoon, covering a noodle stall, a grill house, a fermented condiment stand, and three dessert vendors. The company pre-pays vendors, sets portion sizes, and briefs each group on ordering etiquette. Tours run four times weekly with a maximum of eight guests.",
+    "uvp": "Stops are chosen from vendors the founder's family has bought from for decades, which secures seating and off-menu items walk-in visitors are never offered. Portions are calibrated across six stops so guests can finish the route rather than filling up at the first.",
+    "services": [
+      "Six-stop guided tasting walk",
+      "Off-menu vendor specialities",
+      "Fermented condiment and vinegar tasting",
+      "Dietary-adapted route for vegetarian guests"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 20,
+    "description": "A capsule hostel with ninety-six sleeping pods arranged across three dormitory floors, plus lockers, shared bathrooms, and a co-working lounge. Check-in is automated through kiosks and the property runs with a lean overnight staff. Guests are mostly solo budget travellers and contract workers staying between two nights and three weeks.",
+    "uvp": "Each pod has its own ventilation, blackout blind, and power dock, so the property delivers genuine privacy at dormitory pricing that conventional bunk hostels cannot match. Long-stay guests get a dedicated quiet floor separated from the nightly turnover.",
+    "services": [
+      "Nightly capsule pod bookings",
+      "Long-stay weekly rates on the quiet floor",
+      "Luggage storage and laundry service",
+      "Co-working lounge with day passes"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 21,
+    "description": "A fourteen-room guesthouse occupying a converted family home, run by the owners who live on the ground floor. Rooms are individually furnished, breakfast is cooked to order, and the property keeps a small garden courtyard for guests. Bookings come mainly through direct enquiry and repeat visitors who return each year.",
+    "uvp": "With only fourteen rooms and resident owners, guests get an itinerary planned in conversation over breakfast rather than a printed leaflet at a desk. The house keeps two rooms permanently unlisted so returning guests can always be accommodated at short notice.",
+    "services": [
+      "En-suite room nightly stays",
+      "Cooked-to-order breakfast service",
+      "Owner-planned itinerary consultation",
+      "Airport and terminal transfer arrangement"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 22,
+    "description": "An operator managing eighty serviced apartment units inside a residential tower, marketed for weekend staycations and extended corporate assignments. Each unit has a kitchenette and washer, and the building provides a pool deck, gym, and twenty-four-hour front desk. Housekeeping runs on a schedule guests select at booking.",
+    "uvp": "The company sells the building's leisure amenities as the product itself, packaging pool-deck cabanas and late checkout into weekend rates aimed at residents who want a break without travelling. Corporate tenants take the same units monthly with billing consolidated per company.",
+    "services": [
+      "Weekend staycation packages with late checkout",
+      "Monthly serviced apartment leases",
+      "Pool deck and gym access with cabana hire",
+      "Scheduled housekeeping and linen service"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 23,
+    "description": "A transit hotel located inside the airport perimeter, selling rooms in six-hour blocks as well as overnight stays. It runs shower-only suites for passengers on short layovers, a soundproofed sleeping wing, and a small business lounge. Occupancy is driven almost entirely by delayed connections and early-morning departures.",
+    "uvp": "Booking is sold by the hour against a flight number, so passengers pay only for the layover they actually have rather than a full night. The sleeping wing is engineered to airline-cabin acoustic standards, letting guests rest through terminal announcements.",
+    "services": [
+      "Six-hour layover room blocks",
+      "Shower and refresh suites",
+      "Soundproofed overnight sleeping wing",
+      "Wake-up and boarding-call service"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 24,
+    "description": "A rental management company operating thirty-one privately owned condominium units as short-stay accommodation. It handles listing, guest vetting, cleaning crews, and maintenance on behalf of the owners, taking a management share of nightly revenue. Guests are typically families and small groups who want more space than a hotel room provides.",
+    "uvp": "Because the company standardises linens, kitchen inventory, and check-in across every unit, guests get consistent hotel-grade delivery from independently owned apartments. Owners receive occupancy reporting and a guaranteed minimum, which keeps the inventory stable year to year.",
+    "services": [
+      "Whole-apartment nightly and weekly stays",
+      "Self check-in with digital access codes",
+      "Mid-stay cleaning and linen change",
+      "Owner revenue management and reporting"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 25,
+    "description": "A forty-room resort built along a shallow bay, with low-rise cottages set back from the tideline and a dive shop operating off its own jetty. Guests book nightly stays that bundle boat access to nearby reefs. The property employs a resident marine guide alongside its housekeeping and front-desk teams.",
+    "uvp": "Because the dive operation is owned rather than subcontracted, guests can leave the reef and be back in their room within ten minutes, which fixed-schedule day-trippers cannot do. Cottage placement follows the reef line so every unit faces open water.",
+    "services": [
+      "Beachfront cottage nightly stays",
+      "House-reef guided snorkeling from the jetty",
+      "Two-tank boat dives for in-house guests",
+      "Sunset paddleboard hire"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 26,
+    "description": "A timber lodge at the head of a highland valley, offering eighteen rooms plus a guiding desk that runs trekking parties onto the surrounding ridges. Guests typically stay two to four nights and hike on at least one of them. The lodge maintains its own trail crew and a drying room for wet gear.",
+    "uvp": "Trek routes start from the lodge door instead of a two-hour transfer, so guests get onto the ridgeline at first light while day groups are still driving in. The in-house trail crew keeps four routes cleared year-round, including one closed to non-guests.",
+    "services": [
+      "Valley lodge room and full-board stays",
+      "Guided ridge summit trek with packed lunch",
+      "Dawn departure to the private trail",
+      "Boot, pack, and trekking pole rental"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 27,
+    "description": "An operator managing a covered market hall inside a nineteenth-century civic building in the downtown core. It leases stalls to sixty produce, spice, and cooked-food traders, runs guided tasting circuits, and hosts evening events under the original iron roof. Foot traffic mixes daily shoppers with visitors arriving on organised tours.",
+    "uvp": "The building's restoration was done to conservation standards, so traders work under original architecture rather than a themed rebuild. Guided circuits pair each stall's produce with the market's own documented history, something no adjacent supermarket or food court can offer.",
+    "services": [
+      "Guided market tasting circuit",
+      "Heritage building architectural tour",
+      "Evening supper-club events in the hall",
+      "Spice and regional produce retail stalls"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 28,
+    "description": "An island property running twenty-two bungalows, a dive centre, and a single open-air kitchen that serves all guests at communal tables. Supplies arrive twice weekly by boat, and the kitchen builds its menu around what the day's fishing lands. Most guests book five-night packages combining lodging, meals, and diving.",
+    "uvp": "Being the only operator on its side of the island, the property controls reef access, boat schedules, and the kitchen together, so a dive can finish with a meal cooked from a catch landed the same hour. Nothing here is outsourced to the mainland.",
+    "services": [
+      "Full-board bungalow packages",
+      "Daily two-dive boat trips on the house reef",
+      "Catch-of-the-day communal dinners",
+      "Beach barbecue and grilled seafood nights"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 29,
+    "description": "A boutique hotel occupying a restored ancestral house from the Spanish colonial period, with twelve rooms retaining original hardwood floors and capiz windows. The ground floor holds a small museum of the founding family's possessions, open to non-guests. Conservation architects supervise all maintenance work on the structure.",
+    "uvp": "Guests sleep inside a declared heritage structure rather than a replica built for atmosphere, with room interiors documented and approved by the national conservation office. The resident curator gives evening talks that place the house within the town's founding history.",
+    "services": [
+      "Heritage room nightly stays",
+      "Ground-floor house museum admission",
+      "Evening curator talk on the family archive",
+      "Conservation-focused guided house tour"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 30,
+    "description": "A restaurant and cocktail bar on the thirty-second floor of a business-district tower, seating a hundred and ten across an indoor dining room and a wraparound terrace. The kitchen runs a modern tasting menu and the bar programme changes quarterly. Reservations skew heavily toward evening service and corporate entertaining.",
+    "uvp": "The terrace sits above the district's tallest neighbouring roofline, so diners get an uninterrupted skyline that ground-level restaurants cannot sell at any price. The bar list is built around spirits distilled within the metro, pairing city produce with the city view.",
+    "services": [
+      "Seven-course evening tasting menu",
+      "Rooftop terrace cocktail service",
+      "Quarterly spirits pairing flights",
+      "Private corporate dining room hire"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 31,
+    "description": "A working vegetable and dairy farm that added eight guest cabins and a kitchen barn six years ago. Visitors stay overnight, join the morning milking, and eat meals cooked from produce harvested that day. The farm still sells the bulk of its output wholesale, with tourism supplementing rather than replacing agriculture.",
+    "uvp": "Guests eat at a table twenty metres from the beds the food was cut from, and the kitchen menu is set by that morning's harvest rather than a printed card. Because the farm remains commercially productive, visitors see real operations, not a staged demonstration plot.",
+    "services": [
+      "Overnight farm cabin stays",
+      "Harvest-driven set lunch and dinner",
+      "Morning milking and cheese-making session",
+      "Preserves and fermentation workshop"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 32,
+    "description": "A riverside eco-camp with sixteen raised tent platforms, composting facilities, and a boathouse holding twenty kayaks. Guests stay one to three nights and paddle sections of the river with camp guides. The operation runs off solar power and hauls out all waste under an agreement with the watershed authority.",
+    "uvp": "The camp sits above a stretch of whitewater no road reaches, so guests paddle water that day-trip operators can only access hours downstream. Guides are watershed rangers who fold river ecology and safety training into every descent.",
+    "services": [
+      "Raised platform tent overnight stays",
+      "Guided whitewater kayak descent",
+      "Night paddle under river canopy",
+      "River ecology briefing with camp rangers"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 33,
+    "description": "An amusement park operator that also owns the two hundred-room hotel at its gate, selling combined ride-and-stay packages. The park runs nine mechanical attractions and a nightly parade, while the hotel provides early park entry to registered guests. Marketing targets families travelling more than three hours to reach the site.",
+    "uvp": "Hotel guests enter the park an hour before public opening, which turns an overnight booking into measurably more ride time rather than just a bed. Rooms are themed to individual attractions, extending the park experience past closing time.",
+    "services": [
+      "Ride-and-stay overnight packages",
+      "Early gate access for hotel guests",
+      "Nightly parade and fireworks viewing",
+      "Attraction-themed family rooms"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 34,
+    "description": "An indoor amusement zone built into the top level of a downtown shopping complex, operating a suspended rollercoaster, a drop tower, and a two-storey arcade. Admission is by card-loaded ride credits. The venue draws mall shoppers, weekend family groups, and teenagers from surrounding city districts.",
+    "uvp": "Placing genuine mechanical thrill rides inside a metro shopping tower gives visitors a full amusement outing without leaving the city or spending a day travelling. Ride credits are shared with the mall's loyalty programme, so shopping and rides run on one account.",
+    "services": [
+      "Indoor rollercoaster and drop tower rides",
+      "Card-loaded ride credit packages",
+      "Two-storey arcade and prize redemption",
+      "School holiday group bookings"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 35,
+    "description": "An events company that stages an annual harvest festival built around a patron saint's feast, combining a religious procession with fifty cooking stalls run by parish households. It handles permits, stall allocation, judging of a heirloom-dish competition, and ticketed tasting sessions. The festival runs four days each October.",
+    "uvp": "Every stall is required to cook a dish documented in the town's parish recipe register, so the food is inseparable from the feast it commemorates. Visitors buy a single tasting pass that funds the procession, keeping the devotional core financed by the culinary programme.",
+    "services": [
+      "Multi-stall heirloom dish tasting pass",
+      "Patron saint procession viewing",
+      "Heirloom recipe cooking competition",
+      "Parish household kitchen visits"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 36,
+    "description": "A family distillery that has produced sugarcane spirit on the same site since 1912, now running visitor programmes through its original copper still house. Tours cover the milling yard, the ageing warehouse, and a tasting room in the founder's former office. Bottling remains the company's primary commercial activity.",
+    "uvp": "Visitors taste from barrels laid down before the war in a still house that has never been rebuilt, giving a production heritage no new craft distillery can claim. The company's ledgers are on display, tying each expression to a documented harvest year.",
+    "services": [
+      "Historic still house guided tour",
+      "Barrel-aged expression tasting flight",
+      "Archive ledger and heritage exhibit viewing",
+      "Single-cask bottling for visitors"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 37,
+    "description": "A cruise operator running a converted wooden vessel that departs each evening for a three-hour dinner sailing across a sheltered strait. The boat seats seventy at fixed tables and carries a working galley with two cooks. Bookings come mostly from couples, anniversary parties, and hotel concierge referrals.",
+    "uvp": "Dinner is plated on board from a galley rather than reheated from shore catering, and the departure is timed so the main course lands as the light goes off the water. The vessel's shallow draft lets it hug a coastline larger dinner boats must avoid.",
+    "services": [
+      "Three-hour sunset dinner sailing",
+      "Galley-cooked seafood set menu",
+      "Coastal close-in evening cruising route",
+      "Private charter for anniversaries and events"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 38,
+    "description": "A hostel occupying five floors of a converted office building two blocks from a metro station, with mixed dorms, private twins, and a ground-floor bar that non-guests can use. Staff run nightly outings into the surrounding nightlife district. Guests are predominantly solo travellers aged twenty to thirty-five.",
+    "uvp": "The property sells itself as a base for the district rather than a bed, staffing a nightly host who walks guests to venues hard to find or hard to enter alone. Its bar doubles as the neighbourhood's meeting point, so guests are mixing with residents.",
+    "services": [
+      "Dorm and private room nightly stays",
+      "Nightly hosted bar and live music crawl",
+      "Ground-floor bar open to the public",
+      "City transit and district orientation briefing"
+    ],
+    "labels": [
+      "Urban & City",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 39,
+    "description": "A surf camp offering week-long packages that combine dormitory or private lodging, three daily meals, and twice-daily coaching sessions at the break in front of the property. Video review happens each afternoon in a shaded deck area. Most guests arrive as solo travellers and stay the full seven nights.",
+    "uvp": "The week is structured as a progression rather than sold as separate lessons, so coaching, rest days, and tide-timed sessions are planned around each guest's improvement. Lodging sits close enough to the break that guests paddle out from their room in under two minutes.",
+    "services": [
+      "Seven-night surf and lodging package",
+      "Twice-daily tide-timed coaching sessions",
+      "Afternoon video technique review",
+      "Board quiver access for all guests"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 40,
+    "description": "A highland coffee estate that receives visitors for full-day programmes across its planted slopes. The day involves a steep two-hour walk uphill, hand-picking during harvest months, and a cupping session at the wet mill. The estate processes and roasts its own beans and sells directly to specialty buyers abroad.",
+    "uvp": "The walk is a genuine working ascent across terraced slopes rather than a shuttle to a viewing platform, so visitors reach altitude plots that determine the cup profile they later taste. Cupping is led by the estate's own licensed Q grader.",
+    "services": [
+      "Guided uphill plantation trek",
+      "Harvest-season hand-picking participation",
+      "Wet mill processing walkthrough",
+      "Q grader-led cupping session"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 41,
+    "description": "A tour company running electric shuttle circuits through the metro's oldest districts, linking a restored fort, two cathedrals, and a contemporary arts quarter built inside former warehouses. Circuits run hourly with recorded commentary in four languages and a live guide on board. Tickets are sold as hop-on day passes.",
+    "uvp": "The route deliberately threads colonial-era landmarks together with the working creative district that grew around them, showing continuity instead of treating heritage as a separate museum stop. Electric shuttles are permitted inside pedestrianised heritage streets closed to other tour vehicles.",
+    "services": [
+      "Hop-on hop-off heritage district day pass",
+      "Guided fort and cathedral interior stops",
+      "Warehouse arts quarter circuit",
+      "Four-language onboard commentary"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 42,
+    "description": "A glamping operator running twelve canvas suites on a forested plateau above a waterfall system, each with a proper bed, private bathroom, and deck. A guiding team leads guests down to the falls and along ridge trails during the day. The site is reached by a forty-minute four-wheel-drive transfer.",
+    "uvp": "The company pairs genuinely remote terrain with serviced lodging, so guests can complete a demanding falls descent and return to hot water and a made bed. Access is controlled by the operator, meaning the trails and pools are never shared with day crowds.",
+    "services": [
+      "Canvas suite overnight stays with private bath",
+      "Guided waterfall descent and swim",
+      "Ridge trail day hikes with packed meals",
+      "Four-wheel-drive mountain transfer"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 43,
+    "description": "A grill house built on stilts over the water at the end of a working fishing wharf, seating diners on open decks between the moored boats. The kitchen buys directly from the crews unloading below and cooks to order over charcoal. Service starts at four in the afternoon and runs until the catch is gone.",
+    "uvp": "Diners choose their fish from the landing crates and watch it go straight onto the coals, which no inland seafood restaurant working from a distributor can replicate. Deck tables sit level with the water, putting the working harbour in reach of the table.",
+    "services": [
+      "Choose-your-catch charcoal grilling",
+      "Over-water deck dining among moored boats",
+      "Shellfish and sea urchin seasonal counter",
+      "Dawn fish landing viewing for early bookings"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 44,
+    "description": "An oceanarium and entertainment complex in the city's reclamation district, holding a walk-through tunnel tank, a sea lion show arena, and a small ride area for younger children. Tickets are timed and bundled with neighbouring attractions. The venue runs school programmes on weekdays and family traffic on weekends.",
+    "uvp": "The complex delivers a full ticketed show-and-attraction day inside the metro, so families get an amusement outing without the travel a coastal trip requires. Its tunnel tank is the only one in the country with a scheduled diver feeding narrated live.",
+    "services": [
+      "Walk-through tunnel tank admission",
+      "Scheduled sea lion and diver feeding shows",
+      "Children's ride zone access",
+      "Bundled multi-attraction city tickets"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 45,
+    "description": "A ninety-key resort on a private cove, operating over-water villas, a spa pavilion, and two swimming pools cut into the shoreline rock. Guests book multi-night stays that include transfers by speedboat from the mainland jetty. The property runs at high occupancy through the northeast monsoon lull.",
+    "uvp": "Villas are built over the water on a cove the property owns outright, so guests swim straight off their deck into protected water no day visitor can enter. Spa treatment rooms open directly onto the sea rather than facing an internal garden.",
+    "services": [
+      "Over-water villa multi-night stays",
+      "Speedboat transfers from the mainland jetty",
+      "Seaside spa treatment pavilion",
+      "Private cove swimming and kayak access"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 46,
+    "description": "A ticketed adventure park built across a forested hillside, running eleven zipline spans, a suspension bridge circuit, and a high-ropes course with belay systems. Visitors buy timed entry and progress through graded courses with harnessed supervision. The site was purpose-built and engineered rather than adapted from existing trails.",
+    "uvp": "The park delivers genuine height and exposure with a continuous belay system, so first-timers get an adrenaline experience normally reserved for trained climbers. Its longest span crosses a river valley, a run no other commercial course in the region can offer.",
+    "services": [
+      "Eleven-span zipline circuit",
+      "High-ropes course with continuous belay",
+      "Suspension bridge canopy walk",
+      "Graded beginner-to-advanced course tickets"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 47,
+    "description": "An integrated resort in the metro's entertainment district combining a six hundred-room hotel, a gaming floor, a theatre staging nightly production shows, and a retail arcade. It operates under a regulated gaming licence and markets heavily to regional short-haul visitors. Most guests book two-night weekend packages.",
+    "uvp": "The property bundles accommodation, a resident production show, and the gaming floor under one roof, so guests never leave the building across a weekend. Its theatre runs a purpose-built residency rather than touring acts, giving the resort a show found nowhere else.",
+    "services": [
+      "Weekend hotel and entertainment packages",
+      "Nightly resident theatre production",
+      "Licensed gaming floor access",
+      "Retail arcade and late-night lounges"
+    ],
+    "labels": [
+      "Urban & City",
+      "Accommodation & Staycation",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 48,
+    "description": "A company that operates a nightly street market across four closed-off blocks in the city centre, managing eighty food carts, a stage for live acts, and crowd logistics with the local government. Vendors are curated and rotated quarterly. The market draws office workers on weekdays and heavy family traffic on weekends.",
+    "uvp": "Vendor slots are awarded by a tasting panel rather than sold to the highest bidder, which keeps the food quality above the usual street-market average. Closing the blocks turns an ordinary commercial street into a walkable night destination four evenings a week.",
+    "services": [
+      "Curated night food cart market",
+      "Live stage programming and busker slots",
+      "Pedestrianised street dining zones",
+      "Quarterly vendor rotation and tasting panel"
+    ],
+    "labels": [
+      "Urban & City",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 49,
+    "description": "A casual diner on the third level of a shopping mall in a landlocked inland city, decorated with driftwood panelling, netting, and surfboards mounted on the walls. The kitchen serves fried fish baskets, chowder, and frozen cocktails to shoppers and office workers. It has no connection to any coastline and sources everything frozen from a distributor.",
+    "uvp": "The nautical fit-out and generous portions make it a reliable family stop between shopping floors, and it holds the mall's only late licence. Its chowder recipe has been unchanged since the founder opened the first branch two decades ago.",
+    "services": [
+      "Fried seafood basket menu",
+      "Frozen cocktail and dessert bar",
+      "Mall late-night dining service",
+      "Children's meal and birthday seating"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 50,
+    "description": "A resort of sixty rooms on a headland, operating its own jetty and a climbing wall built into the sea cliff behind the property. A resident guiding team runs cliff traverses and kayak expeditions along the coast. Guests book three- to five-night stays and most take at least two guided activities.",
+    "uvp": "The headland gives the property both protected swimming water and a genuine climbing face within its own boundary, a pairing no flat beachfront hotel can offer. Guides are certified in both rock and sea rescue, letting the resort run activities others must decline.",
+    "services": [
+      "Headland room and suite stays",
+      "Sea cliff climbing and abseil sessions",
+      "Multi-hour coastal kayak expeditions",
+      "Sheltered cove swimming and snorkeling"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 51,
+    "description": "A twenty-four room lodge on a forested slope that pairs a guided hiking programme with a full treatment spa in a separate pavilion. Most guests hike a graded route in the morning and book recovery treatments in the afternoon. The lodge keeps its own trail crew and four therapists on staff year-round.",
+    "uvp": "Treatments are prescribed against the route each guest walked that day rather than sold from a generic menu, so the spa functions as recovery for real exertion. The lodge's trails climb above the treeline, giving guests genuine altitude rather than a landscaped garden walk.",
+    "services": [
+      "Graded morning summit and ridge hikes",
+      "Post-trek recovery massage programme",
+      "Lodge room stays with full board",
+      "Trail-condition briefings and gear loan"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 52,
+    "description": "A hotel occupying a restored 1920s commercial building on the main avenue of the old downtown, with thirty-eight rooms and a preserved art deco lobby. A rooftop bar overlooks the surrounding district. Staff run morning walking tours of the heritage streets for guests and walk-in visitors alike.",
+    "uvp": "The building's original terrazzo, ironwork, and signage were conserved rather than replaced, so the hotel doubles as the district's best-preserved interior. Its rooftop is the only public vantage point over the heritage avenue, tying the stay to the city around it.",
+    "services": [
+      "Restored art deco room stays",
+      "Morning heritage district walking tour",
+      "Rooftop bar with avenue views",
+      "Lobby conservation exhibit and archive display"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 53,
+    "description": "A ticketed family attraction built on farmland far from any coast, themed as a pirate settlement with a galleon-shaped play structure, a splash zone, and staged sword-fighting shows every two hours. Entry is by wristband and the site includes a costume shop and a snack pavilion. Nothing about the operation involves actual water access.",
+    "uvp": "The staged shows are performed by trained stunt actors on a purpose-built galleon set, giving a live spectacle most inland play parks cannot mount. Wristbands cover every attraction, so families budget one price for a full day.",
+    "services": [
+      "Galleon play structure and splash zone access",
+      "Scheduled stunt sword-fighting shows",
+      "All-day attraction wristbands",
+      "Costume hire and photo studio"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 54,
+    "description": "A restaurant seating forty inside a limestone chamber reached by a two hundred-metre lit passage. The kitchen serves a fixed multi-course menu at candle-lit tables, and guests are issued helmets for the walk in. The operator also runs a longer guided route through the unlit sections for diners who want it before service.",
+    "uvp": "Diners eat inside a genuine cave system with live formations rather than a themed room built to resemble one, which forces the kitchen to work from a satellite prep station above ground. The optional pre-dinner traverse turns a meal into a physical descent.",
+    "services": [
+      "Fixed multi-course underground dinner service",
+      "Guided pre-dinner cave traverse",
+      "Helmet and lamp issue with safety briefing",
+      "Private chamber hire for small events"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 55,
+    "description": "A day-tour operator running a boat circuit that stops at two offshore islets and a mainland fishing village with a four-hundred-year-old coral-stone church. Lunch is cooked beachside by a partner household. Groups are capped at sixteen and the full loop takes eight hours including the church visit.",
+    "uvp": "The circuit deliberately breaks from pure island hopping by putting a working parish and its coral-stone architecture in the middle of the day, so guests understand the communities the islets belong to. Lunch is cooked by the same households that host the church visit.",
+    "services": [
+      "Two-islet boat hopping with snorkel stops",
+      "Guided coral-stone church and village visit",
+      "Household-cooked beachside lunch",
+      "Small-group capped departures"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 56,
+    "description": "An operator that installed sixteen insulated sleeping pods with skylights on the roof deck of a mid-rise building in the central business district, sold as an overnight novelty stay. Guests use shared bathrooms on the floor below and order breakfast from the ground-floor cafe. The deck is enclosed and serviced nightly by hotel-standard housekeeping.",
+    "uvp": "Sleeping under a glass roof above the traffic gives visitors a genuinely unusual night in the metro without leaving it, and pods are priced below the district's hotels. The deck's skyline outlook is the product, replacing the view a standard room would give.",
+    "services": [
+      "Rooftop sleeping pod overnight stays",
+      "Skyline deck lounge access",
+      "Ground-floor cafe breakfast delivery",
+      "Shared bathroom and locker facilities"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 57,
+    "description": "A residential retreat venue on eighty hectares of second-growth forest, hosting corporate groups for two- and three-day programmes. Facilities include forty twin rooms, a dining hall, and a low- and high-ropes obstacle course used for facilitated team exercises. Bookings are exclusive-use, so only one organisation is on site at a time.",
+    "uvp": "Because the site takes one group at a time, facilitators can run exercises across the whole forest rather than a fenced activity yard. Programme design is done with the client's own objectives, so the course is a working tool rather than a recreational attraction.",
+    "services": [
+      "Exclusive-use residential retreat bookings",
+      "Facilitated high-ropes and obstacle exercises",
+      "Forest navigation and problem-solving courses",
+      "Full-board dining hall catering"
+    ],
+    "labels": [
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 58,
+    "description": "A shore-excursion company contracted by cruise lines to handle passengers during single-day port calls. Its standard programme moves groups from the pier to a bastioned stone fort, a museum of maritime trade, and a two-hour stop at a swimming beach before returning for departure. All logistics are timed to the ship's sailing window.",
+    "uvp": "The company holds pier-side dispatch rights, so passengers clear the terminal and reach the fort before independent taxis can form a queue. Guides are licensed for both the fort's interiors and small-boat beach transfers, which lets one operator run the whole day.",
+    "services": [
+      "Timed pier-to-fort excursion transfers",
+      "Guided bastion fort and maritime museum entry",
+      "Supervised beach swimming stop",
+      "Ship-schedule-guaranteed return logistics"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 59,
+    "description": "A wellness hotel of fifty-two rooms in a quiet street behind the financial district, built around a hydrotherapy circuit, treatment suites, and a rooftop yoga studio. It sells overnight wellness packages as well as day passes to city residents. Occupancy is highest on weekends and public holidays.",
+    "uvp": "The property is engineered for recovery inside the metro, with soundproofed rooms and blackout systems that turn a city-centre address into somewhere guests can actually sleep. Day-pass access lets residents use it without booking a night away.",
+    "services": [
+      "Overnight wellness and treatment packages",
+      "Hydrotherapy circuit day passes",
+      "Rooftop yoga and breathwork sessions",
+      "Soundproofed recovery room stays"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 60,
+    "description": "A sport-fishing charter operating two offshore boats rigged for trolling and deep jigging, taking small parties beyond the shelf edge on trips that can run twelve hours in open swell. Skippers hold offshore endorsements and the company enforces catch limits and tag-and-release on billfish. Clients are mostly experienced anglers.",
+    "uvp": "Trips run to seamounts three hours offshore that inshore bangka operators cannot safely reach, which is where the pelagic fishing actually is. Every boat carries a fighting chair and a mate trained to coach clients through hour-long billfish battles.",
+    "services": [
+      "Offshore trolling charters beyond the shelf",
+      "Deep jigging trips to seamounts",
+      "Tag-and-release billfish programme",
+      "Overnight open-water fishing runs"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 61,
+    "description": "A privately endowed museum of regional printing and typography, occupying a converted press building with four galleries, a working letterpress studio, and a research reading room. A small counter near the entrance sells coffee and pastries to visitors between galleries. Admission and archive access are the museum's revenue base.",
+    "uvp": "The museum still operates the presses it exhibits, so visitors watch nineteenth-century machinery pull sheets rather than viewing it behind rope. Its reading room holds the only complete run of the region's earliest newspaper, open to researchers by appointment.",
+    "services": [
+      "Four-gallery museum admission",
+      "Live letterpress printing demonstrations",
+      "Archive reading room research appointments",
+      "Typesetting workshops for visitors"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 62,
+    "description": "A hotel of three hundred and twenty rooms attached to a convention centre with a four-thousand-seat hall, hosting conferences on weekdays and touring concerts on weekends. The property sells delegate room blocks and concert-and-stay packages. Its location beside a transit interchange drives most of its walk-in trade.",
+    "uvp": "Guests move from a room to a concert floor without stepping outside, which the surrounding stand-alone hotels cannot match for late-finishing events. The hotel holds the interchange's only direct covered walkway, making it the practical base for city-wide event attendance.",
+    "services": [
+      "Delegate and event room blocks",
+      "Concert-and-stay weekend packages",
+      "Four-thousand-seat hall event hosting",
+      "Covered transit interchange access"
+    ],
+    "labels": [
+      "Accommodation & Staycation",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 63,
+    "description": "An observation venue occupying the top three floors of a skyscraper, selling timed tickets to a glass-floor walkway, a projection show about the city's growth, and a motion-simulator ride over the skyline. Visitor flow is managed in fifteen-minute waves. The operator is a separate company leasing the floors from the building owner.",
+    "uvp": "The deck combines a skyline vantage with a ticketed ride and show programme, so visitors get an attraction rather than a viewing platform they walk through in ten minutes. Its glass walkway extends beyond the building line, which no rival deck in the metro offers.",
+    "services": [
+      "Timed observation deck admission",
+      "Cantilevered glass floor walkway",
+      "Motion-simulator skyline flight ride",
+      "Projection show on the city's history"
+    ],
+    "labels": [
+      "Urban & City",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 64,
+    "description": "An expedition operator running a liveaboard vessel on seven-night marine wildlife itineraries, sleeping sixteen guests in cabins and spending days in tenders tracking whale sharks, pilot whales, and manta aggregations. Guests are in the water several times daily and the boat sails overnight between remote atolls. A marine biologist sails with every departure.",
+    "uvp": "The vessel's range lets it reach atolls no day boat can serve, and sailing overnight puts guests on aggregation sites at dawn before any other craft arrives. Sightings feed a national research dataset, so guests contribute to survey work rather than just watching.",
+    "services": [
+      "Seven-night liveaboard cabin berths",
+      "Tender-based whale shark and manta encounters",
+      "Remote atoll snorkel and free-dive sessions",
+      "Onboard marine biology briefings and data logging"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 65,
+    "description": "A community-run homestay network in a terraced upland village listed for its centuries-old irrigation system, placing guests in eleven family houses. Visitors join households at meals and farm chores. Guided treks follow the stone irrigation channels between villages, involving several hours of steep walking on narrow banks.",
+    "uvp": "Guests sleep in working farming households rather than a purpose-built lodge, and trek fees are paid into the fund that maintains the ancient channels. The routes follow engineering that has been continuously farmed for generations, which no scenic viewpoint tour conveys.",
+    "services": [
+      "Family homestay overnight placement",
+      "Multi-hour guided terrace channel treks",
+      "Shared household meals with host families",
+      "Irrigation heritage interpretation walks"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 66,
+    "description": "A large buffet restaurant designed around a costumed mascot programme, with a stage where character shows run four times each service and a supervised play maze beside the dining floor. The kitchen serves eighty rotating dishes across international stations. Almost all bookings are children's birthday parties and extended family groups.",
+    "uvp": "The show schedule is built into the meal so parents get an entertainment programme they need not organise, while the kitchen keeps a full buffet running throughout. Its allergy-labelled station system lets families with dietary restrictions eat from the same line as everyone else.",
+    "services": [
+      "Eighty-dish international buffet service",
+      "Scheduled costumed character stage shows",
+      "Supervised indoor play maze",
+      "Birthday party packages with host"
+    ],
+    "labels": [
+      "Culinary & Gastronomy",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 67,
+    "description": "An operator running sandboarding and dune-buggy sessions across a coastal dune field that separates a fishing town from the open sea. Sessions involve climbing the dune faces on foot before each descent, and buggies are driven by trained staff. The company also runs sunset sessions timed to the tide-exposed flats below.",
+    "uvp": "The dune field's proximity to the shoreline means runs finish at the waterline, letting guests cool off in the sea between climbs. Boards are waxed for the site's fine marine sand, which imported equipment handles poorly.",
+    "services": [
+      "Guided sandboard descents with uphill climbs",
+      "Staff-driven dune buggy circuits",
+      "Sunset session on the tidal flats",
+      "Board, goggle, and helmet hire"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 68,
+    "description": "A hundred-and-forty room hotel five minutes from the airport terminal, decorated throughout with tropical prints, rattan furniture, and a lobby water feature, branded as an island escape. It serves transiting passengers, airline crew on layover contracts, and delegates attending events at the nearby exhibition halls. The surrounding area is industrial and inland.",
+    "uvp": "Round-the-clock check-in and a five-minute shuttle loop make it the most reliable option for passengers on unpredictable schedules. Rooms are configured for daytime rest with blackout blinds and quiet corridors, which most airport hotels neglect.",
+    "services": [
+      "Twenty-four-hour check-in and day-use rooms",
+      "Continuous airport terminal shuttle",
+      "Airline crew layover contract rooms",
+      "Blackout-configured rest rooms"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 69,
+    "description": "A food heritage institution combining exhibition galleries on regional cooking history with a demonstration kitchen and a tasting gallery where visitors sample dishes reconstructed from archival recipes. Curators work with historians and cooks to research each display. Admission includes a tasting flight, and the institution also publishes a recipe archive.",
+    "uvp": "Dishes are reconstructed from dated manuscripts and served in the same room where their history is exhibited, so tasting is the interpretive method rather than a gift-shop add-on. The recipe archive is publicly searchable, which no restaurant or museum in the region maintains.",
+    "services": [
+      "Gallery admission with archival tasting flight",
+      "Reconstructed historical recipe demonstrations",
+      "Curator-led food history tours",
+      "Public access to the digitised recipe archive"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 70,
+    "description": "A large beachfront resort of two hundred and forty rooms that added a ticketed family entertainment zone with a wave-machine pool, three slides, and an arcade, open to outside visitors as well as guests. The shoreline in front of the property is used for swimming and non-motorised watercraft. Day-pass sales now rival room revenue.",
+    "uvp": "Selling day tickets to its attraction zone turns the resort into the coast's only amusement venue, serving families who are not staying overnight. Guests get both a natural shoreline and engineered rides on one site, which neither a beach hotel nor an inland waterpark provides.",
+    "services": [
+      "Beachfront room and suite stays",
+      "Ticketed wave pool and slide complex",
+      "Shoreline swimming and kayak hire",
+      "Arcade and family entertainment day passes"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Theme Parks / Entertainment"
+    ]
+  },
+  {
+    "id": 71,
+    "description": "A small hospitality company operating fourteen private villas along a low bluff, each opening onto water that changes colour through the afternoon. Guests are met at a jetty rather than a road entrance, and the staff arrange excursions with the fishing families who work the shallows below. Stays average four nights.",
+    "uvp": "Guests fall asleep to surf breaking under their deck and wake to boats being pushed out below them, an immersion a landscaped garden property cannot manufacture. Excursions are arranged with working crews, so what guests see is the day's actual work.",
+    "services": [
+      "Private villa stays with jetty arrival",
+      "Morning outings with local fishing crews",
+      "Guided outings to shallow reef gardens",
+      "Evening service on the water-facing decks"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 72,
+    "description": "An outfitter working a vertical limestone amphitheatre, bolting and maintaining more than ninety routes across grades that run from beginner slabs to severely overhanging lines. It runs instruction, belay certification, and multi-day clinics from a small base hut. Clients arrive with chalk-worn hands or leave with them.",
+    "uvp": "The company sets and re-bolts its own routes, so the wall is maintained to a standard no unmanaged crag reaches. Its clinics move climbers from top-rope to lead in a structured progression rather than selling one-off supervised ascents.",
+    "services": [
+      "Route instruction across ninety graded lines",
+      "Lead climbing and belay certification clinics",
+      "Multi-pitch guided ascents",
+      "Harness, rope, and shoe hire from the base hut"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 73,
+    "description": "A two-vessel operation whose schedule is set entirely by tide tables and moon phase, carrying small groups out at dawn to watch a channel come alive as the water moves. The crew are former commercial fishermen who read current lines for a living. Trips are cancelled outright when the swell exceeds the company's own limit.",
+    "uvp": "Departures are timed to slack water so guests are in the channel during the one hour a day it is calm and full of feeding activity, which fixed-schedule operators simply miss. Crews interpret current and bird behaviour rather than following a set route.",
+    "services": [
+      "Dawn slack-water channel excursions",
+      "Guided in-water drift observation",
+      "Seabird and feeding-activity spotting",
+      "Small-group tide-timed private charters"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 74,
+    "description": "Seven quiet rooms arranged above an interior courtyard, run by a couple who take a maximum of one booking party per floor. There is no restaurant, no reception counter, and no organised programme. Guests are given a key, a courtyard to read in, and the owners' phone number for anything else.",
+    "uvp": "The property deliberately sells absence: no scheduled activities, no lobby traffic, and a one-party-per-floor rule that makes the building feel privately held. Returning guests book the same room for weeks at a time because nothing about it changes.",
+    "services": [
+      "Single-party floor bookings",
+      "Long-stay weekly and monthly rates",
+      "Courtyard reading and quiet-hours policy",
+      "Self-directed key collection and check-in"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 75,
+    "description": "A thirty-seat restaurant in a provincial capital whose entire menu reconstructs the cooking of coastal fishing settlements, working from interviews the chef recorded with elderly cooks along the shoreline. Ingredients are trucked in daily. The dining room itself sits in an inland commercial street with no water in sight.",
+    "uvp": "The kitchen preserves techniques, such as bamboo-tube smoking and seawater curing, that the originating households have largely stopped practising. Each dish is served with the name of the cook whose method it follows, turning the menu into an oral archive.",
+    "services": [
+      "Reconstructed coastal tasting menu",
+      "Seawater curing and smoking demonstrations",
+      "Cook-attributed dish documentation",
+      "Chef's counter seating with method commentary"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 76,
+    "description": "A company running evening circuits through a converted warehouse quarter where independent galleries, printmaking studios, and artist-run spaces open late on the same night each month. Groups of twelve move on foot between eight venues with a guide who works as a curator by day. Artists are usually present in their studios.",
+    "uvp": "Access is arranged directly with the artists, so groups enter working studios rather than public gallery fronts. Because the guide curates in the same scene, the commentary places each space within the quarter's ongoing arguments rather than reciting biographies.",
+    "services": [
+      "Monthly late-night gallery circuit",
+      "Working artist studio access",
+      "Printmaking demonstration stops",
+      "Curator-led contemporary art commentary"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 77,
+    "description": "An operator that supports pilgrims walking a two hundred-kilometre devotional route over eight days, covering roughly twenty-five kilometres of hill road daily. It handles luggage transfer, waypoint provisioning, and a support vehicle for those who cannot finish a stage. Walkers stay in parish halls arranged along the route.",
+    "uvp": "The company runs logistics for a route walked as an act of devotion rather than a marketed trek, so it works with parish wardens instead of hotels. Support vehicles shadow each stage, letting older or injured pilgrims complete the pilgrimage they came for.",
+    "services": [
+      "Eight-stage supported pilgrimage walk",
+      "Daily luggage transfer between waypoints",
+      "Parish hall accommodation arrangement",
+      "Route support vehicle and medical escort"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 78,
+    "description": "A retreat house of nine rooms in a stand of old-growth forest, running three-night silent programmes where guests walk marked forest loops at a deliberately slow pace, eat in silence, and attend guided attention sessions. Phones are surrendered at arrival. The walks involve no elevation gain or technical terrain.",
+    "uvp": "The programme's value lies in enforced quiet rather than exertion, and the house's isolation means guests hear nothing mechanical for three days. Facilitators are trained in clinical stress reduction, which distinguishes the retreat from a scenic lodge selling nature as decoration.",
+    "services": [
+      "Three-night silent residential programme",
+      "Slow-paced guided forest loop walks",
+      "Attention and stress-reduction sessions",
+      "Device surrender and full-board silent meals"
+    ],
+    "labels": [
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 79,
+    "description": "A tasting room operating in a tunnel that was dug as a wartime air-raid shelter and now holds a constant cool temperature ideal for ageing. The business bottles and pours its own fortified wines, seating twenty-four along the tunnel walls. Its trade is walk-in tastings and bottle sales to visitors.",
+    "uvp": "The tunnel's stable temperature lets the producer age stock without refrigeration, which measurably changes the finished wine compared with above-ground competitors. Tastings are poured directly beside the resting barrels, so guests taste the same lot at three different ages.",
+    "services": [
+      "Underground guided tasting flights",
+      "Barrel-side vertical age comparisons",
+      "Fortified wine bottle sales",
+      "Private tunnel table hire"
+    ],
+    "labels": [
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 80,
+    "description": "A production company that stages ticketed drone light shows and pyrotechnic finales in city parks and waterfront plazas, running a fleet of six hundred programmed aircraft. Each show is scored, choreographed, and sold as a seated evening event with staggered entry. Municipal partners contract the company for holiday programming.",
+    "uvp": "Owning its fleet and its flight-control software lets the company build sequences around a specific skyline rather than reusing a stock show. Seated ticketing with staggered entry solves the crowd crush that free public fireworks displays create.",
+    "services": [
+      "Ticketed choreographed drone light shows",
+      "Pyrotechnic finale programming",
+      "Reserved seating with staggered entry",
+      "Municipal holiday event contracts"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 81,
+    "description": "A family aquaculture business that added six sleeping cottages built on floats above its own grow-out pens, reached by a fifteen-minute boat ride from the shore road. Guests sleep over the water, help lift the morning harvest, and eat what comes up. The farm's main income remains its commercial shellfish contracts.",
+    "uvp": "Guests wake directly above the pens and eat shellfish pulled from under their own floor within the hour, a sequence no shore-based restaurant or hotel can compress. Because the farm still runs commercially, visitors work alongside a real harvest cycle.",
+    "services": [
+      "Floating cottage overnight stays",
+      "Morning shellfish harvest participation",
+      "Same-hour grilled harvest meals",
+      "Boat transfer from the shore road"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Accommodation & Staycation",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 82,
+    "description": "A workshop company that takes photographers to exposed ridgelines for first light, which means leaving base at three in the morning and climbing for two hours in the dark with packs. Instruction covers exposure blending and composition under fast-changing light. Participants must pass a fitness screening before booking.",
+    "uvp": "Sessions are scheduled around specific atmospheric conditions rather than a fixed calendar, so participants shoot inversions and cloud seas that day tours never see. The instructor carries mountain leader certification alongside a commercial photography practice.",
+    "services": [
+      "Pre-dawn ridgeline ascent photo sessions",
+      "Field instruction in exposure blending",
+      "Condition-triggered departure scheduling",
+      "Headlamp navigation and safety briefing"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 83,
+    "description": "A tea house operating in a wooden pavilion where guests are seated on tatami and served through a formal sequence that takes ninety minutes. The host is a certified practitioner of the ceremony's lineage and explains each utensil's role. The house also sells the whisked powdered tea it serves.",
+    "uvp": "The sequence is performed to lineage standard rather than shortened for visitors, so guests experience the ceremony as ritual practice instead of a demonstration. Utensils in daily use include pieces from the founding host's collection, dated and explained during the sitting.",
+    "services": [
+      "Ninety-minute formal tea ceremony sittings",
+      "Utensil and lineage interpretation",
+      "Seasonal confection pairing service",
+      "Powdered tea retail from the house selection"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 84,
+    "description": "A bicycle hire operator with three docking hubs across a dense inner district, renting commuter and cargo bikes by the hour. It supplies riders with printed route cards covering mural corridors, independent bookshops, and cafes on quiet backstreets. Most customers are visitors staying in the district for a few days.",
+    "uvp": "Route cards are redrawn every quarter with local input, steering riders onto low-traffic streets that mapping apps route them away from. Cargo bikes let visitors carry market purchases, which no conventional tourist bike rental in the district offers.",
+    "services": [
+      "Hourly commuter and cargo bike hire",
+      "Quarterly-updated backstreet route cards",
+      "Multi-hub pickup and return",
+      "Helmet, lock, and repair kit provision"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 85,
+    "description": "An operator that restored three 1950s rail carriages and runs them as a moving dining room on a provincial branch line, serving a five-course lunch across a four-hour return journey through farmland. Original fittings, livery, and dining car china were reproduced from railway archives. Seats are sold by the table.",
+    "uvp": "The carriages are certified heritage rolling stock running on a line that carries no other passengers, so the journey itself is a preserved artefact. The menu is built from crops grown within sight of the track, changing with what the fields are producing.",
+    "services": [
+      "Five-course dining journey by rail",
+      "Restored 1950s carriage table seating",
+      "Route-sourced seasonal menu",
+      "Railway heritage commentary between stations"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Culinary & Gastronomy"
+    ]
+  },
+  {
+    "id": 86,
+    "description": "A company running eight themed puzzle rooms across two floors of a commercial building in the city centre, where teams of four to eight are locked in for sixty minutes to solve a scripted scenario. Rooms are rebuilt roughly every eighteen months. Corporate team bookings fill most weekday evening slots.",
+    "uvp": "Sets are built by working theatre designers, so rooms function as immersive stage environments rather than plywood puzzle boxes. A live game master adjusts difficulty in real time, keeping both first-timers and enthusiast teams inside the sixty-minute window.",
+    "services": [
+      "Sixty-minute themed escape room sessions",
+      "Live game master difficulty adjustment",
+      "Corporate team-building bookings",
+      "Rotating scenario releases"
+    ],
+    "labels": [
+      "Theme Parks / Entertainment",
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 87,
+    "description": "A lodge of ten stilted rooms in a mangrove estuary, reachable only by a thirty-minute boat channel run. Guests paddle the narrow tidal channels with guides, wading and dragging kayaks where the water thins at low tide. The property runs on solar and treats all wastewater on site.",
+    "uvp": "The estuary position gives guests brackish channel systems that neither an open-water resort nor an inland lodge can reach, and paddling routes change completely between tides. Guides are estuary rangers who monitor the mangrove replanting the lodge funds.",
+    "services": [
+      "Stilted overwater room stays",
+      "Tidal channel kayak expeditions",
+      "Night paddle for estuary wildlife",
+      "Mangrove replanting participation"
+    ],
+    "labels": [
+      "Coastal & Island",
+      "Adventure & Nature",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 88,
+    "description": "A ballooning company launching at first light from cut fields, carrying eight to twelve passengers per basket on flights of about an hour depending on wind. Pilots hold commercial balloon licences and a chase crew recovers the envelope wherever it lands. Flights are cancelled outright on unsuitable mornings.",
+    "uvp": "Launch sites are chosen each morning from wind soundings rather than fixed, which lets the company fly low over river bends and forest canopy instead of a set corridor. Passengers help crew the inflation and pack-down, making the flight a participatory outdoor morning.",
+    "services": [
+      "Sunrise hot air balloon flights",
+      "Passenger-assisted inflation and pack-down",
+      "Wind-sounding based launch site selection",
+      "Chase crew recovery and field landing service"
+    ],
+    "labels": [
+      "Adventure & Nature"
+    ]
+  },
+  {
+    "id": 89,
+    "description": "A working monastery that maintains a guest wing of sixteen cells for visitors willing to keep the community's hours, including a four-thirty morning office. Rooms are plain, meals are taken with the community in silence, and guests may join the chanted liturgy. Donations rather than room rates cover the stay.",
+    "uvp": "Guests are absorbed into a living monastic timetable that has run continuously for over two centuries, rather than observing it from outside. The guest master assigns a monk to each visitor for conversation, which no retreat hotel imitating the format can provide.",
+    "services": [
+      "Guest cell overnight stays on donation",
+      "Participation in the chanted daily office",
+      "Silent community meals",
+      "Assigned guest master conversations"
+    ],
+    "labels": [
+      "Cultural & Heritage",
+      "Accommodation & Staycation"
+    ]
+  },
+  {
+    "id": 90,
+    "description": "A listening bar in a converted ground-floor unit on a busy commercial street, built around a valve amplifier system and a wall of about nine thousand records. Conversation is kept low, staff play full album sides, and drinks are limited to a short list. Trade is almost entirely evening, mostly local residents and visiting record collectors.",
+    "uvp": "The room is acoustically treated and the system rebuilt by hand, so a played record sounds materially different from any bar in the district. Full-side listening rather than a shuffled playlist gives the venue a pace that ordinary nightlife venues cannot hold.",
+    "services": [
+      "Full-album side listening sessions",
+      "Valve system and vinyl archive access",
+      "Curated short-list drinks service",
+      "Guest selector evenings with collectors"
+    ],
+    "labels": [
+      "Urban & City"
+    ]
+  },
+  {
+    "id": 91,
+    "description": "An operator running slow night cruises up a tidal river through mangrove banks, where thousands of insects light the trees in synchronised pulses. Boats are paddled rather than motorised for the final stretch, and lighting is prohibited on board. Departures are limited to four boats a night to protect the display.",
+    "uvp": "Restricting departures and banning artificial light preserves a display that heavier river traffic elsewhere has already dimmed, so guests see the phenomenon at full intensity. Boatmen are trained by the river conservation council and interpret the estuary's ecology as they paddle.",
+    "services": [
+      "Night paddle cruises to synchronised firefly banks",
+      "Zero-light onboard viewing protocol",
+      "Estuary ecology interpretation by trained boatmen",
+      "Capped four-boat nightly departures"
+    ],
+    "labels": [
+      "Coastal & Island"
+    ]
+  },
+  {
+    "id": 92,
+    "description": "A pottery studio in a village where households have thrown the same red-clay water jars for generations, now offering visitors wheel sessions with the family's master potter. Clay is dug from the same riverbank the village has always used and fired in a wood kiln behind the workshop. Finished commercial orders still fill most of the kiln.",
+    "uvp": "Visitors learn the specific jar form the village is known for, using local clay and the family's throwing sequence rather than a generic beginner shape. Pieces are fired in the wood kiln alongside the workshop's commercial stock, so guests wait for a real firing cycle.",
+    "services": [
+      "Master potter wheel-throwing sessions",
+      "Riverbank clay preparation demonstration",
+      "Wood kiln firing observation",
+      "Shipping of fired pieces after the kiln cycle"
+    ],
+    "labels": [
+      "Cultural & Heritage"
+    ]
+  },
+  {
+    "id": 93,
+    "description": "A software company building payroll and attendance systems for mid-sized employers across three countries. Its platform handles statutory contribution filings, shift differentials, and multi-currency disbursement, and is sold on annual per-employee licensing. The team of forty is split between engineering, compliance research, and enterprise support.",
+    "uvp": "The product tracks statutory rule changes in every jurisdiction it serves and pushes calculation updates before the effective date, sparing clients manual reconfiguration. Implementation is handled by in-house compliance analysts rather than resellers, which shortens onboarding considerably.",
+    "services": [
+      "Cloud payroll processing and filing",
+      "Biometric attendance integration",
+      "Statutory contribution compliance updates",
+      "Enterprise onboarding and migration support"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 94,
+    "description": "A rural bank with eleven branches serving farming and small-trader clients, offering deposit accounts, agricultural production loans, and remittance disbursement. Loan officers assess borrowers through field visits rather than credit scores alone. The institution is supervised by the central bank and funds itself largely from local deposits.",
+    "uvp": "Credit decisions are made by officers who walk the borrower's land, allowing lending to farmers no scoring model would approve. Loan schedules are aligned to harvest cycles instead of fixed monthly amortisation, which materially reduces default among crop clients.",
+    "services": [
+      "Agricultural production lending",
+      "Savings and time deposit accounts",
+      "Remittance receiving and disbursement",
+      "Field-based credit assessment"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 95,
+    "description": "A private dialysis centre operating twenty-eight stations across two shifts daily, staffed by nephrology nurses and a visiting consultant. It contracts with the national health insurer for subsidised sessions and maintains its own water treatment plant for dialysate. Patients are typically on long-term thrice-weekly schedules.",
+    "uvp": "The centre runs redundant water purification and generator systems, so treatment continues through the outages that interrupt sessions at comparable facilities. Its slot scheduling guarantees each patient the same chair and shift time every week, which improves adherence.",
+    "services": [
+      "Haemodialysis treatment sessions",
+      "Vascular access monitoring",
+      "Insurer-subsidised session processing",
+      "Nutrition and adherence counselling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 96,
+    "description": "A law firm specialising in maritime and admiralty practice, representing vessel owners, charterers, and cargo insurers in collision, salvage, and crew injury disputes. The partners appear before admiralty courts and arbitration panels, and the firm keeps a standing retainer arrangement with two protection and indemnity clubs. It employs nine lawyers and four paralegals.",
+    "uvp": "The firm maintains a duty roster that puts a lawyer on a casualty scene within twelve hours anywhere in the archipelago, which preserves evidence competitors reach too late. Its partners previously served as marine surveyors, giving technical fluency few litigation practices hold.",
+    "services": [
+      "Collision and salvage litigation",
+      "Cargo claims and charterparty disputes",
+      "Crew injury and employment representation",
+      "Emergency casualty response attendance"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 97,
+    "description": "A structural steel fabricator running a plant with plasma cutting tables, submerged arc welding lines, and a paint shop. It supplies beams, trusses, and custom weldments to civil contractors and industrial plant builders. Output is certified against international welding standards and the company employs its own testing inspectors.",
+    "uvp": "In-house radiographic and ultrasonic testing lets the plant release certified structural assemblies without waiting on third-party labs, cutting weeks from contractor schedules. Its plasma tables handle plate thicknesses that most regional fabricators must subcontract.",
+    "services": [
+      "Structural beam and truss fabrication",
+      "Certified welding and non-destructive testing",
+      "Industrial shot blasting and coating",
+      "Custom heavy weldment production"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 98,
+    "description": "A civil works contractor undertaking road rehabilitation, drainage, and slope protection projects for provincial governments. It owns a fleet of graders, pavers, and rollers, and maintains an aggregates yard with its own crushing plant. Contracts are won by public bidding and are typically eight to eighteen months long.",
+    "uvp": "Owning both the equipment fleet and the aggregate source removes the supply delays that force competitors to suspend work mid-project. The firm's survey unit does its own post-construction settlement monitoring, which very few provincial contractors provide.",
+    "services": [
+      "Road rehabilitation and asphalt paving",
+      "Drainage and culvert construction",
+      "Slope protection and retaining structures",
+      "Aggregate crushing and supply"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 99,
+    "description": "An accounting practice providing external audit, tax compliance, and forensic engagements to family-owned corporations. Its staff of twenty-six is organised into audit and advisory teams, and it holds accreditation with the securities regulator. Work peaks sharply in the two quarters around statutory filing deadlines.",
+    "uvp": "The firm assigns the same engagement partner across years, so recurring clients avoid re-explaining their structures each audit cycle. Its forensic team is separately staffed, allowing fraud investigations to run without impairing the statutory audit's independence.",
+    "services": [
+      "Statutory external audit",
+      "Corporate tax compliance and filing",
+      "Forensic and fraud investigation engagements",
+      "Regulatory reporting advisory"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 100,
+    "description": "A building supply and hardware retailer occupying a warehouse showroom, stocking cement, plumbing fittings, electrical supplies, and power tools. It serves walk-in homeowners as well as contractor accounts with credit terms and site delivery. Two branches operate in neighbouring municipalities under the same family ownership.",
+    "uvp": "Contractor accounts get same-day site delivery from stock held locally rather than ordered in, which keeps small builders working. The store's tool service bench repairs what it sells, an after-sales function the chain competitors in the area do not offer.",
+    "services": [
+      "Construction material and hardware retail",
+      "Contractor credit accounts",
+      "Same-day site delivery",
+      "Power tool repair and servicing"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 101,
+    "description": "An insurance underwriter specialising in travel and trip-interruption policies sold through airlines, booking platforms, and agency partners. It handles medical evacuation coordination, baggage claims, and cancellation reimbursements through a twenty-four-hour assistance desk. The company holds no hospitality assets and never hosts travellers itself.",
+    "uvp": "Claims for medical evacuation are authorised by in-house physicians rather than routed to an outsourced network, which shortens approval to under two hours. Policies are priced per itinerary segment, letting partners embed cover at the point of booking.",
+    "services": [
+      "Trip cancellation and interruption cover",
+      "Emergency medical evacuation coordination",
+      "Baggage loss and delay claims processing",
+      "Twenty-four-hour assistance desk"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 102,
+    "description": "A commercial laundry and linen rental company serving hotels, resorts, and hospitals across a coastal province. It operates industrial tunnel washers, a flatwork ironing line, and a fleet of delivery trucks running nightly circuits. Clients pay per kilogram or on fixed linen rental contracts.",
+    "uvp": "Nightly collection and pre-dawn return let hotel clients hold roughly half the linen stock they would otherwise need, freeing working capital. The plant's water recovery system meets discharge standards that allow it to operate in protected coastal zones where competitors cannot site facilities.",
+    "services": [
+      "Industrial laundry processing by weight",
+      "Hotel linen rental contracts",
+      "Nightly collection and pre-dawn delivery",
+      "Stain reclamation and linen replacement management"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 103,
+    "description": "A software vendor selling a channel manager and property management system to independent hotels, synchronising rates and inventory across online travel agencies. The product includes a booking engine, housekeeping module, and revenue reporting. Revenue comes from monthly per-room subscriptions and integration fees.",
+    "uvp": "The platform reconciles overbooking conflicts across channels in near real time, a failure mode that costs independent properties more than any other software gap. Its migration team imports historical reservation data, which competing vendors leave to the client.",
+    "services": [
+      "Channel management across booking platforms",
+      "Property management system subscriptions",
+      "Direct booking engine deployment",
+      "Revenue and occupancy analytics reporting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 104,
+    "description": "A ground handling company contracted by airlines at a regional airport, providing baggage loading, aircraft pushback, cabin cleaning, and passenger boarding assistance. It runs a fleet of tugs, belt loaders, and ground power units, and staffs shifts around the flight schedule. Safety audits are conducted quarterly by its airline clients.",
+    "uvp": "Its crews are cross-trained across ramp and cabin roles, letting the company maintain turnaround times during staff shortages that ground competing handlers. On-site engineering keeps ground support equipment serviceable without the mainland parts delays others face.",
+    "services": [
+      "Ramp baggage loading and unloading",
+      "Aircraft pushback and marshalling",
+      "Cabin cleaning between rotations",
+      "Ground support equipment maintenance"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 105,
+    "description": "A heavy vehicle maintenance workshop servicing tour coach and shuttle fleets, handling engine overhauls, air conditioning systems, brake certification, and body repairs. It operates six bays with a parts inventory for the three chassis brands most common among local operators. Work is booked on fleet maintenance contracts.",
+    "uvp": "Holding chassis-specific parts locally allows the shop to return a coach to service in a day rather than the week an ordered part would take. Its roadworthiness certification is accepted directly by the transport regulator, sparing operators a second inspection.",
+    "services": [
+      "Coach engine and drivetrain overhaul",
+      "Bus air conditioning system servicing",
+      "Brake testing and roadworthiness certification",
+      "Fleet preventive maintenance contracts"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 106,
+    "description": "A licensed manning agency that recruits, documents, and deploys crew for cruise lines and cargo operators. It handles seafarer certification, medical clearance, visa processing, and contract administration for roughly two thousand deployments a year. The agency is audited by both the labour regulator and its principal shipowners.",
+    "uvp": "The agency runs its own accredited training centre, so candidates complete safety and hospitality certification before deployment instead of waiting for external course slots. Its documentation team clears crew visas in half the sector's average processing time.",
+    "services": [
+      "Seafarer recruitment and screening",
+      "Certification and medical clearance processing",
+      "Visa and deployment documentation",
+      "Contract administration and repatriation handling"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 107,
+    "description": "A marketing agency retained by provincial tourism offices and hospitality brands to produce destination campaigns, run paid media, and manage social channels. Its teams cover strategy, video production, and analytics, and it bills on retainers plus media commission. The agency owns no venues and sells nothing directly to travellers.",
+    "uvp": "Campaign work is grounded in the agency's own arrival and search-demand modelling, so creative is briefed against measured market interest rather than assumption. Its in-house production unit shoots and edits locally, removing the cost of flying crews in.",
+    "services": [
+      "Destination campaign strategy and creative",
+      "Paid media planning and buying",
+      "Video and photo production",
+      "Performance analytics and attribution reporting"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 108,
+    "description": "A seafood processing and export company operating a blast freezing plant and cold storage at a fishing port. It buys tuna and reef catch from consolidators, grades and packs to buyer specifications, and ships containers to Japanese and European importers. Traceability documentation is maintained for every lot.",
+    "uvp": "The plant blast-freezes within four hours of landing, holding a grade level that slower processors cannot reach and commanding sashimi-market pricing. Its lot-level traceability satisfies European import controls that exclude most regional exporters.",
+    "services": [
+      "Blast freezing and cold storage",
+      "Export grading and specification packing",
+      "Catch documentation and traceability",
+      "Container consolidation and shipping"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 109,
+    "description": "A feed milling company producing formulated rations for swine, poultry, and aquaculture, operating a pellet mill and its own quality laboratory. It sells through provincial dealers and directly to commercial farms on volume contracts. Formulations are adjusted seasonally against raw material availability.",
+    "uvp": "The in-house laboratory assays every incoming corn and soybean lot, so formulations hold nutritional specification even when raw material quality swings. Its aquaculture line produces a water-stable pellet few regional mills can extrude consistently.",
+    "services": [
+      "Swine and poultry feed manufacturing",
+      "Water-stable aquaculture pellet production",
+      "Raw material laboratory assay",
+      "Dealer distribution and farm supply contracts"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 110,
+    "description": "A veterinary clinic and animal hospital with a surgical suite, in-house diagnostics, and an overnight ward. It treats companion animals during clinic hours and takes emergency cases around the clock. Three veterinarians and six technicians staff the rotation, and the practice also runs a small boarding kennel.",
+    "uvp": "On-site radiography and blood chemistry mean diagnosis and surgery can happen in the same visit rather than across three appointments. Being the only twenty-four-hour emergency veterinary service in the city, it receives referrals from every other clinic in the area.",
+    "services": [
+      "Companion animal consultation and surgery",
+      "In-house diagnostic imaging and laboratory",
+      "Twenty-four-hour emergency treatment",
+      "Overnight ward and boarding"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 111,
+    "description": "A driving school accredited by the land transportation authority, running theoretical modules and practical instruction for student and professional licence applicants. It maintains a fleet of dual-control training vehicles and a small off-road practice pad. Most enrolees are first-time applicants required to complete a mandated course.",
+    "uvp": "Its instructors are certified assessors, so students complete the mandated examination on the same premises instead of queuing at a regional testing centre. The practice pad allows manoeuvring drills to be learned off public roads, which reduces first-attempt failures.",
+    "services": [
+      "Mandated theoretical driving course",
+      "Dual-control practical instruction",
+      "Professional licence upgrade training",
+      "On-site assessment and examination"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 112,
+    "description": "An infrastructure company that builds, owns, and leases telecommunications towers to mobile network operators. It handles site acquisition, permitting, civil works, and power provisioning, then leases vertical space to multiple carriers per structure. Revenue comes from long-term tenancy agreements indexed to inflation.",
+    "uvp": "Designing every tower for at least three tenants from the outset lets carriers co-locate without structural retrofits, accelerating rollout. The company's permitting team handles municipal approvals in-house, which is the bottleneck that stalls most independent tower builds.",
+    "services": [
+      "Tower site acquisition and permitting",
+      "Tower construction and power provisioning",
+      "Multi-carrier co-location leasing",
+      "Site maintenance and security"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 113,
+    "description": "An environmental services company providing septic desludging, grease trap servicing, and wastewater hauling to resorts, restaurants, and residential subdivisions. It operates vacuum tankers and a permitted treatment facility where collected material is processed. Contracts run on scheduled servicing intervals with compliance documentation issued per visit.",
+    "uvp": "Because the company owns a permitted treatment site, clients receive disposal certificates that satisfy environmental inspectors, which haulers without a facility cannot issue. Scheduled servicing prevents the overflow incidents that shut hospitality clients down during peak season.",
+    "services": [
+      "Septic tank desludging",
+      "Grease trap cleaning and servicing",
+      "Permitted wastewater treatment and disposal",
+      "Compliance certification per service visit"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  },
+  {
+    "id": 114,
+    "description": "A real estate brokerage marketing shoreline and hillside lots to buyers looking for second homes and development sites. Its agents handle title verification, zoning checks, and negotiation, and the firm holds exclusive listings on several subdivided coastal estates. It earns commission on completed transfers and does not operate any property it sells.",
+    "uvp": "The firm runs its own title and easement due diligence before listing, so buyers avoid the boundary disputes that plague shoreline transactions in the province. Its agents are licensed appraisers, giving sellers a defensible valuation rather than a speculative asking price.",
+    "services": [
+      "Shoreline and hillside lot brokerage",
+      "Title verification and zoning due diligence",
+      "Licensed property appraisal",
+      "Transfer and registration facilitation"
+    ],
+    "labels": [
+      "OUT_OF_SCOPE"
+    ]
+  }
+]
