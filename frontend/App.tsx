@@ -14,6 +14,9 @@ import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksS
 import DashboardView from './components/module-2/2.1-dashboard/DashboardView';
 import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
+import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
+import CalendarView from './components/module-3/3.2-calendar/CalendarView';
+import path from 'path/win32';
 
 /**
  * DEV-ONLY preview routes.
@@ -53,19 +56,20 @@ const devPreviewRoutes = import.meta.env.DEV
           </ObDraftProvider>
         ),
       },
-      // The dashboard in its real shell, seeded with a finished profile.
-      // Without this it is unreachable locally: businessProfile.load()'s
-      // fixture is an unonboarded operator, so ProfileGate redirects to
-      // /onboarding and the category filter would match nothing anyway.
-      //
-      // :mode is the state switcher — the React equivalent of the prototype's
-      // setDashMode(). Note `zero-match` is NOT a mode: it is the normal mode
-      // with a profile whose categories match no alert, so it is produced by
-      // swapping the seeded profile rather than forcing the machine.
       {
         path: '/preview/dashboard/:mode?',
         element: <DashboardPreviewShell />,
         children: [{ index: true, element: <DashboardPreviewScreen /> }],
+      },
+      {
+        // Module 3 previews intentionally bypass auth/profile gates. They are
+        // DEV-only, so production users still enter through the normal shell.
+        path: '/preview/content',
+        element: <ContentStudioView />,
+      },
+      {
+        path: '/preview/calendar',
+        element: <CalendarView />,
       },
     ]
   : [];
@@ -142,8 +146,8 @@ const router = createBrowserRouter([
                 children: [
                   { index: true, element: <Navigate to="/dashboard" replace /> },
                   { path: 'dashboard', element: <DashboardView /> },
-                  { path: 'content', element: <RoutePlaceholder navId="content" /> },
-                  { path: 'calendar', element: <RoutePlaceholder navId="calendar" /> },
+                  { path: 'content', element: <ContentStudioView /> },
+                  { path: 'calendar', element: <CalendarView /> },
                   { path: 'performance', element: <RoutePlaceholder navId="performance" /> },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
                   // One route serves all three Settings tabs, so it cannot map to a
