@@ -3,15 +3,9 @@
  * (MarketDto shape, 24-point ChartDataPoint[] history+forecast series).
  */
 
-export interface ChartDataPoint {
-  week: string;
-  history: number | null;
-  forecast: number | null;
-  seasonality: number;
-  forex: number;
-  gdp: number;
-  spike: 0 | 1;
-}
+import type { ChartDataPoint, Airline, Market } from '../../types';
+
+export type { ChartDataPoint, Airline, Market };
 
 interface BuildChartDataInput {
   base: number;
@@ -55,45 +49,6 @@ export function buildChartData(o: BuildChartDataInput): ChartDataPoint[] {
     });
   }
   return pts;
-}
-
-export interface Airline {
-  name: string;
-  code: string;
-  frequency: string;
-  direct: boolean;
-}
-
-export interface Market {
-  id: string;
-  rank: number;
-  name: string;
-  city: string;
-  flag: string;
-  matchScore: number;
-  directive: string;
-  directFlight: boolean;
-  flightHours: string;
-  distanceKm: number;
-  nearestAirport: string;
-  destinationAirport: string;
-  accessibilityScore: number;
-  flightFrequency: number;
-  avgFlightPrice: string;
-  airlines: Airline[];
-  peakMonths: string[];
-  currency: string;
-  forexLabel: string;
-  gdpValue: number;
-  forexValue: number;
-  seasonalityScore: number;
-  yoyRatio: number | null;
-  spikeIndicator: boolean;
-  economyInsight: string;
-  seasonalityInsight: string;
-  gdpTrend: { year: number; value: number }[];
-  forexTrend: { date: string; value: number }[];
-  chartData: ChartDataPoint[];
 }
 
 export const MOCK_MARKETS: Market[] = [

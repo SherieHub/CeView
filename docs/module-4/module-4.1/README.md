@@ -14,9 +14,9 @@ Submodule 4.1 is the **data-entry and KPI-display** half of Module 4. It accepts
 
 | Flow | Trigger | Endpoint | AI Calls |
 |---|---|---|---|
-| **Load demo metrics** | Dashboard mount / 4W-8W toggle | `GET /api/v1/analytics/metrics?weeks=4\|8` | None — deterministic scaled defaults |
-| **Manual data ingestion** | "Generate Campaign Analytics" button | `POST /api/v1/analytics/manual` | Delegates PES compute to Submodule 4.2 (FastAPI) after local KPI computation |
-| **Load history** | `CustomerJourneyFunnel` mount / weeks change | `GET /api/v1/analytics/history?weeks=4\|8` | None — DB read only |
+| **Load demo metrics** | Dashboard mount / 4W-8W toggle | `GET /api/analytics/metrics?weeks=4\|8` | None — deterministic scaled defaults |
+| **Manual data ingestion** | "Generate Campaign Analytics" button | `POST /api/analytics/manual` | Delegates PES compute to Submodule 4.2 (FastAPI) after local KPI computation |
+| **Load history** | `CustomerJourneyFunnel` mount / weeks change | `GET /api/analytics/history?weeks=4\|8` | None — DB read only |
 
 ---
 

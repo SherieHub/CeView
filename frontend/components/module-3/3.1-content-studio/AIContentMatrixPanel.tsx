@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Check, CheckCircle2, ChevronDown, Copy, Sparkles } from 'lucide-react';
-import { MOCK_CONTENT, type CaptionMetadata } from '../../../services/fixtures/content';
-import type { PlatformId } from '../../../types';
+import { Check, CheckCircle2, ChevronDown, Copy, Loader2, Sparkles } from 'lucide-react';
+import type { ContentResponse, PlatformId, CaptionMetadata } from '../../../types';
 
 export const PLATFORM_CHAR_LIMITS: Record<PlatformId, number> = {
   instagram: 2200,
@@ -35,6 +34,10 @@ export interface AIContentMatrixPanelProps {
   onStageCaption?: (caption: string) => void;
   /** Allows a shell to display an already-staged caption without taking ownership of it. */
   stagedCaption?: string;
+  /** Generated content from POST /api/content/generate, owned by ContentStudioView. */
+  content?: ContentResponse | null;
+  /** True while ContentStudioView's generate() call is in flight. */
+  loading?: boolean;
 }
 
 interface CaptionOptionCardProps {
@@ -90,7 +93,7 @@ function CaptionOptionCard({
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
-      <div className={`mt-2 text-right text-xs font-semibold ${isOverLimit ? 'text-critical' : 'text-muted'}`}>
+      <div className={`mt-2 text-right text-xs font-semibold ${isOverLimit ? 'text-critical' : 'text-[var(--color-text-muted)]'}`}>
         {count.toLocaleString()} / {limit.toLocaleString()} characters{isOverLimit ? ' — over recommended limit' : ''}
       </div>
 
@@ -110,7 +113,7 @@ function CaptionOptionCard({
               {REASON_FIELDS.map(([field, label]) => (
                 <div key={field}>
                   <dt className="font-semibold text-navy-dark">{label}</dt>
-                  <dd className="mt-1 leading-5 text-muted">{metadata[field]}</dd>
+                  <dd className="mt-1 leading-5 text-[var(--color-text-muted)]">{metadata[field]}</dd>
                 </div>
               ))}
             </dl>
@@ -136,11 +139,13 @@ export default function AIContentMatrixPanel({
   activePlatform,
   onPlatformChange,
   onStageCaption,
+  content,
+  loading,
 }: AIContentMatrixPanelProps) {
   const [uncontrolledPlatform, setUncontrolledPlatform] = useState<PlatformId>('instagram');
   const [approved, setApproved] = useState<Partial<Record<PlatformId, number>>>({});
   const platform = activePlatform ?? uncontrolledPlatform;
-  const captions = MOCK_CONTENT.captions[platform];
+  const captions = content?.captions[platform];
 
   const selectPlatform = (next: PlatformId) => {
     if (activePlatform === undefined) setUncontrolledPlatform(next);
@@ -171,7 +176,7 @@ export default function AIContentMatrixPanel({
               type="button"
               role="tab"
               aria-selected={selected}
-              className={`relative whitespace-nowrap px-3 py-3 text-sm font-semibold ${selected ? 'border-b-2 border-teal-accent text-navy-dark' : 'text-muted'}`}
+              className={`relative whitespace-nowrap px-3 py-3 text-sm font-semibold ${selected ? 'border-b-2 border-teal-accent text-navy-dark' : 'text-[var(--color-text-muted)]'}`}
               onClick={() => selectPlatform(item.id)}
             >
               {item.label}
@@ -187,20 +192,34 @@ export default function AIContentMatrixPanel({
         </p>
       )}
 
-      <div className="mt-4 space-y-4">
-        {captions.options.map((text, index) => (
-          <CaptionOptionCard
-            key={`${platform}-${index}`}
-            index={index}
-            title={captions.optionNames[index] ?? `Option ${index + 1}`}
-            initialText={text}
-            limit={PLATFORM_CHAR_LIMITS[platform]}
-            metadata={captions.optionMetadata[index]}
-            approved={approved[platform] === index}
-            onApprove={(editedText) => approve(index, editedText)}
-          />
-        ))}
-      </div>
+      {loading && (
+        <p className="mt-4 flex items-center gap-2 rounded-lg bg-mint-pale p-3 text-sm text-navy-dark">
+          <Loader2 size={16} className="animate-spin" /> Generating localised captions…
+        </p>
+      )}
+
+      {!loading && captions && (
+        <div className="mt-4 space-y-4">
+          {captions.options.map((text, index) => (
+            <CaptionOptionCard
+              key={`${platform}-${index}`}
+              index={index}
+              title={captions.optionNames[index] ?? `Option ${index + 1}`}
+              initialText={text}
+              limit={PLATFORM_CHAR_LIMITS[platform]}
+              metadata={captions.optionMetadata[index]}
+              approved={approved[platform] === index}
+              onApprove={(editedText) => approve(index, editedText)}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && !captions && (
+        <p className="mt-4 rounded-lg border border-gray-light p-3 text-sm text-[var(--color-text-muted)]">
+          No generated content yet for this platform.
+        </p>
+      )}
     </section>
   );
 }

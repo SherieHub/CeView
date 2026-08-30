@@ -19,7 +19,7 @@ participant "tbl_localized_\npromotional_content" as DB
 == 1. Content Generation (on mount) ==
 
 O -> UI: Navigate to Content Studio\n(market selected)
-UI -> CC: POST /api/v1/content/generate\n{market, businessName, description,\ncategories, trend} ?profileId
+UI -> CC: POST /api/content/generate\n{market, businessName, description,\ncategories, trend} ?profileId
 
 alt profileId provided
   CC -> CGS: generate(req, profileId)
@@ -68,7 +68,7 @@ UI -> UI: Render AIContentMatrixPanel\n3 platform tabs × 3 archetype cards
 == 2. Content Approval (fire-and-forget) ==
 
 O -> UI: Click "Approve" on one\ncaption per platform
-UI ->> CC: POST /api/v1/content/approve\n{market} ?profileId [non-blocking]
+UI ->> CC: POST /api/content/approve\n{market} ?profileId [non-blocking]
 
 CC -> CAS: approveForMarket(profileId, market)
 CAS -> DB: UPDATE approval_status = true\nSET approved_at = now()\nWHERE (business_profile_id, selected_market)

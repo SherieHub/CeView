@@ -38,7 +38,7 @@ describe('AuthProvider — Google sign-in / profile completion', () => {
     expect(result.current.profileCompleted).toBe(false);
     expect(loadTokens()?.accessToken).toBe('jwt-1');
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/google'),
+      expect.stringContaining('/api/auth/google'),
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token' }) }),
     );
   });

@@ -13,14 +13,14 @@ sequenceDiagram
     participant DB   as PostgreSQL
 
     %% ══════════════════════════════════════════════════════════════════════════
-    %% Flow 1 — Page load: GET /api/v1/forecasting/markets  (DB-only, no AI)
+    %% Flow 1 — Page load: GET /api/forecasting/markets  (DB-only, no AI)
     %% ══════════════════════════════════════════════════════════════════════════
 
-    Note over Browser,DB: Flow 1 · Market Radar page load — GET /api/v1/forecasting/markets (no AI calls)
+    Note over Browser,DB: Flow 1 · Market Radar page load — GET /api/forecasting/markets (no AI calls)
 
     Browser->>MRV: mount (tab: radar)
     MRV->>AC: listMarkets(businessProfileId)
-    AC->>FC: GET /api/v1/forecasting/markets?profileId=UUID
+    AC->>FC: GET /api/forecasting/markets?profileId=UUID
     FC->>FS: loadMarketsFromDb(profileId)
 
     loop For each market in [korea, japan, usa]
@@ -49,15 +49,15 @@ sequenceDiagram
     Note right of Browser: DemandForecastChart — history + forecast + seasonality series<br/>EconomicInsightsBoard — forex/GDP mini-charts + peak-month calendar<br/>LiveAlertBanner — visible only if chartData[].spike === 1<br/>StrategicDirectivePanel — AI directive text + "Generate Content" CTA
 
     %% ══════════════════════════════════════════════════════════════════════════
-    %% Flow 2 — Refresh Forecast: POST /api/v1/forecasting/analyze/{profileId}
+    %% Flow 2 — Refresh Forecast: POST /api/forecasting/analyze/{profileId}
     %% ══════════════════════════════════════════════════════════════════════════
 
-    Note over Browser,DB: Flow 2 · Refresh Forecast — POST /api/v1/forecasting/analyze/{profileId}
+    Note over Browser,DB: Flow 2 · Refresh Forecast — POST /api/forecasting/analyze/{profileId}
 
     Browser->>MRV: click "Refresh Forecast" button
     MRV->>MRV: setIsRefreshing(true) — spinner on button
     MRV->>AC: analyzeMarkets(businessProfileId)
-    AC->>FC: POST /api/v1/forecasting/analyze/UUID
+    AC->>FC: POST /api/forecasting/analyze/UUID
 
     FC->>FS: forecastForProfile(profileId, refresh=true)
     FS->>DB: BusinessProfileRepo.findById(profileId)

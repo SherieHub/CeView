@@ -7,6 +7,7 @@ from app.routers import (
     market_data,
 )
 from app.api import trends_router
+from app.unavailable import register_unavailable_handler
 
 configure_logging()
 
@@ -20,6 +21,8 @@ app = FastAPI(
     ),
 )
 app.add_middleware(TraceIdMiddleware)
+
+register_unavailable_handler(app)
 
 
 @app.get("/healthz")
@@ -47,4 +50,4 @@ def healthz_models() -> dict:
 
 app.include_router(forecasting.router,         prefix="/internal/forecasting",  tags=["forecasting"])
 app.include_router(market_data.router,         prefix="/internal/market-data",   tags=["market-data"])
-app.include_router(trends_router.router,       prefix="/api/v1/trends",           tags=["trends"])
+app.include_router(trends_router.router,       prefix="/api/trends",           tags=["trends"])

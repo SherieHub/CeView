@@ -63,14 +63,7 @@ export default function BusinessProfileSettings() {
     // Either Save should run step 5's analyze -> uniqueness round-trip, or the
     // copy should be corrected — product/backend call, raise in review.
     //
-    // KNOWN GAP: apiClient has no saveProfile (PUT /api/v1/business-profile)
-    // method yet, and services/apiClient.ts belongs to the Fixture Data Layer
-    // card, not this one. Called optionally so this screen picks the real
-    // persistence up automatically once that method lands.
-    const client = apiClient.businessProfile as {
-      save?: (p: BusinessProfile) => Promise<unknown>;
-    };
-    await client.save?.(form);
+    await apiClient.businessProfile.save(form);
 
     setProfile(form); // re-syncs the sidebar identity block without a page reload
     showToast('Business profile saved — embedding refreshed');
@@ -79,7 +72,7 @@ export default function BusinessProfileSettings() {
   return (
     <div className="card p-6">
       <div className="mb-6 flex flex-wrap items-center gap-4">
-        <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-navy text-lg font-semibold text-white">
+        <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[var(--color-navy-primary)] text-lg font-semibold text-[var(--color-text-inverse)]">
           {initials(profile.businessName)}
         </div>
         <div className="min-w-[180px] flex-1">
@@ -92,8 +85,10 @@ export default function BusinessProfileSettings() {
           file) carries no semanticsScore/categoryScore field yet.
         */}
         {profile.uniquenessScore != null && (
-          <span className="rounded-full border border-line px-3 py-1 body-xs font-semibold">
-            Uniqueness {profile.uniquenessScore}
+          // Stored 0–1 (matches the DB column); formatted to a human 0–100
+          // figure only here, at the display edge.
+          <span className="rounded-full border border-[var(--color-gray-light)] px-3 py-1 body-xs font-semibold">
+            Uniqueness {Math.round(profile.uniquenessScore * 100)}
           </span>
         )}
       </div>
@@ -130,7 +125,9 @@ export default function BusinessProfileSettings() {
                 aria-pressed={selected}
                 onClick={() => toggleCategory(c)}
                 className={`rounded-full border px-3 py-1.5 body-xs ${
-                  selected ? 'border-navy bg-navy text-white' : 'border-line'
+                  selected
+                    ? 'border-[var(--color-mint-primary)] bg-[var(--color-mint-pale)] font-semibold'
+                    : 'border-[var(--color-gray-light)]'
                 }`}
               >
                 {c}
@@ -145,7 +142,7 @@ export default function BusinessProfileSettings() {
         <span className="field-label">Core services</span>
         <div className="flex flex-wrap gap-2">
           {form.coreServices.map((s) => (
-            <span key={s} className="rounded-full bg-navy px-3 py-1.5 body-xs text-white">
+            <span key={s} className="badge badge--teal">
               {s}
             </span>
           ))}

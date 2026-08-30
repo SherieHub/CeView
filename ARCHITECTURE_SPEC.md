@@ -61,34 +61,34 @@ score                                     audit                    report
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 1.1 | Business profile capture | User opens **Business Profile** → fills form (word-count-validated) → Save → `PUT /api/v1/business-profile` | Persisted profile + fire-and-forget E5 embedding |
-| 1.1 | Category inference | User clicks **Analyze** → `POST /api/v1/classification/analyze` | 7 category allocations summing to 100% |
-| 1.2 | Uniqueness scoring | User adjusts category sliders → **Compute** → `POST /api/v1/classification/uniqueness` | `overallScore`, `semanticsScore`, `categoryScore` (0–100) + AI feedback |
+| 1.1 | Business profile capture | User opens **Business Profile** → fills form (word-count-validated) → Save → `PUT /api/business-profile` | Persisted profile + fire-and-forget E5 embedding |
+| 1.1 | Category inference | User clicks **Analyze** → `POST /api/classification/analyze` | 7 category allocations summing to 100% |
+| 1.2 | Uniqueness scoring | User adjusts category sliders → **Compute** → `POST /api/classification/uniqueness` | `overallScore`, `semanticsScore`, `categoryScore` (0–100) + AI feedback |
 
 ### 2.2 Module 2 — Market Radar & Notifications
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 2.1 | Home demand alerts | Page load → `POST /api/v1/forecasting/ensure/{profileId}?maxAgeHours=12` (staleness-gated live pipeline) | Trend-alert cards for markets with active/upcoming 2σ spikes |
+| 2.1 | Home demand alerts | Page load → `POST /api/forecasting/ensure/{profileId}?maxAgeHours=12` (staleness-gated live pipeline) | Trend-alert cards for markets with active/upcoming 2σ spikes |
 | 2.1 | Scheduled ingestion | Cron / refresh → PyTrends + World Bank + forex fetch → `tbl_market_signal_record` | Enriched weekly signal records (rolling stats, spike, YoY) |
-| 2.2 | Market Radar | User opens **Market Radar** → `GET /api/v1/forecasting/markets` (DB read) | 3 ranked market cards + 24-point demand chart + economic insights |
-| 2.2 | Refresh forecast | **Refresh** → `POST /api/v1/forecasting/analyze/{profileId}` | Fresh ingestion + Groq batch forecast + re-ranked markets |
+| 2.2 | Market Radar | User opens **Market Radar** → `GET /api/forecasting/markets` (DB read) | 3 ranked market cards + 24-point demand chart + economic insights |
+| 2.2 | Refresh forecast | **Refresh** → `POST /api/forecasting/analyze/{profileId}` | Fresh ingestion + Groq batch forecast + re-ranked markets |
 
 ### 2.3 Module 3 — Content Studio & OMCS Compliance
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 3.1 | Content generation | From a market card → `POST /api/v1/content/generate` | Platform-localized caption options (LangGraph) |
-| 3.2 | Creative direction | After approval → `POST /api/v1/creative-direction/generate/{profileId}` | Shot list, mood, palette, platform guidance |
-| 3.3 | OMCS compliance audit | Upload image + choose caption → `POST /api/v1/compliance/omcs-analyze` | OMCS score (0–100), Pass/Fail (≥70), failure diagnostics |
+| 3.1 | Content generation | From a market card → `POST /api/content/generate` | Platform-localized caption options (LangGraph) |
+| 3.2 | Creative direction | After approval → `POST /api/creative-direction/generate/{profileId}` | Shot list, mood, palette, platform guidance |
+| 3.3 | OMCS compliance audit | Upload image + choose caption → `POST /api/compliance/omcs-analyze` | OMCS score (0–100), Pass/Fail (≥70), failure diagnostics |
 
 ### 2.4 Module 4 — Campaign Analytics & Reporting
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 4.1 | KPI ingestion | Submit 7 raw fields → `POST /api/v1/analytics/manual` | CTR, CPC, CR, ROAS, CAC + 4-stage funnel |
+| 4.1 | KPI ingestion | Submit 7 raw fields → `POST /api/analytics/manual` | CTR, CPC, CR, ROAS, CAC + 4-stage funnel |
 | 4.2 | PES computation | Auto on ingest → FastAPI `/internal/pes-compute/analyze` (Spring fallback) | PES 0–100 + per-metric contribution breakdown |
-| 4.3 | Prescriptive report | Auto-fetch on mount → `POST /api/v1/analytics/report` | Executive summary, weakest metric/stage, ranked fixes |
+| 4.3 | Prescriptive report | Auto-fetch on mount → `POST /api/analytics/report` | Executive summary, weakest metric/stage, ranked fixes |
 
 ---
 

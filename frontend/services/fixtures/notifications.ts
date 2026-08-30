@@ -10,18 +10,9 @@
  * independent of category.
  */
 
-export interface DemandAlert {
-  id: string;
-  date: string;
-  title: string;
-  market: string;
-  marketId: string;
-  category: string;
-  trend: string;
-  isRead: boolean;
-  alertLevel: 'INFO' | 'WARNING';
-  alertMessage: string;
-}
+import type { DemandAlert } from '../../types';
+
+export type { DemandAlert };
 
 export const MOCK_NOTIFICATIONS: DemandAlert[] = [
   { id: 'n1', date: 'Week of Aug 3, 2026', title: 'Demand Window Opening — South Korea', market: 'South Korea', marketId: 'korea', category: 'Accommodation & Staycation', trend: 'Healing / 힐링여행', isRead: false, alertLevel: 'WARNING', alertMessage: 'Predicted 4-week demand is 24% above the 7-day rolling baseline, and the 2σ spike is YoY-confirmed. Target within 4 weeks for maximum reach.' },

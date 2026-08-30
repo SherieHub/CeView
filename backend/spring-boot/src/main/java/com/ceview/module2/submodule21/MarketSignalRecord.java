@@ -17,6 +17,9 @@ public class MarketSignalRecord {
 
     @Column(name = "business_profile_id")  private UUID businessProfileId;
     @Column(name = "target_market")        private String targetMarket;
+    /** The category this signal was fetched under. Null on pre-V20 rows and on
+     *  any aggregation that spans multiple categories in a single fetch. */
+    @Column(name = "category")             private String category;
     @Column(name = "trend_index")          private Double trendIndex;
     @Column(name = "forex_rate")           private Double forexRate;
     @Column(name = "gdp_growth")           private Double gdpGrowth;

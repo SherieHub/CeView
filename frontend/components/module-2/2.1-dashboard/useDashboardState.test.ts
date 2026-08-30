@@ -9,7 +9,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
-import type { DemandAlert } from '../../../services/fixtures/notifications';
+import { marketsForCategory, CATEGORY_MARKET_SCORES } from '../../../services/fixtures/markets';
+import { ApiError } from '../../../services/apiError';
+import type { DemandAlert } from '@/types';
 
 const mockProfile = { categories: [] as string[] };
 
@@ -19,8 +21,9 @@ vi.mock('../../../services/profileContext', () => ({
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    notifications: { list: vi.fn(), markRead: vi.fn() },
+    notifications: { list: vi.fn(), markRead: vi.fn(), keywordTrends: vi.fn() },
     forecast: { analyze: vi.fn(), status: vi.fn() },
+    markets: { forCategory: vi.fn() },
   },
 }));
 
@@ -29,8 +32,12 @@ import { useDashboardState } from './useDashboardState';
 
 const listMock = apiClient.notifications.list as unknown as ReturnType<typeof vi.fn>;
 const markReadMock = apiClient.notifications.markRead as unknown as ReturnType<typeof vi.fn>;
+const keywordTrendsMock = apiClient.notifications.keywordTrends as unknown as ReturnType<
+  typeof vi.fn
+>;
 const analyzeMock = apiClient.forecast.analyze as unknown as ReturnType<typeof vi.fn>;
 const statusMock = apiClient.forecast.status as unknown as ReturnType<typeof vi.fn>;
+const forCategoryMock = apiClient.markets.forCategory as unknown as ReturnType<typeof vi.fn>;
 
 /** Deep copies so a test can never mutate the shared fixture by accident. */
 function alerts(): DemandAlert[] {
@@ -43,6 +50,13 @@ function setup(categories: string[], list: DemandAlert[] = alerts(), available =
   statusMock.mockResolvedValue({ available });
   markReadMock.mockResolvedValue({ ok: true });
   analyzeMock.mockResolvedValue({ rerankedMarkets: 3 });
+  // Empty by default: most tests don't care about the keyword-trend merge.
+  keywordTrendsMock.mockResolvedValue([]);
+  // Mirrors the real backend: a category with no scored markets comes back
+  // empty rather than falling back to some other category's ranking.
+  forCategoryMock.mockImplementation((category: string) =>
+    Promise.resolve(category in CATEGORY_MARKET_SCORES ? marketsForCategory(category) : []),
+  );
 }
 
 const DEMO_CATEGORIES = [
@@ -73,6 +87,8 @@ describe('useDashboardState — load transitions', () => {
     mockProfile.categories = DEMO_CATEGORIES;
     listMock.mockRejectedValue(new Error('offline'));
     statusMock.mockRejectedValue(new Error('offline'));
+    forCategoryMock.mockResolvedValue([]);
+    keywordTrendsMock.mockResolvedValue([]);
 
     const { result } = renderHook(() => useDashboardState());
     await waitFor(() => expect(result.current.mode).not.toBe('loading'));
@@ -82,8 +98,77 @@ describe('useDashboardState — load transitions', () => {
     expect(result.current.mode).toBe('ai-down');
   });
 
+  it('keeps keyword-trend alerts even when they resolve BEFORE the primary load', async () => {
+    // Regression guard. Keyword trends and the primary alert load are separate
+    // effects; if both wrote to one `alerts` state, whichever resolved last
+    // would clobber the other. Today keywordTrends is the slow one (~9s of
+    // PyTrends vs ~0.15s), but the planned rank-markets cache would invert
+    // that — so the hook must not depend on resolution order at all.
+    mockProfile.categories = DEMO_CATEGORIES;
+
+    const keyword = {
+      ...alerts()[0],
+      id: 'keyword-1',
+      title: 'Keyword Trend Alert — Coastal & Island',
+      alertLevel: 'INFO' as const,
+    };
+
+    // Keyword trends resolve immediately; the primary list resolves later.
+    keywordTrendsMock.mockResolvedValue([keyword]);
+    listMock.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(alerts()), 20)),
+    );
+    statusMock.mockResolvedValue({ available: true });
+    forCategoryMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.mode).not.toBe('loading'));
+
+    // Both sources must survive: the late primary load must not erase the
+    // early keyword alert.
+    await waitFor(() =>
+      expect(result.current.myAlerts.some((a) => a.id === 'keyword-1')).toBe(true),
+    );
+    expect(result.current.myAlerts.length).toBeGreaterThan(1);
+  });
+
   it('reports ai-down when the forecast service says it is unavailable', async () => {
     const { result } = await renderReady(DEMO_CATEGORIES, alerts(), false);
+    expect(result.current.mode).toBe('ai-down');
+  });
+
+  it('exposes the error when the alert load fails', async () => {
+    mockProfile.categories = DEMO_CATEGORIES;
+    listMock.mockRejectedValue(
+      new ApiError({
+        status: 503,
+        method: 'GET',
+        path: '/api/notifications',
+        body: { code: 'MOD22_MARKETS_FAILED', message: 'boom' },
+      }),
+    );
+    statusMock.mockResolvedValue({ available: true });
+    forCategoryMock.mockResolvedValue([]);
+    keywordTrendsMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.error).toBeInstanceOf(ApiError));
+  });
+
+  it('keeps alerts when only the health check fails', async () => {
+    mockProfile.categories = DEMO_CATEGORIES;
+    listMock.mockResolvedValue(alerts());
+    statusMock.mockRejectedValue(new Error('down'));
+    markReadMock.mockResolvedValue({ ok: true });
+    forCategoryMock.mockImplementation((category: string) =>
+      Promise.resolve(category in CATEGORY_MARKET_SCORES ? marketsForCategory(category) : []),
+    );
+    keywordTrendsMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.myAlerts.length).toBeGreaterThan(0));
+    // A failing health probe still has to be reflected as degraded — it just
+    // must not have blanked the alerts to get there.
     expect(result.current.mode).toBe('ai-down');
   });
 });
@@ -126,10 +211,10 @@ describe('useDashboardState — selection', () => {
 
     act(() => result.current.selectAlert('n1')); // Accommodation & Staycation
     expect(result.current.showMarkets).toBe(true);
-    expect(result.current.rankedMarkets[0].id).toBe('korea');
+    await waitFor(() => expect(result.current.rankedMarkets[0]?.id).toBe('korea'));
 
     act(() => result.current.selectAlert('n3')); // Adventure & Nature
-    expect(result.current.rankedMarkets[0].id).toBe('usa');
+    await waitFor(() => expect(result.current.rankedMarkets[0]?.id).toBe('usa'));
   });
 
   it('collapses when the open alert is clicked again', async () => {
@@ -221,11 +306,12 @@ describe('useDashboardState — summary derivations', () => {
     const { result } = await renderReady(DEMO_CATEGORIES);
 
     // Adventure & Nature ranks usa at 90, the highest of any category's leader.
-    expect(result.current.topMarket).toMatchObject({ id: 'usa', matchScore: 90 });
+    await waitFor(() => expect(result.current.topMarket).toMatchObject({ id: 'usa', matchScore: 90 }));
   });
 
   it('has no top market when the operator covers no known category', async () => {
     const { result } = await renderReady(['Wellness & Spa']);
+    await waitFor(() => expect(forCategoryMock).toHaveBeenCalledWith('Wellness & Spa'));
     expect(result.current.topMarket).toBeNull();
   });
 });
@@ -241,6 +327,22 @@ describe('useDashboardState — refresh', () => {
     expect(analyzeMock).toHaveBeenCalled();
     expect(listMock).toHaveBeenCalledTimes(2);
     expect(result.current.isRefreshing).toBe(false);
+  });
+});
+
+describe('useDashboardState — keyword-trend merge', () => {
+  // Task 7a: keyword-trend notifications round-trip to PyTrends via FastAPI and
+  // can take tens of seconds or fail outright — neither should ever touch the
+  // primary alert feed or the dashboard's error state.
+  it('leaves demand alerts intact and error null when the keyword-trend fetch fails', async () => {
+    setup(DEMO_CATEGORIES);
+    keywordTrendsMock.mockRejectedValue(new Error('pytrends timeout'));
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.mode).not.toBe('loading'));
+
+    expect(result.current.myAlerts).toHaveLength(5);
+    expect(result.current.error).toBeNull();
   });
 });
 

@@ -3,32 +3,20 @@
  * ui-ux-prototype.html:1431–1466 (ManualIngestResponse, PrescriptiveReport).
  */
 
-export interface CampaignInput {
-  impressions: number;
-  clicks: number;
-  adSpend: number;
-  revenue: number;
-  conversions: number;
-  bookings: number;
-  newCustomers: number;
-}
+import type {
+  CampaignInput,
+  CampaignHistoryEntry,
+  FunnelDiagnostic,
+  Recommendation,
+  PrescriptiveReport,
+} from '../../types';
+
+export type { CampaignInput, CampaignHistoryEntry, FunnelDiagnostic, Recommendation, PrescriptiveReport };
 
 export const DEFAULT_CAMPAIGN_INPUT: CampaignInput = {
   impressions: 95000, clicks: 2800, adSpend: 4000, revenue: 35000,
   conversions: 185, bookings: 112, newCustomers: 34,
 };
-
-export interface CampaignHistoryEntry {
-  periodStart: string;
-  periodEnd: string;
-  pesScore: number;
-  pesLabel: string;
-  ctr: number;
-  cpc: number;
-  roas: number;
-  convRate: number;
-  cac: number;
-}
 
 export const MOCK_HISTORY: CampaignHistoryEntry[] = [
   { periodStart: '2026-06-08', periodEnd: '2026-06-14', pesScore: 0.42, pesLabel: 'Fair Performance', ctr: 2.00, cpc: 3.75, roas: 3.20, convRate: 3.25, cac: 333.33 },
@@ -40,27 +28,6 @@ export const MOCK_HISTORY: CampaignHistoryEntry[] = [
   { periodStart: '2026-07-20', periodEnd: '2026-07-26', pesScore: 0.78, pesLabel: 'Good Performance', ctr: 3.90, cpc: 1.02, roas: 10.20, convRate: 5.60, cac: 78.00 },
   { periodStart: '2026-07-27', periodEnd: '2026-08-02', pesScore: 0.81, pesLabel: 'Excellent Performance', ctr: 4.30, cpc: 0.94, roas: 11.10, convRate: 6.20, cac: 66.00 },
 ];
-
-export interface FunnelDiagnostic {
-  stage: string;
-  rank: string;
-  dropRate: string;
-  insight: string;
-}
-
-export interface Recommendation {
-  stage: string;
-  urgency: string;
-  title: string;
-  action: string;
-}
-
-export interface PrescriptiveReport {
-  executiveSummary: string;
-  recommendedPlatform: string;
-  funnelDiagnostics: FunnelDiagnostic[];
-  recommendations: Recommendation[];
-}
 
 export const MOCK_REPORT: PrescriptiveReport = {
   executiveSummary:

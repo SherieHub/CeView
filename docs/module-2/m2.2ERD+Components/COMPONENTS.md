@@ -35,9 +35,9 @@ Module 2.2 covers **Forecasting & Market Scoring**: AI-powered demand forecastin
 
 | Component Name | File Path | Type | Description |
 |---|---|---|---|
-| `api.listMarkets` | `ceview/services/apiClient.ts` | API Client Method | `GET /api/v1/forecasting/markets` — fetches ranked market list from Spring Boot |
-| `api.analyzeMarkets` | `ceview/services/apiClient.ts` | API Client Method | `POST /api/v1/forecasting/analyze/{profileId}` — triggers full AI ingestion + forecast + scoring pipeline |
-| `api.listNotifications` | `ceview/services/apiClient.ts` | API Client Method | `GET /api/v1/notifications` — fetches demand-alert notifications for the HomeView feed |
+| `api.listMarkets` | `ceview/services/apiClient.ts` | API Client Method | `GET /api/forecasting/markets` — fetches ranked market list from Spring Boot |
+| `api.analyzeMarkets` | `ceview/services/apiClient.ts` | API Client Method | `POST /api/forecasting/analyze/{profileId}` — triggers full AI ingestion + forecast + scoring pipeline |
+| `api.listNotifications` | `ceview/services/apiClient.ts` | API Client Method | `GET /api/notifications` — fetches demand-alert notifications for the HomeView feed |
 | `Market` | `ceview/types.ts` | TypeScript Interface | Defines the Market data structure: rank, name, city, matchScore, directive, flight info, accessibility, airlines, peakMonths, economic/seasonality insights, chartData array, GDP/forex trends |
 | `ChartDataPoint` | `ceview/types.ts` | TypeScript Interface | Defines a single chart point: week label, history/forecast/seasonality values, forex, gdp, spike indicator |
 | `Notification` | `ceview/types.ts` | TypeScript Interface | Defines notification structure: id, date, title, market, marketId, trend, isRead, optional details |
@@ -48,8 +48,8 @@ Module 2.2 covers **Forecasting & Market Scoring**: AI-powered demand forecastin
 
 | Component Name | File Path | Type | Description |
 |---|---|---|---|
-| `ForecastingController` | `backend/spring-boot/src/main/java/com/ceview/module2/ForecastingController.java` | Spring REST Controller | Exposes `GET /api/v1/forecasting/markets` (DB-only market list) and `POST /api/v1/forecasting/analyze/{profileId}` (full AI pipeline); includes structured error responses with MDC codes |
-| `NotificationController` | `backend/spring-boot/src/main/java/com/ceview/module2/NotificationController.java` | Spring REST Controller | Exposes `GET /api/v1/notifications?profileId=UUID` — returns demand-alert notification list for the HomeView |
+| `ForecastingController` | `backend/spring-boot/src/main/java/com/ceview/module2/ForecastingController.java` | Spring REST Controller | Exposes `GET /api/forecasting/markets` (DB-only market list) and `POST /api/forecasting/analyze/{profileId}` (full AI pipeline); includes structured error responses with MDC codes |
+| `NotificationController` | `backend/spring-boot/src/main/java/com/ceview/module2/NotificationController.java` | Spring REST Controller | Exposes `GET /api/notifications?profileId=UUID` — returns demand-alert notification list for the HomeView |
 
 ---
 
@@ -60,7 +60,7 @@ Module 2.2 covers **Forecasting & Market Scoring**: AI-powered demand forecastin
 | `ForecastingService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule22/ForecastingService.java` | Spring Service | Orchestrates 3-phase pipeline (ingestion → batch Groq inference → XGBoost scoring); provides fast DB-read path via `loadMarketsFromDb()`; assembles 24-point chart data; `@Transactional` ensures atomic DB writes across all three markets |
 | `EnrichedSequenceBuilder` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule22/EnrichedSequenceBuilder.java` | Spring Utility Service | Builds Groq prompt payload from `MarketSignalRecord` history; computes trend series (last 12 weeks), 7d/30d rolling stats, YoY ratio, seasonality score, forex, GDP, holiday flag |
 | `NotificationService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule22/NotificationService.java` | Spring Service | Queries `DemandAlert → MarketScore → ForecastResult` chain; maps to `NotificationDto`; delegates category-rank supplementary notifications to `CategoryRankNotificationService` |
-| `CategoryRankNotificationService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule22/CategoryRankNotificationService.java` | Spring Service | Calls FastAPI `/api/v1/trends/rank-markets` per business category; builds cross-market keyword-volume notifications |
+| `CategoryRankNotificationService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule22/CategoryRankNotificationService.java` | Spring Service | Calls FastAPI `/api/trends/rank-markets` per business category; builds cross-market keyword-volume notifications |
 | `MarketDataIngestionService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule21/MarketDataIngestionService.java` | Spring Service | Per-market ingestion: concurrent GDP + forex fetch → PyTrends (12-week backfill on first run, current-week on updates) → seasonality computation → persists `MarketSignalRecord`; includes 2σ fallback when FastAPI unreachable |
 | `ExternalMarketDataClient` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule21/ExternalMarketDataClient.java` | Spring Service | World Bank GDP API client (5-year) and fawazahmed0 forex CDN client (12 concurrent monthly calls via `Flux.merge()`); static flight references; includes graceful fallbacks with hardcoded defaults |
 | `TrendFetchSchedulerService` | `backend/spring-boot/src/main/java/com/ceview/module2/submodule21/TrendFetchSchedulerService.java` | Spring Scheduled Service | `@Scheduled` every Sunday 00:00 UTC; processes 21 (7 category × 3 market) PyTrends jobs sequentially; implements `PENDING → IN_PROGRESS → SUCCESS/FAILED` state machine with 3-attempt retry |
@@ -116,7 +116,7 @@ Module 2.2 covers **Forecasting & Market Scoring**: AI-powered demand forecastin
 |---|---|---|---|---|
 | Forecasting Router | `backend/fastapi-transformer/app/routers/forecasting.py` | FastAPI Router | `POST /inference`, `POST /inference-batch`, `POST /score` | Handles single-market Groq forecast, all-3-markets batch forecast (1 RPM slot), and XGBoost economic viability scoring |
 | Market Data Router | `backend/fastapi-transformer/app/routers/market_data.py` | FastAPI Router | `POST /trends`, `POST /trends/history`, `POST /seasonality` | Handles current-week PyTrends index, N-week backfill history, and 4-step seasonal shift detection |
-| Trends Router | `backend/fastapi-transformer/app/api/trends_router.py` | FastAPI Router | `POST /api/v1/trends/fetch`, `POST /api/v1/trends/rank-markets` | Single (market, category) trend fetch for `TrendFetchSchedulerService`; cross-market keyword volume ranking |
+| Trends Router | `backend/fastapi-transformer/app/api/trends_router.py` | FastAPI Router | `POST /api/trends/fetch`, `POST /api/trends/rank-markets` | Single (market, category) trend fetch for `TrendFetchSchedulerService`; cross-market keyword volume ranking |
 
 ---
 

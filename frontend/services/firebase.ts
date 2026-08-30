@@ -21,7 +21,7 @@ function getFirebaseApp(): FirebaseApp {
 
 /**
  * Opens the Google account picker in a popup and resolves with the signed-in
- * user's Firebase ID token, ready to send to POST /api/v1/auth/google.
+ * user's Firebase ID token, ready to send to POST /api/auth/google.
  * Rejects (e.g. popup closed by the user, blocked popup) exactly as the
  * underlying Firebase SDK call does — callers surface that via their own
  * error handling, matching how SignInForm/CreateAccountForm already do for

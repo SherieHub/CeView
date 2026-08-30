@@ -1,6 +1,7 @@
 package com.ceview.module4.engagement;
 
 import com.ceview.module4.dto.AnalyticsDtos.*;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -9,11 +10,18 @@ import java.util.ArrayList;
 /**
  * Submodule 4.1 — Campaign Engagement Metrics.
  *
- * <p>KPI + funnel computation, default demo metrics, business-impact funnel
- * transition ranking, and synthetic time-series generation for the report agent.
+ * <p>KPI + funnel computation, default metrics scoped to a business profile,
+ * business-impact funnel transition ranking, and synthetic time-series
+ * generation for the report agent.
  */
 @Service
 public class MetricsCalculationService {
+
+    private final CampaignRecordRepository campaignRepo;
+
+    public MetricsCalculationService(CampaignRecordRepository campaignRepo) {
+        this.campaignRepo = campaignRepo;
+    }
 
     /**
      * Compute the five KPI metrics and the four-stage funnel from raw inputs.
@@ -57,15 +65,56 @@ public class MetricsCalculationService {
 
     /**
      * Default campaign metrics for the EngagementMetricsBoard and as a shared
-     * baseline for the PES (4.2) and prescriptive report (4.3) submodules.
+     * baseline for the PES (4.2) and prescriptive report (4.3) submodules —
+     * scoped to one business profile's real {@code tbl_campaign_records}.
      *
-     * @param weeks Analysis window — 4 (default) or 8. Scales demo defaults proportionally.
+     * <p>Previously this returned the same hardcoded demo numbers to every
+     * operator, regardless of {@code businessProfileId} — plausible-looking
+     * KPIs that corresponded to no real record anywhere. It now aggregates
+     * the operator's own recent records (same lookup {@link
+     * EngagementMetricsController#history} already uses) and reuses {@link
+     * #compute(ManualIngestRequest)} for the KPI math, rather than
+     * re-deriving any formula here.
+     *
+     * <p><b>Aggregation approach:</b> sum the raw inputs (impressions, clicks,
+     * ad spend, revenue, conversions, bookings, new customers) across the
+     * {@code weeks}-window records, then run that single summed input through
+     * {@link #compute(ManualIngestRequest)} — the same "one set of raw totals
+     * in, one KPI set out" shape {@code /manual} already uses per record.
+     * Averaging the already-computed per-record KPIs instead would silently
+     * distort ratio metrics (e.g. averaging CPC across records misrepresents
+     * total spend over total clicks), so raw-input summation was chosen.
+     *
+     * <p><b>Empty case:</b> an operator with zero campaign records for the
+     * window sums to all-zero raw inputs, which {@link #compute} turns into
+     * zeroed-out KPI cards (0% CTR, ₱0 CPC, etc.) rather than falling back to
+     * demo numbers. Zeros are honestly "no data yet"; silently substituting
+     * demo figures would recreate the exact "fake data presented as real"
+     * failure this method exists to fix.
+     *
+     * @param businessProfileId the authenticated operator's business profile id
+     * @param weeks Analysis window — 4 (default) or 8.
      */
-    public MetricsResponse defaultMetrics(int weeks) {
-        int scale = (weeks == 8) ? 2 : 1;
+    public MetricsResponse defaultMetrics(UUID businessProfileId, int weeks) {
+        int limit = (weeks == 8) ? 8 : 4;
+        List<CampaignRecord> records = campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(
+                businessProfileId, PageRequest.of(0, limit));
+
+        long impressions = 0, clicks = 0, conversions = 0, bookings = 0, newCustomers = 0;
+        double adSpend = 0.0, revenue = 0.0;
+        for (CampaignRecord r : records) {
+            impressions  += r.getImpressions();
+            clicks       += r.getClicks();
+            adSpend      += r.getAdSpend();
+            revenue      += r.getRevenue();
+            conversions  += r.getConversions();
+            bookings     += r.getBookings();
+            newCustomers += r.getNewCustomers();
+        }
+
         return compute(new ManualIngestRequest(
-                150_000 * scale, 7_200 * scale, 5_000.0 * scale, 16_000.0 * scale,
-                350 * scale, 180 * scale, 80 * scale, null, null
+                (int) impressions, (int) clicks, adSpend, revenue,
+                (int) conversions, (int) bookings, (int) newCustomers, null, null
         ));
     }
 

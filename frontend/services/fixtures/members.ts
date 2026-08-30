@@ -3,12 +3,9 @@
  * ui-ux-prototype.html:1477–1481.
  */
 
-export interface WorkspaceMemberFixture {
-  name: string;
-  email: string;
-  role: 'Owner' | 'Editor' | 'Viewer';
-  initials: string;
-}
+import type { WorkspaceMemberFixture } from '../../types';
+
+export type { WorkspaceMemberFixture };
 
 export const MOCK_MEMBERS: WorkspaceMemberFixture[] = [
   { name: 'Maria Lopez', email: 'maria@sunsetcove.ph', role: 'Owner', initials: 'ML' },

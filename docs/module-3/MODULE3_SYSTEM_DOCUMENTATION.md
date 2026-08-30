@@ -40,7 +40,7 @@ approved per-platform independently, matching [content-studio.md](screens/conten
 
 ### Sub-Flow A — Content Generation & Caption Matrix (Submodule 3.1)
 
-1. **On mount**: `ContentStudioView` immediately fires `api.generateContent({ market, businessName, description, categories, trend }, businessProfileId)` → `POST /api/v1/content/generate`. A full-page spinner "Generating content…" replaces the layout while the request is in-flight.
+1. **On mount**: `ContentStudioView` immediately fires `api.generateContent({ market, businessName, description, categories, trend }, businessProfileId)` → `POST /api/content/generate`. A full-page spinner "Generating content…" replaces the layout while the request is in-flight.
 2. **Error states**: If generation fails, `<ServerErrorBanner>` appears with the structured `ApiError` code and trace ID. A fallback state message ("The content engine is unavailable") is shown below.
 3. **Fallback pill**: When `content.source === 'fallback'` (Groq API key absent or unavailable), a gold "Demo content (LLM offline)" pill appears in the header so operators know they are seeing curated template data.
 4. **Content header**: Once loaded, a navy header card shows `"{Country} — {City} Profile"` derived from the `content.market` object returned by the API.
@@ -61,7 +61,7 @@ approved per-platform independently, matching [content-studio.md](screens/conten
    - Updates `approvedIndices[activeTab] = idx` (gold ring appears on approved card).
    - Updates `approvedCaptions[activeTab] = text`.
    - Stages the text in `stagedCaption` (auto-populates the `MediaCaptionManager` textarea).
-   - **Fire-and-forget persistence**: `api.approveContent(businessProfileId, market)` → `POST /api/v1/content/approve`. This marks the content as approved in `tbl_localized_promotional_content`. The approval state is required by Submodule 3.2.
+   - **Fire-and-forget persistence**: `api.approveContent(businessProfileId, market)` → `POST /api/content/approve`. This marks the content as approved in `tbl_localized_promotional_content`. The approval state is required by Submodule 3.2.
 
 9. **Visual Direction Board** (`VisualDirectionBoard`): Rendered alongside the caption matrix. Displays `platform.guide[]` — a list of curated visual direction tips per platform (e.g., "Aesthetic Mood Shot", "Apply warm golden filter", "4:5 portrait ratio"). These are market-specific and platform-specific, loaded from `gemini_client.get_platform_guides(market)`.
 
@@ -71,10 +71,10 @@ approved per-platform independently, matching [content-studio.md](screens/conten
 
 ### Sub-Flow B — Creative Direction (Submodule 3.2)
 
-1. **Trigger**: After approving 3.1 content, the operator runs creative direction → `api.generateCreative(profileId, market)` → `POST /api/v1/creative-direction/generate/{profileId}`.
+1. **Trigger**: After approving 3.1 content, the operator runs creative direction → `api.generateCreative(profileId, market)` → `POST /api/creative-direction/generate/{profileId}`.
 2. **Dependency gate**: if no approved 3.1 content exists for the profile + market, the request is rejected with HTTP 400 `missing_dependency`; the UI prompts the operator to approve captions first.
 3. **Visual Direction Board** renders the returned `visualGuide[]` staging blueprint per platform via `BlueprintStepItem`. The backend also returns `shots[]` and `moodboard` (palette + references); these are available in the response but not yet visualized in the UI.
-4. **Approval**: `api.approveCreative(profileId, market)` → `POST /api/v1/creative-direction/approve/{profileId}` marks the latest creative direction output approved.
+4. **Approval**: `api.approveCreative(profileId, market)` → `POST /api/creative-direction/approve/{profileId}` marks the latest creative direction output approved.
 
 ---
 
@@ -89,7 +89,7 @@ approved per-platform independently, matching [content-studio.md](screens/conten
 1. **Toggle**: The operator enables the compliance audit via `SmartOptimizationBoard`'s toggle. `auditOn = true` reveals `MediaCaptionManager` (caption textarea + media upload zone).
 2. **Caption staging**: The `stagedCaption` field is pre-populated from the most recently approved caption card (`handleApproveOption` sets it automatically). The operator can edit it in `CaptionTextArea` before running the audit.
 3. **Media upload**: `MediaDropzone` accepts PNG, JPG, or WEBP up to 20 MB via drag-and-drop or file browser. On selection the file is read as a base64 data URL (`imageDataUrl`) and a preview is shown in `MediaPreviewCard`. If no media is uploaded, `AuditEmptyBanner` blocks the run button.
-4. **Audit execution**: The operator clicks "Run Audit". `runOmcsAudit()` in `ContentStudioView` fires → `api.analyzeOmcs({ caption, imageUrl: imageDataUrl, businessProfile, recommendations })` → `POST /api/v1/compliance/omcs-analyze`. A 6-step `auditProgress` animation plays while the request is in-flight.
+4. **Audit execution**: The operator clicks "Run Audit". `runOmcsAudit()` in `ContentStudioView` fires → `api.analyzeOmcs({ caption, imageUrl: imageDataUrl, businessProfile, recommendations })` → `POST /api/compliance/omcs-analyze`. A 6-step `auditProgress` animation plays while the request is in-flight.
 5. **Score display**: On response, `SmartOptimizationBoard` renders:
    - `ComplianceGauge` — SVG circular gauge coloured green (score ≥80), gold (≥60), or red (<60).
    - Three component scores: Profile Semantic Score (weight 0.35), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
@@ -107,7 +107,7 @@ Module 3 has **two sequential transactions** — each builds on the previous. Su
 
 ### Request Lifecycle 1 — Content Generation (Submodule 3.1)
 
-**Trigger**: `ContentStudioView` mounts → `POST /api/v1/content/generate?profileId={UUID}`.
+**Trigger**: `ContentStudioView` mounts → `POST /api/content/generate?profileId={UUID}`.
 
 1. `ContentController.generate()` delegates to `ContentGenerationService.generate()`.
 2. **DB enrichment (FR3.1)**: When `profileId != null`, loads `BusinessProfile` from `tbl_business_profile`. DB values **override** the HTTP request body — ensuring the AI prompt uses the verified, persisted identity rather than user-supplied fields from the frontend.
@@ -121,7 +121,7 @@ Module 3 has **two sequential transactions** — each builds on the previous. Su
 
 ### Request Lifecycle 2 — Content Approval
 
-**Trigger**: User clicks "Approve" on a caption card → `POST /api/v1/content/approve?profileId={UUID}` with body `{ "market": "korea" }`.
+**Trigger**: User clicks "Approve" on a caption card → `POST /api/content/approve?profileId={UUID}` with body `{ "market": "korea" }`.
 
 1. `ContentController.approve()` delegates to `ContentApprovalService.approveForMarket(profileId, market)`.
 2. Finds all `LocalizedPromotionalContent` rows for `(profileId, market)` where `approval_status = false`.
@@ -132,7 +132,7 @@ Module 3 has **two sequential transactions** — each builds on the previous. Su
 
 ### Request Lifecycle 3 — Creative Direction (Submodule 3.2)
 
-**Trigger**: `api.generateCreative(profileId, market)` → `POST /api/v1/creative-direction/generate/{profileId}?market=`.
+**Trigger**: `api.generateCreative(profileId, market)` → `POST /api/creative-direction/generate/{profileId}?market=`.
 
 1. `CreativeDirectionController.generate()` delegates to `CreativeDirectionService.generate(profileId, market)`.
 2. **Dependency check (FR3.11)**: `contentApprovalService.hasApprovedContent(profileId, market)` — queries `tbl_localized_promotional_content` for approved rows. If none → throws `IllegalStateException("missing_dependency")` → controller returns `400 { error: "missing_dependency" }`. This is the **A3 alternative flow**.
@@ -146,7 +146,7 @@ Module 3 has **two sequential transactions** — each builds on the previous. Su
 
 ### Request Lifecycle 4 — Creative Direction Approval
 
-**Trigger**: `api.approveCreative(profileId, market)` → `POST /api/v1/creative-direction/approve/{profileId}?market=`.
+**Trigger**: `api.approveCreative(profileId, market)` → `POST /api/creative-direction/approve/{profileId}?market=`.
 
 1. `CreativeDirectionController.approve()` → `CreativeApprovalService.approveLatest(profileId, market)`.
 2. Marks the latest `CreativeDirectionOutput` for the profile + market `approval_status = true`, stamps `approved_at = now()`.
@@ -386,15 +386,15 @@ class AgentLLMModel:
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/v1/content/generate` | `permitAll` | Generate 3-platform × 3-archetype caption matrix |
-| `POST` | `/api/v1/content/approve` | `permitAll` | Approve content for a market (UC-3.1 step 14) |
-| `POST` | `/api/v1/creative-direction/generate/{profileId}` | `permitAll` | Generate visual direction (requires 3.1 approved) |
-| `POST` | `/api/v1/creative-direction/approve/{profileId}` | `permitAll` | Approve creative direction output |
-| `POST` | `/api/v1/compliance/omcs-analyze` | `permitAll` | OMCS compliance audit — stateless passthrough to FastAPI omcs_agent (Submodule 3.3) |
+| `POST` | `/api/content/generate` | `permitAll` | Generate 3-platform × 3-archetype caption matrix |
+| `POST` | `/api/content/approve` | `permitAll` | Approve content for a market (UC-3.1 step 14) |
+| `POST` | `/api/creative-direction/generate/{profileId}` | `permitAll` | Generate visual direction (requires 3.1 approved) |
+| `POST` | `/api/creative-direction/approve/{profileId}` | `permitAll` | Approve creative direction output |
+| `POST` | `/api/compliance/omcs-analyze` | `permitAll` | OMCS compliance audit — stateless passthrough to FastAPI omcs_agent (Submodule 3.3) |
 
 ---
 
-#### `POST /api/v1/content/generate?profileId={UUID}`
+#### `POST /api/content/generate?profileId={UUID}`
 
 **Request body**:
 ```json
@@ -445,7 +445,7 @@ class AgentLLMModel:
 
 ---
 
-#### `POST /api/v1/creative-direction/generate/{profileId}?market=korea`
+#### `POST /api/creative-direction/generate/{profileId}?market=korea`
 
 **Response** `200 OK` (`CreativeDirectionDto`):
 ```json

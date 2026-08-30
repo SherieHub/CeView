@@ -335,10 +335,10 @@ notifications; they are not surge alerts.
 - [ ] **Step 4: Verify against the live backend**
 
 ```bash
-T=$(curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+T=$(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' \
   -d '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}' \
   | sed -E 's/.*"token":"([^"]+)".*/\1/')
-curl -s http://localhost:8080/api/v1/notifications -H "Authorization: Bearer $T" \
+curl -s http://localhost:8080/api/notifications -H "Authorization: Bearer $T" \
   | python -c "import sys,json;print(sorted(json.load(sys.stdin)['notifications'][0].keys()))"
 ```
 
@@ -406,7 +406,7 @@ Rebuild Spring Boot, then confirm the seeded alert now carries a category matchi
 operator's own:
 
 ```bash
-curl -s http://localhost:8080/api/v1/notifications -H "Authorization: Bearer $T" \
+curl -s http://localhost:8080/api/notifications -H "Authorization: Bearer $T" \
   | python -c "import sys,json;n=json.load(sys.stdin)['notifications'];print([(x['title'],x.get('category')) for x in n])"
 ```
 
@@ -440,7 +440,7 @@ Once this file is complete, three things there change:
 - [ ] `tbl_market_signal_record` and `tbl_forecast_result` both carry `category`
 - [ ] A profile with two categories produces two forecast rows per market, with different
       inputs — verified, not assumed
-- [ ] `GET /api/v1/notifications` returns `category`, `alertLevel`, `alertMessage`
+- [ ] `GET /api/notifications` returns `category`, `alertLevel`, `alertMessage`
 - [ ] Seeded alerts carry a category matching their operator's profile
 - [ ] `yoy_ratio` is persisted and non-null on newly computed forecasts
 - [ ] `./mvnw test` passes

@@ -18,7 +18,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { ChartDataPoint } from '../../../services/fixtures/markets';
+import type { ChartDataPoint } from '@/types';
 import type { Timeframe } from './radarTypes';
 
 interface DemandForecastChartProps {

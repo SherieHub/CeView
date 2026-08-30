@@ -19,7 +19,7 @@ docker compose ps fastapi        # wait for "healthy"
 
 ## Task 18: `classification.analyze` client method
 
-`POST /api/v1/classification/analyze` exists and returns `{ categories: CategoryAllocation[] }`
+`POST /api/classification/analyze` exists and returns `{ categories: CategoryAllocation[] }`
 per [`backend/CONTRACT.md`](../../../../backend/CONTRACT.md). No client method calls it.
 
 **Files:**
@@ -50,8 +50,8 @@ const SAMPLE = {
 };
 
 describeIfBackend(up, 'module 1 endpoints', () => {
-  it('POST /api/v1/classification/analyze returns category allocations', async () => {
-    const res = await api('/api/v1/classification/analyze', {
+  it('POST /api/classification/analyze returns category allocations', async () => {
+    const res = await api('/api/classification/analyze', {
       method: 'POST',
       body: JSON.stringify(SAMPLE),
     });
@@ -108,7 +108,7 @@ In `services/apiClient.ts`, add a new top-level block:
     }) =>
       USE_FIXTURES
         ? delay({ categories: [{ category: 'Coastal & Island', percentage: 100 }] })
-        : request<{ categories: CategoryAllocation[] }>('/api/v1/classification/analyze', {
+        : request<{ categories: CategoryAllocation[] }>('/api/classification/analyze', {
             method: 'POST',
             body: JSON.stringify(input),
           }).then((r) => r.categories),
@@ -134,7 +134,7 @@ git commit -m "feat(frontend): add classification.analyze client method"
 
 ## Task 19: `classification.uniqueness` client method
 
-`POST /api/v1/classification/uniqueness` returns `DetailedCalibrationResultDTO` — the
+`POST /api/classification/uniqueness` returns `DetailedCalibrationResultDTO` — the
 uniqueness score the whole onboarding gate depends on.
 
 **Files:**
@@ -148,8 +148,8 @@ uniqueness score the whole onboarding gate depends on.
 Append to the `describeIfBackend` block:
 
 ```ts
-  it('POST /api/v1/classification/uniqueness returns a score', async () => {
-    const res = await api('/api/v1/classification/uniqueness', {
+  it('POST /api/classification/uniqueness returns a score', async () => {
+    const res = await api('/api/classification/uniqueness', {
       method: 'POST',
       body: JSON.stringify({ ...SAMPLE, categories: ['Coastal & Island'], uvp: 'Small-group freediving with certified local guides.' }),
     });
@@ -202,7 +202,7 @@ Inside the `classification` block:
     }) =>
       USE_FIXTURES
         ? delay({ uniquenessScore: 72 })
-        : request<UniquenessResult>('/api/v1/classification/uniqueness', {
+        : request<UniquenessResult>('/api/classification/uniqueness', {
             method: 'POST',
             body: JSON.stringify(input),
           }),
@@ -227,7 +227,7 @@ git commit -m "feat(frontend): add classification.uniqueness client method"
 
 `BusinessProfileSettings.tsx:67-70` reaches into `apiClient.businessProfile` through an
 `as { … }` cast because no save method exists. The backend has served
-`PUT /api/v1/business-profile` all along.
+`PUT /api/business-profile` all along.
 
 **Files:**
 
@@ -255,7 +255,7 @@ describe('businessProfile.save', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('PUTs to /api/v1/business-profile', async () => {
+  it('PUTs to /api/business-profile', async () => {
     await apiClient.businessProfile.save({
       businessName: 'Moalboal FreeDive Cebu',
       categories: ['Coastal & Island'],
@@ -268,7 +268,7 @@ describe('businessProfile.save', () => {
     });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain('/api/v1/business-profile');
+    expect(url).toContain('/api/business-profile');
     expect(init.method).toBe('PUT');
     expect(JSON.parse(init.body).uniquenessScore).toBe(72);
   });
@@ -293,12 +293,12 @@ In `services/apiClient.ts`:
     load: () =>
       USE_FIXTURES
         ? delay(EMPTY_BUSINESS_PROFILE_DTO)
-        : request<BusinessProfileDto>('/api/v1/business-profile'),
+        : request<BusinessProfileDto>('/api/business-profile'),
     /** Persists the onboarding result. Returns the saved DTO so callers refresh from the server's view. */
     save: (profile: BusinessProfileDto) =>
       USE_FIXTURES
         ? delay(profile)
-        : request<BusinessProfileDto>('/api/v1/business-profile', {
+        : request<BusinessProfileDto>('/api/business-profile', {
             method: 'PUT',
             body: JSON.stringify(profile),
           }),
@@ -381,7 +381,7 @@ describe('AnalysisStep', () => {
   it('names the missing dependency when sbert is unavailable', async () => {
     vi.spyOn(apiClient.classification, 'analyze').mockRejectedValue(
       new ApiError({
-        status: 503, method: 'POST', path: '/api/v1/classification/analyze',
+        status: 503, method: 'POST', path: '/api/classification/analyze',
         body: { code: 'DEPENDENCY_UNREACHABLE', message: 'fastapi-sbert unreachable at http://localhost:8000' },
       }),
     );
@@ -515,7 +515,7 @@ Register a brand-new account (not a seeded one), complete the wizard, and confir
 
 ```bash
 TOKEN=<the new account's token>
-curl -s http://localhost:8080/api/v1/business-profile -H "Authorization: Bearer $TOKEN"
+curl -s http://localhost:8080/api/business-profile -H "Authorization: Bearer $TOKEN"
 ```
 
 Expected: `uniquenessScore` is a number, not `null`.

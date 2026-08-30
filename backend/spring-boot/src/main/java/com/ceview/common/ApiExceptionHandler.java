@@ -27,13 +27,26 @@ public class ApiExceptionHandler {
         return ResponseEntity.badRequest().body(body("validation_failed", 400, e.getMessage()));
     }
 
+    /**
+     * Non-2xx from a WebClient call that did not go through
+     * {@link com.ceview.ai.AIInferenceGatewayService}. AI calls no longer reach here:
+     * that class's {@code .onStatus(...)} intercepts every non-2xx and throws an
+     * {@code AiDependencyException} carrying the upstream `cause`, which
+     * {@code AiDependencyExceptionHandler} renders instead.
+     */
     @ExceptionHandler(WebClientResponseException.class)
     public ResponseEntity<?> downstream(WebClientResponseException e) {
         return ResponseEntity.status(502)
                 .body(body("ai_service_unavailable", e.getStatusCode().value(), e.getMessage()));
     }
 
-    /** Catches connection-refused / timeout from WebClient when FastAPI is unreachable. */
+    /**
+     * Connection-refused / timeout from a WebClient other than the AI gateway's —
+     * e.g. {@code ExternalMarketDataClient}'s World Bank and forex clients. An
+     * unreachable *FastAPI* no longer lands here: the gateway translates it into an
+     * {@code AiDependencyException} naming {@code dependency: "fastapi"}, which this
+     * shared handler could not do without mislabelling those other upstreams.
+     */
     @ExceptionHandler(WebClientRequestException.class)
     public ResponseEntity<?> unreachable(WebClientRequestException e) {
         return ResponseEntity.status(503)

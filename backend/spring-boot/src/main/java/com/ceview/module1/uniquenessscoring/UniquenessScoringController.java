@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/** SDD §1.2 — exposes POST /api/v1/classification/uniqueness. */
+/** SDD §1.2 — exposes POST /api/classification/uniqueness. */
 @RestController
-@RequestMapping("/api/v1/classification")
+@RequestMapping("/api/classification")
 public class UniquenessScoringController {
 
     private final AIInferenceGatewayService ai;

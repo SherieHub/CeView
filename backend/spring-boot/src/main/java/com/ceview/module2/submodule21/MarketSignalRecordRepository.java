@@ -11,6 +11,16 @@ public interface MarketSignalRecordRepository extends JpaRepository<MarketSignal
     List<MarketSignalRecord> findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(
             UUID businessProfileId, String targetMarket);
 
+    /**
+     * Category-scoped variant (Task 1a.2). Once ingestion writes one record per
+     * (category, market) pair, rolling-average / seasonality / spike-detection
+     * math must be computed within a single category's history — mixing
+     * categories would silently blend unrelated series. Use this finder
+     * anywhere history is reloaded to feed those stats.
+     */
+    List<MarketSignalRecord> findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+            UUID businessProfileId, String targetMarket, String category);
+
     List<MarketSignalRecord> findByBusinessProfileIdOrderByAggregatedAtDesc(UUID businessProfileId);
 
     boolean existsByBusinessProfileIdAndTargetMarketAndAggregatedAtAfter(

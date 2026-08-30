@@ -3,12 +3,18 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import CampaignAnalyticsView from './CampaignAnalyticsView';
 import { MOCK_HISTORY, MOCK_REPORT } from '../../../services/fixtures/campaign';
 import { PostStoreProvider } from '../../../services/postStore';
+import { apiClient } from '../../../services/apiClient';
+import { ApiError } from '../../../services/apiError';
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
     campaign: {
       history: vi.fn(() => Promise.resolve(MOCK_HISTORY)),
       report: vi.fn(() => Promise.resolve(MOCK_REPORT)),
+      // IngestionForm now persists via this before calling onSubmit (Task
+      // 16) — its response is intentionally discarded by the form, so an
+      // empty resolution is enough to let submission proceed.
+      ingest: vi.fn(() => Promise.resolve({ ok: true })),
     },
     // PreviouslyPublished (mounted for real by the full view since m4c7
     // landed) reads usePosts(), which needs apiClient.posts.list() to
@@ -93,6 +99,38 @@ describe('CampaignAnalyticsView', () => {
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
   });
 
+  it('shows the server-computed PES score/label in the gauge when the ingest response has one', async () => {
+    vi.spyOn(apiClient.campaign, 'ingest').mockResolvedValue({
+      pes: { overallScore: 0.5773, label: 'Fair Performance', breakdown: [] },
+    } as never);
+
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+    await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
+
+    expect(screen.getByTestId('pes-score-value')).toHaveTextContent('0.58');
+    expect(screen.getByTestId('pes-label')).toHaveTextContent('Fair Performance');
+  });
+
+  it('falls back to the client-computed PES when the ingest response has none', async () => {
+    // Default mock resolves { ok: true } — no `pes` field, same as a
+    // VITE_USE_FIXTURES=true run's ingest response.
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+    await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
+
+    // DEFAULT_CAMPAIGN_INPUT run through campaignMetrics.ts's computeMetrics/computePes.
+    expect(screen.getByTestId('pes-score-value')).toBeInTheDocument();
+  });
+
   it('re-slices the trend window when weeks changes from 4 to 8', async () => {
     renderView();
 
@@ -141,5 +179,67 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.getByText(/no campaign data found/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
+  });
+
+  it('renders the error panel when the report call fails', async () => {
+    vi.spyOn(apiClient.campaign, 'report').mockRejectedValue(
+      new ApiError({
+        status: 503,
+        method: 'POST',
+        path: '/api/analytics/report',
+        body: { code: 'ai_service_unreachable', message: 'fastapi unreachable' },
+      }),
+    );
+    vi.spyOn(apiClient.campaign, 'history').mockResolvedValue([]);
+
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+
+    expect(await screen.findByText(/setup required|something went wrong/i)).toBeInTheDocument();
+  });
+
+  it('shows a degraded state when the report comes back empty', async () => {
+    vi.spyOn(apiClient.campaign, 'report').mockResolvedValue({} as never);
+    vi.spyOn(apiClient.campaign, 'history').mockResolvedValue([]);
+
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+
+    expect(await screen.findByText(/returned no content/i)).toBeInTheDocument();
+  });
+
+  it('keeps rendering successfully-loaded history when the report call fails', async () => {
+    vi.spyOn(apiClient.campaign, 'report').mockRejectedValue(
+      new ApiError({
+        status: 503,
+        method: 'POST',
+        path: '/api/analytics/report',
+        body: { code: 'ai_service_unreachable', message: 'fastapi unreachable' },
+      }),
+    );
+    vi.spyOn(apiClient.campaign, 'history').mockResolvedValue(MOCK_HISTORY);
+
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+
+    await screen.findByText(/setup required|something went wrong/i);
+    await waitFor(() =>
+      expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute(
+        'data-window-length',
+        String(MOCK_HISTORY.slice(-4).length),
+      ),
+    );
   });
 });

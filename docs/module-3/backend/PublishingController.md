@@ -14,9 +14,9 @@ Persist and serve social posts — drafts, scheduled, and published — the reco
 
 | Method | Path | Purpose | Called by |
 |---|---|---|---|
-| `GET` | `/api/v1/posts?operatorId=UUID&from=&to=` | List posts in a date range | Calendar |
-| `GET` | `/api/v1/posts?operatorId=UUID&status=` | List by status (draft/scheduled/published) | Content Studio's content board |
-| `POST` | `/api/v1/posts/publish` | Publish approved captions to N selected, connected platforms | Content Studio's Publish button |
+| `GET` | `/api/posts?operatorId=UUID&from=&to=` | List posts in a date range | Calendar |
+| `GET` | `/api/posts?operatorId=UUID&status=` | List by status (draft/scheduled/published) | Content Studio's content board |
+| `POST` | `/api/posts/publish` | Publish approved captions to N selected, connected platforms | Content Studio's Publish button |
 
 `POST /publish` request: `{ platforms: string[], captionsByPlatform: {[platform]: string}, mediaRef: string, toggles: {visibility, comments, paid} }`.
 One `SocialPost` row is created per platform in the request. Each platform's own approved caption is

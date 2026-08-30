@@ -42,4 +42,6 @@ export const DEMO_BUSINESS: ObDraft = {
   },
   logo: null,
   website: 'https://sunsetcove.ph',
+  categories: [],
+  uniquenessScore: null,
 };

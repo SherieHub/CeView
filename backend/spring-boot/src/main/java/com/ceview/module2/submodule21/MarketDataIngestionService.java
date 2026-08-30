@@ -51,21 +51,33 @@ public class MarketDataIngestionService {
     }
 
     /**
-     * Run the 2.1 ingestion pipeline for all three target markets.
+     * Run the 2.1 ingestion pipeline for every (category, market) pair on the
+     * profile (Task 1a.2 — one fetchTrends call and one persisted
+     * MarketSignalRecord per category, so alerts can be attributed to a real
+     * category instead of a blended cross-category value).
      *
-     * @return number of markets successfully ingested
+     * @return number of (category, market) pairs successfully ingested
      */
     public int ingestForProfile(BusinessProfile profile) {
+        List<String> categories = profile.categoriesList();
+        if (categories == null || categories.isEmpty()) {
+            log.warn("Profile {} has no categories set — skipping ingestion (0 pairs)",
+                    profile.getBusinessProfileId());
+            return 0;
+        }
+
         int count = 0;
         for (String market : MARKETS) {
-            try {
-                ingestMarket(profile, market);
-                count++;
-            } catch (Exception e) {
-                MDC.put("code", Module2ErrorCodes.MOD21_INGESTION_JOB_FAILED);
-                log.warn("Ingestion failed for profile={} market={}: {}",
-                        profile.getBusinessProfileId(), market, e.getMessage());
-                MDC.remove("code");
+            for (String category : categories) {
+                try {
+                    ingestMarket(profile, market, category);
+                    count++;
+                } catch (Exception e) {
+                    MDC.put("code", Module2ErrorCodes.MOD21_INGESTION_JOB_FAILED);
+                    log.warn("Ingestion failed for profile={} market={} category={}: {}",
+                            profile.getBusinessProfileId(), market, category, e.getMessage());
+                    MDC.remove("code");
+                }
             }
         }
         return count;
@@ -73,9 +85,8 @@ public class MarketDataIngestionService {
 
     // ─── private pipeline ────────────────────────────────────────────────────
 
-    private void ingestMarket(BusinessProfile profile, String market) {
-        UUID         profileId  = profile.getBusinessProfileId();
-        List<String> categories = profile.categoriesList();
+    private void ingestMarket(BusinessProfile profile, String market, String category) {
+        UUID profileId = profile.getBusinessProfileId();
 
         // ── Concurrent external fetches ──────────────────────────────────────
         CompletableFuture<ExternalMarketDataClient.GdpDataDto> gdpFuture =
@@ -89,26 +100,28 @@ public class MarketDataIngestionService {
         ExternalMarketDataClient.GdpDataDto    gdp   = gdpFuture.join();
         ExternalMarketDataClient.ForexDataDto  forex = forexFuture.join();
 
-        // ── Load existing signal history ──────────────────────────────────────
+        // ── Load existing signal history (scoped to this category — Task 1a.2) ─
         List<MarketSignalRecord> history = signalRepo
-                .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+                .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                        profileId, market, category);
 
         // ── First ingestion: backfill N weeks of real historical trend data ───
-        // On first run for a profile/market there are no signal records, so the
-        // chart would show a flat line.  Fetch 12 weeks of weekly PyTrends data
-        // and persist one MarketSignalRecord per historical week so the chart
-        // shows real week-over-week variance from the very first forecast.
+        // On first run for a profile/market/category there are no signal records,
+        // so the chart would show a flat line.  Fetch 12 weeks of weekly PyTrends
+        // data and persist one MarketSignalRecord per historical week so the
+        // chart shows real week-over-week variance from the very first forecast.
         double trendIndex;
         if (history.isEmpty()) {
             Map<String, Object> historyResult = ai.fetchTrendHistory(
-                    Map.of("market", market, "categories", categories, "weeks", 12));
-            trendIndex = backfillHistory(profileId, market, historyResult, gdp, forex);
+                    Map.of("market", market, "categories", List.of(category), "weeks", 12));
+            trendIndex = backfillHistory(profileId, market, category, historyResult, gdp, forex);
             // Reload history so the seasonality call below has the backfilled series
             history = signalRepo
-                    .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+                    .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                            profileId, market, category);
         } else {
             Map<String, Object> trendsResult = ai.fetchTrends(
-                    Map.of("market", market, "categories", categories));
+                    Map.of("market", market, "categories", List.of(category)));
             trendIndex = Math.max(0.0, Math.min(100.0,
                     ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
         }
@@ -176,6 +189,7 @@ public class MarketDataIngestionService {
         MarketSignalRecord record = new MarketSignalRecord();
         record.setBusinessProfileId(profileId);
         record.setTargetMarket(market);
+        record.setCategory(category);
         record.setTrendIndex(trendIndex);
         record.setForexRate(forexAvg);
         record.setGdpGrowth(gdp.gdpGrowth());
@@ -188,8 +202,8 @@ public class MarketDataIngestionService {
         record.setYoyRatio(yoyRatio);
         signalRepo.save(record);
 
-        log.debug("Ingested: profile={} market={} trend={} spike={} yoy={}",
-                profileId, market, String.format("%.1f", trendIndex), spike, yoyRatio);
+        log.debug("Ingested: profile={} market={} category={} trend={} spike={} yoy={}",
+                profileId, market, category, String.format("%.1f", trendIndex), spike, yoyRatio);
     }
 
     // ─── backfill helper ──────────────────────────────────────────────────────
@@ -202,7 +216,7 @@ public class MarketDataIngestionService {
      * @return the trend_index of the most-recent (current) week in the series
      */
     @SuppressWarnings("unchecked")
-    private double backfillHistory(UUID profileId, String market,
+    private double backfillHistory(UUID profileId, String market, String category,
                                    Map<String, Object> historyResult,
                                    ExternalMarketDataClient.GdpDataDto gdp,
                                    ExternalMarketDataClient.ForexDataDto forex) {
@@ -225,6 +239,7 @@ public class MarketDataIngestionService {
             MarketSignalRecord rec = new MarketSignalRecord();
             rec.setBusinessProfileId(profileId);
             rec.setTargetMarket(market);
+            rec.setCategory(category);
             rec.setTrendIndex(ti);
             rec.setForexRate(forex.rateVsPhp());
             rec.setGdpGrowth(gdp.gdpGrowth());
@@ -252,8 +267,8 @@ public class MarketDataIngestionService {
             signalRepo.save(rec);
         }
 
-        log.info("Backfilled {} historical signal records for profile={} market={}",
-                historical.size(), profileId, market);
+        log.info("Backfilled {} historical signal records for profile={} market={} category={}",
+                historical.size(), profileId, market, category);
 
         Map<String, Object> last = series.get(series.size() - 1);
         return Math.max(0.0, Math.min(100.0,

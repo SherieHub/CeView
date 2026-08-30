@@ -19,7 +19,8 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
-import type { CampaignInput, CampaignHistoryEntry, PrescriptiveReport } from '../../../services/fixtures/campaign';
+import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
+import type { CampaignInput, CampaignHistoryEntry, ManualIngestPes, PrescriptiveReport } from '@/types';
 import { computeMetrics, computePes } from './campaignMetrics';
 import type { Metrics } from './campaignTypes';
 import IngestionForm from './IngestionForm';
@@ -46,40 +47,80 @@ const KPI_CARD_SPECS: { label: string; key: keyof Metrics; inverseGood?: boolean
   { label: 'CAC', key: 'cac', inverseGood: true },
 ];
 
+/**
+ * The report endpoint can answer 200 with an empty object: FastAPI's
+ * /internal/report/generate returns {} on success, so Spring's FR4.26
+ * fallback never fires. A 200 cannot trigger ApiErrorPanel, so the screen has
+ * to recognise the empty case itself rather than rendering a blank panel.
+ */
+function isReportPopulated(r: PrescriptiveReport | null): boolean {
+  return !!r && typeof r.executiveSummary === 'string' && r.executiveSummary.trim().length > 0;
+}
+
 export default function CampaignAnalyticsView() {
   const [campaign, setCampaign] = useState<CampaignInput | null>(null);
+  // Task 17: the server's PES from the ingest response, if the submit
+  // returned one — the gauge's authoritative headline. null (fixture runs,
+  // or a response with no `pes`) falls back to the client computation below.
+  const [serverPes, setServerPes] = useState<ManualIngestPes | null>(null);
   const [weeks, setWeeks] = useState<4 | 8>(4);
   const [history, setHistory] = useState<CampaignHistoryEntry[] | null>(null);
   const [report, setReport] = useState<PrescriptiveReport | null>(null);
+  const [error, setError] = useState<unknown | null>(null);
 
   useEffect(() => {
     if (!campaign) return;
-    // apiClient.campaign.history()/.report() type as Promise<unknown> — the
-    // real (non-fixture) branch calls request() with no explicit type
-    // argument, which widens the ternary's inferred return type. That's an
-    // existing apiClient.ts looseness, not something this card's file list
-    // covers; cast locally rather than touching a shared file out of scope.
-    apiClient.campaign.history().then((h) => setHistory(h as CampaignHistoryEntry[]));
-    apiClient.campaign.report().then((r) => setReport(r as PrescriptiveReport));
+    let cancelled = false;
+    setError(null);
+
+    // Two independent calls sharing one error surface: history is a plain DB
+    // read, the report round-trips to FastAPI. One failing must not discard
+    // the other.
+    apiClient.campaign
+      .history()
+      .then((h) => { if (!cancelled) setHistory(h); })
+      .catch((e) => { if (!cancelled) setError(e); });
+
+    apiClient.campaign
+      .report()
+      .then((r) => { if (!cancelled) setReport(r); })
+      .catch((e) => { if (!cancelled) setError(e); });
+
+    return () => { cancelled = true; };
   }, [campaign]);
 
   function handleNewSubmission() {
     setCampaign(null);
+    setServerPes(null);
     setHistory(null);
     setReport(null);
+    setError(null);
     setWeeks(4);
+  }
+
+  function handleCampaignSubmit(input: CampaignInput, pes?: ManualIngestPes) {
+    setServerPes(pes ?? null);
+    setCampaign(input);
   }
 
   if (!campaign) {
     return (
       <div className="mx-auto max-w-[880px]">
-        <IngestionForm onSubmit={setCampaign} />
+        <IngestionForm onSubmit={handleCampaignSubmit} />
       </div>
     );
   }
 
   const { metrics, flagged } = computeMetrics(campaign);
-  const { score, label } = computePes(metrics);
+  // Task 17: prefer the server-computed PES (from the ingest response) as the
+  // authoritative score/label; fall back to the client computation when
+  // there isn't one (fixture runs, or a response with no `pes`). Verified
+  // against ARCHITECTURE_SPEC.md §4.2's formula for a real submission: the
+  // two agree to within display rounding, so this is not a formula change,
+  // just a source-of-truth swap.
+  const clientPes = computePes(metrics);
+  const score = serverPes?.overallScore ?? clientPes.score;
+  const label = serverPes?.label ?? clientPes.label;
   const windowSlice = (history ?? []).slice(-weeks);
 
   return (
@@ -105,7 +146,24 @@ export default function CampaignAnalyticsView() {
       <PesTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
       <EfficiencyTrendChart window={windowSlice} />
       <CostTrendChart window={windowSlice} />
-      {report && <AiActionPlan report={report} />}
+      {error != null && <ApiErrorPanel error={error} label="Campaign Analytics" />}
+      {isReportPopulated(report) ? (
+        <AiActionPlan report={report as PrescriptiveReport} />
+      ) : report === null && error == null ? (
+        <div className="rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-6 text-sm text-[var(--color-text-muted)]">
+          Loading report…
+        </div>
+      ) : report !== null ? (
+        <div className="rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-6">
+          <p className="text-sm text-[var(--color-text-body)]">
+            The report service returned no content.{' '}
+            <span className="font-mono text-xs text-[var(--color-text-muted)]">
+              POST /api/analytics/report
+            </span>{' '}
+            responded 200 with an empty body.
+          </p>
+        </div>
+      ) : null}
       <PreviouslyPublished />
     </div>
   );

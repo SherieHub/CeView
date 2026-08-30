@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { PostStoreProvider } from '../../../services/postStore';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import PostAnalyticsModal from './PostAnalyticsModal';
-import type { PublishedPost } from '../../../services/fixtures/posts';
+import type { PublishedPost } from '@/types';
 
 const LONG_CAPTION =
   'POV: you booked the resort you kept postponing and now every single one of your friends wants the exact same room for the exact same week';

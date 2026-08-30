@@ -7,7 +7,7 @@ import { ProfileProvider, ProfileGate, useProfile } from './profileContext';
 import { saveTokens } from './authStorage';
 
 // ProfileProvider must fetch the operator's real profile from the backend
-// (apiClient.businessProfile.load, GET /api/v1/business-profile) once
+// (apiClient.businessProfile.load, GET /api/business-profile) once
 // authenticated, instead of staying permanently on the local EMPTY_PROFILE
 // default — otherwise every operator looks brand-new forever and ProfileGate
 // always sends them to /onboarding regardless of their real data.

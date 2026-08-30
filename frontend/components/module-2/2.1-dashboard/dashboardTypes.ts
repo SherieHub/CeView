@@ -10,8 +10,8 @@
  * prototype. See the plan's IA section for why it earns its place.
  */
 import type { DashMode, FeedFilter } from './useDashboardState';
-import type { Market } from '../../../services/fixtures/markets';
-import type { DemandAlert } from '../../../services/fixtures/notifications';
+import type { Market } from '@/types';
+import type { DemandAlert } from '@/types';
 
 export interface AlertFeedSlotProps {
   mode: DashMode;

@@ -9,7 +9,7 @@
  * then reads the same way everywhere in the app.
  */
 import { CalendarClock, Plane, Zap } from 'lucide-react';
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 interface RankCardProps {
   market: Market;

@@ -32,7 +32,7 @@ Handled by `ceview/components/module-4/4.1-campaign-analytics/components/DataIng
    | **New Customers** | Net-new customers acquired in the period |
 
 3. **Client-side validation**: `handleSubmit` checks that all seven values are non-negative numbers. Any negative or `NaN` value shows a red error banner "All fields must be non-negative numbers."
-4. **Submission**: Clicking "Generate Campaign Analytics" sets `submitting = true` (spinner + "Computing Analytics…" label) and calls `api.analyticsManual(payload)` → `POST /api/v1/analytics/manual`.
+4. **Submission**: Clicking "Generate Campaign Analytics" sets `submitting = true` (spinner + "Computing Analytics…" label) and calls `api.analyticsManual(payload)` → `POST /api/analytics/manual`.
 5. **On success**: `onDataReady(result)` stores the `ManualIngestResponse` in `CampaignAnalyticsView.metricsData` and sets `dashboardActive = true`. The form is replaced by the full dashboard.
 6. **On failure**: `ApiError.code` shown in a red error banner. Dashboard is **not** activated.
 
@@ -59,7 +59,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 **2. `CustomerJourneyFunnel`** (Campaign Metrics Trend)
 
-- Auto-fetches `api.analyticsHistory(weeks)` → `GET /api/v1/analytics/history?weeks=` on mount and when `weeks` changes.
+- Auto-fetches `api.analyticsHistory(weeks)` → `GET /api/analytics/history?weeks=` on mount and when `weeks` changes.
 - Renders two side-by-side `LineChart` panels from the stored history:
   - **Efficiency Metrics**: ROAS (navy), CTR (gold), CR (emerald)
   - **Cost Metrics (₱)**: CPC (amber), CAC (red-orange)
@@ -69,7 +69,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 - **Left panel — Score Gauge**: `<ScoreGauge>` circular gauge (0–1 scale, shown as 0.00–1.00) receives the submitted PES `overallScore` as its `score` prop. `<QualitativeLabel>` takes the PES `label` string and shows the textual tier: Poor / Fair / Good / Excellent Performance. Falls back to last history record when no submitted PES is present.
 - **Right panel — PES Trend chart**:
-  - Auto-fetches `api.analyticsHistory(weeks)` → `GET /api/v1/analytics/history`.
+  - Auto-fetches `api.analyticsHistory(weeks)` → `GET /api/analytics/history`.
   - Recharts `LineChart` with Y domain `[0, 1]` and four dashed reference lines:
     - `y=0.80` — "Excellent" (green)
     - `y=0.60` — "Good" (amber)
@@ -81,7 +81,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 **4. `AIActionPlanReport`**
 
-- **Auto-fires on mount** and re-fires when `weeks` changes: `api.prescriptiveReport(weeks)` → `POST /api/v1/analytics/report`. This is the only component in Module 4 that calls an AI endpoint on-demand (not triggered by user action).
+- **Auto-fires on mount** and re-fires when `weeks` changes: `api.prescriptiveReport(weeks)` → `POST /api/analytics/report`. This is the only component in Module 4 that calls an AI endpoint on-demand (not triggered by user action).
 - **Loading state**: Full-panel spinner "Analyzing your campaign funnel…" while the Groq report generates.
 - **Report output** (when `reportData` populated):
   - **Executive Summary**: 2–3 sentence overall campaign assessment referencing the PES score and primary bottleneck.
@@ -99,7 +99,7 @@ Rendered once `dashboardActive = true`. Four components render in sequence, all 
 
 ---
 
-### Request Lifecycle 1 — Manual Data Ingestion (`POST /api/v1/analytics/manual`)
+### Request Lifecycle 1 — Manual Data Ingestion (`POST /api/analytics/manual`)
 
 The central pipeline of Module 4. All computation, persistence, and AI enrichment flows through this single endpoint.
 
@@ -120,7 +120,7 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 ### Request Lifecycle 2 — History Load
 
-**Trigger**: `PESComputationBoard` and `CustomerJourneyFunnel` mount → `GET /api/v1/analytics/history?weeks={4|8}`.
+**Trigger**: `PESComputationBoard` and `CustomerJourneyFunnel` mount → `GET /api/analytics/history?weeks={4|8}`.
 
 1. `EngagementMetricsController.history()` sets `limit = (weeks == 8) ? 8 : 4`.
 2. `campaignRepo.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit))` — loads the most recent `limit` records in DESC order.
@@ -129,9 +129,9 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 ---
 
-### Request Lifecycle 3 — Prescriptive Report (`POST /api/v1/analytics/report`)
+### Request Lifecycle 3 — Prescriptive Report (`POST /api/analytics/report`)
 
-**Trigger**: `AIActionPlanReport` mounts → `POST /api/v1/analytics/report` with body `{ weeks: 4 | 8 }`.
+**Trigger**: `AIActionPlanReport` mounts → `POST /api/analytics/report` with body `{ weeks: 4 | 8 }`.
 
 1. `PrescriptiveReportController.report()` loads default metrics via `metricsSvc.defaultMetrics(weeks)` (scaled demo defaults).
 2. `metricsSvc.computeFunnelTransitions(mr.funnel())` — derives three absolute drop rates and **ranks them by business impact** (see Engine section).
@@ -142,9 +142,9 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 
 ---
 
-### Request Lifecycle 4 — PES Time-Series Analysis (`POST /api/v1/analytics/pes-analysis`)
+### Request Lifecycle 4 — PES Time-Series Analysis (`POST /api/analytics/pes-analysis`)
 
-**Trigger**: Future on-demand call → `POST /api/v1/analytics/pes-analysis` with body `{ weeks: 4 | 8 }`.
+**Trigger**: Future on-demand call → `POST /api/analytics/pes-analysis` with body `{ weeks: 4 | 8 }`.
 
 1. `PrescriptiveReportController.pesAnalysis()` loads current metrics via `metricsSvc.defaultMetrics(weeks)`.
 2. `metricsSvc.buildTimeSeries(metrics, weeks)` — generates a synthetic `weeks`-length time series in **reverse chronological order** (index 0 = current) for all five metrics.
@@ -617,17 +617,17 @@ This mirrors the FastAPI formula exactly, producing consistent PES scores whethe
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/v1/analytics/metrics` | `permitAll` | Default demo campaign metrics (`?weeks=4\|8`) |
-| `POST` | `/api/v1/analytics/manual` | `permitAll` | Full pipeline: KPI compute + persist + FastAPI PES |
-| `GET` | `/api/v1/analytics/history` | `permitAll` | Last N campaign records chronological (`?weeks=4\|8`) |
-| `GET` | `/api/v1/analytics/pes/{campaignId}` | `permitAll` | PES breakdown for a campaign ID |
-| `POST` | `/api/v1/analytics/report` | `permitAll` | Prescriptive Groq report (funnel diagnostics) |
-| `POST` | `/api/v1/analytics/pes-analysis` | `permitAll` | PES deep-analysis via LangGraph agent |
-| `GET` | `/api/v1/analytics/report/{id}/pdf` | `permitAll` | Binary PDF download of a generated report |
+| `GET` | `/api/analytics/metrics` | `permitAll` | Default demo campaign metrics (`?weeks=4\|8`) |
+| `POST` | `/api/analytics/manual` | `permitAll` | Full pipeline: KPI compute + persist + FastAPI PES |
+| `GET` | `/api/analytics/history` | `permitAll` | Last N campaign records chronological (`?weeks=4\|8`) |
+| `GET` | `/api/analytics/pes/{campaignId}` | `permitAll` | PES breakdown for a campaign ID |
+| `POST` | `/api/analytics/report` | `permitAll` | Prescriptive Groq report (funnel diagnostics) |
+| `POST` | `/api/analytics/pes-analysis` | `permitAll` | PES deep-analysis via LangGraph agent |
+| `GET` | `/api/analytics/report/{id}/pdf` | `permitAll` | Binary PDF download of a generated report |
 
 ---
 
-#### `POST /api/v1/analytics/manual`
+#### `POST /api/analytics/manual`
 
 **Request body**:
 ```json
@@ -674,7 +674,7 @@ This mirrors the FastAPI formula exactly, producing consistent PES scores whethe
 
 ---
 
-#### `POST /api/v1/analytics/report`
+#### `POST /api/analytics/report`
 
 **Request body** (optional — defaults applied):
 ```json
@@ -716,7 +716,7 @@ This mirrors the FastAPI formula exactly, producing consistent PES scores whethe
 
 ---
 
-#### `GET /api/v1/analytics/history?weeks=4`
+#### `GET /api/analytics/history?weeks=4`
 
 **Response** `200 OK`:
 ```json

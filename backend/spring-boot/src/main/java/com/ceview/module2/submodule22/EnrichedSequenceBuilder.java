@@ -46,11 +46,37 @@ public class EnrichedSequenceBuilder {
      *
      * @throws IllegalStateException("enriched_dataset_empty") when fewer than
      *         MIN_RECORDS signal records exist — propagates as a 500 error to the caller.
+     * @deprecated category-agnostic — kept only so nothing outside this task's
+     *         scope breaks; prefer {@link #buildSequence(UUID, String, String)}.
      */
+    @Deprecated
     public Map<String, Object> buildSequence(UUID profileId, String market) {
+        return buildSequence(profileId, market, null);
+    }
+
+    /**
+     * Build the Gemini forecast context payload, scoped to a single category
+     * (Task 1a.2b). Ingestion now writes one {@link MarketSignalRecord} per
+     * (category, market) pair, so blending them here would silently mix
+     * unrelated trend series into one prompt. {@code category} is the
+     * business profile's chosen "primary" category for this market's demand
+     * forecast — see {@code ForecastingService} for how that is selected.
+     *
+     * <p>Pre-V20 fallback: when the category-scoped read returns nothing
+     * (either the category hasn't been ingested yet, or the rows predate the
+     * V20 migration and have {@code category = null}), falls back to the
+     * category-agnostic finder rather than throwing — a profile with older
+     * data should not suddenly see an empty forecast.
+     */
+    public Map<String, Object> buildSequence(UUID profileId, String market, String category) {
         // DESC order: most-recent first
-        List<MarketSignalRecord> records = signalRepo
-                .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        List<MarketSignalRecord> records = category != null
+                ? signalRepo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                        profileId, market, category)
+                : List.of();
+        if (records.isEmpty()) {
+            records = signalRepo.findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        }
 
         if (records.size() < MIN_RECORDS) {
             throw new IllegalStateException("enriched_dataset_empty");
@@ -78,6 +104,7 @@ public class EnrichedSequenceBuilder {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("profileId",       profileId.toString());
         payload.put("market",          market);
+        payload.put("category",        category);   // extra context; ignored by FastAPI if unused
         payload.put("trendSeries",     trendSeries);
         // Prefer the explicit 7d column; fall back to legacy rollingAverage
         payload.put("rolling7dAvg",    orDefault(

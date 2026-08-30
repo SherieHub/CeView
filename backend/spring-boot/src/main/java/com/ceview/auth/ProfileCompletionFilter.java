@@ -73,6 +73,6 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
     }
 
     private boolean isExempt(String path) {
-        return path.startsWith("/api/v1/auth/") || path.startsWith("/actuator/") || path.equals("/error");
+        return path.startsWith("/api/auth/") || path.startsWith("/actuator/") || path.equals("/error");
     }
 }

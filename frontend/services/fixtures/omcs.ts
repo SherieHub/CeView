@@ -3,6 +3,10 @@
  * ui-ux-prototype.html:1396–1426 (OmcsAuditResultDTO).
  */
 
+import type { OmcsAuditResult } from '../../types';
+
+export type { OmcsAuditResult };
+
 export const OMCS_RUBRIC_LABELS: Record<string, string> = {
   visual_business_context_match: 'Visual ↔ business context match',
   visual_intent_consistency: 'Visual intent consistency',
@@ -12,20 +16,6 @@ export const OMCS_RUBRIC_LABELS: Record<string, string> = {
   platform_suitability: 'Platform suitability',
   attribute_coverage_consistency: 'Attribute coverage consistency',
 };
-
-export interface OmcsAuditResult {
-  profileSemanticScore: number;
-  rubricEvaluationData: {
-    scores: Record<keyof typeof OMCS_RUBRIC_LABELS, number>;
-    total: number;
-  };
-  recommendationsPictureScore: number;
-  pubmatConsistencyScore: number;
-  consistencyExplanation: string;
-  omcsScore: number;
-  status: 'Pass' | 'Fail';
-  feedback: string;
-}
 
 export const MOCK_OMCS: OmcsAuditResult = {
   profileSemanticScore: 85.5,

@@ -14,9 +14,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../../services/apiClient';
 import { useProfile } from '../../../services/profileContext';
-import { marketsForCategory, CATEGORY_MARKET_SCORES } from '../../../services/fixtures/markets';
-import type { Market } from '../../../services/fixtures/markets';
-import type { DemandAlert } from '../../../services/fixtures/notifications';
+import { isSurge } from '@/types';
+import type { Market } from '@/types';
+import type { DemandAlert } from '@/types';
 
 export type DashMode = 'loading' | 'empty' | 'normal' | 'ai-down';
 export type FeedFilter = 'all' | 'unread' | 'surge';
@@ -39,6 +39,8 @@ export interface DashboardState {
   topMarket: { id: string; name: string; matchScore: number; category: string } | null;
   feedFilter: FeedFilter;
   isRefreshing: boolean;
+  /** Non-null when the initial load failed; render <ApiErrorPanel error={error} />. */
+  error: unknown | null;
   selectAlert: (id: string) => void;
   setFeedFilter: (filter: FeedFilter) => void;
   refresh: () => Promise<void>;
@@ -55,7 +57,7 @@ interface Options {
 
 function matchesFilter(alert: DemandAlert, filter: FeedFilter, read: Set<string>): boolean {
   if (filter === 'unread') return !read.has(alert.id);
-  if (filter === 'surge') return alert.alertLevel === 'WARNING';
+  if (filter === 'surge') return isSurge(alert);
   return true;
 }
 
@@ -69,6 +71,7 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<unknown | null>(null);
 
   useEffect(() => {
     // Note the fetch runs even under forceMode: the `normal` and `ai-down`
@@ -77,29 +80,72 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     // regardless of what was loaded.
     let cancelled = false;
     (async () => {
-      try {
-        const [list, health] = await Promise.all([
-          apiClient.notifications.list() as Promise<DemandAlert[]>,
-          apiClient.forecast.status() as Promise<{ available: boolean }>,
-        ]);
-        if (cancelled) return;
-        setAlerts(list);
+      // allSettled, not all: a health-check failure must never be able to
+      // discard a successfully-fetched alert list. See Task 12.
+      const [listResult, healthResult] = await Promise.allSettled([
+        apiClient.notifications.list() as Promise<DemandAlert[]>,
+        apiClient.forecast.status() as Promise<{ available: boolean }>,
+      ]);
+      if (cancelled) return;
+
+      if (listResult.status === 'fulfilled') {
+        setAlerts(listResult.value);
         // Seed read state from the server's view once, then own it locally.
-        setReadIds(new Set(list.filter((a) => a.isRead).map((a) => a.id)));
-        setAiServiceDown(!health.available);
-      } catch {
-        // A failed load is not an empty forecast run — but with no error state
-        // in the screen spec, degraded mode is the honest fallback: it tells the
-        // operator the data may be stale rather than that nothing exists.
-        if (!cancelled) setAiServiceDown(true);
-      } finally {
-        if (!cancelled) setStatus('ready');
+        setReadIds(new Set(listResult.value.filter((a) => a.isRead).map((a) => a.id)));
+      } else {
+        // A failed alert load IS worth surfacing — unlike the health probe,
+        // there is no honest degraded fallback for "we don't know what your
+        // alerts are".
+        setError(listResult.reason);
       }
+
+      // A failed health probe means "assume degraded", never "assume no
+      // alerts" — that would silently blank a successful alert load above.
+      setAiServiceDown(healthResult.status !== 'fulfilled' || !healthResult.value.available);
+
+      setStatus('ready');
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  /**
+   * Keyword-trend alerts are held in their OWN state rather than merged into
+   * `alerts`, because both loads are independent effects that would otherwise
+   * race on one setter: if this resolved first, the primary load's
+   * `setAlerts(listResult.value)` would overwrite it.
+   *
+   * Today that ordering is practically unreachable (this hop is ~9s of
+   * PyTrends, the primary read is ~0.15s) — but the known next improvement is
+   * to cache rank-markets server-side, which would make this fast and the race
+   * live. Separate state removes the failure mode instead of relying on timing.
+   */
+  const [keywordAlerts, setKeywordAlerts] = useState<DemandAlert[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient.notifications
+      .keywordTrends()
+      .then((extra) => {
+        if (!cancelled) setKeywordAlerts(extra);
+      })
+      // A slow or failing keyword-trend fetch must never blank the feed or
+      // surface as a dashboard error — the demand alerts are the primary data.
+      // This is a deliberate swallow, not the silent-catch bug fixed elsewhere:
+      // nothing the operator would otherwise see is lost.
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Primary alerts plus keyword trends, de-duplicated by id. */
+  const allAlerts = useMemo(() => {
+    if (keywordAlerts.length === 0) return alerts;
+    const seen = new Set(alerts.map((a) => a.id));
+    return [...alerts, ...keywordAlerts.filter((a) => !seen.has(a.id))];
+  }, [alerts, keywordAlerts]);
 
   const isRead = useCallback((id: string) => readIds.has(id), [readIds]);
 
@@ -107,8 +153,8 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   // is no undifferentiated "all alerts" feed in the real system either.
   // ui-ux-prototype.html:2376.
   const myAlerts = useMemo(
-    () => alerts.filter((a) => profile.categories.includes(a.category)),
-    [alerts, profile.categories],
+    () => allAlerts.filter((a) => profile.categories.includes(a.category)),
+    [allAlerts, profile.categories],
   );
 
   const unreadCount = useMemo(
@@ -116,10 +162,7 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     [myAlerts, readIds],
   );
 
-  const surgeCount = useMemo(
-    () => myAlerts.filter((a) => a.alertLevel === 'WARNING').length,
-    [myAlerts],
-  );
+  const surgeCount = useMemo(() => myAlerts.filter(isSurge).length, [myAlerts]);
 
   const visibleAlerts = useMemo(
     () => myAlerts.filter((a) => matchesFilter(a, feedFilter, readIds)),
@@ -134,14 +177,30 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     [selectedAlertId, myAlerts],
   );
 
-  const rankedMarkets = useMemo(
-    () => (selectedAlert ? marketsForCategory(selectedAlert.category) : []),
-    [selectedAlert],
-  );
+  const [rankedMarkets, setRankedMarkets] = useState<Market[]>([]);
+
+  useEffect(() => {
+    if (!selectedAlert) {
+      setRankedMarkets([]);
+      return;
+    }
+    let cancelled = false;
+    apiClient.markets
+      .forCategory(selectedAlert.category)
+      .then((list) => {
+        if (!cancelled) setRankedMarkets(list as Market[]);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAlert]);
 
   /** Markets named by the confirmed-surge alerts, de-duplicated, for the summary. */
   const surgeMarkets = useMemo(
-    () => [...new Set(myAlerts.filter((a) => a.alertLevel === 'WARNING').map((a) => a.market))],
+    () => [...new Set(myAlerts.filter(isSurge).map((a) => a.market))],
     [myAlerts],
   );
 
@@ -150,21 +209,52 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
    * Answers "where should I be pointing right now" without first picking an
    * alert — the question the prototype's dashboard could not answer at a glance.
    */
-  const topMarket = useMemo(() => {
-    let best: { id: string; name: string; matchScore: number; category: string } | null = null;
-    for (const category of profile.categories) {
-      // Skip categories with no ranking data. marketsForCategory falls back to
-      // each market's default score for an unknown category, which is the right
-      // call for the reveal panel but would make this tile claim a top market
-      // *for* a category the system has never scored — a number presented as a
-      // measurement when nothing was measured.
-      if (!(category in CATEGORY_MARKET_SCORES)) continue;
-      const leader = marketsForCategory(category)[0];
-      if (leader && (!best || leader.matchScore > best.matchScore)) {
-        best = { id: leader.id, name: leader.name, matchScore: leader.matchScore, category };
-      }
+  const [topMarket, setTopMarket] = useState<{
+    id: string;
+    name: string;
+    matchScore: number;
+    category: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (profile.categories.length === 0) {
+      setTopMarket(null);
+      return;
     }
-    return best;
+    let cancelled = false;
+    // allSettled, not all: these are N independent per-category requests, and
+    // one failing category must not blank a leader the others did return.
+    // Same reasoning as the alert/health decoupling above.
+    Promise.allSettled(
+      profile.categories.map((category) =>
+        apiClient.markets
+          .forCategory(category)
+          .then((list) => ({ category, leader: (list as Market[])[0] ?? null })),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      let best: { id: string; name: string; matchScore: number; category: string } | null = null;
+      let firstFailure: unknown = null;
+
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          firstFailure ??= result.reason;
+          continue;
+        }
+        const { category, leader } = result.value;
+        if (leader && (!best || leader.matchScore > best.matchScore)) {
+          best = { id: leader.id, name: leader.name, matchScore: leader.matchScore, category };
+        }
+      }
+
+      setTopMarket(best);
+      // Surface a failure only when it cost us the answer entirely — a partial
+      // result is still a usable top market, not an error state.
+      if (best === null && firstFailure !== null) setError(firstFailure);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [profile.categories]);
 
   const mode: DashMode = useMemo(() => {
@@ -229,6 +319,7 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     topMarket,
     feedFilter,
     isRefreshing,
+    error,
     selectAlert,
     setFeedFilter,
     refresh,

@@ -67,11 +67,11 @@ class BusinessProfileControllerTest {
         profileB.setBusinessName("Operator B's Business");
         profileRepo.save(profileB);
 
-        mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + tokenA))
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessName").value("Operator A's Business"));
 
-        mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + tokenB))
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenB))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessName").value("Operator B's Business"));
     }
@@ -81,7 +81,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(null, "New Business", List.of("Retail"),
             List.of("Service A"), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -103,7 +103,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(existing.getBusinessProfileId(), "Updated Name", List.of(),
             List.of(), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -126,7 +126,7 @@ class BusinessProfileControllerTest {
             List.of(), "desc", "uvp", null, null);
 
         // Operator A attempts to overwrite operator B's profile by id.
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -152,7 +152,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
             List.of(), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))

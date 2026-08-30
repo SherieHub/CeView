@@ -119,9 +119,9 @@ Publishing appends one post per selected platform to the shared post store (toda
 
 | Call | When | Endpoint |
 |---|---|---|
-| content generation (on entry, scoped to the targeted market) | screen mount | `POST /api/v1/content/generate` |
-| `apiClient` creative direction | visual direction card | `POST /api/v1/creative-direction/generate/{profileId}` |
-| compliance audit | agreement checkbox ticked | `POST /api/v1/compliance/evaluate` (multipart, with pubmat) |
+| content generation (on entry, scoped to the targeted market) | screen mount | `POST /api/content/generate` |
+| `apiClient` creative direction | visual direction card | `POST /api/creative-direction/generate/{profileId}` |
+| compliance audit | agreement checkbox ticked | `POST /api/compliance/evaluate` (multipart, with pubmat) |
 | publish | Publish button | see [`backend/PublishingController.md`](../backend/PublishingController.md) — **specified, not yet implemented** |
 
 ## Backend requirement

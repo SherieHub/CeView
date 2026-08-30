@@ -1,6 +1,7 @@
 package com.ceview.module4.report;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.engagement.MetricsCalculationService;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ import java.util.*;
  * fully populated — the UI never crashes.
  */
 @RestController
-@RequestMapping("/api/v1/analytics")
+@RequestMapping("/api/analytics")
 public class PrescriptiveReportController {
 
     private static final Logger log = LoggerFactory.getLogger(PrescriptiveReportController.class);
@@ -35,14 +36,17 @@ public class PrescriptiveReportController {
     private final MetricsCalculationService metricsSvc;
     private final AIInferenceGatewayService ai;
     private final PrescriptiveReportService reportSvc;
+    private final CurrentBusinessProfile    currentBusinessProfile;
 
     public PrescriptiveReportController(
             MetricsCalculationService metricsSvc,
             AIInferenceGatewayService ai,
-            PrescriptiveReportService reportSvc) {
+            PrescriptiveReportService reportSvc,
+            CurrentBusinessProfile currentBusinessProfile) {
         this.metricsSvc = metricsSvc;
         this.ai         = ai;
         this.reportSvc  = reportSvc;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     // ─── POST /report ─────────────────────────────────────────────────────────
@@ -63,7 +67,7 @@ public class PrescriptiveReportController {
         var payload = new HashMap<String, Object>(body == null ? Map.of() : body);
         int weeks   = extractWeeks(payload);
 
-        MetricsResponse mr = metricsSvc.defaultMetrics(weeks);
+        MetricsResponse mr = metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks);
         payload.putIfAbsent("metrics", mr);
         payload.put("funnelTransitions", metricsSvc.computeFunnelTransitions(mr.funnel()));
         payload.put("weeks", weeks);
@@ -100,7 +104,8 @@ public class PrescriptiveReportController {
         // Prefer the frontend-supplied series; synthesize only when absent.
         Object timeSeries = (body != null && body.get("metrics_data") instanceof Map<?, ?> m && !m.isEmpty())
                 ? m
-                : metricsSvc.buildTimeSeries(metricsSvc.defaultMetrics(weeks), weeks);
+                : metricsSvc.buildTimeSeries(
+                        metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks), weeks);
 
         try {
             return ai.generatePesAnalysis(Map.of("metrics_data", timeSeries, "weeks", weeks));

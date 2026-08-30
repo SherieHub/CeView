@@ -9,7 +9,7 @@
  * TrendSlotProps — only PesTrendChart owns the weeks/onWeeksChange toggle.
  */
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { CampaignHistoryEntry } from '../../../services/fixtures/campaign';
+import type { CampaignHistoryEntry } from '@/types';
 import type { TrendSlotProps } from './campaignTypes';
 
 function formatPeriodLabel(entry: CampaignHistoryEntry): string {

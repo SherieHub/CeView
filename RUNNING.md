@@ -229,7 +229,7 @@ never commit real keys.** Start from `backend/.env.example`.
 | `HF_TOKEN` | Optional | `fastapi-sbert` | Used to download the SBERT/E5 encoder from HuggingFace. **Use a read-only token** — nothing in this codebase writes to HuggingFace. Get one at https://huggingface.co/settings/tokens. |
 | `JWT_SECRET` | Recommended (has a dev default) | `spring-boot` | Signs/verifies login JWTs. Defaults to `dev-secret-change-me-please-32chars-min` if unset — fine for local dev, must be a real 32+ char secret in any shared/deployed environment. |
 | `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3001`/`5173`. Add your frontend's actual origin if it differs. |
-| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/v1/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
+| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
 | `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
@@ -239,7 +239,7 @@ never commit real keys.** Start from `backend/.env.example`.
 ## 6. Authentication & seeded demo accounts
 
 The app requires login — every screen is gated behind a Sign In page, and
-every `/api/v1/**` backend route requires a valid JWT.
+every `/api/**` backend route requires a valid JWT.
 
 **9 realistic demo MSME operator accounts** are seeded automatically by
 Flyway (`V2__module1_profile_multi_category.sql`) on both Postgres and H2,
@@ -262,7 +262,7 @@ Quick reference — any of these logs in:
 never reuse them anywhere real)*
 
 You can also register a brand-new account via the Register link on the login
-page (`POST /api/v1/auth/register`) — it starts with an empty business
+page (`POST /api/auth/register`) — it starts with an empty business
 profile instead of pre-seeded data.
 
 **What to verify once logged in:**
@@ -270,14 +270,14 @@ profile instead of pre-seeded data.
   operator's own* seeded data.
 - Logging out and back in as a *different* seeded operator shows *different*
   data — no cross-operator leakage.
-- `curl http://localhost:8080/api/v1/business-profile` **without** an
+- `curl http://localhost:8080/api/business-profile` **without** an
   `Authorization` header returns `401` — the API is genuinely locked down,
   not just the frontend UI.
 
 ### Google Sign-In setup (optional)
 
 The "Continue with Google" button on the login page works without any setup
-— it's just disabled-looking until configured, and `POST /api/v1/auth/google`
+— it's just disabled-looking until configured, and `POST /api/auth/google`
 returns `503` if hit without a Firebase credential. To turn it on:
 
 1. In the [Firebase Console](https://console.firebase.google.com/), create
@@ -315,12 +315,12 @@ With the backend (Path A or B) and frontend both running:
 
 | Tab | What you click | Backend call |
 |---|---|---|
-| **Home** | (auto on load) | `GET /api/v1/notifications` |
-| **Market Radar** | (auto on load) | `GET /api/v1/forecasting/markets` |
-| **Uniqueness Score** | Fill all fields → *Analyze Business Profile* | `POST /api/v1/classification/analyze` |
-| **Uniqueness Score** | *Compute Uniqueness* | `POST /api/v1/classification/uniqueness` |
-| **Business Profile** | *Save* | `PUT /api/v1/business-profile` |
-| **Campaign Analytics** | *Generate AI Report* | `POST /api/v1/analytics/report` |
+| **Home** | (auto on load) | `GET /api/notifications` |
+| **Market Radar** | (auto on load) | `GET /api/forecasting/markets` |
+| **Uniqueness Score** | Fill all fields → *Analyze Business Profile* | `POST /api/classification/analyze` |
+| **Uniqueness Score** | *Compute Uniqueness* | `POST /api/classification/uniqueness` |
+| **Business Profile** | *Save* | `PUT /api/business-profile` |
+| **Campaign Analytics** | *Generate AI Report* | `POST /api/analytics/report` |
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
@@ -333,17 +333,17 @@ response body for the actual error before assuming it's a frontend bug.
 
 ```powershell
 # Login to get a token
-$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/auth/login `
+$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/auth/login `
     -ContentType 'application/json' `
     -Body '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'
 $token = $login.token
 
 # Use it on a protected route
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/business-profile `
+Invoke-RestMethod -Uri http://localhost:8080/api/business-profile `
     -Headers @{ Authorization = "Bearer $token" }
 
 # Markets (also requires auth now)
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/forecasting/markets `
+Invoke-RestMethod -Uri http://localhost:8080/api/forecasting/markets `
     -Headers @{ Authorization = "Bearer $token" }
 ```
 
@@ -403,7 +403,7 @@ Get-Process node   | Stop-Process -Force
 | Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
 | `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
-| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/v1/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
+| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
 | Port 8080/8000/8001/3000 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
 | `fastapi-sbert` takes forever to become healthy on first run | Expected — it's downloading the ~1.1GB SBERT/E5 encoder from HuggingFace (`start_period: 600s` in the healthcheck accounts for this). Subsequent runs reuse the cached model via the `ceview-hf-cache` Docker volume. |
 | Playwright e2e tests fail with connection errors | The stack isn't running yet — Playwright doesn't start it for you. Bring up backend + frontend first (§3, §4), then run `npx playwright test`. |

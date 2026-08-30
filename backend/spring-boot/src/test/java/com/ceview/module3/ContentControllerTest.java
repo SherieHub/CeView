@@ -96,7 +96,7 @@ class ContentControllerTest {
 
     @Test
     void generateOmittingProfileIdDerivesTheCallersOwnProfile() throws Exception {
-        mvc.perform(post("/api/v1/content/generate")
+        mvc.perform(post("/api/content/generate")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(generateBody()))
@@ -106,7 +106,7 @@ class ContentControllerTest {
 
     @Test
     void generateWithOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(post("/api/v1/content/generate")
+        mvc.perform(post("/api/content/generate")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileA.toString())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -117,7 +117,7 @@ class ContentControllerTest {
 
     @Test
     void generateWithAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/content/generate")
+        mvc.perform(post("/api/content/generate")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileB.toString())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -131,7 +131,7 @@ class ContentControllerTest {
         UUID operatorWithoutProfile = UUID.randomUUID();
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
 
-        mvc.perform(post("/api/v1/content/generate")
+        mvc.perform(post("/api/content/generate")
                 .header("Authorization", "Bearer " + tokenWithoutProfile)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(generateBody()))
@@ -144,7 +144,7 @@ class ContentControllerTest {
 
     @Test
     void approveWithOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(post("/api/v1/content/approve")
+        mvc.perform(post("/api/content/approve")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileA.toString())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -155,7 +155,7 @@ class ContentControllerTest {
 
     @Test
     void approveWithAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/content/approve")
+        mvc.perform(post("/api/content/approve")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileB.toString())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -169,7 +169,7 @@ class ContentControllerTest {
         UUID operatorWithoutProfile = UUID.randomUUID();
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile2@example.com");
 
-        mvc.perform(post("/api/v1/content/approve")
+        mvc.perform(post("/api/content/approve")
                 .header("Authorization", "Bearer " + tokenWithoutProfile)
                 .param("profileId", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -183,7 +183,7 @@ class ContentControllerTest {
 
     @Test
     void generateWithoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/content/generate")
+        mvc.perform(post("/api/content/generate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(generateBody()))
             .andExpect(status().isUnauthorized());

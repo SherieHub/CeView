@@ -28,7 +28,7 @@ import java.util.*;
  * still fully populated — the UI never crashes.
  */
 @RestController
-@RequestMapping("/api/v1/analytics")
+@RequestMapping("/api/analytics")
 public class EngagementMetricsController {
 
     private static final Logger log = LoggerFactory.getLogger(EngagementMetricsController.class);
@@ -55,14 +55,15 @@ public class EngagementMetricsController {
     // ─── GET /metrics ─────────────────────────────────────────────────────────
 
     /**
-     * Default campaign metrics for the EngagementMetricsBoard.
+     * Default campaign metrics for the EngagementMetricsBoard, aggregated from
+     * the authenticated operator's own {@code tbl_campaign_records} (Task 13).
      *
-     * @param weeks Analysis window — 4 (default) or 8. Scales demo defaults proportionally.
+     * @param weeks Analysis window — 4 (default) or 8.
      */
     @GetMapping("/metrics")
     public MetricsResponse metrics(
             @RequestParam(required = false, defaultValue = "4") int weeks) {
-        return metricsSvc.defaultMetrics(weeks);
+        return metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks);
     }
 
     // ─── POST /manual ─────────────────────────────────────────────────────────

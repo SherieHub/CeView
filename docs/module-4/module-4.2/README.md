@@ -16,8 +16,8 @@ Submodule 4.2 is the **scoring engine** of Module 4. It receives the five raw KP
 |---|---|---|---|
 | **PES compute** (primary) | `POST /manual` in Submodule 4.1 | `POST /internal/pes-compute/analyze` (FastAPI, internal) | 1× Groq call via `pes_compute_insights()` for weakest stage + recommendations |
 | **PES compute** (fallback) | FastAPI unavailable / timeout > 30 s | Spring Boot `PESComputationService.compute()` (in-process) | None — deterministic rule-based |
-| **PES score by ID** | — | `GET /api/v1/analytics/pes/{campaignId}?weeks=4\|8` | None — Spring Boot rule-based only. Client method `analyticsPes` is **defined but not called by the UI**; the controller ignores `campaignId` and computes default metrics for the window |
-| **PES trend history** | `PESComputationBoard` mount / weeks change | `GET /api/v1/analytics/history?weeks=4\|8` (owned by 4.1) | None |
+| **PES score by ID** | — | `GET /api/analytics/pes/{campaignId}?weeks=4\|8` | None — Spring Boot rule-based only. Client method `analyticsPes` is **defined but not called by the UI**; the controller ignores `campaignId` and computes default metrics for the window |
+| **PES trend history** | `PESComputationBoard` mount / weeks change | `GET /api/analytics/history?weeks=4\|8` (owned by 4.1) | None |
 
 ---
 

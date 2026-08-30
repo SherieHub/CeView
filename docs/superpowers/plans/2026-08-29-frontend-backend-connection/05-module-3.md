@@ -6,8 +6,8 @@ but scheduled last because it is the most AI-dependent.
 **This is not a path fix.** The backend endpoints require request bodies the frontend has
 never assembled:
 
-- `POST /api/v1/content/generate` takes `{market, businessName, description, categories, trend}`
-- `POST /api/v1/compliance/omcs-analyze` rejects a blank `caption` or `imageUrl` with a 400
+- `POST /api/content/generate` takes `{market, businessName, description, categories, trend}`
+- `POST /api/compliance/omcs-analyze` rejects a blank `caption` or `imageUrl` with a 400
 
 Today `content.list()` is a bodyless GET to `/api/content` and `omcs.evaluate()` POSTs
 nothing. Three components read `MOCK_CONTENT` / `MOCK_OMCS` / `MOCK_POSTS` directly.
@@ -57,8 +57,8 @@ const GENERATE_BODY = {
 };
 
 describeIfBackend(up, 'module 3 endpoints', () => {
-  it('POST /api/v1/content/generate returns captions for the requested market', async () => {
-    const res = await api('/api/v1/content/generate', {
+  it('POST /api/content/generate returns captions for the requested market', async () => {
+    const res = await api('/api/content/generate', {
       method: 'POST',
       body: JSON.stringify(GENERATE_BODY),
     });
@@ -73,8 +73,8 @@ describeIfBackend(up, 'module 3 endpoints', () => {
     expect(body.market).toMatchObject({ country: expect.any(String) });
   });
 
-  it('POST /api/v1/content/generate rejects a missing market', async () => {
-    const res = await api('/api/v1/content/generate', {
+  it('POST /api/content/generate rejects a missing market', async () => {
+    const res = await api('/api/content/generate', {
       method: 'POST',
       body: JSON.stringify({ ...GENERATE_BODY, market: '' }),
     });
@@ -113,7 +113,7 @@ In `services/apiClient.ts`, replace the whole `content` block:
     }) =>
       USE_FIXTURES
         ? delay(MOCK_CONTENT)
-        : request<ContentResponse>('/api/v1/content/generate', {
+        : request<ContentResponse>('/api/content/generate', {
             method: 'POST',
             body: JSON.stringify(input),
           }),
@@ -122,7 +122,7 @@ In `services/apiClient.ts`, replace the whole `content` block:
       USE_FIXTURES
         ? delay({ approvedIds: [], market, count: 0 })
         : request<{ approvedIds: string[]; market: string; count: number }>(
-            '/api/v1/content/approve',
+            '/api/content/approve',
             { method: 'POST', body: JSON.stringify({ market }) },
           ),
   },
@@ -151,7 +151,7 @@ git commit -m "feat(frontend): replace content.list with a real content.generate
 ## Task 23: `compliance.omcsAnalyze` with real caption and image
 
 `apiClient.omcs.evaluate()` POSTs nothing to `/api/omcs/evaluate` (404). The real endpoint
-is `POST /api/v1/compliance/omcs-analyze`, and it throws
+is `POST /api/compliance/omcs-analyze`, and it throws
 `MOD3_COMPLIANCE_VALIDATION` on a blank `caption` or `imageUrl` — so the UI must not fire
 until the operator has both.
 
@@ -165,8 +165,8 @@ until the operator has both.
 Append to the `describeIfBackend` block:
 
 ```ts
-  it('POST /api/v1/compliance/omcs-analyze scores a caption + image pair', async () => {
-    const res = await api('/api/v1/compliance/omcs-analyze', {
+  it('POST /api/compliance/omcs-analyze scores a caption + image pair', async () => {
+    const res = await api('/api/compliance/omcs-analyze', {
       method: 'POST',
       body: JSON.stringify({
         caption: 'Sardine run season is here — join a small-group freedive in Moalboal.',
@@ -183,7 +183,7 @@ Append to the `describeIfBackend` block:
   });
 
   it('rejects a blank caption with a validation error, not a 500', async () => {
-    const res = await api('/api/v1/compliance/omcs-analyze', {
+    const res = await api('/api/compliance/omcs-analyze', {
       method: 'POST',
       body: JSON.stringify({ caption: '   ', imageUrl: 'https://example.invalid/x.jpg' }),
     });
@@ -212,7 +212,7 @@ will report a server fault for what is user input.
     omcsAnalyze: (input: { caption: string; imageUrl: string }) =>
       USE_FIXTURES
         ? delay(MOCK_OMCS)
-        : request<OmcsAuditResult>('/api/v1/compliance/omcs-analyze', {
+        : request<OmcsAuditResult>('/api/compliance/omcs-analyze', {
             method: 'POST',
             body: JSON.stringify(input),
           }),
@@ -251,8 +251,8 @@ git commit -m "feat(frontend): wire compliance.omcsAnalyze with required caption
 - [ ] **Step 1: Add the contract case**
 
 ```ts
-  it('POST /api/v1/creative-direction/generate works with only a JWT', async () => {
-    const res = await api('/api/v1/creative-direction/generate', { method: 'POST' });
+  it('POST /api/creative-direction/generate works with only a JWT', async () => {
+    const res = await api('/api/creative-direction/generate', { method: 'POST' });
     expect([200, 409, 503]).toContain(res.status);
     // Foundation Task 6 added the pathless variant; a 404 means it did not register.
     expect(res.status).not.toBe(404);
@@ -295,7 +295,7 @@ export interface CreativeDirection {
             lightingSuggestions: [],
             moodboardReferences: [],
           })
-        : request<CreativeDirection>('/api/v1/creative-direction/generate', { method: 'POST' }),
+        : request<CreativeDirection>('/api/creative-direction/generate', { method: 'POST' }),
   },
 ```
 
@@ -391,7 +391,7 @@ describe('ContentStudioView', () => {
   it('names GROQ_API_KEY when content generation is unconfigured', async () => {
     vi.spyOn(apiClient.content, 'generate').mockRejectedValue(
       new ApiError({
-        status: 503, method: 'POST', path: '/api/v1/content/generate',
+        status: 503, method: 'POST', path: '/api/content/generate',
         body: { code: 'DEPENDENCY_NOT_CONFIGURED', message: 'GROQ_API_KEY is not set' },
       }),
     );
@@ -511,7 +511,7 @@ useEffect(() => {
 reader doesn't take it for an oversight:
 
 ```tsx
-// Publishing has no backend yet — GET /api/v1/posts is deferred to spec C
+// Publishing has no backend yet — GET /api/posts is deferred to spec C
 // (docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md §Non-goals).
 // This board stays fixture-backed until that lands.
 ```
@@ -536,7 +536,7 @@ Expected: both PASS.
 - [ ] **Step 9: Verify in the browser, both configured and not**
 
 With `GROQ_API_KEY` set: open Content Studio, pick a market, confirm captions render from
-`source: "groq"` and DevTools shows `POST /api/v1/content/generate` 200.
+`source: "groq"` and DevTools shows `POST /api/content/generate` 200.
 
 Then unset the key, restart Spring Boot, and reload: the panel reads "Setup required —
 GROQ_API_KEY is not set". Both outcomes are correct; verify both.

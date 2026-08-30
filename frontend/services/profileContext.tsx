@@ -4,7 +4,7 @@
  * once it's set.
  *
  * Fetches the operator's real profile (apiClient.businessProfile.load,
- * GET /api/v1/business-profile) once authenticated, rather than staying
+ * GET /api/business-profile) once authenticated, rather than staying
  * permanently on the local EMPTY_PROFILE default — otherwise every operator
  * would look brand-new forever regardless of what's actually saved. The
  * fetched BusinessProfileDto (backend's real, narrower shape) is merged over

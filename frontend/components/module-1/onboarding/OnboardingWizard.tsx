@@ -15,8 +15,21 @@
  * import their own not-yet-implemented stub components (Cards 6-8) and render
  * unchanged. This lookup touches a Card 4 file from a later card, same
  * precedent as feat/assets-and-links's identical fix for its own step.
+ *
+ * Task 21 (Analysis + wizard completion): the Finish action on the terminal
+ * step now persists the profile (POST via apiClient.businessProfile.save)
+ * before navigating to /dashboard, instead of just advancing an index that
+ * has nowhere further to go. It reads `draft.categories` /
+ * `draft.uniquenessScore`, which AnalysisStep writes once it reaches its
+ * 'scored' phase — see AnalysisStep.tsx's header comment for why the Finish
+ * button stays here (single button, reusing stepValid's existing case 4)
+ * rather than moving into AnalysisStep as the pseudocode's finishWizard()
+ * sketches it. `onGoToStep` is threaded through only to AnalysisStep, whose
+ * warn banner links back to Step 3 — every other step ignores the extra prop.
  */
 import { useState } from 'react';
+import type { ComponentType } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
 import { OB_STEPS, stepValid, useObDraft } from './obDraft';
 import BasicInfoStep from './steps/BasicInfoStep';
@@ -24,8 +37,15 @@ import BrandIdentityStep from './steps/BrandIdentityStep';
 import StructuredInputsStep from './steps/StructuredInputsStep';
 import AssetsLinksStep from './steps/AssetsLinksStep';
 import AnalysisStep from './steps/AnalysisStep';
+import { apiClient } from '../../../services/apiClient';
+import { useProfile } from '../../../services/profileContext';
+import { useToast } from '../../shared/Toast';
 
-const STEP_PANELS = [
+interface StepPanelProps {
+  onGoToStep?: (index: number) => void;
+}
+
+const STEP_PANELS: ComponentType<StepPanelProps>[] = [
   BasicInfoStep,
   BrandIdentityStep,
   StructuredInputsStep,
@@ -35,11 +55,39 @@ const STEP_PANELS = [
 
 export default function OnboardingWizard() {
   const { draft } = useObDraft();
+  const { profile, setProfile } = useProfile();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const [index, setIndex] = useState(0);
+  const [finishing, setFinishing] = useState(false);
 
   const Panel = STEP_PANELS[index];
   const canContinue = stepValid(draft, index);
   const isLast = index === OB_STEPS.length - 1;
+
+  async function handleFinish() {
+    if (finishing) return;
+    setFinishing(true);
+    try {
+      const saved = await apiClient.businessProfile.save({
+        businessProfileId: profile.businessProfileId,
+        businessName: draft.businessName,
+        categories: draft.categories,
+        coreServices: draft.coreServices,
+        description: draft.description,
+        uvp: draft.uvp,
+        imagePreview: draft.logo ?? null,
+        // The database stays canonical at 0-1; draft.uniquenessScore holds
+        // the raw 0-100 API scale until this exact conversion point.
+        uniquenessScore: (draft.uniquenessScore ?? 0) / 100,
+      });
+      setProfile({ ...profile, ...saved });
+      navigate('/dashboard');
+    } catch {
+      showToast('Could not save your profile — please try again.');
+      setFinishing(false);
+    }
+  }
 
   return (
     <div className="ob-wrap">
@@ -91,7 +139,7 @@ export default function OnboardingWizard() {
         </div>
 
         <div className="ob-panel">
-          <Panel />
+          <Panel onGoToStep={setIndex} />
         </div>
 
         <div className="ob-foot">
@@ -111,10 +159,13 @@ export default function OnboardingWizard() {
             <button
               type="button"
               className="btn-cta"
-              onClick={() => setIndex((i) => Math.min(OB_STEPS.length - 1, i + 1))}
-              disabled={!canContinue}
+              onClick={() =>
+                isLast ? handleFinish() : setIndex((i) => Math.min(OB_STEPS.length - 1, i + 1))
+              }
+              disabled={!canContinue || (isLast && finishing)}
             >
-              {isLast ? 'Finish' : 'Continue'} <ArrowRight size={16} aria-hidden="true" />
+              {isLast ? (finishing ? 'Finishing…' : 'Finish') : 'Continue'}{' '}
+              <ArrowRight size={16} aria-hidden="true" />
             </button>
           </div>
         </div>

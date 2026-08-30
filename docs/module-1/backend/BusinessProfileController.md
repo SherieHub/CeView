@@ -13,9 +13,9 @@ Load and persist the operator's `BusinessProfile` entity. The one write path sha
 
 | Method | Path | Called by |
 |---|---|---|
-| `GET` | `/api/v1/business-profile` | App mount (`apiClient.loadProfile`) |
-| `PUT` | `/api/v1/business-profile` | Onboarding finish, Settings Save (`apiClient.saveProfile`) |
-| `POST` | `/api/v1/business-profile/keywords` | (not used by any current screen doc — legacy SEO keyword panel from the pre-overhaul `BusinessProfile.tsx`; retained for now, revisit once the overhaul frontend plan reaches parity) |
+| `GET` | `/api/business-profile` | App mount (`apiClient.loadProfile`) |
+| `PUT` | `/api/business-profile` | Onboarding finish, Settings Save (`apiClient.saveProfile`) |
+| `POST` | `/api/business-profile/keywords` | (not used by any current screen doc — legacy SEO keyword panel from the pre-overhaul `BusinessProfile.tsx`; retained for now, revisit once the overhaul frontend plan reaches parity) |
 
 ## Collaborators
 

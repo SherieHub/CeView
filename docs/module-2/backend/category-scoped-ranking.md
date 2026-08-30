@@ -9,7 +9,7 @@ not one fixed top-3 ranking reused everywhere. This is a **specification**, not 
 `ForecastingService` computes one `market_score` per market
 (`demand₄w × 0.40 + seasonality × 0.35 + economic_viability × 0.25`, per
 `tbl_market_score`) and one global rank (1–3), independent of business category.
-`GET /api/v1/forecasting/markets` returns that single ranking for every caller.
+`GET /api/forecasting/markets` returns that single ranking for every caller.
 
 ## Required behavior
 
@@ -17,7 +17,7 @@ Ranking must vary by the business's category so that, e.g., Korea ranks differen
 "Culinary & Gastronomy" (Korean food-tourism searches are high) than for "Cultural & Heritage"
 (where Japan leads). Two implementation options, either acceptable:
 
-1. **Parameterize the endpoint.** `GET /api/v1/forecasting/markets?category=<name>` computes or looks
+1. **Parameterize the endpoint.** `GET /api/forecasting/markets?category=<name>` computes or looks
    up a `market_score` specific to that category. Requires either a `(category, market)` composite
    scoring table, or a category-weighted adjustment applied to the existing per-market signals at
    request time.

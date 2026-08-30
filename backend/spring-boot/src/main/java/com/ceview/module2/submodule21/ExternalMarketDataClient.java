@@ -73,9 +73,12 @@ public class ExternalMarketDataClient {
     private static final Map<String, Double> FOREX_DEFAULTS = Map.of(
             "KRW", 23.8, "JPY", 2.1, "USD", 0.018);
 
-    // Market → ISO-2 country code (World Bank)
-    private static final Map<String, String> COUNTRY_CODE = Map.of(
-            "korea", "KR", "japan", "JP", "usa", "US");
+    // Market → ISO-2 country code (World Bank). Delegates to MarketFlags — the
+    // single source of truth for this lookup — rather than keeping a second copy.
+    private static String countryCode(String marketId) {
+        String iso = com.ceview.module2.MarketFlags.isoFor(marketId);
+        return iso.isBlank() ? "US" : iso;
+    }
 
     // Market → currency code
     private static final Map<String, String> CURRENCY_CODE = Map.of(
@@ -90,7 +93,7 @@ public class ExternalMarketDataClient {
     }
 
     public GdpDataDto fetchGdpGrowth(String marketId) {
-        String countryCode = COUNTRY_CODE.getOrDefault(marketId, "US");
+        String countryCode = countryCode(marketId);
         try {
             List<Object> response = worldBankClient.get()
                     .uri("/country/{code}/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrv=5", countryCode)
@@ -168,7 +171,7 @@ public class ExternalMarketDataClient {
      * unavailable, keeping the pipeline non-blocking.
      */
     public GdpTrendDto fetchGdpTrend(String marketId) {
-        String countryCode = COUNTRY_CODE.getOrDefault(marketId, "US");
+        String countryCode = countryCode(marketId);
         try {
             List<Object> response = worldBankClient.get()
                     .uri("/country/{code}/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrv=5", countryCode)

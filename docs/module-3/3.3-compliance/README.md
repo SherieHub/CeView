@@ -26,7 +26,7 @@ Submodule 3.3 evaluates a staged caption + uploaded image against the business p
 | `MediaPreviewCard.tsx` | Image thumbnail preview with file size and removal button | React component `.tsx` |
 | `CaptionTextArea.tsx` | Editable textarea for staging the caption before the audit | React component `.tsx` |
 | `AuditEmptyBanner.tsx` | Warning banner blocking run until media is uploaded | React component `.tsx` |
-| `apiClient.ts` (`analyzeOmcs`) | Calls `POST /api/v1/compliance/omcs-analyze`; returns `OmcsAuditResultDTO` | TypeScript service `.ts` |
+| `apiClient.ts` (`analyzeOmcs`) | Calls `POST /api/compliance/omcs-analyze`; returns `OmcsAuditResultDTO` | TypeScript service `.ts` |
 
 ### Backend — `backend/spring-boot/src/main/java/com/ceview/module3/`
 
@@ -49,7 +49,7 @@ Submodule 3.3 evaluates a staged caption + uploaded image against the business p
 1. **Enable audit**: Operator toggles `SmartOptimizationBoard` → `auditOn = true`.
 2. **Stage caption**: `stagedCaption` auto-populates from the most recently approved caption card. Editable in `CaptionTextArea`.
 3. **Upload media**: Drag-and-drop or browse a PNG/JPG/WEBP image (≤20 MB). The file is read as a base64 data URL. `AuditEmptyBanner` blocks the run button until media is present.
-4. **Run audit**: Click "Run Audit" → `runOmcsAudit()` → `POST /api/v1/compliance/omcs-analyze`. A 6-step progress animation plays while in-flight.
+4. **Run audit**: Click "Run Audit" → `runOmcsAudit()` → `POST /api/compliance/omcs-analyze`. A 6-step progress animation plays while in-flight.
 5. **View score**: `ComplianceGauge` renders the OMCS score. Component scores and a 7-criterion rubric table are shown. If the audit fails, a `feedback` diagnostic explains the root cause and suggests corrections.
 6. **Reset**: Click "Reset Audit" → `omcs = null`, `auditDone = false`, `auditOn = false`.
 
@@ -57,7 +57,7 @@ Submodule 3.3 evaluates a staged caption + uploaded image against the business p
 
 ## Request Lifecycle
 
-**Trigger**: `api.analyzeOmcs({ caption, imageUrl, businessProfile, recommendations })` → `POST /api/v1/compliance/omcs-analyze`.
+**Trigger**: `api.analyzeOmcs({ caption, imageUrl, businessProfile, recommendations })` → `POST /api/compliance/omcs-analyze`.
 
 1. `ComplianceController.omcsAnalyze()` validates that `caption` and `imageUrl` are non-blank (throws 400 otherwise).
 2. Builds a snake_case payload: `{ caption, image_url, business_profile, recommendations }`.

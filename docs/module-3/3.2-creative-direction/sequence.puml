@@ -19,7 +19,7 @@ participant "tbl_creative_\ndirection_output" as DB
 == 1. Dependency Gate Check (FR3.11) ==
 
 O -> UI: Click "Generate Creative Direction"
-UI -> CDC: POST /api/v1/creative-direction/generate/{profileId}\n?market={market}
+UI -> CDC: POST /api/creative-direction/generate/{profileId}\n?market={market}
 CDC -> CDS: generate(profileId, market)
 CDS -> CAS: hasApprovedContent(profileId, market)
 CAS -> CAS: query tbl_localized_promotional_content\nWHERE approval_status = true
@@ -81,7 +81,7 @@ UI -> UI: Render VisualDirectionBoard
 == 5. Approve Creative Direction ==
 
 O -> UI: Review output and confirm
-UI -> CDC: POST /api/v1/creative-direction/approve/{profileId}\n?market={market}
+UI -> CDC: POST /api/creative-direction/approve/{profileId}\n?market={market}
 CDC -> CDC: approveLatest(profileId, market)
 CDC -> DB: UPDATE approval_status = true\nSET approved_at = now()
 DB --> CDC: updated entity

@@ -64,7 +64,7 @@ export default function BrandIdentityStep() {
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="body-xs font-semibold">
-            Vibe <span className="text-muted font-normal">— Pick one or more</span>
+            Vibe <span className="text-[var(--color-text-muted)] font-normal">— Pick one or more</span>
           </span>
           <div className="flex flex-wrap gap-2">
             {VIBES.map((v) => (
@@ -73,7 +73,7 @@ export default function BrandIdentityStep() {
                 type="button"
                 aria-pressed={draft.vibes.includes(v)}
                 onClick={() => toggleVibe(v)}
-                className="rounded-full border border-line px-3 py-1.5 body-sm aria-pressed:border-navy aria-pressed:bg-gold-wash aria-pressed:font-semibold"
+                className="rounded-full border border-[var(--color-gray-light)] px-3 py-1.5 body-sm aria-pressed:border-[var(--color-mint-primary)] aria-pressed:bg-[var(--color-mint-pale)] aria-pressed:font-semibold"
               >
                 {v}
               </button>
@@ -83,14 +83,14 @@ export default function BrandIdentityStep() {
 
         <label className="flex flex-col gap-1">
           <span className="body-xs font-semibold">
-            Core services <span className="text-muted font-normal">— At least one</span>
+            Core services <span className="text-[var(--color-text-muted)] font-normal">— At least one</span>
           </span>
           <div
-            className="flex flex-wrap items-center gap-2 rounded-md border border-line px-3 py-2"
+            className="field-row flex flex-wrap"
             onClick={() => inputRef.current?.focus()}
           >
             {draft.coreServices.map((s) => (
-              <span key={s} className="flex items-center gap-1 rounded-full bg-panel px-2.5 py-1 body-xs">
+              <span key={s} className="flex items-center gap-1 rounded-full bg-[var(--color-white)] px-2.5 py-1 body-xs">
                 {s}
                 <button
                   type="button"
@@ -107,14 +107,14 @@ export default function BrandIdentityStep() {
             <input
               ref={inputRef}
               type="text"
-              className="min-w-[160px] flex-1 border-0 p-1 outline-none"
+              className="input min-w-[160px] flex-1"
               placeholder="Type a service and press Enter…"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
             />
           </div>
-          <span className="body-xs text-muted">
+          <span className="body-xs text-[var(--color-text-muted)]">
             e.g. Scuba Diving, Island Hopping, Sunset Cruise, Farm-to-table Dining
           </span>
         </label>

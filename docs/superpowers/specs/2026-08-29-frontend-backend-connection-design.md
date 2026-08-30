@@ -7,8 +7,8 @@
 ## Problem
 
 The frontend is approximately 10% connected to the backend. Only two calls work:
-`auth.login/register/google/completeProfile` → `/api/v1/auth/*`, and
-`businessProfile.load()` → `GET /api/v1/business-profile`.
+`auth.login/register/google/completeProfile` → `/api/auth/*`, and
+`businessProfile.load()` → `GET /api/business-profile`.
 
 Everything else in [`frontend/services/apiClient.ts`](../../../frontend/services/apiClient.ts)
 targets a path Spring Boot does not serve. `frontend/.env` currently sets
@@ -22,12 +22,12 @@ Developers therefore cannot manually debug against real data.
 
 | `apiClient` calls | Spring Boot actually serves |
 |---|---|
-| `/api/markets`, `/api/markets/{id}/chart`, `/api/markets/category-scores` | `GET /api/v1/forecasting/markets`, envelope `{markets:[…]}`. No chart or category-scores route exists. |
-| `/api/notifications`, `/api/notifications/{id}/read` | `GET /api/v1/notifications`, envelope `{notifications:[…]}`. No mark-read route. |
-| `/api/v1/forecasting/analyze`, `/api/v1/forecasting/status` | `POST /api/v1/forecasting/analyze/{profileId}`. No `/status`. |
-| `/api/content` | `POST /api/v1/content/generate` (requires a request body) |
-| `/api/omcs/rubric`, `/api/omcs/evaluate` | `POST /api/v1/compliance/omcs-analyze` (requires `{caption, imageUrl}`) |
-| `/api/campaigns/default-input`, `/history`, `/report` | `GET /api/v1/analytics/metrics`, `GET /api/v1/analytics/history`, `POST /api/v1/analytics/report` |
+| `/api/markets`, `/api/markets/{id}/chart`, `/api/markets/category-scores` | `GET /api/forecasting/markets`, envelope `{markets:[…]}`. No chart or category-scores route exists. |
+| `/api/notifications`, `/api/notifications/{id}/read` | `GET /api/notifications`, envelope `{notifications:[…]}`. No mark-read route. |
+| `/api/forecasting/analyze`, `/api/forecasting/status` | `POST /api/forecasting/analyze/{profileId}`. No `/status`. |
+| `/api/content` | `POST /api/content/generate` (requires a request body) |
+| `/api/omcs/rubric`, `/api/omcs/evaluate` | `POST /api/compliance/omcs-analyze` (requires `{caption, imageUrl}`) |
+| `/api/campaigns/default-input`, `/history`, `/report` | `GET /api/analytics/metrics`, `GET /api/analytics/history`, `POST /api/analytics/report` |
 | `/api/posts`, `/api/connections`, `/api/workspace/*` | Nothing — unimplemented, listed in [`backend/CONTRACT.md`](../../../backend/CONTRACT.md) |
 
 ### Components bypassing `apiClient` entirely
@@ -49,7 +49,7 @@ breaking type imports across three modules.
 
 Nothing in the repo verifies that a frontend call matches a real backend route.
 `frontend/tests/integration/` contains CSS and brand-token contract tests, not backend
-integration tests. This is how `/api/markets` drifted from `/api/v1/forecasting/markets`
+integration tests. This is how `/api/markets` drifted from `/api/forecasting/markets`
 without anything failing.
 
 ## Decomposition
@@ -174,10 +174,10 @@ profile fetch, add pathless variants that resolve the profile from the JWT, exac
 
 | New | Existing (retained for compatibility) |
 |---|---|
-| `POST /api/v1/forecasting/analyze` | `POST /api/v1/forecasting/analyze/{profileId}` |
-| `POST /api/v1/forecasting/ensure` | `POST /api/v1/forecasting/ensure/{profileId}` |
-| `POST /api/v1/creative-direction/generate` | `POST /api/v1/creative-direction/generate/{profileId}` |
-| `POST /api/v1/content/approve` (no `profileId` param) | `POST /api/v1/content/approve?profileId=` |
+| `POST /api/forecasting/analyze` | `POST /api/forecasting/analyze/{profileId}` |
+| `POST /api/forecasting/ensure` | `POST /api/forecasting/ensure/{profileId}` |
+| `POST /api/creative-direction/generate` | `POST /api/creative-direction/generate/{profileId}` |
+| `POST /api/content/approve` (no `profileId` param) | `POST /api/content/approve?profileId=` |
 
 All resolve via `CurrentBusinessProfile.resolveOrValidate(null)`. `apiClient` never
 handles `profileId`.
@@ -188,15 +188,15 @@ Largest DTO work; all underlying data already exists in the database.
 
 **Client fixes**
 
-- `markets.list()` → `GET /api/v1/forecasting/markets`, unwrap `{markets:[…]}`
-- `notifications.list()` → `GET /api/v1/notifications`, unwrap `{notifications:[…]}`
-- `forecast.analyze()` → `POST /api/v1/forecasting/analyze` (JWT-derived, 0.6)
+- `markets.list()` → `GET /api/forecasting/markets`, unwrap `{markets:[…]}`
+- `notifications.list()` → `GET /api/notifications`, unwrap `{notifications:[…]}`
+- `forecast.analyze()` → `POST /api/forecasting/analyze` (JWT-derived, 0.6)
 - `notifications.markRead` — currently PATCHes a nonexistent route and swallows the 404.
   Either add the endpoint or remove the call. Do not leave it silently broken.
 
 **New backend**
 
-- `GET /api/v1/forecasting/status` — `useDashboardState` already calls it to drive the
+- `GET /api/forecasting/status` — `useDashboardState` already calls it to drive the
   existing `ai-down` banner. Reports reachability of `fastapi-transformer`.
 - Category-scoped market ranking, replacing the fixture `CATEGORY_MARKET_SCORES`
   (see [`docs/module-2/backend/category-scoped-ranking.md`](../../module-2/backend/category-scoped-ranking.md))
@@ -230,13 +230,13 @@ Also reconcile: backend `AirlineDto` carries `duration` and `tier` that the fron
 
 Smallest surface; real seed data from `V15__module4_campaign_seed_data.sql`.
 
-- `campaign.history()` → `GET /api/v1/analytics/history?weeks=4|8`, unwrap and map
+- `campaign.history()` → `GET /api/analytics/history?weeks=4|8`, unwrap and map
   `CampaignSnapshot` → `CampaignHistoryEntry`
-- `campaign.report()` → `POST /api/v1/analytics/report`
-- `campaign.defaultInput()` → `GET /api/v1/analytics/metrics?weeks=`
-- `IngestionForm` submits to `POST /api/v1/analytics/manual` instead of only seeding
+- `campaign.report()` → `POST /api/analytics/report`
+- `campaign.defaultInput()` → `GET /api/analytics/metrics?weeks=`
+- `IngestionForm` submits to `POST /api/analytics/manual` instead of only seeding
   local state from `DEFAULT_CAMPAIGN_INPUT`
-- `PesGauge` wires to `GET /api/v1/analytics/pes/{campaignId}`
+- `PesGauge` wires to `GET /api/analytics/pes/{campaignId}`
 
 **Multi-tenancy fix.** `EngagementMetricsController.metrics()` calls
 `metricsSvc.defaultMetrics(weeks)` with no profile scoping, unlike `/history` and
@@ -248,9 +248,9 @@ slice.
 
 The wizard currently makes no network calls at all; this slice gives it its first.
 
-- `AnalysisStep` → `POST /api/v1/classification/analyze`, then
-  `POST /api/v1/classification/uniqueness`
-- Wizard completion → `PUT /api/v1/business-profile`, so `uniquenessScore` persists and
+- `AnalysisStep` → `POST /api/classification/analyze`, then
+  `POST /api/classification/uniqueness`
+- Wizard completion → `PUT /api/business-profile`, so `uniquenessScore` persists and
   `ProfileCompletionGate`'s redirect decides against real state
 - `BasicInfoStep` stops importing `DEMO_BUSINESS`
 - `BusinessProfileSettings` currently reaches `apiClient.businessProfile` through an
@@ -271,9 +271,9 @@ blank `caption` or `imageUrl`. Today `content.list()` and `omcs.evaluate()` send
 - Build the `content/generate` request from `ProfileContext` + the selected market;
   `ContentStudioView` and `AIContentMatrixPanel` stop importing `MOCK_CONTENT`
 - `CompliancePanel` sends real `{caption, imageUrl}` to
-  `POST /api/v1/compliance/omcs-analyze` instead of reading `MOCK_OMCS`
-- `VisualDirectionBoard` → `POST /api/v1/creative-direction/generate` (JWT-derived)
-- Content approval → `POST /api/v1/content/approve` (JWT-derived)
+  `POST /api/compliance/omcs-analyze` instead of reading `MOCK_OMCS`
+- `VisualDirectionBoard` → `POST /api/creative-direction/generate` (JWT-derived)
+- Content approval → `POST /api/content/approve` (JWT-derived)
 - `ContentBoard` stays on `MOCK_POSTS` — publishing is spec C
 
 ## Fixture toggle semantics

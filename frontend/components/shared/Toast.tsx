@@ -37,9 +37,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="flex items-center gap-2 rounded-md bg-navy px-4 py-3 text-sm font-medium text-white shadow-2 transition-opacity"
+            className="flex items-center gap-2 rounded-md bg-[var(--color-navy-primary)] px-4 py-3 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-card)] transition-opacity"
           >
-            <CheckCircle2 size={16} className="text-cyan" />
+            <CheckCircle2 size={16} className="text-[var(--color-mint-primary)]" />
             <span>{t.message}</span>
           </div>
         ))}

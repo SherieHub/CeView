@@ -23,7 +23,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
     // A .env line like "VITE_API_BASE_URL=" gives import.meta.env.VITE_API_BASE_URL
     // the value "" (present, not undefined) — `??` doesn't fall back on that, so this
     // regression-tests the real bug: requests silently going relative to the frontend's
-    // own origin (http://localhost:3001/api/v1/...) instead of the backend (:8080).
+    // own origin (http://localhost:3001/api/...) instead of the backend (:8080).
     vi.stubEnv('VITE_API_BASE_URL', '');
     (fetch as ReturnType<typeof vi.fn>).mockReturnValue(
       jsonResponse({ token: 'jwt-1', operatorId: 'op-1', profileCompleted: false }),
@@ -33,7 +33,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
     await apiClient.auth.login('a@b.com', 'pw');
 
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8080/api/v1/auth/login',
+      'http://localhost:8080/api/auth/login',
       expect.anything(),
     );
   });
@@ -52,7 +52,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
       user: { id: 'op-1', email: 'a@b.com', businessName: null },
     });
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/login'),
+      expect.stringContaining('/api/auth/login'),
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ email: 'a@b.com', password: 'pw' }) }),
     );
   });
@@ -71,7 +71,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
       user: { id: 'op-2', email: 'a@b.com', businessName: null },
     });
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/register'),
+      expect.stringContaining('/api/auth/register'),
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ email: 'a@b.com', password: 'pw', firstName: 'Ana', lastName: 'Cruz', contactNumber: '09171234567' }),
@@ -93,7 +93,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
       user: { id: 'op-3', email: null, businessName: null },
     });
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/google'),
+      expect.stringContaining('/api/auth/google'),
       expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token' }) }),
     );
   });
@@ -106,7 +106,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
 
     expect(res).toEqual({ profileCompleted: true });
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/profile'),
+      expect.stringContaining('/api/auth/profile'),
       expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ contactNumber: '09171234567' }) }),
     );
   });

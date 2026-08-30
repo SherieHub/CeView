@@ -3,6 +3,10 @@
  * ui-ux-prototype.html:1093–1391 (ContentResponseDTO / CaptionsByPlatform).
  */
 
+import type { CaptionMetadata, PlatformCaptions, ContentResponse } from '../../types';
+
+export type { CaptionMetadata, PlatformCaptions, ContentResponse };
+
 export const ARCHETYPES = [
   'Witty, Trend-Conscious & High-Energy',
   'Formal, Educational & Value-Driven',
@@ -10,14 +14,6 @@ export const ARCHETYPES = [
 ];
 
 export const ARCHETYPE_SUB = ['Gen Z / Younger Demographic', 'Mature Planners / Family', 'Aspirational / Experiential'];
-
-export interface CaptionMetadata {
-  core_business_context: string;
-  market_cultural_localization: string;
-  psychological_elements: string;
-  creative_tone_atmosphere: string;
-  algorithmic_platform_architecture: string;
-}
 
 function meta(
   a: string,
@@ -32,25 +28,6 @@ function meta(
     psychological_elements: c,
     creative_tone_atmosphere: d,
     algorithmic_platform_architecture: e,
-  };
-}
-
-export interface PlatformCaptions {
-  optionNames: string[];
-  options: string[];
-  optionMetadata: CaptionMetadata[];
-  guide: string[];
-}
-
-export interface ContentResponse {
-  market: { country: string; city: string; flag: string };
-  framework: string;
-  source: string;
-  captions: {
-    instagram: PlatformCaptions;
-    tiktok: PlatformCaptions;
-    facebook: PlatformCaptions;
-    naver: PlatformCaptions;
   };
 }
 

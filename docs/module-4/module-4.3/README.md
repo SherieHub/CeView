@@ -14,11 +14,11 @@ Submodule 4.3 is the **AI diagnostics layer** of Module 4. It runs two distinct 
 
 | Flow | Trigger | Endpoint | AI Calls |
 |---|---|---|---|
-| **Prescriptive report** | `AIActionPlanReport` mount + weeks toggle | `POST /api/v1/analytics/report` | 1× Groq call via `performance_report()` with pre-ranked funnel transitions |
+| **Prescriptive report** | `AIActionPlanReport` mount + weeks toggle | `POST /api/analytics/report` | 1× Groq call via `performance_report()` with pre-ranked funnel transitions |
 | **Prescriptive report** (fallback) | FastAPI unavailable | `PrescriptiveReportService.buildRuleBasedReport()` (in-process) | None — lowest-PES-contribution metric identified deterministically |
-| **PES deep analysis** | Backend-only (no UI trigger yet) | `POST /api/v1/analytics/pes-analysis` | LangGraph agent: 1–3× Groq structured-output calls (generate + evaluate, up to MAX_RETRIES = 3) |
+| **PES deep analysis** | Backend-only (no UI trigger yet) | `POST /api/analytics/pes-analysis` | LangGraph agent: 1–3× Groq structured-output calls (generate + evaluate, up to MAX_RETRIES = 3) |
 | **PES deep analysis** (fallback) | FastAPI unavailable | `PrescriptiveReportService.buildOfflinePesAnalysisFallback()` (in-process) | None — returns `needs_human_review: true` with empty metric conditions |
-| **PDF download** | Backend-only (no UI trigger yet) | `GET /api/v1/analytics/report/{id}/pdf` | FastAPI `POST /internal/report/pdf` |
+| **PDF download** | Backend-only (no UI trigger yet) | `GET /api/analytics/report/{id}/pdf` | FastAPI `POST /internal/report/pdf` |
 
 ---
 

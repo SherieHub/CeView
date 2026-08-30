@@ -36,30 +36,33 @@ export default function CompleteProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-10">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center p-10" style={{ background: 'var(--gradient-canvas)' }}>
+      <div className="card w-full max-w-sm">
         <h1 className="heading-lg mb-1">Complete your profile</h1>
-        <p className="body-sm text-navy-muted mb-6">
+        <p className="body-sm mb-6">
           One last thing — add a contact number so we can reach you about your account.
         </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1">
-            <span className="body-xs">Contact number</span>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label className="field-label" htmlFor="complete-profile-contact-number">
+              Contact number
+            </label>
             <input
+              id="complete-profile-contact-number"
               type="tel"
               required
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
-              className="rounded-md border border-line px-3 py-2"
+              className="input"
             />
-          </label>
-          {error && <p className="body-xs text-critical">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-full bg-gold py-2.5 font-bold text-navy disabled:opacity-60"
-          >
+          </div>
+          {error && (
+            <p className="body-xs mb-3" role="alert" style={{ color: 'var(--color-critical-text)' }}>
+              {error}
+            </p>
+          )}
+          <button type="submit" disabled={submitting} className="btn-cta w-full">
             Continue
           </button>
         </form>
