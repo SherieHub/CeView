@@ -58,6 +58,7 @@ class AgentLLMModel:
                 model=groq_model,
                 temperature=0.7,
                 groq_api_key=api_key,
+                max_tokens=8192,
             )
             self.last_error = None
             logger.info("AgentLLMModel: ChatGroq initialised (model=%s).", groq_model)

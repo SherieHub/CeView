@@ -24,6 +24,7 @@ from app.agents.creative_director_agent.prompts import (
 )
 from app.agents.creative_director_agent.state import SocialAgentState
 from app.core.AgentLLMModel import _wrapper as _llm_wrapper
+from app.unavailable import DependencyUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -86,39 +87,23 @@ def analyze_services(state: SocialAgentState) -> dict:
         }
 
 
-def _fallback_captions() -> dict:
-    """Return mock captions in the agent output shape when LLM is unavailable."""
-    from app.services.gemini_client import _mock_captions  # local to avoid circular import
-    mock = _mock_captions()
-    result: dict = {"_source": "fallback"}
-    for platform in ("instagram", "tiktok", "facebook"):
-        pdata    = mock.get(platform, {})
-        options  = pdata.get("options", [])
-        metadata = pdata.get("optionMetadata", [])
-        result[platform] = [
-            {"caption": options[i], **(metadata[i] if i < len(metadata) else {})}
-            for i in range(len(options))
-        ]
-    return result
-
-
 def generate_platform_captions(state: SocialAgentState) -> dict:
     """Node 2 — Generate 3-platform × 3-variation caption matrix.
 
     Passes full market context (target_market, forecast_context, research_context)
     to the platform-aware prompt so the LLM can produce culturally localised,
     platform-rule-compliant captions with named variation types.
-    Falls back to curated mock captions when the LLM is unavailable.
+    Raises DependencyUnavailable when the LLM is unavailable; never substitutes canned copy.
     """
     llm = _llm_wrapper.get_model()
     if llm is None:
-        logger.warning(
-            "[%s] caption_agent.generate_platform_captions: LLM unavailable — "
-            "GROQ_API_KEY may be unset or ChatOpenAI failed to initialise. Returning mock captions.",
-            errors.MOD31_LLM_UNAVAILABLE,
+        raise DependencyUnavailable(
+            code=errors.MOD31_LLM_UNAVAILABLE,
+            message="Caption generation is unavailable.",
+            dependency="groq",
+            cause=getattr(_llm_wrapper, "last_error", None) or "the Groq client is not initialised",
+            stage="fastapi-sbert/caption_agent",
         )
-        fb = _fallback_captions()
-        return {"final_captions": fb, "source": fb.pop("_source", "fallback")}
 
     try:
         chain = caption_generation_prompt | llm | JsonOutputParser()

@@ -34,7 +34,12 @@ def get_llm():
             return None
         try:
             from langchain_groq import ChatGroq  # type: ignore[import]
-            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key)
+            # max_tokens: without a cap, langchain's JsonOutputParser silently
+            # repairs a truncated response by dropping the last incomplete key
+            # rather than raising — a growing rubric or rationale field could
+            # someday truncate the same way the caption matrix did in
+            # AgentLLMModel before this was added there. Cheap to guard now.
+            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key, max_tokens=2048)
         except Exception as exc:  # pragma: no cover - import/config failure
             logger.error("omcs_agent: failed to init vision LLM (%s): %s", _VISION_MODEL, exc)
             return None

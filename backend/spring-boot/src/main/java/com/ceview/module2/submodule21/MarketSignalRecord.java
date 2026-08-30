@@ -37,9 +37,25 @@ public class MarketSignalRecord {
     @Column(name = "spike_indicator")      private Boolean spikeIndicator;
     @Column(name = "aggregated_at")        private OffsetDateTime aggregatedAt;
 
+    /**
+     * Where this row's trend index came from. Only {@code "pytrends"} is trusted
+     * by readers — see EnrichedSequenceBuilder. Never write {@code "stub"}: the
+     * synthetic path was deleted in Task 11.
+     */
+    @Column(name = "source")             private String source;
+    @Column(name = "source_fetched_at")  private OffsetDateTime sourceFetchedAt;
+
     @PrePersist
     void onCreate() {
         if (signalRecordId == null) signalRecordId = UUID.randomUUID();
         if (aggregatedAt == null) aggregatedAt = OffsetDateTime.now();
+        // V22 made `source` NOT NULL DEFAULT 'unknown' — but that DB-level default
+        // only applies when a column is *omitted* from an INSERT. Hibernate's
+        // generated INSERT lists every mapped column explicitly (this entity has
+        // no @DynamicInsert), so a null Java field sends an explicit NULL and
+        // violates the constraint rather than falling through to the default.
+        // Until every writer (Task 10) sets this explicitly, this keeps every
+        // insert path — including ones this task never touched — from breaking.
+        if (source == null) source = "unknown";
     }
 }

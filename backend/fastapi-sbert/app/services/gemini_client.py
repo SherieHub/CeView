@@ -19,6 +19,7 @@ import logging
 import os
 
 from app import errors
+from app.unavailable import DependencyUnavailable
 
 _log = logging.getLogger("gemini_client")
 
@@ -93,7 +94,7 @@ _content_log = logging.getLogger("module3.content.gemini")
 _compliance_log = logging.getLogger("module3.compliance.gemini")
 
 
-def content_for_market(
+def generate_content(
         market: str,
         business_name: str,
         description: str,
@@ -104,8 +105,17 @@ def content_for_market(
         research_context: dict | None = None) -> dict:
     """Generate market-localised captions + supplementary outputs (FR3.5, FR3.6).
 
+    NOTE: not currently wired to the HTTP route — POST /internal/content/generate
+    goes through the LangGraph agent in agents/creative_director_agent/node.py
+    instead. This function has no live caller today; it is kept because the two
+    implementations share the DependencyUnavailable contract this task (17)
+    established, and a future consolidation of the two generation paths would
+    build on this one rather than the agent's. Do not delete it as unused
+    without checking node.py's path first.
+
     Returns: { market: {country, flag, city}, framework, captions: {...}, source }
-    `source` is "gemini" when the LLM response is used, "fallback" otherwise.
+    Raises DependencyUnavailable instead of returning synthetic data when the
+    model is disabled, errors, or returns nothing usable.
     """
     base = {
         "market": {
@@ -114,16 +124,17 @@ def content_for_market(
             "usa":   {"country": "USA",   "flag": "🇺🇸", "city": "Los Angeles"},
         }.get(market, {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"}),
         "framework": "SOR — Stimulus-Organism-Response",
-        "captions": _mock_captions(),
+        "captions": _caption_schema_example(),  # prompt shape only; never returned
     }
 
     if not _enabled():
-        _content_log.info(
-            "Gemini disabled; returning fallback content for market=%s",
-            market,
-            extra={"code": errors.MOD3_CONTENT_GEMINI_DISABLED},
+        raise DependencyUnavailable(
+            code=errors.MOD3_CONTENT_GEMINI_DISABLED,
+            message="Content generation is unavailable.",
+            dependency="groq",
+            cause="GROQ_API_KEY is not set, so the content client is disabled",
+            stage="fastapi-sbert/gemini_client.generate_content",
         )
-        return {**base, "source": "fallback"}
 
     # FR3.3 — cultural research context block
     research_block = ""
@@ -234,20 +245,22 @@ The optionNames field is a list parallel to options:
     try:
         enriched = _generate_json(prompt)
     except Exception as exc:
-        _content_log.exception(
-            "Gemini call failed for market=%s: %s",
-            market, exc,
-            extra={"code": errors.MOD3_CONTENT_GEMINI_EXCEPTION},
-        )
-        return {**base, "source": "fallback"}
+        raise DependencyUnavailable(
+            code=errors.MOD3_CONTENT_GEMINI_EXCEPTION,
+            message="Content generation failed.",
+            dependency="groq",
+            cause=str(exc),
+            stage="fastapi-sbert/gemini_client.generate_content",
+        ) from exc
 
     if not enriched or not enriched.get("captions"):
-        _content_log.warning(
-            "Gemini returned empty payload for market=%s",
-            market,
-            extra={"code": errors.MOD3_CONTENT_GEMINI_EMPTY},
+        raise DependencyUnavailable(
+            code=errors.MOD3_CONTENT_GEMINI_EMPTY,
+            message="Content generation returned no captions.",
+            dependency="groq",
+            cause=f"model returned {'an empty body' if not enriched else 'no captions key'}",
+            stage="fastapi-sbert/gemini_client.generate_content",
         )
-        return {**base, "source": "fallback"}
 
     _content_log.info("Groq content ok market=%s", market)
     return {
@@ -265,373 +278,23 @@ _DEMOGRAPHIC_OPTION_NAMES = [
 ]
 
 
-def _mock_captions() -> dict:
-    _instagram_metadata = [
-        # Archetype 1 — Witty, Trend-Conscious & High-Energy
-        {
-            "core_business_context": (
-                "Korean-market healing resort in Cebu, Philippines; POV hook + 호캉스 "
-                "(hocance) positioning targets the K-wellness travel trend. Link-in-bio CTA."
-            ),
-            "market_cultural_localization": (
-                "Korean market: 호캉스 naturally embedded, Korean hashtags throughout "
-                "(#호캉스세부, #세부여행, #힐링여행, etc.). Bilingual hashtag strategy "
-                "for Korean Instagram discovery."
-            ),
-            "psychological_elements": (
-                "FOMO (go go go, urgency), excitement/hype, social proof via trend alignment "
-                "('glow-up trip'). Playful deal-closing framing ('You said deal. 🤝')."
-            ),
-            "creative_tone_atmosphere": (
-                "Gen Z slang register, very high emoji density, rhetorical casual voice. "
-                "Short punchy sentences. Atmosphere: energetic, playful, viral-adjacent."
-            ),
-            "algorithmic_platform_architecture": (
-                "Instagram: ≤2,200 chars; hook in first 125 chars (POV:); no URL (link-in-bio); "
-                "10 native-language hashtags at bottom, one per line."
-            ),
-        },
-        # Archetype 2 — Formal, Educational & Value-Driven
-        {
-            "core_business_context": (
-                "Cebu wellness resort with private coastal access, curated healing packages, "
-                "and Filipino hospitality; targets discerning travellers wanting cultural "
-                "depth plus restorative comfort."
-            ),
-            "market_cultural_localization": (
-                "Bilingual hashtag set (#세부여행, #필리핀여행, #힐링) mixed with English "
-                "premium travel tags. Professional Korean-international travel lexicon — "
-                "'discerning travellers', 'cultural depth'."
-            ),
-            "psychological_elements": (
-                "Exclusivity ('private pool villas'), luxury positioning, security through "
-                "specificity (detailed service list), value certainty. Rational trigger."
-            ),
-            "creative_tone_atmosphere": (
-                "Authoritative, editorial. Low emoji (📍 only). Full sentences, formal "
-                "phrasing. Structure: intro → detail × 2 → link CTA. "
-                "Atmosphere: premium, refined."
-            ),
-            "algorithmic_platform_architecture": (
-                "Instagram: ≤2,200 chars; 125-char hook closes with destination tag 📍; "
-                "no URL (link-in-bio); 10 localised hashtags, mixed KR/EN, one per line."
-            ),
-        },
-        # Archetype 3 — Storytelling, Immersive & Emotional
-        {
-            "core_business_context": (
-                "Cebu healing resort as antidote to burnout; positions the destination as "
-                "a sensory-rich pause from urban pressure. Emphasises nature connection "
-                "over digital connectivity."
-            ),
-            "market_cultural_localization": (
-                "Korean healing-travel archetype: 힐링여행 hashtag leads, 세부여행 + "
-                "세부리조트 for geo-discovery. Emotional narrative aligned with "
-                "'balance recovery' Korean wellness trend."
-            ),
-            "psychological_elements": (
-                "Escapism ('pause button'), tropical healing, emotional relatability "
-                "('you deserve this rest'), atmospheric contrast (wifi-weak vs nature-strong). "
-                "Arc: burnout tension → tropical threshold → release."
-            ),
-            "creative_tone_atmosphere": (
-                "Cinematic, contemplative, sensory. Moderate emoji (☁️, 🛌, ✨, 💙). "
-                "Long descriptive sentence followed by short CTA. "
-                "Atmosphere: warm, restorative, immersive."
-            ),
-            "algorithmic_platform_architecture": (
-                "Instagram: ≤2,200 chars; emotional hook opens with question ('Burned out? ☁️'); "
-                "no URL (link-in-bio); 10 Korean-led healing hashtags at bottom, one per line."
-            ),
-        },
-    ]
+def _caption_schema_example() -> dict:
+    """The JSON shape the caption prompt asks the model to fill.
 
-    _tiktok_metadata = [
-        # Archetype 1 — Witty, Trend-Conscious & High-Energy
-        {
-            "core_business_context": (
-                "Cebu paradise resort experience distilled into a TikTok-native POV hook; "
-                "frames healing travel as waking up in paradise with zero obligations."
-            ),
-            "market_cultural_localization": (
-                "Korean market: 호캉스 hashtag anchors Korean discovery. English POV caption "
-                "is universally TikTok-native; appeal is cross-market with Korean search tag."
-            ),
-            "psychological_elements": (
-                "FOMO (implied exclusivity), excitement (emoji density, exclamation), "
-                "escapism (no alarms, ocean sounds). Immediate-impact hook within 6 words."
-            ),
-            "creative_tone_atmosphere": (
-                "Punchy, fast, viral. High emoji density. Ultra-short sentences. "
-                "Atmosphere: high-energy, present-tense, movement-oriented. "
-                "All within TikTok's ideal 150–300 chars."
-            ),
-            "algorithmic_platform_architecture": (
-                "TikTok: 150 chars; link-in-bio CTA; 5 trending hashtags; entire caption "
-                "functions as the on-screen hook for the first-frame audience grab."
-            ),
-        },
-        # Archetype 2 — Formal, Educational & Value-Driven
-        {
-            "core_business_context": (
-                "Cebu's 168-island geography as a factual discovery hook — reframes the "
-                "destination's scale, then transitions to the private resort + healing "
-                "package offer."
-            ),
-            "market_cultural_localization": (
-                "English with global wellness travel tags; educational 'Did you know' format "
-                "resonates with curiosity-driven mature planners who discover via TikTok's "
-                "educational content subculture."
-            ),
-            "psychological_elements": (
-                "Curiosity trigger ('Did you know'), value certainty (168 islands → 1 private "
-                "resort — scarcity framing), credibility through specificity. "
-                "Rational + mild FOMO."
-            ),
-            "creative_tone_atmosphere": (
-                "Informative but concise. Minimal emoji (🏝️ only). Measured pacing: "
-                "fact → offer → CTA. Atmosphere: authoritative but approachable."
-            ),
-            "algorithmic_platform_architecture": (
-                "TikTok: 149 chars (within 150-char ideal window); 3 hashtags "
-                "(destination, wellness, platform); link-in-bio CTA."
-            ),
-        },
-        # Archetype 3 — Storytelling, Immersive & Emotional
-        {
-            "core_business_context": (
-                "Cebu's sensory environment — salt air, ocean sounds at dawn — positioned "
-                "as proof of genuine tropical healing. Understated emotional atmosphere "
-                "over feature listing."
-            ),
-            "market_cultural_localization": (
-                "Universal English emotional narrative; tropical healing vocabulary "
-                "(#TropicalHealing, #HealingTrip) crosses Korean, Japanese, and US market "
-                "expectations. Broad cross-market appeal."
-            ),
-            "psychological_elements": (
-                "Escapism (sensory detail builds the daydream), emotional atmosphere "
-                "('calling your name at dawn'), tropical healing. No hard sell — "
-                "pure feeling trigger."
-            ),
-            "creative_tone_atmosphere": (
-                "Lyrical, sparse, cinematic. Minimal emoji (🌅 only). Fragmented poetic "
-                "sentences. Atmosphere: quiet, dawn-lit, deeply restorative."
-            ),
-            "algorithmic_platform_architecture": (
-                "TikTok: 148 chars (within 150-char optimal); 5 hashtags covering healing + "
-                "destination + platform discovery."
-            ),
-        },
-    ]
-
-    _facebook_metadata = [
-        # Archetype 1 — Witty, Trend-Conscious & High-Energy
-        {
-            "core_business_context": (
-                "Cebu-based coastal healing resort offering a signature 3D2N getaway "
-                "package with private ocean access, emphasising urgency and limited availability."
-            ),
-            "market_cultural_localization": (
-                "Casual, lowercase register aligned with millennial/Gen Z Korean and Southeast "
-                "Asian digital-native tone; urgency CTA with 'before May fills up' seasonal hook."
-            ),
-            "psychological_elements": (
-                "FOMO (limited slots), urgency (month deadline), social proof implied through "
-                "high demand framing. Excitement and spontaneity triggers."
-            ),
-            "creative_tone_atmosphere": (
-                "Lowercase casual, rapid-fire sentences, rhetorical exclamations. High emoji "
-                "density (🤯). Conversational and punchy. Atmosphere: electric, hyper-present."
-            ),
-            "algorithmic_platform_architecture": (
-                "Facebook: 3 short paragraphs, embedded URL in CTA, 2 hashtags. "
-                "Well within 63,206-char limit; hook visible before 'See More' cutoff."
-            ),
-        },
-        # Archetype 2 — Formal, Educational & Value-Driven
-        {
-            "core_business_context": (
-                "Wellness resort in Cebu, Philippines; highlights the 3D2N Healing Coast "
-                "Package featuring private pool villa, beachfront breakfast, and expert-guided "
-                "island tour with direct booking link."
-            ),
-            "market_cultural_localization": (
-                "Formal, authoritative English targeting mature international travellers; "
-                "references Southeast Asia rankings to establish destination credibility "
-                "for quality-focused audiences."
-            ),
-            "psychological_elements": (
-                "Exclusivity (private villa), value certainty (concrete deliverables listed), "
-                "social proof (SE Asia ranking), security through specificity. "
-                "Zero FOMO — rational decision trigger."
-            ),
-            "creative_tone_atmosphere": (
-                "Professional, respectful, editorial. Low emoji (📍 for location only). "
-                "Structured paragraph format. Atmosphere: trustworthy, premium, curated."
-            ),
-            "algorithmic_platform_architecture": (
-                "Facebook: 2 content paragraphs + CTA with embedded URL, 1 hashtag. "
-                "Optimised for 'See More' cutoff at ~250 chars with hook sentence."
-            ),
-        },
-        # Archetype 3 — Storytelling, Immersive & Emotional
-        {
-            "core_business_context": (
-                "Cebu Healing Coast Package (3D2N) positioned as an emotional reset "
-                "destination — appeals to reconnection, healing retreat, "
-                "and rest-deferral resolution."
-            ),
-            "market_cultural_localization": (
-                "Universal English with emotional resonance; broad international appeal. "
-                "Designed for aspirational travellers who follow healing-travel editorial accounts."
-            ),
-            "psychological_elements": (
-                "Escapism (imagine waking up), emotional appeal (healing retreat, reconnection "
-                "journey), relatability (the rest you've been postponing), FOMO (3D2N available "
-                "now). Arc: longing → invitation → availability signal."
-            ),
-            "creative_tone_atmosphere": (
-                "Cinematic, inviting, warm. Moderate emoji (🌅, 📍, 🌊). Rhetorical opening "
-                "('Imagine...'). Slow build then direct CTA. Atmosphere: warm, golden-hour aspirational."
-            ),
-            "algorithmic_platform_architecture": (
-                "Facebook: 3 emotional paragraphs + direct booking URL, 2 hashtags. "
-                "Optimised for shareability among travel communities."
-            ),
-        },
-    ]
-
+    Types, not sample copy. This used to hold finished captions and doubled as the
+    fallback payload — which meant a disabled model returned a prompt example to
+    the operator as if it were generated content. The fallback is gone (Task 17);
+    this survives only to show the model the shape it must return.
+    """
+    per_platform = {
+        "options": ["<string>", "<string>", "<string>"],
+        "optionNames": _DEMOGRAPHIC_OPTION_NAMES,
+        "guide": ["<string>", "<string>", "<string>", "<string>", "<string>"],
+    }
     return {
-        "instagram": {
-            "options": [
-                # Archetype 1 — Witty, Trend-Conscious & High-Energy (Gen Z)
-                (
-                    "POV: you booked the 호캉스 your body has been begging for 🌊✈️\n\n"
-                    "Cebu said less alarms, more ocean. You said deal. 🤝 "
-                    "The glow-up trip is a link-in-bio away — go go go!\n\n"
-                    "#호캉스세부\n#CebuPhilippines\n#TravelTok\n#HealingTrip\n"
-                    "#세부여행\n#필리핀여행\n#힐링여행\n#TravelAesthetic\n"
-                    "#FOMO\n#WellnessTravel"
-                ),
-                # Archetype 2 — Formal, Educational & Value-Driven (Mature Planners)
-                (
-                    "Cebu, Philippines: a certified wellness destination offering "
-                    "private coastal access, curated healing packages, and authentic "
-                    "Filipino hospitality. 📍\n\n"
-                    "Our resort combines private pool villas, beachfront dining, and "
-                    "expert-guided island experiences — tailored for discerning "
-                    "travellers seeking both cultural depth and restorative comfort.\n\n"
-                    "Availability and itinerary details: link in bio.\n\n"
-                    "#CebuPhilippines\n#WellnessTravel\n#LuxuryCebu\n"
-                    "#HealingVacation\n#세부여행\n#필리핀여행\n#힐링\n"
-                    "#TravelAesthetic\n#ResortLife\n#IslandHealing"
-                ),
-                # Archetype 3 — Storytelling, Immersive & Emotional (Aspirational)
-                (
-                    "Burned out? ☁️ Find your pause button in Cebu.\n\n"
-                    "Warm breeze, healing food, and time that moves slower. 🛌✨ "
-                    "You deserve this rest. Step away from the rush and into a place "
-                    "where the wifi is weak but the connection to nature is strong.\n\n"
-                    "Link in bio to book your escape. 💙\n\n"
-                    "#힐링여행\n#세부여행\n#CebuHealing\n#Philippines\n"
-                    "#TravelGoals\n#WellnessTravel\n#필리핀여행\n"
-                    "#세부리조트\n#HealingTrip\n#TropicalHealing"
-                ),
-            ],
-            "optionNames": _DEMOGRAPHIC_OPTION_NAMES,
-            "optionMetadata": _instagram_metadata,
-            "guide": [
-                "Aesthetic Mood Shot — open balcony doors, zero clutter, morning sunlight on tropical fruits beside a plunge pool.",
-                "Apply warm, low-contrast golden filters (lightroom preset LUT recommended: 'Mango Sunrise').",
-                "Recommended ratio: 4:5 portrait — maximizes feed real-estate on Korean Instagram feeds.",
-                "Soft vignette, no text overlay. Let the image breathe completely.",
-                "Cultural nuance: avoid showing other guests — solo 'me-space' framing resonates strongly with Korean healing-travel archetype.",
-            ],
-        },
-        "tiktok": {
-            "options": [
-                # Archetype 1 — Witty, Trend-Conscious & High-Energy (Gen Z)
-                (
-                    "POV: You just woke up in paradise. 🌊 No alarms, just ocean sounds. "
-                    "The healing era is here. Link in bio. ✈️🇵🇭\n\n"
-                    "#TravelTok #Cebu #HealingVibes #Philippines #호캉스"
-                ),
-                # Archetype 2 — Formal, Educational & Value-Driven (Mature Planners)
-                (
-                    "Did you know Cebu has 168 islands? 🏝️ One private resort. "
-                    "3 days. Full healing package. Details → link in bio.\n\n"
-                    "#CebuPhilippines #WellnessTravel #TravelTok"
-                ),
-                # Archetype 3 — Storytelling, Immersive & Emotional (Aspirational)
-                (
-                    "Salt air. No alarms. 🌅 The ocean calling your name at dawn. "
-                    "This is what tropical healing actually feels like. Cebu. Link in bio.\n\n"
-                    "#HealingTrip #TropicalHealing #Cebu #TravelTok #Philippines"
-                ),
-            ],
-            "optionNames": _DEMOGRAPHIC_OPTION_NAMES,
-            "optionMetadata": _tiktok_metadata,
-            "guide": [
-                "Slow-motion first-person POV tracking shot. Start tight on a local delicacy.",
-                "Pan smoothly upward to reveal a crisp ocean panorama — the 'reveal' moment is the hook.",
-                "Keep ambient sound prominent; sync video rhythm to chill lo-fi acoustic track.",
-                "Duration target: 18–27 seconds — optimal for Korean TikTok algorithm retention window.",
-                "Add Korean subtitle overlay at bottom third. Font: rounded sans, white with soft shadow.",
-            ],
-        },
-        "facebook": {
-            "options": [
-                # Archetype 1 — Witty, Trend-Conscious & High-Energy (Gen Z)
-                (
-                    "no one told me Cebu was THIS good 🤯 three days, zero alarms, "
-                    "infinite ocean. the healing era starts NOW.\n\n"
-                    "grab your slot before May fills up → cebu-healing.ph\n\n"
-                    "#CebuTravel #HealingTrip"
-                ),
-                # Archetype 2 — Formal, Educational & Value-Driven (Mature Planners)
-                (
-                    "Cebu, Philippines consistently ranks among Southeast Asia's top "
-                    "wellness destinations — and for good reason.\n\n"
-                    "Our 3D2N Healing Coast Package delivers a private pool villa, "
-                    "beachfront breakfast, and an expert-guided island tour. "
-                    "Comprehensive itinerary details and availability at cebu-healing.ph/packages.\n\n"
-                    "#VisitCebu"
-                ),
-                # Archetype 3 — Storytelling, Immersive & Emotional (Aspirational)
-                (
-                    "🌅 Imagine waking up to this every morning.\n\n"
-                    "Cebu is calling — are you ready to answer? Perfect for a healing "
-                    "retreat, reconnection journey, or simply the rest you've been "
-                    "postponing. Our Cebu Healing Coast Package is designed for you.\n\n"
-                    "📍 Cebu, Philippines  🌊 3D2N available now\n"
-                    "Book your escape → cebu-healing.ph\n\n"
-                    "#CebuTravel #HealingDestination"
-                ),
-            ],
-            "optionNames": _DEMOGRAPHIC_OPTION_NAMES,
-            "optionMetadata": _facebook_metadata,
-            "guide": [
-                "Wide establishing shot of coastline at golden hour — captures the 'breath of relief' emotional entry point.",
-                "Include a human element (silhouette, hands holding coffee) to trigger empathy and projection.",
-                "Facebook favors horizontal 16:9 frame for organic reach; include destination tag overlay at upper-left.",
-                "Use warm, slightly desaturated tones — not oversaturated tropical clichés.",
-                "CTA text in caption: 'Plan your escape →' — drives link-click micro-conversion on Facebook.",
-            ],
-        },
-        "naver": {
-            "options": [
-                "세부에서 찾은 나만의 힐링 스팟 🌴\n\n바쁜 일상에서 벗어나, 필리핀 세부에서 진정한 휴식을 경험했어요. 따뜻한 바람, 맑은 바다, 그리고 느린 시간...\n\n#세부여행 #필리핀여행 #힐링여행 #세부맛집",
-                "직장인 필수 코스! 세부 프라이빗 리조트 3박 4일 힐링 후기 ✈️\n\n매일 야근에 지쳐있다가 드디어 떠난 세부 여행! 나만 알고 싶은 세부 힐링 숙소 추천 리스트를 공개합니다. 💙\n\n#세부여행 #세부프라이빗리조트",
-            ],
-            "guide": [
-                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
-                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
-                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
-                "Write in warm, conversational Korean with clear subheadings.",
-                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
-            ],
-        },
+        "instagram": dict(per_platform),
+        "tiktok": dict(per_platform),
+        "facebook": dict(per_platform),
     }
 
 

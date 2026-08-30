@@ -52,6 +52,28 @@ def test_last_error_is_cleared_once_a_model_initialises(monkeypatch):
     assert wrapper.last_error is None
 
 
+def test_max_tokens_is_configured(monkeypatch):
+    """Regression guard: without this, a long caption matrix response gets cut
+    off mid-JSON and langchain's JsonOutputParser silently drops the last
+    incomplete key rather than raising — which surfaced in production as a
+    confusing "missing platform 'tiktok'" error, not a token-limit error. This
+    test exists so removing the kwarg fails loudly here instead of live.
+    """
+    monkeypatch.setenv("GROQ_API_KEY", "sk-test")
+    captured = {}
+
+    def _capture(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr("langchain_groq.ChatGroq", _capture)
+
+    wrapper = AgentLLMModel()
+    wrapper.get_model()
+
+    assert captured.get("max_tokens") == 8192
+
+
 def test_long_exception_message_is_truncated(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "sk-test")
     monkeypatch.setenv("GROQ_MODEL", "some-model")
