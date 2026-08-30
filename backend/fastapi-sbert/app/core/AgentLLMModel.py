@@ -49,7 +49,7 @@ class AgentLLMModel:
         # which surfaces as MOD31_CAPTION_AGENT_FAILED rather than an
         # auth error. Set GROQ_MODEL in backend/.env to a model your key
         # can access.
-        groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 
         try:
             from langchain_groq import ChatGroq  # type: ignore[import]

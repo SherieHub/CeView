@@ -10,7 +10,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.net.ServerSocket;
 import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -168,7 +173,7 @@ class AiDependencyPassthroughTest {
     /** The timeout cause is authored, not raw: "30000000000 NANOSECONDS" helps nobody. */
     @Test
     void anAuthoredTimeoutCauseBecomesTheContract() {
-        AiDependencyException ex = AiDependencyException.unreachable(
+        AiDependencyException ex = AiDependencyException.unreachableAfterTimeout(
                 "content/generate",
                 "no response within 30s (the service may still be loading its model)");
 
@@ -242,6 +247,72 @@ class AiDependencyPassthroughTest {
                         org.hamcrest.Matchers.containsString("Connection refused")))
                 .andExpect(jsonPath("$.stage").value("spring/content/generate"))
                 .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    // ─── end to end through the real gateway, over real sockets ──────────────
+
+    /**
+     * The strongest available evidence for the timeout path: a server that accepts
+     * the connection and then never writes a byte, which is exactly what a
+     * cold-starting fastapi-sbert looks like. Reactor raises the bare
+     * IllegalStateException here for real, not as a hand-built stand-in.
+     */
+    @Test
+    void aServerThatNeverAnswersProducesTheContract() throws Exception {
+        try (ServerSocket silent = new ServerSocket(0)) {
+            Thread accepting = new Thread(() -> {
+                try { silent.accept(); Thread.sleep(30_000); } catch (Exception ignored) { }
+            });
+            accepting.setDaemon(true);
+            accepting.start();
+
+            AIInferenceGatewayService gateway = gatewayPointedAt(silent.getLocalPort());
+
+            assertThatThrownBy(() -> gateway.classifyCategories(Map.of("description", "dive shop")))
+                    .isInstanceOf(AiDependencyException.class)
+                    .satisfies(thrown -> {
+                        AiDependencyException ex = (AiDependencyException) thrown;
+                        assertThat(ex.getStatus()).isEqualTo(503);
+                        assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
+                        assertThat(ex.getDependency()).isEqualTo("fastapi");
+                        assertThat(ex.getCause2())
+                                .isEqualTo("no response within 1s "
+                                        + "(the service may still be loading its model)");
+                        assertThat(ex.getStage()).isEqualTo("spring/classification/analyze");
+                    });
+        }
+    }
+
+    /**
+     * rank-markets used to build its own WebClient chain and so bypassed the
+     * contract entirely, landing in the legacy {@code ApiExceptionHandler} with
+     * `cause` discarded. It now goes through {@code post(...)} like every other
+     * JSON call.
+     */
+    @Test
+    void rankMarketsForCategoryAlsoProducesTheContract() throws Exception {
+        int closedPort;
+        try (ServerSocket probe = new ServerSocket(0)) {
+            closedPort = probe.getLocalPort();
+        }
+
+        AIInferenceGatewayService gateway = gatewayPointedAt(closedPort);
+
+        assertThatThrownBy(() -> gateway.rankMarketsForCategory("diving"))
+                .isInstanceOf(AiDependencyException.class)
+                .satisfies(thrown -> {
+                    AiDependencyException ex = (AiDependencyException) thrown;
+                    assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
+                    assertThat(ex.getDependency()).isEqualTo("fastapi");
+                    assertThat(ex.getStage()).isEqualTo("spring/api/trends/rank-markets");
+                    assertThat(ex.getCause2()).isNotBlank();
+                });
+    }
+
+    /** Both clients aimed at one port, with 1 s bounds so the tests stay fast. */
+    private static AIInferenceGatewayService gatewayPointedAt(int port) {
+        WebClient client = WebClient.create("http://localhost:" + port);
+        return new AIInferenceGatewayService(client, client, 1, 1);
     }
 
     @RestController

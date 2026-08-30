@@ -29,10 +29,14 @@ public class ApiExceptionHandler {
 
     /**
      * Non-2xx from a WebClient call that did not go through
-     * {@link com.ceview.ai.AIInferenceGatewayService}. AI calls no longer reach here:
-     * that class's {@code .onStatus(...)} intercepts every non-2xx and throws an
-     * {@code AiDependencyException} carrying the upstream `cause`, which
-     * {@code AiDependencyExceptionHandler} renders instead.
+     * {@link com.ceview.ai.AIInferenceGatewayService}'s {@code post(...)} helper.
+     * Calls that do go through it never reach here: its {@code .onStatus(...)}
+     * intercepts every non-2xx and throws an {@code AiDependencyException} carrying
+     * the upstream `cause`, which {@code AiDependencyExceptionHandler} renders instead.
+     *
+     * <p>One AI call still lands here, and its `cause` is discarded when it does:
+     * {@code AIInferenceGatewayService.generateReportPdf}, which builds its own
+     * WebClient chain because it returns {@code byte[]} rather than a JSON map.
      */
     @ExceptionHandler(WebClientResponseException.class)
     public ResponseEntity<?> downstream(WebClientResponseException e) {
@@ -41,11 +45,23 @@ public class ApiExceptionHandler {
     }
 
     /**
-     * Connection-refused / timeout from a WebClient other than the AI gateway's —
-     * e.g. {@code ExternalMarketDataClient}'s World Bank and forex clients. An
-     * unreachable *FastAPI* no longer lands here: the gateway translates it into an
-     * {@code AiDependencyException} naming {@code dependency: "fastapi"}, which this
-     * shared handler could not do without mislabelling those other upstreams.
+     * Connection-refused from a WebClient other than the AI gateway's — e.g.
+     * {@code ExternalMarketDataClient}'s World Bank and forex clients. A FastAPI
+     * call made through {@code AIInferenceGatewayService.post(...)} no longer lands
+     * here: the gateway translates it into an {@code AiDependencyException} naming
+     * {@code dependency: "fastapi"}, which this shared handler could not do without
+     * mislabelling those other upstreams. {@code generateReportPdf} bypasses that
+     * helper and so still arrives here on connection-refused, without `dependency`
+     * or `cause`.
+     *
+     * <p><b>Not a read timeout, despite this class's older name for the concern.</b>
+     * A genuine Reactor blocking-read timeout on {@code generateReportPdf} throws
+     * {@code IllegalStateException}, not {@code WebClientRequestException} — this
+     * handler never sees it. That falls through to Spring's default {@code /error}
+     * as a blank 500 with no code, dependency, or cause. {@code post(...)} closed
+     * this exact gap for every call routed through it; {@code generateReportPdf}
+     * is the one caller that still has it open, because it returns {@code byte[]}
+     * rather than a JSON map and was left out of that helper on purpose.
      */
     @ExceptionHandler(WebClientRequestException.class)
     public ResponseEntity<?> unreachable(WebClientRequestException e) {

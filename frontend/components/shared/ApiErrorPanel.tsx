@@ -35,10 +35,13 @@ export function ApiErrorPanel({ error, onRetry, label }: Props) {
   const Icon = missing ? Settings : notReady ? UserPlus : AlertTriangle;
   const tone = missing || notReady ? 'text-[var(--color-navy-primary)]' : 'text-[var(--color-critical-text)]';
 
+  // isMissingDependency() requires a non-empty `dependency` string (apiError.ts),
+  // so whenever missing is true, api is a non-null ApiError with a truthy
+  // api.dependency — there is no "missing dependency, but no name" case to
+  // fall back from. (An earlier version of this line had a 'Setup required'
+  // fallback here; it was dead code that could never render.)
   const heading = missing
-    ? api?.dependency
-      ? `${api.dependency} is unavailable`
-      : 'Setup required'
+    ? `${api!.dependency} is unavailable`
     : notReady
       ? 'Complete onboarding first'
       : 'Something went wrong';
@@ -75,12 +78,19 @@ export function ApiErrorPanel({ error, onRetry, label }: Props) {
           </div>
           <div>
             <dt className="sr-only">Message</dt>
-            <dd className="whitespace-pre-wrap">{api.message}</dd>
+            <dd className="whitespace-pre-wrap break-words">{api.message}</dd>
           </div>
+          {/* Cause and Stage use a visible <dt>, unlike Request/Status/Message above,
+              which use sr-only labels. Those three are self-explanatory from content
+              alone (a method+path, an HTTP status, a message). Cause is an arbitrary
+              backend-authored string and Stage is a multi-segment chain like
+              "fastapi-sbert/caption_agent -> spring/content/generate" — without a
+              visible label neither reads as anything in particular, even to a sighted
+              developer. Don't "fix" this to match the other three rows. */}
           {api.cause && (
             <div>
               <dt className="mt-2 not-italic text-[var(--color-text-muted)]">Cause</dt>
-              <dd data-testid="api-error-cause" className="whitespace-pre-wrap">
+              <dd data-testid="api-error-cause" className="whitespace-pre-wrap break-words">
                 {api.cause}
               </dd>
             </div>

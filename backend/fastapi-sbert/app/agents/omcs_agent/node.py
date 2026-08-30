@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # The omcs_agent needs a VISION-capable model because nodes pass the pubmat
 # image as an image_url content block. The shared AgentLLMModel default
-# (llama-3.3-70b-versatile) is text-only and rejects multimodal input, so this
+# (openai/gpt-oss-120b) is text-only and rejects multimodal input, so this
 # agent uses its own Groq vision model. Overridable via OMCS_VISION_MODEL.
 # Kept isolated so other agents (caption generation, PES report) are unaffected.
 _VISION_MODEL = os.environ.get("OMCS_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")

@@ -86,6 +86,14 @@ public class CategoryRankNotificationService {
         // "no trends" — it's an upstream outage — so surface it to the caller
         // instead of returning a silent, indistinguishable-from-empty 200.
         if (failureCount == categories.size() && lastFailure != null) {
+            // If the gateway already produced the unavailability contract, rethrow it
+            // as-is — wrapping it in IllegalStateException would demote it to
+            // getCause() and ApiExceptionHandler has no handler for that type, so the
+            // dependency/cause/stage the gateway just preserved would be lost and this
+            // would fall to Spring's default /error as a blank 500.
+            if (lastFailure instanceof com.ceview.ai.AiDependencyException aiEx) {
+                throw aiEx;
+            }
             throw new IllegalStateException(
                     "Keyword-trend lookup failed for all " + failureCount + " categor"
                             + (failureCount == 1 ? "y" : "ies"), lastFailure);

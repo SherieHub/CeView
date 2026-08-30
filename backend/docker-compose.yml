@@ -22,7 +22,7 @@ services:
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       # Groq decommissions models periodically; override without a rebuild.
-      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       HF_TOKEN: ${HF_TOKEN:-}
       KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
@@ -53,7 +53,7 @@ services:
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       # Groq decommissions models periodically; override without a rebuild.
-      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
     ports:
       - "8001:8001"
 
@@ -69,7 +69,7 @@ services:
       FASTAPI_SBERT_BASE_URL: http://fastapi:8000
       FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://192.168.1.194:3000,http://192.168.1.194:5173
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://192.168.1.194:3000,http://192.168.1.194:5173
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
     depends_on:
       postgres:

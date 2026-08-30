@@ -15,7 +15,7 @@ a flat repeated value.
 
 Environment variables:
     GROQ_API_KEY  — Groq API key (required)
-    GROQ_MODEL    — model name (default: "llama-3.3-70b-versatile")
+    GROQ_MODEL    — model name (default: "openai/gpt-oss-120b")
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ─── API initialisation ───────────────────────────────────────────────────────
 
 _API_KEY    = os.getenv("GROQ_API_KEY", "")
-_MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+_MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 _groq_client = None   # set below on successful import
 
 if _API_KEY:

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Map;
 
@@ -22,18 +23,20 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final ProfileCompletionFilter profileCompletionFilter;
     private final ObjectMapper objectMapper;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter, ProfileCompletionFilter profileCompletionFilter,
-                           ObjectMapper objectMapper) {
+                           ObjectMapper objectMapper, CorsConfigurationSource corsConfigurationSource) {
         this.jwtFilter = jwtFilter;
         this.profileCompletionFilter = profileCompletionFilter;
         this.objectMapper = objectMapper;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(c -> c.disable())
-            .cors(c -> {})
+            .cors(c -> c.configurationSource(corsConfigurationSource))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/actuator/**", "/error").permitAll()
