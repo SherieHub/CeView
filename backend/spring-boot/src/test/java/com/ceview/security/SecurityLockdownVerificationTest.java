@@ -32,11 +32,11 @@ class SecurityLockdownVerificationTest {
 
     @Test
     void loginWithBadCredsIsPublicNot401FromSecurity() throws Exception {
-        // Hits the /api/v1/auth/** permitAll route; controller itself returns 401
+        // Hits the /api/auth/** permitAll route; controller itself returns 401
         // for bad creds, but the request must reach the controller (not be blocked
         // by the security filter chain) and must NOT get our JSON entry-point body,
         // since AuthController already returns Map.of("error","invalid credentials").
-        mvc.perform(post("/api/v1/auth/login")
+        mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"nobody@example.com\",\"password\":\"wrong\"}"))
             .andExpect(status().isUnauthorized())
@@ -45,7 +45,7 @@ class SecurityLockdownVerificationTest {
 
     @Test
     void protectedModuleEndpointWithoutTokenReturns401WithJsonBody() throws Exception {
-        mvc.perform(get("/api/v1/business-profile"))
+        mvc.perform(get("/api/business-profile"))
             .andExpect(status().isUnauthorized())
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.error").value("authentication required"));
@@ -54,7 +54,7 @@ class SecurityLockdownVerificationTest {
     @Test
     void protectedModuleEndpointWithValidTokenIsNotRejected() throws Exception {
         String token = jwtService.issue(UUID.randomUUID(), "someone@example.com");
-        mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk());
     }
 
@@ -63,7 +63,7 @@ class SecurityLockdownVerificationTest {
         // JwtAuthenticationFilter swallows parse failures and leaves the context
         // anonymous; this verifies that path still falls through to our JSON
         // entry point rather than leaking a stack trace or a non-JSON response.
-        mvc.perform(get("/api/v1/business-profile")
+        mvc.perform(get("/api/business-profile")
                 .header("Authorization", "Bearer not-a-real-jwt"))
             .andExpect(status().isUnauthorized())
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))

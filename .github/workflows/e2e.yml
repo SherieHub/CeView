@@ -169,6 +169,12 @@ jobs:
 
       - name: Run Playwright tests for this screen
         working-directory: e2e
+        env:
+          # playwright.config.ts now defaults baseURL to :3001 (Vite's real dev
+          # port — see the config's own comment). This job builds and serves
+          # the frontend on :3000 above, so it has to override that default
+          # explicitly rather than relying on it.
+          E2E_BASE_URL: http://localhost:3000
         run: npx playwright test tests/${{ matrix.screen }}.spec.ts
 
       - name: Upload Playwright report
@@ -176,6 +182,89 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.screen }}
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Tear down backend stack
+        if: always()
+        working-directory: backend
+        run: docker compose down -v
+
+  # The one spec that exercises a real, full authenticated journey against the
+  # live stack (see e2e/tests/journey.spec.ts) rather than one isolated
+  # screen. Runs the backend WITHOUT the AI microservices — see the
+  # docker compose note below — so Content Studio's caption generation and the
+  # dashboard's keyword-trend merge are exercised in their "unavailable"
+  # shape here; the spec is written to tolerate that.
+  e2e-journey:
+    runs-on: ubuntu-latest
+    name: e2e-journey (full authenticated flow)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start backend stack
+        working-directory: backend
+        run: |
+          # --no-deps is REQUIRED: spring-boot declares
+          #   depends_on: fastapi -> condition: service_healthy
+          # so a plain `up spring-boot` also starts fastapi-sbert and blocks on
+          # its ~1.1GB model download. The journey spec already tolerates the AI
+          # services being absent.
+          docker compose up -d postgres
+          docker compose up -d --no-deps --build spring-boot
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null -X POST http://localhost:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'; then
+              echo "backend ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "backend did not become ready"; docker compose logs spring-boot; exit 1
+
+      - name: Dump container logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ps
+          echo "::endgroup::"
+          docker compose logs spring-boot postgres || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Start frontend dev server
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: |
+          npm ci
+          npm run dev -- --port 3001 --host 0.0.0.0 &
+          timeout 60 bash -c 'until curl -sf http://localhost:3001; do sleep 2; done'
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run journey spec
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://localhost:3001
+          E2E_API_BASE_URL: http://localhost:8080
+        run: npx playwright test tests/journey.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-journey
           path: e2e/playwright-report/
           retention-days: 7
 

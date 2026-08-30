@@ -52,7 +52,7 @@ Flat, reverse-chronological list of every post with its date, platform, caption,
 
 | Call | When | Endpoint |
 |---|---|---|
-| list posts | screen mount | see [`backend/PublishingController.md`](../backend/PublishingController.md) — `GET /api/v1/posts?from=&to=`, **specified, not yet implemented** |
+| list posts | screen mount | see [`backend/PublishingController.md`](../backend/PublishingController.md) — `GET /api/posts?from=&to=`, **specified, not yet implemented** |
 
 ## Backend requirement
 

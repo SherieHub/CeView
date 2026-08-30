@@ -35,7 +35,7 @@ O -> SOB: Click "Run Audit"
 SOB -> UI: onRunAudit()
 UI -> UI: auditRunning = true\nauditProgress animates 0→100 (6 steps)
 
-UI -> CC: POST /api/v1/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
+UI -> CC: POST /api/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
 
 note right of CC
   Validates: caption + imageUrl required.

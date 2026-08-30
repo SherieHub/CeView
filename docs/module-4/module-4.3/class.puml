@@ -116,7 +116,7 @@ package "4.3 AI-Generated Prescriptive Report" {
 }
 
 AIActionPlanReport *-- "1" PriorityFixCard
-AIActionPlanReport ..> PrescriptiveReportController : POST /api/v1/analytics/report
+AIActionPlanReport ..> PrescriptiveReportController : POST /api/analytics/report
 
 PrescriptiveReportController --> MetricsCalculationService : computeFunnelTransitions
 PrescriptiveReportController --> AIInferenceGatewayService : primary path

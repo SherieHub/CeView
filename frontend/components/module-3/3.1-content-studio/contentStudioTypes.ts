@@ -1,6 +1,4 @@
-import type { PlatformId } from '../../../types';
-import type { OmcsAuditResult } from '../../../services/fixtures/omcs';
-import type { PublishedPost } from '../../../services/fixtures/posts';
+import type { PlatformId, OmcsAuditResult, PublishedPost } from '../../../types';
 
 export interface PublishDraftState {
   caption: string;
@@ -12,11 +10,13 @@ export interface PublishDraftState {
   agreementChecked: boolean;
 }
 
-export type AuditStatus = 'idle' | 'running' | 'complete';
+export type AuditStatus = 'idle' | 'running' | 'complete' | 'error';
 export interface AuditState {
   status: AuditStatus;
   step: number;
   result: OmcsAuditResult | null;
+  /** Present when status is 'error' — the rejected POST /api/compliance/omcs-analyze call. */
+  error?: unknown;
 }
 
 export interface MatrixSlotProps {

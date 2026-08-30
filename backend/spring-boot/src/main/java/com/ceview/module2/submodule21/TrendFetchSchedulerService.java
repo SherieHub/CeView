@@ -30,7 +30,7 @@ import java.util.Optional;
  * data is always captured.
  *
  * <h3>Decoupled design (one request per category/market pair)</h3>
- * The scheduler sends 21 individual, isolated {@code POST /api/v1/trends/fetch}
+ * The scheduler sends 21 individual, isolated {@code POST /api/trends/fetch}
  * requests sequentially — one per (category × market) combination.  This is
  * intentional and matches the FastAPI endpoint design:
  * <ul>
@@ -159,7 +159,7 @@ public class TrendFetchSchedulerService {
         );
 
         try {
-            // ── POST to FastAPI /api/v1/trends/fetch ──────────────────────────
+            // ── POST to FastAPI /api/trends/fetch ──────────────────────────
             // Use HashMap (not Map.of) so the JDT null checker recognises it
             // as definitively @NonNull, satisfying bodyValue(@NonNull Object).
             HashMap<String, Object> payload = new HashMap<>(2);
@@ -168,7 +168,7 @@ public class TrendFetchSchedulerService {
 
             String traceId = MDC.get(TraceIdFilter.MDC_KEY);
             Map<String, Object> result = transformerClient.post()
-                .uri("/api/v1/trends/fetch")
+                .uri("/api/trends/fetch")
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
                 .bodyValue(payload)
                 .retrieve()

@@ -19,7 +19,8 @@
  * markets panel it opens. The prototype had no ARIA at all.
  */
 import { ArrowRight, ChevronUp, MapPin, Tag, TrendingUp, Zap } from 'lucide-react';
-import type { DemandAlert } from '../../../services/fixtures/notifications';
+import { isSurge } from '@/types';
+import type { DemandAlert } from '@/types';
 
 interface AlertCardProps {
   alert: DemandAlert;
@@ -42,7 +43,7 @@ export default function AlertCard({ alert, isRead, isSelected, onSelect }: Alert
         {!isRead && <span className="alert-dot" aria-hidden="true" />}
         <span className="text-meta">{alert.date}</span>
         {!isRead && <span className="sr">Unread</span>}
-        {alert.alertLevel === 'WARNING' && (
+        {isSurge(alert) && (
           <span className="chip chip--critical">
             <Zap aria-hidden="true" /> Surge
           </span>

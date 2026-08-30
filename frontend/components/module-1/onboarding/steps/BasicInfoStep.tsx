@@ -49,24 +49,24 @@ export default function BasicInfoStep() {
         forecasting and caption generation all read from them.
       </p>
 
-      <div className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="body-xs font-semibold">Business name</span>
+      <div className="flex flex-col">
+        <label className="field">
+          <span className="field-label">Business name</span>
           <input
             type="text"
-            className="rounded-md border border-line px-3 py-2"
+            className="input"
             placeholder="e.g. Sunset Cove Beach Resort"
             value={draft.businessName}
             onChange={(e) => setDraft({ ...draft, businessName: e.target.value })}
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="body-xs font-semibold">
-            Industry <span className="text-muted font-normal">— Primary tourism category</span>
+        <label className="field">
+          <span className="field-label">
+            Industry <span className="opt">— Primary tourism category</span>
           </span>
           <select
-            className="rounded-md border border-line px-3 py-2"
+            className="input"
             value={draft.industry}
             onChange={(e) => setDraft({ ...draft, industry: e.target.value })}
           >
@@ -79,13 +79,13 @@ export default function BasicInfoStep() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="body-xs font-semibold">
-            Slogan <span className="text-muted font-normal">(optional)</span>
+        <label className="field">
+          <span className="field-label">
+            Slogan <span className="opt">(optional)</span>
           </span>
           <input
             type="text"
-            className="rounded-md border border-line px-3 py-2"
+            className="input"
             placeholder="One line that captures what you offer"
             value={draft.slogan}
             onChange={(e) => setDraft({ ...draft, slogan: e.target.value })}
@@ -101,7 +101,7 @@ export default function BasicInfoStep() {
         {import.meta.env.DEV && (
           <button
             type="button"
-            className="body-sm w-fit rounded-full border border-line px-3 py-1.5"
+            className="body-sm w-fit rounded-full border border-[var(--color-gray-light)] px-3 py-1.5"
             onClick={() => setDraft({ ...draft, ...DEMO_BUSINESS })}
           >
             Fill with demo business

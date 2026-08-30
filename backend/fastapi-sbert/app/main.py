@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
 from app.middleware.trace import TraceIdMiddleware
+from app.unavailable import register_unavailable_handler
 from app.routers import (
     classification,
     content,
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="CeView SBERT Microservice", version="0.1.0", lifespan=lifespan)
 app.add_middleware(TraceIdMiddleware)
+register_unavailable_handler(app)
 
 
 @app.get("/healthz")

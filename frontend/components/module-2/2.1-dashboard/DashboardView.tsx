@@ -18,6 +18,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Award, AlertTriangle } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
+import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import { useDashboardState } from './useDashboardState';
 import type { DashMode } from './useDashboardState';
 import AlertFeed from './AlertFeed';
@@ -75,7 +76,9 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
                  the row — and the disc is what makes it read as a score rather
                  than a label with a number after it. */
               <span className="score-badge">
-                <b className="score-badge-disc num">{profile.uniquenessScore}</b>
+                {/* Stored 0–1 (matches the DB column); formatted to a human
+                    0–100 figure only here, at the display edge. */}
+                <b className="score-badge-disc num">{Math.round(profile.uniquenessScore * 100)}</b>
                 <span className="score-badge-body">
                   <span className="score-badge-label">Uniqueness</span>
                   <Award className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -94,6 +97,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           </>
         }
       />
+
+      {state.error != null && <ApiErrorPanel error={state.error} label="Dashboard" onRetry={state.refresh} />}
 
       <AiStatusBanner visible={degraded} />
 
@@ -135,7 +140,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
       {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
           ?market= itself, so mounting it unconditionally is correct: with no
           market in the URL it renders closed. */}
-      <MarketRadarDrawer onTargetMarket={() => navigate('/content')} />
+      <MarketRadarDrawer markets={state.rankedMarkets} onTargetMarket={() => navigate('/content')} />
     </div>
   );
 }

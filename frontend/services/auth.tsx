@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Called after the "complete your profile" form (CompleteProfilePage)
-   * succeeds against PATCH /api/v1/auth/profile — flips the flag locally
+   * succeeds against PATCH /api/auth/profile — flips the flag locally
    * without a full re-login, since the backend call that got us here already
    * confirmed the update.
    */

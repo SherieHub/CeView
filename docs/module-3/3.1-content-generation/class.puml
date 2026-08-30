@@ -166,7 +166,7 @@ ContentStudioView *-- DistributionPanel
 AIContentMatrixPanel *-- "3" CopywritingOptionCard
 AIContentMatrixPanel *-- "3" PlatformTab
 
-ContentStudioView ..> ContentController : POST /api/v1/content/generate\nPOST /api/v1/content/approve
+ContentStudioView ..> ContentController : POST /api/content/generate\nPOST /api/content/approve
 
 ContentController --> ContentGenerationService : generate()
 ContentController --> ContentApprovalService : approveForMarket()

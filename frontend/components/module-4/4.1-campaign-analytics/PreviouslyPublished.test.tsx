@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { PostStoreProvider } from '../../../services/postStore';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import PreviouslyPublished from './PreviouslyPublished';
-import type { PublishedPost } from '../../../services/fixtures/posts';
+import type { PublishedPost } from '@/types';
 
 const POSTS: PublishedPost[] = [
   { id: 'p1', date: '2026-08-04', platform: 'instagram', caption: 'IG post', status: 'published', reach: 31200, likes: 2810, comments: 142, shares: 890, engagementRate: 12.4, series: [8, 14, 22] },

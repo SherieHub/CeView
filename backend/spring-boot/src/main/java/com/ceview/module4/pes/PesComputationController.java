@@ -1,5 +1,6 @@
 package com.ceview.module4.pes;
 
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.engagement.MetricsCalculationService;
 import org.springframework.web.bind.annotation.*;
@@ -13,17 +14,20 @@ import org.springframework.web.bind.annotation.*;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/v1/analytics")
+@RequestMapping("/api/analytics")
 public class PesComputationController {
 
     private final MetricsCalculationService metricsSvc;
     private final PESComputationService     pesSvc;
+    private final CurrentBusinessProfile    currentBusinessProfile;
 
     public PesComputationController(
             MetricsCalculationService metricsSvc,
-            PESComputationService pesSvc) {
+            PESComputationService pesSvc,
+            CurrentBusinessProfile currentBusinessProfile) {
         this.metricsSvc = metricsSvc;
         this.pesSvc     = pesSvc;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     // ─── GET /pes/{campaignId} ────────────────────────────────────────────────
@@ -37,6 +41,7 @@ public class PesComputationController {
     public PesResponse pes(
             @PathVariable String campaignId,
             @RequestParam(required = false, defaultValue = "4") int weeks) {
-        return pesSvc.compute(metricsSvc.defaultMetrics(weeks).metrics());
+        return pesSvc.compute(metricsSvc.defaultMetrics(
+                currentBusinessProfile.resolveProfileId(), weeks).metrics());
     }
 }

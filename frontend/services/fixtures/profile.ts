@@ -27,7 +27,9 @@ export const DEMO_PROFILE: BusinessProfile = {
   ...DEMO_BUSINESS,
   businessProfileId: 'bp-demo-1',
   imagePreview: null,
-  uniquenessScore: 82,
+  // 0–1 scale, matching the DB column (see BusinessProfileSettings.tsx /
+  // DashboardView.tsx, which format this ×100 only at display time).
+  uniquenessScore: 0.82,
   categories: [
     'Accommodation & Staycation',
     'Coastal & Island',

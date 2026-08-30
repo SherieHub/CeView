@@ -54,9 +54,9 @@ instead of an empty chart.
 
 | Call | When | Endpoint |
 |---|---|---|
-| `apiClient` manual ingest | form submit | `POST /api/v1/analytics/manual` |
-| `apiClient` PES | full view load | `GET /api/v1/analytics/pes/{campaignId}` |
-| `apiClient` report | full view load | `POST /api/v1/analytics/report` |
+| `apiClient` manual ingest | form submit | `POST /api/analytics/manual` |
+| `apiClient` PES | full view load | `GET /api/analytics/pes/{campaignId}` |
+| `apiClient` report | full view load | `POST /api/analytics/report` |
 | list published posts | full view load | see [`backend/PublishingController.md`](../../module-3/backend/PublishingController.md) |
 | post metrics | modal open | see [`backend/post-metrics.md`](../backend/post-metrics.md) — **specified, not yet implemented** |
 

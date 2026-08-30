@@ -3,10 +3,13 @@ package com.ceview.module2;
 import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module2.dto.MarketDtos.MarketsResponse;
 import com.ceview.module2.submodule22.ForecastingService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,27 +28,66 @@ import java.util.UUID;
  * an arbitrary profileId to read/trigger forecasts for another operator's business.
  */
 @RestController
-@RequestMapping("/api/v1/forecasting")
+@RequestMapping("/api/forecasting")
 public class ForecastingController {
 
     private final ForecastingService forecastingService;
     private final CurrentBusinessProfile currentBusinessProfile;
+    private final WebClient transformerClient;
 
     public ForecastingController(ForecastingService forecastingService,
-                                  CurrentBusinessProfile currentBusinessProfile) {
+                                  CurrentBusinessProfile currentBusinessProfile,
+                                  @Qualifier("fastapiTransformerClient") WebClient transformerClient) {
         this.forecastingService = forecastingService;
         this.currentBusinessProfile = currentBusinessProfile;
+        this.transformerClient = transformerClient;
     }
 
-    /** Ranked markets for MarketRadarView — pure DB read, no AI calls. */
+    /**
+     * Drives the dashboard's "AI Forecast Service Unavailable" banner.
+     *
+     * <p>Deliberately NOT tenant-scoped: whether fastapi-transformer is reachable is
+     * the same answer for every operator, and must stay answerable before a business
+     * profile even exists. Reuses the {@code fastapiTransformerClient} bean (see
+     * {@link com.ceview.config.WebClientConfig}) instead of building a second client.
+     *
+     * <p>Always returns 200 — a down AI service is an expected operating state, not
+     * a server error. {@code available:false} lets the dashboard degrade gracefully
+     * instead of rendering the generic failure panel (or, worse, having this call's
+     * rejection sink the whole {@code Promise.all} it's loaded alongside).
+     */
+    @GetMapping("/status")
+    public Map<String, Object> status() {
+        try {
+            transformerClient.get().uri("/healthz")
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block(Duration.ofSeconds(3));
+            return Map.of("available", true);
+        } catch (Exception e) {
+            return Map.of("available", false, "reason", e.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * Ranked markets for MarketRadarView — pure DB read, no AI calls.
+     *
+     * <p>{@code category}, when present, pins the per-market selection to that one
+     * category (see {@link ForecastingService#loadMarketsFromDb(UUID, String)})
+     * instead of each market's best-ranked category. The profile is still resolved
+     * via {@link CurrentBusinessProfile#resolveOrValidate}, so the category param
+     * can only ever filter within the caller's own profile — it cannot widen access
+     * to another operator's data.
+     */
     @GetMapping("/markets")
-    public ResponseEntity<?> markets(@RequestParam(required = false) UUID profileId) {
+    public ResponseEntity<?> markets(@RequestParam(required = false) UUID profileId,
+                                      @RequestParam(required = false) String category) {
         // Resolved/validated outside the try block so a 401/403/409 from ownership
         // checks reaches ApiExceptionHandler's standard shape rather than being
         // swallowed by the generic catch below and reported as a 503 markets failure.
         UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.loadMarketsFromDb(resolvedProfileId);
+            MarketsResponse result = forecastingService.loadMarketsFromDb(resolvedProfileId, category);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(503)
@@ -90,6 +132,43 @@ public class ForecastingController {
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * JWT-derived "Refresh Forecast" — the profile comes from the token, so the
+     * frontend never needs to know its own profileId. Same service call and error
+     * mapping as {@link #analyze(UUID)}.
+     */
+    @PostMapping("/analyze")
+    public ResponseEntity<?> analyze() {
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(null);
+        try {
+            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true);
+            return ResponseEntity.ok(result);
+        } catch (ResponseStatusException rse) {
+            return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
+        }
+    }
+
+    /** JWT-derived counterpart of {@link #ensure(UUID, long)}. */
+    @PostMapping("/ensure")
+    public ResponseEntity<?> ensure(@RequestParam(defaultValue = "12") long maxAgeHours) {
+        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(null);
+        try {
+            MarketsResponse result = forecastingService.ensureFreshForecast(resolvedProfileId, maxAgeHours);
+            return ResponseEntity.ok(result);
+        } catch (ResponseStatusException rse) {
+            return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.status(409)
+                    .body(Map.of("code", "MOD22_PROFILE_NOT_READY", "message", iae.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));

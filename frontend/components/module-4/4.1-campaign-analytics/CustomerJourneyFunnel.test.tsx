@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import CustomerJourneyFunnel from './CustomerJourneyFunnel';
-import type { CampaignInput } from '../../../services/fixtures/campaign';
+import type { CampaignInput } from '@/types';
 
 function makeInput(overrides: Partial<CampaignInput> = {}): CampaignInput {
   return {

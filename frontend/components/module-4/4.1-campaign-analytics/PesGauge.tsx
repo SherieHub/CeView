@@ -4,18 +4,29 @@
  * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/05-module-4.md (M4-2)
  * Pseudocode: pseudocode/module-4/pes-gauge.ts
  *
- * Renders the pre-computed PES score/label (from campaignMetrics.ts's
- * computePes(), called by the shell) as a Recharts radial gauge, plus a
+ * Renders the pre-computed PES score/label as a Recharts radial gauge, plus a
  * per-metric contribution-breakdown bar and the weighted-sum formula.
  *
- * This card independently re-derives each metric's normalized value from raw
- * `metrics` using the SAME formula/weights as computePes() — the shell hands
- * this component `metrics`, not a breakdown array, specifically so this card
- * can compute its own per-metric contributions (see campaignTypes.ts's
- * PesGaugeSlotProps doc comment and campaignMetrics.ts's file header). The
- * clamp bounds, normalization denominators and weights below are therefore
- * duplicated from campaignMetrics.ts's computePes() on purpose, not imported
- * — keep them in sync by hand if that formula ever changes.
+ * Task 17: `score`/`label` are now server-authoritative when the shell has
+ * one (from `POST /api/analytics/manual`'s `pes` field — the actual value
+ * persisted to `tbl_campaign_records.pes_score`), falling back to
+ * campaignMetrics.ts's computePes() otherwise (fixture runs, or a response
+ * with no `pes`) — see CampaignAnalyticsView.tsx. This component itself is
+ * unaware of the source; it just renders whatever score/label it's handed.
+ *
+ * The contribution-breakdown bar below is still client-derived: the server's
+ * `pes.breakdown` gives {metric, weight, contribution} but no per-metric
+ * `normalized` value, which the bar width needs, and inventing one
+ * (normalized = contribution / weight) would just be re-deriving it a
+ * different way — so this card independently re-derives each metric's
+ * normalized value from raw `metrics` using the SAME formula/weights as
+ * computePes() — the shell hands this component `metrics`, not a breakdown
+ * array, specifically so this card can compute its own per-metric
+ * contributions (see campaignTypes.ts's PesGaugeSlotProps doc comment and
+ * campaignMetrics.ts's file header). The clamp bounds, normalization
+ * denominators and weights below are therefore duplicated from
+ * campaignMetrics.ts's computePes() on purpose, not imported — keep them in
+ * sync by hand if that formula ever changes.
  *
  * Gauge implementation note: RadialBarChart is used with fixed pixel
  * width/height instead of wrapped in Recharts' ResponsiveContainer. This

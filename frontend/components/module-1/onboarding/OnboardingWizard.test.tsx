@@ -5,18 +5,89 @@
  * Also covers the rail's defining property — it is a progress indicator, not
  * navigation, so its state is derived from the current index and its rows do
  * not move the wizard.
+ *
+ * Task 21 added: OnboardingWizard now calls useNavigate/useProfile/useToast
+ * (Finish persists then navigates to /dashboard), so every render needs a
+ * Router and a mocked profile context — useProfile is mocked rather than
+ * driven through the real ProfileProvider for the same reason
+ * BusinessProfileSettings.test.tsx gives: these assertions are about this
+ * component's behavior, not the provider's fetch lifecycle. apiClient is
+ * mocked wholesale so AnalysisStep's own on-mount analyze() call (it mounts
+ * underneath the wizard once Step 5 is reached) never issues a real request.
  */
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import OnboardingWizard from './OnboardingWizard';
 import { DEMO_OB_DRAFT, EMPTY_OB_DRAFT, ObDraftProvider, stepValid } from './obDraft';
 import type { ObDraft } from './obDraft';
+import { ToastProvider } from '../../shared/Toast';
+import type { BusinessProfile, BusinessProfileDto } from '../../../types';
+
+const BASE_PROFILE: BusinessProfile = {
+  businessProfileId: null,
+  businessName: '',
+  categories: [],
+  coreServices: [],
+  description: '',
+  uvp: '',
+  imagePreview: null,
+  uniquenessScore: null,
+  slogan: '',
+  industry: '',
+  vibes: [],
+  website: '',
+  logo: null,
+  socials: {},
+};
+
+const profileState = { profile: BASE_PROFILE, setProfile: vi.fn(), isLoading: false };
+
+vi.mock('../../../services/profileContext', () => ({
+  useProfile: () => profileState,
+}));
+
+const analyzeMock = vi.fn();
+const uniquenessMock = vi.fn();
+const saveMock = vi.fn();
+
+vi.mock('../../../services/apiClient', () => ({
+  apiClient: {
+    classification: {
+      analyze: (...args: unknown[]) => analyzeMock(...args),
+      uniqueness: (...args: unknown[]) => uniquenessMock(...args),
+    },
+    businessProfile: {
+      save: (...args: unknown[]) => saveMock(...args),
+    },
+  },
+}));
+
+beforeEach(() => {
+  profileState.profile = BASE_PROFILE;
+  profileState.setProfile = vi.fn();
+  analyzeMock.mockReset().mockReturnValue(new Promise(() => {})); // never resolves by default
+  uniquenessMock.mockReset();
+  saveMock.mockReset();
+});
 
 function renderWizard(initial: ObDraft) {
   return render(
-    <ObDraftProvider initial={initial}>
-      <OnboardingWizard />
-    </ObDraftProvider>
+    <MemoryRouter initialEntries={['/onboarding']}>
+      <ToastProvider>
+        <Routes>
+          <Route
+            path="/onboarding"
+            element={
+              <ObDraftProvider initial={initial}>
+                <OnboardingWizard />
+              </ObDraftProvider>
+            }
+          />
+          <Route path="/dashboard" element={<div>Dashboard</div>} />
+        </Routes>
+      </ToastProvider>
+    </MemoryRouter>
   );
 }
 
@@ -118,5 +189,44 @@ describe('OnboardingWizard', () => {
 
     expect(screen.getByText('Step 5 of 5')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Finish/ })).toBeDisabled();
+  });
+
+  it('persists with the 0-1 scale conversion and navigates to /dashboard on Finish', async () => {
+    analyzeMock.mockResolvedValue([{ name: 'Coastal & Island', percentage: 90 }]);
+    uniquenessMock.mockResolvedValue({
+      overallScore: 72,
+      semanticsScore: 70,
+      categoryScore: 74,
+      descriptionFeedback: '',
+      categoryFeedback: '',
+    });
+    saveMock.mockImplementation((dto: BusinessProfileDto) => Promise.resolve(dto));
+
+    renderWizard(DEMO_OB_DRAFT);
+
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
+    }
+
+    // AnalysisStep runs analyze() -> categories -> compute -> uniqueness() -> scored.
+    await waitFor(() => expect(screen.getByText(/Compute uniqueness score/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    const finishButton = await waitFor(() => {
+      const btn = screen.getByRole('button', { name: /Finish/ });
+      expect(btn).toBeEnabled();
+      return btn;
+    });
+    fireEvent.click(finishButton);
+
+    await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
+
+    expect(saveMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categories: ['Coastal & Island'],
+        // 100x-wrong-scale guard: the API's 72 (0-100) must land as 0.72 (0-1).
+        uniquenessScore: 0.72,
+      })
+    );
   });
 });

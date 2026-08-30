@@ -12,7 +12,7 @@ import java.util.*;
 
 /**
  * Builds keyword-trend push notifications for a business profile's tagged
- * categories by calling the FastAPI {@code POST /api/v1/trends/rank-markets}
+ * categories by calling the FastAPI {@code POST /api/trends/rank-markets}
  * endpoint and mapping the result to the existing {@link NotificationDto} shape.
  *
  * <p>For each category the profile is tagged to, this service:
@@ -61,6 +61,8 @@ public class CategoryRankNotificationService {
 
         List<NotificationDto> result = new ArrayList<>();
         String today = LocalDate.now().format(DATE_FMT);
+        int failureCount = 0;
+        Exception lastFailure = null;
 
         for (String category : categories) {
             try {
@@ -74,7 +76,19 @@ public class CategoryRankNotificationService {
             } catch (Exception exc) {
                 log.warn("CategoryRankNotificationService skipping category={} — {}",
                          category, exc.getMessage());
+                failureCount++;
+                lastFailure = exc;
             }
+        }
+
+        // A partial failure still returns the categories that succeeded (silent
+        // skip, as documented above). But if every category errored, that's not
+        // "no trends" — it's an upstream outage — so surface it to the caller
+        // instead of returning a silent, indistinguishable-from-empty 200.
+        if (failureCount == categories.size() && lastFailure != null) {
+            throw new IllegalStateException(
+                    "Keyword-trend lookup failed for all " + failureCount + " categor"
+                            + (failureCount == 1 ? "y" : "ies"), lastFailure);
         }
 
         return result;
@@ -139,7 +153,10 @@ public class CategoryRankNotificationService {
                 topMarketKey,
                 "Top keyword: " + topKeyword,
                 false,
-                details
+                details,
+                category,
+                "INFO",
+                null
         );
     }
 

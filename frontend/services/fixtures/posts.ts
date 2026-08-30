@@ -5,21 +5,9 @@
  * this richer shape backs Calendar's day-click modal and Performance's
  * "Previously Published" list / post-analytics modal.
  */
-import type { PlatformId } from '../../types';
+import type { PublishedPost } from '../../types';
 
-export interface PublishedPost {
-  id: string;
-  date: string;
-  platform: PlatformId;
-  caption: string;
-  status: 'published' | 'draft';
-  reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  engagementRate: number;
-  series: number[];
-}
+export type { PublishedPost };
 
 export const MOCK_POSTS: PublishedPost[] = [
   { id: 'p1', date: '2026-08-04', platform: 'instagram', caption: 'POV: you booked the 호캉스 you kept postponing 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon.', status: 'published', reach: 31200, likes: 2810, comments: 142, shares: 890, engagementRate: 12.4, series: [8, 14, 22, 29, 31, 30, 28] },

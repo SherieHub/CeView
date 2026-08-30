@@ -31,9 +31,9 @@ for real, not something to silently invent; flag in review.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/v1/workspace/members?operatorId=UUID` | List members |
-| `POST` | `/api/v1/workspace/invites` | Send an invite (email + role) |
-| `DELETE` | `/api/v1/workspace/members/{id}` | Remove a member (not present in the prototype; needed for a real product — flag as a gap) |
+| `GET` | `/api/workspace/members?operatorId=UUID` | List members |
+| `POST` | `/api/workspace/invites` | Send an invite (email + role) |
+| `DELETE` | `/api/workspace/members/{id}` | Remove a member (not present in the prototype; needed for a real product — flag as a gap) |
 
 ## Entities (proposed) — `WorkspaceMember` / `tbl_workspace_member`, `WorkspaceInvite` / `tbl_workspace_invite`
 

@@ -12,7 +12,7 @@ import java.util.Map;
  * without waiting for the 00:00 UTC cron schedule.
  */
 @RestController
-@RequestMapping("/api/v1/admin/ingestion")
+@RequestMapping("/api/admin/ingestion")
 public class IngestionTriggerController {
 
     private final MarketDataIngestionJob ingestionJob;

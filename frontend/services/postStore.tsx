@@ -18,8 +18,7 @@
  */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { PlatformId } from '../types';
-import type { PublishedPost } from './fixtures/posts';
+import type { PlatformId, PublishedPost } from '../types';
 import { apiClient } from './apiClient';
 
 export interface PublishDraft {

@@ -14,8 +14,8 @@ Submodule 2.2 is the **on-demand** half of Module 2. It is triggered by user act
 
 | Flow | Trigger | Path | AI Calls |
 |---|---|---|---|
-| **Load Markets** | Page mount / tab switch | `GET /api/v1/forecasting/markets?profileId=UUID` | None — pure DB read |
-| **Refresh Forecast** | "Refresh Forecast" button | `POST /api/v1/forecasting/analyze/{profileId}` | Phase 0 (2.1 ingestion) → Phase B (1× Groq `llama-3.3-70b-versatile` batch) → Phase C (3× XGBoost) |
+| **Load Markets** | Page mount / tab switch | `GET /api/forecasting/markets?profileId=UUID` | None — pure DB read |
+| **Refresh Forecast** | "Refresh Forecast" button | `POST /api/forecasting/analyze/{profileId}` | Phase 0 (2.1 ingestion) → Phase B (1× Groq `llama-3.3-70b-versatile` batch) → Phase C (3× XGBoost) |
 
 ---
 

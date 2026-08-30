@@ -1,12 +1,12 @@
 """Module 2.1 — Localized Google Trends Fetch API (FR2.2).
 
-  POST /api/v1/trends/fetch
+  POST /api/trends/fetch
       Accept exactly ONE (market, category) pair per request.
       Designed for sequential, decoupled orchestration by the Spring Boot
       TrendFetchSchedulerService (one HTTP call per category/market pair).
 
 Usage in Postman:
-    POST  http://localhost:8001/api/v1/trends/fetch
+    POST  http://localhost:8001/api/trends/fetch
     Body  (raw JSON):
         { "market": "korea", "category": "Coastal & Island" }
 

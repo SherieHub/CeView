@@ -30,7 +30,7 @@ changes" button at the bottom.
 
 - Category toggle mirrors onboarding's rule: removing the last remaining category is blocked with a
   toast, not silently prevented.
-- Save calls `apiClient.saveProfile` (`PUT /api/v1/business-profile`) and re-syncs the sidebar
+- Save calls `apiClient.saveProfile` (`PUT /api/business-profile`) and re-syncs the sidebar
   identity (avatar initials, business name).
 - **Known gap, carried from the prototype as-is:** saving here does **not** recompute the uniqueness
   score. The prototype only ever computes `uniquenessScore`/`semanticsScore`/`categoryScore` during
@@ -45,7 +45,7 @@ changes" button at the bottom.
 
 | Call | Endpoint |
 |---|---|
-| `apiClient.saveProfile` | `PUT /api/v1/business-profile` |
+| `apiClient.saveProfile` | `PUT /api/business-profile` |
 
 (If the gap above is resolved in favor of re-scoring on save: also `apiClient.classifyAnalyze` +
 `apiClient.classifyUniqueness`, same as onboarding step 5.)

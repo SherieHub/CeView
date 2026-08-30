@@ -17,6 +17,9 @@ public class ForecastResult {
 
     @Column(name = "business_profile_id")      private UUID businessProfileId;
     @Column(name = "target_market")            private String targetMarket;
+    /** The category this forecast was produced for. Null when not attributable
+     *  to a single category (see MarketSignalRecord.category). */
+    @Column(name = "category")                 private String category;
     @Column(name = "predicted_demand")         private Double predictedDemand;
     @Column(name = "forecast_confidence")      private Double forecastConfidence;
     @Column(name = "mape_score")               private Double mapeScore;
@@ -26,6 +29,9 @@ public class ForecastResult {
     @Column(name = "generated_at")             private OffsetDateTime generatedAt;
     @Column(name = "weekly_forecasts_json", columnDefinition = "TEXT")
     private String weeklyForecastsJson;
+    /** Year-over-Year ratio input the forecaster consumed; persisted so the
+     *  frontend's Market.yoyRatio can be populated instead of always null. */
+    @Column(name = "yoy_ratio")                private Double yoyRatio;
 
     @PrePersist
     void onCreate() {

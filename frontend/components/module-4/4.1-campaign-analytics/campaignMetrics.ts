@@ -11,7 +11,7 @@
  * array — PesGaugeSlotProps hands the PES Gauge card (M4-2) raw `metrics` to
  * derive its own contribution bars from.
  */
-import type { CampaignInput } from '../../../services/fixtures/campaign';
+import type { CampaignInput } from '@/types';
 import type { Metrics, FlaggedMetric } from './campaignTypes';
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));

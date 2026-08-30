@@ -45,7 +45,7 @@ function OverlayStackTestScaffold() {
         type="button"
         data-testid="test-open-drawer"
         onClick={() => push('drawer')}
-        className="body-xs mt-4 rounded border border-line px-2 py-1 text-muted"
+        className="body-xs mt-4 rounded border border-[var(--color-gray-light)] px-2 py-1 text-[var(--color-text-muted)]"
       >
         Open test drawer
       </button>
@@ -54,7 +54,7 @@ function OverlayStackTestScaffold() {
           type="button"
           data-testid="test-open-modal-from-drawer"
           onClick={() => push('modal')}
-          className="body-xs mt-4 rounded border border-line px-2 py-1 text-muted"
+          className="body-xs mt-4 rounded border border-[var(--color-gray-light)] px-2 py-1 text-[var(--color-text-muted)]"
         >
           Open test modal
         </button>

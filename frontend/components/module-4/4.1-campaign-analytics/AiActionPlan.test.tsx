@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import AiActionPlan from './AiActionPlan';
 import { MOCK_REPORT } from '../../../services/fixtures/campaign';
-import type { PrescriptiveReport } from '../../../services/fixtures/campaign';
+import type { PrescriptiveReport } from '@/types';
 
 describe('AiActionPlan', () => {
   it('renders the executive summary and recommended platform', () => {

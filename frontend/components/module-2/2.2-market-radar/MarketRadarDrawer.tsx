@@ -30,15 +30,21 @@ import Drawer from '../../shared/Drawer';
 import DrawerChartPanel from './DrawerChartPanel';
 import InsightsTabs from './InsightsTabs';
 import RouteCarriers from './RouteCarriers';
-import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import type { InsightsTab, Timeframe } from './radarTypes';
+import type { Market } from '@/types';
 
 interface MarketRadarDrawerProps {
+  /**
+   * Markets to switch between and look the open one up in — the Dashboard has
+   * already loaded these (the selected alert's ranked markets), so the drawer
+   * does its own lookup rather than re-fetching.
+   */
+  markets: Market[];
   /** Called by "Target this market" — the Dashboard owns the navigation. */
   onTargetMarket?: (marketId: string) => void;
 }
 
-export default function MarketRadarDrawer({ onTargetMarket }: MarketRadarDrawerProps) {
+export default function MarketRadarDrawer({ markets, onTargetMarket }: MarketRadarDrawerProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const marketId = searchParams.get('market');
 
@@ -46,7 +52,7 @@ export default function MarketRadarDrawer({ onTargetMarket }: MarketRadarDrawerP
   const [activeTab, setActiveTab] = useState<InsightsTab>('economy');
 
   // An unknown id is treated as closed rather than rendering an empty drawer.
-  const market = marketId ? MOCK_MARKETS.find((m) => m.id === marketId) ?? null : null;
+  const market = marketId ? markets.find((m) => m.id === marketId) ?? null : null;
   const open = market != null;
 
   // Reset per market, not per open: reopening the same market keeps where you
@@ -90,7 +96,7 @@ export default function MarketRadarDrawer({ onTargetMarket }: MarketRadarDrawerP
         {/* Switching here rather than behind the drawer, which covers the rank
             cards entirely. Ordered by rank, so it mirrors the list it replaces. */}
         <div className="radar-switch" role="group" aria-label="Switch market">
-          {MOCK_MARKETS.map((m) => (
+          {markets.map((m) => (
             <button
               key={m.id}
               type="button"

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeMetrics, computePes } from './campaignMetrics';
-import type { CampaignInput } from '../../../services/fixtures/campaign';
+import type { CampaignInput } from '@/types';
 import type { Metrics } from './campaignTypes';
 
 const BASE_INPUT: CampaignInput = {

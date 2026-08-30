@@ -13,7 +13,7 @@ percentage allocation across the seven tourism categories. Backs
 
 | Method | Path | Called by |
 |---|---|---|
-| `POST` | `/api/v1/classification/analyze` | `apiClient.classifyAnalyze` |
+| `POST` | `/api/classification/analyze` | `apiClient.classifyAnalyze` |
 
 ## Request / response
 

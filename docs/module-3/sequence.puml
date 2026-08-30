@@ -20,7 +20,7 @@ database "PostgreSQL" as DB
 == Transaction 3.1 — Market-Localized Promotional Content Generation ==
 
 O -> UI: Open Content Studio (market selected)
-UI -> CC: POST /api/v1/content/generate ?profileId
+UI -> CC: POST /api/content/generate ?profileId
 CC -> CS: generate(req, profileId)
 CS -> CS: load BusinessProfile + Module 2 forecast context
 CS -> GW: generateCaption(payload)
@@ -41,7 +41,7 @@ CC --> UI: captions matrix
 UI -> UI: Render AIContentMatrixPanel
 
 O -> UI: Approve one caption per platform
-UI ->> CC: POST /api/v1/content/approve {market} ?profileId
+UI ->> CC: POST /api/content/approve {market} ?profileId
 CC -> CS: approveForMarket(profileId, market)
 CS -> DB: UPDATE approval_status = true, approved_at = now()
 CS --> CC: {approvedIds, market, count}
@@ -52,7 +52,7 @@ note over CC,DB: approval_status = true is the dependency gate for 3.2
 == Transaction 3.2 — Creative Direction and Visual Recommendation Generation ==
 
 O -> UI: Generate creative direction
-UI -> CD: POST /api/v1/creative-direction/generate/{profileId} ?market
+UI -> CD: POST /api/creative-direction/generate/{profileId} ?market
 CD -> CS: hasApprovedContent(profileId, market)
 
 alt no approved 3.1 content (A3)
@@ -77,7 +77,7 @@ else approved content exists
 end
 
 O -> UI: Approve creative direction
-UI -> CD: POST /api/v1/creative-direction/approve/{profileId} ?market
+UI -> CD: POST /api/creative-direction/approve/{profileId} ?market
 CD -> DB: UPDATE approval_status = true, approved_at = now()
 CD --> UI: {approvedId, market}
 
@@ -85,7 +85,7 @@ CD --> UI: {approvedId, market}
 
 O -> UI: Upload media image + stage caption\n(SmartOptimizationBoard toggle → MediaCaptionManager)
 O -> UI: Run audit
-UI -> CC3: POST /api/v1/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
+UI -> CC3: POST /api/compliance/omcs-analyze\n{caption, imageUrl, businessProfile, recommendations}
 
 note right of CC3
   Validates: caption + imageUrl required.

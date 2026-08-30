@@ -19,7 +19,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { CampaignHistoryEntry } from '../../../services/fixtures/campaign';
+import type { CampaignHistoryEntry } from '@/types';
 import type { TrendSlotProps } from './campaignTypes';
 
 /** The label-threshold bands a PES score is qualitatively judged against. */

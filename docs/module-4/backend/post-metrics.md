@@ -7,8 +7,8 @@ Backs [`screens/performance.md`](../screens/performance.md)'s "Previously publis
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/v1/analytics/posts?operatorId=UUID&platform=` | List published posts with summary metrics, optionally filtered by platform |
-| `GET` | `/api/v1/analytics/posts/{postId}` | Full detail for one post: reach, likes, comments, shares, engagement rate, 7-day reach-accumulation series |
+| `GET` | `/api/analytics/posts?operatorId=UUID&platform=` | List published posts with summary metrics, optionally filtered by platform |
+| `GET` | `/api/analytics/posts/{postId}` | Full detail for one post: reach, likes, comments, shares, engagement rate, 7-day reach-accumulation series |
 
 ## Entity (proposed) — `PostMetric` / `tbl_post_metric`
 

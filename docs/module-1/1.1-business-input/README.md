@@ -37,8 +37,8 @@ The Business Input experience spans two surfaces. The **Uniqueness Calibration**
 
 | Component Name | Description & Purpose | Type / Format |
 |---|---|---|
-| `BusinessProfileController` | `GET /api/v1/business-profile` (load by operator), `PUT /api/v1/business-profile` (upsert), `POST /api/v1/business-profile/keywords`. | Spring `@RestController` |
-| `ClassificationAnalyzeController` | `POST /api/v1/classification/analyze` — routes the analyze request to the AI gateway. | Spring `@RestController` |
+| `BusinessProfileController` | `GET /api/business-profile` (load by operator), `PUT /api/business-profile` (upsert), `POST /api/business-profile/keywords`. | Spring `@RestController` |
+| `ClassificationAnalyzeController` | `POST /api/classification/analyze` — routes the analyze request to the AI gateway. | Spring `@RestController` |
 | `AIInferenceGatewayService` | Reactive WebClient bridge to the FastAPI microservice; methods `classifyCategories`, `generateKeywords`. | Spring `@Service` |
 | `BusinessProfile` (entity) | JPA entity for `tbl_business_profile`; comma-joined `coreServices` and `categories`; `@PrePersist`/`@PreUpdate` hooks. | JPA entity |
 | `BusinessProfileRepository` | `JpaRepository<BusinessProfile, UUID>` with custom `findFirstByUserId(UUID)`. | Spring Data repository |
@@ -52,16 +52,16 @@ The Business Input experience spans two surfaces. The **Uniqueness Calibration**
 
 | Method | Path | Controller method | Frontend caller |
 |---|---|---|---|
-| `GET` | `/api/v1/business-profile` | `BusinessProfileController.get` | `apiClient.loadProfile` (App mount) |
-| `PUT` | `/api/v1/business-profile` | `BusinessProfileController.save` | `apiClient.saveProfile` (Confirm + Edit save) |
-| `POST` | `/api/v1/business-profile/keywords` | `BusinessProfileController.keywords` | `apiClient.generateKeywords` (BusinessProfile) |
-| `POST` | `/api/v1/classification/analyze` | `ClassificationAnalyzeController.analyze` | `apiClient.classifyAnalyze` (Calibration Phase 1) |
+| `GET` | `/api/business-profile` | `BusinessProfileController.get` | `apiClient.loadProfile` (App mount) |
+| `PUT` | `/api/business-profile` | `BusinessProfileController.save` | `apiClient.saveProfile` (Confirm + Edit save) |
+| `POST` | `/api/business-profile/keywords` | `BusinessProfileController.keywords` | `apiClient.generateKeywords` (BusinessProfile) |
+| `POST` | `/api/classification/analyze` | `ClassificationAnalyzeController.analyze` | `apiClient.classifyAnalyze` (Calibration Phase 1) |
 
 ## Processing Logic
 
 1. On `App` mount, `apiClient.loadProfile(OPERATOR_ID)` is invoked; the controller's `findFirstByUserId` returns an existing `BusinessProfileDto` or an empty stub, and all `ProfileData` setters are hydrated.
 2. The operator opens the Calibration view and fills the `UniquenessCalibrationForm`. The form validator enforces non-empty `businessName`, `description`, `uvp`, and at least one `coreService` before enabling the Analyze button.
-3. On Analyze, the frontend POSTs the payload to `/api/v1/classification/analyze`. The controller hands the map to `AIInferenceGatewayService.classifyCategories`, which forwards to the FastAPI SBERT pipeline and returns `{categories:[{name, percentage}]}`.
+3. On Analyze, the frontend POSTs the payload to `/api/classification/analyze`. The controller hands the map to `AIInferenceGatewayService.classifyCategories`, which forwards to the FastAPI SBERT pipeline and returns `{categories:[{name, percentage}]}`.
 4. The view merges the returned allocations with `BASE_CATEGORIES`, sets local `categories[]`, and renders the `InferredCategoryBoard` for manual override.
 5. When the operator clicks "Confirm & Register Profile", `apiClient.saveProfile` is called with the full profile snapshot; `BusinessProfileController.save` upserts the entity via `setCategoriesList` / `setCoreServicesList` and returns the persisted DTO (including its assigned `businessProfileId`).
 6. The view propagates the persisted `businessProfileId` and other fields back through `ProfileSetters` and navigates to the `profile` tab.

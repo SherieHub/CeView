@@ -6,7 +6,7 @@
  * through.
  */
 import { Plane } from 'lucide-react';
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 export default function RouteCarriers({ market }: { market: Market }) {
   return (

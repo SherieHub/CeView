@@ -12,7 +12,7 @@ embedding corpus. Backs [Onboarding step 5's "computing" sub-phase](../screens/o
 
 | Method | Path | Called by |
 |---|---|---|
-| `POST` | `/api/v1/classification/uniqueness` | `apiClient.classifyUniqueness` |
+| `POST` | `/api/classification/uniqueness` | `apiClient.classifyUniqueness` |
 
 ## Request / response
 

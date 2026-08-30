@@ -7,7 +7,7 @@
  */
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarRange, Sparkles } from 'lucide-react';
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

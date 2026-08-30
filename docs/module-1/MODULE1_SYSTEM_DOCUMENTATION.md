@@ -27,17 +27,17 @@ All Module 1 requests flow from the React frontend through the Spring Boot orche
 
 ### Request Lifecycle 1 — Load Profile on App Boot
 
-1. React `useEffect` fires `GET /api/v1/business-profile?operatorId={UUID}`.
+1. React `useEffect` fires `GET /api/business-profile?operatorId={UUID}`.
 2. `BusinessProfileController.get()` calls `repo.findFirstByUserId(operatorId)` (JPA query on `tbl_business_profile WHERE user_id = ?`).
 3. If found: entity mapped to `BusinessProfileDto` via `toDto()`, returned `200 OK`. If not found: `emptyDto()` returned (null score, empty strings, empty lists) — no `404`.
 4. React distributes all fields to global state setters — every module now has profile context.
 
 ---
 
-### Request Lifecycle 2 — Save Profile (`PUT /api/v1/business-profile`)
+### Request Lifecycle 2 — Save Profile (`PUT /api/business-profile`)
 
 1. Frontend sends `BusinessProfileDto` JSON body with `operatorId` as query param.
-2. `JwtAuthenticationFilter` inspects `Authorization: Bearer <token>`. Currently all `/api/v1/**` routes are `permitAll()` (scaffolding pass), so anonymous requests pass through with an anonymous security context.
+2. `JwtAuthenticationFilter` inspects `Authorization: Bearer <token>`. Currently all `/api/**` routes are `permitAll()` (scaffolding pass), so anonymous requests pass through with an anonymous security context.
 3. `TraceIdFilter` generates or propagates an `X-Trace-Id` UUID into `MDC` for log correlation across all three services.
 4. `BusinessProfileController.save()`:
    - If `businessProfileId` is present: attempts `repo.findById()` to load the existing entity.
@@ -49,7 +49,7 @@ All Module 1 requests flow from the React frontend through the Spring Boot orche
 
 ---
 
-### Request Lifecycle 3 — Classification Analyze (`POST /api/v1/classification/analyze`)
+### Request Lifecycle 3 — Classification Analyze (`POST /api/classification/analyze`)
 
 1. Frontend posts `{ businessName, coreServices[], description, uvp }`.
 2. `ClassificationAnalyzeController.analyze()` wraps fields in a `HashMap<String, Object>`.
@@ -61,7 +61,7 @@ All Module 1 requests flow from the React frontend through the Spring Boot orche
 
 ---
 
-### Request Lifecycle 4 — Uniqueness Compute (`POST /api/v1/classification/uniqueness`)
+### Request Lifecycle 4 — Uniqueness Compute (`POST /api/classification/uniqueness`)
 
 1. Frontend posts `{ businessProfileId, businessName, categories[], coreServices[], description, uvp }`.
 2. `UniquenessScoringController.uniqueness()` packages all fields into a `HashMap` and calls `ai.computeUniqueness()`.
@@ -238,16 +238,16 @@ When `_BertModel.get()` returns `None` (model files absent or load failure), eve
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/v1/business-profile` | `permitAll` | Load operator profile by `operatorId` |
-| `PUT` | `/api/v1/business-profile` | `permitAll` | Upsert operator profile; triggers embed |
-| `POST` | `/api/v1/classification/analyze` | `permitAll` | AI category classification (all 7) |
-| `POST` | `/api/v1/classification/uniqueness` | `permitAll` | Uniqueness score computation |
+| `GET` | `/api/business-profile` | `permitAll` | Load operator profile by `operatorId` |
+| `PUT` | `/api/business-profile` | `permitAll` | Upsert operator profile; triggers embed |
+| `POST` | `/api/classification/analyze` | `permitAll` | AI category classification (all 7) |
+| `POST` | `/api/classification/uniqueness` | `permitAll` | Uniqueness score computation |
 
 > All routes are currently `permitAll()` as a scaffolding pass. JWT enforcement against `tbl_msme_operator` is the planned next state. The `operatorId` query parameter is a placeholder for the claim that will come from the JWT subject.
 
 ---
 
-#### `GET /api/v1/business-profile?operatorId={UUID}`
+#### `GET /api/business-profile?operatorId={UUID}`
 
 **Response** `200 OK`:
 ```json
@@ -266,7 +266,7 @@ Returns the same shape with empty strings and `null` scores when no profile exis
 
 ---
 
-#### `PUT /api/v1/business-profile?operatorId={UUID}`
+#### `PUT /api/business-profile?operatorId={UUID}`
 
 **Request body** (mirrors `BusinessProfileDto`):
 ```json
@@ -288,7 +288,7 @@ Returns the same shape with empty strings and `null` scores when no profile exis
 
 ---
 
-#### `POST /api/v1/classification/analyze`
+#### `POST /api/classification/analyze`
 
 **Request**:
 ```json
@@ -318,7 +318,7 @@ Always returns all 7 categories. Percentages sum to exactly 100 (last category a
 
 ---
 
-#### `POST /api/v1/classification/uniqueness`
+#### `POST /api/classification/uniqueness`
 
 **Request**:
 ```json

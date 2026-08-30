@@ -70,7 +70,27 @@ public class MarketDtos {
         /** GDP growth time-series (up to 5 years, chronological). Nullable — absent from stub responses. */
         List<GdpTrendPointDto> gdpTrend,
         /** Forex rate time-series (up to 12 months, chronological). Nullable — absent from stub responses. */
-        List<ForexTrendPointDto> forexTrend
+        List<ForexTrendPointDto> forexTrend,
+        /** ISO country code for the flag glyph, derived from the market name. */
+        String flag,
+        /** ISO currency code — MarketEconomicTrend.currencyCode. */
+        String currency,
+        /** Human label for the forex axis, e.g. "PHP per 1 KRW". */
+        String forexLabel,
+        /** MarketScore.gdpPerCapitaGrowth, falling back to MarketEconomicTrend.gdpLatest. */
+        double gdpValue,
+        /** MarketScore.forexVsPhp, falling back to MarketEconomicTrend.forexLatest. */
+        double forexValue,
+        /** MarketScore.seasonalityScore. */
+        double seasonalityScore,
+        /**
+         * Year-over-year arrivals ratio (tbl_market_score.yoy_ratio, added in V20).
+         * Nullable: rows written before V20 have no value, so the frontend's
+         * Seasonal Patterns tab keeps an explicit "not available" state.
+         */
+        Double yoyRatio,
+        /** MarketScore.spikeIndicator. */
+        boolean spikeIndicator
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

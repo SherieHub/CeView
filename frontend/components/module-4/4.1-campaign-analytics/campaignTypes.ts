@@ -8,7 +8,7 @@
  * against. metrics/flagged/score/label arrive pre-computed by
  * campaignMetrics.ts — slot components only render them.
  */
-import type { CampaignInput, CampaignHistoryEntry, PrescriptiveReport } from '../../../services/fixtures/campaign';
+import type { CampaignInput, CampaignHistoryEntry, PrescriptiveReport } from '@/types';
 
 export interface Metrics {
   ctr: number;

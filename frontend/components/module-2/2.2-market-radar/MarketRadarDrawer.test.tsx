@@ -14,7 +14,7 @@ function renderAt(search: string, onTargetMarket = vi.fn()) {
   const view = render(
     <MemoryRouter initialEntries={[`/dashboard${search}`]}>
       <OverlayStackProvider>
-        <MarketRadarDrawer onTargetMarket={onTargetMarket} />
+        <MarketRadarDrawer markets={MOCK_MARKETS} onTargetMarket={onTargetMarket} />
       </OverlayStackProvider>
     </MemoryRouter>,
   );
@@ -96,7 +96,7 @@ describe('MarketRadarDrawer — URL as the source of truth', () => {
       <MemoryRouter initialEntries={['/dashboard?market=korea']}>
         <OverlayStackProvider>
           <MarketSwitcher />
-          <MarketRadarDrawer />
+          <MarketRadarDrawer markets={MOCK_MARKETS} />
         </OverlayStackProvider>
       </MemoryRouter>,
     );
@@ -119,7 +119,7 @@ describe('MarketRadarDrawer — state resets per market', () => {
       <MemoryRouter initialEntries={['/dashboard?market=korea']}>
         <OverlayStackProvider>
           <MarketSwitcher />
-          <MarketRadarDrawer />
+          <MarketRadarDrawer markets={MOCK_MARKETS} />
         </OverlayStackProvider>
       </MemoryRouter>,
     );
@@ -194,7 +194,7 @@ describe('MarketRadarDrawer — reachable while open', () => {
       <MemoryRouter initialEntries={['/dashboard?market=korea']}>
         <OverlayStackProvider>
           <MarketSwitcher />
-          <MarketRadarDrawer />
+          <MarketRadarDrawer markets={MOCK_MARKETS} />
         </OverlayStackProvider>
       </MemoryRouter>,
     );

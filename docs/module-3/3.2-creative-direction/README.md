@@ -30,8 +30,8 @@ Generates market-specific **visual direction** (visual guide, shot list, lightin
 | `ContentStudioView` | Hosts the creative-direction workflow; calls `api.generateCreative()` / `api.approveCreative()` and holds creative-direction state. | React functional component |
 | `VisualDirectionBoard` | Renders the `guide[]` / `visualGuide[]` staging blueprint per platform. | React board component |
 | `BlueprintStepItem` | Displays a single numbered visual-direction step. | React item component |
-| `api.generateCreative` | API client method — `POST /api/v1/creative-direction/generate/{profileId}`. | TypeScript API client method |
-| `api.approveCreative` | API client method — `POST /api/v1/creative-direction/approve/{profileId}`. | TypeScript API client method |
+| `api.generateCreative` | API client method — `POST /api/creative-direction/generate/{profileId}`. | TypeScript API client method |
+| `api.approveCreative` | API client method — `POST /api/creative-direction/approve/{profileId}`. | TypeScript API client method |
 | `CreativeDirectionDTO` | Response shape `{ visualGuide[], shots[], moodboard }` consumed by the board. | TypeScript interface |
 
 > **UI status note:** `visualGuide[]` is rendered today; the `shots[]` shot list and `moodboard` palette are returned by the backend but not yet visualized in the UI.
@@ -40,7 +40,7 @@ Generates market-specific **visual direction** (visual guide, shot list, lightin
 
 | Component Name | Description & Purpose | Type / Format |
 |----------------|-----------------------|---------------|
-| `CreativeDirectionController` | Exposes `POST /api/v1/creative-direction/generate/{profileId}` and `approve/{profileId}`. | Spring REST Controller |
+| `CreativeDirectionController` | Exposes `POST /api/creative-direction/generate/{profileId}` and `approve/{profileId}`. | Spring REST Controller |
 | `CreativeDirectionService` | Performs the dependency-gate check, context retrieval, FastAPI delegation via `generateCreative()`, transform + persist. | Spring Service |
 | `CreativeApprovalService` | `approveLatest(profileId, market)` — sets `approval_status = true` on the latest output. | Spring Service |
 | `ContentApprovalService` | Provides `hasApprovedContent()` / `getApprovedCaptions()` — the 3.1 dependency gate. | Spring Service |
@@ -88,8 +88,8 @@ Generates market-specific **visual direction** (visual guide, shot list, lightin
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/creative-direction/generate/{profileId}` | Generate visual direction; optional `?market={market}` (requires approved 3.1 content) |
-| POST | `/api/v1/creative-direction/approve/{profileId}` | Approve the latest creative direction output; `?market={market}` |
+| POST | `/api/creative-direction/generate/{profileId}` | Generate visual direction; optional `?market={market}` (requires approved 3.1 content) |
+| POST | `/api/creative-direction/approve/{profileId}` | Approve the latest creative direction output; `?market={market}` |
 
 ## FastAPI Internal Endpoint
 
