@@ -315,7 +315,7 @@ public class AIInferenceGatewayService {
      * {@link AiDependencyException#fromBody} falls to its transport-failure branch
      * instead of masking the real status.
      */
-    private static Map<String, Object> parseErrorBody(String rawBody) {
+    static Map<String, Object> parseErrorBody(String rawBody) {
         if (rawBody == null || rawBody.isBlank()) return Map.of();
         try {
             Map<String, Object> parsed = ERROR_BODY_MAPPER.readValue(rawBody, ERROR_MAP_TYPE);
