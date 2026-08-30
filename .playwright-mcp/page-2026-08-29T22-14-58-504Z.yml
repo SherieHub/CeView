@@ -1,0 +1,73 @@
+- generic [ref=f22e47]:
+  - complementary [ref=f22e48]:
+    - generic [ref=f22e49]:
+      - generic [ref=f22e50]: Ce
+      - generic [ref=f22e51]:
+        - generic [ref=f22e52]: CeView
+        - text: Set up your profile
+    - paragraph [ref=f22e53]: Required steps
+    - list "Onboarding progress" [ref=f22e54]:
+      - listitem [ref=f22e55]:
+        - generic [ref=f22e57]:
+          - generic [ref=f22e58]: Basic Info
+          - generic [ref=f22e59]: Name, industry, slogan
+      - listitem [ref=f22e60]:
+        - generic [ref=f22e62]:
+          - generic [ref=f22e63]: Brand Identity
+          - generic [ref=f22e64]: Vibe and core services
+      - listitem [ref=f22e65]:
+        - generic [ref=f22e67]:
+          - generic [ref=f22e68]: Structured Inputs
+          - generic [ref=f22e69]: Description and UVP
+      - listitem [ref=f22e70]:
+        - generic [ref=f22e72]:
+          - generic [ref=f22e73]: Assets & Links
+          - generic [ref=f22e74]: Socials, logo, website
+      - listitem [ref=f22e75]:
+        - generic [ref=f22e76]: "5"
+        - generic [ref=f22e77]:
+          - generic [ref=f22e78]: Analysis
+          - generic [ref=f22e79]: Categories and uniqueness
+    - generic [ref=f22e80]: Every field feeds the AI. Complete answers produce sharper forecasts and better captions.
+  - main [ref=f22e84]:
+    - generic [ref=f22e230]:
+      - paragraph [ref=f22e231]: Step 5 — Required
+      - heading "Categories and uniqueness" [level=2] [ref=f22e232]
+      - paragraph [ref=f22e233]: The AI reads your description and UVP to infer which tourism categories fit your business, then scores how differentiated you are against the local cohort in those categories.
+      - generic [ref=f22e234]:
+        - paragraph [ref=f22e235]: Inferred categories
+        - generic [ref=f22e239]:
+          - button "Coastal & Island 36%" [pressed] [ref=f22e240] [cursor=pointer]:
+            - text: Coastal & Island
+            - generic [ref=f22e243]: 36%
+          - button "Accommodation & Staycation 34%" [pressed] [ref=f22e244] [cursor=pointer]:
+            - text: Accommodation & Staycation
+            - generic [ref=f22e247]: 34%
+          - button "Adventure & Nature 27%" [ref=f22e248] [cursor=pointer]:
+            - text: Adventure & Nature
+            - generic [ref=f22e250]: 27%
+          - button "Culinary & Gastronomy 3%" [ref=f22e251] [cursor=pointer]:
+            - text: Culinary & Gastronomy
+            - generic [ref=f22e253]: 3%
+          - button "Theme Parks / Entertainment 1%" [ref=f22e254] [cursor=pointer]:
+            - text: Theme Parks / Entertainment
+            - generic [ref=f22e256]: 1%
+      - button "Compute uniqueness score" [ref=f22e257] [cursor=pointer]
+      - generic [ref=f22e265]:
+        - generic [ref=f22e266]:
+          - generic [ref=f22e267]:
+            - paragraph [ref=f22e268]: Overall uniqueness
+            - paragraph [ref=f22e269]: "100"
+          - generic [ref=f22e270]:
+            - paragraph [ref=f22e271]: Description strength
+            - paragraph [ref=f22e272]: "100"
+          - generic [ref=f22e273]:
+            - paragraph [ref=f22e274]: Category fit
+            - paragraph [ref=f22e275]: "100"
+        - status [ref=f22e276]:
+          - generic [ref=f22e279]: Strong differentiation. Your profile stands out clearly against the local cohort in these categories.
+    - generic [ref=f22e104]:
+      - button "Back" [ref=f22e105] [cursor=pointer]
+      - generic [ref=f22e108]:
+        - generic [ref=f22e109]: Step 5 of 5
+        - button "Finish" [ref=f22e261] [cursor=pointer]

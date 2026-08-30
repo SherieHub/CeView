@@ -1,0 +1,234 @@
+- generic [ref=f26e1]:
+  - generic [ref=f26e179]:
+    - navigation "Main" [ref=f26e180]:
+      - generic [ref=f26e181]:
+        - generic [ref=f26e182]: Ce
+        - generic [ref=f26e183]: CeView
+        - button "Collapse sidebar" [expanded] [ref=f26e185] [cursor=pointer]
+      - list [ref=f26e190]:
+        - listitem [ref=f26e191]: Intelligence
+        - listitem [ref=f26e192]:
+          - button "Dashboard 2" [ref=f26e193] [cursor=pointer]:
+            - generic [ref=f26e199]: Dashboard
+            - generic [ref=f26e200]: "2"
+        - listitem [ref=f26e201]: Create
+        - listitem [ref=f26e202]:
+          - button "Content Studio" [ref=f26e203] [cursor=pointer]
+        - listitem [ref=f26e208]:
+          - button "Calendar" [ref=f26e209] [cursor=pointer]
+        - listitem [ref=f26e213]: Measure
+        - listitem [ref=f26e214]:
+          - button "Performance" [ref=f26e215] [cursor=pointer]
+        - listitem [ref=f26e220]: Settings
+        - listitem [ref=f26e221]:
+          - button "Business Profile" [ref=f26e222] [cursor=pointer]
+        - listitem [ref=f26e228]:
+          - button "Platforms" [ref=f26e229] [cursor=pointer]
+        - listitem [ref=f26e237]:
+          - button "Workspace" [ref=f26e238] [cursor=pointer]
+      - generic [ref=f26e245]:
+        - generic [ref=f26e246]: ramon.delacruz@ceview.local
+        - button "Sign out" [ref=f26e247] [cursor=pointer]
+    - generic [ref=f26e249]:
+      - banner [ref=f26e250]:
+        - button "Search" [disabled] [ref=f26e251]
+        - button "Notifications" [disabled] [ref=f26e256]
+      - main [ref=f26e261]:
+        - generic [ref=f26e262]:
+          - generic [ref=f26e263]:
+            - generic [ref=f26e264]:
+              - heading "Good morning, Moalboal FreeDive Cebu" [level=1] [ref=f26e265]
+              - paragraph [ref=f26e266]: Select an alert to see the markets ranked for its category.
+            - generic [ref=f26e267]:
+              - generic [ref=f26e268]:
+                - generic [ref=f26e269]: "74"
+                - generic [ref=f26e270]: Uniqueness
+              - button "Refresh forecast" [ref=f26e275] [cursor=pointer]
+          - generic [ref=f26e281]:
+            - generic [ref=f26e282]:
+              - generic [ref=f26e288]:
+                - generic [ref=f26e289]: Unread alerts
+                - generic [ref=f26e290]: "1"
+              - generic [ref=f26e291]: Across your categories
+            - generic [ref=f26e292]:
+              - generic [ref=f26e296]:
+                - generic [ref=f26e297]: Confirmed surges
+                - generic [ref=f26e298]: "1"
+              - generic [ref=f26e299]: South Korea
+            - button "Top market now South Korea 81/100 · Coastal & Island" [ref=f26e300] [cursor=pointer]:
+              - generic [ref=f26e305]:
+                - generic [ref=f26e306]: Top market now
+                - generic [ref=f26e307]: South Korea
+              - generic [ref=f26e308]: 81/100 · Coastal & Island
+          - generic [ref=f26e312]:
+            - region "Surge Alerts" [ref=f26e313]:
+              - generic [ref=f26e314]:
+                - heading "Surge Alerts" [level=2] [ref=f26e315]
+                - group "Filter alerts" [ref=f26e316]:
+                  - button "All" [pressed] [ref=f26e317] [cursor=pointer]
+                  - button "Unread (1)" [ref=f26e318] [cursor=pointer]
+                  - button "Surges (1)" [ref=f26e319] [cursor=pointer]
+              - generic [ref=f26e320]:
+                - button "Jul 27, 2026 Surge Demand Surge Detected — South Korea Demand window opening for Korea — Moalboal FreeDive Cebu search interest is 31% above the 30-day baseline. Target Korean-market promotion within the next 4 weeks. South Korea Coastal & Island Rising demand window Hide target markets" [expanded] [active] [ref=f26e382] [cursor=pointer]:
+                  - generic [ref=f26e322]:
+                    - generic [ref=f26e323]: Jul 27, 2026
+                    - generic [ref=f26e324]: Surge
+                  - heading "Demand Surge Detected — South Korea" [level=3] [ref=f26e327]
+                  - paragraph [ref=f26e328]: Demand window opening for Korea — Moalboal FreeDive Cebu search interest is 31% above the 30-day baseline. Target Korean-market promotion within the next 4 weeks.
+                  - generic [ref=f26e329]:
+                    - generic [ref=f26e330]: South Korea
+                    - generic [ref=f26e334]: Coastal & Island
+                    - generic [ref=f26e338]: Rising demand window
+                  - generic [ref=f26e342]: Hide target markets
+                - 'button "Aug 29, 2026 Unread Keyword Trend Alert — Coastal & Island South Korea Coastal & Island Top keyword: Cebu beach View target markets" [ref=f26e345] [cursor=pointer]':
+                  - generic [ref=f26e346]:
+                    - generic [ref=f26e348]: Aug 29, 2026
+                    - generic [ref=f26e349]: Unread
+                  - heading "Keyword Trend Alert — Coastal & Island" [level=3] [ref=f26e350]
+                  - paragraph [ref=f26e351]
+                  - generic [ref=f26e352]:
+                    - generic [ref=f26e353]: South Korea
+                    - generic [ref=f26e357]: Coastal & Island
+                    - generic [ref=f26e361]: "Top keyword: Cebu beach"
+                  - generic [ref=f26e365]: View target markets
+            - region "Top Target Markets" [ref=f26e368]:
+              - generic [ref=f26e369]:
+                - heading "Top Target Markets" [level=2] [ref=f26e370]
+                - generic [ref=f26e385]: Coastal & Island
+              - button "1 South Korea Seoul · 2,640 km to Cebu 81 Potential Market potential 81/100 Direct · 3h 45m 14x / week" [ref=f26e389] [cursor=pointer]:
+                - generic [ref=f26e390]:
+                  - generic [ref=f26e391]: "1"
+                  - generic [ref=f26e392]:
+                    - heading "South Korea" [level=3] [ref=f26e393]
+                    - paragraph [ref=f26e394]: Seoul · 2,640 km to Cebu
+                  - generic [ref=f26e395]:
+                    - generic [ref=f26e396]: "81"
+                    - text: Potential
+                - generic [ref=f26e398]:
+                  - generic [ref=f26e399]: Market potential
+                  - generic [ref=f26e400]: 81/100
+                - generic [ref=f26e403]:
+                  - generic [ref=f26e404]:
+                    - generic [ref=f26e407]: Direct
+                    - text: · 3h 45m
+                  - generic [ref=f26e408]: 14x / week
+          - dialog "South Korea market radar" [ref=f26e413]:
+            - button "Close" [ref=f26e414] [cursor=pointer]
+            - generic [ref=f26e418]:
+              - generic [ref=f26e419]:
+                - group "Switch market" [ref=f26e420]:
+                  - button "South Korea" [pressed] [ref=f26e421] [cursor=pointer]
+                - generic [ref=f26e422]:
+                  - generic [ref=f26e423]: "1"
+                  - generic [ref=f26e424]:
+                    - heading "South Korea" [level=2] [ref=f26e425]
+                    - paragraph [ref=f26e426]: Seoul · 2,640 km · 3h 45m direct
+                - paragraph [ref=f26e427]: ICN — Incheon Int'l → CEB — Mactan-Cebu Int'l
+              - region "Demand forecast" [ref=f26e430]:
+                - status [ref=f26e431]:
+                  - generic [ref=f26e432]: Surge confirmed
+                  - paragraph [ref=f26e437]: Demand has broken the 2σ threshold and the pattern repeats year on year — this is a seasonal inflection, not a one-off.
+                - generic [ref=f26e438]:
+                  - generic [ref=f26e439]: Strategic directive
+                  - paragraph [ref=f26e445]: Demand surge detected in South Korea. Activate targeted promotions immediately — prioritise social content and rate adjustments within 48 hours.
+                - generic [ref=f26e446]:
+                  - heading "Demand Forecast" [level=3] [ref=f26e447]
+                  - group "Forecast timeframe" [ref=f26e448]:
+                    - button "4WK" [pressed] [ref=f26e449] [cursor=pointer]
+                    - button "12WK" [ref=f26e450] [cursor=pointer]
+                - application [ref=f26e454]:
+                  - generic [ref=f26e467]:
+                    - generic [ref=f26e468]:
+                      - generic [ref=f26e469]: Wk -11
+                      - generic [ref=f26e471]: Wk -8
+                      - generic [ref=f26e473]: Wk -5
+                      - generic [ref=f26e475]: Wk -2
+                      - generic [ref=f26e477]: Wk +1
+                      - generic [ref=f26e479]: Wk +4
+                    - generic [ref=f26e481]:
+                      - generic [ref=f26e482]: "0"
+                      - generic [ref=f26e484]: "30"
+                      - generic [ref=f26e486]: "70"
+                      - generic [ref=f26e488]: "100"
+                - list [ref=f26e490]:
+                  - listitem [ref=f26e491]:
+                    - generic [ref=f26e493]:
+                      - generic [ref=f26e494]: Low 0–30
+                      - text: Discount to fill
+                  - listitem [ref=f26e495]:
+                    - generic [ref=f26e497]:
+                      - generic [ref=f26e498]: Moderate 31–70
+                      - text: Hold rates
+                  - listitem [ref=f26e499]:
+                    - generic [ref=f26e501]:
+                      - generic [ref=f26e502]: High peak 71–100
+                      - text: Raise rates early
+              - region "Market insights" [ref=f26e503]:
+                - tablist "Market insights" [ref=f26e504]:
+                  - tab "Purchasing Power" [selected] [ref=f26e505] [cursor=pointer]
+                  - tab "Seasonal Patterns" [ref=f26e506] [cursor=pointer]
+                - tabpanel "Purchasing Power" [ref=f26e507]:
+                  - generic [ref=f26e508]:
+                    - generic [ref=f26e509]:
+                      - generic [ref=f26e514]:
+                        - generic [ref=f26e515]: PHP per 1 KRW
+                        - generic [ref=f26e516]: "0.04"
+                      - generic [ref=f26e517]: KRW
+                    - generic [ref=f26e518]:
+                      - generic [ref=f26e523]:
+                        - generic [ref=f26e524]: GDP growth
+                        - generic [ref=f26e525]: 2.1%
+                      - generic [ref=f26e526]: Year on year
+                    - generic [ref=f26e527]:
+                      - generic [ref=f26e531]:
+                        - generic [ref=f26e532]: Avg flight price
+                        - generic [ref=f26e533]: ₱8,000 – ₱15,000
+                      - generic [ref=f26e534]: Round trip
+                    - generic [ref=f26e535]:
+                      - generic [ref=f26e540]:
+                        - generic [ref=f26e541]: Accessibility
+                        - generic [ref=f26e542]: 9/10
+                      - generic [ref=f26e543]: 14x weekly
+                  - generic [ref=f26e544]:
+                    - generic [ref=f26e545]: What this means
+                    - paragraph [ref=f26e551]: GDP is showing moderate growth (2.1% YoY). The exchange rate signals strong purchasing power for visitors spending in Cebu — an XGBoost economic viability score was used to weight this market's accessibility alongside flight data.
+                  - generic [ref=f26e552]:
+                    - generic [ref=f26e553]:
+                      - generic [ref=f26e554]:
+                        - paragraph [ref=f26e555]: PHP per 1 KRW · 12 months
+                        - generic [ref=f26e556]:
+                          - generic [ref=f26e557]: "0.04"
+                          - generic [ref=f26e558]: ▲ 0.04–0.04
+                      - application [ref=f26e561]
+                    - generic [ref=f26e566]:
+                      - generic [ref=f26e567]:
+                        - paragraph [ref=f26e568]: GDP growth · 5 years
+                        - generic [ref=f26e569]:
+                          - generic [ref=f26e570]: 2.1%
+                          - generic [ref=f26e571]: ▼ 1.4%–2.6%
+                      - application [ref=f26e574]
+              - region "Route and carriers" [ref=f26e579]:
+                - heading "Route & Carriers" [level=3] [ref=f26e580]
+                - generic [ref=f26e581]:
+                  - paragraph [ref=f26e582]: ICN — Incheon Int'l → CEB — Mactan-Cebu Int'l · 14x / week · ₱8,000 – ₱15,000
+                  - list [ref=f26e583]:
+                    - listitem [ref=f26e584]:
+                      - generic [ref=f26e585]: KE
+                      - generic [ref=f26e586]:
+                        - generic [ref=f26e587]: Korean Air
+                        - text: 7x / week
+                      - generic [ref=f26e588]: Direct
+                    - listitem [ref=f26e591]:
+                      - generic [ref=f26e592]: 5J
+                      - generic [ref=f26e593]:
+                        - generic [ref=f26e594]: Cebu Pacific
+                        - text: 5x / week
+                      - generic [ref=f26e595]: Direct
+                    - listitem [ref=f26e598]:
+                      - generic [ref=f26e599]: BX
+                      - generic [ref=f26e600]:
+                        - generic [ref=f26e601]: Air Busan
+                        - text: 2x / week
+                      - generic [ref=f26e602]: Direct
+            - button "Target this market" [ref=f26e606] [cursor=pointer]
+  - generic [ref=f26e610]: "0"

@@ -1,0 +1,66 @@
+- generic [ref=f22e280]:
+  - navigation "Main" [ref=f22e281]:
+    - generic [ref=f22e282]:
+      - generic [ref=f22e283]: Ce
+      - generic [ref=f22e284]: CeView
+      - button "Collapse sidebar" [expanded] [ref=f22e286] [cursor=pointer]
+    - list [ref=f22e291]:
+      - listitem [ref=f22e292]: Intelligence
+      - listitem [ref=f22e293]:
+        - button "Dashboard 2" [ref=f22e294] [cursor=pointer]:
+          - generic [ref=f22e300]: Dashboard
+          - generic [ref=f22e301]: "2"
+      - listitem [ref=f22e302]: Create
+      - listitem [ref=f22e303]:
+        - button "Content Studio" [ref=f22e304] [cursor=pointer]
+      - listitem [ref=f22e309]:
+        - button "Calendar" [ref=f22e310] [cursor=pointer]
+      - listitem [ref=f22e314]: Measure
+      - listitem [ref=f22e315]:
+        - button "Performance" [ref=f22e316] [cursor=pointer]
+      - listitem [ref=f22e321]: Settings
+      - listitem [ref=f22e322]:
+        - button "Business Profile" [ref=f22e323] [cursor=pointer]
+      - listitem [ref=f22e329]:
+        - button "Platforms" [ref=f22e330] [cursor=pointer]
+      - listitem [ref=f22e338]:
+        - button "Workspace" [ref=f22e339] [cursor=pointer]
+    - generic [ref=f22e346]:
+      - generic [ref=f22e347]: task21tester@example.com
+      - button "Sign out" [ref=f22e348] [cursor=pointer]
+  - generic [ref=f22e350]:
+    - banner [ref=f22e351]:
+      - button "Search" [disabled] [ref=f22e352]
+      - button "Notifications" [disabled] [ref=f22e357]
+    - main [ref=f22e362]:
+      - generic [ref=f22e363]:
+        - generic [ref=f22e364]:
+          - generic [ref=f22e365]:
+            - heading "Good morning, Sunset Cove Beach Resort" [level=1] [ref=f22e366]
+            - paragraph [ref=f22e367]: No forecast data yet — run your first analysis to start receiving alerts.
+          - generic [ref=f22e368]:
+            - generic [ref=f22e369]:
+              - generic [ref=f22e370]: "100"
+              - generic [ref=f22e371]: Uniqueness
+            - button "Refresh forecast" [ref=f22e376] [cursor=pointer]
+        - generic [ref=f22e382]:
+          - generic [ref=f22e383]:
+            - generic [ref=f22e389]:
+              - generic [ref=f22e390]: Unread alerts
+              - generic [ref=f22e391]: "0"
+            - generic [ref=f22e392]: You are all caught up
+          - generic [ref=f22e393]:
+            - generic [ref=f22e397]:
+              - generic [ref=f22e398]: Confirmed surges
+              - generic [ref=f22e399]: "0"
+            - generic [ref=f22e400]: Nothing above threshold
+          - button "Top market now — No markets ranked yet" [disabled] [ref=f22e401]:
+            - generic [ref=f22e406]:
+              - generic [ref=f22e407]: Top market now
+              - generic [ref=f22e408]: —
+            - generic [ref=f22e409]: No markets ranked yet
+        - region "Surge Alerts" [ref=f22e412]:
+          - heading "Surge Alerts" [level=2] [ref=f22e413]
+          - generic [ref=f22e415]:
+            - heading "No notifications yet" [level=3] [ref=f22e422]
+            - paragraph [ref=f22e423]: Market trend data will appear here once your profile has been analysed and the first forecast run completes.

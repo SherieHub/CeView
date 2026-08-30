@@ -1,0 +1,206 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - navigation "Main" [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: Ce
+        - generic [ref=e9]: CeView
+        - button "Collapse sidebar" [expanded] [ref=e11] [cursor=pointer]
+      - list [ref=e16]:
+        - listitem [ref=e17]: Intelligence
+        - listitem [ref=e18]:
+          - button "Dashboard 2" [ref=e19] [cursor=pointer]:
+            - generic [ref=e25]: Dashboard
+            - generic [ref=e26]: "2"
+        - listitem [ref=e27]: Create
+        - listitem [ref=e28]:
+          - button "Content Studio" [ref=e29] [cursor=pointer]
+        - listitem [ref=e34]:
+          - button "Calendar" [ref=e35] [cursor=pointer]
+        - listitem [ref=e39]: Measure
+        - listitem [ref=e40]:
+          - button "Performance" [ref=e41] [cursor=pointer]
+        - listitem [ref=e46]: Settings
+        - listitem [ref=e47]:
+          - button "Business Profile" [ref=e48] [cursor=pointer]
+        - listitem [ref=e54]:
+          - button "Platforms" [ref=e55] [cursor=pointer]
+        - listitem [ref=e63]:
+          - button "Workspace" [ref=e64] [cursor=pointer]
+      - button "Sign out" [ref=e72] [cursor=pointer]
+    - generic [ref=e74]:
+      - banner [ref=e75]:
+        - button "Search" [disabled] [ref=e76]
+        - button "Notifications" [disabled] [ref=e81]
+      - main [ref=e86]:
+        - generic [ref=e186]:
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - heading "Performance" [level=2] [ref=e226]
+              - paragraph [ref=e227]: Campaign scored 0.64 — Good Performance.
+            - button "New submission" [ref=e228] [cursor=pointer]
+          - generic [ref=e232]:
+            - generic [ref=e233]: CTR
+            - generic [ref=e234]: "0.66"
+            - generic [ref=e235]: 73.6%
+          - generic [ref=e239]:
+            - generic [ref=e240]: CPC
+            - generic [ref=e241]: "1.43"
+            - generic [ref=e242]: 28.6%
+          - generic [ref=e246]:
+            - generic [ref=e247]: ROAS
+            - generic [ref=e248]: "8.75"
+            - generic [ref=e249]: 75.0%
+          - generic [ref=e253]:
+            - generic [ref=e254]: CR
+            - generic [ref=e255]: "4.00"
+            - generic [ref=e256]: 11.1%
+          - generic [ref=e260]:
+            - generic [ref=e261]: CAC
+            - generic [ref=e262]: "117.65"
+            - generic [ref=e263]: 21.6%
+          - generic [ref=e267]:
+            - heading "Performance Score" [level=3] [ref=e268]
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - application [ref=e272]
+                - generic:
+                  - generic: "0.64"
+                  - generic: out of 1.00
+              - paragraph [ref=e301]: Good Performance
+            - generic [ref=e302]:
+              - heading "Contribution breakdown" [level=4] [ref=e303]
+              - generic [ref=e305]:
+                - generic [ref=e306]:
+                  - text: ROAS
+                  - generic [ref=e307]: (35%)
+                - generic [ref=e308]: "0.350"
+              - generic [ref=e312]:
+                - generic [ref=e313]:
+                  - text: Conv. Rate
+                  - generic [ref=e314]: (30%)
+                - generic [ref=e315]: "0.080"
+              - generic [ref=e319]:
+                - generic [ref=e320]:
+                  - text: CAC (Inv)
+                  - generic [ref=e321]: (15%)
+                - generic [ref=e322]: "0.146"
+              - generic [ref=e326]:
+                - generic [ref=e327]:
+                  - text: CTR
+                  - generic [ref=e328]: (15%)
+                - generic [ref=e329]: "0.010"
+              - generic [ref=e333]:
+                - generic [ref=e334]:
+                  - text: CPC (Inv)
+                  - generic [ref=e335]: (5%)
+                - generic [ref=e336]: "0.050"
+            - paragraph [ref=e339]: PES = ROAS×0.35 + CR×0.30 + CAC⁻¹×0.15 + CTR×0.15 + CPC⁻¹×0.05
+          - generic [ref=e340]:
+            - heading "Customer Journey Funnel" [level=3] [ref=e341]
+            - generic [ref=e342]:
+              - generic [ref=e344]:
+                - generic [ref=e345]: Impressions
+                - generic [ref=e346]: 424,242
+              - generic [ref=e351]:
+                - generic [ref=e352]: Clicks
+                - generic [ref=e353]:
+                  - generic [ref=e354]: 2,800
+                  - generic [ref=e355]: "-99.3% drop-off"
+              - generic [ref=e359]:
+                - generic [ref=e360]: Conversions
+                - generic [ref=e361]:
+                  - generic [ref=e362]: "185"
+                  - generic [ref=e363]: "-93.4% drop-off"
+              - generic [ref=e367]:
+                - generic [ref=e368]: Bookings
+                - generic [ref=e369]:
+                  - generic [ref=e370]: "112"
+                  - generic [ref=e371]: "-39.5% drop-off"
+          - generic [ref=e374]:
+            - generic [ref=e375]:
+              - generic [ref=e376]:
+                - heading "PES Trend" [level=3] [ref=e377]
+                - paragraph [ref=e378]: Weekly Performance Efficiency Score against the label-threshold bands.
+              - group "Trend window" [ref=e379]:
+                - button "4WK" [pressed] [ref=e380] [cursor=pointer]
+                - button "8WK" [ref=e381] [cursor=pointer]
+            - application [ref=e385]:
+              - generic [ref=e399]:
+                - generic [ref=e400]:
+                  - generic [ref=e401]: Apr 6–Apr 12
+                  - generic [ref=e403]: Apr 13–Apr 19
+                  - generic [ref=e405]: Apr 20–Apr 26
+                  - generic [ref=e407]: Jan 1–Jan 1
+                - generic [ref=e409]:
+                  - generic [ref=e410]: "0"
+                  - generic [ref=e412]: "0.25"
+                  - generic [ref=e414]: "0.5"
+                  - generic [ref=e416]: "0.75"
+                  - generic [ref=e418]: "1"
+                - generic [ref=e420]: "0.40"
+                - generic [ref=e421]: "0.60"
+                - generic [ref=e422]: "0.80"
+          - generic [ref=e423]:
+            - generic [ref=e424]:
+              - heading "Efficiency Trend" [level=3] [ref=e425]
+              - paragraph [ref=e426]: ROAS, CTR and conversion rate over the selected window.
+            - generic [ref=e429]:
+              - list [ref=e431]:
+                - listitem [ref=e432]:
+                  - img "CTR legend icon" [ref=e433]
+                  - text: CTR
+                - listitem [ref=e435]:
+                  - img "Conversion rate legend icon" [ref=e436]
+                  - text: Conversion rate
+                - listitem [ref=e438]:
+                  - img "ROAS legend icon" [ref=e439]
+                  - text: ROAS
+              - application [ref=e441]:
+                - generic [ref=e471]:
+                  - generic [ref=e472]:
+                    - generic [ref=e473]: Apr 6–Apr 12
+                    - generic [ref=e475]: Apr 13–Apr 19
+                    - generic [ref=e477]: Apr 20–Apr 26
+                    - generic [ref=e479]: Jan 1–Jan 1
+                  - generic [ref=e481]:
+                    - generic [ref=e482]: "0"
+                    - generic [ref=e484]: "5"
+                    - generic [ref=e486]: "10"
+                    - generic [ref=e488]: "15"
+                    - generic [ref=e490]: "20"
+          - generic [ref=e492]:
+            - generic [ref=e493]:
+              - heading "Cost Trend" [level=3] [ref=e494]
+              - paragraph [ref=e495]: Cost per click and customer acquisition cost over the selected window.
+            - generic [ref=e498]:
+              - list [ref=e500]:
+                - listitem [ref=e501]:
+                  - img "CAC (₱) legend icon" [ref=e502]
+                  - text: CAC (₱)
+                - listitem [ref=e504]:
+                  - img "CPC (₱) legend icon" [ref=e505]
+                  - text: CPC (₱)
+              - application [ref=e507]:
+                - generic [ref=e529]:
+                  - generic [ref=e530]:
+                    - generic [ref=e531]: Apr 6–Apr 12
+                    - generic [ref=e533]: Apr 13–Apr 19
+                    - generic [ref=e535]: Apr 20–Apr 26
+                    - generic [ref=e537]: Jan 1–Jan 1
+                  - generic [ref=e539]:
+                    - generic [ref=e540]: "0"
+                    - generic [ref=e542]: "30"
+                    - generic [ref=e544]: "60"
+                    - generic [ref=e546]: "90"
+                    - generic [ref=e548]: "120"
+          - paragraph [ref=e551]: The report service returned no content. POST /api/analytics/report responded 200 with an empty body.
+          - generic [ref=e552]:
+            - generic [ref=e553]:
+              - heading "Previously Published" [level=3] [ref=e554]
+              - group "Platform filter" [ref=e555]:
+                - button "All" [pressed] [ref=e556] [cursor=pointer]
+                - button "TikTok" [ref=e557] [cursor=pointer]
+                - button "Instagram" [ref=e558] [cursor=pointer]
+                - button "Facebook" [ref=e559] [cursor=pointer]
+            - paragraph [ref=e561]: Nothing published yet for this filter.
+  - generic [ref=e562]: "30"

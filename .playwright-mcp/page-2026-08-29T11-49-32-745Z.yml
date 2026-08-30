@@ -1,0 +1,35 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: CeView
+    - generic [ref=e6]:
+      - heading "Know the surge before it lands." [level=1] [ref=e7]
+      - paragraph [ref=e8]: Demand forecasting and market-localized content for Cebu's tourism businesses.
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: "21"
+        - generic [ref=e12]: category × market signals
+      - generic [ref=e13]:
+        - generic [ref=e14]: "3"
+        - generic [ref=e15]: tracked source markets
+      - generic [ref=e16]:
+        - generic [ref=e17]: 24/7
+        - generic [ref=e18]: surge monitoring
+  - generic [ref=e20]:
+    - tablist [ref=e21]:
+      - tab "Sign in" [selected] [ref=e22] [cursor=pointer]
+      - tab "Create account" [ref=e23] [cursor=pointer]
+    - heading "Sign In" [level=2] [ref=e24]
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: Email
+        - textbox "Email" [ref=e28]:
+          - /placeholder: you@example.com
+          - text: ramon.delacruz@ceview.local
+      - generic [ref=e29]:
+        - generic [ref=e30]: Password
+        - textbox "Password" [ref=e31]:
+          - /placeholder: ••••••••
+          - text: MoalboalDive2024!
+      - paragraph [ref=e34]: Something went wrong. Check your details and try again.
+      - button "Sign in" [ref=e32] [cursor=pointer]
+    - button "Continue with Google" [ref=e33] [cursor=pointer]
