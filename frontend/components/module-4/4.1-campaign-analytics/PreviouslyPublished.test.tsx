@@ -11,7 +11,7 @@ const POSTS: PublishedPost[] = [
   { id: 'p3', date: '2026-07-30', platform: 'facebook', caption: 'FB post', status: 'published', reach: 22100, likes: 1510, comments: 210, shares: 522, engagementRate: 10.1, series: [6, 11, 16] },
   { id: 'p4', date: '2026-07-28', platform: 'instagram', caption: 'IG post two', status: 'published', reach: 18600, likes: 1180, comments: 64, shares: 301, engagementRate: 8.8, series: [5, 9, 13] },
   { id: 'p5', date: '2026-08-12', platform: 'facebook', caption: 'Draft one', status: 'draft', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] },
-  { id: 'p6', date: '2026-08-18', platform: 'naver', caption: 'Draft two', status: 'draft', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] },
+  { id: 'p6', date: '2026-08-18', platform: 'facebook', caption: 'Draft two', status: 'draft', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] },
 ];
 
 vi.mock('../../../services/apiClient', () => ({
@@ -40,14 +40,12 @@ beforeEach(() => {
 });
 
 describe('PreviouslyPublished', () => {
-  it('shows exactly the filter tabs All / TikTok / Instagram / Facebook (no Naver tab)', async () => {
+  it('shows exactly the filter tabs All / TikTok / Instagram / Facebook', async () => {
     await ready();
 
-    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'TikTok' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Instagram' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Facebook' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Naver' })).not.toBeInTheDocument();
+    for (const label of ['All', 'TikTok', 'Instagram', 'Facebook']) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+    }
   });
 
   it('the default "All" filter lists every published post and none of the drafts', async () => {

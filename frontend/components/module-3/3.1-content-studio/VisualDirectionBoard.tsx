@@ -26,7 +26,7 @@ export default function VisualDirectionBoard({ activePlatform = 'instagram' }: P
     <section className="card" aria-labelledby="visual-direction-title">
       <div className="flex items-start gap-3">
         <span className="conn-ico" aria-hidden="true"><Camera /></span>
-        <div><h2 id="visual-direction-title" className="heading-lg">Visual direction</h2><p className="body-sm">Shot-list guidance for {activePlatform === 'naver' ? 'Naver Blog' : activePlatform}.</p></div>
+        <div><h2 id="visual-direction-title" className="heading-lg">Visual direction</h2><p className="body-sm">Shot-list guidance for {activePlatform}.</p></div>
       </div>
 
       {loading && (
