@@ -151,13 +151,13 @@ class AiDependencyPassthroughTest {
     void anAuthoredTimeoutCauseBecomesTheContract() {
         AiDependencyException ex = AiDependencyException.unreachableAfterTimeout(
                 "content/generate",
-                new RuntimeException("no response within 30s (the service may still be loading its model)"));
+                "no response within 30s (the service may still be loading its model)");
 
         assertThat(ex.getStatus()).isEqualTo(503);
         assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
         assertThat(ex.getDependency()).isEqualTo("fastapi");
         assertThat(ex.getCause2()).isEqualTo(
-                "RuntimeException: no response within 30s (the service may still be loading its model)");
+                "no response within 30s (the service may still be loading its model)");
         assertThat(ex.getStage()).isEqualTo("spring/content/generate");
     }
 
