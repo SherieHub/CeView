@@ -142,13 +142,20 @@ describe('CampaignAnalyticsView', () => {
       vi.advanceTimersByTime(1200);
     });
     vi.useRealTimers();
-    await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
+    // Wait for the window to actually be populated, not just for the probe to
+    // mount: the probe appears as soon as `campaign` is set (synchronous with
+    // submission), but `history` lands a tick later via a separate async
+    // apiClient.campaign.history() call — asserting right after presence
+    // alone races that fetch and can catch data-window-length at its
+    // pre-fetch "0" value.
+    await waitFor(() =>
+      expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute(
+        'data-window-length',
+        String(MOCK_HISTORY.slice(-4).length)
+      )
+    );
 
     expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute('data-weeks', '4');
-    expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute(
-      'data-window-length',
-      String(MOCK_HISTORY.slice(-4).length)
-    );
 
     // Simulates PesTrendChart's own toggle calling back up via onWeeksChange —
     // the real toggle UI belongs to that (still-stubbed) sibling card, not

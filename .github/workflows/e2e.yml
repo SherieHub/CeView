@@ -12,15 +12,22 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  # Determines which screens' spec files actually need to run for a given PR.
-  # Every leg of the `e2e` matrix below still always runs on push/schedule/
-  # workflow_dispatch — this job's output only narrows what runs on
-  # pull_request events. See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
+  # Determines which screens' spec files actually need to run for a given PR,
+  # and resolves that straight down into the `screens` output consumed by the
+  # `e2e` job's `strategy.matrix` below. Every screen still always runs on
+  # push/schedule/workflow_dispatch — only pull_request events get narrowed.
+  # See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
   # ("Testing strategy") for the reasoning.
+  #
+  # This used to be a static matrix on the `e2e` job filtered by a per-leg
+  # `if: contains(..., matrix.screen)` — but `matrix` isn't in scope for a
+  # job's own `if:` (only for its steps), so GitHub rejects the whole
+  # workflow file as invalid before any job runs. Computing the matrix
+  # contents here instead avoids referencing `matrix` outside step context.
   changes:
     runs-on: ubuntu-latest
     outputs:
-      changes: ${{ steps.filter.outputs.changes }}
+      screens: ${{ steps.screens.outputs.screens }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -67,29 +74,36 @@ jobs:
               - 'frontend/components/module-4/4.1-campaign-analytics/**'
               - 'e2e/tests/performance.spec.ts'
 
+      # Resolves the filter output above into the actual list of screens the
+      # `e2e` job's matrix should run: the full roster on push/schedule/
+      # workflow_dispatch (unfiltered safety-net) or on a pull_request that
+      # touched `foundation`; otherwise just the screens whose own paths (or
+      # spec file) changed.
+      - name: Compute the screen matrix to run
+        id: screens
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED: ${{ steps.filter.outputs.changes }}
+        run: |
+          ALL='["login","onboarding-wizard","settings-business-profile","dashboard","market-radar-drawer","content-studio","calendar","settings-platforms","settings-workspace","performance"]'
+          if [ "$EVENT_NAME" != "pull_request" ] || jq -e 'index("foundation")' <<< "$CHANGED" >/dev/null; then
+            SCREENS="$ALL"
+          else
+            SCREENS=$(jq -cn --argjson all "$ALL" --argjson changed "$CHANGED" \
+              '[$all[] | select(. as $s | $changed | index($s) != null)]')
+          fi
+          echo "screens=$SCREENS" >> "$GITHUB_OUTPUT"
+
   e2e:
     needs: changes
+    # Skip the job entirely (rather than expanding a matrix of zero and
+    # having GitHub report a green no-op) when nothing matched — only
+    # possible on a pull_request that touched none of these screens.
+    if: needs.changes.outputs.screens != '[]'
     strategy:
       fail-fast: false
       matrix:
-        screen:
-          - login
-          - onboarding-wizard
-          - settings-business-profile
-          - dashboard
-          - market-radar-drawer
-          - content-studio
-          - calendar
-          - settings-platforms
-          - settings-workspace
-          - performance
-    # Runs unconditionally on push/schedule/workflow_dispatch (full safety-net
-    # run). On pull_request, only runs when this screen's own paths changed or
-    # a `foundation` path changed (shared infra can break any screen).
-    if: >-
-      github.event_name != 'pull_request' ||
-      contains(fromJSON(needs.changes.outputs.changes), matrix.screen) ||
-      contains(fromJSON(needs.changes.outputs.changes), 'foundation')
+        screen: ${{ fromJSON(needs.changes.outputs.screens) }}
     runs-on: ubuntu-latest
     name: e2e-screen (${{ matrix.screen }})
     # See the original workflow's note: fastapi-sbert's cold-start HF model
