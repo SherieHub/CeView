@@ -75,7 +75,15 @@ export interface UniquenessResult {
   categoryFeedback: string;
 }
 
-export type PlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+/**
+ * The platforms CeView generates for and publishes to.
+ *
+ * Naver Blog was removed as a generation target (spec §2a) — its captions were
+ * hardcoded Korean text injected on the success path, not model output. The AI
+ * may still *recommend* Naver as a channel; it is simply not something this app
+ * writes copy for.
+ */
+export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
 
 export interface PlatformConnection {
   platform: PlatformId;
@@ -304,16 +312,15 @@ export interface ContentResponse {
   framework: string;
   source: ContentSource;
   /**
-   * Deviates from the plan's `Record<string, PlatformCaptions>` — the fixture's
-   * real shape (ui-ux-prototype.html:1093–1391 / CaptionsByPlatform) is a fixed
-   * four-platform object, not an open string-keyed map. Kept as-is to avoid
+   * Deviates from the plan's `Record<string, PlatformCaptions>` — the real
+   * shape is a fixed three-platform object, not an open string-keyed map, so
+   * an empty `{}` doesn't typecheck as a stand-in. Kept explicit to avoid
    * silently widening/losing the per-platform keys.
    */
   captions: {
     instagram: PlatformCaptions;
     tiktok: PlatformCaptions;
     facebook: PlatformCaptions;
-    naver: PlatformCaptions;
   };
 }
 

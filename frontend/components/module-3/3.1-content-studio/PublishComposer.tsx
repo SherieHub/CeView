@@ -3,8 +3,8 @@ import type { PlatformId } from '../../../types';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
 
-const PLATFORM_LABELS: Record<PlatformId, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', naver: 'Naver Blog' };
-const CONNECTED: PlatformId[] = ['instagram', 'tiktok', 'facebook', 'naver'];
+const PLATFORM_LABELS: Record<PlatformId, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+const CONNECTED: PlatformId[] = ['instagram', 'tiktok', 'facebook'];
 
 function blockReason(draft: PublishDraftState, audit: ComposerSlotProps['audit']) {
   if (!draft.caption.trim()) return 'Approve or write a caption first.';
