@@ -30,7 +30,7 @@ export default function DrawerChartPanel({
       {/* Tabbed cards: the label straddles the top edge rather than leading the
           sentence, so the two states are told apart at a glance instead of by
           reading the first three words. */}
-      {market.spikeIndicator ? (
+      {market.spikeIndicator === true ? (
         <div className="info-card" data-tone="critical" role="status">
           <span className="info-tab">Surge confirmed</span>
           <div className="info-body">

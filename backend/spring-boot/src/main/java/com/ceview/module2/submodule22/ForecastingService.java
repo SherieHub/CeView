@@ -1,6 +1,7 @@
 package com.ceview.module2.submodule22;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.ai.AiDependencyException;
 import com.ceview.module1.businessinput.BusinessProfile;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.MarketFlags;
@@ -16,6 +17,8 @@ import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
+import com.ceview.module2.submodule21.TrendFetchJob;
+import com.ceview.module2.submodule21.TrendFetchJobRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -80,6 +83,7 @@ public class ForecastingService {
     private final ExternalMarketDataClient externalClient;
     private final MarketSignalRecordRepository signalRepo;
     private final MarketEconomicTrendRepository economicTrendRepo;
+    private final TrendFetchJobRepository jobRepo;
     private final ObjectMapper objectMapper;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
@@ -92,6 +96,7 @@ public class ForecastingService {
                               ExternalMarketDataClient externalClient,
                               MarketSignalRecordRepository signalRepo,
                               MarketEconomicTrendRepository economicTrendRepo,
+                              TrendFetchJobRepository jobRepo,
                               ObjectMapper objectMapper) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
@@ -103,7 +108,26 @@ public class ForecastingService {
         this.externalClient     = externalClient;
         this.signalRepo         = signalRepo;
         this.economicTrendRepo  = economicTrendRepo;
+        this.jobRepo            = jobRepo;
         this.objectMapper       = objectMapper;
+    }
+
+    /**
+     * No genuinely-measured signal exists for this market.
+     *
+     * <p>Deliberately not an empty forecast: a zeroed market score renders as a
+     * real "demand is low" reading. The operator needs to know the difference
+     * between "we measured low demand" and "we could not measure".
+     */
+    public static AiDependencyException noMarketData(String market, String lastIngestionError) {
+        return AiDependencyException.fromBody(503, java.util.Map.of(
+                "code", "MOD22_NO_MARKET_DATA",
+                "message", "No measured demand data exists for " + market + " yet.",
+                "dependency", "pytrends",
+                "cause", lastIngestionError == null
+                        ? "no successful trend fetch has completed for this market"
+                        : lastIngestionError,
+                "stage", "spring/forecasting"), "forecasting/markets");
     }
 
     /**
@@ -348,7 +372,8 @@ public class ForecastingService {
                                 t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
                         double latest = t.getGdpLatest() != null ? t.getGdpLatest()
                                 : (pts.isEmpty() ? 2.0 : pts.get(pts.size() - 1).value());
-                        return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                        return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
+                                pts, latest, t.getFetchedAt());
                     } catch (Exception e) {
                         return null;
                     }
@@ -365,7 +390,8 @@ public class ForecastingService {
                                 t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
                         double latest = t.getForexLatest() != null ? t.getForexLatest()
                                 : (pts.isEmpty() ? 1.0 : pts.get(pts.size() - 1).value());
-                        return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market, pts, latest);
+                        return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
+                                pts, latest, t.getFetchedAt());
                     } catch (Exception e) {
                         return null;
                     }
@@ -451,35 +477,26 @@ public class ForecastingService {
             GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
             ForexTrendDto forexTrend = externalClient.fetchForexTrend(market);
 
-            // Build enriched sequence; fall back to safe defaults when signal records are
-            // absent (fresh profile, ingestion not yet run) so the pipeline can still
-            // return degraded-but-valid market cards rather than a 500.
+            // Build enriched sequence. When no genuinely-measured signal data
+            // exists, this is reported as a structured MOD22_NO_MARKET_DATA (503)
+            // rather than fabricating a baseline series — an invented "demand is
+            // ~50" reading is indistinguishable from a real one once forecast.
             Map<String, Object> sequence;
             try {
                 sequence = sequenceBuilder.buildSequence(profileId, market, primaryCategory);
             } catch (IllegalStateException seqEx) {
                 if ("enriched_dataset_empty".equals(seqEx.getMessage())) {
                     MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
-                    log.warn("No enriched signal data for market={} profile={} — using baseline defaults",
-                            market, profileId);
+                    String lastError = jobRepo.findTopByMarketOrderByLastAttemptedAtDesc(market)
+                            .map(TrendFetchJob::getLastError)
+                            .orElse(null);
+                    log.warn("No measured signal data for market={} profile={} — "
+                             + "MOD22_NO_MARKET_DATA (last ingestion error: {})",
+                            market, profileId, lastError);
                     MDC.remove("code");
-                    Map<String, Object> defaultSeq = new LinkedHashMap<>();
-                    defaultSeq.put("profileId",       profileId.toString());
-                    defaultSeq.put("market",          market);
-                    defaultSeq.put("trendSeries",     List.of(45.0, 48.0, 50.0, 52.0));
-                    defaultSeq.put("rolling7dAvg",    50.0);
-                    defaultSeq.put("rolling30dAvg",   50.0);
-                    defaultSeq.put("rollingStd7d",    2.0);
-                    defaultSeq.put("spikeIndicator",  false);
-                    defaultSeq.put("yoyRatio",        null);
-                    defaultSeq.put("seasonalityScore", 0.5);
-                    defaultSeq.put("forexRate",       1.0);
-                    defaultSeq.put("gdpGrowth",       2.0);
-                    defaultSeq.put("holidayFlag",     false);
-                    sequence = defaultSeq;
-                } else {
-                    throw seqEx;
+                    throw noMarketData(market, lastError);
                 }
+                throw seqEx;
             }
 
             // Inject GDP trend direction into the Gemini prompt context
@@ -797,6 +814,12 @@ public class ForecastingService {
                 ? ms.getForexVsPhp()
                 : (b.forexTrend() != null ? b.forexTrend().latest() : 0.0);
 
+        // Age of the newest measured signal behind this card — the dashboard shows
+        // a staleness banner instead of pretending old-but-real numbers are fresh.
+        OffsetDateTime signalAsOf = b.latestSignal() != null ? b.latestSignal().getAggregatedAt() : null;
+        String  dataAsOf  = signalAsOf != null ? signalAsOf.toString() : null;
+        boolean dataStale = EnrichedSequenceBuilder.isStale(signalAsOf, OffsetDateTime.now());
+
         return new MarketDto(
                 market, rank, meta[0], meta[1], matchScore, directive,
                 flight.directFlight(), flight.flightHours(), flight.distanceKm(),
@@ -818,7 +841,9 @@ public class ForecastingService {
                 forexValue,
                 ms.getSeasonalityScore() != null ? ms.getSeasonalityScore() : 0.0,
                 ms.getYoyRatio(),
-                Boolean.TRUE.equals(ms.getSpikeIndicator())
+                Boolean.TRUE.equals(ms.getSpikeIndicator()),
+                dataAsOf,
+                dataStale
         );
     }
 

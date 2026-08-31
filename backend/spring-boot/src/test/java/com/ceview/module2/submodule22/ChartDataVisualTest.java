@@ -94,7 +94,7 @@ class ChartDataVisualTest {
                         new ExternalMarketDataClient.GdpTrendPoint(2022,  2.6),
                         new ExternalMarketDataClient.GdpTrendPoint(2023,  1.4),
                         new ExternalMarketDataClient.GdpTrendPoint(2024,  2.2)),
-                2.2);
+                2.2, OffsetDateTime.now());
         ExternalMarketDataClient.ForexTrendDto forexTrend = new ExternalMarketDataClient.ForexTrendDto(
                 "KRW",
                 List.of(
@@ -102,7 +102,7 @@ class ChartDataVisualTest {
                         new ExternalMarketDataClient.ForexTrendPoint("2025-03", 23.4),
                         new ExternalMarketDataClient.ForexTrendPoint("2025-04", 23.6),
                         new ExternalMarketDataClient.ForexTrendPoint("2025-05", 23.8)),
-                23.8);
+                23.8, OffsetDateTime.now());
 
         when(externalClient.fetchGdpTrend(anyString())).thenReturn(gdpTrend);
         when(externalClient.fetchForexTrend(anyString())).thenReturn(forexTrend);
@@ -256,6 +256,7 @@ class ChartDataVisualTest {
             r.setRollingAverage30d(ti - 2.0);
             r.setRollingStdDev(3.5);
             r.setSpikeIndicator(spike);
+            r.setSource("pytrends");   // measured data — EnrichedSequenceBuilder reads real rows only
             // timestamp: oldest = 3 weeks ago, newest = now
             r.setAggregatedAt(OffsetDateTime.now().minusWeeks(n - 1 - i));
             signalRepo.save(r);
