@@ -131,7 +131,11 @@ test.describe('Shell & Routing — router + overlay stack', () => {
 
   test('overlay stack: opening a drawer then a modal over it closes only the modal on first Escape, and the scrim stays visible until both are closed', async ({ page }) => {
     await loginAsSeedOperator(page);
-    await page.goto('/dashboard');
+    // The generic overlay-stack test scaffold (RoutePlaceholder.tsx) only
+    // renders on a still-unbuilt placeholder screen — Dashboard, Performance,
+    // Content Studio and Calendar are all real screens now, so /settings/:tab
+    // is the one route left that hosts it.
+    await page.goto('/settings/profile');
 
     const scrim = page.locator('#scrim');
     await expect(scrim).not.toHaveClass(/on/);

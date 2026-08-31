@@ -24,9 +24,13 @@ export default function RoutePlaceholder({ navId, title, sub }: RoutePlaceholder
       <p className="body-sm">{sub ?? nav?.sub ?? 'This screen has not been built yet.'}</p>
       {/* Foundation — Shell & Routing overlay-stack e2e coverage (login.spec.ts).
           Exercises the shared Drawer/Modal/scrim stack generically since no real
-          screen exists yet to host it; relocate/remove once the real Dashboard
-          card (03-module-2.md) lands. */}
-      {navId === 'dashboard' && <OverlayStackTestScaffold />}
+          screen exists yet to host it. Was gated on navId === 'dashboard' until
+          the real Dashboard card (03-module-2.md) landed; Dashboard, Performance,
+          Content Studio and Calendar are all real screens now, so /settings/:tab
+          is the only route left rendering this placeholder at all — render
+          unconditionally here rather than re-gating on a specific navId that
+          would need updating again the next time a placeholder route is retired. */}
+      <OverlayStackTestScaffold />
     </div>
   );
 }
