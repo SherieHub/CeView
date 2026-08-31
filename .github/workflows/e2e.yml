@@ -123,7 +123,9 @@ jobs:
         working-directory: backend/spring-boot
         run: |
           chmod +x mvnw
-          ./mvnw -B package -DskipTests
+          # Retry: Maven Central occasionally returns a transient 502/503 on a
+          # single artifact fetch — one retry clears it without failing the job.
+          ./mvnw -B package -DskipTests || ./mvnw -B package -DskipTests
 
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend
