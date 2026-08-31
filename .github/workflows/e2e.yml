@@ -50,7 +50,8 @@ jobs:
               - 'frontend/components/module-1/onboarding/**'
               - 'e2e/tests/onboarding-wizard.spec.ts'
             settings-business-profile:
-              - 'frontend/components/module-1/settings/**'
+              - 'frontend/components/settings/BusinessProfileSettings.tsx'
+              - 'frontend/components/settings/BusinessProfileSettings.test.tsx'
               - 'e2e/tests/settings-business-profile.spec.ts'
             dashboard:
               - 'frontend/components/module-2/2.1-dashboard/**'
@@ -65,10 +66,13 @@ jobs:
               - 'frontend/components/module-3/calendar/**'
               - 'e2e/tests/calendar.spec.ts'
             settings-platforms:
-              - 'frontend/components/module-3/settings/**'
+              - 'frontend/components/settings/PlatformsSettings.tsx'
+              - 'frontend/components/settings/PlatformsSettings.test.tsx'
+              - 'frontend/services/connectionsStore.tsx'
               - 'e2e/tests/settings-platforms.spec.ts'
             settings-workspace:
-              - 'frontend/components/shared/settings/**'
+              - 'frontend/components/settings/WorkspaceSettings.tsx'
+              - 'frontend/components/settings/WorkspaceSettings.test.tsx'
               - 'e2e/tests/settings-workspace.spec.ts'
             performance:
               - 'frontend/components/module-4/4.1-campaign-analytics/**'

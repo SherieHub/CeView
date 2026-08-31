@@ -177,7 +177,11 @@ test.describe('Shell & Routing — router + overlay stack', () => {
     const scrim = page.locator('#scrim');
     await expect(scrim).not.toHaveClass(/on/);
 
-    await page.getByRole('button', { name: 'Connect' }).first().click();
+    // { exact: true } matters here: Playwright's role-name matching is
+    // substring-based by default, so a plain { name: 'Connect' } also matches
+    // the already-connected Instagram row's "Disconnect" button, which sorts
+    // first in DOM order — clicking that opens no modal at all.
+    await page.getByRole('button', { name: 'Connect', exact: true }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(scrim).toHaveClass(/on/);
 

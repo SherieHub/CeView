@@ -57,7 +57,10 @@ test.describe('Platforms', () => {
     await login(page);
     await page.goto('/settings/platforms');
 
-    await page.getByRole('button', { name: 'Connect' }).first().click();
+    // exact: true — a plain { name: 'Connect' } also matches Instagram's
+    // "Disconnect" button (substring match is Playwright's default), which
+    // sorts first in DOM order and opens no modal at all.
+    await page.getByRole('button', { name: 'Connect', exact: true }).first().click();
     await expect(page.getByText(/redirecting to/i)).toBeVisible();
     await expect(page.getByText(/requesting permission/i)).toBeVisible({ timeout: 3_000 });
 
@@ -127,7 +130,8 @@ test.describe('Platforms', () => {
     // client-side routing, never a full reload (login.spec.ts's own
     // no-full-reload test establishes this is how the sidebar navigates).
     await page.getByRole('button', { name: 'Platforms' }).click();
-    await page.getByRole('button', { name: 'Connect' }).first().click(); // tiktok is the first disconnected row
+    // exact: true — see the earlier connect-flow test's comment on why.
+    await page.getByRole('button', { name: 'Connect', exact: true }).first().click(); // tiktok is the first disconnected row
     await page.getByText(/redirecting to/i).waitFor();
     await page.getByText(/requesting permission/i).waitFor({ timeout: 3_000 });
     await page.getByRole('button', { name: /grant scope/i }).click();
