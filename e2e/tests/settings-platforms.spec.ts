@@ -114,7 +114,7 @@ test.describe('Platforms', () => {
       }),
     );
     await page.route('**/api/creative-direction/generate', (route) =>
-      route.fulfill({ json: { shotListRecommendations: [], visualRecommendations: [], lightingSuggestions: [], moodboardReferences: [] } }),
+      route.fulfill({ json: { visualGuide: [], shots: [], moodboard: { palette: '', references: [] } } }),
     );
 
     await login(page);
@@ -184,7 +184,7 @@ test.describe('Platforms', () => {
       }),
     );
     await page.route('**/api/creative-direction/generate', (route) =>
-      route.fulfill({ json: { shotListRecommendations: [], visualRecommendations: [], lightingSuggestions: [], moodboardReferences: [] } }),
+      route.fulfill({ json: { visualGuide: [], shots: [], moodboard: { palette: '', references: [] } } }),
     );
 
     await login(page);

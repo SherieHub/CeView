@@ -45,9 +45,14 @@ test.describe('Workspace', () => {
     await page.getByRole('button', { name: /send invite/i }).click();
 
     // Appears immediately, before the (stubbed) request necessarily resolves.
-    await expect(page.getByText('Hana Kim')).toBeVisible();
-    await expect(page.getByText('hana.kim@sunsetcove.ph')).toBeVisible();
-    await expect(page.getByText('Invite pending')).toBeVisible();
+    // Scoped to the member row itself — a plain page-wide getByText() for the
+    // email also matches the "Invite sent to hana.kim@sunsetcove.ph" toast
+    // fired by the same action (see the next test), which is a substring
+    // match on the same text and trips Playwright's strict mode.
+    const pendingRow = page.getByRole('listitem').filter({ hasText: 'Hana Kim' });
+    await expect(pendingRow).toBeVisible();
+    await expect(pendingRow.getByText('hana.kim@sunsetcove.ph')).toBeVisible();
+    await expect(pendingRow.getByText('Invite pending')).toBeVisible();
 
     await expect.poll(() => inviteRequestBody).toEqual({ email: 'hana.kim@sunsetcove.ph', role: 'Viewer' });
   });
