@@ -118,7 +118,16 @@ test.describe('End-to-end authenticated journey', () => {
   });
 
   test('performance: ingestion persists to the backend, the PES gauge reflects the server score, and the prescriptive report renders', async ({ page }) => {
-    test.setTimeout(60_000);
+    // The report round-trips through Spring -> FastAPI -> Groq for a large
+    // structured completion (executive summary + 3 funnel diagnostics + 3
+    // recommendations) and Spring allows it the full 30s configured at
+    // ceview.fastapi.timeout-seconds (application.yml) before giving up. The
+    // content-studio test in this same file already documents ~25s as an
+    // observed real ceiling for a comparable Groq-backed call. Give both
+    // budgets real headroom instead of the old 60s/20s, which sized the
+    // heading wait below the backend's own allowance and made this flaky
+    // under CI's slower/higher-latency runners rather than actually broken.
+    test.setTimeout(90_000);
 
     await loginAsSeedOperator(page);
     await page.goto('/performance');
@@ -144,8 +153,11 @@ test.describe('End-to-end authenticated journey', () => {
 
     // The prescriptive report now returns a real executiveSummary — assert
     // the AI Action Plan renders, not the "Loading report…" or "returned no
-    // content" placeholder states.
-    await expect(page.getByRole('heading', { name: 'AI Action Plan' })).toBeVisible({ timeout: 20_000 });
+    // content" placeholder states. 35s, not 20s: Spring's own proxy timeout
+    // to FastAPI (ceview.fastapi.timeout-seconds) is 30s, so a stricter wait
+    // here can fail on a real, still-in-flight report rather than a genuine
+    // problem — see this test's setTimeout comment above for the evidence.
+    await expect(page.getByRole('heading', { name: 'AI Action Plan' })).toBeVisible({ timeout: 35_000 });
     const firstDiagnostic = page.getByTestId('action-plan-card-0');
     await expect(firstDiagnostic).toBeVisible();
     await expect(firstDiagnostic).not.toHaveText('');
