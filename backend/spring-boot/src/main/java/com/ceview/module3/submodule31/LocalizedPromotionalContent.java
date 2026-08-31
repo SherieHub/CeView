@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * Persists one generated caption per platform per profile+market request (FR3.10).
- * Four rows are created per generate call (instagram, tiktok, facebook, naver).
+ * Three rows are created per generate call (instagram, tiktok, facebook).
  */
 @Data
 @Entity

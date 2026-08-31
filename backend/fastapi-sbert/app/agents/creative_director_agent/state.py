@@ -39,7 +39,7 @@ class SocialAgentState(TypedDict):
     relevant_priority_services: List[str]                           # set by Node 1
     extra_additional_services: List[str]                           # set by Node 1
     final_captions:    Dict[str, List[Dict[str, Any]]]    # set by Node 2
-    source:            Optional[str]                               # "groq" | "fallback"
+    source:            Optional[str]                               # always "groq"; unavailability raises instead
     # final_captions shape (6-field schema — one object per demographic archetype):
     # {
     #   "facebook":  [ { "core_business_context": "...",
