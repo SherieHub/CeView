@@ -322,8 +322,16 @@ export const apiClient = {
     // that type models a future real-backend member shape (id/status/lowercase role) that
     // doesn't exist yet. Reconcile the two once a real /api/workspace/members lands.
     members: () => (USE_FIXTURES ? delay(MOCK_MEMBERS) : request<WorkspaceMemberFixture[]>('/api/workspace/members')),
-    invite: (email: string) =>
-      USE_FIXTURES ? delay({ ok: true }) : request('/api/workspace/invite', { method: 'POST', body: JSON.stringify({ email }) }),
+    /**
+     * Sends an invite. Backend endpoint is proposed, not yet implemented
+     * (docs/shared/workspace.md) — the caller treats this as fire-and-forget
+     * (see WorkspaceSettings' optimistic pending row) rather than blocking the
+     * UI on it.
+     */
+    invite: (email: string, role: 'Editor' | 'Viewer') =>
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request('/api/workspace/invite', { method: 'POST', body: JSON.stringify({ email, role }) }),
   },
   auth: {
     login: (email: string, password: string) =>

@@ -382,6 +382,13 @@ export interface WorkspaceMemberFixture {
   email: string;
   role: 'Owner' | 'Editor' | 'Viewer';
   initials: string;
+  /**
+   * Omitted (or 'active') for a real member. 'pending' marks an unaccepted
+   * invite — set client-side for the optimistic row WorkspaceSettings appends
+   * on submit; the backend invite endpoint is proposed, not implemented, so
+   * no real member row is ever fetched back in this state yet.
+   */
+  status?: 'active' | 'pending';
 }
 
 export interface PublishedPost {

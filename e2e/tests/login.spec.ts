@@ -129,32 +129,60 @@ test.describe('Shell & Routing — router + overlay stack', () => {
     await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
   });
 
-  test('overlay stack: opening a drawer then a modal over it closes only the modal on first Escape, and the scrim stays visible until both are closed', async ({ page }) => {
+  test('overlay stack: opening the market radar drawer pushes the scrim, and Escape closes it', async ({ page }) => {
+    // Was driven through a generic test-only scaffold (RoutePlaceholder.tsx,
+    // now deleted) that rendered on whichever screen hadn't been built yet.
+    // Dashboard, Performance, Content Studio, Calendar and all three Settings
+    // screens are real now, so there is no placeholder left to host it —
+    // this exercises the shared Drawer against a real screen instead.
     await loginAsSeedOperator(page);
-    // The generic overlay-stack test scaffold (RoutePlaceholder.tsx) only
-    // renders on a still-unbuilt placeholder screen — Dashboard, Performance,
-    // Content Studio and Calendar are all real screens now, so /settings/:tab
-    // is the one route left that hosts it.
-    await page.goto('/settings/profile');
+    await page.goto('/dashboard');
 
     const scrim = page.locator('#scrim');
     await expect(scrim).not.toHaveClass(/on/);
 
-    await page.getByTestId('test-open-drawer').click();
-    await expect(page.locator('.drawer.on')).toBeVisible();
-    await expect(scrim).toHaveClass(/on/);
+    await page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' }).click();
+    await page.locator('section.dash-markets').getByRole('heading', { name: 'South Korea' }).click();
 
-    await page.getByTestId('test-open-modal-from-drawer').click();
-    await expect(page.locator('.modal.on')).toBeVisible();
-    await expect(page.locator('.drawer.on')).toBeVisible();
-
-    await page.keyboard.press('Escape');
-    await expect(page.locator('.modal.on')).toHaveCount(0);
     await expect(page.locator('.drawer.on')).toBeVisible();
     await expect(scrim).toHaveClass(/on/);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('.drawer.on')).toHaveCount(0);
+    await expect(scrim).not.toHaveClass(/on/);
+  });
+
+  test('overlay stack: the Platforms connect modal pushes the scrim, and Escape closes it', async ({ page }) => {
+    // /api/connections has no backend implementation yet (docs/module-3/
+    // backend/PlatformConnectionController.md — specified, not implemented),
+    // so this stubs just that one call and drives everything else (login,
+    // routing) against the real stack. Covers the shared Modal against a real
+    // screen; the stacked-drawer-then-modal Escape-priority behavior (closing
+    // only the top-most overlay) is unit-tested directly in
+    // frontend/components/shared/useOverlayStack.test.tsx, since no real
+    // screen nests a Modal inside an open Drawer today.
+    await page.route('**/api/connections', (route) =>
+      route.fulfill({
+        json: [
+          { platform: 'instagram', connected: true, handle: '@cebu.dive', connectedAt: '2026-05-01T00:00:00Z' },
+          { platform: 'tiktok', connected: false, handle: null, connectedAt: null },
+          { platform: 'facebook', connected: false, handle: null, connectedAt: null },
+        ],
+      }),
+    );
+
+    await loginAsSeedOperator(page);
+    await page.goto('/settings/platforms');
+
+    const scrim = page.locator('#scrim');
+    await expect(scrim).not.toHaveClass(/on/);
+
+    await page.getByRole('button', { name: 'Connect' }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(scrim).toHaveClass(/on/);
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(scrim).not.toHaveClass(/on/);
   });
 });

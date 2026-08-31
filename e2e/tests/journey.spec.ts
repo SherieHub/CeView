@@ -160,6 +160,16 @@ test.describe('End-to-end authenticated journey', () => {
     await loginAsSeedOperator(page);
     await page.goto('/content');
 
+    // Content Studio is gated behind an explicit surge + target-market pick
+    // (ContentTargetPicker) — it must never infer one on the operator's
+    // behalf. Drive the same two-step pick a real operator would: the seeded
+    // South Korea / Coastal & Island demand alert from the dashboard tests
+    // above, then its top-ranked market.
+    await expect(page.getByText('Step 1 of 2')).toBeVisible();
+    await page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' }).click();
+    await expect(page.getByText('Step 2 of 2')).toBeVisible();
+    await page.getByRole('heading', { name: 'South Korea' }).click();
+
     // Visual Direction Board (POST /api/creative-direction/generate -> Spring's
     // AIInferenceGatewayService.generateCreative -> fastapi-sbert) has no known
     // defect on the happy path — but fastapi-sbert isn't started in the
