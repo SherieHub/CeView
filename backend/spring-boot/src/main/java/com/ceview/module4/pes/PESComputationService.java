@@ -13,8 +13,10 @@ import java.util.Map;
  *
  * <p>SDD §4.2 — PES = ROAS×0.35 + CR×0.30 + CAC_inv×0.15 + CTR×0.15 + CPC_inv×0.05.
  *
- * <p>Also serves as the FR4.26 rule-based fallback when the FastAPI PES service
- * is unavailable.
+ * <p>This is the deterministic PES formula from ARCHITECTURE_SPEC.md — arithmetic
+ * over real campaign records, not a stand-in for an AI output. It was previously
+ * documented as "the FR4.26 rule-based fallback", which invited deleting it
+ * alongside the actual fallbacks removed in Task 24. It is not one. Keep it.
  */
 @Service
 public class PESComputationService {
@@ -56,11 +58,11 @@ public class PESComputationService {
      * Reconstruct a typed {@link PesResponse} from the raw FastAPI
      * {@code /internal/pes-compute/analyze} result map.
      *
-     * <p>Falls back to {@link #compute(Metrics)} if the map is missing required keys
-     * so the caller always receives a fully populated response (FR4.26).
+     * <p>Reconstructs locally via {@link #compute(Metrics)} if the map is missing
+     * required keys, so the caller always receives a fully populated response.
      *
      * @param pesResult raw FastAPI result map
-     * @param metrics   locally computed KPIs used for the fallback computation
+     * @param metrics   locally computed KPIs used for the local reconstruction
      */
     @SuppressWarnings("unchecked")
     public PesResponse fromFastApiResult(Map<String, Object> pesResult, Metrics metrics) {

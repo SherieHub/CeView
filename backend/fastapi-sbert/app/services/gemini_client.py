@@ -228,14 +228,10 @@ FACEBOOK   max 63,206 chars · optimise for 2-3 paragraphs · conversational ton
 TIKTOK     max 2,200 chars · OPTIMISE for 150-300 chars · entire caption = hook ·
            no links (→ "Link in bio") · strictly 3-5 trending hashtags.
 
-NAVER      Korean language only · long-form editorial style (1,500+ chars) ·
-           subheadings, food/accommodation close-up references, embedded map mention.
-
 Return JSON with the same shape as: {json.dumps(base)} — fill captions with:
 - instagram: 3 options (one per archetype above) + optionNames + 5 visual guide tips
 - tiktok:    3 options (one per archetype above) + optionNames + 5 visual guide tips
 - facebook:  3 options (one per archetype above) + optionNames + 5 visual guide tips
-- naver:     2 options in Korean language + 5 visual guide tips (Korean audience)
 
 The optionNames field is a list parallel to options:
 ["Witty, Trend-Conscious & High-Energy",
@@ -304,7 +300,7 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
     Used by content.py when routing caption generation through the LangGraph agent
     so that visual guides remain available without a second Gemini call.
 
-    Returns: { "instagram": [...], "tiktok": [...], "facebook": [...], "naver": [...] }
+    Returns: { "instagram": [...], "tiktok": [...], "facebook": [...] }
     """
     _guides: dict[str, dict[str, list[str]]] = {
         "korea": {
@@ -329,13 +325,6 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
                 "Use warm, slightly desaturated tones — not oversaturated tropical clichés.",
                 "CTA text: 'Plan your escape →' — drives link-click micro-conversion on Facebook.",
             ],
-            "naver": [
-                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
-                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
-                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
-                "Write in warm, conversational Korean with clear subheadings.",
-                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
-            ],
         },
         "japan": {
             "instagram": [
@@ -359,13 +348,6 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
                 "Use cool, authoritative colour palette — blues and greens over warm gold.",
                 "CTA: 'View full itinerary →' — Japanese audiences want complete information before deciding.",
             ],
-            "naver": [
-                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
-                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
-                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
-                "Write in warm, conversational Korean with clear subheadings.",
-                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
-            ],
         },
         "usa": {
             "instagram": [
@@ -388,13 +370,6 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
                 "Horizontal 1.91:1 ratio for Feed; 1:1 for Marketplace.",
                 "Use social proof element: '500+ American travellers visited this month'.",
                 "CTA: 'Book Now' or 'Get the Deal' — US audiences respond to direct, benefit-led language.",
-            ],
-            "naver": [
-                "Long-form editorial blog layout — Korean audiences expect deep photo-journaling, not quick posts.",
-                "Lead with a 3×2 hero image collage grid — establishes visual authority before text.",
-                "Include food close-ups, accommodation review shots, and activity documentation shots sequentially.",
-                "Write in warm, conversational Korean with clear subheadings.",
-                "Minimum 1,500 characters with embedded map — Naver SEO depends heavily on content depth.",
             ],
         },
     }
@@ -420,15 +395,14 @@ def generate_creative_direction(
     }
     platforms = platform_map.get(market, platform_map["korea"])
 
-    fallback = _creative_fallback(market, platforms)
-
     if not _enabled():
-        _creative_log.info(
-            "Gemini disabled; returning fallback creative for market=%s",
-            market,
-            extra={"code": errors.MOD3_CREATIVE_GEMINI_DISABLED},
+        raise DependencyUnavailable(
+            code=errors.MOD3_CREATIVE_GEMINI_DISABLED,
+            message="Creative direction is unavailable.",
+            dependency="groq",
+            cause="GROQ_API_KEY is not set, so the creative client is disabled",
+            stage="fastapi-sbert/gemini_client.generate_creative_direction",
         )
-        return {**fallback, "source": "fallback"}
 
     captions_block = "\n".join(f"- {c}" for c in (approved_captions or [])[:3])
     forecast_hint = ""
@@ -466,99 +440,36 @@ Generate destination-specific creative direction. Return JSON with exactly:
             "Gemini creative direction failed for market=%s: %s", market, exc,
             extra={"code": errors.MOD3_CREATIVE_GEMINI_EXCEPTION},
         )
-        return {**fallback, "source": "fallback"}
+        raise DependencyUnavailable(
+            code=errors.MOD3_CREATIVE_GEMINI_EXCEPTION,
+            message="Creative direction is unavailable.",
+            dependency="groq",
+            cause=str(exc),
+            stage="fastapi-sbert/gemini_client.generate_creative_direction",
+        ) from exc
 
-    if not out or not out.get("visualGuide"):
+    if not out or not all(out.get(k) for k in
+                          ("visualGuide", "shots", "moodboard", "platformRecommendations")):
         _creative_log.warning(
-            "Gemini returned empty creative payload for market=%s", market,
+            "Gemini returned an incomplete creative payload for market=%s", market,
             extra={"code": errors.MOD3_CREATIVE_GEMINI_EMPTY},
         )
-        return {**fallback, "source": "fallback"}
+        raise DependencyUnavailable(
+            code=errors.MOD3_CREATIVE_GEMINI_EMPTY,
+            message="Creative direction is unavailable.",
+            dependency="groq",
+            cause="the creative model returned no usable structure",
+            stage="fastapi-sbert/gemini_client.generate_creative_direction",
+        )
 
     _creative_log.info("Groq creative direction ok market=%s", market)
     return {
-        "visualGuide":            out.get("visualGuide") or fallback["visualGuide"],
-        "shots":                  out.get("shots") or fallback["shots"],
-        "moodboard":              out.get("moodboard") or fallback["moodboard"],
-        "platformRecommendations": out.get("platformRecommendations") or fallback["platformRecommendations"],
+        "visualGuide":             out["visualGuide"],
+        "shots":                   out["shots"],
+        "moodboard":               out["moodboard"],
+        "platformRecommendations": out["platformRecommendations"],
         "source": "groq",
     }
-
-
-def _creative_fallback(market: str, platforms: dict) -> dict:
-    """Curated fallback creative direction per market."""
-    _fallbacks = {
-        "korea": {
-            "visualGuide": [
-                "Aerial drone shot starting high above the ocean, moving slowly toward a private villa balcony.",
-                "Close-up of a local breakfast tray on the balcony with ocean blur in the background.",
-                "POV walking through lush resort gardens, opening a gate to a private beach.",
-                "Soft, dreamy color grading — avoid oversaturated tropical clichés.",
-                "Maintain a 4:5 portrait ratio for Korean Instagram feeds.",
-            ],
-            "shots": [
-                {"label": "Golden Hour Reveal", "description": "Slow-motion balcony door opening to ocean panorama", "lighting": "Golden hour backlight, 06:00-07:30"},
-                {"label": "Healing Table", "description": "Close-up of local breakfast beside a plunge pool", "lighting": "Soft diffused morning light, no direct sun"},
-                {"label": "Garden POV Walk", "description": "First-person walk through resort gardens to private beach", "lighting": "Dappled natural light through canopy"},
-            ],
-            "moodboard": {
-                "palette": "Warm golden + soft teal — low contrast, slightly desaturated. LUT: 'Mango Sunrise'.",
-                "references": ["Aman Resorts editorial photography", "Korean 'healing travel' Instagram aesthetic", "Wabi-sabi minimal interiors"],
-            },
-            "platformRecommendations": {
-                "Naver Blog": "Long-form photo journal (1,500+ chars) with embedded map, food close-ups, and sequential accommodation review shots.",
-                "Instagram": "4:5 portrait, warm filter, no text overlay. Solo 'me-space' framing resonates with Korean healing-travel archetype.",
-                "TikTok": "18-27 second POV reveal. Korean subtitle overlay, rounded sans font. Sync to chill lo-fi acoustic track.",
-            },
-        },
-        "japan": {
-            "visualGuide": [
-                "Wide establishing shot of pristine coastline at golden hour — evokes 'non-daily life' (非日常) feeling.",
-                "Detailed close-up of local cuisine with clean white background — Japanese audiences value food photography.",
-                "Symmetrical resort architecture framing against a clear blue sky.",
-                "Human silhouette at water's edge — scale reference creates emotional connection.",
-                "Horizontal 16:9 framing for Facebook; square 1:1 for Instagram grid.",
-            ],
-            "shots": [
-                {"label": "Non-Daily Reveal", "description": "Wide coastline pan from right to left, slow movement, hold on horizon", "lighting": "Golden hour, slightly underexposed for moody drama"},
-                {"label": "Food Detail", "description": "Macro shot of signature dish, shallow depth of field", "lighting": "Soft diffused natural window light, no harsh shadows"},
-                {"label": "Tranquil Moment", "description": "Single person sitting at water edge, back to camera, contemplative", "lighting": "Backlit by setting sun, silhouette with warm halo"},
-            ],
-            "moodboard": {
-                "palette": "Clean whites, ocean blue, warm sand tones. Minimal saturation. Inspired by Japanese resort editorial.",
-                "references": ["Hoshinoya Resort photography", "Japanese travel magazine (じゃらん) aesthetic", "Ryokan interior minimalism applied to tropical setting"],
-            },
-            "platformRecommendations": {
-                "Facebook": "Multiple photos per post, detailed caption in Japanese with clear price point and booking link. Community group posting strategy.",
-                "Instagram": "High-quality single hero image or 3-photo carousel. Japanese caption using 絶景 and 癒し trigger words.",
-                "TikTok": "Scenic reveal format, minimal text. Japanese subtitle at bottom third.",
-            },
-        },
-        "usa": {
-            "visualGuide": [
-                "9:16 vertical framing optimised for Instagram Reels and TikTok — fill the frame.",
-                "Strong hook visual in first 2 seconds — underwater shot, aerial reveal, or unexpected angle.",
-                "Authentic, slightly raw aesthetic — avoid overly polished stock-photo look.",
-                "Action and adventure shots: diving, island-hopping, street food exploration.",
-                "Text overlay for accessibility — bold, high-contrast font in first 3 seconds.",
-            ],
-            "shots": [
-                {"label": "Reels Hook", "description": "2-second underwater-to-surface reveal, camera breaks the water line", "lighting": "Bright midday sun for underwater clarity, GoPro-style"},
-                {"label": "Island Hop", "description": "Quick cuts between three islands, 3-5 seconds each, energetic pacing", "lighting": "Natural midday, saturated tropical colors"},
-                {"label": "Street Food POV", "description": "First-person eating sequence at local market, reacting to flavors", "lighting": "Ambient market lighting, slightly warm"},
-            ],
-            "moodboard": {
-                "palette": "Vibrant tropical — saturated blues and greens, warm skin tones. High energy, high contrast. Think GoPro travel aesthetic.",
-                "references": ["GoPro Destination travel content", "Nas Daily-style authentic storytelling", "Instagram Reels trending travel creators"],
-            },
-            "platformRecommendations": {
-                "Instagram Reels": "9:16, trending audio, strong 2-second hook, text overlay. 5-7 hashtags max. CTA: 'Link in bio to book'.",
-                "TikTok": "Raw, authentic feel. Trending sound. 15-30 seconds. 'Hidden gem' and FOMO framing. Duet/stitch-friendly.",
-                "Facebook": "Horizontal video for trip planning groups. Detailed caption with price comparison (US vs Philippines). Tag location.",
-            },
-        },
-    }
-    return _fallbacks.get(market, _fallbacks["korea"])
 
 
 _creative_log = logging.getLogger("module3.creative.gemini")
