@@ -90,7 +90,11 @@ public class MarketDtos {
          */
         Double yoyRatio,
         /** MarketScore.spikeIndicator. */
-        boolean spikeIndicator
+        boolean spikeIndicator,
+        /** ISO-8601 timestamp of the newest measured signal behind this market, or null. */
+        String dataAsOf,
+        /** True when dataAsOf is older than EnrichedSequenceBuilder.STALE_AFTER. */
+        boolean dataStale
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

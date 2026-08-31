@@ -19,6 +19,7 @@ import { Award, AlertTriangle } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
+import { StaleDataBanner } from '../../shared/StaleDataBanner';
 import { useDashboardState } from './useDashboardState';
 import type { DashMode } from './useDashboardState';
 import AlertFeed from './AlertFeed';
@@ -111,6 +112,16 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         topMarket={state.topMarket}
         onOpenMarket={openMarket}
       />
+
+      {/* Real-but-old market data: show its age rather than let the ranking
+          below read as a fresh measurement. Distinct from ApiErrorPanel — see
+          StaleDataBanner's header. */}
+      {state.rankedMarkets.some((m) => m.dataStale) && (
+        <StaleDataBanner
+          dataAsOf={state.rankedMarkets.find((m) => m.dataStale)?.dataAsOf ?? null}
+          now={new Date()}
+        />
+      )}
 
       <div className="dash-grid">
         <AlertFeed

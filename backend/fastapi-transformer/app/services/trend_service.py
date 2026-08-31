@@ -16,37 +16,41 @@ Pipeline per request:
          YoY ratio, and composite seasonality score
     6. Return structured dict matching TrendsFetchResponse schema
 
-Fallback:
-    When pytrends is unavailable (ImportError) or any request fails, a
-    deterministic stub result is returned so the endpoint always responds
-    without raising.  source="stub" signals callers to treat the data as
-    a placeholder until a live fetch succeeds.
+Unavailability:
+    When pytrends is not installed or any request fails, this module raises
+    ``DependencyUnavailable`` (HTTP 503) carrying the upstream reason. There is
+    no synthetic fallback — a fabricated trend series is indistinguishable from
+    a measured one once it reaches a forecast. See
+    docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md §1.
 """
 from __future__ import annotations
 
-import hashlib
 import logging
 import random
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timezone
+from typing import NoReturn
 
 from app.config.keyword_mapping import MACRO_TREND_MAPPING, MARKET_CONFIG
 from app.services.seasonal_shift_detector import compute as seasonal_compute
+from app.unavailable import DependencyUnavailable
 
 logger = logging.getLogger(__name__)
 
-# ── Optional pytrends import (fail-safe) ─────────────────────────────────────
+# ── pytrends import (reason retained, not swallowed) ─────────────────────────
 _TrendReq = None
+_IMPORT_ERROR: str | None = None
 
 try:
     from pytrends.request import TrendReq as _TrendReqClass
     _TrendReq = _TrendReqClass
     logger.info("pytrends loaded successfully")
 except Exception as _exc:  # noqa: BLE001
-    logger.warning(
-        "pytrends unavailable — trend_service will return deterministic stub values: %s",
-        _exc,
-    )
+    # Recording the reason, not just the fact, is the whole point: it surfaces
+    # to the developer as the `cause` of a 503 rather than a bare
+    # "trends unavailable".
+    _IMPORT_ERROR = str(_exc)
+    logger.warning("pytrends unavailable — trend fetches will fail loudly: %s", _exc)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -55,42 +59,16 @@ JITTER_MAX_S:    float      = 12.0   # maximum sleep per fetch
 TIMEFRAME:       str        = "today 5-y"   # ~260 weekly points; satisfies 52w YoY requirement
 REQUEST_TIMEOUT: tuple      = (10, 30)      # (connect_s, read_s) for pytrends TrendReq
 
-# Deterministic base indices per market used when pytrends is unavailable
-_STUB_BASE: dict[str, float] = {
-    "korea": 72.0,
-    "japan": 58.0,
-    "usa":   44.0,
-}
 
-# Curated stub series — 52 weeks of realistic inbound tourism search interest
-# for each market (chronological, oldest first). Values reflect seasonal peaks
-# observed in Philippine inbound tourism data: Korea peaks Jul–Aug & Dec–Jan,
-# Japan peaks Mar–Apr & Oct–Nov, USA peaks Jun–Aug & Dec–Jan.
-# Used by fetch_current_index / fetch_trend_history fallbacks so the demand
-# chart keeps realistic week-over-week variance when pytrends is offline.
-_STUB_SERIES: dict[str, list[float]] = {
-    "korea": [
-        42, 45, 48, 52, 55, 58, 62, 65, 67, 64, 60, 55,
-        50, 48, 45, 43, 41, 40, 42, 45, 50, 55, 60, 65,
-        70, 75, 72, 68, 63, 58, 54, 50, 47, 45, 44, 46,
-        50, 55, 60, 65, 68, 70, 72, 68, 63, 58, 52, 48,
-        45, 43, 41, 40,
-    ],
-    "japan": [
-        35, 38, 42, 48, 55, 58, 54, 50, 46, 42, 40, 38,
-        36, 35, 37, 40, 44, 48, 52, 55, 53, 50, 47, 44,
-        42, 40, 38, 37, 36, 38, 42, 46, 50, 54, 57, 55,
-        52, 48, 45, 42, 40, 39, 38, 40, 44, 48, 52, 55,
-        53, 50, 46, 42,
-    ],
-    "usa": [
-        30, 32, 35, 38, 42, 48, 55, 60, 58, 52, 45, 40,
-        36, 34, 32, 31, 30, 32, 35, 38, 42, 46, 50, 54,
-        58, 62, 60, 56, 51, 46, 42, 38, 35, 33, 32, 34,
-        38, 43, 48, 53, 57, 60, 58, 54, 49, 44, 40, 36,
-        33, 31, 30, 30,
-    ],
-}
+def _trends_unavailable(cause: str) -> NoReturn:
+    """Raise the one structured 503 for every trend-fetch failure path."""
+    raise DependencyUnavailable(
+        code="MOD21_TRENDS_UNAVAILABLE",
+        message="Google Trends data is unavailable.",
+        dependency="pytrends",
+        cause=cause,
+        stage="fastapi-transformer/trend_service",
+    )
 
 
 # ─── Public API ───────────────────────────────────────────────────────────────
@@ -141,19 +119,15 @@ def fetch_and_process(market: str, category: str) -> dict:
     keywords = cat_map.get(geo_code, [])
 
     if not keywords:
-        logger.warning(
-            "No keyword mapping for category='%s' geo='%s' — using generic fallback",
+        logger.info(
+            "No keyword mapping for category='%s' geo='%s' — using generic query terms",
             category, geo_code,
         )
         keywords = _generic_keywords(market_key)
 
-    # ── 2. Early-exit when pytrends unavailable ───────────────────────────────
+    # ── 2. Fail loudly when pytrends is unavailable ───────────────────────────
     if _TrendReq is None:
-        logger.warning(
-            "pytrends not installed — returning stub for market=%s category=%s",
-            market_key, category,
-        )
-        return _stub_result(market_key, category, keywords)
+        _trends_unavailable(_IMPORT_ERROR or "pytrends is not installed")
 
     # ── 3. Fetch from Google Trends ───────────────────────────────────────────
     try:
@@ -173,11 +147,9 @@ def fetch_and_process(market: str, category: str) -> dict:
         _jitter_sleep()
 
         if df is None or df.empty:
-            logger.warning(
-                "pytrends returned empty DataFrame — stub fallback. market=%s category=%s",
-                market_key, category,
+            _trends_unavailable(
+                f"pytrends returned no data for market={market_key} category={category}"
             )
-            return _stub_result(market_key, category, keywords)
 
         # Drop the pytrends meta-column "isPartial" if present
         if "isPartial" in df.columns:
@@ -188,7 +160,9 @@ def fetch_and_process(market: str, category: str) -> dict:
         series: list[float] = df[primary_kw].astype(float).tolist()
 
         if not series:
-            return _stub_result(market_key, category, keywords)
+            _trends_unavailable(
+                f"pytrends returned an empty series for market={market_key} category={category}"
+            )
 
         trend_index = float(series[-1])
 
@@ -223,12 +197,14 @@ def fetch_and_process(market: str, category: str) -> dict:
             "source":            "pytrends",
         }
 
+    except DependencyUnavailable:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.warning(
-            "pytrends request failed — stub fallback. market=%s category=%s error=%s",
+            "pytrends request failed. market=%s category=%s error=%s",
             market_key, category, exc,
         )
-        return _stub_result(market_key, category, keywords)
+        _trends_unavailable(str(exc))
 
 
 # ─── Market-data ingestion API (consumed by /internal/market-data router) ──────
@@ -259,10 +235,7 @@ def fetch_current_index(market: str, categories: list[str]) -> dict:
     keywords = _resolve_localized_keywords(market_key, geo_code, categories)
 
     if _TrendReq is None:
-        logger.warning(
-            "pytrends unavailable — stub current index market=%s", market_key,
-        )
-        return _stub_current_index(market_key, keywords)
+        _trends_unavailable(_IMPORT_ERROR or "pytrends is not installed")
 
     try:
         pt = _TrendReq(hl=config["hl"], tz=config["tz"], timeout=REQUEST_TIMEOUT)
@@ -271,10 +244,9 @@ def fetch_current_index(market: str, categories: list[str]) -> dict:
         _jitter_sleep()   # space out consecutive requests (HTTP 429 mitigation)
 
         if df is None or df.empty:
-            logger.warning(
-                "Empty DataFrame for current index — stub fallback market=%s", market_key,
+            _trends_unavailable(
+                f"pytrends returned no current-index data for market={market_key}"
             )
-            return _stub_current_index(market_key, keywords)
 
         if "isPartial" in df.columns:
             df = df.drop(columns=["isPartial"])
@@ -290,12 +262,13 @@ def fetch_current_index(market: str, categories: list[str]) -> dict:
             "source":        "pytrends",
         }
 
+    except DependencyUnavailable:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.warning(
-            "Current index fetch failed — stub fallback market=%s error=%s",
-            market_key, exc,
+            "Current index fetch failed market=%s error=%s", market_key, exc,
         )
-        return _stub_current_index(market_key, keywords)
+        _trends_unavailable(str(exc))
 
 
 def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> dict:
@@ -322,10 +295,7 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
     keywords = _resolve_localized_keywords(market_key, geo_code, categories)
 
     if _TrendReq is None:
-        logger.warning(
-            "pytrends unavailable — stub history market=%s weeks=%d", market_key, weeks,
-        )
-        return _stub_history(market_key, keywords, weeks)
+        _trends_unavailable(_IMPORT_ERROR or "pytrends is not installed")
 
     try:
         pt = _TrendReq(hl=config["hl"], tz=config["tz"], timeout=REQUEST_TIMEOUT)
@@ -334,10 +304,9 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
         _jitter_sleep()   # space out consecutive requests (HTTP 429 mitigation)
 
         if df is None or df.empty:
-            logger.warning(
-                "Empty DataFrame for history — stub fallback market=%s", market_key,
+            _trends_unavailable(
+                f"pytrends returned no history for market={market_key} weeks={weeks}"
             )
-            return _stub_history(market_key, keywords, weeks)
 
         if "isPartial" in df.columns:
             df = df.drop(columns=["isPartial"])
@@ -364,12 +333,13 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
             "source":        "pytrends",
         }
 
+    except DependencyUnavailable:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.warning(
-            "History fetch failed — stub fallback market=%s error=%s",
-            market_key, exc,
+            "History fetch failed market=%s error=%s", market_key, exc,
         )
-        return _stub_history(market_key, keywords, weeks)
+        _trends_unavailable(str(exc))
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -398,8 +368,8 @@ def _resolve_localized_keywords(
     cat_map  = MACRO_TREND_MAPPING.get(first_category, {})
     keywords = cat_map.get(geo_code, [])
     if not keywords:
-        logger.warning(
-            "No keyword mapping for category='%s' geo='%s' — generic fallback",
+        logger.info(
+            "No keyword mapping for category='%s' geo='%s' — using generic query terms",
             first_category, geo_code,
         )
         keywords = _generic_keywords(market_key)
@@ -428,92 +398,6 @@ def _generic_keywords(market_key: str) -> list[str]:
     }
     return defaults.get(market_key, ["Cebu Philippines travel"])
 
-
-def _stub_current_index(market: str, keywords: list[str]) -> dict:
-    """Curated stub current index — most-recent week of the seasonal series.
-
-    Rotates the 52-week curated series by the current ISO week so the 'current'
-    value tracks the calendar, giving the chart a plausible seasonal position.
-    """
-    series      = _STUB_SERIES.get(market, _STUB_SERIES["korea"])
-    idx         = date.today().isocalendar()[1] % len(series)
-    trend_index = float(series[idx])
-    return {
-        "market":        market,
-        "trend_index":   round(max(0.0, min(100.0, trend_index)), 2),
-        "keywords_used": list(keywords[:5]),
-        "fetched_at":    datetime.now(timezone.utc).isoformat(),
-        "source":        "stub",
-    }
-
-
-def _stub_history(market: str, keywords: list[str], weeks: int) -> dict:
-    """Curated stub weekly history — ``weeks`` dated points from the seasonal series.
-
-    Ends at the current ISO week and walks backwards (wrapping around the 52-week
-    series), attaching the Monday of each corresponding past week so the series is
-    chronological with real week-over-week variance.
-    """
-    full     = _STUB_SERIES.get(market, _STUB_SERIES["korea"])
-    end_idx  = date.today().isocalendar()[1] % len(full)
-    indices  = [(end_idx - weeks + i) % len(full) for i in range(weeks)]
-    values   = [full[i] for i in indices]
-
-    today  = date.today()
-    monday = today - timedelta(days=today.weekday())
-    series = [
-        {
-            "date":        str(monday - timedelta(weeks=weeks - 1 - i)),
-            "trend_index": round(max(0.0, min(100.0, float(v))), 2),
-        }
-        for i, v in enumerate(values)
-    ]
-    return {
-        "market":        market,
-        "weekly_series": series,
-        "keywords_used": list(keywords[:5]),
-        "fetched_at":    datetime.now(timezone.utc).isoformat(),
-        "source":        "stub",
-    }
-
-
-def _stub_result(market: str, category: str, keywords: list[str]) -> dict:
-    """Return a deterministic stub when pytrends is unavailable or a request fails.
-
-    Uses a seeded pseudo-random series of 60 weekly points derived from the
-    (market, category) hash so results are consistent across restarts while
-    still exercising the full SeasonalShift math pipeline.
-    """
-    # Use 8 bytes of the digest (not just the first byte) so distinct
-    # (market, category) pairs get distinct seeds — a single byte (0–255)
-    # collides for ~66% of the 21 possible pairs.
-    seed_val   = int.from_bytes(hashlib.md5(f"{market}:{category}".encode()).digest()[:8], "big")
-    jitter_val = (seed_val % 20) - 10       # ±10 deterministic jitter
-    base       = _STUB_BASE.get(market, 50.0)
-    trend_idx  = round(max(0.0, min(100.0, base + jitter_val)), 2)
-
-    # Build a plausible 60-week series so SeasonalShift math runs on real-ish data
-    rng         = random.Random(seed_val)
-    stub_series = [max(0.0, min(100.0, trend_idx + rng.uniform(-8.0, 8.0)))
-                   for _ in range(60)]
-    stub_series[-1] = trend_idx   # pin the current week to the deterministic stub index
-    shift = seasonal_compute(stub_series)
-
-    return {
-        "market":            market,
-        "category":          category,
-        "keywords_used":     list(keywords[:5]),
-        "trend_index":       trend_idx,
-        "rolling_7d_avg":    shift["rolling_7d_avg"],
-        "rolling_30d_avg":   shift["rolling_30d_avg"],
-        "rolling_7d_std":    shift["rolling_7d_std"],
-        "spike_indicator":   shift["spike_indicator"],
-        "yoy_ratio":         shift["yoy_ratio"],
-        "seasonality_score": shift["seasonality_score"],
-        "data_points":       len(stub_series),
-        "fetched_at":        datetime.now(timezone.utc).isoformat(),
-        "source":            "stub",
-    }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Category volume aggregation — cross-market keyword ranking pipeline
@@ -558,11 +442,7 @@ def fetch_category_volume(category: str, market: str) -> dict:
         )
 
     if _TrendReq is None:
-        logger.warning(
-            "pytrends unavailable — stub for fetch_category_volume market=%s category=%s",
-            market_key, category,
-        )
-        return _stub_category_volume(market_key, category, keywords)
+        _trends_unavailable(_IMPORT_ERROR or "pytrends is not installed")
 
     geo_code  = config["geo"]
     hl        = config["hl"]
@@ -579,31 +459,36 @@ def fetch_category_volume(category: str, market: str) -> dict:
             _jitter_sleep()   # space out consecutive batch requests (HTTP 429 mitigation)
 
             if df is None or df.empty:
-                logger.warning(
-                    "Empty DataFrame for batch market=%s category=%s batch=%s",
-                    market_key, category, batch,
+                _trends_unavailable(
+                    f"pytrends returned no data for market={market_key} "
+                    f"category={category} batch={batch}"
                 )
-                for kw in batch:
-                    keyword_volumes.setdefault(kw, 0.0)
-                continue
 
             if "isPartial" in df.columns:
                 df = df.drop(columns=["isPartial"])
 
             for kw in batch:
                 col = kw if kw in df.columns else (df.columns[0] if len(df.columns) else None)
-                keyword_volumes[kw] = float(df[col].tail(4).mean()) if col else 0.0
+                if col is None:
+                    _trends_unavailable(
+                        f"pytrends returned no usable column for market={market_key} "
+                        f"category={category} keyword={kw}"
+                    )
+                keyword_volumes[kw] = float(df[col].tail(4).mean())
 
+        except DependencyUnavailable:
+            raise
         except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Batch fetch failed — stub for batch. market=%s category=%s error=%s",
+                "Batch fetch failed market=%s category=%s error=%s",
                 market_key, category, exc,
             )
-            for kw in batch:
-                keyword_volumes.setdefault(kw, 0.0)
+            _trends_unavailable(str(exc))
 
     if not keyword_volumes:
-        return _stub_category_volume(market_key, category, keywords)
+        _trends_unavailable(
+            f"pytrends returned no keyword volumes for market={market_key} category={category}"
+        )
 
     total_volume = round(sum(keyword_volumes.values()), 2)
     top_keyword  = max(keyword_volumes, key=lambda k: keyword_volumes[k])
@@ -651,13 +536,11 @@ def rank_markets_by_category(category: str) -> dict:
         )
 
     results: list[dict] = []
-    any_live = False
 
     for market_key in MARKET_CONFIG:
-        result = fetch_category_volume(category, market_key)
-        results.append(result)
-        if result.get("source") == "pytrends":
-            any_live = True
+        # fetch_category_volume raises DependencyUnavailable on any failure — it
+        # propagates, so a partial ranking is never returned as if complete.
+        results.append(fetch_category_volume(category, market_key))
 
     results.sort(key=lambda r: r["total_volume"], reverse=True)
 
@@ -678,31 +561,5 @@ def rank_markets_by_category(category: str) -> dict:
         "top_keyword":         top.get("top_keyword", ""),
         "top_market_keywords": top.get("keyword_volumes", {}),
         "fetched_at":          datetime.now(timezone.utc).isoformat(),
-        "source":              "pytrends" if any_live else "stub",
-    }
-
-
-def _stub_category_volume(market: str, category: str, keywords: list[str]) -> dict:
-    """Deterministic stub for fetch_category_volume when pytrends is unavailable."""
-    base = _STUB_BASE.get(market, 50.0)
-
-    keyword_volumes: dict[str, float] = {}
-    for kw in keywords:
-        kw_seed = int(hashlib.md5(f"{market}:{category}:{kw}".encode()).digest()[0])
-        vol = max(0.0, min(100.0, base + (kw_seed % 40) - 20))
-        keyword_volumes[kw] = round(vol, 2)
-
-    total_volume = round(sum(keyword_volumes.values()), 2)
-    top_keyword  = max(keyword_volumes, key=lambda k: keyword_volumes[k])
-    top_volume   = round(keyword_volumes[top_keyword], 2)
-
-    return {
-        "market":          market,
-        "category":        category,
-        "total_volume":    total_volume,
-        "keyword_volumes": keyword_volumes,
-        "top_keyword":     top_keyword,
-        "top_volume":      top_volume,
-        "source":          "stub",
-        "fetched_at":      datetime.now(timezone.utc).isoformat(),
+        "source":              "pytrends",
     }

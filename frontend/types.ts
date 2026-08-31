@@ -187,6 +187,10 @@ export interface Market {
   gdpTrend: { year: number; value: number }[];
   forexTrend: { date: string; value: number }[];
   chartData: ChartDataPoint[];
+  /** When the newest measured signal behind this market was aggregated. */
+  dataAsOf: string | null;
+  /** True when that measurement is older than 48h — real, but old. */
+  dataStale: boolean;
 }
 
 export interface DemandAlert {

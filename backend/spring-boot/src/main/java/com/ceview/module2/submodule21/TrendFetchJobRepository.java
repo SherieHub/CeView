@@ -55,6 +55,13 @@ public interface TrendFetchJobRepository extends JpaRepository<TrendFetchJob, UU
     List<TrendFetchJob> findByWeekOf(String weekOf);
 
     /**
+     * The most recently attempted job for a market, any status. Task 13 reads
+     * its {@code lastError} to explain a {@code MOD22_NO_MARKET_DATA} to the
+     * operator instead of failing with a bare "no data".
+     */
+    Optional<TrendFetchJob> findTopByMarketOrderByLastAttemptedAtDesc(String market);
+
+    /**
      * Latest SUCCESS result for a given (category, market) pair — used by
      * downstream services that need the most recent trend data.
      */
