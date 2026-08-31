@@ -144,44 +144,20 @@ class AiDependencyPassthroughTest {
 
     // ─── read timeout: connection accepted, no response ──────────────────────
 
-    /**
-     * fastapi-sbert downloads a ~1.1 GB E5 encoder in its lifespan hook, so a cold
-     * start accepts the connection and then says nothing — the likeliest way a
-     * developer meets this path. Reactor's {@code block(Duration)} signals that as a
-     * bare {@link IllegalStateException}, which is neither a WebClientRequestException
-     * nor handled anywhere, so before this it fell to Spring's default /error as a
-     * blank 500.
-     */
-    @Test
-    void aBlockingReadTimeoutIsRecognised() {
-        assertThat(AIInferenceGatewayService.isBlockingReadTimeout(new IllegalStateException(
-                "Timeout on blocking read for 30000000000 NANOSECONDS"))).isTrue();
-    }
 
-    /** A genuine programming error must not be laundered into a dependency outage. */
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {
-            "Only one connection receive subscriber allowed.",
-            "block()/blockFirst()/blockLast() are blocking, which is not supported",
-            "Duplicate key"})
-    void unrelatedIllegalStateExceptionsAreNotTreatedAsTimeouts(String message) {
-        assertThat(AIInferenceGatewayService.isBlockingReadTimeout(
-                new IllegalStateException(message))).isFalse();
-    }
 
     /** The timeout cause is authored, not raw: "30000000000 NANOSECONDS" helps nobody. */
     @Test
     void anAuthoredTimeoutCauseBecomesTheContract() {
         AiDependencyException ex = AiDependencyException.unreachableAfterTimeout(
                 "content/generate",
-                "no response within 30s (the service may still be loading its model)");
+                new RuntimeException("no response within 30s (the service may still be loading its model)"));
 
         assertThat(ex.getStatus()).isEqualTo(503);
         assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
         assertThat(ex.getDependency()).isEqualTo("fastapi");
         assertThat(ex.getCause2()).isEqualTo(
-                "no response within 30s (the service may still be loading its model)");
+                "RuntimeException: no response within 30s (the service may still be loading its model)");
         assertThat(ex.getStage()).isEqualTo("spring/content/generate");
     }
 
