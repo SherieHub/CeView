@@ -3,8 +3,10 @@ import type { Page } from '@playwright/test';
 import { requireBackend, SEED_OPERATOR } from './support/stack';
 
 // Full authenticated journey against the REAL docker-compose stack (Postgres +
-// Spring Boot + both FastAPI services) — login -> dashboard -> market radar ->
-// performance -> content studio.
+// Spring Boot + fastapi-sbert) — login -> dashboard -> market radar ->
+// performance -> content studio. fastapi-transformer (Module 2 forecasting)
+// is NOT started for this job — nothing this spec exercises calls it live —
+// see the e2e-journey job in .github/workflows/e2e.yml.
 //
 // Every other e2e/tests/*.spec.ts file is scaffolding (test.describe.skip +
 // test.fixme()) that has never actually run against the app. This is the one
@@ -184,9 +186,9 @@ test.describe('End-to-end authenticated journey', () => {
 
     // Visual Direction Board (POST /api/creative-direction/generate -> Spring's
     // AIInferenceGatewayService.generateCreative -> fastapi-sbert) has no known
-    // defect on the happy path — but fastapi-sbert isn't started in the
-    // e2e-journey CI job (same --no-deps omission as the AI services generally;
-    // see this file's header comment), so here it falls through to
+    // defect on the happy path and fastapi-sbert IS started in the e2e-journey
+    // CI job (see this file's header comment) — but a live Groq call can still
+    // fail transiently, in which case this falls through to
     // VisualDirectionBoard.tsx's <ApiErrorPanel> instead. Accept either outcome,
     // mirroring the caption-panel assertion below, and only require real content
     // when the "Shot list" heading actually rendered.
