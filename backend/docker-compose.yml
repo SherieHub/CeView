@@ -24,11 +24,10 @@ services:
       # Groq decommissions models periodically; override without a rebuild.
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       HF_TOKEN: ${HF_TOKEN:-}
-      KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
+      HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
       DATABASE_URL: postgresql://ceview:ceview@postgres:5432/ceview
     volumes:
-      - ./fastapi-sbert/models:/app/models:ro
       # Persist the HuggingFace cache so the ~1.1GB E5 encoder is downloaded
       # once and reused across rebuilds/recreates instead of every startup.
       - ceview-hf-cache:/root/.cache/huggingface

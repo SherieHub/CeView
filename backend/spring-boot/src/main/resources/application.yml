@@ -27,7 +27,7 @@ ceview:
     # fastapi-transformer — Module 2 (Gemini demand forecasting + XGBoost economic scoring, port 8001)
     transformer:
       base-url: ${FASTAPI_TRANSFORMER_BASE_URL:http://localhost:8001}
-    timeout-seconds: 30
+    timeout-seconds: 90
     # rank-markets calls PyTrends live (6 batches × 4–12 s jitter = up to 75 s).
     # This separate timeout prevents the shared 30 s limit from killing live fetches.
     rank-markets-timeout-seconds: 90
