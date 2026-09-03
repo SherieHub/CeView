@@ -138,9 +138,13 @@ export default function CampaignAnalyticsView() {
       </div>
 
       <FlaggedMetricBanner flagged={flagged} />
-      {KPI_CARD_SPECS.map((spec) => (
-        <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
-      ))}
+      {/* KPI strip: one row on desktop, wrapping 3→2 on smaller widths, rather
+          than five full-width cards stacked down the page. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {KPI_CARD_SPECS.map((spec) => (
+          <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
+        ))}
+      </div>
       <PesGauge score={score} label={label} metrics={metrics} />
       <CustomerJourneyFunnel input={campaign} />
       <PesTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
