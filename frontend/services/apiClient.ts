@@ -11,6 +11,7 @@ import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
 import { MOCK_CONTENT } from './fixtures/content';
 import { MOCK_OMCS } from './fixtures/omcs';
+import { MOCK_CREATIVE_DIRECTION } from './fixtures/creativeDirection';
 import { MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
 import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
@@ -244,14 +245,10 @@ export const apiClient = {
           }),
   },
   creativeDirection: {
-    /** Shot list, visual and lighting direction for the VisualDirectionBoard. */
+    /** Shot list, visual and lighting direction for ShotListAccordion and CampaignBriefDrawer. */
     generate: () =>
       USE_FIXTURES
-        ? delay({
-            visualGuide: [],
-            shots: [],
-            moodboard: { palette: '', references: [] },
-          } as CreativeDirection)
+        ? delay(MOCK_CREATIVE_DIRECTION)
         : request<CreativeDirection>('/api/creative-direction/generate', { method: 'POST' }),
   },
   campaign: {

@@ -19,6 +19,7 @@ import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
 import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
 import CalendarView from './components/module-3/3.2-calendar/CalendarView';
+import { DEMO_DRAFT, DEMO_BOARD_POSTS } from './components/module-3/3.1-content-studio/previewFixtures';
 import path from 'path/win32';
 
 /**
@@ -65,14 +66,30 @@ const devPreviewRoutes = import.meta.env.DEV
         children: [{ index: true, element: <DashboardPreviewScreen /> }],
       },
       {
-        // Module 3 previews intentionally bypass auth/profile gates. They are
-        // DEV-only, so production users still enter through the normal shell.
-        path: '/preview/content',
-        element: <ContentStudioView />,
-      },
-      {
-        path: '/preview/calendar',
-        element: <CalendarView />,
+        // Module 3 previews intentionally bypass auth/profile gates -- but not
+        // the shell. Mounting AppShell here means the preview exercises the real
+        // chrome (sidebar, topbar, the minmax(0, 1fr) content track and the
+        // shared overlay scrim) rather than a bare full-width viewport, so a
+        // panel that overflows at /content overflows here too. The stores are
+        // mounted for the same reason: usePosts()/useConnections() throw outside
+        // their provider, so without them these routes would start failing the
+        // moment a Module 3 screen wires up to publish(). Matches
+        // DashboardPreviewShell below. DEV-only, so production users still enter
+        // through the gated tree.
+        path: '/preview',
+        element: (
+          <ProfileProvider initial={DEMO_PROFILE}>
+            <PostStoreProvider>
+              <ConnectionsStoreProvider>
+                <AppShell />
+              </ConnectionsStoreProvider>
+            </PostStoreProvider>
+          </ProfileProvider>
+        ),
+        children: [
+          { path: 'content', element: <ContentPreviewScreen /> },
+          { path: 'calendar', element: <CalendarView /> },
+        ],
       },
     ]
   : [];
@@ -94,6 +111,17 @@ function DashboardPreviewShell() {
       <AppShell />
     </ProfileProvider>
   );
+}
+
+/**
+ * DEV-ONLY. Content Studio with its composer pre-staged, so the publish and
+ * compliance panels are reachable without a login or a file picker. The
+ * profile is seeded one level up, on the /preview shell, because every screen
+ * under it needs one — Content Studio will not generate captions against an
+ * empty businessName.
+ */
+function ContentPreviewScreen() {
+  return <ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={DEMO_BOARD_POSTS} />;
 }
 
 /** DEV-ONLY. Maps the :mode segment onto the dashboard's state machine. */
