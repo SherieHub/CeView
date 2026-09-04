@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Camera, Clapperboard, Loader2 } from 'lucide-react';
+import PanelHead from './PanelHead';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { CreativeDirection } from '../../../types';
@@ -24,10 +25,12 @@ export default function VisualDirectionBoard({ activePlatform = 'instagram' }: P
 
   return (
     <section className="card" aria-labelledby="visual-direction-title">
-      <div className="flex items-start gap-3">
-        <span className="conn-ico" aria-hidden="true"><Camera /></span>
-        <div><h2 id="visual-direction-title" className="heading-lg">Visual direction</h2><p className="body-sm">Shot-list guidance for {activePlatform === 'naver' ? 'Naver Blog' : activePlatform}.</p></div>
-      </div>
+      <PanelHead
+        icon={<Camera />}
+        titleId="visual-direction-title"
+        title="Visual direction"
+        subtitle={`Shot-list guidance for ${activePlatform === 'naver' ? 'Naver Blog' : activePlatform}.`}
+      />
 
       {loading && (
         <p className="mt-5 flex items-center gap-2 rounded-lg bg-mint-pale p-3 text-sm text-navy-dark">

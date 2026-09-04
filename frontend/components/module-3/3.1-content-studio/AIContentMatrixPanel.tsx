@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, CheckCircle2, ChevronDown, Copy, Loader2, Sparkles } from 'lucide-react';
+import PanelHead from './PanelHead';
 import type { ContentResponse, PlatformId, CaptionMetadata } from '../../../types';
 
 export const PLATFORM_CHAR_LIMITS: Record<PlatformId, number> = {
@@ -121,13 +122,27 @@ function CaptionOptionCard({
         </div>
       )}
 
+      {/* btn/btn--secondary/btn--primary were never defined anywhere in the
+          stylesheet, so both of these rendered as bare inline text with a
+          stacked glyph. The system's three variants are .btn-primary,
+          .btn-cta and .btn-outline (§4 of the brand doc). Copy is the
+          secondary action and takes the outline; Approve carries the card and
+          takes the mint fill, both at the compact size so a card footer does
+          not get two screen-scale pills. */}
       <div className="mt-4 flex items-center justify-end gap-2">
-        <button type="button" className="btn btn--secondary" onClick={copyText}>
-          {copied ? <Check size={16} /> : <Copy size={16} />}
+        <button type="button" className="btn-outline btn-outline--sm" onClick={copyText}>
+          {copied ? <Check size={15} /> : <Copy size={15} />}
           {copied ? 'Copied' : 'Copy'}
         </button>
-        <button type="button" className="btn btn--primary" onClick={() => onApprove(text)}>
-          <Check size={16} /> {approved ? 'Approved' : 'Approve'}
+        {/* Editing an approved caption leaves the staged copy behind, so the
+            label says what the click now does rather than repeating the
+            "Approved" state the header chip already carries. */}
+        <button
+          type="button"
+          className={approved ? 'btn-outline btn-outline--sm' : 'btn-primary btn-primary--sm'}
+          onClick={() => onApprove(text)}
+        >
+          <Check size={15} /> {approved ? 'Re-approve' : 'Approve'}
         </button>
       </div>
     </article>
@@ -159,15 +174,14 @@ export default function AIContentMatrixPanel({
 
   return (
     <section className="card" aria-labelledby="copywriting-matrix-title">
-      <div className="flex items-start gap-3">
-        <span className="conn-ico" aria-hidden="true"><Sparkles /></span>
-        <div>
-          <h2 id="copywriting-matrix-title" className="heading-lg">AI Copywriting Matrix</h2>
-          <p className="body-sm">Localised copy, tailored to platform and audience.</p>
-        </div>
-      </div>
+      <PanelHead
+        icon={<Sparkles />}
+        titleId="copywriting-matrix-title"
+        title="AI Copywriting Matrix"
+        subtitle="Localised copy, tailored to platform and audience."
+      />
 
-      <div className="mt-5 flex gap-1 overflow-x-auto border-b border-gray-light" role="tablist" aria-label="Content platform">
+      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-gray-light" role="tablist" aria-label="Content platform">
         {PLATFORMS.map((item) => {
           const selected = platform === item.id;
           return (

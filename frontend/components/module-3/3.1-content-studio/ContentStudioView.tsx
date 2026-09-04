@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import CompliancePanel from './CompliancePanel';
 import ContentBoard from './ContentBoard';
@@ -107,26 +108,35 @@ export default function ContentStudioView() {
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6" aria-label="Content Studio">
-      <header>
-        <p className="eyebrow">Content Studio</p>
-        <h1 className="heading-xl">Create content that fits the market</h1>
-        <p className="body-sm mt-2">Choose an AI direction, stage your media, then validate it before publishing.</p>
-        {markets.length > 0 && (
-          <label className="mt-4 block max-w-xs text-sm text-navy-dark">
-            Target market
-            <select
-              className="input mt-1"
-              value={selectedMarketId ?? ''}
-              onChange={(event) => setSelectedMarketId(event.target.value)}
-            >
-              {markets.map((market) => (
-                <option key={market.id} value={market.id}>{market.name}</option>
-              ))}
-            </select>
-          </label>
-        )}
-        {marketsError != null && <div className="mt-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
-      </header>
+      {/* PageHead, not a hand-rolled block: this screen was the only one still
+          writing its own, at .heading-xl (40px) where every other screen's <h1>
+          renders at 28px — so the studio's title outsized the dashboard's and
+          the panels beneath it had to shout to keep up. Target market moves
+          into the actions slot, on the title's baseline, where the dashboard
+          puts Refresh forecast — it is the control the whole screen reads
+          from, not a field buried under the subtitle. */}
+      <PageHead
+        eyebrow="Content Studio"
+        title="Create content that fits the market"
+        subtitle="Choose an AI direction, stage your media, then validate it before publishing."
+        actions={
+          markets.length > 0 && (
+            <label className="studio-market">
+              <span className="field-label">Target market</span>
+              <select
+                className="input"
+                value={selectedMarketId ?? ''}
+                onChange={(event) => setSelectedMarketId(event.target.value)}
+              >
+                {markets.map((market) => (
+                  <option key={market.id} value={market.id}>{market.name}</option>
+                ))}
+              </select>
+            </label>
+          )
+        }
+      />
+      {marketsError != null && <ApiErrorPanel error={marketsError} label="Markets" />}
 
       {stubbed && (
         <div className="banner banner--warn" role="status">

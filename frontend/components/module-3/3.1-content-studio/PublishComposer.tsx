@@ -1,4 +1,5 @@
 import { ImagePlus, Link2, Lock, Trash2 } from 'lucide-react';
+import PanelHead from './PanelHead';
 import type { PlatformId } from '../../../types';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
@@ -33,8 +34,13 @@ export default function PublishComposer({ draft, onDraftChange, audit }: Compose
 
   return (
     <section className="card" aria-labelledby="publish-composer-title">
-      <div className="flex items-start gap-3"><span className="conn-ico" aria-hidden="true"><Link2 /></span><div><h2 id="publish-composer-title" className="heading-lg">Publish composer</h2><p className="body-sm">Prepare the final caption and publishing details.</p></div></div>
-      <label className="field-label mt-5" htmlFor="staged-caption">Staged caption</label>
+      <PanelHead
+        icon={<Link2 />}
+        titleId="publish-composer-title"
+        title="Publish composer"
+        subtitle="Prepare the final caption and publishing details."
+      />
+      <label className="field-label mt-4" htmlFor="staged-caption">Staged caption</label>
       <textarea id="staged-caption" className={`textarea ${draft.caption.length > limit ? 'is-invalid' : ''}`} value={draft.caption} onChange={(event) => onDraftChange({ caption: event.target.value, agreementChecked: false })} placeholder="Approve a matrix option or write your own caption." />
       <p className={`mt-1 text-right text-xs ${draft.caption.length > limit ? 'text-critical' : 'text-[var(--color-text-muted)]'}`}>{draft.caption.length.toLocaleString()} / {limit.toLocaleString()} characters</p>
 

@@ -1,5 +1,6 @@
-import { CheckCircle2, Send } from 'lucide-react';
+import { CheckCircle2, LayoutList, Send } from 'lucide-react';
 import { useState } from 'react';
+import PanelHead from './PanelHead';
 import type { PublishedPost } from '@/types';
 import type { BoardSlotProps } from './contentStudioTypes';
 
@@ -14,5 +15,23 @@ function PostCard({ post }: { post: PublishedPost }) {
 export default function ContentBoard({ draft, posts, canPublish, onPublished }: BoardSlotProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const visible = filter === 'all' ? posts : posts.filter((post) => post.status === filter);
-  return <section className="card" aria-labelledby="content-board-title"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><h2 id="content-board-title" className="heading-lg">Content board</h2><p className="body-sm">Review drafts and published content in one place.</p></div><button type="button" className="btn btn--primary" disabled={!canPublish} title={canPublish ? 'Publish selected content' : 'Complete the composer and pass the audit to publish'} onClick={onPublished}><Send size={16} />Publish {draft.platforms.length ? `to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}</button></div><div className="mt-5 flex gap-2 border-b border-gray-light">{FILTERS.map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`px-3 py-2 text-sm font-semibold capitalize ${filter === item ? 'border-b-2 border-teal-accent text-navy-dark' : 'text-[var(--color-text-muted)]'}`}>{item}</button>)}</div>{canPublish && <p className="mt-4 flex gap-2 rounded-lg bg-mint-pale p-3 text-sm text-navy-dark"><CheckCircle2 size={18} className="shrink-0 text-success" />Ready to publish after a successful compliance audit.</p>}<div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visible.map((post) => <PostCard key={post.id} post={post} />)}</div></section>;
+  return <section className="card" aria-labelledby="content-board-title">
+    {/* The board's own action sits in the head's actions slot, on the title's
+        baseline. It used to be a `btn btn--primary` — a class pair the
+        stylesheet never defined — so the screen's single most consequential
+        control rendered as an unstyled icon stacked over its label in the
+        corner. It is the one publish action on this screen, which is what
+        .btn-cta is for (§4: at most one per view). */}
+    <PanelHead
+      icon={<LayoutList />}
+      titleId="content-board-title"
+      title="Content board"
+      subtitle="Review drafts and published content in one place."
+      actions={
+        <button type="button" className="btn-cta" disabled={!canPublish} title={canPublish ? 'Publish selected content' : 'Complete the composer and pass the audit to publish'} onClick={onPublished}>
+          <Send size={16} />Publish {draft.platforms.length ? `to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
+        </button>
+      }
+    />
+    <div className="mt-4 flex gap-2 border-b border-gray-light">{FILTERS.map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`px-3 py-2 text-sm font-semibold capitalize ${filter === item ? 'border-b-2 border-teal-accent text-navy-dark' : 'text-[var(--color-text-muted)]'}`}>{item}</button>)}</div>{canPublish && <p className="mt-4 flex gap-2 rounded-lg bg-mint-pale p-3 text-sm text-navy-dark"><CheckCircle2 size={18} className="shrink-0 text-success" />Ready to publish after a successful compliance audit.</p>}<div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{visible.map((post) => <PostCard key={post.id} post={post} />)}</div></section>;
 }
