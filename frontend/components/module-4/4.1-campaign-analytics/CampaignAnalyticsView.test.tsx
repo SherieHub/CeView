@@ -150,7 +150,10 @@ describe('CampaignAnalyticsView', () => {
       )
     );
 
-    expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute('data-weeks', '4');
+    // The shell passes only the pre-sliced `window` down to each chart — the
+    // selected width itself is observable on the shared toggle, not on the
+    // chart props.
+    expect(screen.getByRole('button', { name: '4WK' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: '8WK' }));
 
