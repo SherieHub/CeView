@@ -1,5 +1,9 @@
 # CeView — Project Context for Claude
 
+> **Shared rules:** Read and follow [`AGENTS.md`](../AGENTS.md) before acting. It is the
+> repository's canonical, tool-neutral guide. This file provides Claude Code-specific context and
+> optional workflows.
+
 CeView is a tourism-demand intelligence and AI-assisted marketing platform for Cebu-based MSMEs
 (dive shops, cafés, tour operators, and similar small tourism-adjacent businesses). It forecasts
 inbound-traveler demand surges from specific international markets, alerts business owners when a
