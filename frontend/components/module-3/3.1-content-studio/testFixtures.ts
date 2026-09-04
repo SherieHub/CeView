@@ -1,8 +1,8 @@
 /**
  * Shared test-only fixture builder for module 3's content studio tests.
  *
- * ContentResponse.captions is a fixed four-platform object (instagram /
- * tiktok / facebook / naver), not an open string-keyed map, so an empty `{}`
+ * ContentResponse.captions is a fixed three-platform object (instagram /
+ * tiktok / facebook), not an open string-keyed map, so an empty `{}`
  * doesn't typecheck as a stand-in — every test that needs a ContentResponse
  * builds one through this helper instead.
  */
@@ -36,7 +36,6 @@ export function buildContentResponse(source: ContentSource = 'groq'): ContentRes
       instagram: platformCaptions('Instagram'),
       tiktok: platformCaptions('TikTok'),
       facebook: platformCaptions('Facebook'),
-      naver: platformCaptions('Naver'),
     },
   };
 }

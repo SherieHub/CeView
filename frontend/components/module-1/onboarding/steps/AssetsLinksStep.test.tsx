@@ -62,7 +62,6 @@ describe('AssetsLinksStep', () => {
       'Instagram handle or page name',
       'TikTok handle or page name',
       'Facebook handle or page name',
-      'Naver Blog handle or page name',
     ]) {
       const field = screen.getByLabelText(label) as HTMLInputElement;
       expect(field.value).toBe('');

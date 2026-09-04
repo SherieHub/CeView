@@ -41,20 +41,43 @@ function UrgencyChip({ urgency }: { urgency: string }) {
 export default function AiActionPlan({ report }: ActionPlanSlotProps) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="card flex flex-wrap items-start justify-between gap-4">
+      {/* Full-width summary: prose on the left uses the column's width, the
+          right rail carries the recommended platform + a scannable priority
+          list that the detail cards below expand on. */}
+      <div className="card grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-2">
           <h2 className="heading-lg flex items-center gap-2">
             <Sparkles size={22} className="text-teal-accent" aria-hidden="true" />
             AI Action Plan
           </h2>
-          <p className="body-sm max-w-[56ch]">{report.executiveSummary}</p>
+          <p className="body-sm">{report.executiveSummary}</p>
         </div>
-        <span className="badge badge--teal whitespace-nowrap">
-          Recommended platform: {report.recommendedPlatform}
-        </span>
+        <div className="flex flex-col gap-3 lg:border-l lg:border-[var(--color-gray-light)] lg:pl-6">
+          <span className="badge badge--teal w-fit whitespace-nowrap">
+            Recommended platform: {report.recommendedPlatform}
+          </span>
+          <div>
+            <span className="eyebrow">Funnel priorities</span>
+            <ul className="mt-2 flex flex-col divide-y divide-[var(--color-gray-light)]">
+              {report.funnelDiagnostics.map((diagnostic) => (
+                <li
+                  key={diagnostic.stage}
+                  className="flex items-center justify-between gap-3 py-2 text-sm"
+                >
+                  <span className="font-semibold text-[var(--color-text-heading)]">
+                    {diagnostic.stage}
+                  </span>
+                  <span className="text-meta shrink-0">
+                    {diagnostic.rank} · {diagnostic.dropRate}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {report.funnelDiagnostics.map((diagnostic, index) => {
           const recommendation = report.recommendations[index];
           return (

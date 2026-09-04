@@ -7,9 +7,8 @@
  * M3-F0 owns the shared post store; this card is a read-only consumer — no
  * dependency on any Content Studio feature card, only on M3-F0 and M4-F.
  *
- * Filter tabs are All/TikTok/Instagram/Facebook exactly as specced (not all
- * 4 PlatformId values — Naver has no tab here, per the card's own pseudocode
- * comment, not an oversight).
+ * Filter tabs are All/TikTok/Instagram/Facebook exactly as specced — one tab
+ * per PlatformId, plus All.
  *
  * KNOWN RUNTIME GAP: usePosts() throws unless a PostStoreProvider ancestor
  * exists. No PostStoreProvider is mounted in App.tsx yet (flagged when

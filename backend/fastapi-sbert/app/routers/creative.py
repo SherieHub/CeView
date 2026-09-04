@@ -2,11 +2,13 @@
 
 Called by Spring Boot CreativeDirectionService after approved captions are available.
 Generates destination-specific visual direction, shot lists, lighting, moodboard,
-and platform-aware recommendations via Gemini.  Falls back to curated templates.
+and platform-aware recommendations via Gemini.  Raises when Gemini is unavailable —
+no curated-template stand-in.
 """
 from __future__ import annotations
 
 import logging
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -59,7 +61,9 @@ class CreativeDirectionResponse(BaseModel):
     moodboard:               MoodboardItem       = Field(default_factory=MoodboardItem)
     # dict[platform_name → recommendation_string] — e.g. {"Naver Blog": "...", "Instagram": "..."}
     platformRecommendations: dict[str, str]      = Field(default_factory=dict)
-    source:                  str                 = "fallback"
+    # Closed on purpose, and with no default — see ContentResponse.source. A
+    # fallback is now an AiDependencyException, not a value this field can hold.
+    source:                  Literal["groq"]
 
 
 # ─── /generate ────────────────────────────────────────────────────────────────
@@ -83,7 +87,7 @@ def generate(req: CreativeGenerateRequest) -> CreativeDirectionResponse:
         shots                   — [ { label, description, lighting } ]
         moodboard               — { palette, references }
         platformRecommendations — ranked platform list with strategy notes
-        source                  — "gemini" | "fallback"
+        source                  — always "groq"
     """
     market           = (req.market or "korea").strip() or "korea"
     business_name    = req.businessName or ""

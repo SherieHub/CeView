@@ -10,6 +10,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth';
 import { signInWithGooglePopup } from '../../services/firebase';
+import { ApiError } from '../../services/apiError';
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle } = useAuth();
@@ -43,10 +44,15 @@ export default function LoginPage() {
     setGoogleSubmitting(true);
     try {
       const idToken = await signInWithGooglePopup();
-      await loginWithGoogle(idToken);
+      const intent = mode === 'signup' ? 'register' : 'login';
+      await loginWithGoogle(idToken, intent);
       navigate('/dashboard', { replace: true });
-    } catch {
-      setError('Something went wrong signing in with Google. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.message
+          ? err.message
+          : 'Something went wrong signing in with Google. Please try again.',
+      );
     } finally {
       setGoogleSubmitting(false);
     }

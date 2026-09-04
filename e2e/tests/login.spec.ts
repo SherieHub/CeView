@@ -46,12 +46,12 @@ test.describe('Shell & Routing — existing coverage', () => {
     await page.getByPlaceholder('••••••••').fill(SEED_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Post-login lands on /dashboard (App.tsx's index route) inside AppShell;
-    // the topbar title is the reliable "app has loaded" signal — neither
-    // LoginPage nor Sidebar render a heading-role element containing "CeView"
-    // post-rewrite (Sidebar's brand mark is a <b>, LoginPage's own <h1> is
-    // the pitch headline, not the wordmark).
-    await expect(page.locator('.topbar-title b')).toHaveText('Dashboard');
+    // Post-login lands on /dashboard (App.tsx's index route) inside AppShell.
+    // Topbar carries no route title (Topbar.tsx's own header comment: that
+    // moved to each screen's own PageHead <h1>, and Topbar renders none of
+    // its own) — the sidebar's aria-current="page" on the matching nav item
+    // is the reliable, router-driven "app has loaded on this route" signal.
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
 
     const performanceTab = page.getByRole('button', { name: 'Performance' });
     await expect(performanceTab).toBeVisible();
@@ -69,9 +69,9 @@ async function loginAsSeedOperator(page: import('@playwright/test').Page) {
   await page.getByPlaceholder('••••••••').fill(SEED_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();
   // See the comment above the equivalent assertion in "login with seeded
-  // credentials..." above: post-login there's no heading-role "CeView"
-  // anywhere in the shipped markup, so assert on the topbar title instead.
-  await expect(page.locator('.topbar-title b')).toHaveText('Dashboard');
+  // credentials..." above: Topbar renders no route title, so assert on the
+  // sidebar's aria-current="page" instead.
+  await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
 }
 
 test.describe('Shell & Routing — router + overlay stack', () => {
@@ -82,19 +82,26 @@ test.describe('Shell & Routing — router + overlay stack', () => {
   test('direct navigation to /dashboard, /content, /calendar, /performance, /settings/:tab all render the correct route without a full page reload', async ({ page }) => {
     await loginAsSeedOperator(page);
 
-    const routes: Array<{ path: string; title: string }> = [
-      { path: '/dashboard', title: 'Dashboard' },
-      { path: '/content', title: 'Content Studio' },
-      { path: '/calendar', title: 'Calendar' },
-      { path: '/performance', title: 'Performance' },
-      { path: '/settings/profile', title: 'Settings' },
+    // Topbar carries no route title (see loginAsSeedOperator's comment) — the
+    // sidebar's aria-current="page" on the matching nav item (layout/nav.ts +
+    // Sidebar.tsx) is the one signal driven purely by the router's pathname,
+    // independent of whether a given screen has built out its own PageHead
+    // <h1> yet. The three Settings destinations are flat peer nav items now
+    // (Sidebar.tsx's own comment: no more parent "Settings" to expand), so
+    // /settings/profile's item is labelled "Business Profile", not "Settings".
+    const routes: Array<{ path: string; label: string }> = [
+      { path: '/dashboard', label: 'Dashboard' },
+      { path: '/content', label: 'Content Studio' },
+      { path: '/calendar', label: 'Calendar' },
+      { path: '/performance', label: 'Performance' },
+      { path: '/settings/profile', label: 'Business Profile' },
     ];
 
     // Deep-link each route directly (full browser navigation) and confirm
     // the router resolves it to the correct screen.
     for (const route of routes) {
       await page.goto(route.path);
-      await expect(page.locator('.topbar-title b')).toHaveText(route.title);
+      await expect(page.getByRole('button', { name: route.label })).toHaveAttribute('aria-current', 'page');
     }
 
     // Then confirm navigating between them *within* the app (sidebar clicks)
@@ -103,22 +110,10 @@ test.describe('Shell & Routing — router + overlay stack', () => {
     await page.goto('/dashboard');
     await page.evaluate(() => { (window as any).__noReload = true; });
 
-    await page.getByRole('button', { name: 'Content Studio' }).click();
-    await expect(page.locator('.topbar-title b')).toHaveText('Content Studio');
-
-    await page.getByRole('button', { name: 'Calendar' }).click();
-    await expect(page.locator('.topbar-title b')).toHaveText('Calendar');
-
-    await page.getByRole('button', { name: 'Performance' }).click();
-    await expect(page.locator('.topbar-title b')).toHaveText('Performance');
-
-    // Settings is an expandable sidebar item — expand it, then pick a sub-tab.
-    await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByRole('button', { name: 'Profile' }).click();
-    await expect(page.locator('.topbar-title b')).toHaveText('Settings');
-
-    await page.getByRole('button', { name: 'Dashboard' }).click();
-    await expect(page.locator('.topbar-title b')).toHaveText('Dashboard');
+    for (const label of ['Content Studio', 'Calendar', 'Performance', 'Business Profile', 'Dashboard']) {
+      await page.getByRole('button', { name: label }).click();
+      await expect(page.getByRole('button', { name: label })).toHaveAttribute('aria-current', 'page');
+    }
 
     expect(await page.evaluate(() => (window as any).__noReload)).toBe(true);
   });
@@ -131,31 +126,67 @@ test.describe('Shell & Routing — router + overlay stack', () => {
     // straight back to /dashboard rather than letting it render.
     await page.goto('/onboarding');
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.locator('.topbar-title b')).toHaveText('Dashboard');
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
   });
 
-  test('overlay stack: opening a drawer then a modal over it closes only the modal on first Escape, and the scrim stays visible until both are closed', async ({ page }) => {
+  test('overlay stack: opening the market radar drawer pushes the scrim, and Escape closes it', async ({ page }) => {
+    // Was driven through a generic test-only scaffold (RoutePlaceholder.tsx,
+    // now deleted) that rendered on whichever screen hadn't been built yet.
+    // Dashboard, Performance, Content Studio, Calendar and all three Settings
+    // screens are real now, so there is no placeholder left to host it —
+    // this exercises the shared Drawer against a real screen instead.
     await loginAsSeedOperator(page);
     await page.goto('/dashboard');
 
     const scrim = page.locator('#scrim');
     await expect(scrim).not.toHaveClass(/on/);
 
-    await page.getByTestId('test-open-drawer').click();
-    await expect(page.locator('.drawer.on')).toBeVisible();
-    await expect(scrim).toHaveClass(/on/);
+    await page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' }).click();
+    await page.locator('section.dash-markets').getByRole('heading', { name: 'South Korea' }).click();
 
-    await page.getByTestId('test-open-modal-from-drawer').click();
-    await expect(page.locator('.modal.on')).toBeVisible();
-    await expect(page.locator('.drawer.on')).toBeVisible();
-
-    await page.keyboard.press('Escape');
-    await expect(page.locator('.modal.on')).toHaveCount(0);
     await expect(page.locator('.drawer.on')).toBeVisible();
     await expect(scrim).toHaveClass(/on/);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('.drawer.on')).toHaveCount(0);
+    await expect(scrim).not.toHaveClass(/on/);
+  });
+
+  test('overlay stack: the Platforms connect modal pushes the scrim, and Escape closes it', async ({ page }) => {
+    // /api/connections has no backend implementation yet (docs/module-3/
+    // backend/PlatformConnectionController.md — specified, not implemented),
+    // so this stubs just that one call and drives everything else (login,
+    // routing) against the real stack. Covers the shared Modal against a real
+    // screen; the stacked-drawer-then-modal Escape-priority behavior (closing
+    // only the top-most overlay) is unit-tested directly in
+    // frontend/components/shared/useOverlayStack.test.tsx, since no real
+    // screen nests a Modal inside an open Drawer today.
+    await page.route('**/api/connections', (route) =>
+      route.fulfill({
+        json: [
+          { platform: 'instagram', connected: true, handle: '@cebu.dive', connectedAt: '2026-05-01T00:00:00Z' },
+          { platform: 'tiktok', connected: false, handle: null, connectedAt: null },
+          { platform: 'facebook', connected: false, handle: null, connectedAt: null },
+        ],
+      }),
+    );
+
+    await loginAsSeedOperator(page);
+    await page.goto('/settings/platforms');
+
+    const scrim = page.locator('#scrim');
+    await expect(scrim).not.toHaveClass(/on/);
+
+    // { exact: true } matters here: Playwright's role-name matching is
+    // substring-based by default, so a plain { name: 'Connect' } also matches
+    // the already-connected Instagram row's "Disconnect" button, which sorts
+    // first in DOM order — clicking that opens no modal at all.
+    await page.getByRole('button', { name: 'Connect', exact: true }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(scrim).toHaveClass(/on/);
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(scrim).not.toHaveClass(/on/);
   });
 });

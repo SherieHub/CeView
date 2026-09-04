@@ -63,19 +63,62 @@ export interface CategoryAllocation {
   percentage: number;
 }
 
+/** Cohort density tier, derived from the category's share of the corpus. */
+export type CategoryDensity = 'dense' | 'moderate' | 'sparse';
+
 /**
  * Uniqueness scoring result — POST /api/classification/uniqueness.
  * Scores are 0–100. Note the score field is `overallScore`, not `uniquenessScore`.
+ *
+ * TWO RULES THE TYPES CANNOT EXPRESS, both previously got wrong here:
+ *
+ *  1. `overallScore === semanticPercentile`. Nothing else feeds it.
+ *  2. `categoryScore` is NOT a component of `overallScore`. It is a
+ *     classification-confidence indicator shown beside the score, never
+ *     inside it.
+ *
+ * `categoryScore` is a *normalised share* summing to 100 across the selected
+ * categories, so keeping one category yields ~100 mechanically and keeping
+ * three yields ~33 each. It is not comparable across different numbers of
+ * selected categories and must not be charted or trended as if it were.
+ *
+ * See docs/superpowers/plans/2026-09-04-uniqueness-scoring-honesty/.
  */
 export interface UniquenessResult {
+  /** The headline. Always equal to `semanticPercentile`. */
   overallScore: number;
+  /** Raw distinctiveness (scaled mean cosine distance). Compressed by the
+   *  encoder into a narrow band — a subordinate diagnostic, not the score. */
   semanticsScore: number;
+  /** Classification confidence. NOT part of `overallScore` — see above. */
   categoryScore: number;
+  /** Rank against the cohort's own distance distribution. Self-calibrating. */
+  semanticPercentile: number;
+  /** How many businesses were compared against. A percentile without its
+   *  comparison set is unreadable, so this is always displayed with it. */
+  cohortSize: number;
+  /** Median `semanticsScore` within that cohort. */
+  cohortMedianScore: number;
+  /** Categories the cohort was drawn from, for naming it in the UI. */
+  cohortCategories: string[];
+  /** Drives the always-visible density explainer on Step 5. */
+  categoryDensity: CategoryDensity | '';
+  /** False when the cohort is below the comparison floor. Render a distinct
+   *  state, not a number — this is a valid response, not an error. */
+  sufficientCohort: boolean;
   descriptionFeedback: string;
   categoryFeedback: string;
 }
 
-export type PlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+/**
+ * The platforms CeView generates for and publishes to.
+ *
+ * Naver Blog was removed as a generation target (spec §2a) — its captions were
+ * hardcoded Korean text injected on the success path, not model output. The AI
+ * may still *recommend* Naver as a channel; it is simply not something this app
+ * writes copy for.
+ */
+export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
 
 export interface PlatformConnection {
   platform: PlatformId;
@@ -179,6 +222,10 @@ export interface Market {
   gdpTrend: { year: number; value: number }[];
   forexTrend: { date: string; value: number }[];
   chartData: ChartDataPoint[];
+  /** When the newest measured signal behind this market was aggregated. */
+  dataAsOf: string | null;
+  /** True when that measurement is older than 48h — real, but old. */
+  dataStale: boolean;
 }
 
 export interface DemandAlert {
@@ -304,16 +351,15 @@ export interface ContentResponse {
   framework: string;
   source: ContentSource;
   /**
-   * Deviates from the plan's `Record<string, PlatformCaptions>` — the fixture's
-   * real shape (ui-ux-prototype.html:1093–1391 / CaptionsByPlatform) is a fixed
-   * four-platform object, not an open string-keyed map. Kept as-is to avoid
+   * Deviates from the plan's `Record<string, PlatformCaptions>` — the real
+   * shape is a fixed three-platform object, not an open string-keyed map, so
+   * an empty `{}` doesn't typecheck as a stand-in. Kept explicit to avoid
    * silently widening/losing the per-platform keys.
    */
   captions: {
     instagram: PlatformCaptions;
     tiktok: PlatformCaptions;
     facebook: PlatformCaptions;
-    naver: PlatformCaptions;
   };
 }
 
@@ -371,6 +417,13 @@ export interface WorkspaceMemberFixture {
   email: string;
   role: 'Owner' | 'Editor' | 'Viewer';
   initials: string;
+  /**
+   * Omitted (or 'active') for a real member. 'pending' marks an unaccepted
+   * invite — set client-side for the optimistic row WorkspaceSettings appends
+   * on submit; the backend invite endpoint is proposed, not implemented, so
+   * no real member row is ever fetched back in this state yet.
+   */
+  status?: 'active' | 'pending';
 }
 
 export interface PublishedPost {

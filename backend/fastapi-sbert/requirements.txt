@@ -6,8 +6,8 @@ httpx>=0.27.0
 # Groq API (OpenAI-compatible) — Module 1 uniqueness, Module 3 content/compliance/creative/reports
 openai>=1.0.0
 # Module 1 — SBERT classifier head + E5 sentence embeddings
-tensorflow-cpu>=2.17.0
 sentence-transformers>=3.0.0
+gradio_client>=2.0.0
 numpy>=1.26.0,<2.0
 # Module 1 — embedding corpus persistence (tbl_business_embedding)
 psycopg2-binary>=2.9.0

@@ -28,6 +28,13 @@ public class EnrichedSequenceBuilder {
 
     private static final int MIN_RECORDS = 4;
 
+    /**
+     * How old the newest real signal may be before the UI calls it stale.
+     * Matches the trend-fetch scheduler's weekly-with-daily-retry cadence with
+     * room for one missed run. Defined once, here, so it is not re-derived.
+     */
+    public static final java.time.Duration STALE_AFTER = java.time.Duration.ofHours(48);
+
     /** ISO week numbers for known high-demand holiday periods per market. */
     private static final Map<String, Set<Integer>> HOLIDAY_WEEKS = Map.of(
             "korea", Set.of(1, 2, 22, 23, 37, 38, 52),   // Lunar New Year, Chuseok
@@ -69,13 +76,14 @@ public class EnrichedSequenceBuilder {
      * data should not suddenly see an empty forecast.
      */
     public Map<String, Object> buildSequence(UUID profileId, String market, String category) {
-        // DESC order: most-recent first
-        List<MarketSignalRecord> records = category != null
-                ? signalRepo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                        profileId, market, category)
-                : List.of();
-        if (records.isEmpty()) {
-            records = signalRepo.findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        // DESC order: most-recent first. Real (source='pytrends') rows only —
+        // stub is purged by V23 and 'unknown' is untrusted by policy.
+        List<MarketSignalRecord> records =
+                signalRepo.findRealByProfileAndMarket(profileId, market, category);
+        if (records.isEmpty() && category != null) {
+            // Category not yet ingested — fall back to the market's other real
+            // records rather than to nothing. Still real-only.
+            records = signalRepo.findRealByProfileAndMarket(profileId, market, null);
         }
 
         if (records.size() < MIN_RECORDS) {
@@ -86,10 +94,9 @@ public class EnrichedSequenceBuilder {
         List<MarketSignalRecord> chronological = new ArrayList<>(records);
         Collections.reverse(chronological);
 
-        // Full chronological trend-index series for the Gemini prompt
-        List<Double> trendSeries = chronological.stream()
-                .map(r -> orDefault(r.getTrendIndex(), 50.0))
-                .collect(Collectors.toList());
+        // Full chronological trend-index series for the Gemini prompt —
+        // unmeasured records are dropped, never defaulted to a midpoint.
+        List<Double> trendSeries = trendSeriesOf(chronological);
 
         // Use the latest record for pre-computed rolling stats
         MarketSignalRecord latest = records.get(0);
@@ -107,23 +114,42 @@ public class EnrichedSequenceBuilder {
         payload.put("category",        category);   // extra context; ignored by FastAPI if unused
         payload.put("trendSeries",     trendSeries);
         // Prefer the explicit 7d column; fall back to legacy rollingAverage
-        payload.put("rolling7dAvg",    orDefault(
-                latest.getRollingAverage7d(),
-                orDefault(latest.getRollingAverage(), 50.0)));
-        payload.put("rolling30dAvg",   orDefault(
-                latest.getRollingAverage30d(),
-                orDefault(latest.getRollingAverage(), 50.0)));
-        payload.put("rollingStd7d",    orDefault(latest.getRollingStdDev(), 0.0));
-        payload.put("spikeIndicator",  Boolean.TRUE.equals(latest.getSpikeIndicator()));
-        payload.put("yoyRatio",        latest.getYoyRatio());   // may be null — Map.of() forbidden
-        payload.put("seasonalityScore", orDefault(latest.getSeasonalityScore(), 0.5));
-        payload.put("forexRate",       orDefault(latest.getForexRate(), 1.0));
-        payload.put("gdpGrowth",       orDefault(latest.getGdpGrowth(), 2.0));
-        payload.put("holidayFlag",     holidayFlag);
+        // Measured fields pass through raw: an absent measurement must reach the
+        // forecaster as null, not as an invented number it cannot tell apart
+        // from a real reading. gemini_forecaster raises on an unusable payload.
+        payload.put("rolling7dAvg",     latest.getRollingAverage7d());
+        payload.put("rolling30dAvg",    latest.getRollingAverage30d());
+        payload.put("rollingStd7d",     latest.getRollingStdDev());
+        payload.put("spikeIndicator",   Boolean.TRUE.equals(latest.getSpikeIndicator()));
+        payload.put("yoyRatio",         latest.getYoyRatio());   // may be null — Map.of() forbidden
+        payload.put("seasonalityScore", latest.getSeasonalityScore());
+        payload.put("forexRate",        latest.getForexRate());
+        payload.put("gdpGrowth",        latest.getGdpGrowth());
+        payload.put("dataAsOf", latest.getAggregatedAt() == null
+                ? null : latest.getAggregatedAt().toString());
+        payload.put("dataStale", isStale(latest.getAggregatedAt(), java.time.OffsetDateTime.now()));
+        payload.put("holidayFlag",      holidayFlag);
         return payload;
     }
 
-    private double orDefault(Double value, double def) {
-        return value != null ? value : def;
+    /**
+     * Trend indices, chronological, with unmeasured records dropped.
+     *
+     * <p>This used to substitute {@code 50.0} for a null index — a fabricated
+     * midpoint the forecaster could not distinguish from a real measurement.
+     * Omitting the point is honest; the series is shorter and MIN_RECORDS still
+     * guards the floor.
+     */
+    public static List<Double> trendSeriesOf(List<MarketSignalRecord> chronological) {
+        return chronological.stream()
+                .map(MarketSignalRecord::getTrendIndex)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /** True when the newest real signal is older than {@link #STALE_AFTER}. */
+    public static boolean isStale(java.time.OffsetDateTime newest, java.time.OffsetDateTime now) {
+        if (newest == null) return true;
+        return java.time.Duration.between(newest, now).compareTo(STALE_AFTER) > 0;
     }
 }

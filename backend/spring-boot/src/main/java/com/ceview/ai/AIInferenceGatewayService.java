@@ -86,7 +86,13 @@ public class AIInferenceGatewayService {
     public Map<String, Object> rankMarketsForCategory(String category) {
         var payload = new HashMap<String, Object>();
         payload.put("category", category);
-        return post(transformerClient, "/api/trends/rank-markets", payload, rankMarketsTimeout);
+        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
+        return transformerClient.post().uri("/api/trends/rank-markets")
+                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(MAP_TYPE)
+                .block(rankMarketsTimeout);
     }
 
     // ─── Module 2.1 — Market data ingestion (fastapi-transformer) ────────────
@@ -261,26 +267,16 @@ public class AIInferenceGatewayService {
     // ─── private helpers ──────────────────────────────────────────────────────
 
     private Map<String, Object> postSbert(String path, Map<String, Object> payload) {
-        return post(sbertClient, path, payload, timeout);
+        return post(sbertClient, path, payload);
     }
 
     private Map<String, Object> postTransformer(String path, Map<String, Object> payload) {
-        return post(transformerClient, path, payload, timeout);
+        return post(transformerClient, path, payload);
     }
 
-    /**
-     * The one path every JSON AI call goes through, so every one of them fails as the
-     * unavailability contract. {@code callTimeout} is passed in rather than read from
-     * the field because rank-markets needs {@link #rankMarketsTimeout}, and the cause
-     * text quotes whichever bound actually expired.
-     *
-     * <p>{@code generateReportPdf} is the only remaining caller that bypasses this —
-     * it returns {@code byte[]}, not a {@code Map}, so it keeps the legacy handling.
-     */
-    private Map<String, Object> post(
-            WebClient client, String path, Map<String, Object> payload, Duration callTimeout) {
+    private Map<String, Object> post(WebClient client, String path, Map<String, Object> payload) {
         try {
-            return doPost(client, path, payload, callTimeout);
+            return doPost(client, path, payload);
         } catch (WebClientRequestException noResponse) {
             // Connection refused / DNS / socket reset — FastAPI never answered, so there
             // is no body to pass through. Translated here rather than in the shared
@@ -288,34 +284,10 @@ public class AIInferenceGatewayService {
             // "fastapi"; ExternalMarketDataClient raises the same exception type for
             // World Bank and forex, which must not be mislabelled as an AI outage.
             throw AiDependencyException.unreachable(springPath(path), noResponse);
-        } catch (IllegalStateException maybeTimeout) {
-            // Neither WebClient sets a responseTimeout, so the only bound on a service
-            // that accepts the connection and then says nothing is block(Duration) —
-            // and Reactor signals *that* as a bare IllegalStateException, not a
-            // WebClientRequestException. fastapi-sbert downloads a ~1.1 GB E5 encoder
-            // in its lifespan hook, so a cold start is the likeliest way to meet this.
-            if (!isBlockingReadTimeout(maybeTimeout)) throw maybeTimeout;
-            throw AiDependencyException.unreachableAfterTimeout(
-                    springPath(path),
-                    "no response within " + callTimeout.toSeconds()
-                            + "s (the service may still be loading its model)");
         }
     }
 
-    /**
-     * True only for Reactor's blocking-read timeout. Matched on the message because
-     * Reactor gives it no distinct type — deliberately narrow, so a genuine
-     * programming-error {@code IllegalStateException} from anywhere in the chain
-     * still propagates as the bug it is instead of being laundered into an outage.
-     */
-    static boolean isBlockingReadTimeout(Throwable failure) {
-        return failure != null
-                && failure.getMessage() != null
-                && failure.getMessage().contains("Timeout on blocking read");
-    }
-
-    private Map<String, Object> doPost(
-            WebClient client, String path, Map<String, Object> payload, Duration callTimeout) {
+    private Map<String, Object> doPost(WebClient client, String path, Map<String, Object> payload) {
         String traceId = MDC.get(TraceIdFilter.MDC_KEY);
         return client.post().uri(path)
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
@@ -334,7 +306,7 @@ public class AIInferenceGatewayService {
                                 springPath(path)))
                 )
                 .bodyToMono(MAP_TYPE)
-                .block(callTimeout);
+                .block(timeout);
     }
 
     /**

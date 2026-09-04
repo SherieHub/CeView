@@ -47,6 +47,9 @@ const KPI_CARD_SPECS: { label: string; key: keyof Metrics; inverseGood?: boolean
   { label: 'CAC', key: 'cac', inverseGood: true },
 ];
 
+/** Windows the shared trend-window toggle offers; governs all three charts. */
+const WEEK_OPTIONS: (4 | 8)[] = [4, 8];
+
 /**
  * The report endpoint can answer 200 with an empty object: FastAPI's
  * /internal/report/generate returns {} on success, so Spring's FR4.26
@@ -124,7 +127,11 @@ export default function CampaignAnalyticsView() {
   const windowSlice = (history ?? []).slice(-weeks);
 
   return (
-    <div className="mx-auto flex max-w-[880px] flex-col gap-6">
+    // A dashboard, not a form: fills the shell's content width (capped at
+    // --content-max) instead of the 880px prose measure, and lays the cards
+    // out in a grid so the screen reads in ~4 bands rather than an 11-card
+    // vertical scroll.
+    <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="heading-lg">Performance</h2>
@@ -138,15 +145,52 @@ export default function CampaignAnalyticsView() {
       </div>
 
       <FlaggedMetricBanner flagged={flagged} />
-      {KPI_CARD_SPECS.map((spec) => (
-        <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
-      ))}
+      {/* KPI strip: one row on desktop, wrapping 3→2 on smaller widths, rather
+          than five full-width cards stacked down the page. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {KPI_CARD_SPECS.map((spec) => (
+          <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
+        ))}
+      </div>
+
       <PesGauge score={score} label={label} metrics={metrics} />
+
       <CustomerJourneyFunnel input={campaign} />
-      <PesTrendChart window={windowSlice} weeks={weeks} onWeeksChange={setWeeks} />
-      <EfficiencyTrendChart window={windowSlice} />
-      <CostTrendChart window={windowSlice} />
+
+      {/* One shared window control governs all three charts below — it used to
+          live inside PesTrendChart's header, where it read as a PES-only
+          toggle. */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="heading-md">Trends over time</h3>
+          <div role="group" aria-label="Trend window" className="inline-flex gap-1 rounded-pill bg-mint-pale p-1">
+            {WEEK_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={weeks === option}
+                onClick={() => setWeeks(option)}
+                className={`rounded-pill px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  weeks === option ? 'bg-mint-primary text-navy-dark' : 'text-navy-primary hover:text-cyan-deep'
+                }`}
+              >
+                {option}WK
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <PesTrendChart window={windowSlice} />
+          <EfficiencyTrendChart window={windowSlice} />
+          <CostTrendChart window={windowSlice} />
+        </div>
+      </div>
+
       {error != null && <ApiErrorPanel error={error} label="Campaign Analytics" />}
+
+      {/* Full width, stacked: the action plan grows with the number of
+          diagnostics and has no fixed-height partner, so putting the post list
+          beside it just stranded whitespace under the list. */}
       {isReportPopulated(report) ? (
         <AiActionPlan report={report as PrescriptiveReport} />
       ) : report === null && error == null ? (

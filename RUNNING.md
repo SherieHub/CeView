@@ -236,6 +236,57 @@ never commit real keys.** Start from `backend/.env.example`.
 
 ---
 
+## 5a. Importing the uniqueness reference corpus
+
+Module 1's uniqueness score ranks a business against a **cohort** of other
+businesses. That cohort lives in `tbl_business_embedding`, and until it is
+populated the score is meaningless — below three rows the scorer has nothing
+to rank against, and on a machine with a handful of ad-hoc saved profiles the
+score is whatever that machine happens to contain. Two developers would see
+different numbers for the same business.
+
+The corpus therefore ships in two halves:
+
+| Half | Where | Applied by |
+|---|---|---|
+| Profile **text** (64 reference businesses across all 7 categories) | `V26__module1_reference_corpus.sql` | Flyway, automatically |
+| The **vectors** for that text | `backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql` | you, once |
+
+```bash
+# 1. Flyway seeds the text (runs automatically when spring-boot starts)
+docker compose up -d spring-boot
+
+# 2. Import the vectors
+docker exec -i ceview-postgres psql -U ceview -d ceview \
+  < backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql
+```
+
+Verify:
+
+```bash
+docker exec ceview-postgres psql -U ceview -d ceview \
+  -c "SELECT embedding_model_version, COUNT(*) FROM tbl_business_embedding GROUP BY 1;"
+```
+
+You want **one** row back. More than one means a mixed-scheme corpus, which is
+the one failure mode worth understanding: vectors built under different schemes
+are not comparable, and mixing them does not raise an error — it silently
+produces distances driven by the scheme difference rather than by the
+businesses, so the scores look fine and are wrong. Fix it by re-embedding
+everything from the text already in the database:
+
+```bash
+docker exec -i ceview-fastapi python - --all < scripts/generate-reference-corpus.py
+```
+
+Re-run that (without `--all`, then regenerate the dump) after **any** change to
+`ml_classifier._build_text`, the encoder, or `V26` — otherwise the committed
+dump and the code drift apart silently.
+
+> The reference rows are marked `is_reference = TRUE` and have no operator.
+> They are corpus material, not tenants, and must never appear in an
+> operator-scoped query. Only the uniqueness cohort reads them.
+
 ## 6. Authentication & seeded demo accounts
 
 The app requires login — every screen is gated behind a Sign In page, and
@@ -261,13 +312,13 @@ Quick reference — any of these logs in:
 *(see `SEED_CREDENTIALS.md` for all 9 — these are demo/seed credentials only,
 never reuse them anywhere real)*
 
-You can also register a brand-new account via the Register link on the login
-page (`POST /api/auth/register`) — it starts with an empty business
+You can also register a brand-new account via the "Create account" tab on the
+login page (`POST /api/auth/register`) — it starts with an empty business
 profile instead of pre-seeded data.
 
 **What to verify once logged in:**
-- The business profile / home / campaign analytics screens show *that
-  operator's own* seeded data.
+- The dashboard and performance screens show *that operator's own* seeded
+  data.
 - Logging out and back in as a *different* seeded operator shows *different*
   data — no cross-operator leakage.
 - `curl http://localhost:8080/api/business-profile` **without** an
@@ -310,20 +361,35 @@ With the backend (Path A or B) and frontend both running:
    not the app.
 2. Log in with a seeded account from §6.
 3. Open DevTools (F12) → **Network** tab, filter by `localhost:8080`.
-4. Click through the sidebar and watch requests fire — every request should
-   now carry an `Authorization: Bearer <token>` header and return **200 OK**:
+4. Click through the sidebar (`layout/nav.ts`: **Dashboard, Content Studio,
+   Calendar, Performance**, and **Business Profile / Platforms / Workspace**
+   under Settings) and watch requests fire — every request should now carry
+   an `Authorization: Bearer <token>` header and return **200 OK**:
 
-| Tab | What you click | Backend call |
+| Sidebar item | What you click | Backend call |
 |---|---|---|
-| **Home** | (auto on load) | `GET /api/notifications` |
-| **Market Radar** | (auto on load) | `GET /api/forecasting/markets` |
-| **Uniqueness Score** | Fill all fields → *Analyze Business Profile* | `POST /api/classification/analyze` |
-| **Uniqueness Score** | *Compute Uniqueness* | `POST /api/classification/uniqueness` |
-| **Business Profile** | *Save* | `PUT /api/business-profile` |
-| **Campaign Analytics** | *Generate AI Report* | `POST /api/analytics/report` |
+| **Dashboard** | (auto on load) | `GET /api/notifications` |
+| **Dashboard** | click a demand alert to open its market ranking, then a ranked market to open the Market Radar drawer | `GET /api/forecasting/markets` |
+| **Performance** | *Generate AI Report* | `POST /api/analytics/report` |
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
+
+Two backend-wired flows aren't clickable from the table above yet:
+
+- The Business Profile / Platforms / Workspace Settings screens and the
+  `PUT /api/business-profile` save flow are still unbuilt in `frontend/` as of
+  this writing (`e2e/tests/settings-*.spec.ts` are `test.describe.skip` +
+  `test.fixme()` scaffolding) — nothing to click through there yet.
+- `POST /api/classification/analyze` and `POST /api/classification/uniqueness`
+  aren't reachable from a signed-in seeded account — they only fire from the
+  **onboarding wizard** (`components/module-1/onboarding/`), which a seeded
+  demo operator can't reach: their profile already has a `uniquenessScore`, so
+  the profile-completeness guard redirects a direct `/onboarding` visit
+  straight back to `/dashboard`. To exercise them manually, **register a
+  brand-new account** instead (§6) — analysis fires automatically on the
+  wizard's Analysis step, and its *Compute uniqueness score* button fires the
+  second call.
 
 If the backend is down or a call 401s unexpectedly, some views fall back to
 local mock data and log a warning to the console — check the Network tab
@@ -415,13 +481,15 @@ Get-Process node   | Stop-Process -Force
 ```
 CeView/
 ├── frontend/                       # React 19 + Vite frontend
-│   ├── components/auth/          # LoginPage, RegisterPage, AuthGate
+│   ├── components/auth/          # LoginPage (sign-in + create-account tabs), AuthGate
 │   └── services/
 │       ├── apiClient.ts          # all backend calls live here, attaches JWT
-│       ├── auth.tsx              # AuthProvider / useAuth() — session state
-│       └── geminiService.ts      # legacy direct-to-Gemini (kept for unwired flows)
+│       └── auth.tsx              # AuthProvider / useAuth() — session state
 ├── e2e/                          # Playwright end-to-end tests
-│   └── tests/smoke.spec.ts       # login flow + core navigation smoke test
+│   └── tests/
+│       ├── login.spec.ts         # login flow + shell/routing/overlay coverage
+│       ├── journey.spec.ts       # full authenticated journey against the real stack
+│       └── *.spec.ts             # one per screen (dashboard, calendar, content-studio, …)
 ├── backend/
 │   ├── docker-compose.yml        # Path A
 │   ├── .env.example

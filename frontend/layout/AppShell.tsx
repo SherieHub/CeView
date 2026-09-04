@@ -7,6 +7,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useOverlayStack } from '../components/shared/useOverlayStack';
+import ErrorBoundary from '../components/shared/ErrorBoundary';
 
 const COLLAPSE_KEY = 'ceview.sidebarCollapsed';
 
@@ -72,7 +73,11 @@ export default function AppShell() {
       <div className="app-col">
         <Topbar onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         <main className="content app-main">
-          <Outlet />
+          {/* key={pathname}, not a plain prop — see ErrorBoundary's own comment on
+              why only remounting (not a prop change) clears its caught-error state. */}
+          <ErrorBoundary key={pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
       {/* Shared backdrop for the drawer/modal overlay stack — see useOverlayStack.tsx.

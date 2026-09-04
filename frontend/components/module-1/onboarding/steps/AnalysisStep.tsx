@@ -9,8 +9,8 @@
  * `analyzing` calls POST /api/classification/analyze on mount; `categories`
  * lets the operator adjust the AI's pick (>=1 category must always stay
  * selected — blocked with a toast, never a disabled control) before
- * triggering POST /api/classification/uniqueness; `scored` renders the three
- * score cards plus a pass/warn banner.
+ * triggering POST /api/classification/uniqueness; `scored` renders the score
+ * cards plus a pass/warn banner.
  *
  * Wizard completion (persisting the profile + navigating to /dashboard) is
  * NOT done here — it lives in OnboardingWizard's Finish handler, which reads
@@ -22,6 +22,19 @@
  * and platform connections have no backend, so faking that state would lie
  * about what actually happened.
  *
+ * ── Composition (01-prerequisites.md Task 5) ────────────────────────────────
+ * This file was ~280 lines holding phase state, the category picker, the score
+ * tiles and the banner, which meant two parallel frontend work streams would
+ * have collided in it. The presentational parts now live in ./analysis/:
+ *
+ *   CategoryPicker.tsx  chips              owned by Dev E (05-frontend-shell.md)
+ *   ScoreTiles.tsx      the score cards    owned by Dev D (04-frontend-copy.md)
+ *   CohortContext.tsx   the banner         owned by Dev D (04-frontend-copy.md)
+ *
+ * This file keeps phase state and the apiClient calls, so the children stay
+ * presentational and the two developers can work without coordinating. The
+ * split was behaviour-preserving: AnalysisStep.test.tsx passes unchanged.
+ *
  * Ports (structure/behaviour, not styling — ceview/ predates the current
  * design system): ceview/components/module-1/1.1-business-input/components/
  * InferredCategoryBoard.tsx + AdjustableCategoryItem.tsx, and
@@ -29,12 +42,15 @@
  * OverallScoreCard.tsx + ActionableScoreCard.tsx + ComputeUniquenessButton.tsx.
  */
 import { useEffect, useState } from 'react';
-import { Check, Loader2, Plus, Sparkles, ThumbsUp, X } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useObDraft } from '../obDraft';
 import { useToast } from '../../../shared/Toast';
 import { ApiErrorPanel } from '../../../shared/ApiErrorPanel';
 import { apiClient } from '../../../../services/apiClient';
 import type { CategoryAllocation, UniquenessResult } from '../../../../types';
+import CategoryPicker from './analysis/CategoryPicker';
+import ScoreTiles from './analysis/ScoreTiles';
+import CohortContext from './analysis/CohortContext';
 
 type Phase = 'idle' | 'analyzing' | 'categories' | 'computing' | 'scored';
 
@@ -42,8 +58,6 @@ interface Props {
   /** Wired by OnboardingWizard so the warn banner's link can jump back to Step 3. */
   onGoToStep?: (index: number) => void;
 }
-
-const PASS_THRESHOLD = 70;
 
 export default function AnalysisStep({ onGoToStep }: Props) {
   const { draft, setDraft } = useObDraft();
@@ -178,33 +192,7 @@ export default function AnalysisStep({ onGoToStep }: Props) {
 
       {(phase === 'categories' || phase === 'computing' || phase === 'scored') && (
         <>
-          <div className="card mb-4">
-            <p className="body-xs font-semibold mb-3 flex items-center gap-1.5">
-              <Sparkles size={14} aria-hidden="true" />
-              Inferred categories
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((c) => {
-                const isSelected = selected.includes(c.name);
-                return (
-                  <button
-                    key={c.name}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => toggleCategory(c.name)}
-                    className="flex items-center gap-1.5 rounded-full border border-[var(--color-gray-light)] px-3 py-1.5 body-sm aria-pressed:border-[var(--color-mint-primary)] aria-pressed:bg-[var(--color-mint-pale)] aria-pressed:font-semibold"
-                  >
-                    {isSelected ? <Check size={12} aria-hidden="true" /> : <Plus size={12} aria-hidden="true" />}
-                    {c.name}
-                    <span className="badge badge--teal">{Math.round(c.percentage)}%</span>
-                  </button>
-                );
-              })}
-            </div>
-            {selected.length === 0 && (
-              <p className="body-xs mt-3 text-[var(--color-text-muted)]">Select at least one category to proceed.</p>
-            )}
-          </div>
+          <CategoryPicker categories={categories} selected={selected} onToggle={toggleCategory} />
 
           <button
             type="button"
@@ -227,53 +215,8 @@ export default function AnalysisStep({ onGoToStep }: Props) {
 
       {phase === 'scored' && scores && (
         <div className="mt-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="card">
-              <p className="eyebrow">Overall uniqueness</p>
-              <p className="heading-xl mt-2">{Math.round(scores.overallScore)}</p>
-            </div>
-            <div className="card">
-              <p className="eyebrow">Description strength</p>
-              <p className="heading-xl mt-2">{Math.round(scores.semanticsScore)}</p>
-              {scores.descriptionFeedback && (
-                <p className="body-xs mt-2 text-[var(--color-text-muted)]">{scores.descriptionFeedback}</p>
-              )}
-            </div>
-            <div className="card">
-              <p className="eyebrow">Category fit</p>
-              <p className="heading-xl mt-2">{Math.round(scores.categoryScore)}</p>
-              {scores.categoryFeedback && (
-                <p className="body-xs mt-2 text-[var(--color-text-muted)]">{scores.categoryFeedback}</p>
-              )}
-            </div>
-          </div>
-
-          {scores.overallScore >= PASS_THRESHOLD ? (
-            <div className="banner banner--info mt-4" role="status">
-              <ThumbsUp aria-hidden="true" />
-              <div>
-                <b>Strong differentiation.</b> Your profile stands out clearly against the local
-                cohort in these categories.
-              </div>
-            </div>
-          ) : (
-            <div className="banner banner--warn mt-4" role="status">
-              <X aria-hidden="true" />
-              <div>
-                <b>Room to sharpen your positioning.</b> A more specific UVP usually raises this
-                score.{' '}
-                {onGoToStep && (
-                  <button
-                    type="button"
-                    className="underline font-semibold"
-                    onClick={() => onGoToStep(2)}
-                  >
-                    Strengthen my UVP
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          <ScoreTiles scores={scores} />
+          <CohortContext scores={scores} onGoToStep={onGoToStep} />
         </div>
       )}
     </div>
