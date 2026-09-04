@@ -119,10 +119,20 @@ export const apiClient = {
       categories: string[];
     }) =>
       USE_FIXTURES
-        ? delay({
-            overallScore: 72,
-            semanticsScore: 70,
-            categoryScore: 74,
+        ? // Dev-only USE_FIXTURES branch. Deliberately NOT a plausible score:
+          // an obviously-empty cohort cannot be mistaken for a real reading if
+          // this ever renders outside dev. Real scores come from the seeded
+          // reference corpus (V26 + db/dump/uniqueness-corpus.sql).
+          delay({
+            overallScore: 0,
+            semanticsScore: 0,
+            categoryScore: 0,
+            semanticPercentile: 0,
+            cohortSize: 0,
+            cohortMedianScore: 0,
+            cohortCategories: [],
+            categoryDensity: '',
+            sufficientCohort: false,
             descriptionFeedback: '',
             categoryFeedback: '',
           } as UniquenessResult)
@@ -359,12 +369,12 @@ export const apiClient = {
             user: { id: operatorId, email, businessName: null },
           })),
     /** Verifies a Firebase ID token server-side and mints the same session shape as login/register. */
-    google: (idToken: string) =>
+    google: (idToken: string, intent: 'login' | 'register') =>
       USE_FIXTURES
         ? delay({ accessToken: 'mock-access-token-123', profileCompleted: false, user: { id: 'usr-1', email: null, businessName: null } })
         : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/google', {
             method: 'POST',
-            body: JSON.stringify({ idToken }),
+            body: JSON.stringify({ idToken, intent }),
           }).then(({ token, operatorId, profileCompleted }) => ({
             accessToken: token,
             profileCompleted,

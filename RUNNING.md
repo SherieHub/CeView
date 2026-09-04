@@ -236,6 +236,57 @@ never commit real keys.** Start from `backend/.env.example`.
 
 ---
 
+## 5a. Importing the uniqueness reference corpus
+
+Module 1's uniqueness score ranks a business against a **cohort** of other
+businesses. That cohort lives in `tbl_business_embedding`, and until it is
+populated the score is meaningless — below three rows the scorer has nothing
+to rank against, and on a machine with a handful of ad-hoc saved profiles the
+score is whatever that machine happens to contain. Two developers would see
+different numbers for the same business.
+
+The corpus therefore ships in two halves:
+
+| Half | Where | Applied by |
+|---|---|---|
+| Profile **text** (64 reference businesses across all 7 categories) | `V26__module1_reference_corpus.sql` | Flyway, automatically |
+| The **vectors** for that text | `backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql` | you, once |
+
+```bash
+# 1. Flyway seeds the text (runs automatically when spring-boot starts)
+docker compose up -d spring-boot
+
+# 2. Import the vectors
+docker exec -i ceview-postgres psql -U ceview -d ceview \
+  < backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql
+```
+
+Verify:
+
+```bash
+docker exec ceview-postgres psql -U ceview -d ceview \
+  -c "SELECT embedding_model_version, COUNT(*) FROM tbl_business_embedding GROUP BY 1;"
+```
+
+You want **one** row back. More than one means a mixed-scheme corpus, which is
+the one failure mode worth understanding: vectors built under different schemes
+are not comparable, and mixing them does not raise an error — it silently
+produces distances driven by the scheme difference rather than by the
+businesses, so the scores look fine and are wrong. Fix it by re-embedding
+everything from the text already in the database:
+
+```bash
+docker exec -i ceview-fastapi python - --all < scripts/generate-reference-corpus.py
+```
+
+Re-run that (without `--all`, then regenerate the dump) after **any** change to
+`ml_classifier._build_text`, the encoder, or `V26` — otherwise the committed
+dump and the code drift apart silently.
+
+> The reference rows are marked `is_reference = TRUE` and have no operator.
+> They are corpus material, not tenants, and must never appear in an
+> operator-scoped query. Only the uniqueness cohort reads them.
+
 ## 6. Authentication & seeded demo accounts
 
 The app requires login — every screen is gated behind a Sign In page, and

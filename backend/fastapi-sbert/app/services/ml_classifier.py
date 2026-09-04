@@ -1,12 +1,39 @@
 """
-ML classifier for Module 1 business category prediction.
+Business-profile embeddings for Module 1 uniqueness scoring.
 
-Architecture (two-stage) — mirrors bert-agent-service:
-  1. intfloat/multilingual-e5-base  →  768-dim sentence embedding
-  2. complete_classifier_head.keras →  Keras forward pass (Dense 256→128→7 sigmoid)
+This module owns exactly one thing: turning a business profile into a 768-dim
+``intfloat/multilingual-e5-base`` vector, and measuring how far that vector
+sits from a cohort of other businesses.
 
-Both models are loaded once at import time via the BertModel singleton.
-Falls back to ml_stubs when either model is unavailable.
+Category *classification* does not live here — it is served by the hosted
+Hugging Face Space (see ``hf_space_classifier.py``). The local two-stage
+"encoder + complete_classifier_head.keras" path this module used to carry has
+been removed: ``BertModel`` stopped exposing ``.classifier`` when
+classification moved to the Space, so ``_predict_probs`` — and its callers
+``predict_top3``, ``predict_all`` and ``compute_category_score`` — had been
+raising AttributeError on every call, with no callers left anywhere in the
+tree. Their ``ml_stubs`` fallbacks went with them; see
+docs/superpowers/plans/2026-08-30-remove-synthetic-fallbacks/.
+
+E5 PREFIXES: this encoder is trained with instruction prefixes, so
+``_build_text`` emits one. Business-to-business comparison is *symmetric*, so
+both sides carry the same ``query: `` prefix — mixing ``query: `` with
+``passage: `` is the asymmetric-retrieval recipe and would place the two sides
+in different regions of the space.
+
+The prefix is here for correctness, NOT for score range. Measured over 8
+representative Cebu profiles it shifts every pairwise distance down by ~0.02
+and leaves the spread unchanged (0.0907 → 0.0901), preserving rank ordering.
+The narrow similarity band is inherent to this model on same-domain text. That
+is why uniqueness is scored by percentile rank against a cohort rather than by
+an absolute distance threshold — see tests/unit/test_ml_classifier_text.py,
+which pins both facts.
+
+Any change to ``_build_text`` invalidates every stored vector. The reference
+corpus is generated through this same function by
+``scripts/generate-reference-corpus.py``, and
+``embedding_store.EMBEDDING_MODEL_VERSION`` records which scheme produced a
+given row.
 """
 
 from __future__ import annotations
@@ -30,107 +57,28 @@ _bert = _BertModel.get()
 # Expose the E5 encoder as a module-level alias for convenience.
 _e5_model = _bert.encoder if _bert is not None else None
 
+# E5 instruction prefix. Business-to-business comparison is symmetric, so the
+# same prefix goes on both sides — see the module docstring.
+E5_QUERY_PREFIX = "query: "
+
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _build_text(core_services: list[str], uvp: str, description: str) -> str:
-    """Format input text to match the training-time input format."""
+    """Format profile text for the E5 encoder, including its instruction prefix.
+
+    The services/uvp/description ordering is shared with the reference-corpus
+    generator — reordering silently invalidates every stored vector, so it is
+    pinned by tests/unit/test_ml_classifier_text.py.
+    """
     services_str = ", ".join(core_services) if core_services else ""
-    return f"services: {services_str}\nuvp: {uvp}\ndescription: {description}"
-
-
-def _predict_probs(text: str) -> np.ndarray | None:
-    """Encode text and run Keras classifier. Returns shape-(7,) sigmoid probabilities."""
-    if _bert is None:
-        return None
-    try:
-        vector = _bert.encoder.encode([text])               # (1, 768)
-        raw = _bert.classifier.predict(vector, verbose=0)[0]  # (7,)
-        return np.array(raw, dtype=np.float32)
-    except Exception as exc:
-        log.warning("ml_classifier: inference error — %s", exc,
-                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
-        return None
+    return (
+        f"{E5_QUERY_PREFIX}services: {services_str}\n"
+        f"uvp: {uvp}\n"
+        f"description: {description}"
+    )
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
-
-def predict_top3(
-    business_name: str,
-    core_services: list[str],
-    description: str,
-    uvp: str,
-) -> list[dict]:
-    """Return the top-3 predicted categories with normalized percentages.
-
-    Falls back to ml_stubs when models are unavailable.
-    """
-    if _bert is None:
-        from app.services import ml_stubs
-        log.warning("ml_classifier: using stub fallback for predict_top3",
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
-        return ml_stubs.classify_categories(description, core_services)
-
-    text = _build_text(core_services, uvp, description)
-    probs = _predict_probs(text)
-
-    if probs is None:
-        from app.services import ml_stubs
-        return ml_stubs.classify_categories(description, core_services)
-
-    top3_idx = probs.argsort()[::-1][:3]
-    top3_probs = probs[top3_idx]
-    total = float(top3_probs.sum()) or 1.0
-
-    result = []
-    remainder = 100
-    for rank, (idx, prob) in enumerate(zip(top3_idx, top3_probs)):
-        pct = round(float(prob) / total * 100) if rank < 2 else remainder
-        remainder -= pct
-        result.append({"name": CATEGORY_LABELS[int(idx)], "percentage": pct})
-
-    log.info("ml_classifier: top3=%s probs=%s",
-             [r["name"] for r in result], [round(float(p), 3) for p in top3_probs])
-    return result
-
-
-def predict_all(
-    business_name: str,
-    core_services: list[str],
-    description: str,
-    uvp: str,
-) -> list[dict]:
-    """Return all 7 categories sorted by probability descending, percentages normalized to 100.
-
-    Falls back to ml_stubs when models are unavailable.
-    """
-    if _bert is None:
-        from app.services import ml_stubs
-        log.warning("ml_classifier: using stub fallback for predict_all",
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
-        return ml_stubs.classify_categories(description, core_services)
-
-    text = _build_text(core_services, uvp, description)
-    probs = _predict_probs(text)
-
-    if probs is None:
-        from app.services import ml_stubs
-        return ml_stubs.classify_categories(description, core_services)
-
-    sorted_idx = probs.argsort()[::-1]
-    sorted_probs = probs[sorted_idx]
-    total = float(sorted_probs.sum()) or 1.0
-
-    result = []
-    remainder = 100
-    last = len(CATEGORY_LABELS) - 1
-    for rank, (idx, prob) in enumerate(zip(sorted_idx, sorted_probs)):
-        pct = round(float(prob) / total * 100) if rank < last else max(0, remainder)
-        remainder -= pct
-        result.append({"name": CATEGORY_LABELS[int(idx)], "percentage": pct})
-
-    log.info("ml_classifier: predict_all top3=%s", [r["name"] for r in result[:3]])
-    return result
-
 
 def embed_business(
     core_services: list[str],
@@ -242,41 +190,3 @@ def compute_semantic_uniqueness(
                     extra={"code": "MOD1_ML_INFERENCE_FAIL"})
         return None
 
-
-def compute_category_score(
-    business_name: str,
-    core_services: list[str],
-    description: str,
-    uvp: str,
-    selected_categories: list[str],
-) -> float:
-    """Return 0-100 score: how confidently the model predicts the operator's chosen categories.
-
-    Falls back to ml_stubs when models are unavailable.
-    """
-    if _bert is None or not selected_categories:
-        from app.services import ml_stubs
-        result = ml_stubs.cosine_uniqueness(description, selected_categories)
-        return float(result["categoryScore"])
-
-    text = _build_text(core_services, uvp, description)
-    probs = _predict_probs(text)
-
-    if probs is None:
-        from app.services import ml_stubs
-        result = ml_stubs.cosine_uniqueness(description, selected_categories)
-        return float(result["categoryScore"])
-
-    selected_indices = [
-        i for i, label in enumerate(CATEGORY_LABELS)
-        if label in selected_categories
-    ]
-    if not selected_indices:
-        return 50.0
-
-    selected_sum = float(probs[selected_indices].sum())
-    max_possible = min(len(selected_categories), 7) / 7.0
-    score = round(min(max(selected_sum / max(max_possible, 0.01) * 100, 0.0), 100.0), 1)
-
-    log.info("ml_classifier: category_score=%.1f selected=%s", score, selected_categories)
-    return score

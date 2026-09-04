@@ -31,7 +31,7 @@ describe('AuthProvider — Google sign-in / profile completion', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await act(async () => {
-      await result.current.loginWithGoogle('firebase-id-token');
+      await result.current.loginWithGoogle('firebase-id-token', 'login');
     });
 
     expect(result.current.isAuthenticated).toBe(true);
@@ -39,7 +39,7 @@ describe('AuthProvider — Google sign-in / profile completion', () => {
     expect(loadTokens()?.accessToken).toBe('jwt-1');
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/auth/google'),
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token' }) }),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token', intent: 'login' }) }),
     );
   });
 
@@ -49,7 +49,7 @@ describe('AuthProvider — Google sign-in / profile completion', () => {
     );
     const { result } = renderHook(() => useAuth(), { wrapper });
     await act(async () => {
-      await result.current.loginWithGoogle('firebase-id-token');
+      await result.current.loginWithGoogle('firebase-id-token', 'login');
     });
 
     act(() => {

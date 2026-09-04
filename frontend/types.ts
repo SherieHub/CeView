@@ -63,14 +63,49 @@ export interface CategoryAllocation {
   percentage: number;
 }
 
+/** Cohort density tier, derived from the category's share of the corpus. */
+export type CategoryDensity = 'dense' | 'moderate' | 'sparse';
+
 /**
  * Uniqueness scoring result — POST /api/classification/uniqueness.
  * Scores are 0–100. Note the score field is `overallScore`, not `uniquenessScore`.
+ *
+ * TWO RULES THE TYPES CANNOT EXPRESS, both previously got wrong here:
+ *
+ *  1. `overallScore === semanticPercentile`. Nothing else feeds it.
+ *  2. `categoryScore` is NOT a component of `overallScore`. It is a
+ *     classification-confidence indicator shown beside the score, never
+ *     inside it.
+ *
+ * `categoryScore` is a *normalised share* summing to 100 across the selected
+ * categories, so keeping one category yields ~100 mechanically and keeping
+ * three yields ~33 each. It is not comparable across different numbers of
+ * selected categories and must not be charted or trended as if it were.
+ *
+ * See docs/superpowers/plans/2026-09-04-uniqueness-scoring-honesty/.
  */
 export interface UniquenessResult {
+  /** The headline. Always equal to `semanticPercentile`. */
   overallScore: number;
+  /** Raw distinctiveness (scaled mean cosine distance). Compressed by the
+   *  encoder into a narrow band — a subordinate diagnostic, not the score. */
   semanticsScore: number;
+  /** Classification confidence. NOT part of `overallScore` — see above. */
   categoryScore: number;
+  /** Rank against the cohort's own distance distribution. Self-calibrating. */
+  semanticPercentile: number;
+  /** How many businesses were compared against. A percentile without its
+   *  comparison set is unreadable, so this is always displayed with it. */
+  cohortSize: number;
+  /** Median `semanticsScore` within that cohort. */
+  cohortMedianScore: number;
+  /** Categories the cohort was drawn from, for naming it in the UI. */
+  cohortCategories: string[];
+  /** Drives the always-visible density explainer on Step 5. */
+  categoryDensity: CategoryDensity | '';
+  /** False when the cohort is below the comparison floor. Render a distinct
+   *  state, not a number — this is a valid response, not an error. */
+  sufficientCohort: boolean;
   descriptionFeedback: string;
   categoryFeedback: string;
 }
