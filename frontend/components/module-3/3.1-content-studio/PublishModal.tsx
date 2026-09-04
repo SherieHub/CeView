@@ -112,8 +112,6 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
     <Modal open={open} onClose={onClose} variant="full" label="Publish">
       <div className="pub-shell">
         <div className="pub-controls">
-          <h2 className="pub-title">Publish</h2>
-
           <fieldset className="pub-group">
             <legend>Publish to</legend>
             <div className="pub-plats">

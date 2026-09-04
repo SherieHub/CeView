@@ -28,6 +28,7 @@
  * warn banner links back to Step 3 — every other step ignores the extra prop.
  */
 import { useState } from 'react';
+import ceviewLogo from '../../CeView Logo.png';
 import type { ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
@@ -93,7 +94,7 @@ export default function OnboardingWizard() {
     <div className="ob-wrap">
       <aside className="ob-rail">
         <div className="ob-rail-mark">
-          <div className="g">Ce</div>
+          <img src={ceviewLogo} alt="CeView Logo" className="g" style={{ background: 'none' }} />
           <div>
             <b className="heading-sm block leading-tight">CeView</b>
             <span className="text-meta">Set up your profile</span>

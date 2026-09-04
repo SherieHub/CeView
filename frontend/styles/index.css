@@ -4787,7 +4787,7 @@
     .pub-shell {
       /* 30/70 — the settings drawer takes only what it needs so the preview
          gets the rest of the window. */
-      grid-template-columns: 30% 70%;
+      grid-template-columns: 25% 75%;
       grid-template-rows: minmax(0, 1fr) auto;
       overflow: hidden;
     }
@@ -4809,7 +4809,7 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--space-sm);
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-sm) var(--space-lg);
   }
 
   /* SHOT LIST — editorial register.
@@ -5048,12 +5048,10 @@
   .pub-group legend,
   .pub-controls .field-label {
     display: block;
-    margin-bottom: 0;
+    margin-bottom: 2px;
     font-family: var(--font-body);
     font-size: 0.8125rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--color-text-inverse);
   }
   /* OUTLINED, not filled. White slabs on a dark ground read as panels stacked
@@ -5090,18 +5088,21 @@
   .pub-controls .composer-agree svg {
     color: var(--color-mint-primary);
   }
+  .pub-controls .composer-agree {
+    flex-shrink: 0;
+    margin-top: var(--space-sm);
+  }
   .pub-group--grow {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    gap: 0;
   }
-  /* Fills the slack the group was given, and scrolls rather than pushing the
-     authorisation below the fold. */
+  /* Fixed height instead of flex-filling — prevents the caption from
+     consuming all space and overlapping the authorisation checkbox. */
   .pub-caption {
-    flex: 1;
-    min-height: 140px;
-    resize: none;
+    height: 160px;
+    min-height: 100px;
+    resize: vertical;
   }
   .pub-plats {
     display: grid;
@@ -5110,6 +5111,10 @@
   /* Distribution controls stack under their segmented visibility toggle. */
   .pub-group .seg {
     margin-bottom: var(--space-sm);
+  }
+  .pub-group .seg button {
+    flex: 1;
+    justify-content: center;
   }
   .pub-switch {
     display: flex;
@@ -5196,7 +5201,7 @@
     border-radius: 26px;
   }
   .device-frame[data-device='desktop'] {
-    width: 1100px;
+    width: 1920px;
     border-radius: 14px;
     padding: 0 0 10px;
   }
@@ -5242,6 +5247,27 @@
     border-radius: 6px;
     padding-top: 0;
     margin-inline: 10px;
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 480px;
+  }
+  .device-frame[data-device='desktop'] .device-media {
+    max-width: 480px;
+  }
+  .device-frame[data-device='desktop'] .device-actions {
+    max-width: 480px;
+    width: 100%;
+    color: #ccc;
+  }
+  .device-frame[data-device='desktop'] .device-caption {
+    max-width: 480px;
+    width: 100%;
+    color: #e0e0e0;
+  }
+  .device-frame[data-device='desktop'] .device-more {
+    color: #888;
   }
   .device-media {
     width: 100%;

@@ -56,7 +56,7 @@ export default function ContentBoard({ draft, posts, canPublish, onPublished }: 
         {canPublish && (
           <button
             type="button"
-            className="btn-primary studio-head-act"
+            className="btn-cta studio-head-act"
             title="Publish selected content"
             onClick={onPublished}
           >
