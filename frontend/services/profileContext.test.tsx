@@ -44,6 +44,40 @@ describe('ProfileProvider — real backend fetch', () => {
     mockLoad.mockReset();
   });
 
+  // REGRESSION: the dev preview routes bypass AuthGate, not the persisted
+  // token, so a seeded provider was mounting WITH a live session. The fetch
+  // ran and overwrote the seed — and under VITE_USE_FIXTURES it answers an
+  // empty DTO, so /preview/content and /preview/dashboard both reset to a
+  // blank operator a moment after mounting. Every existing test here runs
+  // unauthenticated, which is why none of them caught it.
+  it('treats a supplied seed as authoritative and skips the fetch, even with a session', async () => {
+    seedSession();
+    mockLoad.mockResolvedValue({
+      businessProfileId: null, businessName: '', categories: [], coreServices: [],
+      description: '', uvp: '', imagePreview: null, uniquenessScore: null,
+    });
+
+    render(
+      <AuthProvider>
+        <ProfileProvider initial={{
+          businessProfileId: 'bp-demo', businessName: 'Sunset Cove', categories: ['Coastal & Island'],
+          coreServices: [], description: '', uvp: '', imagePreview: null, uniquenessScore: 0.82,
+          slogan: '', industry: '', vibes: [], website: '', logo: null, socials: {},
+        }}>
+          <Probe />
+        </ProfileProvider>
+      </AuthProvider>,
+    );
+
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+    expect(screen.getByTestId('name')).toHaveTextContent('Sunset Cove');
+    expect(mockLoad).not.toHaveBeenCalled();
+
+    // Still seeded after the load would have resolved and overwritten it.
+    await waitFor(() => expect(screen.getByTestId('name')).toHaveTextContent('Sunset Cove'));
+    expect(screen.getByTestId('score')).toHaveTextContent('0.82');
+  });
+
   it('stays at the empty profile and never calls the backend when unauthenticated', () => {
     render(
       <AuthProvider>

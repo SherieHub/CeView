@@ -23,6 +23,7 @@
  * either state, and each control keeps a `title` for pointer users.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
+import ceviewLogo from '../components/CeView Logo.png';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NAV } from './nav';
 import { useAuth } from '../services/auth';
@@ -62,7 +63,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
       <div className="sb-head">
         {/* Identity block — shares .ob-rail-mark's rules so the wordmark is
             pixel-identical to the one an operator just saw in onboarding. */}
-        <div className="g">Ce</div>
+        <img src={ceviewLogo} alt="CeView Logo" className="g" style={{ background: 'none' }} />
         <div className="sb-head-text min-w-0">
           <b className="block leading-tight">CeView</b>
         </div>

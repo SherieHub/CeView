@@ -1,34 +1,71 @@
-import { ImagePlus, Link2, Lock, Trash2 } from 'lucide-react';
-import PanelHead from './PanelHead';
-import type { PlatformId } from '../../../types';
+/**
+ * Step 2 of the linear journey — "Attach".
+ *
+ * Renders a FRAGMENT, not a card: it shares one card with AIContentMatrixPanel
+ * under a single "Post composer" header. See ContentStudioView.
+ *
+ * Narrowed to the two things this step is actually about: the single editable
+ * copy of the caption, and the media it will publish with. Destination choice,
+ * visibility, comment settings and the publishing authorisation all moved to
+ * the publish modal (PublishModal), where they sit beside the live preview and
+ * the irreversible action they govern.
+ */
+import { useEffect, useRef, useState } from 'react';
+import { ImagePlus, Maximize2, Trash2 } from 'lucide-react';
+import Modal from '../../shared/Modal';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
 import { useConnections } from '../../../services/connectionsStore';
 
-const PLATFORM_LABELS: Record<PlatformId, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
-
-function blockReason(draft: PublishDraftState, audit: ComposerSlotProps['audit']) {
-  if (!draft.caption.trim()) return 'Approve or write a caption first.';
-  if (!draft.mediaDataUrl) return 'Add a PNG, JPG, or WEBP image first.';
-  if (!draft.platforms.length) return 'Choose at least one connected platform.';
-  if (!draft.agreementChecked) return 'Confirm publishing authorisation first.';
-  if (audit.status === 'running') return 'The compliance audit is still running.';
-  if (!audit.result) return 'Complete the compliance audit first.';
-  if (audit.result.status !== 'Pass') return 'The current audit needs changes before publishing.';
+/**
+ * What is still missing before the audit can run. Scoped to this panel's own
+ * inputs — it used to also report on platforms, authorisation and the audit
+ * itself, none of which the composer owns any more, so it would have told the
+ * operator to use controls that are no longer on screen.
+ */
+function blockReason(draft: PublishDraftState) {
+  if (!draft.caption.trim()) return 'Select an option above, or write your own caption.';
+  if (!draft.mediaDataUrl) return 'Add a PNG, JPG, or WEBP image to run the audit.';
   return null;
 }
 
-export default function PublishComposer({ draft, onDraftChange, audit }: ComposerSlotProps) {
-  // Real connection state (Settings -> Platforms), not a hardcoded list — a
-  // disconnected platform must not be selectable here (docs/module-3/screens/
-  // settings-platforms.md, "State: shared across the app").
-  const { isConnected } = useConnections();
-  const limit = draft.platforms.length === 1 ? PLATFORM_CHAR_LIMITS[draft.platforms[0]] : 5000;
-  const reason = blockReason(draft, audit);
-  const updatePlatforms = (platform: PlatformId) => onDraftChange({
-    platforms: draft.platforms.includes(platform) ? draft.platforms.filter((item) => item !== platform) : [...draft.platforms, platform],
-    agreementChecked: false,
-  });
+export default function PublishComposer({
+  draft,
+  onDraftChange,
+  platform,
+  stageToken,
+  onOpenBrief,
+}: ComposerSlotProps) {
+  const limit = PLATFORM_CHAR_LIMITS[platform];
+  const reason = blockReason(draft);
+  const overLimit = draft.caption.length > limit;
+
+  /**
+   * Grow the caption field to its content so the whole caption is visible
+   * without scrolling — these run to several paragraphs and the operator is
+   * checking them over, which a 120px window with a scrollbar makes hard.
+   *
+   * `height: auto` first is load-bearing: scrollHeight is measured against the
+   * CURRENT height, so without the reset the field can only ever grow. Deleting
+   * text would leave it stuck at its tallest.
+   *
+   * Runs on the caption rather than on input events so it also fires when an
+   * option is staged from the grid above, which changes the value without any
+   * keystroke.
+   */
+  // The staged image, full size. The preview is cropped to fill its column, so
+  // the only way to check the whole frame — what the crop is cutting — is to
+  // open it uncropped.
+  const [mediaOpen, setMediaOpen] = useState(false);
+
+  const captionRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = captionRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft.caption]);
+
   const readImage = (file: File | undefined) => {
     if (!file || !file.type.match(/^image\/(png|jpeg|webp)$/) || file.size > 20 * 1024 * 1024) return;
     const reader = new FileReader();
@@ -37,23 +74,82 @@ export default function PublishComposer({ draft, onDraftChange, audit }: Compose
   };
 
   return (
-    <section className="card" aria-labelledby="publish-composer-title">
-      <PanelHead
-        icon={<Link2 />}
-        titleId="publish-composer-title"
-        title="Publish composer"
-        subtitle="Prepare the final caption and publishing details."
-      />
-      <label className="field-label mt-4" htmlFor="staged-caption">Staged caption</label>
-      <textarea id="staged-caption" className={`textarea ${draft.caption.length > limit ? 'is-invalid' : ''}`} value={draft.caption} onChange={(event) => onDraftChange({ caption: event.target.value, agreementChecked: false })} placeholder="Approve a matrix option or write your own caption." />
-      <p className={`mt-1 text-right text-xs ${draft.caption.length > limit ? 'text-critical' : 'text-[var(--color-text-muted)]'}`}>{draft.caption.length.toLocaleString()} / {limit.toLocaleString()} characters</p>
+    <>
+      <div className="composer-grid">
+        <div>
+          <label className="field-label" htmlFor="staged-caption">Staged caption</label>
+          {/* The changing `key` remounts the element, which is what restarts a
+              one-shot CSS animation — without it the flash plays once and never
+              again on subsequent selections. */}
+          <textarea
+            id="staged-caption"
+            ref={captionRef}
+            className={`textarea textarea--caption ${overLimit ? 'is-invalid' : ''}`}
+            data-flash={stageToken != null && stageToken > 0}
+            key={`staged-${stageToken ?? 0}`}
+            value={draft.caption}
+            onChange={(event) => onDraftChange({ caption: event.target.value, agreementChecked: false })}
+            placeholder="Approve a matrix option or write your own caption."
+          />
+          <p className="cap-count num" data-over={overLimit}>
+            {draft.caption.length.toLocaleString()} / {limit.toLocaleString()} characters
+          </p>
+        </div>
 
-      <div className="mt-5"><span className="field-label">Publication media</span>{draft.mediaDataUrl ? <div className="relative overflow-hidden rounded-lg border border-gray-light"><img src={draft.mediaDataUrl} alt="Publication media preview" className="h-44 w-full object-cover" /><button type="button" className="icon-btn absolute right-2 top-2 bg-white shadow" onClick={() => onDraftChange({ mediaDataUrl: null, agreementChecked: false })} aria-label="Remove media"><Trash2 size={16} /></button></div> : <label className="upload-zone"><ImagePlus className="upload-glyph" /><span className="font-semibold text-navy-dark">Upload PNG, JPG, or WEBP</span><span className="mt-1 block text-sm text-[var(--color-text-muted)]">Up to 20 MB</span><input className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => readImage(event.target.files?.[0])} /></label>}</div>
+        <div>
+          <div className="media-head">
+            <span className="field-label">Publication media</span>
+            {/* The point-of-action pointer into the visual guide. The shot list
+                used to be inlined here as a collapsed accordion, which
+                duplicated the drawer wholesale; a link costs one line and sends
+                the operator to the single copy. */}
+            {onOpenBrief && (
+              <button type="button" className="link-inline" onClick={onOpenBrief}>
+                Review Visual Guide
+              </button>
+            )}
+          </div>
+          {draft.mediaDataUrl ? (
+            <div className="media-frame">
+              <img src={draft.mediaDataUrl} alt="Publication media preview" />
+              <div className="media-acts">
+                <button
+                  type="button"
+                  className="icon-btn media-act"
+                  onClick={() => setMediaOpen(true)}
+                  aria-label="View media full size"
+                >
+                  <Maximize2 size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn media-act"
+                  onClick={() => onDraftChange({ mediaDataUrl: null, agreementChecked: false })}
+                  aria-label="Remove media"
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label className="upload-zone">
+              <span className="upload-glyph"><ImagePlus size={20} aria-hidden="true" /></span>
+              <span className="heading-sm">Upload PNG, JPG, or WEBP</span>
+              <span className="text-meta mt-1 block">Up to 20 MB</span>
+              <input className="sr" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => readImage(event.target.files?.[0])} />
+            </label>
+          )}
+          {reason && <p className="text-meta mt-3" role="status">{reason}</p>}
+        </div>
+      </div>
 
-      <fieldset className="mt-5"><legend className="field-label">Publish to</legend><div className="grid grid-cols-2 gap-2">{(Object.keys(PLATFORM_LABELS) as PlatformId[]).map((platform) => <label key={platform} className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-light p-3 text-sm font-semibold text-navy-dark"><input type="checkbox" checked={draft.platforms.includes(platform)} disabled={!isConnected(platform)} onChange={() => updatePlatforms(platform)} />{PLATFORM_LABELS[platform]}</label>)}</div></fieldset>
-      <div className="mt-5 grid gap-2 sm:grid-cols-3"><label className="text-sm text-navy-dark">Visibility<select className="input mt-1" value={draft.visibility} onChange={(event) => onDraftChange({ visibility: event.target.value as PublishDraftState['visibility'] })}><option value="public">Public</option><option value="private">Private</option></select></label><label className="flex items-center gap-2 pt-6 text-sm text-navy-dark"><input type="checkbox" checked={draft.commentsEnabled} onChange={(event) => onDraftChange({ commentsEnabled: event.target.checked })} />Comments on</label><label className="flex items-center gap-2 pt-6 text-sm text-navy-dark"><input type="checkbox" checked={draft.paidPartnership} onChange={(event) => onDraftChange({ paidPartnership: event.target.checked })} />Paid partnership</label></div>
-      <label className="mt-5 flex gap-3 rounded-lg bg-mint-pale p-3 text-sm leading-5 text-navy-dark"><input className="mt-1" type="checkbox" checked={draft.agreementChecked} onChange={(event) => onDraftChange({ agreementChecked: event.target.checked })} /><span><Lock size={15} className="mr-1 inline" />I confirm I am authorised to publish this media and caption. Checking this starts the compliance audit when all inputs are ready.</span></label>
-      {reason && <p className="mt-3 text-sm text-[var(--color-text-muted)]" role="status">{reason}</p>}
-    </section>
+      {/* Uncropped, so what the column's crop hides is checkable before the
+          audit scores caption-to-media consistency against it. */}
+      <Modal open={mediaOpen} onClose={() => setMediaOpen(false)} title="Publication media">
+        {draft.mediaDataUrl && (
+          <img className="media-full" src={draft.mediaDataUrl} alt="Publication media at full size" />
+        )}
+      </Modal>
+    </>
   );
 }
