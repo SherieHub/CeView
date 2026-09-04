@@ -10,6 +10,13 @@
  * Filter tabs are All/TikTok/Instagram/Facebook exactly as specced — one tab
  * per PlatformId, plus All.
  *
+ * Fixed-height card (matches PesGauge, which it's paired with in
+ * CampaignAnalyticsView.tsx — both are 660px, sized to fit PesGauge's own
+ * fixed content) so the two stay the same size regardless of how many posts
+ * exist — the post list scrolls internally instead of growing the card
+ * (wheel/trackpad/scrollbar all work; no dedicated scroll buttons — the
+ * native scrollbar shown by overflow-y-auto is affordance enough).
+ *
  * KNOWN RUNTIME GAP: usePosts() throws unless a PostStoreProvider ancestor
  * exists. No PostStoreProvider is mounted in App.tsx yet (flagged when
  * services/postStore.tsx landed) — so this component will crash if reached
@@ -39,10 +46,10 @@ export default function PreviouslyPublished() {
   );
 
   return (
-    <div className="card flex flex-col gap-4">
+    <div className="card flex h-[660px] flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="heading-md">Previously Published</h3>
-        <div role="group" aria-label="Platform filter" className="inline-flex gap-1 rounded-pill bg-mint-pale p-1">
+        <div role="group" aria-label="Platform filter" className="inline-flex flex-wrap gap-1 rounded-pill bg-mint-pale p-1">
           {TABS.map((tab) => (
             <button
               key={tab.value}
@@ -59,37 +66,43 @@ export default function PreviouslyPublished() {
         </div>
       </div>
 
-      {published.length === 0 ? (
-        <div className="empty py-6">
-          <p className="body-sm">Nothing published yet for this filter.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {published.map((post) => (
-            <button
-              key={post.id}
-              type="button"
-              onClick={() => setOpenPostId(post.id)}
-              className="flex items-center justify-between gap-3 rounded-md bg-mint-pale-alt px-4 py-3 text-left transition-colors hover:bg-mint-pale"
-            >
-              <div className="min-w-0">
-                <p className="body-sm truncate">{post.caption}</p>
-                <span className="text-meta">
-                  {post.date} · {post.platform}
-                </span>
-              </div>
-              <div className="flex shrink-0 gap-4">
-                <span className="text-meta">
-                  <b className="num">{post.reach ? post.reach.toLocaleString() : '—'}</b> Reach
-                </span>
-                <span className="text-meta">
-                  <b className="num">{post.reach ? `${post.engagementRate.toFixed(1)}%` : '—'}</b> Eng.
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* flex-1 + min-h-0 is what lets this area actually shrink to fit the
+          fixed-height card instead of forcing the card to grow with it —
+          without min-h-0 a flex child never shrinks below its content size. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {published.length === 0 ? (
+          <div className="empty py-6">
+            <p className="body-sm">Nothing published yet for this filter.</p>
+          </div>
+        ) : (
+          // Matches Content Studio's ContentBoard post-card style: bordered
+          // tile, platform + status pill, caption preview, meta row — so a
+          // published post reads the same way wherever it's shown.
+          <div className="flex flex-col gap-3">
+            {published.map((post) => (
+              <button
+                key={post.id}
+                type="button"
+                onClick={() => setOpenPostId(post.id)}
+                className="flex flex-col rounded-lg border border-gray-light bg-white p-4 text-left transition-colors hover:border-teal-accent"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="capitalize text-sm font-semibold text-navy-dark">{post.platform}</span>
+                  <span className="rounded-full bg-mint-pale px-2 py-1 text-xs font-semibold text-success">
+                    published
+                  </span>
+                </div>
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-navy-dark">{post.caption}</p>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-muted)]">
+                  <span>{post.date}</span>
+                  <span>Reach {post.reach ? post.reach.toLocaleString() : '—'}</span>
+                  <span>Eng. {post.reach ? `${post.engagementRate.toFixed(1)}%` : '—'}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {openPostId && <PostAnalyticsModal postId={openPostId} onClose={() => setOpenPostId(null)} />}
     </div>
