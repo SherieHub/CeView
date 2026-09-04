@@ -85,7 +85,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
     );
     const { apiClient } = await import('./apiClient');
 
-    const res = await apiClient.auth.google('firebase-id-token');
+    const res = await apiClient.auth.google('firebase-id-token', 'login');
 
     expect(res).toEqual({
       accessToken: 'jwt-3',
@@ -94,7 +94,7 @@ describe('apiClient.auth (real-fetch mode)', () => {
     });
     expect(fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/auth/google'),
-      expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token' }) }),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ idToken: 'firebase-id-token', intent: 'login' }) }),
     );
   });
 

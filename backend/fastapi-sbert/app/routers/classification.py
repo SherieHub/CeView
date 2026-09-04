@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.services import embedding_store, ml_classifier
+from app.services import embedding_store, hf_space_classifier
 
 router = APIRouter()
 
@@ -19,9 +19,9 @@ class AnalyzeRequest(BaseModel):
 
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
-    """Return all 7 category allocations (name + %) via the SBERT + Keras classifier."""
-    return {"categories": ml_classifier.predict_all(
-        req.businessName, req.coreServices, req.description, req.uvp
+    """Return category allocations from the hosted CeView Hugging Face Space."""
+    return {"categories": hf_space_classifier.predict_categories(
+        req.description, req.uvp, req.coreServices
     )}
 
 
@@ -47,6 +47,8 @@ def uniqueness(req: UniquenessRequest) -> dict:
     """
 
     # ── 1. Semantic uniqueness via corpus comparison ───────────────────────────
+    from app.services import ml_classifier
+
     other_embeddings = embedding_store.fetch_others(req.businessProfileId)
     semantic_score: float | None = ml_classifier.compute_semantic_uniqueness(
         req.coreServices, req.description, req.uvp, other_embeddings
@@ -56,8 +58,8 @@ def uniqueness(req: UniquenessRequest) -> dict:
     final_semantic_score = semantic_score if semantic_score is not None else 100.0
 
     # ── 2. Category score via ML classifier ───────────────────────────────────
-    category_score = ml_classifier.compute_category_score(
-        req.businessName, req.coreServices, req.description, req.uvp, req.categories
+    category_score = hf_space_classifier.category_score(
+        req.description, req.uvp, req.coreServices, req.categories
     )
 
     # ── 3. Compose response ───────────────────────────────────────────────────
@@ -89,6 +91,8 @@ def embed(req: EmbedRequest) -> dict:
         {"stored": true}  when the embedding was written to tbl_business_embedding.
         {"stored": false} when the E5 model is unavailable (falls back gracefully).
     """
+    from app.services import ml_classifier
+
     vector = ml_classifier.embed_business(req.coreServices, req.description, req.uvp)
     if vector:
         embedding_store.upsert_embedding(req.businessProfileId, vector)

@@ -181,6 +181,15 @@ public class TrendFetchSchedulerService {
 
             // ── Mark SUCCESS and store result snapshot ────────────────────────
             applyResult(job, result);
+
+            if (!isTrustworthy(result)) {
+                markFailed(job, "untrusted source: " + result.get("source"));
+                log.warn("Trend fetch for category={} market={} returned an untrusted source ({}); "
+                         + "no signal record written", job.getCategory(), job.getMarket(),
+                         result.get("source"));
+                return false;
+            }
+
             job.setStatus(TrendFetchJob.STATUS_SUCCESS);
             job.setCompletedAt(OffsetDateTime.now());
             job.setLastError(null);
@@ -238,6 +247,18 @@ public class TrendFetchSchedulerService {
             }
         }
         return created;
+    }
+
+    /**
+     * Only a genuinely-measured fetch may become a signal record.
+     *
+     * <p>Task 11 deletes the synthetic path in fastapi-transformer, so
+     * {@code source = "stub"} should no longer be producible. This guard stays
+     * anyway: it is one line, and it means a regression in the Python service
+     * cannot silently repopulate the database with fabricated trend indices.
+     */
+    public static boolean isTrustworthy(Map<String, Object> result) {
+        return "pytrends".equals(result == null ? null : result.get("source"));
     }
 
     /** Apply FastAPI response fields to the job entity result columns. */

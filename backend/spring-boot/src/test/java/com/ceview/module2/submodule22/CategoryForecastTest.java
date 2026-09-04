@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,22 +44,20 @@ class CategoryForecastTest {
     }
 
     /**
-     * Proves EnrichedSequenceBuilder actually calls the category-scoped finder
-     * (not the category-agnostic one) when scoped history exists — this is the
-     * fix for the crux bug: seasonality/spike/GDP/forex context fed to Gemini
-     * must come from the same category as the forecast being built, not an
-     * arbitrary blended record.
+     * Proves EnrichedSequenceBuilder reads the category-scoped, real-only finder
+     * (Task 12) when scoped history exists — seasonality/spike/GDP/forex context
+     * fed to Gemini must come from the same category as the forecast being
+     * built, not an arbitrary blended record, and only from measured rows.
      */
     @Test
-    void buildSequenceUsesCategoryScopedFinderWhenScopedHistoryExists() {
+    void buildSequenceUsesCategoryScopedRealFinderWhenScopedHistoryExists() {
         MarketSignalRecordRepository repo = mock(MarketSignalRecordRepository.class);
         UUID profileId = UUID.randomUUID();
         String market = "korea";
         String category = "Coastal & Island";
 
         List<MarketSignalRecord> scopedHistory = fourWeeksOfRecords(category);
-        when(repo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, market, category)).thenReturn(scopedHistory);
+        when(repo.findRealByProfileAndMarket(profileId, market, category)).thenReturn(scopedHistory);
 
         EnrichedSequenceBuilder builder = new EnrichedSequenceBuilder(repo);
         Map<String, Object> sequence = builder.buildSequence(profileId, market, category);
@@ -66,40 +65,35 @@ class CategoryForecastTest {
         assertThat(sequence.get("market")).isEqualTo(market);
         assertThat(sequence.get("category")).isEqualTo(category);
 
-        verify(repo).findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, market, category);
-        // The scoped read had enough records, so the blended/legacy finder must
-        // never be consulted — otherwise category attribution would be moot.
-        verify(repo, never()).findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(
-                eq(profileId), eq(market));
+        verify(repo).findRealByProfileAndMarket(profileId, market, category);
+        // The scoped read had enough real records, so the market-wide fallback
+        // must never be consulted — otherwise category attribution would be moot.
+        verify(repo, never()).findRealByProfileAndMarket(eq(profileId), eq(market), eq(null));
     }
 
     /**
-     * Pre-V20 fallback: rows written before the category column existed have
-     * category = null, so the scoped finder returns nothing for a named
-     * category. buildSequence must fall back to the category-agnostic finder
-     * instead of throwing "enriched_dataset_empty" for a profile that actually
-     * has history.
+     * Category-not-yet-ingested fallback: the scoped real-only finder returns
+     * nothing for a named category, so buildSequence falls back to the market's
+     * other real records rather than throwing "enriched_dataset_empty" for a
+     * profile that actually has measured history.
      */
     @Test
-    void buildSequenceFallsBackToLegacyFinderWhenScopedHistoryIsEmpty() {
+    void buildSequenceFallsBackToMarketWideRealFinderWhenScopedHistoryIsEmpty() {
         MarketSignalRecordRepository repo = mock(MarketSignalRecordRepository.class);
         UUID profileId = UUID.randomUUID();
         String market = "japan";
         String category = "Culinary & Gastronomy";
 
-        when(repo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, market, category)).thenReturn(List.of());
-        when(repo.findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market))
+        when(repo.findRealByProfileAndMarket(profileId, market, category)).thenReturn(List.of());
+        when(repo.findRealByProfileAndMarket(profileId, market, null))
                 .thenReturn(fourWeeksOfRecords(null));
 
         EnrichedSequenceBuilder builder = new EnrichedSequenceBuilder(repo);
         Map<String, Object> sequence = builder.buildSequence(profileId, market, category);
 
         assertThat(sequence).isNotNull();
-        verify(repo).findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, market, category);
-        verify(repo).findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        verify(repo).findRealByProfileAndMarket(profileId, market, category);
+        verify(repo).findRealByProfileAndMarket(profileId, market, null);
     }
 
     private List<MarketSignalRecord> fourWeeksOfRecords(String category) {
@@ -123,6 +117,7 @@ class CategoryForecastTest {
         r.setForexRate(23.5);
         r.setGdpGrowth(2.2);
         r.setYoyRatio(1.05);
+        r.setSource("pytrends");
         r.setAggregatedAt(OffsetDateTime.now().minusWeeks(weeksAgo));
         return r;
     }

@@ -25,7 +25,8 @@ class MarketDtoMappingTest {
                 "KR", "KRW", "PHP per 1 KRW",
                 2.2, 23.8, 0.65,
                 yoyRatio,
-                true
+                true,
+                "2026-08-24T03:00:00Z", false
         );
     }
 

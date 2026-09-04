@@ -4,16 +4,19 @@ import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import CompliancePanel from './CompliancePanel';
 import ContentBoard from './ContentBoard';
+import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
 import VisualDirectionBoard from './VisualDirectionBoard';
 import type { AuditState, PublishDraftState } from './contentStudioTypes';
-import type { ContentResponse, Market, PlatformId, PublishedPost } from '../../../types';
+import type { ContentResponse, PlatformId, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
 // (see docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md
 // §Non-goals). This board stays fixture-backed until that lands.
 import { MOCK_POSTS } from '../../../services/fixtures/posts';
 import { apiClient } from '../../../services/apiClient';
+import { useConnections } from '../../../services/connectionsStore';
 import { useProfile } from '../../../services/profileContext';
+import { useTargetSelection } from '../../../services/targetSelectionStore';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 
 const EMPTY_DRAFT: PublishDraftState = {
@@ -30,41 +33,40 @@ export default function ContentStudioView() {
   const [posts, setPosts] = useState<PublishedPost[]>(MOCK_POSTS);
 
   // Content Studio has no market selector of its own — Module 2 owns "which
-  // market is selected" and nothing in this codebase persists that choice
-  // across routes yet (see Task 25 context). Rather than block generation on
-  // a cross-module wiring that doesn't exist, this view fetches the
-  // operator's ranked markets and defaults to the top one, same as opening
-  // the dashboard fresh would surface first.
-  const [markets, setMarkets] = useState<Market[]>([]);
-  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
-  const [marketsError, setMarketsError] = useState<unknown | null>(null);
+  // surge / which market" — so this view never infers one on the operator's
+  // behalf. It renders nothing until both are explicitly picked, either via
+  // ContentTargetPicker below or by arriving from the Dashboard's "Target
+  // this market" flow (DashboardView writes the pick into this same store).
+  const { target, setTarget, clearTarget } = useTargetSelection();
 
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [contentError, setContentError] = useState<unknown | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
 
+  // Settings -> Platforms rule (docs/module-3/screens/settings-platforms.md,
+  // "Disconnect"): disconnecting a platform mid-publish here removes it from
+  // the in-progress "Publish to" selection, since it can no longer be
+  // published to. Historical published posts for that platform are untouched.
+  const { onDisconnect } = useConnections();
   useEffect(() => {
-    let cancelled = false;
-    apiClient.markets
-      .list()
-      .then((list) => {
-        if (cancelled) return;
-        setMarkets(list);
-        setSelectedMarketId((current) => current ?? list[0]?.id ?? null);
-      })
-      .catch((e) => { if (!cancelled) setMarketsError(e); });
-    return () => { cancelled = true; };
-  }, []);
+    return onDisconnect((platform) => {
+      setDraft((current) =>
+        current.platforms.includes(platform)
+          ? { ...current, platforms: current.platforms.filter((p) => p !== platform) }
+          : current,
+      );
+      setAudit(IDLE_AUDIT);
+    });
+  }, [onDisconnect]);
 
-  const selectedMarket = markets.find((m) => m.id === selectedMarketId) ?? null;
   // No dedicated "trend" field ships on Market — spikeIndicator is the closest
   // live signal for "is this market surging right now".
-  const marketTrend = selectedMarket ? (selectedMarket.spikeIndicator ? 'surging' : 'steady') : 'steady';
+  const marketTrend = target ? (target.market.spikeIndicator ? 'surging' : 'steady') : 'steady';
 
   useEffect(() => {
     // The backend 400s on a blank market and needs the profile fields, so don't
     // fire until both are present.
-    if (!selectedMarketId || !profile.businessName) return;
+    if (!target || !profile.businessName) return;
 
     let cancelled = false;
     setContentLoading(true);
@@ -72,7 +74,7 @@ export default function ContentStudioView() {
 
     apiClient.content
       .generate({
-        market: selectedMarketId,
+        market: target.market.id,
         businessName: profile.businessName,
         description: profile.description,
         categories: profile.categories,
@@ -83,7 +85,7 @@ export default function ContentStudioView() {
       .finally(() => { if (!cancelled) setContentLoading(false); });
 
     return () => { cancelled = true; };
-  }, [selectedMarketId, profile, marketTrend]);
+  }, [target, profile, marketTrend]);
 
   const patchDraft = (patch: Partial<PublishDraftState>) => {
     setDraft((current) => ({ ...current, ...patch }));
@@ -105,6 +107,21 @@ export default function ContentStudioView() {
   };
 
   const stubbed = content?.source === 'fallback' || content?.source === 'template';
+
+  // No surge + market picked yet — gate everything below behind the picker.
+  // No entry point (sidebar nav, a stale/empty store) may skip this by
+  // inferring a market on the operator's behalf.
+  if (!target) {
+    return (
+      <main className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6" aria-label="Content Studio">
+        <header>
+          <p className="eyebrow">Content Studio</p>
+          <h1 className="heading-xl">Create content that fits the market</h1>
+        </header>
+        <ContentTargetPicker onPicked={setTarget} />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6" aria-label="Content Studio">

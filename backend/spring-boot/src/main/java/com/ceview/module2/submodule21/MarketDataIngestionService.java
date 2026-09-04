@@ -111,10 +111,12 @@ public class MarketDataIngestionService {
         // data and persist one MarketSignalRecord per historical week so the
         // chart shows real week-over-week variance from the very first forecast.
         double trendIndex;
+        String source;
         if (history.isEmpty()) {
             Map<String, Object> historyResult = ai.fetchTrendHistory(
                     Map.of("market", market, "categories", List.of(category), "weeks", 12));
-            trendIndex = backfillHistory(profileId, market, category, historyResult, gdp, forex);
+            source = str(historyResult, "source");
+            trendIndex = backfillHistory(profileId, market, category, historyResult, gdp, forex, source);
             // Reload history so the seasonality call below has the backfilled series
             history = signalRepo
                     .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
@@ -122,6 +124,7 @@ public class MarketDataIngestionService {
         } else {
             Map<String, Object> trendsResult = ai.fetchTrends(
                     Map.of("market", market, "categories", List.of(category)));
+            source = str(trendsResult, "source");
             trendIndex = Math.max(0.0, Math.min(100.0,
                     ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
         }
@@ -150,7 +153,7 @@ public class MarketDataIngestionService {
         double   rolling7d        = trendIndex;    // safe defaults before FastAPI call
         double   rolling30d       = trendIndex;
         double   rollingStd7d     = 0.0;
-        boolean  spike            = false;
+        Boolean  spike            = false;
         Double   yoyRatio         = null;
 
         try {
@@ -171,18 +174,12 @@ public class MarketDataIngestionService {
             }
 
         } catch (Exception e) {
-            // FastAPI unreachable — apply inline 2σ spike as fallback
-            log.debug("Seasonality compute unavailable, applying local 2σ spike fallback: {}",
-                    e.getMessage());
-            if (weeklyHistory.size() >= 7) {
-                List<Double> w7 = weeklyHistory.subList(
-                        weeklyHistory.size() - 7, weeklyHistory.size());
-                double localMean = mean(w7);
-                double localStd  = stdDev(w7, localMean);
-                spike     = trendIndex > localMean + 2.0 * localStd;
-                rolling7d = localMean;
-                rollingStd7d = localStd;
-            }
+            // No local substitute. A guessed spike flag renders identically to a
+            // measured one in the dashboard's surge chip, and a false surge is
+            // worse than no chip at all. Null means "not determined".
+            log.warn("Seasonality service unavailable for market={}; spike_indicator left null: {}",
+                     market, e.getMessage());
+            spike = null;
         }
 
         // ── Persist ────────────────────────────────────────────────────────
@@ -200,6 +197,8 @@ public class MarketDataIngestionService {
         record.setRollingStdDev(rollingStd7d);
         record.setSpikeIndicator(spike);
         record.setYoyRatio(yoyRatio);
+        record.setSource(source);
+        record.setSourceFetchedAt(OffsetDateTime.now());
         signalRepo.save(record);
 
         log.debug("Ingested: profile={} market={} category={} trend={} spike={} yoy={}",
@@ -219,7 +218,8 @@ public class MarketDataIngestionService {
     private double backfillHistory(UUID profileId, String market, String category,
                                    Map<String, Object> historyResult,
                                    ExternalMarketDataClient.GdpDataDto gdp,
-                                   ExternalMarketDataClient.ForexDataDto forex) {
+                                   ExternalMarketDataClient.ForexDataDto forex,
+                                   String source) {
         List<Map<String, Object>> series =
                 (List<Map<String, Object>>) historyResult.get("weekly_series");
         if (series == null || series.isEmpty()) {
@@ -249,6 +249,8 @@ public class MarketDataIngestionService {
             rec.setRollingAverage30d(ti);
             rec.setRollingStdDev(0.0);
             rec.setSpikeIndicator(false);
+            rec.setSource(source);
+            rec.setSourceFetchedAt(OffsetDateTime.now());
 
             // Set the timestamp to the corresponding past week
             String dateStr = (String) point.get("date");
@@ -282,16 +284,14 @@ public class MarketDataIngestionService {
         return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
 
-    private double stdDev(List<Double> values, double mean) {
-        if (values.size() < 2) return 0.0;
-        double variance = values.stream()
-                .mapToDouble(v -> (v - mean) * (v - mean))
-                .average().orElse(0.0);
-        return Math.sqrt(variance);
-    }
-
     private double num(Map<String, Object> map, String key, double def) {
         Object v = map.get(key);
         return v instanceof Number ? ((Number) v).doubleValue() : def;
+    }
+
+    /** FastAPI's declared provenance for this fetch, or null → entity defaults it to "unknown". */
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : null;
     }
 }

@@ -38,7 +38,6 @@ export const DEMO_BUSINESS: ObDraft = {
     instagram: '@sunsetcove.ph',
     tiktok: '@sunsetcove',
     facebook: 'SunsetCoveMoalboal',
-    naver: '',
   },
   logo: null,
   website: 'https://sunsetcove.ph',

@@ -7,16 +7,12 @@ export const PLATFORM_CHAR_LIMITS: Record<PlatformId, number> = {
   instagram: 2200,
   tiktok: 300,
   facebook: 500,
-  // Naver Blog is long-form. This is an editorial guidance limit rather than
-  // the platform's technical maximum.
-  naver: 5000,
 };
 
 const PLATFORMS: Array<{ id: PlatformId; label: string }> = [
   { id: 'instagram', label: 'Instagram' },
   { id: 'tiktok', label: 'TikTok' },
   { id: 'facebook', label: 'Facebook' },
-  { id: 'naver', label: 'Naver Blog' },
 ];
 
 const REASON_FIELDS: Array<[keyof CaptionMetadata, string]> = [
@@ -199,12 +195,6 @@ export default function AIContentMatrixPanel({
           );
         })}
       </div>
-
-      {platform === 'naver' && (
-        <p className="mt-4 rounded-lg border border-teal-accent/30 bg-mint-pale p-3 text-sm leading-5 text-navy-dark">
-          Naver Blog favours authentic, long-form Korean editorial. These two curated templates use a blog-review format rather than short social captions.
-        </p>
-      )}
 
       {loading && (
         <p className="mt-4 flex items-center gap-2 rounded-lg bg-mint-pale p-3 text-sm text-navy-dark">

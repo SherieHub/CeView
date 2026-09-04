@@ -1,6 +1,8 @@
 package com.ceview.module2.submodule21;
 
 import com.ceview.module2.Module2ErrorCodes;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -13,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,6 +54,8 @@ public class ExternalMarketDataClient {
     private final WebClient worldBankClient;
     private final WebClient forexClient;
     private final String    forexBaseUrl;   // stored so we can build absolute URIs that bypass WebClient path-normalisation
+    private final MarketEconomicTrendRepository economicTrendRepo;
+    private final ObjectMapper objectMapper;
 
     // Static flight reference data for the three fixed markets
     private static final Map<String, FlightReferenceDto> FLIGHT_REFS = Map.of(
@@ -86,10 +91,14 @@ public class ExternalMarketDataClient {
 
     public ExternalMarketDataClient(
             @Value("${ceview.external.worldbank.base-url}") String worldBankUrl,
-            @Value("${ceview.external.forex.base-url}") String forexUrl) {
-        this.worldBankClient = WebClient.builder().baseUrl(worldBankUrl).build();
-        this.forexClient     = WebClient.builder().baseUrl(forexUrl).build();
-        this.forexBaseUrl    = forexUrl.replaceAll("/$", ""); // strip trailing slash
+            @Value("${ceview.external.forex.base-url}") String forexUrl,
+            MarketEconomicTrendRepository economicTrendRepo,
+            ObjectMapper objectMapper) {
+        this.worldBankClient   = WebClient.builder().baseUrl(worldBankUrl).build();
+        this.forexClient       = WebClient.builder().baseUrl(forexUrl).build();
+        this.forexBaseUrl      = forexUrl.replaceAll("/$", ""); // strip trailing slash
+        this.economicTrendRepo = economicTrendRepo;
+        this.objectMapper      = objectMapper;
     }
 
     public GdpDataDto fetchGdpGrowth(String marketId) {
@@ -197,16 +206,21 @@ public class ExternalMarketDataClient {
                         // World Bank returns newest-first → reverse to chronological order
                         points.sort((a, b) -> Integer.compare(a.year(), b.year()));
                         double latest = points.get(points.size() - 1).value();
-                        return new GdpTrendDto(countryCode, points, latest);
+                        return new GdpTrendDto(countryCode, points, latest, OffsetDateTime.now());
                     }
                 }
             }
         } catch (Exception e) {
             MDC.put("code", Module2ErrorCodes.MOD21_EXTERNAL_API_ERROR);
-            log.warn("World Bank GDP trend fetch failed for {} — using defaults: {}", countryCode, e.getMessage());
+            log.warn("World Bank GDP trend fetch failed for {} — reusing last-known-good: {}",
+                    countryCode, e.getMessage());
             MDC.remove("code");
         }
-        return gdpTrendFallback(countryCode);
+        // Last-known-good, not a synthetic curve. tbl_market_economic_trend exists
+        // precisely so an outage reuses the last real reading (see V11 header).
+        // null → "never fetched", and the market's economic panel renders empty
+        // rather than flat.
+        return lastKnownGoodGdp(marketId, countryCode);
     }
 
     // ─── Forex time-series (12 monthly data points) ──────────────────────────
@@ -225,7 +239,6 @@ public class ExternalMarketDataClient {
     public ForexTrendDto fetchForexTrend(String marketId) {
         String currencyCode  = CURRENCY_CODE.getOrDefault(marketId, "USD");
         String currencyLower = currencyCode.toLowerCase();
-        double defaultRate   = FOREX_DEFAULTS.getOrDefault(currencyCode, 1.0);
         LocalDate today      = LocalDate.now();
         DateTimeFormatter isoFmt   = DateTimeFormatter.ISO_LOCAL_DATE;
         DateTimeFormatter monthFmt = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -246,16 +259,16 @@ public class ExternalMarketDataClient {
                         .uri(uri)
                         .retrieve()
                         .bodyToMono(MAP_TYPE)
-                        .map(resp -> {
+                        .flatMap(resp -> {
                             @SuppressWarnings("unchecked")
                             Map<String, Object> phpRates = (Map<String, Object>) resp.get("php");
-                            double rate = defaultRate;
-                            if (phpRates != null && phpRates.containsKey(currencyLower)) {
-                                rate = ((Number) phpRates.get(currencyLower)).doubleValue();
+                            if (phpRates == null || !phpRates.containsKey(currencyLower)) {
+                                return Mono.empty();   // omit the month, never invent a rate for it
                             }
-                            return new ForexTrendPoint(monthKey, rate);
+                            double rate = ((Number) phpRates.get(currencyLower)).doubleValue();
+                            return Mono.just(new ForexTrendPoint(monthKey, rate));
                         })
-                        .onErrorReturn(new ForexTrendPoint(monthKey, defaultRate));
+                        .onErrorResume(e -> Mono.empty());   // a failed month is dropped, not faked
                 monos.add(mono);
             }
 
@@ -268,38 +281,65 @@ public class ExternalMarketDataClient {
                 points.sort(Comparator.comparing(ForexTrendPoint::date));
                 double latest = points.get(points.size() - 1).value();
                 log.info("Forex trend fetched for {}: {} monthly points", currencyCode, points.size());
-                return new ForexTrendDto(currencyCode, points, latest);
+                return new ForexTrendDto(currencyCode, points, latest, OffsetDateTime.now());
             }
         } catch (Exception e) {
             MDC.put("code", Module2ErrorCodes.MOD21_EXTERNAL_API_ERROR);
-            log.warn("Forex trend fetch failed for {} — using defaults: {}", currencyCode, e.getMessage());
+            log.warn("Forex trend fetch failed for {} — reusing last-known-good: {}",
+                    currencyCode, e.getMessage());
             MDC.remove("code");
         }
-        return forexTrendFallback(currencyCode, today);
+        // Last-known-good, not a flat synthetic curve. null → "never fetched".
+        return lastKnownGoodForex(marketId, currencyCode);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────
 
-    /** Synthetic 5-year GDP trend at the market's static default (straight-line fallback). */
-    private GdpTrendDto gdpTrendFallback(String countryCode) {
-        double def  = GDP_DEFAULTS.getOrDefault(countryCode, 2.0);
-        int    year = LocalDate.now().getYear();
-        List<GdpTrendPoint> points = new ArrayList<>();
-        for (int i = 4; i >= 0; i--) {
-            points.add(new GdpTrendPoint(year - i, def));
-        }
-        return new GdpTrendDto(countryCode, points, def);
+    /**
+     * The newest persisted GDP trend snapshot for this market, or {@code null}
+     * when none has ever been stored. Replaces the old straight-line synthetic
+     * curve: a real reading that is simply stale is honest; an invented one is not.
+     */
+    private GdpTrendDto lastKnownGoodGdp(String marketId, String countryCode) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(marketId)
+                .filter(t -> t.getGdpTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<GdpTrendPoint> pts = objectMapper.readValue(
+                                t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
+                        if (pts.isEmpty()) return null;
+                        double latest = t.getGdpLatest() != null
+                                ? t.getGdpLatest() : pts.get(pts.size() - 1).value();
+                        return new GdpTrendDto(countryCode, pts, latest, t.getFetchedAt());
+                    } catch (Exception e) {
+                        log.warn("Stored GDP trend for {} is unreadable: {}", marketId, e.getMessage());
+                        return null;
+                    }
+                })
+                .orElse(null);
     }
 
-    /** Synthetic 12-month forex trend at the market's static default (flat-line fallback). */
-    private ForexTrendDto forexTrendFallback(String currencyCode, LocalDate today) {
-        double def = FOREX_DEFAULTS.getOrDefault(currencyCode, 1.0);
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
-        List<ForexTrendPoint> points = new ArrayList<>();
-        for (int i = 11; i >= 0; i--) {
-            points.add(new ForexTrendPoint(today.minusMonths(i).format(fmt), def));
-        }
-        return new ForexTrendDto(currencyCode, points, def);
+    /**
+     * The newest persisted forex trend snapshot for this market, or {@code null}
+     * when none has ever been stored.
+     */
+    private ForexTrendDto lastKnownGoodForex(String marketId, String currencyCode) {
+        return economicTrendRepo.findTopByMarketOrderByFetchedAtDesc(marketId)
+                .filter(t -> t.getForexTrendJson() != null)
+                .map(t -> {
+                    try {
+                        List<ForexTrendPoint> pts = objectMapper.readValue(
+                                t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
+                        if (pts.isEmpty()) return null;
+                        double latest = t.getForexLatest() != null
+                                ? t.getForexLatest() : pts.get(pts.size() - 1).value();
+                        return new ForexTrendDto(currencyCode, pts, latest, t.getFetchedAt());
+                    } catch (Exception e) {
+                        log.warn("Stored forex trend for {} is unreadable: {}", marketId, e.getMessage());
+                        return null;
+                    }
+                })
+                .orElse(null);
     }
 
     // ─── DTOs ────────────────────────────────────────────────────────────────
@@ -329,9 +369,21 @@ public class ExternalMarketDataClient {
      */
     public record ForexTrendPoint(String date, double value) {}
 
-    /** Multi-year GDP growth time-series for a single market. */
-    public record GdpTrendDto(String countryCode, List<GdpTrendPoint> points, double latest) {}
+    /**
+     * Multi-year GDP growth time-series for a single market.
+     *
+     * @param fetchedAt when this reading was taken — {@code now} for a fresh
+     *                  World Bank fetch, or the persisted timestamp when this is
+     *                  a last-known-good reuse (so callers can age it, Task 16).
+     */
+    public record GdpTrendDto(String countryCode, List<GdpTrendPoint> points, double latest,
+                              OffsetDateTime fetchedAt) {}
 
-    /** 12-month forex rate time-series for a single market. */
-    public record ForexTrendDto(String currencyCode, List<ForexTrendPoint> points, double latest) {}
+    /**
+     * 12-month forex rate time-series for a single market.
+     *
+     * @param fetchedAt see {@link GdpTrendDto#fetchedAt()}.
+     */
+    public record ForexTrendDto(String currencyCode, List<ForexTrendPoint> points, double latest,
+                                OffsetDateTime fetchedAt) {}
 }

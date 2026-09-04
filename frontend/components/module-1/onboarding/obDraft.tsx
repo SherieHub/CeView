@@ -51,7 +51,7 @@ export const EMPTY_OB_DRAFT: ObDraft = {
   coreServices: [],
   description: '',
   uvp: '',
-  socials: { instagram: '', tiktok: '', facebook: '', naver: '' },
+  socials: { instagram: '', tiktok: '', facebook: '' },
   logo: null,
   website: '',
   categories: [],

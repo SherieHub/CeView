@@ -30,6 +30,10 @@ function getFirebaseApp(): FirebaseApp {
 export async function signInWithGooglePopup(): Promise<string> {
   const auth = getAuth(getFirebaseApp());
   const provider = new GoogleAuthProvider();
+  // Without this, Google silently reuses the browser's existing Google
+  // session instead of showing the account chooser — so a user could never
+  // pick a different account without first signing out of Google entirely.
+  provider.setCustomParameters({ prompt: 'select_account' });
   const result = await signInWithPopup(auth, provider);
   return result.user.getIdToken();
 }

@@ -22,6 +22,14 @@ log = logging.getLogger("module1.embedding_store")
 
 _DATABASE_URL: str = os.environ.get("DATABASE_URL", "")
 
+# Identifies the scheme that produced a stored vector, not just the model.
+# Vectors written with and without the E5 instruction prefix are NOT comparable
+# — mean cosine distance between the two populations is dominated by the prefix
+# rather than by the businesses. Bumping this on any change to
+# ml_classifier._build_text is what makes a mixed corpus detectable instead of
+# silently wrong; see 01-prerequisites.md Task 1.
+EMBEDDING_MODEL_VERSION = "intfloat/multilingual-e5-base+e5prefix"
+
 
 # ── lazy connection helper ─────────────────────────────────────────────────────
 
@@ -73,7 +81,7 @@ def upsert_embedding(business_profile_id: str, vector: List[float]) -> None:
                 str(uuid.uuid4()),
                 business_profile_id,
                 vec_str,
-                "intfloat/multilingual-e5-base",
+                EMBEDDING_MODEL_VERSION,
             ),
         )
         conn.commit()

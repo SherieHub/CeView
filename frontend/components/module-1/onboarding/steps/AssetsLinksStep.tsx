@@ -16,7 +16,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import type { ComponentType } from "react";
 import { Facebook, ImageUp, Instagram } from "lucide-react";
-import { NaverGlyph, TikTokGlyph } from "../../../shared/PlatformGlyphs";
+import { TikTokGlyph } from "../../../shared/PlatformGlyphs";
 import { useObDraft } from "../obDraft";
 import type { PlatformId } from "../../../../types";
 
@@ -30,9 +30,8 @@ interface PlatformMeta {
 /**
  * Transcribed from ui-ux-prototype.html:1086–1091 (PLATFORM_META).
  *
- * TikTok and Naver use local marks from shared/PlatformGlyphs — lucide has no
- * icon for either, so the prototype stood in `music` and `notebook-pen`, which
- * are not the logos.
+ * TikTok uses a local mark from shared/PlatformGlyphs — lucide has no icon for
+ * it, so the prototype stood in `music`, which is not the logo.
  *
  * KNOWN FOLLOW-UP: Instagram and Facebook are still lucide's brand icons,
  * which are deprecated and due for removal in lucide v1.0. They are at least
@@ -43,7 +42,6 @@ const PLATFORM_META: PlatformMeta[] = [
   { platform: "instagram", label: "Instagram", icon: Instagram },
   { platform: "tiktok", label: "TikTok", icon: TikTokGlyph },
   { platform: "facebook", label: "Facebook", icon: Facebook },
-  { platform: "naver", label: "Naver Blog", icon: NaverGlyph },
 ];
 
 export default function AssetsLinksStep() {

@@ -49,7 +49,7 @@ public class AuthController {
 
     public record LoginRequest(@Email String email, @NotBlank String password) {}
 
-    public record GoogleAuthRequest(@NotBlank String idToken) {}
+    public record GoogleAuthRequest(@NotBlank String idToken, @NotBlank String intent) {}
 
     public record CompleteProfileRequest(@NotBlank String contactNumber) {}
 
@@ -82,9 +82,18 @@ public class AuthController {
      * operator from the Google profile. Either way, ends by minting the same CeView JWT that
      * /register and /login produce — nothing downstream of that point knows or cares how the
      * session was established.
+     *
+     * <p>{@code req.intent()} ("login" or "register", matching the frontend's active tab) gates
+     * which of those outcomes is allowed: "register" rejects with 409 if this Google account is
+     * already linked to an operator, and "login" rejects with 404 if no operator matches by
+     * either Google UID or verified email — see the intent branching below.
      */
     @PostMapping("/google")
     public ResponseEntity<?> google(@RequestBody @Valid GoogleAuthRequest req) {
+        if (!"login".equals(req.intent()) && !"register".equals(req.intent())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "invalid intent"));
+        }
+
         if (firebaseAuth.isEmpty()) {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of("error", "Google sign-in is not configured"));
@@ -99,26 +108,48 @@ public class AuthController {
 
         String googleUid = decoded.getUid();
         String email = decoded.getEmail();
+        boolean isRegister = "register".equals(req.intent());
 
-        MsmeOperator op = repo.findByGoogleUid(googleUid).orElseGet(() -> {
-            if (decoded.isEmailVerified() && email != null) {
-                Optional<MsmeOperator> existing = repo.findByEmail(email);
-                if (existing.isPresent()) {
-                    MsmeOperator o = existing.get();
-                    o.setGoogleUid(googleUid);
-                    return repo.save(o);
-                }
+        Optional<MsmeOperator> byGoogleUid = repo.findByGoogleUid(googleUid);
+
+        if (isRegister && byGoogleUid.isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "error", "google_account_already_registered",
+                "message", "This Google account is already registered. Please sign in instead."
+            ));
+        }
+
+        MsmeOperator op;
+        if (byGoogleUid.isPresent()) {
+            op = byGoogleUid.get();
+        } else {
+            Optional<MsmeOperator> byEmail = (decoded.isEmailVerified() && email != null)
+                ? repo.findByEmail(email)
+                : Optional.empty();
+
+            if (!isRegister && byEmail.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", "google_account_not_registered",
+                    "message", "No account found for this Google account. Please create an account first."
+                ));
             }
-            MsmeOperator o = new MsmeOperator();
-            String[] names = splitDisplayName(decoded.getName(), email);
-            o.setFirstName(names[0]);
-            o.setLastName(names[1]);
-            o.setEmail(email);
-            o.setGoogleUid(googleUid);
-            // passwordHash and contactNumber are left null — the frontend routes this
-            // operator through the "complete your profile" step (see profileCompleted below).
-            return repo.save(o);
-        });
+
+            MsmeOperator o;
+            if (byEmail.isPresent()) {
+                o = byEmail.get();
+                o.setGoogleUid(googleUid);
+            } else {
+                o = new MsmeOperator();
+                String[] names = splitDisplayName(decoded.getName(), email);
+                o.setFirstName(names[0]);
+                o.setLastName(names[1]);
+                o.setEmail(email);
+                o.setGoogleUid(googleUid);
+                // passwordHash and contactNumber are left null — the frontend routes this
+                // operator through the "complete your profile" step (see profileCompleted below).
+            }
+            op = repo.save(o);
+        }
 
         return sessionResponse(op);
     }

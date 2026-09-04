@@ -9,7 +9,7 @@ const FILTERS: Filter[] = ['all', 'draft', 'published'];
 
 function PostCard({ post }: { post: PublishedPost }) {
   const published = post.status === 'published';
-  return <article className="rounded-lg border border-gray-light bg-white p-4"><div className="flex items-center justify-between gap-3"><span className="capitalize text-sm font-semibold text-navy-dark">{post.platform === 'naver' ? 'Naver Blog' : post.platform}</span><span className={`rounded-full px-2 py-1 text-xs font-semibold ${published ? 'bg-mint-pale text-success' : 'bg-gray-light text-[var(--color-text-muted)]'}`}>{post.status}</span></div><p className="mt-3 line-clamp-3 text-sm leading-6 text-navy-dark">{post.caption}</p><div className="mt-3 flex gap-4 text-xs text-[var(--color-text-muted)]"><span>{post.date}</span>{published && <><span>Reach {post.reach.toLocaleString()}</span><span>Likes {post.likes.toLocaleString()}</span></>}</div></article>;
+  return <article className="rounded-lg border border-gray-light bg-white p-4"><div className="flex items-center justify-between gap-3"><span className="capitalize text-sm font-semibold text-navy-dark">{post.platform}</span><span className={`rounded-full px-2 py-1 text-xs font-semibold ${published ? 'bg-mint-pale text-success' : 'bg-gray-light text-[var(--color-text-muted)]'}`}>{post.status}</span></div><p className="mt-3 line-clamp-3 text-sm leading-6 text-navy-dark">{post.caption}</p><div className="mt-3 flex gap-4 text-xs text-[var(--color-text-muted)]"><span>{post.date}</span>{published && <><span>Reach {post.reach.toLocaleString()}</span><span>Likes {post.likes.toLocaleString()}</span></>}</div></article>;
 }
 
 export default function ContentBoard({ draft, posts, canPublish, onPublished }: BoardSlotProps) {

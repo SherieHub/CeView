@@ -5,7 +5,6 @@ import CompleteProfilePage from './components/auth/CompleteProfilePage';
 import ProfileCompletionGate from './components/auth/ProfileCompletionGate';
 import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
 import AppShell from './layout/AppShell';
-import RoutePlaceholder from './layout/RoutePlaceholder';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
@@ -14,12 +13,15 @@ import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksS
 import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
 import { PostStoreProvider } from './services/postStore';
 import { ConnectionsStoreProvider } from './services/connectionsStore';
-import { UnreadAlertsProvider } from './services/unreadAlertsStore';
+import { TargetSelectionProvider } from './services/targetSelectionStore';
 import DashboardView from './components/module-2/2.1-dashboard/DashboardView';
 import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
 import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
 import CalendarView from './components/module-3/3.2-calendar/CalendarView';
+import BusinessProfileSettings from './components/settings/BusinessProfileSettings';
+import PlatformsSettings from './components/settings/PlatformsSettings';
+import WorkspaceSettings from './components/settings/WorkspaceSettings';
 import path from 'path/win32';
 
 /**
@@ -68,8 +70,17 @@ const devPreviewRoutes = import.meta.env.DEV
       {
         // Module 3 previews intentionally bypass auth/profile gates. They are
         // DEV-only, so production users still enter through the normal shell.
+        // Wrapped in its own TargetSelectionProvider + ConnectionsStoreProvider
+        // (normally mounted once, above AppShell) since this route bypasses
+        // that subtree entirely.
         path: '/preview/content',
-        element: <ContentStudioView />,
+        element: (
+          <ConnectionsStoreProvider>
+            <TargetSelectionProvider>
+              <ContentStudioView />
+            </TargetSelectionProvider>
+          </ConnectionsStoreProvider>
+        ),
       },
       {
         path: '/preview/calendar',
@@ -92,9 +103,9 @@ function DashboardPreviewShell() {
 
   return (
     <ProfileProvider initial={profile}>
-      <UnreadAlertsProvider>
+      <TargetSelectionProvider>
         <AppShell />
-      </UnreadAlertsProvider>
+      </TargetSelectionProvider>
     </ProfileProvider>
   );
 }
@@ -123,8 +134,10 @@ function DashboardPreviewScreen() {
  *          Stores, m3c1 — mounted here, above AppShell, per that card's own milestone, so
  *          every AppShell child reads the same posts/connections state)
  *         (AppShell: sidebar + topbar + <Outlet/>)
- *           /dashboard, /content, /calendar, /settings/:tab - still empty screen-shell
- *             placeholders, land in later cards (03-module-2.md, 04-module-3.md)
+ *           /dashboard, /content, /calendar    - real screens (03-module-2.md, 04-module-3.md)
+ *           /settings/profile, /platforms,       BusinessProfileSettings (02-module-1.md Card 9),
+ *             /workspace                         PlatformsSettings + WorkspaceSettings (04-module-3.md
+ *                                                 M3-9, M3-10); settings/:tab falls back to /profile
  *           /performance          - CampaignAnalyticsView (Module 4 — Campaign Analytics &
  *                                   Reporting, all 7 cards done — see 05-module-4.md)
  */
@@ -153,11 +166,9 @@ const router = createBrowserRouter([
                 element: (
                   <PostStoreProvider>
                     <ConnectionsStoreProvider>
-                      {/* Above AppShell so the rail's Dashboard badge and the
-                          dashboard screen itself read one unread count. */}
-                      <UnreadAlertsProvider>
+                      <TargetSelectionProvider>
                         <AppShell />
-                      </UnreadAlertsProvider>
+                      </TargetSelectionProvider>
                     </ConnectionsStoreProvider>
                   </PostStoreProvider>
                 ),
@@ -168,12 +179,14 @@ const router = createBrowserRouter([
                   { path: 'content', element: <ContentStudioView /> },
                   { path: 'calendar', element: <CalendarView /> },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
-                  // One route serves all three Settings tabs, so it cannot map to a
-                  // single NAV entry — the placeholder is given its copy directly.
-                  {
-                    path: 'settings/:tab',
-                    element: <RoutePlaceholder title="Settings" sub="Profile, platforms and workspace" />,
-                  },
+                  { path: 'settings/profile', element: <BusinessProfileSettings /> },
+                  { path: 'settings/platforms', element: <PlatformsSettings /> },
+                  { path: 'settings/workspace', element: <WorkspaceSettings /> },
+                  // An unrecognized settings/:tab falls back to Profile rather
+                  // than a dead end — the three explicit routes above always
+                  // win first since react-router matches static segments
+                  // before this catch-all.
+                  { path: 'settings/:tab', element: <Navigate to="/settings/profile" replace /> },
                 ],
               },
             ],

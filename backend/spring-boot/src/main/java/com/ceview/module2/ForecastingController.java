@@ -1,5 +1,6 @@
 package com.ceview.module2;
 
+import com.ceview.ai.AiDependencyException;
 import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module2.dto.MarketDtos.MarketsResponse;
 import com.ceview.module2.submodule22.ForecastingService;
@@ -117,6 +118,10 @@ public class ForecastingController {
             // server fault. 409 keeps the Home view from showing the AI-down banner.
             return ResponseEntity.status(409)
                     .body(Map.of("code", "MOD22_PROFILE_NOT_READY", "message", iae.getMessage()));
+        } catch (AiDependencyException ai) {
+            // Structured dependency failure (e.g. MOD22_NO_MARKET_DATA) — pass the
+            // full unavailability contract through instead of flattening it.
+            return ResponseEntity.status(ai.getStatus()).body(ai.toBody());
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
@@ -132,6 +137,10 @@ public class ForecastingController {
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (AiDependencyException ai) {
+            // Structured dependency failure (e.g. MOD22_NO_MARKET_DATA) — pass the
+            // full unavailability contract through instead of flattening it.
+            return ResponseEntity.status(ai.getStatus()).body(ai.toBody());
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
@@ -151,6 +160,10 @@ public class ForecastingController {
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
+        } catch (AiDependencyException ai) {
+            // Structured dependency failure (e.g. MOD22_NO_MARKET_DATA) — pass the
+            // full unavailability contract through instead of flattening it.
+            return ResponseEntity.status(ai.getStatus()).body(ai.toBody());
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
@@ -169,6 +182,10 @@ public class ForecastingController {
         } catch (IllegalArgumentException iae) {
             return ResponseEntity.status(409)
                     .body(Map.of("code", "MOD22_PROFILE_NOT_READY", "message", iae.getMessage()));
+        } catch (AiDependencyException ai) {
+            // Structured dependency failure (e.g. MOD22_NO_MARKET_DATA) — pass the
+            // full unavailability contract through instead of flattening it.
+            return ResponseEntity.status(ai.getStatus()).body(ai.toBody());
         } catch (Exception e) {
             return ResponseEntity.status(503)
                     .body(Map.of("code", "MOD22_FORECAST_FAILED", "message", e.getMessage()));
