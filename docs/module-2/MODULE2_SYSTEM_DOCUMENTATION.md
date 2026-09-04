@@ -91,7 +91,7 @@ Module 2 has **two distinct operational modes**: an automated background data co
 3. **Load retryable jobs**: Queries `PENDING + FAILED` rows where `attempt_count < max_attempts` (default: 3).
 4. **Sequential processing** (intentionally not parallel to respect rate limits):
    - Marks job `IN_PROGRESS`, increments `attempt_count`.
-   - `POST /api/v1/trends/fetch` to fastapi-transformer (30 s timeout per call; FastAPI's 4–12 s jitter sleep is the primary 429 mitigation).
+   - `POST /api/trends/fetch` to fastapi-transformer (30 s timeout per call; FastAPI's 4–12 s jitter sleep is the primary 429 mitigation).
    - On success: applies result fields to the job entity, marks `SUCCESS`, stores `trend_index`, `rolling_7d_avg`, `rolling_30d_avg`, `rolling_7d_std`, `spike_indicator`, `yoy_ratio`, `seasonality_score`, `source`.
    - On failure: marks `FAILED`, stores `last_error` message. Next Sunday's run retries failed rows.
 5. Logs completion summary: `weekOf`, `success`, `failed`, `total`.
@@ -100,7 +100,7 @@ Module 2 has **two distinct operational modes**: an automated background data co
 
 ### Request Lifecycle 1 — Load Markets (Fast DB Read)
 
-**Trigger**: User opens Market Radar or Home tab → `GET /api/v1/forecasting/markets?profileId={UUID}`.
+**Trigger**: User opens Market Radar or Home tab → `GET /api/forecasting/markets?profileId={UUID}`.
 
 1. `ForecastingController.markets()` delegates to `forecastingService.loadMarketsFromDb(profileId)`.
 2. For each of the three markets, loads: latest `ForecastResult` (4-week horizon), associated `MarketScore`, signal record history, `MarketEconomicTrend` snapshot, and deserializes `weekly_forecasts_json` from the `ForecastResult`.
@@ -112,7 +112,7 @@ Module 2 has **two distinct operational modes**: an automated background data co
 
 ### Request Lifecycle 2 — Refresh Forecast (Full AI Pipeline)
 
-**Trigger**: User clicks "Refresh Forecast" → `POST /api/v1/forecasting/analyze/{profileId}`.
+**Trigger**: User clicks "Refresh Forecast" → `POST /api/forecasting/analyze/{profileId}`.
 
 1. `ForecastingController.analyze(profileId)` calls `forecastingService.forecastForProfile(profileId, refresh=true)`.
 2. **Profile validation**: Loads profile from DB; if `categoriesList()` is empty → `IllegalArgumentException` (UC-1.1 must complete before Module 2 runs).
@@ -129,7 +129,7 @@ Module 2 has **two distinct operational modes**: an automated background data co
 
 ### Request Lifecycle 3 — Notifications
 
-**Trigger**: `GET /api/v1/notifications?profileId={UUID}`.
+**Trigger**: `GET /api/notifications?profileId={UUID}`.
 
 1. `NotificationService.getNotificationsForProfile(profileId)` queries `tbl_demand_alert` via the `DemandAlert → MarketScore → ForecastResult` join chain for the given profile.
 2. Returns the alert list as `NotificationsResponse`. Each alert carries: `id`, `date`, `title`, `market`, `marketId`, `trend`, `isRead`.
@@ -467,7 +467,7 @@ if (demand4w > rollingAvg7d × 1.2) {
 }
 ```
 
-These alerts are what feed the `HomeView` notification cards via `GET /api/v1/notifications`.
+These alerts are what feed the `HomeView` notification cards via `GET /api/notifications`.
 
 ---
 
@@ -502,13 +502,13 @@ These alerts are what feed the `HomeView` notification cards via `GET /api/v1/no
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/v1/forecasting/markets` | `permitAll` | DB-only market list (fast, no AI) |
-| `POST` | `/api/v1/forecasting/analyze/{profileId}` | `permitAll` | Full AI pipeline + ingestion |
-| `GET` | `/api/v1/notifications` | `permitAll` | Demand alert notification list |
+| `GET` | `/api/forecasting/markets` | `permitAll` | DB-only market list (fast, no AI) |
+| `POST` | `/api/forecasting/analyze/{profileId}` | `permitAll` | Full AI pipeline + ingestion |
+| `GET` | `/api/notifications` | `permitAll` | Demand alert notification list |
 
 ---
 
-#### `GET /api/v1/forecasting/markets?profileId={UUID}`
+#### `GET /api/forecasting/markets?profileId={UUID}`
 
 **Response** `200 OK`:
 ```json
@@ -556,7 +556,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ---
 
-#### `POST /api/v1/forecasting/analyze/{profileId}`
+#### `POST /api/forecasting/analyze/{profileId}`
 
 **Response** `200 OK`: Same `markets[]` shape as above (full AI pipeline result).
 
@@ -574,7 +574,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ---
 
-#### `GET /api/v1/notifications?profileId={UUID}`
+#### `GET /api/notifications?profileId={UUID}`
 
 **Response** `200 OK`:
 ```json
@@ -605,8 +605,8 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 | `POST` | `/internal/forecasting/inference` | Single-market Groq demand forecast |
 | `POST` | `/internal/forecasting/inference-batch` | Batch Groq forecast for all 3 markets (1 RPM) |
 | `POST` | `/internal/forecasting/score` | XGBoost economic viability scoring |
-| `POST` | `/api/v1/trends/fetch` | TrendFetchScheduler: one (category, market) pair |
-| `POST` | `/api/v1/trends/rank-markets` | Cross-market keyword volume ranking |
+| `POST` | `/api/trends/fetch` | TrendFetchScheduler: one (category, market) pair |
+| `POST` | `/api/trends/rank-markets` | Cross-market keyword volume ranking |
 | `GET` | `/healthz` | Liveness probe |
 
 **`POST /internal/forecasting/inference-batch`** — request/response:
@@ -650,7 +650,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 }
 ```
 
-**`POST /api/v1/trends/fetch`** — request/response:
+**`POST /api/trends/fetch`** — request/response:
 ```json
 // Request
 { "market": "korea", "category": "Coastal & Island" }

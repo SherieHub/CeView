@@ -13,10 +13,10 @@ the platform picker in [`content-studio.md`](../screens/content-studio.md).
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/v1/platform-connections?operatorId=UUID` | List connection state for all four platforms |
-| `POST` | `/api/v1/platform-connections/{platform}/connect` | Initiate OAuth (returns a redirect URL) |
-| `POST` | `/api/v1/platform-connections/{platform}/callback` | OAuth callback — exchanges code for token, persists it |
-| `DELETE` | `/api/v1/platform-connections/{platform}` | Disconnect — revokes/discards the stored token |
+| `GET` | `/api/platform-connections?operatorId=UUID` | List connection state for all four platforms |
+| `POST` | `/api/platform-connections/{platform}/connect` | Initiate OAuth (returns a redirect URL) |
+| `POST` | `/api/platform-connections/{platform}/callback` | OAuth callback — exchanges code for token, persists it |
+| `DELETE` | `/api/platform-connections/{platform}` | Disconnect — revokes/discards the stored token |
 
 `{platform}` is one of `instagram`, `tiktok`, `facebook`, `naver`.
 

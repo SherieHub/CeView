@@ -21,7 +21,7 @@ function getFirebaseApp(): FirebaseApp {
 
 /**
  * Opens the Google account picker in a popup and resolves with the signed-in
- * user's Firebase ID token, ready to send to POST /api/v1/auth/google.
+ * user's Firebase ID token, ready to send to POST /api/auth/google.
  * Rejects (e.g. popup closed by the user, blocked popup) exactly as the
  * underlying Firebase SDK call does — callers surface that via their own
  * error handling, matching how SignInForm/CreateAccountForm already do for
@@ -30,6 +30,10 @@ function getFirebaseApp(): FirebaseApp {
 export async function signInWithGooglePopup(): Promise<string> {
   const auth = getAuth(getFirebaseApp());
   const provider = new GoogleAuthProvider();
+  // Without this, Google silently reuses the browser's existing Google
+  // session instead of showing the account chooser — so a user could never
+  // pick a different account without first signing out of Google entirely.
+  provider.setCustomParameters({ prompt: 'select_account' });
   const result = await signInWithPopup(auth, provider);
   return result.user.getIdToken();
 }

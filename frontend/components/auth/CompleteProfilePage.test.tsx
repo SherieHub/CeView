@@ -43,7 +43,7 @@ describe('CompleteProfilePage', () => {
 
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/auth/profile'),
+      expect.stringContaining('/api/auth/profile'),
       expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ contactNumber: '09171234567' }) }),
     );
   });

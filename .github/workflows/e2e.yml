@@ -12,15 +12,22 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  # Determines which screens' spec files actually need to run for a given PR.
-  # Every leg of the `e2e` matrix below still always runs on push/schedule/
-  # workflow_dispatch — this job's output only narrows what runs on
-  # pull_request events. See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
+  # Determines which screens' spec files actually need to run for a given PR,
+  # and resolves that straight down into the `screens` output consumed by the
+  # `e2e` job's `strategy.matrix` below. Every screen still always runs on
+  # push/schedule/workflow_dispatch — only pull_request events get narrowed.
+  # See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
   # ("Testing strategy") for the reasoning.
+  #
+  # This used to be a static matrix on the `e2e` job filtered by a per-leg
+  # `if: contains(..., matrix.screen)` — but `matrix` isn't in scope for a
+  # job's own `if:` (only for its steps), so GitHub rejects the whole
+  # workflow file as invalid before any job runs. Computing the matrix
+  # contents here instead avoids referencing `matrix` outside step context.
   changes:
     runs-on: ubuntu-latest
     outputs:
-      changes: ${{ steps.filter.outputs.changes }}
+      screens: ${{ steps.screens.outputs.screens }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -43,7 +50,8 @@ jobs:
               - 'frontend/components/module-1/onboarding/**'
               - 'e2e/tests/onboarding-wizard.spec.ts'
             settings-business-profile:
-              - 'frontend/components/module-1/settings/**'
+              - 'frontend/components/settings/BusinessProfileSettings.tsx'
+              - 'frontend/components/settings/BusinessProfileSettings.test.tsx'
               - 'e2e/tests/settings-business-profile.spec.ts'
             dashboard:
               - 'frontend/components/module-2/2.1-dashboard/**'
@@ -58,38 +66,48 @@ jobs:
               - 'frontend/components/module-3/calendar/**'
               - 'e2e/tests/calendar.spec.ts'
             settings-platforms:
-              - 'frontend/components/module-3/settings/**'
+              - 'frontend/components/settings/PlatformsSettings.tsx'
+              - 'frontend/components/settings/PlatformsSettings.test.tsx'
+              - 'frontend/services/connectionsStore.tsx'
               - 'e2e/tests/settings-platforms.spec.ts'
             settings-workspace:
-              - 'frontend/components/shared/settings/**'
+              - 'frontend/components/settings/WorkspaceSettings.tsx'
+              - 'frontend/components/settings/WorkspaceSettings.test.tsx'
               - 'e2e/tests/settings-workspace.spec.ts'
             performance:
               - 'frontend/components/module-4/4.1-campaign-analytics/**'
               - 'e2e/tests/performance.spec.ts'
 
+      # Resolves the filter output above into the actual list of screens the
+      # `e2e` job's matrix should run: the full roster on push/schedule/
+      # workflow_dispatch (unfiltered safety-net) or on a pull_request that
+      # touched `foundation`; otherwise just the screens whose own paths (or
+      # spec file) changed.
+      - name: Compute the screen matrix to run
+        id: screens
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED: ${{ steps.filter.outputs.changes }}
+        run: |
+          ALL='["login","onboarding-wizard","settings-business-profile","dashboard","market-radar-drawer","content-studio","calendar","settings-platforms","settings-workspace","performance"]'
+          if [ "$EVENT_NAME" != "pull_request" ] || jq -e 'index("foundation")' <<< "$CHANGED" >/dev/null; then
+            SCREENS="$ALL"
+          else
+            SCREENS=$(jq -cn --argjson all "$ALL" --argjson changed "$CHANGED" \
+              '[$all[] | select(. as $s | $changed | index($s) != null)]')
+          fi
+          echo "screens=$SCREENS" >> "$GITHUB_OUTPUT"
+
   e2e:
     needs: changes
+    # Skip the job entirely (rather than expanding a matrix of zero and
+    # having GitHub report a green no-op) when nothing matched — only
+    # possible on a pull_request that touched none of these screens.
+    if: needs.changes.outputs.screens != '[]'
     strategy:
       fail-fast: false
       matrix:
-        screen:
-          - login
-          - onboarding-wizard
-          - settings-business-profile
-          - dashboard
-          - market-radar-drawer
-          - content-studio
-          - calendar
-          - settings-platforms
-          - settings-workspace
-          - performance
-    # Runs unconditionally on push/schedule/workflow_dispatch (full safety-net
-    # run). On pull_request, only runs when this screen's own paths changed or
-    # a `foundation` path changed (shared infra can break any screen).
-    if: >-
-      github.event_name != 'pull_request' ||
-      contains(fromJSON(needs.changes.outputs.changes), matrix.screen) ||
-      contains(fromJSON(needs.changes.outputs.changes), 'foundation')
+        screen: ${{ fromJSON(needs.changes.outputs.screens) }}
     runs-on: ubuntu-latest
     name: e2e-screen (${{ matrix.screen }})
     # See the original workflow's note: fastapi-sbert's cold-start HF model
@@ -109,7 +127,9 @@ jobs:
         working-directory: backend/spring-boot
         run: |
           chmod +x mvnw
-          ./mvnw -B package -DskipTests
+          # Retry: Maven Central occasionally returns a transient 502/503 on a
+          # single artifact fetch — one retry clears it without failing the job.
+          ./mvnw -B package -DskipTests || ./mvnw -B package -DskipTests
 
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend
@@ -169,6 +189,12 @@ jobs:
 
       - name: Run Playwright tests for this screen
         working-directory: e2e
+        env:
+          # playwright.config.ts now defaults baseURL to :3001 (Vite's real dev
+          # port — see the config's own comment). This job builds and serves
+          # the frontend on :3000 above, so it has to override that default
+          # explicitly rather than relying on it.
+          E2E_BASE_URL: http://localhost:3000
         run: npx playwright test tests/${{ matrix.screen }}.spec.ts
 
       - name: Upload Playwright report
@@ -176,6 +202,110 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.screen }}
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Tear down backend stack
+        if: always()
+        working-directory: backend
+        run: docker compose down -v
+
+  # The one spec that exercises a real, full authenticated journey against the
+  # live stack (see e2e/tests/journey.spec.ts) rather than one isolated
+  # screen. Starts fastapi-sbert (Module 3/4 AI path — report generation,
+  # captions, creative direction) alongside Postgres + Spring Boot: since
+  # commit b5766c09 removed the rule-based report fallback, the performance
+  # test needs a REAL fastapi-sbert response, not a tolerated "unavailable"
+  # state. fastapi-transformer (Module 2 forecasting) stays out — nothing this
+  # spec exercises calls it live; see the docker compose note below.
+  e2e-journey:
+    runs-on: ubuntu-latest
+    name: e2e-journey (full authenticated flow)
+    # fastapi-sbert's cold-start ~1.1GB HF model download can take up to 10
+    # minutes (see its docker-compose healthcheck start_period) — same budget
+    # as the per-screen `e2e` job above, which pays the same cost.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start backend stack
+        working-directory: backend
+        env:
+          # Repo secret — see docs/DEPLOY_RENDER.md. fastapi-sbert needs
+          # GROQ_API_KEY for the report/caption/creative Groq calls and
+          # HF_TOKEN to download the E5 encoder its lifespan hook loads
+          # before /healthz serves.
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # --no-deps on spring-boot skips fastapi-transformer, which compose
+          # would otherwise also start via spring-boot's depends_on graph —
+          # fastapi (sbert) is started explicitly instead, on its own line.
+          docker compose up -d postgres
+          docker compose up -d --build fastapi
+          docker compose up -d --no-deps --build spring-boot
+
+      - name: Wait for fastapi-sbert health check
+        run: |
+          echo "Waiting for fastapi-sbert on :8000 (cold model download can take up to 10 min)..."
+          timeout 600 bash -c 'until curl -sf http://localhost:8000/healthz; do sleep 5; done'
+
+      - name: Wait for Spring Boot to be ready
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null -X POST http://localhost:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'; then
+              echo "backend ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "backend did not become ready"
+          cd backend && docker compose logs spring-boot fastapi
+          exit 1
+
+      - name: Dump container logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ps
+          echo "::endgroup::"
+          docker compose logs spring-boot fastapi postgres || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Start frontend dev server
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: |
+          npm ci
+          npm run dev -- --port 3001 --host 0.0.0.0 &
+          timeout 60 bash -c 'until curl -sf http://localhost:3001; do sleep 2; done'
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run journey spec
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://localhost:3001
+          E2E_API_BASE_URL: http://localhost:8080
+        run: npx playwright test tests/journey.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-journey
           path: e2e/playwright-report/
           retention-days: 7
 

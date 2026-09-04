@@ -26,7 +26,7 @@ Submodule 2.1 is the **scheduled** half of Module 2. It runs two independent cro
 | Layer | Component | File | Responsibility |
 |---|---|---|---|
 | **Job** | `MarketDataIngestionJob` | `com/ceview/module2/submodule21/MarketDataIngestionJob.java` | `@Scheduled` cron entry point; queries all `BusinessProfile` records, calls `MarketDataIngestionService.ingestForProfile()` per profile |
-| **Controller** | `IngestionTriggerController` | `com/ceview/module2/submodule21/IngestionTriggerController.java` | Manual trigger endpoint (`POST /api/v1/ingestion/trigger`) for development / ops use |
+| **Controller** | `IngestionTriggerController` | `com/ceview/module2/submodule21/IngestionTriggerController.java` | Manual trigger endpoint (`POST /api/ingestion/trigger`) for development / ops use |
 | **Service** | `MarketDataIngestionService` | `com/ceview/module2/submodule21/MarketDataIngestionService.java` | Per-market ingestion pipeline: concurrent GDP + forex fetch → PyTrends backfill or current-week → seasonality computation via FastAPI → persist `MarketSignalRecord`; inline 2σ spike fallback when FastAPI is unreachable |
 | **Service** | `TrendFetchSchedulerService` | `com/ceview/module2/submodule21/TrendFetchSchedulerService.java` | Weekly 21-job state machine; sequential processing to respect PyTrends rate limits (4–12 s jitter per request); auto-retry on next Sunday for FAILED jobs below `max_attempts` |
 | **Service** | `ExternalMarketDataClient` | `com/ceview/module2/submodule21/ExternalMarketDataClient.java` | World Bank GDP API (5-year annual growth, 10 s timeout), fawazahmed0 forex CDN (12 concurrent monthly calls via `Flux.merge()`, 30 s combined timeout), static flight references; hardcoded graceful fallbacks |
@@ -46,8 +46,8 @@ Submodule 2.1 is the **scheduled** half of Module 2. It runs two independent cro
 | `marketDataRouter` | `pytrends_client` | `POST /internal/market-data/trends` | Current-week Google Trends index (0–100) for a market + category list; 4–12 s jitter sleep per request |
 | `marketDataRouter` | `pytrends_client` | `POST /internal/market-data/trends/history` | N-week (4–52) backfill: returns `weekly_series` of `{date, trend_index}` objects |
 | `marketDataRouter` | `seasonal_shift_detector` | `POST /internal/market-data/seasonality` | 4-step CeView SeasonalShift pipeline: rolling 7d/30d averages → 2σ spike test → YoY ratio (52-week lookback) → composite seasonality score [0, 1] |
-| `trendsRouter` | `trend_service` | `POST /api/v1/trends/fetch` | Single (category, market) trend job called by `TrendFetchSchedulerService` |
-| `trendsRouter` | `trend_service` | `POST /api/v1/trends/rank-markets` | Cross-market keyword volume ranking by business category; consumed by `CategoryRankNotificationService` in 2.2 |
+| `trendsRouter` | `trend_service` | `POST /api/trends/fetch` | Single (category, market) trend job called by `TrendFetchSchedulerService` |
+| `trendsRouter` | `trend_service` | `POST /api/trends/rank-markets` | Cross-market keyword volume ranking by business category; consumed by `CategoryRankNotificationService` in 2.2 |
 
 ---
 

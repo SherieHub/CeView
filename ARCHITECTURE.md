@@ -31,7 +31,7 @@ flowchart LR
 
     External[("Gemini API<br/>(optional,<br/>ENABLE_GEMINI=true)")]
 
-    UI -- "fetch /api/v1/*<br/>CORS http://localhost:3000" --> Ctrl
+    UI -- "fetch /api/*<br/>CORS http://localhost:3000" --> Ctrl
     Ctrl --> Svc
     Ctrl --> AIGW
     Ctrl <--> JPA
@@ -64,9 +64,9 @@ sequenceDiagram
     Note over H: useEffect on mount
     H->>API: api.listNotifications()
     activate API
-    API->>SC: GET /api/v1/notifications<br/>Origin: http://localhost:3000
+    API->>SC: GET /api/notifications<br/>Origin: http://localhost:3000
     activate SC
-    Note over SC: CORS preflight passes<br/>(SecurityConfig permitAll /api/v1/**)
+    Note over SC: CORS preflight passes<br/>(SecurityConfig permitAll /api/**)
     SC->>GW: ai.listNotifications()
     activate GW
     GW->>FR: POST http://fastapi:8000/internal/forecasting/notifications<br/>body: {}
@@ -111,7 +111,7 @@ sequenceDiagram
     Note over M: useEffect on mount
     M->>API: api.listMarkets()
     activate API
-    API->>SC: GET /api/v1/forecasting/markets
+    API->>SC: GET /api/forecasting/markets
     activate SC
     SC->>GW: ai.forecastMarkets({ profileId: "" })
     activate GW
@@ -156,7 +156,7 @@ sequenceDiagram
     V->>V: setIsAnalyzing(true)
     V->>API: api.classifyAnalyze({<br/>  businessName, coreServices,<br/>  description, uvp<br/>})
     activate API
-    API->>SC: POST /api/v1/classification/analyze<br/>Content-Type: application/json
+    API->>SC: POST /api/classification/analyze<br/>Content-Type: application/json
     activate SC
     SC->>GW: ai.classifyCategories(payload)
     activate GW
@@ -205,7 +205,7 @@ sequenceDiagram
     V->>V: setIsComputing(true)
     V->>API: api.classifyUniqueness({<br/>  businessName, categories,<br/>  coreServices, description, uvp<br/>})
     activate API
-    API->>SC: POST /api/v1/classification/uniqueness
+    API->>SC: POST /api/classification/uniqueness
     activate SC
     SC->>GW: ai.computeUniqueness(payload)
     activate GW
@@ -266,7 +266,7 @@ sequenceDiagram
     BP->>BP: setIsLoading(true)
     BP->>API: api.generateKeywords({<br/>  businessName, description,<br/>  category: categories.join(", ")<br/>})
     activate API
-    API->>SC: POST /api/v1/business-profile/keywords
+    API->>SC: POST /api/business-profile/keywords
     activate SC
     SC->>GW: ai.generateKeywords(payload)
     activate GW
@@ -319,7 +319,7 @@ sequenceDiagram
     R->>R: setIsGenerating(true)
     R->>API: api.prescriptiveReport()
     activate API
-    API->>AC: POST /api/v1/analytics/report<br/>body: {}
+    API->>AC: POST /api/analytics/report<br/>body: {}
     activate AC
     Note over AC: payload empty → fill with defaults
     AC->>MC: metrics(null, null)
@@ -374,7 +374,7 @@ sequenceDiagram
     H-->>U: alert cards render from mocks
     H->>API: api.listNotifications()  (in useEffect)
     activate API
-    API->>SC: GET /api/v1/notifications
+    API->>SC: GET /api/notifications
     Note over SC: container down /<br/>connection refused
     API-->>H: throw Error
     deactivate API
@@ -399,7 +399,7 @@ sequenceDiagram
     participant Repo as BusinessProfileRepository<br/>[Spring Data JPA]
     participant PG as Postgres<br/>tbl_business_profile
 
-    Client->>BPC: PUT /api/v1/business-profile<br/>?operatorId={uuid}<br/>body: BusinessProfileDto
+    Client->>BPC: PUT /api/business-profile<br/>?operatorId={uuid}<br/>body: BusinessProfileDto
     activate BPC
     BPC->>Repo: findById(profileId) OR new BusinessProfile()
     activate Repo
@@ -428,13 +428,13 @@ These flows still render from frontend mocks. The endpoints exist and have been 
 
 | Frontend view | Endpoint sitting unused |
 |---|---|
-| `ContentStudioView` (Module 3) | `POST /api/v1/content/generate` |
-| `CreativeDirectionBoard` | `POST /api/v1/creative-direction/generate/{profileId}` |
-| `SmartOptimizationBoard` | `POST /api/v1/compliance/evaluate-json` |
-| `EngagementMetricsBoard` (funnel cards) | `GET /api/v1/analytics/metrics` |
-| `PESComputationBoard` (gauge + breakdown) | `GET /api/v1/analytics/pes/{campaignId}` |
-| PDF download button | `GET /api/v1/analytics/report/{id}/pdf` |
-| Auth screen (doesn't exist yet) | `POST /api/v1/auth/{register,login}` |
+| `ContentStudioView` (Module 3) | `POST /api/content/generate` |
+| `CreativeDirectionBoard` | `POST /api/creative-direction/generate/{profileId}` |
+| `SmartOptimizationBoard` | `POST /api/compliance/evaluate-json` |
+| `EngagementMetricsBoard` (funnel cards) | `GET /api/analytics/metrics` |
+| `PESComputationBoard` (gauge + breakdown) | `GET /api/analytics/pes/{campaignId}` |
+| PDF download button | `GET /api/analytics/report/{id}/pdf` |
+| Auth screen (doesn't exist yet) | `POST /api/auth/{register,login}` |
 
 ---
 

@@ -1,6 +1,8 @@
 package com.ceview.ai;
 
 import com.ceview.common.TraceIdFilter;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +10,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -29,6 +31,11 @@ public class AIInferenceGatewayService {
 
     private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
             new ParameterizedTypeReference<>() {};
+
+    /** Reader for FastAPI *error* bodies, which arrive as a raw String (any Content-Type). */
+    private static final ObjectMapper ERROR_BODY_MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> ERROR_MAP_TYPE =
+            new TypeReference<>() {};
 
     private final WebClient sbertClient;
     private final WebClient transformerClient;
@@ -80,7 +87,7 @@ public class AIInferenceGatewayService {
         var payload = new HashMap<String, Object>();
         payload.put("category", category);
         String traceId = MDC.get(TraceIdFilter.MDC_KEY);
-        return transformerClient.post().uri("/api/v1/trends/rank-markets")
+        return transformerClient.post().uri("/api/trends/rank-markets")
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
                 .bodyValue(payload)
                 .retrieve()
@@ -268,6 +275,19 @@ public class AIInferenceGatewayService {
     }
 
     private Map<String, Object> post(WebClient client, String path, Map<String, Object> payload) {
+        try {
+            return doPost(client, path, payload);
+        } catch (WebClientRequestException noResponse) {
+            // Connection refused / DNS / socket reset — FastAPI never answered, so there
+            // is no body to pass through. Translated here rather than in the shared
+            // ApiExceptionHandler because only this class knows the dependency is
+            // "fastapi"; ExternalMarketDataClient raises the same exception type for
+            // World Bank and forex, which must not be mislabelled as an AI outage.
+            throw AiDependencyException.unreachable(springPath(path), noResponse);
+        }
+    }
+
+    private Map<String, Object> doPost(WebClient client, String path, Map<String, Object> payload) {
         String traceId = MDC.get(TraceIdFilter.MDC_KEY);
         return client.post().uri(path)
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
@@ -280,29 +300,34 @@ public class AIInferenceGatewayService {
                     // as MAP_TYPE would throw UnsupportedMediaTypeException in that case.
                     response -> response.bodyToMono(String.class)
                         .defaultIfEmpty("")
-                        .map(rawBody -> {
-                            String code = "FASTAPI_ERROR";
-                            String msg  = rawBody;
-                            // Best-effort extraction of structured {"code":"...","message":"..."} fields
-                            try {
-                                if (rawBody.contains("\"code\"")) {
-                                    int ci = rawBody.indexOf("\"code\"") + 8;
-                                    int ce = rawBody.indexOf('"', ci);
-                                    if (ce > ci) code = rawBody.substring(ci, ce);
-                                }
-                                if (rawBody.contains("\"message\"")) {
-                                    int mi = rawBody.indexOf("\"message\"") + 11;
-                                    int me = rawBody.indexOf('"', mi);
-                                    if (me > mi) msg = rawBody.substring(mi, me);
-                                }
-                            } catch (Exception ignored) {}
-                            if (msg.isBlank()) msg = response.statusCode().toString();
-                            return (Throwable) new ResponseStatusException(
-                                HttpStatus.valueOf(response.statusCode().value()),
-                                code + " :: " + msg);
-                        })
+                        .map(rawBody -> (Throwable) AiDependencyException.fromBody(
+                                response.statusCode().value(),
+                                parseErrorBody(rawBody),
+                                springPath(path)))
                 )
                 .bodyToMono(MAP_TYPE)
                 .block(timeout);
+    }
+
+    /**
+     * Parses a FastAPI error body into a Map. A non-JSON body — an HTML proxy page,
+     * an empty 502 — yields an empty map, never null, so
+     * {@link AiDependencyException#fromBody} falls to its transport-failure branch
+     * instead of masking the real status.
+     */
+    static Map<String, Object> parseErrorBody(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) return Map.of();
+        try {
+            Map<String, Object> parsed = ERROR_BODY_MAPPER.readValue(rawBody, ERROR_MAP_TYPE);
+            return parsed == null ? Map.of() : parsed;
+        } catch (Exception notJson) {
+            return Map.of();
+        }
+    }
+
+    /** "/internal/content/generate" -> "content/generate", for the stage chain. */
+    private static String springPath(String path) {
+        String p = path.startsWith("/internal/") ? path.substring("/internal/".length()) : path;
+        return p.startsWith("/") ? p.substring(1) : p;
     }
 }

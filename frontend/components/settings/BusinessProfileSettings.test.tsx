@@ -23,7 +23,7 @@ const BASE_PROFILE: BusinessProfile = {
   description: 'A twelve-room beachfront property above the reef wall.',
   uvp: 'The only eco-certified resort on this stretch of coast.',
   imagePreview: null,
-  uniquenessScore: 82,
+  uniquenessScore: 0.82, // 0–1 scale; component formats ×100 for display
   slogan: 'Rest, thirty metres from the sardine run.',
   industry: 'Accommodation & Staycation',
   vibes: [],
@@ -40,6 +40,17 @@ const profileState = {
 
 vi.mock('../../services/profileContext', () => ({
   useProfile: () => profileState,
+}));
+
+// Save now round-trips through apiClient.businessProfile.save (PUT
+// /api/business-profile) instead of being a no-op — stub it so these
+// component-behavior tests don't issue a real network request.
+vi.mock('../../services/apiClient', () => ({
+  apiClient: {
+    businessProfile: {
+      save: vi.fn((profile: BusinessProfile) => Promise.resolve(profile)),
+    },
+  },
 }));
 
 beforeEach(() => {
@@ -158,7 +169,7 @@ describe('BusinessProfileSettings', () => {
 
     expect(screen.getByRole('heading', { name: BASE_PROFILE.businessName })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Renamed Resort' })).not.toBeInTheDocument();
-    expect(screen.getByText(/^Uniqueness 82$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Uniqueness 82$/)).toBeInTheDocument(); // 0.82 -> formatted ×100
   });
 
   it('omits the score chip before a uniqueness score exists', () => {

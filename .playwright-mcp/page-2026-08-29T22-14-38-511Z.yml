@@ -1,0 +1,64 @@
+- generic [ref=f22e47]:
+  - complementary [ref=f22e48]:
+    - generic [ref=f22e49]:
+      - generic [ref=f22e50]: Ce
+      - generic [ref=f22e51]:
+        - generic [ref=f22e52]: CeView
+        - text: Set up your profile
+    - paragraph [ref=f22e53]: Required steps
+    - list "Onboarding progress" [ref=f22e54]:
+      - listitem [ref=f22e55]:
+        - generic [ref=f22e57]:
+          - generic [ref=f22e58]: Basic Info
+          - generic [ref=f22e59]: Name, industry, slogan
+      - listitem [ref=f22e60]:
+        - generic [ref=f22e62]:
+          - generic [ref=f22e63]: Brand Identity
+          - generic [ref=f22e64]: Vibe and core services
+      - listitem [ref=f22e65]:
+        - generic [ref=f22e67]:
+          - generic [ref=f22e68]: Structured Inputs
+          - generic [ref=f22e69]: Description and UVP
+      - listitem [ref=f22e70]:
+        - generic [ref=f22e71]: "4"
+        - generic [ref=f22e72]:
+          - generic [ref=f22e73]: Assets & Links
+          - generic [ref=f22e74]: Socials, logo, website
+      - listitem [ref=f22e75]:
+        - generic [ref=f22e76]: "5"
+        - generic [ref=f22e77]:
+          - generic [ref=f22e78]: Analysis
+          - generic [ref=f22e79]: Categories and uniqueness
+    - generic [ref=f22e80]: Every field feeds the AI. Complete answers produce sharper forecasts and better captions.
+  - main [ref=f22e84]:
+    - generic [ref=f22e182]:
+      - generic [ref=f22e183]:
+        - paragraph [ref=f22e184]: Step 4 · All optional
+        - heading "Assets and links" [level=2] [ref=f22e185]
+        - paragraph [ref=f22e186]: Connect the accounts you publish to. You can add or change any of this later in Settings → Platforms.
+      - generic [ref=f22e187]:
+        - generic [ref=f22e188]: Social profiles
+        - textbox "Instagram handle or page name" [ref=f22e194]: "@sunsetcove.ph"
+        - textbox "TikTok handle or page name" [ref=f22e199]: "@sunsetcove"
+        - textbox "Facebook handle or page name" [ref=f22e204]: SunsetCoveMoalboal
+        - textbox "Naver Blog handle or page name" [ref=f22e209]
+      - generic [ref=f22e210]:
+        - generic [ref=f22e211]:
+          - generic [ref=f22e212]:
+            - generic [ref=f22e213]: Logo
+            - generic [ref=f22e214]: Optional
+          - button "Upload logo" [ref=f22e215] [cursor=pointer]:
+            - paragraph [ref=f22e221]: Drop your logo
+            - paragraph [ref=f22e222]: PNG, JPG or SVG
+        - generic [ref=f22e223]:
+          - generic [ref=f22e224]:
+            - generic [ref=f22e225]: Website
+            - generic [ref=f22e226]: Optional
+          - textbox "Website Optional" [ref=f22e227]:
+            - /placeholder: https://
+            - text: https://sunsetcove.ph
+    - generic [ref=f22e104]:
+      - button "Back" [ref=f22e105] [cursor=pointer]
+      - generic [ref=f22e108]:
+        - generic [ref=f22e109]: Step 4 of 5
+        - button "Continue" [active] [ref=f22e110] [cursor=pointer]

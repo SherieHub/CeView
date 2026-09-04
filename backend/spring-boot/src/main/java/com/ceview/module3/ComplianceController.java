@@ -24,7 +24,7 @@ import java.util.concurrent.TimeoutException;
  * the asset fails. No results are persisted.
  */
 @RestController
-@RequestMapping("/api/v1/compliance")
+@RequestMapping("/api/compliance")
 public class ComplianceController {
 
     private static final Logger log = LoggerFactory.getLogger(ComplianceController.class);

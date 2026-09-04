@@ -1,0 +1,104 @@
+[     734ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[    1119ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[    1120ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[    1129ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts:35:11)
+[17178363ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17183186ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17183188ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17183217ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts:35:11)
+[17204050ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[17204070ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[17204092ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[17204094ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[17205565ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17206082ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17206083ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17206091ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17221853ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17222178ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17222184ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17222184ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17342910ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17343237ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17343238ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17343247ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17344346ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17344529ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17344530ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17344536ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17345398ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17345651ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17345652ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17345657ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17859071ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17859360ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17859366ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17859366ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17890535ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17890807ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17890808ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17890816ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17980570ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17980786ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17980788ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)
+[17980792ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17984782ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[17985004ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[17985006ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[17985012ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788059557594:35:11)

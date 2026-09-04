@@ -21,7 +21,7 @@ Form -> Form: validateInputs()\n[all values >= 0 & not NaN]
 alt invalid inputs
   Form --> O: Red error banner\n"All fields must be non-negative numbers"
 else valid inputs
-  Form -> AC: POST /api/v1/analytics/manual
+  Form -> AC: POST /api/analytics/manual
   AC -> MCS: compute(rawInput)
   note right of MCS
     CTR  = clicks / impressions × 100
@@ -50,7 +50,7 @@ else valid inputs
   end note
 
   Form -> CJF: mount(weeks = 4)
-  CJF -> AC: GET /api/v1/analytics/history?weeks=4
+  CJF -> AC: GET /api/analytics/history?weeks=4
   AC -> Repo: findAllByOrderByCreatedAtDesc(limit=4)
   Repo --> AC: [4 records] reversed to chronological order
   AC --> CJF: CampaignHistoryResponse{snapshots}

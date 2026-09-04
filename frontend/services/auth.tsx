@@ -16,7 +16,7 @@ interface AuthContextValue {
   profileCompleted: boolean | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) => Promise<void>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (idToken: string, intent: 'login' | 'register') => Promise<void>;
   markProfileCompleted: () => void;
   logout: () => void;
 }
@@ -69,14 +69,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applySession(res);
   }, [applySession]);
 
-  const loginWithGoogle = useCallback(async (idToken: string) => {
-    const res = await apiClient.auth.google(idToken);
+  const loginWithGoogle = useCallback(async (idToken: string, intent: 'login' | 'register') => {
+    const res = await apiClient.auth.google(idToken, intent);
     applySession(res);
   }, [applySession]);
 
   /**
    * Called after the "complete your profile" form (CompleteProfilePage)
-   * succeeds against PATCH /api/v1/auth/profile — flips the flag locally
+   * succeeds against PATCH /api/auth/profile — flips the flag locally
    * without a full re-login, since the backend call that got us here already
    * confirmed the update.
    */

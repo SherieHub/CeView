@@ -51,21 +51,33 @@ public class MarketDataIngestionService {
     }
 
     /**
-     * Run the 2.1 ingestion pipeline for all three target markets.
+     * Run the 2.1 ingestion pipeline for every (category, market) pair on the
+     * profile (Task 1a.2 — one fetchTrends call and one persisted
+     * MarketSignalRecord per category, so alerts can be attributed to a real
+     * category instead of a blended cross-category value).
      *
-     * @return number of markets successfully ingested
+     * @return number of (category, market) pairs successfully ingested
      */
     public int ingestForProfile(BusinessProfile profile) {
+        List<String> categories = profile.categoriesList();
+        if (categories == null || categories.isEmpty()) {
+            log.warn("Profile {} has no categories set — skipping ingestion (0 pairs)",
+                    profile.getBusinessProfileId());
+            return 0;
+        }
+
         int count = 0;
         for (String market : MARKETS) {
-            try {
-                ingestMarket(profile, market);
-                count++;
-            } catch (Exception e) {
-                MDC.put("code", Module2ErrorCodes.MOD21_INGESTION_JOB_FAILED);
-                log.warn("Ingestion failed for profile={} market={}: {}",
-                        profile.getBusinessProfileId(), market, e.getMessage());
-                MDC.remove("code");
+            for (String category : categories) {
+                try {
+                    ingestMarket(profile, market, category);
+                    count++;
+                } catch (Exception e) {
+                    MDC.put("code", Module2ErrorCodes.MOD21_INGESTION_JOB_FAILED);
+                    log.warn("Ingestion failed for profile={} market={} category={}: {}",
+                            profile.getBusinessProfileId(), market, category, e.getMessage());
+                    MDC.remove("code");
+                }
             }
         }
         return count;
@@ -73,9 +85,8 @@ public class MarketDataIngestionService {
 
     // ─── private pipeline ────────────────────────────────────────────────────
 
-    private void ingestMarket(BusinessProfile profile, String market) {
-        UUID         profileId  = profile.getBusinessProfileId();
-        List<String> categories = profile.categoriesList();
+    private void ingestMarket(BusinessProfile profile, String market, String category) {
+        UUID profileId = profile.getBusinessProfileId();
 
         // ── Concurrent external fetches ──────────────────────────────────────
         CompletableFuture<ExternalMarketDataClient.GdpDataDto> gdpFuture =
@@ -89,26 +100,31 @@ public class MarketDataIngestionService {
         ExternalMarketDataClient.GdpDataDto    gdp   = gdpFuture.join();
         ExternalMarketDataClient.ForexDataDto  forex = forexFuture.join();
 
-        // ── Load existing signal history ──────────────────────────────────────
+        // ── Load existing signal history (scoped to this category — Task 1a.2) ─
         List<MarketSignalRecord> history = signalRepo
-                .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+                .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                        profileId, market, category);
 
         // ── First ingestion: backfill N weeks of real historical trend data ───
-        // On first run for a profile/market there are no signal records, so the
-        // chart would show a flat line.  Fetch 12 weeks of weekly PyTrends data
-        // and persist one MarketSignalRecord per historical week so the chart
-        // shows real week-over-week variance from the very first forecast.
+        // On first run for a profile/market/category there are no signal records,
+        // so the chart would show a flat line.  Fetch 12 weeks of weekly PyTrends
+        // data and persist one MarketSignalRecord per historical week so the
+        // chart shows real week-over-week variance from the very first forecast.
         double trendIndex;
+        String source;
         if (history.isEmpty()) {
             Map<String, Object> historyResult = ai.fetchTrendHistory(
-                    Map.of("market", market, "categories", categories, "weeks", 12));
-            trendIndex = backfillHistory(profileId, market, historyResult, gdp, forex);
+                    Map.of("market", market, "categories", List.of(category), "weeks", 12));
+            source = str(historyResult, "source");
+            trendIndex = backfillHistory(profileId, market, category, historyResult, gdp, forex, source);
             // Reload history so the seasonality call below has the backfilled series
             history = signalRepo
-                    .findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+                    .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                            profileId, market, category);
         } else {
             Map<String, Object> trendsResult = ai.fetchTrends(
-                    Map.of("market", market, "categories", categories));
+                    Map.of("market", market, "categories", List.of(category)));
+            source = str(trendsResult, "source");
             trendIndex = Math.max(0.0, Math.min(100.0,
                     ((Number) trendsResult.getOrDefault("trend_index", 50.0)).doubleValue()));
         }
@@ -137,7 +153,7 @@ public class MarketDataIngestionService {
         double   rolling7d        = trendIndex;    // safe defaults before FastAPI call
         double   rolling30d       = trendIndex;
         double   rollingStd7d     = 0.0;
-        boolean  spike            = false;
+        Boolean  spike            = false;
         Double   yoyRatio         = null;
 
         try {
@@ -158,24 +174,19 @@ public class MarketDataIngestionService {
             }
 
         } catch (Exception e) {
-            // FastAPI unreachable — apply inline 2σ spike as fallback
-            log.debug("Seasonality compute unavailable, applying local 2σ spike fallback: {}",
-                    e.getMessage());
-            if (weeklyHistory.size() >= 7) {
-                List<Double> w7 = weeklyHistory.subList(
-                        weeklyHistory.size() - 7, weeklyHistory.size());
-                double localMean = mean(w7);
-                double localStd  = stdDev(w7, localMean);
-                spike     = trendIndex > localMean + 2.0 * localStd;
-                rolling7d = localMean;
-                rollingStd7d = localStd;
-            }
+            // No local substitute. A guessed spike flag renders identically to a
+            // measured one in the dashboard's surge chip, and a false surge is
+            // worse than no chip at all. Null means "not determined".
+            log.warn("Seasonality service unavailable for market={}; spike_indicator left null: {}",
+                     market, e.getMessage());
+            spike = null;
         }
 
         // ── Persist ────────────────────────────────────────────────────────
         MarketSignalRecord record = new MarketSignalRecord();
         record.setBusinessProfileId(profileId);
         record.setTargetMarket(market);
+        record.setCategory(category);
         record.setTrendIndex(trendIndex);
         record.setForexRate(forexAvg);
         record.setGdpGrowth(gdp.gdpGrowth());
@@ -186,10 +197,12 @@ public class MarketDataIngestionService {
         record.setRollingStdDev(rollingStd7d);
         record.setSpikeIndicator(spike);
         record.setYoyRatio(yoyRatio);
+        record.setSource(source);
+        record.setSourceFetchedAt(OffsetDateTime.now());
         signalRepo.save(record);
 
-        log.debug("Ingested: profile={} market={} trend={} spike={} yoy={}",
-                profileId, market, String.format("%.1f", trendIndex), spike, yoyRatio);
+        log.debug("Ingested: profile={} market={} category={} trend={} spike={} yoy={}",
+                profileId, market, category, String.format("%.1f", trendIndex), spike, yoyRatio);
     }
 
     // ─── backfill helper ──────────────────────────────────────────────────────
@@ -202,10 +215,11 @@ public class MarketDataIngestionService {
      * @return the trend_index of the most-recent (current) week in the series
      */
     @SuppressWarnings("unchecked")
-    private double backfillHistory(UUID profileId, String market,
+    private double backfillHistory(UUID profileId, String market, String category,
                                    Map<String, Object> historyResult,
                                    ExternalMarketDataClient.GdpDataDto gdp,
-                                   ExternalMarketDataClient.ForexDataDto forex) {
+                                   ExternalMarketDataClient.ForexDataDto forex,
+                                   String source) {
         List<Map<String, Object>> series =
                 (List<Map<String, Object>>) historyResult.get("weekly_series");
         if (series == null || series.isEmpty()) {
@@ -225,6 +239,7 @@ public class MarketDataIngestionService {
             MarketSignalRecord rec = new MarketSignalRecord();
             rec.setBusinessProfileId(profileId);
             rec.setTargetMarket(market);
+            rec.setCategory(category);
             rec.setTrendIndex(ti);
             rec.setForexRate(forex.rateVsPhp());
             rec.setGdpGrowth(gdp.gdpGrowth());
@@ -234,6 +249,8 @@ public class MarketDataIngestionService {
             rec.setRollingAverage30d(ti);
             rec.setRollingStdDev(0.0);
             rec.setSpikeIndicator(false);
+            rec.setSource(source);
+            rec.setSourceFetchedAt(OffsetDateTime.now());
 
             // Set the timestamp to the corresponding past week
             String dateStr = (String) point.get("date");
@@ -252,8 +269,8 @@ public class MarketDataIngestionService {
             signalRepo.save(rec);
         }
 
-        log.info("Backfilled {} historical signal records for profile={} market={}",
-                historical.size(), profileId, market);
+        log.info("Backfilled {} historical signal records for profile={} market={} category={}",
+                historical.size(), profileId, market, category);
 
         Map<String, Object> last = series.get(series.size() - 1);
         return Math.max(0.0, Math.min(100.0,
@@ -267,16 +284,14 @@ public class MarketDataIngestionService {
         return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
 
-    private double stdDev(List<Double> values, double mean) {
-        if (values.size() < 2) return 0.0;
-        double variance = values.stream()
-                .mapToDouble(v -> (v - mean) * (v - mean))
-                .average().orElse(0.0);
-        return Math.sqrt(variance);
-    }
-
     private double num(Map<String, Object> map, String key, double def) {
         Object v = map.get(key);
         return v instanceof Number ? ((Number) v).doubleValue() : def;
+    }
+
+    /** FastAPI's declared provenance for this fetch, or null → entity defaults it to "unknown". */
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? v.toString() : null;
     }
 }

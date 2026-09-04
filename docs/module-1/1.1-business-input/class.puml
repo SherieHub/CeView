@@ -134,8 +134,8 @@ UniquenessCalibrationForm *-- DynamicListManager
 UniquenessCalibrationForm *-- ValidationBanner
 InferredCategoryBoard *-- "7" AdjustableCategoryItem
 
-UniquenessCalibrationForm ..> ClassificationAnalyzeController : POST /api/v1/classification/analyze
-BusinessProfile ..> BusinessProfileController : GET/PUT /api/v1/business-profile
+UniquenessCalibrationForm ..> ClassificationAnalyzeController : POST /api/classification/analyze
+BusinessProfile ..> BusinessProfileController : GET/PUT /api/business-profile
 
 BusinessProfileController --> BusinessProfileRepository : findFirstByUserId / save
 BusinessProfileController --> AIInferenceGatewayService : generateKeywords / embedBusinessProfile

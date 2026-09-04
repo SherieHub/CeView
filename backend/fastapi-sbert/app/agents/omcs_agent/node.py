@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # The omcs_agent needs a VISION-capable model because nodes pass the pubmat
 # image as an image_url content block. The shared AgentLLMModel default
-# (llama-3.3-70b-versatile) is text-only and rejects multimodal input, so this
+# (openai/gpt-oss-120b) is text-only and rejects multimodal input, so this
 # agent uses its own Groq vision model. Overridable via OMCS_VISION_MODEL.
 # Kept isolated so other agents (caption generation, PES report) are unaffected.
 _VISION_MODEL = os.environ.get("OMCS_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
@@ -34,7 +34,12 @@ def get_llm():
             return None
         try:
             from langchain_groq import ChatGroq  # type: ignore[import]
-            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key)
+            # max_tokens: without a cap, langchain's JsonOutputParser silently
+            # repairs a truncated response by dropping the last incomplete key
+            # rather than raising — a growing rubric or rationale field could
+            # someday truncate the same way the caption matrix did in
+            # AgentLLMModel before this was added there. Cheap to guard now.
+            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key, max_tokens=2048)
         except Exception as exc:  # pragma: no cover - import/config failure
             logger.error("omcs_agent: failed to init vision LLM (%s): %s", _VISION_MODEL, exc)
             return None

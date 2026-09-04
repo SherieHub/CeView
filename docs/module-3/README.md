@@ -32,9 +32,9 @@ below.
 
 | Submodule | Endpoint | Scope |
 |---|---|---|
-| [`3.1-content-generation/`](3.1-content-generation/) | `POST /api/v1/content/generate` | LangGraph caption generation |
-| [`3.2-creative-direction/`](3.2-creative-direction/) | `POST /api/v1/creative-direction/generate/{profileId}` | Groq visual direction |
-| [`3.3-compliance/`](3.3-compliance/) | `POST /api/v1/compliance/evaluate` | OMCS audit |
+| [`3.1-content-generation/`](3.1-content-generation/) | `POST /api/content/generate` | LangGraph caption generation |
+| [`3.2-creative-direction/`](3.2-creative-direction/) | `POST /api/creative-direction/generate/{profileId}` | Groq visual direction |
+| [`3.3-compliance/`](3.3-compliance/) | `POST /api/compliance/evaluate` | OMCS audit |
 
 ## Diagrams
 

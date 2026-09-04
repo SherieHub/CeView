@@ -9,7 +9,7 @@
  */
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Banknote, Compass, Plane, Sparkles, TrendingUp } from 'lucide-react';
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 function MiniTrend({
   data,

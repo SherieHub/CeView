@@ -1,0 +1,206 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e5]:
+    - navigation "Main" [ref=f27e6]:
+      - generic [ref=f27e7]:
+        - generic [ref=f27e8]: Ce
+        - generic [ref=f27e9]: CeView
+        - button "Collapse sidebar" [expanded] [ref=f27e11] [cursor=pointer]
+      - list [ref=f27e16]:
+        - listitem [ref=f27e17]: Intelligence
+        - listitem [ref=f27e18]:
+          - button "Dashboard 2" [ref=f27e19] [cursor=pointer]:
+            - generic [ref=f27e25]: Dashboard
+            - generic [ref=f27e26]: "2"
+        - listitem [ref=f27e27]: Create
+        - listitem [ref=f27e28]:
+          - button "Content Studio" [ref=f27e29] [cursor=pointer]
+        - listitem [ref=f27e34]:
+          - button "Calendar" [ref=f27e35] [cursor=pointer]
+        - listitem [ref=f27e39]: Measure
+        - listitem [ref=f27e40]:
+          - button "Performance" [ref=f27e41] [cursor=pointer]
+        - listitem [ref=f27e46]: Settings
+        - listitem [ref=f27e47]:
+          - button "Business Profile" [ref=f27e48] [cursor=pointer]
+        - listitem [ref=f27e54]:
+          - button "Platforms" [ref=f27e55] [cursor=pointer]
+        - listitem [ref=f27e63]:
+          - button "Workspace" [ref=f27e64] [cursor=pointer]
+      - button "Sign out" [ref=f27e72] [cursor=pointer]
+    - generic [ref=f27e74]:
+      - banner [ref=f27e75]:
+        - button "Search" [disabled] [ref=f27e76]
+        - button "Notifications" [disabled] [ref=f27e81]
+      - main [ref=f27e86]:
+        - generic [ref=f27e87]:
+          - generic [ref=f27e125]:
+            - generic [ref=f27e126]:
+              - heading "Performance" [level=2] [ref=f27e127]
+              - paragraph [ref=f27e128]: Campaign scored 0.67 — Good Performance.
+            - button "New submission" [ref=f27e129] [cursor=pointer]
+          - generic [ref=f27e133]:
+            - generic [ref=f27e134]: CTR
+            - generic [ref=f27e135]: "2.95"
+            - generic [ref=f27e136]: 17.9%
+          - generic [ref=f27e140]:
+            - generic [ref=f27e141]: CPC
+            - generic [ref=f27e142]: "1.43"
+            - generic [ref=f27e143]: 28.6%
+          - generic [ref=f27e147]:
+            - generic [ref=f27e148]: ROAS
+            - generic [ref=f27e149]: "8.75"
+            - generic [ref=f27e150]: 75.0%
+          - generic [ref=f27e154]:
+            - generic [ref=f27e155]: CR
+            - generic [ref=f27e156]: "4.00"
+            - generic [ref=f27e157]: 11.1%
+          - generic [ref=f27e161]:
+            - generic [ref=f27e162]: CAC
+            - generic [ref=f27e163]: "117.65"
+            - generic [ref=f27e164]: 21.6%
+          - generic [ref=f27e168]:
+            - heading "Performance Score" [level=3] [ref=f27e169]
+            - generic [ref=f27e170]:
+              - generic [ref=f27e171]:
+                - application [ref=f27e173]
+                - generic:
+                  - generic: "0.67"
+                  - generic: out of 1.00
+              - paragraph [ref=f27e202]: Good Performance
+            - generic [ref=f27e203]:
+              - heading "Contribution breakdown" [level=4] [ref=f27e204]
+              - generic [ref=f27e206]:
+                - generic [ref=f27e207]:
+                  - text: ROAS
+                  - generic [ref=f27e208]: (35%)
+                - generic [ref=f27e209]: "0.350"
+              - generic [ref=f27e213]:
+                - generic [ref=f27e214]:
+                  - text: Conv. Rate
+                  - generic [ref=f27e215]: (30%)
+                - generic [ref=f27e216]: "0.080"
+              - generic [ref=f27e220]:
+                - generic [ref=f27e221]:
+                  - text: CAC (Inv)
+                  - generic [ref=f27e222]: (15%)
+                - generic [ref=f27e223]: "0.146"
+              - generic [ref=f27e227]:
+                - generic [ref=f27e228]:
+                  - text: CTR
+                  - generic [ref=f27e229]: (15%)
+                - generic [ref=f27e230]: "0.044"
+              - generic [ref=f27e234]:
+                - generic [ref=f27e235]:
+                  - text: CPC (Inv)
+                  - generic [ref=f27e236]: (5%)
+                - generic [ref=f27e237]: "0.050"
+            - paragraph [ref=f27e240]: PES = ROAS×0.35 + CR×0.30 + CAC⁻¹×0.15 + CTR×0.15 + CPC⁻¹×0.05
+          - generic [ref=f27e241]:
+            - heading "Customer Journey Funnel" [level=3] [ref=f27e242]
+            - generic [ref=f27e243]:
+              - generic [ref=f27e245]:
+                - generic [ref=f27e246]: Impressions
+                - generic [ref=f27e247]: 95,000
+              - generic [ref=f27e252]:
+                - generic [ref=f27e253]: Clicks
+                - generic [ref=f27e254]:
+                  - generic [ref=f27e255]: 2,800
+                  - generic [ref=f27e256]: "-97.1% drop-off"
+              - generic [ref=f27e260]:
+                - generic [ref=f27e261]: Conversions
+                - generic [ref=f27e262]:
+                  - generic [ref=f27e263]: "185"
+                  - generic [ref=f27e264]: "-93.4% drop-off"
+              - generic [ref=f27e268]:
+                - generic [ref=f27e269]: Bookings
+                - generic [ref=f27e270]:
+                  - generic [ref=f27e271]: "112"
+                  - generic [ref=f27e272]: "-39.5% drop-off"
+          - generic [ref=f27e275]:
+            - generic [ref=f27e276]:
+              - generic [ref=f27e277]:
+                - heading "PES Trend" [level=3] [ref=f27e278]
+                - paragraph [ref=f27e279]: Weekly Performance Efficiency Score against the label-threshold bands.
+              - group "Trend window" [ref=f27e280]:
+                - button "4WK" [pressed] [ref=f27e281] [cursor=pointer]
+                - button "8WK" [ref=f27e282] [cursor=pointer]
+            - application [ref=f27e286]:
+              - generic [ref=f27e297]:
+                - generic [ref=f27e298]:
+                  - generic [ref=f27e299]: Aug 16–Aug 22
+                  - generic [ref=f27e301]: Aug 16–Aug 22
+                  - generic [ref=f27e303]: Aug 16–Aug 22
+                  - generic [ref=f27e305]: Aug 16–Aug 22
+                - generic [ref=f27e307]:
+                  - generic [ref=f27e308]: "0"
+                  - generic [ref=f27e310]: "0.25"
+                  - generic [ref=f27e312]: "0.5"
+                  - generic [ref=f27e314]: "0.75"
+                  - generic [ref=f27e316]: "1"
+                - generic [ref=f27e318]: "0.40"
+                - generic [ref=f27e319]: "0.60"
+                - generic [ref=f27e320]: "0.80"
+          - generic [ref=f27e321]:
+            - generic [ref=f27e322]:
+              - heading "Efficiency Trend" [level=3] [ref=f27e323]
+              - paragraph [ref=f27e324]: ROAS, CTR and conversion rate over the selected window.
+            - generic [ref=f27e327]:
+              - list [ref=f27e329]:
+                - listitem [ref=f27e330]:
+                  - img "CTR legend icon" [ref=f27e331]
+                  - text: CTR
+                - listitem [ref=f27e333]:
+                  - img "Conversion rate legend icon" [ref=f27e334]
+                  - text: Conversion rate
+                - listitem [ref=f27e336]:
+                  - img "ROAS legend icon" [ref=f27e337]
+                  - text: ROAS
+              - application [ref=f27e339]:
+                - generic [ref=f27e360]:
+                  - generic [ref=f27e361]:
+                    - generic [ref=f27e362]: Aug 16–Aug 22
+                    - generic [ref=f27e364]: Aug 16–Aug 22
+                    - generic [ref=f27e366]: Aug 16–Aug 22
+                    - generic [ref=f27e368]: Aug 16–Aug 22
+                  - generic [ref=f27e370]:
+                    - generic [ref=f27e371]: "0"
+                    - generic [ref=f27e373]: "3"
+                    - generic [ref=f27e375]: "6"
+                    - generic [ref=f27e377]: "9"
+                    - generic [ref=f27e379]: "12"
+          - generic [ref=f27e381]:
+            - generic [ref=f27e382]:
+              - heading "Cost Trend" [level=3] [ref=f27e383]
+              - paragraph [ref=f27e384]: Cost per click and customer acquisition cost over the selected window.
+            - generic [ref=f27e387]:
+              - list [ref=f27e389]:
+                - listitem [ref=f27e390]:
+                  - img "CAC (₱) legend icon" [ref=f27e391]
+                  - text: CAC (₱)
+                - listitem [ref=f27e393]:
+                  - img "CPC (₱) legend icon" [ref=f27e394]
+                  - text: CPC (₱)
+              - application [ref=f27e396]:
+                - generic [ref=f27e412]:
+                  - generic [ref=f27e413]:
+                    - generic [ref=f27e414]: Aug 16–Aug 22
+                    - generic [ref=f27e416]: Aug 16–Aug 22
+                    - generic [ref=f27e418]: Aug 16–Aug 22
+                    - generic [ref=f27e420]: Aug 16–Aug 22
+                  - generic [ref=f27e422]:
+                    - generic [ref=f27e423]: "0"
+                    - generic [ref=f27e425]: "30"
+                    - generic [ref=f27e427]: "60"
+                    - generic [ref=f27e429]: "90"
+                    - generic [ref=f27e431]: "120"
+          - generic [ref=f27e433]: Loading report…
+          - generic [ref=f27e434]:
+            - generic [ref=f27e435]:
+              - heading "Previously Published" [level=3] [ref=f27e436]
+              - group "Platform filter" [ref=f27e437]:
+                - button "All" [pressed] [ref=f27e438] [cursor=pointer]
+                - button "TikTok" [ref=f27e439] [cursor=pointer]
+                - button "Instagram" [ref=f27e440] [cursor=pointer]
+                - button "Facebook" [ref=f27e441] [cursor=pointer]
+            - paragraph [ref=f27e443]: Nothing published yet for this filter.
+  - generic [ref=f27e444]: "30"

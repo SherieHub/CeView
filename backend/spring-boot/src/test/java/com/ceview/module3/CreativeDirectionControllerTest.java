@@ -74,7 +74,7 @@ class CreativeDirectionControllerTest {
 
     @Test
     void generateWithOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(post("/api/v1/creative-direction/generate/" + profileA)
+        mvc.perform(post("/api/creative-direction/generate/" + profileA)
                 .header("Authorization", "Bearer " + tokenA)
                 .param("market", "korea"))
             .andExpect(status().isOk());
@@ -82,7 +82,7 @@ class CreativeDirectionControllerTest {
 
     @Test
     void generateWithAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/creative-direction/generate/" + profileB)
+        mvc.perform(post("/api/creative-direction/generate/" + profileB)
                 .header("Authorization", "Bearer " + tokenA)
                 .param("market", "korea"))
             .andExpect(status().isForbidden())
@@ -96,7 +96,7 @@ class CreativeDirectionControllerTest {
 
         // profileId in the path must be a real UUID; since the caller has no
         // profile at all, resolution fails with 409 before the mismatch check.
-        mvc.perform(post("/api/v1/creative-direction/generate/" + UUID.randomUUID())
+        mvc.perform(post("/api/creative-direction/generate/" + UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenWithoutProfile)
                 .param("market", "korea"))
             .andExpect(status().isConflict())
@@ -108,7 +108,7 @@ class CreativeDirectionControllerTest {
 
     @Test
     void approveWithOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(post("/api/v1/creative-direction/approve/" + profileA)
+        mvc.perform(post("/api/creative-direction/approve/" + profileA)
                 .header("Authorization", "Bearer " + tokenA)
                 .param("market", "korea"))
             .andExpect(status().isOk())
@@ -117,7 +117,7 @@ class CreativeDirectionControllerTest {
 
     @Test
     void approveWithAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/creative-direction/approve/" + profileB)
+        mvc.perform(post("/api/creative-direction/approve/" + profileB)
                 .header("Authorization", "Bearer " + tokenA)
                 .param("market", "korea"))
             .andExpect(status().isForbidden())
@@ -129,7 +129,7 @@ class CreativeDirectionControllerTest {
         UUID operatorWithoutProfile = UUID.randomUUID();
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile2@example.com");
 
-        mvc.perform(post("/api/v1/creative-direction/approve/" + UUID.randomUUID())
+        mvc.perform(post("/api/creative-direction/approve/" + UUID.randomUUID())
                 .header("Authorization", "Bearer " + tokenWithoutProfile)
                 .param("market", "korea"))
             .andExpect(status().isConflict())
@@ -141,7 +141,7 @@ class CreativeDirectionControllerTest {
 
     @Test
     void generateWithoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/creative-direction/generate/" + UUID.randomUUID())
+        mvc.perform(post("/api/creative-direction/generate/" + UUID.randomUUID())
                 .param("market", "korea"))
             .andExpect(status().isUnauthorized());
     }

@@ -110,8 +110,8 @@ DB --> TFS: List~TrendFetchJob~
 
 loop For each TrendFetchJob (sequential — rate-limit safe)
     TFS -> DB: TrendFetchJobRepo.save() — status = IN_PROGRESS
-    TFS -> AIG: POST /api/v1/trends/fetch { category, market }
-    AIG -> FT: POST /api/v1/trends/fetch
+    TFS -> AIG: POST /api/trends/fetch { category, market }
+    AIG -> FT: POST /api/trends/fetch
     FT -> FT: trend_service.fetch_and_process() + 4-12 s jitter
 
     alt PyTrends success

@@ -6,7 +6,7 @@
  * be built without editing the shell. The shell owns the timeframe and the
  * active tab; the slots receive them and report changes back.
  */
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 export type Timeframe = '4WK' | '12WK';
 export type InsightsTab = 'economy' | 'season';

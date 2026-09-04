@@ -10,6 +10,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/auth';
 import { signInWithGooglePopup } from '../../services/firebase';
+import { ApiError } from '../../services/apiError';
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle } = useAuth();
@@ -43,10 +44,15 @@ export default function LoginPage() {
     setGoogleSubmitting(true);
     try {
       const idToken = await signInWithGooglePopup();
-      await loginWithGoogle(idToken);
+      const intent = mode === 'signup' ? 'register' : 'login';
+      await loginWithGoogle(idToken, intent);
       navigate('/dashboard', { replace: true });
-    } catch {
-      setError('Something went wrong signing in with Google. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.message
+          ? err.message
+          : 'Something went wrong signing in with Google. Please try again.',
+      );
     } finally {
       setGoogleSubmitting(false);
     }
@@ -54,11 +60,17 @@ export default function LoginPage() {
 
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-      <div className="flex flex-col justify-between bg-navy p-10 text-white">
-        <div className="eyebrow text-skyblue">CeView</div>
+      {/* Brand panel — dark chrome, same surface language as .ob-rail/.sb-rail. */}
+      <div
+        className="flex flex-col justify-between p-10"
+        style={{ background: 'var(--gradient-chrome)', color: 'var(--color-text-inverse)' }}
+      >
+        <div className="eyebrow" style={{ color: 'var(--color-text-accent)' }}>
+          CeView
+        </div>
         <div>
-          <h1 className="heading-xl mb-3">Know the surge before it lands.</h1>
-          <p className="body-sm text-navy-muted">
+          <h1 className="heading-hero mb-3">Know the surge before it lands.</h1>
+          <p className="body-sm" style={{ color: 'var(--color-text-inverse-muted)' }}>
             Demand forecasting and market-localized content for Cebu's tourism businesses.
           </p>
         </div>
@@ -68,25 +80,33 @@ export default function LoginPage() {
             ['3', 'tracked source markets'],
             ['24/7', 'surge monitoring'],
           ].map(([stat, label]) => (
-            <div key={label}>
-              <div className="heading-lg num text-gold">{stat}</div>
-              <div className="body-xs text-navy-muted">{label}</div>
+            <div
+              key={label}
+              className="rounded-md p-3"
+              style={{ background: 'var(--chrome-raised)', borderTop: '1px solid var(--chrome-line)' }}
+            >
+              <div className="heading-md num" style={{ color: 'var(--color-text-inverse)' }}>
+                {stat}
+              </div>
+              <div className="body-xs" style={{ color: 'var(--color-text-inverse-muted)' }}>
+                {label}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-10">
+      {/* Form pane — pale mint canvas. */}
+      <div className="flex items-center justify-center p-10" style={{ background: 'var(--gradient-canvas)' }}>
         <div className="w-full max-w-sm">
-          <div className="tabs mb-6 flex gap-2 rounded-full bg-panel-sunk p-1" role="tablist">
+          <div className="seg mb-6 w-full" role="tablist">
             <button
               type="button"
               role="tab"
               aria-selected={mode === 'signin'}
+              aria-pressed={mode === 'signin'}
               onClick={() => setMode('signin')}
-              className="heading-sm flex-1 rounded-full py-2"
-              data-active={mode === 'signin'}
-              style={mode === 'signin' ? { background: 'var(--color-panel)', boxShadow: 'var(--shadow-1)' } : undefined}
+              className="flex-1"
             >
               Sign in
             </button>
@@ -94,10 +114,9 @@ export default function LoginPage() {
               type="button"
               role="tab"
               aria-selected={mode === 'signup'}
+              aria-pressed={mode === 'signup'}
               onClick={() => setMode('signup')}
-              className="heading-sm flex-1 rounded-full py-2"
-              data-active={mode === 'signup'}
-              style={mode === 'signup' ? { background: 'var(--color-panel)', boxShadow: 'var(--shadow-1)' } : undefined}
+              className="flex-1"
             >
               Create account
             </button>
@@ -105,69 +124,86 @@ export default function LoginPage() {
 
           <h2 className="heading-lg mb-4">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit}>
             {mode === 'signup' && (
-              <>
-                <label className="flex flex-col gap-1">
-                  <span className="body-xs">First name</span>
-                  <input
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-md border border-line px-3 py-2"
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="body-xs">Last name</span>
-                  <input
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-md border border-line px-3 py-2"
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="body-xs">Contact number</span>
-                  <input
-                    type="tel"
-                    required
-                    value={contactNumber}
-                    onChange={(e) => setContactNumber(e.target.value)}
-                    className="rounded-md border border-line px-3 py-2"
-                  />
-                </label>
-              </>
+              <div className="field">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="field-label" htmlFor="login-first-name">
+                      First name
+                    </label>
+                    <input
+                      id="login-first-name"
+                      type="text"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="login-last-name">
+                      Last name
+                    </label>
+                    <input
+                      id="login-last-name"
+                      type="text"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label" htmlFor="login-contact-number">
+                      Contact number
+                    </label>
+                    <input
+                      id="login-contact-number"
+                      type="tel"
+                      required
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                      className="input"
+                    />
+                  </div>
+                </div>
+              </div>
             )}
-            <label className="flex flex-col gap-1">
-              <span className="body-xs">Email</span>
+            <div className="field">
+              <label className="field-label" htmlFor="login-email">
+                Email
+              </label>
               <input
+                id="login-email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-md border border-line px-3 py-2"
+                className="input"
                 placeholder="you@example.com"
               />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="body-xs">Password</span>
+            </div>
+            <div className="field">
+              <label className="field-label" htmlFor="login-password">
+                Password
+              </label>
               <input
+                id="login-password"
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="rounded-md border border-line px-3 py-2"
+                className="input"
                 placeholder="••••••••"
               />
-            </label>
-            {error && <p className="body-xs text-critical">{error}</p>}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-full bg-gold py-2.5 font-bold text-navy disabled:opacity-60"
-            >
+            </div>
+            {error && (
+              <p className="body-xs mb-3" role="alert" style={{ color: 'var(--color-critical-text)' }}>
+                {error}
+              </p>
+            )}
+            <button type="submit" disabled={submitting} className="btn-primary w-full">
               {mode === 'signin' ? 'Sign in' : 'Create account'}
             </button>
           </form>
@@ -176,7 +212,7 @@ export default function LoginPage() {
             type="button"
             onClick={handleGoogleClick}
             disabled={googleSubmitting}
-            className="body-sm mt-4 w-full rounded-full border border-line py-2.5 disabled:opacity-60"
+            className="btn-outline mt-4 w-full"
           >
             {googleSubmitting ? 'Signing in…' : 'Continue with Google'}
           </button>

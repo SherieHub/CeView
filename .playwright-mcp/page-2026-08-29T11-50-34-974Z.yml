@@ -1,0 +1,68 @@
+- generic [ref=f1e5]:
+  - navigation "Main" [ref=f1e6]:
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]: Ce
+      - generic [ref=f1e9]: CeView
+      - button "Collapse sidebar" [expanded] [ref=f1e11] [cursor=pointer]
+    - list [ref=f1e16]:
+      - listitem [ref=f1e17]: Intelligence
+      - listitem [ref=f1e18]:
+        - button "Dashboard 2" [ref=f1e19] [cursor=pointer]:
+          - generic [ref=f1e25]: Dashboard
+          - generic [ref=f1e26]: "2"
+      - listitem [ref=f1e27]: Create
+      - listitem [ref=f1e28]:
+        - button "Content Studio" [ref=f1e29] [cursor=pointer]
+      - listitem [ref=f1e34]:
+        - button "Calendar" [ref=f1e35] [cursor=pointer]
+      - listitem [ref=f1e39]: Measure
+      - listitem [ref=f1e40]:
+        - button "Performance" [ref=f1e41] [cursor=pointer]
+      - listitem [ref=f1e46]: Settings
+      - listitem [ref=f1e47]:
+        - button "Business Profile" [ref=f1e48] [cursor=pointer]
+      - listitem [ref=f1e54]:
+        - button "Platforms" [ref=f1e55] [cursor=pointer]
+      - listitem [ref=f1e63]:
+        - button "Workspace" [ref=f1e64] [cursor=pointer]
+    - button "Sign out" [ref=f1e72] [cursor=pointer]
+  - generic [ref=f1e74]:
+    - banner [ref=f1e75]:
+      - button "Search" [disabled] [ref=f1e76]
+      - button "Notifications" [disabled] [ref=f1e81]
+    - main [ref=f1e86]:
+      - generic [ref=f1e187]:
+        - generic [ref=f1e188]:
+          - heading "No campaign data found" [level=3] [ref=f1e189]
+          - paragraph [ref=f1e190]: Enter your campaign parameters below to generate analytics.
+        - generic [ref=f1e191]:
+          - generic [ref=f1e192]:
+            - generic [ref=f1e193]:
+              - generic [ref=f1e194]: Impressions
+              - spinbutton "Impressions Total ad impressions served" [ref=f1e195]: "95000"
+              - generic [ref=f1e196]: Total ad impressions served
+            - generic [ref=f1e197]:
+              - generic [ref=f1e198]: Clicks
+              - spinbutton "Clicks Total clicks on ads" [ref=f1e199]: "2800"
+              - generic [ref=f1e200]: Total clicks on ads
+            - generic [ref=f1e201]:
+              - generic [ref=f1e202]: Ad spend (₱)
+              - spinbutton "Ad spend (₱) Total spend in Philippine Pesos" [ref=f1e203]: "4000"
+              - generic [ref=f1e204]: Total spend in Philippine Pesos
+            - generic [ref=f1e205]:
+              - generic [ref=f1e206]: Revenue (₱)
+              - spinbutton "Revenue (₱) Revenue attributed to the campaign" [ref=f1e207]: "35000"
+              - generic [ref=f1e208]: Revenue attributed to the campaign
+            - generic [ref=f1e209]:
+              - generic [ref=f1e210]: Conversions (leads)
+              - spinbutton "Conversions (leads) Enquiry form submissions" [ref=f1e211]: "185"
+              - generic [ref=f1e212]: Enquiry form submissions
+            - generic [ref=f1e213]:
+              - generic [ref=f1e214]: Bookings (sales)
+              - spinbutton "Bookings (sales) Confirmed bookings closed" [ref=f1e215]: "112"
+              - generic [ref=f1e216]: Confirmed bookings closed
+            - generic [ref=f1e217]:
+              - generic [ref=f1e218]: New customers
+              - spinbutton "New customers Net-new customers acquired" [ref=f1e219]: "34"
+              - generic [ref=f1e220]: Net-new customers acquired
+          - button "Computing analytics…" [disabled] [ref=f1e224]

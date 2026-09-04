@@ -62,7 +62,13 @@ public class NotificationDtos {
         String marketId,
         String trend,
         boolean isRead,
-        DetailsDto details
+        DetailsDto details,
+        /** The signal-grid category this alert came from; null for pre-V20 rows. */
+        String category,
+        /** tbl_demand_alert.alert_level — "INFO" or "WARNING". Drives the surge filter. */
+        String alertLevel,
+        /** tbl_demand_alert.alert_message — the operator-facing directive. */
+        String alertMessage
     ) {}
 
     public record NotificationsResponse(List<NotificationDto> notifications) {}

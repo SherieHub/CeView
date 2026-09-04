@@ -46,7 +46,7 @@ export interface BusinessProfile {
 
 /**
  * The real backend's shape (com.ceview.module1.businessinput.dto.BusinessProfileDto,
- * GET/PUT /api/v1/business-profile) — a strict subset of BusinessProfile. The
+ * GET/PUT /api/business-profile) — a strict subset of BusinessProfile. The
  * onboarding-only fields (slogan/industry/vibes/website/logo/socials) don't
  * exist in the backend schema yet (see docs/module-1/backend/schema-delta.md),
  * so ProfileProvider merges a fetched BusinessProfileDto over EMPTY_PROFILE
@@ -57,7 +57,68 @@ export type BusinessProfileDto = Pick<
   'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
 >;
 
-export type PlatformId = 'instagram' | 'tiktok' | 'facebook' | 'naver';
+/** One category and its share of the classification — POST /api/classification/analyze. */
+export interface CategoryAllocation {
+  name: string;
+  percentage: number;
+}
+
+/** Cohort density tier, derived from the category's share of the corpus. */
+export type CategoryDensity = 'dense' | 'moderate' | 'sparse';
+
+/**
+ * Uniqueness scoring result — POST /api/classification/uniqueness.
+ * Scores are 0–100. Note the score field is `overallScore`, not `uniquenessScore`.
+ *
+ * TWO RULES THE TYPES CANNOT EXPRESS, both previously got wrong here:
+ *
+ *  1. `overallScore === semanticPercentile`. Nothing else feeds it.
+ *  2. `categoryScore` is NOT a component of `overallScore`. It is a
+ *     classification-confidence indicator shown beside the score, never
+ *     inside it.
+ *
+ * `categoryScore` is a *normalised share* summing to 100 across the selected
+ * categories, so keeping one category yields ~100 mechanically and keeping
+ * three yields ~33 each. It is not comparable across different numbers of
+ * selected categories and must not be charted or trended as if it were.
+ *
+ * See docs/superpowers/plans/2026-09-04-uniqueness-scoring-honesty/.
+ */
+export interface UniquenessResult {
+  /** The headline. Always equal to `semanticPercentile`. */
+  overallScore: number;
+  /** Raw distinctiveness (scaled mean cosine distance). Compressed by the
+   *  encoder into a narrow band — a subordinate diagnostic, not the score. */
+  semanticsScore: number;
+  /** Classification confidence. NOT part of `overallScore` — see above. */
+  categoryScore: number;
+  /** Rank against the cohort's own distance distribution. Self-calibrating. */
+  semanticPercentile: number;
+  /** How many businesses were compared against. A percentile without its
+   *  comparison set is unreadable, so this is always displayed with it. */
+  cohortSize: number;
+  /** Median `semanticsScore` within that cohort. */
+  cohortMedianScore: number;
+  /** Categories the cohort was drawn from, for naming it in the UI. */
+  cohortCategories: string[];
+  /** Drives the always-visible density explainer on Step 5. */
+  categoryDensity: CategoryDensity | '';
+  /** False when the cohort is below the comparison floor. Render a distinct
+   *  state, not a number — this is a valid response, not an error. */
+  sufficientCohort: boolean;
+  descriptionFeedback: string;
+  categoryFeedback: string;
+}
+
+/**
+ * The platforms CeView generates for and publishes to.
+ *
+ * Naver Blog was removed as a generation target (spec §2a) — its captions were
+ * hardcoded Korean text injected on the success path, not model output. The AI
+ * may still *recommend* Naver as a channel; it is simply not something this app
+ * writes copy for.
+ */
+export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
 
 export interface PlatformConnection {
   platform: PlatformId;
@@ -99,4 +160,292 @@ export interface PostMetric {
   engagements: number;
   clicks: number;
   engagementRate: number;
+}
+
+// ─── Module 2 — Market Radar ──────────────────────────────────────────────
+
+export interface ChartDataPoint {
+  week: string;
+  history: number | null;
+  forecast: number | null;
+  seasonality: number;
+  forex: number;
+  gdp: number;
+  spike: 0 | 1;
+}
+
+export interface Airline {
+  name: string;
+  code: string;
+  frequency: string;
+  direct: boolean;
+  /** Present on backend AirlineDto; absent from older fixtures. */
+  duration?: string;
+  /** Present on backend AirlineDto; absent from older fixtures. */
+  tier?: string;
+}
+
+export interface Market {
+  id: string;
+  rank: number;
+  name: string;
+  city: string;
+  flag: string;
+  matchScore: number;
+  directive: string;
+  directFlight: boolean;
+  flightHours: string;
+  distanceKm: number;
+  nearestAirport: string;
+  destinationAirport: string;
+  accessibilityScore: number;
+  flightFrequency: number;
+  avgFlightPrice: string;
+  airlines: Airline[];
+  peakMonths: string[];
+  currency: string;
+  forexLabel: string;
+  gdpValue: number;
+  forexValue: number;
+  seasonalityScore: number;
+  /**
+   * Year-over-year arrivals ratio. Computed at ingestion and now persisted
+   * (V20 added tbl_forecast_result.yoy_ratio / tbl_market_score.yoy_ratio;
+   * ForecastingService populates them). Still nullable: rows written before
+   * V20 have no value, so the Seasonal Patterns tab keeps its explicit
+   * "not available" state for those.
+   */
+  yoyRatio: number | null;
+  spikeIndicator: boolean;
+  economyInsight: string;
+  seasonalityInsight: string;
+  gdpTrend: { year: number; value: number }[];
+  forexTrend: { date: string; value: number }[];
+  chartData: ChartDataPoint[];
+  /** When the newest measured signal behind this market was aggregated. */
+  dataAsOf: string | null;
+  /** True when that measurement is older than 48h — real, but old. */
+  dataStale: boolean;
+}
+
+export interface DemandAlert {
+  id: string;
+  date: string;
+  title: string;
+  market: string;
+  marketId: string;
+  category: string;
+  trend: string;
+  isRead: boolean;
+  /**
+   * tbl_demand_alert.alert_level. The live backend emits WARNING and CRITICAL
+   * (seed data: 3 WARNING, 2 CRITICAL, no INFO); INFO comes from the
+   * category-rank notification path. Anything above INFO counts as a surge —
+   * see isSurge() below, and never compare against 'WARNING' directly or
+   * CRITICAL alerts silently drop out of the surge count.
+   */
+  alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
+  alertMessage: string;
+}
+
+// ─── Module 4 — Campaign Analytics ────────────────────────────────────────
+
+export interface CampaignInput {
+  impressions: number;
+  clicks: number;
+  adSpend: number;
+  revenue: number;
+  conversions: number;
+  bookings: number;
+  newCustomers: number;
+}
+
+export interface CampaignHistoryEntry {
+  periodStart: string;
+  periodEnd: string;
+  pesScore: number;
+  pesLabel: string;
+  ctr: number;
+  cpc: number;
+  roas: number;
+  convRate: number;
+  cac: number;
+}
+
+/**
+ * The `POST /api/analytics/manual` response's `pes` object (see
+ * PESComputationService / ARCHITECTURE_SPEC.md §4.2) — the server-authoritative
+ * score/label the board displays as of Task 17. `weight` is a display string
+ * ("35.0%") the server formats itself; there is no `normalized` component, so
+ * PesGauge's per-metric breakdown bars stay client-derived (see PesGauge.tsx).
+ */
+export interface PesBreakdownItem {
+  metric: string;
+  weight: string;
+  contribution: number;
+}
+
+export interface ManualIngestPes {
+  overallScore: number;
+  label: string;
+  breakdown: PesBreakdownItem[];
+}
+
+/**
+ * `POST /api/analytics/manual`'s full response. Only `pes` is consumed by the
+ * frontend today (Task 17) — `metrics`/`funnel` are computed client-side from
+ * the same input via campaignMetrics.ts, so they're intentionally left
+ * untyped/unused here rather than modeled speculatively.
+ */
+export interface ManualIngestResponse {
+  pes?: ManualIngestPes;
+}
+
+export interface FunnelDiagnostic {
+  stage: string;
+  rank: string;
+  dropRate: string;
+  insight: string;
+}
+
+export interface Recommendation {
+  stage: string;
+  urgency: string;
+  title: string;
+  action: string;
+}
+
+export interface PrescriptiveReport {
+  executiveSummary: string;
+  recommendedPlatform: string;
+  funnelDiagnostics: FunnelDiagnostic[];
+  recommendations: Recommendation[];
+}
+
+// ─── Module 3 — Content Studio ────────────────────────────────────────────
+
+export interface CaptionMetadata {
+  core_business_context: string;
+  market_cultural_localization: string;
+  psychological_elements: string;
+  creative_tone_atmosphere: string;
+  algorithmic_platform_architecture: string;
+}
+
+export interface PlatformCaptions {
+  optionNames: string[];
+  options: string[];
+  optionMetadata: CaptionMetadata[];
+  guide: string[];
+}
+
+/**
+ * Where generated content came from. "fallback" means fastapi-sbert served a
+ * deterministic mock because GROQ_API_KEY is unset — the content looks real but
+ * is not. Screens MUST surface this (see 05-module-3.md Task 25).
+ */
+export type ContentSource = 'groq' | 'gemini' | 'fallback' | 'template';
+
+export interface ContentResponse {
+  market: { country: string; city: string; flag: string };
+  framework: string;
+  source: ContentSource;
+  /**
+   * Deviates from the plan's `Record<string, PlatformCaptions>` — the real
+   * shape is a fixed three-platform object, not an open string-keyed map, so
+   * an empty `{}` doesn't typecheck as a stand-in. Kept explicit to avoid
+   * silently widening/losing the per-platform keys.
+   */
+  captions: {
+    instagram: PlatformCaptions;
+    tiktok: PlatformCaptions;
+    facebook: PlatformCaptions;
+  };
+}
+
+export interface OmcsAuditResult {
+  profileSemanticScore: number;
+  /**
+   * Deviates from the plan's `Record<string, number>` — the fixture's real
+   * shape (ui-ux-prototype.html:1396–1426 / OmcsAuditResultDTO) nests the
+   * rubric scores under `scores`/`total` rather than being a flat map. The
+   * fixture-local `keyof typeof OMCS_RUBRIC_LABELS` key constraint is widened
+   * to `string` here so this type doesn't depend back on services/fixtures/omcs.ts.
+   */
+  rubricEvaluationData: {
+    scores: Record<string, number>;
+    total: number;
+  };
+  recommendationsPictureScore: number;
+  pubmatConsistencyScore: number;
+  consistencyExplanation: string;
+  omcsScore: number;
+  status: 'Pass' | 'Fail';
+  feedback: string;
+}
+
+/**
+ * Module 3 creative direction — the VisualDirectionBoard's data.
+ *
+ * Deviates from the plan's assumed `{shotListRecommendations, visualRecommendations,
+ * lightingSuggestions, moodboardReferences}` shape — the live
+ * POST /api/creative-direction/generate response was verified (Tasks 22-24) to
+ * actually return this nested shape instead. Kept as observed rather than the
+ * plan's guess.
+ */
+export interface CreativeDirection {
+  visualGuide: string[];
+  shots: Array<{
+    label: string;
+    description: string;
+    lighting: string;
+  }>;
+  moodboard: {
+    palette: string;
+    references: string[];
+  };
+}
+
+/**
+ * Not part of Task 1's enumerated fixture list, but the contract test's
+ * "no type import from a fixture module" rule is unconditional, and
+ * services/apiClient.ts imports this type — so it moves here too, following
+ * the same import/re-export pattern as the other fixtures.
+ */
+export interface WorkspaceMemberFixture {
+  name: string;
+  email: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
+  initials: string;
+  /**
+   * Omitted (or 'active') for a real member. 'pending' marks an unaccepted
+   * invite — set client-side for the optimistic row WorkspaceSettings appends
+   * on submit; the backend invite endpoint is proposed, not implemented, so
+   * no real member row is ever fetched back in this state yet.
+   */
+  status?: 'active' | 'pending';
+}
+
+export interface PublishedPost {
+  id: string;
+  date: string;
+  platform: PlatformId;
+  caption: string;
+  status: 'published' | 'draft';
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagementRate: number;
+  series: number[];
+}
+
+/**
+ * True when a demand alert represents an active surge. Centralised because the
+ * dashboard reads it in three places (feed filter, surge count, surge markets)
+ * and each previously compared `alertLevel === 'WARNING'` directly — which
+ * silently excluded CRITICAL, the most urgent level the backend emits.
+ */
+export function isSurge(alert: Pick<DemandAlert, 'alertLevel'>): boolean {
+  return alert.alertLevel === 'WARNING' || alert.alertLevel === 'CRITICAL';
 }

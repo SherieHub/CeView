@@ -1,0 +1,72 @@
+- generic [ref=e34]:
+  - navigation "Main" [ref=e35]:
+    - generic [ref=e36]:
+      - generic [ref=e37]: Ce
+      - generic [ref=e38]: CeView
+      - button "Collapse sidebar" [expanded] [ref=e40] [cursor=pointer]
+    - list [ref=e45]:
+      - listitem [ref=e46]: Intelligence
+      - listitem [ref=e47]:
+        - button "Dashboard 2" [ref=e48] [cursor=pointer]:
+          - generic [ref=e54]: Dashboard
+          - generic [ref=e55]: "2"
+      - listitem [ref=e56]: Create
+      - listitem [ref=e57]:
+        - button "Content Studio" [ref=e58] [cursor=pointer]
+      - listitem [ref=e63]:
+        - button "Calendar" [ref=e64] [cursor=pointer]
+      - listitem [ref=e68]: Measure
+      - listitem [ref=e69]:
+        - button "Performance" [ref=e70] [cursor=pointer]
+      - listitem [ref=e75]: Settings
+      - listitem [ref=e76]:
+        - button "Business Profile" [ref=e77] [cursor=pointer]
+      - listitem [ref=e83]:
+        - button "Platforms" [ref=e84] [cursor=pointer]
+      - listitem [ref=e92]:
+        - button "Workspace" [ref=e93] [cursor=pointer]
+    - generic [ref=e100]:
+      - generic [ref=e101]: ramon.delacruz@ceview.local
+      - button "Sign out" [ref=e102] [cursor=pointer]
+  - generic [ref=e104]:
+    - banner [ref=e105]:
+      - button "Search" [disabled] [ref=e106]
+      - button "Notifications" [disabled] [ref=e111]
+    - main [ref=e116]:
+      - generic [ref=e117]:
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - heading "Good morning, Moalboal FreeDive Cebu" [level=1] [ref=e120]
+            - paragraph [ref=e121]: No surge alerts match your business categories right now.
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - generic [ref=e124]: "0.74"
+              - generic [ref=e125]: Uniqueness
+            - button "Refresh forecast" [ref=e130] [cursor=pointer]
+        - status [ref=e136]:
+          - generic [ref=e141]: AI Forecast Service Unavailable. The alerts and rankings below are read from your last successful forecast run. Refreshing will not produce new predictions until the service recovers.
+        - generic [ref=e142]:
+          - generic [ref=e143]:
+            - generic [ref=e149]:
+              - generic [ref=e150]: Unread alerts
+              - generic [ref=e151]: "0"
+            - generic [ref=e152]: You are all caught up
+          - generic [ref=e153]:
+            - generic [ref=e157]:
+              - generic [ref=e158]: Confirmed surges
+              - generic [ref=e159]: "0"
+            - generic [ref=e160]: Nothing above threshold
+          - button "Top market now cached United States 86/100 · Coastal & Island" [ref=e161] [cursor=pointer]:
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - text: Top market now
+                - generic [ref=e168]: cached
+              - generic [ref=e169]: United States
+            - generic [ref=e170]: 86/100 · Coastal & Island
+        - region "Surge Alerts" [ref=e175]:
+          - heading "Surge Alerts" [level=2] [ref=e176]
+          - generic [ref=e178]:
+            - heading "No surge alerts for your categories yet" [level=3] [ref=e183]
+            - paragraph [ref=e184]: Nothing is currently trending for Coastal & Island. Add another category to widen your coverage.
+            - link "Edit business categories" [ref=e185] [cursor=pointer]:
+              - /url: /settings/profile

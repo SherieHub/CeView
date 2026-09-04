@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>{@code /metrics} is intentionally NOT covered here: it only returns
  * synthetic demo data (out of scope per Task 9), and is already covered by
- * Task 5's blanket authentication requirement on all {@code /api/v1/**} routes.
+ * Task 5's blanket authentication requirement on all {@code /api/**} routes.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -100,7 +100,7 @@ class EngagementMetricsControllerTest {
 
     @Test
     void manualIngestPersistsRecordWithAuthenticatedOperatorsBusinessProfileId() throws Exception {
-        mvc.perform(post("/api/v1/analytics/manual")
+        mvc.perform(post("/api/analytics/manual")
                         .header("Authorization", "Bearer " + tokenA)
                         .contentType("application/json")
                         .content(manualIngestBody()))
@@ -113,7 +113,7 @@ class EngagementMetricsControllerTest {
 
     @Test
     void manualIngestWithoutBusinessProfileReturns409() throws Exception {
-        mvc.perform(post("/api/v1/analytics/manual")
+        mvc.perform(post("/api/analytics/manual")
                         .header("Authorization", "Bearer " + tokenNoProfile)
                         .contentType("application/json")
                         .content(manualIngestBody()))
@@ -145,14 +145,14 @@ class EngagementMetricsControllerTest {
         recB2.enrichWithKpis(5.0, 4.0, 40.0, 4.0, 10.0);
         campaignRepo.save(recB2);
 
-        mvc.perform(get("/api/v1/analytics/history")
+        mvc.perform(get("/api/analytics/history")
                         .header("Authorization", "Bearer " + tokenA)
                         .param("weeks", "4"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.snapshots.length()").value(1))
                 .andExpect(jsonPath("$.snapshots[0].periodStart").value("2026-07-01"));
 
-        mvc.perform(get("/api/v1/analytics/history")
+        mvc.perform(get("/api/analytics/history")
                         .header("Authorization", "Bearer " + tokenB)
                         .param("weeks", "4"))
                 .andExpect(status().isOk())
@@ -161,7 +161,7 @@ class EngagementMetricsControllerTest {
 
     @Test
     void historyWithoutBusinessProfileReturns409() throws Exception {
-        mvc.perform(get("/api/v1/analytics/history")
+        mvc.perform(get("/api/analytics/history")
                         .header("Authorization", "Bearer " + tokenNoProfile)
                         .param("weeks", "4"))
                 .andExpect(status().isConflict());
@@ -169,7 +169,7 @@ class EngagementMetricsControllerTest {
 
     @Test
     void manualIngestWithoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/analytics/manual")
+        mvc.perform(post("/api/analytics/manual")
                         .contentType("application/json")
                         .content(manualIngestBody()))
                 .andExpect(status().isUnauthorized());
@@ -177,7 +177,7 @@ class EngagementMetricsControllerTest {
 
     @Test
     void historyWithoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(get("/api/v1/analytics/history"))
+        mvc.perform(get("/api/analytics/history"))
                 .andExpect(status().isUnauthorized());
     }
 }

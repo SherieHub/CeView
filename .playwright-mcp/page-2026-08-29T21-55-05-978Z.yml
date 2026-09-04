@@ -1,0 +1,36 @@
+- generic [ref=f19e5]:
+  - navigation "Main" [ref=f19e6]:
+    - generic [ref=f19e7]:
+      - generic [ref=f19e8]: Ce
+      - generic [ref=f19e9]: CeView
+      - button "Collapse sidebar" [expanded] [ref=f19e11] [cursor=pointer]
+    - list [ref=f19e16]:
+      - listitem [ref=f19e17]: Intelligence
+      - listitem [ref=f19e18]:
+        - button "Dashboard 2" [ref=f19e19] [cursor=pointer]:
+          - generic [ref=f19e25]: Dashboard
+          - generic [ref=f19e26]: "2"
+      - listitem [ref=f19e27]: Create
+      - listitem [ref=f19e28]:
+        - button "Content Studio" [ref=f19e29] [cursor=pointer]
+      - listitem [ref=f19e34]:
+        - button "Calendar" [ref=f19e35] [cursor=pointer]
+      - listitem [ref=f19e39]: Measure
+      - listitem [ref=f19e40]:
+        - button "Performance" [ref=f19e41] [cursor=pointer]
+      - listitem [ref=f19e46]: Settings
+      - listitem [ref=f19e47]:
+        - button "Business Profile" [active] [ref=f19e48] [cursor=pointer]
+      - listitem [ref=f19e54]:
+        - button "Platforms" [ref=f19e55] [cursor=pointer]
+      - listitem [ref=f19e63]:
+        - button "Workspace" [ref=f19e64] [cursor=pointer]
+    - button "Sign out" [ref=f19e72] [cursor=pointer]
+  - generic [ref=f19e74]:
+    - banner [ref=f19e75]:
+      - button "Search" [disabled] [ref=f19e76]
+      - button "Notifications" [disabled] [ref=f19e81]
+    - main [ref=f19e86]:
+      - generic [ref=f19e87]:
+        - heading "Settings" [level=2] [ref=f19e88]
+        - paragraph [ref=f19e89]: Profile, platforms and workspace

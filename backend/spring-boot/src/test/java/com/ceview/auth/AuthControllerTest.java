@@ -95,7 +95,7 @@ class AuthControllerTest {
     void googleReturns503WhenFirebaseIsNotConfigured() {
         AuthController controller = newController(Optional.empty());
 
-        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("some-id-token"));
+        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("some-id-token", "login"));
 
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
     }
@@ -108,9 +108,102 @@ class AuthControllerTest {
         when(firebaseAuth.verifyIdToken(anyString())).thenThrow(mock(FirebaseAuthException.class));
         AuthController controller = newController(Optional.of(firebaseAuth));
 
-        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("bad-token"));
+        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("bad-token", "login"));
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
+    // ---- google(): intent must be "login" or "register" ----
+
+    @Test
+    void googleReturns400WhenIntentIsInvalid() {
+        AuthController controller = newController(Optional.empty());
+
+        ResponseEntity<?> response = controller.google(
+            new AuthController.GoogleAuthRequest("some-id-token", "bogus"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    // ---- google(): register intent rejects an already-linked Google account ----
+
+    @Test
+    void googleRegisterRejectsWhenGoogleAccountAlreadyLinked() throws FirebaseAuthException {
+        FirebaseAuth firebaseAuth = mock(FirebaseAuth.class);
+        FirebaseToken token = mock(FirebaseToken.class);
+        when(token.getUid()).thenReturn("google-uid-existing");
+        when(firebaseAuth.verifyIdToken("good-token")).thenReturn(token);
+
+        MsmeOperator existing = new MsmeOperator();
+        existing.setOperatorId(UUID.randomUUID());
+        existing.setGoogleUid("google-uid-existing");
+        when(repo.findByGoogleUid("google-uid-existing")).thenReturn(Optional.of(existing));
+        AuthController controller = newController(Optional.of(firebaseAuth));
+
+        ResponseEntity<?> response = controller.google(
+            new AuthController.GoogleAuthRequest("good-token", "register"));
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("google_account_already_registered", body.get("error"));
+        assertEquals("This Google account is already registered. Please sign in instead.", body.get("message"));
+        verify(jwt, org.mockito.Mockito.never()).issue(any(), any());
+    }
+
+    // ---- google(): login intent rejects when no account exists yet ----
+
+    @Test
+    void googleLoginRejectsWhenNoAccountExists() throws FirebaseAuthException {
+        FirebaseAuth firebaseAuth = mock(FirebaseAuth.class);
+        FirebaseToken token = mock(FirebaseToken.class);
+        when(token.getUid()).thenReturn("google-uid-unknown");
+        when(token.getEmail()).thenReturn("nobody@example.com");
+        when(token.isEmailVerified()).thenReturn(true);
+        when(firebaseAuth.verifyIdToken("good-token")).thenReturn(token);
+        when(repo.findByGoogleUid("google-uid-unknown")).thenReturn(Optional.empty());
+        when(repo.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+        AuthController controller = newController(Optional.of(firebaseAuth));
+
+        ResponseEntity<?> response = controller.google(
+            new AuthController.GoogleAuthRequest("good-token", "login"));
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("google_account_not_registered", body.get("error"));
+        assertEquals("No account found for this Google account. Please create an account first.", body.get("message"));
+        verify(repo, org.mockito.Mockito.never()).save(any(MsmeOperator.class));
+    }
+
+    // ---- google(): register intent still links (not rejects) when only the email matches ----
+
+    @Test
+    void googleRegisterLinksWhenVerifiedEmailMatchesExistingPasswordAccount() throws FirebaseAuthException {
+        FirebaseAuth firebaseAuth = mock(FirebaseAuth.class);
+        FirebaseToken token = mock(FirebaseToken.class);
+        when(token.getUid()).thenReturn("google-uid-4");
+        when(token.getEmail()).thenReturn("existing2@example.com");
+        when(token.isEmailVerified()).thenReturn(true);
+        when(firebaseAuth.verifyIdToken("good-token")).thenReturn(token);
+        when(repo.findByGoogleUid("google-uid-4")).thenReturn(Optional.empty());
+
+        UUID existingId = UUID.randomUUID();
+        MsmeOperator existing = new MsmeOperator();
+        existing.setOperatorId(existingId);
+        existing.setEmail("existing2@example.com");
+        existing.setContactNumber("0917");
+        when(repo.findByEmail("existing2@example.com")).thenReturn(Optional.of(existing));
+        when(repo.save(any(MsmeOperator.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jwt.issue(any(), any())).thenReturn("jwt-token");
+        AuthController controller = newController(Optional.of(firebaseAuth));
+
+        ResponseEntity<?> response = controller.google(
+            new AuthController.GoogleAuthRequest("good-token", "register"));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals(existingId.toString(), body.get("operatorId").toString());
+        assertEquals("google-uid-4", existing.getGoogleUid());
+        verify(repo).save(existing);
     }
 
     // ---- google(): brand-new user, no existing row ----
@@ -134,7 +227,7 @@ class AuthControllerTest {
         when(jwt.issue(any(), any())).thenReturn("jwt-token");
         AuthController controller = newController(Optional.of(firebaseAuth));
 
-        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("good-token"));
+        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("good-token", "register"));
 
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(Boolean.FALSE, body.get("profileCompleted"));
@@ -168,7 +261,7 @@ class AuthControllerTest {
         when(jwt.issue(any(), any())).thenReturn("jwt-token");
         AuthController controller = newController(Optional.of(firebaseAuth));
 
-        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("good-token"));
+        ResponseEntity<?> response = controller.google(new AuthController.GoogleAuthRequest("good-token", "login"));
 
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(existingId.toString(), body.get("operatorId").toString());
@@ -197,7 +290,7 @@ class AuthControllerTest {
         when(jwt.issue(any(), any())).thenReturn("jwt-token");
         AuthController controller = newController(Optional.of(firebaseAuth));
 
-        controller.google(new AuthController.GoogleAuthRequest("good-token"));
+        controller.google(new AuthController.GoogleAuthRequest("good-token", "register"));
 
         verify(repo, org.mockito.Mockito.never()).findByEmail(anyString());
     }

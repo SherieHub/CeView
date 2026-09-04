@@ -79,12 +79,12 @@ Copy notes these can be changed later in Settings → Platforms / Business profi
 Three sub-phases driven by `obPhase`, not by step navigation (Back/Continue are hidden or repurposed
 here):
 1. **analyzing** — skeleton rows + "Running multilingual E5 embedding, then the Dense(256→128→7)
-   classifier head…" banner. Calls `POST /api/v1/classification/analyze` (Module 1.1).
+   classifier head…" banner. Calls `POST /api/classification/analyze` (Module 1.1).
 2. **categories** — sorted-by-confidence rows, each a toggle; percentage bar per row. At least one
    category must stay selected — attempting to deselect the last one is blocked with a toast
    ("At least one category must stay selected"), not a disabled control. A "Compute uniqueness score"
    button appears once ready.
-3. **computing → scored** — calls `POST /api/v1/classification/uniqueness` (Module 1.2) with the
+3. **computing → scored** — calls `POST /api/classification/uniqueness` (Module 1.2) with the
    confirmed profile + selected categories. Result renders as three score cards (Overall / Semantics
    / Category, `StatTypography`), a pass banner at ≥70 ("Well differentiated") or a warning banner
    below 70 ("Room to sharpen") with a "Strengthen my UVP" link that jumps back to step 3 without
@@ -103,9 +103,9 @@ here):
 
 | Call | Step | Endpoint |
 |---|---|---|
-| `apiClient.classifyAnalyze` | 5 (analyzing) | `POST /api/v1/classification/analyze` |
-| `apiClient.classifyUniqueness` | 5 (computing) | `POST /api/v1/classification/uniqueness` |
-| `apiClient.saveProfile` | on finish | `PUT /api/v1/business-profile` |
+| `apiClient.classifyAnalyze` | 5 (analyzing) | `POST /api/classification/analyze` |
+| `apiClient.classifyUniqueness` | 5 (computing) | `POST /api/classification/uniqueness` |
+| `apiClient.saveProfile` | on finish | `PUT /api/business-profile` |
 
 ## Backend detail
 

@@ -12,7 +12,7 @@ import DrawerChartPanel from './DrawerChartPanel';
 import SeasonalPatternsTab, { seasonalityBand } from './SeasonalPatternsTab';
 import PurchasingPowerTab from './PurchasingPowerTab';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
-import type { Market } from '../../../services/fixtures/markets';
+import type { Market } from '@/types';
 
 const korea = MOCK_MARKETS.find((m) => m.id === 'korea')!; // spikeIndicator: true
 const market_gdp = (m: Market) => m.gdpTrend.map((g) => g.value);

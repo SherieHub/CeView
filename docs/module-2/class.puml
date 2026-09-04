@@ -141,8 +141,8 @@ package "FastAPI — Routers" {
     }
 
     class trendsRouter <<router>> {
-        +POST /api/v1/trends/fetch : dict
-        +POST /api/v1/trends/rank-markets : dict
+        +POST /api/trends/fetch : dict
+        +POST /api/trends/rank-markets : dict
     }
 }
 
@@ -543,7 +543,7 @@ MarketDataIngestionService --> ExternalMarketDataClient : fetchGdpGrowth / fetch
 MarketDataIngestionService --> MarketSignalRecordRepository : save
 
 TrendFetchSchedulerService --> TrendFetchJobRepository : state machine reads / writes
-TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/v1/trends/fetch
+TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/trends/fetch
 
 ' ══════════════════════════════════════════════════════════════════════════
 ' RELATIONSHIPS — Entities

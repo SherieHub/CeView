@@ -32,6 +32,15 @@ export interface ObDraft {
   socials: Record<PlatformId, string>;
   logo: string | null;
   website: string;
+  /**
+   * Step 5 — Analysis (Task 21). `categories` is the operator's selected
+   * category names once classification runs; `uniquenessScore` is the raw
+   * 0–100 API scale (UniquenessResult.overallScore), NOT the 0–1 scale the
+   * backend persists — it exists here only so stepValid's case 4 can gate on
+   * "has a score been computed", not as the value that gets saved.
+   */
+  categories: string[];
+  uniquenessScore: number | null;
 }
 
 export const EMPTY_OB_DRAFT: ObDraft = {
@@ -42,9 +51,11 @@ export const EMPTY_OB_DRAFT: ObDraft = {
   coreServices: [],
   description: '',
   uvp: '',
-  socials: { instagram: '', tiktok: '', facebook: '', naver: '' },
+  socials: { instagram: '', tiktok: '', facebook: '' },
   logo: null,
   website: '',
+  categories: [],
+  uniquenessScore: null,
 };
 
 /**
@@ -110,10 +121,13 @@ export function wordCount(text: string): number {
 /**
  * Per-step Continue gate — ports obValid() (ui-ux-prototype.html:1931-1939).
  *
- * Step 5 (index 4) is gated in the prototype on `obPhase === 'scored'`, which
- * is AnalysisStep's internal state rather than draft data. AnalysisStep is
- * still a stub, so this returns false there: the wizard correctly refuses to
- * finish until the analysis card lands.
+ * Step 5 (index 4) is gated on `obPhase === 'scored'` in the prototype, which
+ * is AnalysisStep's internal phase state rather than draft data. AnalysisStep
+ * writes `categories`/`uniquenessScore` back into the draft the moment it
+ * reaches 'scored' (and clears `uniquenessScore` back to null if the operator
+ * reopens category selection afterward), so gating on
+ * `draft.uniquenessScore != null` here is equivalent without threading
+ * AnalysisStep's phase enum through the wizard shell.
  */
 export function stepValid(draft: ObDraft, index: number): boolean {
   switch (index) {
@@ -127,7 +141,7 @@ export function stepValid(draft: ObDraft, index: number): boolean {
     case 3:
       return true; // Assets & Links — every field optional
     case 4:
-      return false; // TODO(AnalysisStep): true once obPhase === 'scored'
+      return draft.uniquenessScore != null; // Analysis — true once obPhase === 'scored'
     default:
       return true;
   }

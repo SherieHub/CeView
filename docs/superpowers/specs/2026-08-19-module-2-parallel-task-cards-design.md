@@ -106,7 +106,7 @@ primary, plus option 2 (alert-time embed) on top of it.
 
 **M2-B1 — Category-Scoped Market Ranking: Query & Endpoint**
 Depends on: — (root; builds only on already-merged `ForecastingService`/`tbl_market_score`). Adds
-`GET /api/v1/forecasting/markets?category=` — a category-weighted score computed from existing
+`GET /api/forecasting/markets?category=` — a category-weighted score computed from existing
 per-(category, market) signal data (the 21-job grid `TrendFetchSchedulerService` already produces),
 returned via the existing `MarketDto` shape.
 

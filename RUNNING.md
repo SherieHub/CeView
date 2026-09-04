@@ -229,17 +229,68 @@ never commit real keys.** Start from `backend/.env.example`.
 | `HF_TOKEN` | Optional | `fastapi-sbert` | Used to download the SBERT/E5 encoder from HuggingFace. **Use a read-only token** — nothing in this codebase writes to HuggingFace. Get one at https://huggingface.co/settings/tokens. |
 | `JWT_SECRET` | Recommended (has a dev default) | `spring-boot` | Signs/verifies login JWTs. Defaults to `dev-secret-change-me-please-32chars-min` if unset — fine for local dev, must be a real 32+ char secret in any shared/deployed environment. |
 | `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3001`/`5173`. Add your frontend's actual origin if it differs. |
-| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/v1/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
+| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
 | `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
 
 ---
 
+## 5a. Importing the uniqueness reference corpus
+
+Module 1's uniqueness score ranks a business against a **cohort** of other
+businesses. That cohort lives in `tbl_business_embedding`, and until it is
+populated the score is meaningless — below three rows the scorer has nothing
+to rank against, and on a machine with a handful of ad-hoc saved profiles the
+score is whatever that machine happens to contain. Two developers would see
+different numbers for the same business.
+
+The corpus therefore ships in two halves:
+
+| Half | Where | Applied by |
+|---|---|---|
+| Profile **text** (64 reference businesses across all 7 categories) | `V26__module1_reference_corpus.sql` | Flyway, automatically |
+| The **vectors** for that text | `backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql` | you, once |
+
+```bash
+# 1. Flyway seeds the text (runs automatically when spring-boot starts)
+docker compose up -d spring-boot
+
+# 2. Import the vectors
+docker exec -i ceview-postgres psql -U ceview -d ceview \
+  < backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql
+```
+
+Verify:
+
+```bash
+docker exec ceview-postgres psql -U ceview -d ceview \
+  -c "SELECT embedding_model_version, COUNT(*) FROM tbl_business_embedding GROUP BY 1;"
+```
+
+You want **one** row back. More than one means a mixed-scheme corpus, which is
+the one failure mode worth understanding: vectors built under different schemes
+are not comparable, and mixing them does not raise an error — it silently
+produces distances driven by the scheme difference rather than by the
+businesses, so the scores look fine and are wrong. Fix it by re-embedding
+everything from the text already in the database:
+
+```bash
+docker exec -i ceview-fastapi python - --all < scripts/generate-reference-corpus.py
+```
+
+Re-run that (without `--all`, then regenerate the dump) after **any** change to
+`ml_classifier._build_text`, the encoder, or `V26` — otherwise the committed
+dump and the code drift apart silently.
+
+> The reference rows are marked `is_reference = TRUE` and have no operator.
+> They are corpus material, not tenants, and must never appear in an
+> operator-scoped query. Only the uniqueness cohort reads them.
+
 ## 6. Authentication & seeded demo accounts
 
 The app requires login — every screen is gated behind a Sign In page, and
-every `/api/v1/**` backend route requires a valid JWT.
+every `/api/**` backend route requires a valid JWT.
 
 **9 realistic demo MSME operator accounts** are seeded automatically by
 Flyway (`V2__module1_profile_multi_category.sql`) on both Postgres and H2,
@@ -261,23 +312,23 @@ Quick reference — any of these logs in:
 *(see `SEED_CREDENTIALS.md` for all 9 — these are demo/seed credentials only,
 never reuse them anywhere real)*
 
-You can also register a brand-new account via the Register link on the login
-page (`POST /api/v1/auth/register`) — it starts with an empty business
+You can also register a brand-new account via the "Create account" tab on the
+login page (`POST /api/auth/register`) — it starts with an empty business
 profile instead of pre-seeded data.
 
 **What to verify once logged in:**
-- The business profile / home / campaign analytics screens show *that
-  operator's own* seeded data.
+- The dashboard and performance screens show *that operator's own* seeded
+  data.
 - Logging out and back in as a *different* seeded operator shows *different*
   data — no cross-operator leakage.
-- `curl http://localhost:8080/api/v1/business-profile` **without** an
+- `curl http://localhost:8080/api/business-profile` **without** an
   `Authorization` header returns `401` — the API is genuinely locked down,
   not just the frontend UI.
 
 ### Google Sign-In setup (optional)
 
 The "Continue with Google" button on the login page works without any setup
-— it's just disabled-looking until configured, and `POST /api/v1/auth/google`
+— it's just disabled-looking until configured, and `POST /api/auth/google`
 returns `503` if hit without a Firebase credential. To turn it on:
 
 1. In the [Firebase Console](https://console.firebase.google.com/), create
@@ -310,20 +361,35 @@ With the backend (Path A or B) and frontend both running:
    not the app.
 2. Log in with a seeded account from §6.
 3. Open DevTools (F12) → **Network** tab, filter by `localhost:8080`.
-4. Click through the sidebar and watch requests fire — every request should
-   now carry an `Authorization: Bearer <token>` header and return **200 OK**:
+4. Click through the sidebar (`layout/nav.ts`: **Dashboard, Content Studio,
+   Calendar, Performance**, and **Business Profile / Platforms / Workspace**
+   under Settings) and watch requests fire — every request should now carry
+   an `Authorization: Bearer <token>` header and return **200 OK**:
 
-| Tab | What you click | Backend call |
+| Sidebar item | What you click | Backend call |
 |---|---|---|
-| **Home** | (auto on load) | `GET /api/v1/notifications` |
-| **Market Radar** | (auto on load) | `GET /api/v1/forecasting/markets` |
-| **Uniqueness Score** | Fill all fields → *Analyze Business Profile* | `POST /api/v1/classification/analyze` |
-| **Uniqueness Score** | *Compute Uniqueness* | `POST /api/v1/classification/uniqueness` |
-| **Business Profile** | *Save* | `PUT /api/v1/business-profile` |
-| **Campaign Analytics** | *Generate AI Report* | `POST /api/v1/analytics/report` |
+| **Dashboard** | (auto on load) | `GET /api/notifications` |
+| **Dashboard** | click a demand alert to open its market ranking, then a ranked market to open the Market Radar drawer | `GET /api/forecasting/markets` |
+| **Performance** | *Generate AI Report* | `POST /api/analytics/report` |
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
+
+Two backend-wired flows aren't clickable from the table above yet:
+
+- The Business Profile / Platforms / Workspace Settings screens and the
+  `PUT /api/business-profile` save flow are still unbuilt in `frontend/` as of
+  this writing (`e2e/tests/settings-*.spec.ts` are `test.describe.skip` +
+  `test.fixme()` scaffolding) — nothing to click through there yet.
+- `POST /api/classification/analyze` and `POST /api/classification/uniqueness`
+  aren't reachable from a signed-in seeded account — they only fire from the
+  **onboarding wizard** (`components/module-1/onboarding/`), which a seeded
+  demo operator can't reach: their profile already has a `uniquenessScore`, so
+  the profile-completeness guard redirects a direct `/onboarding` visit
+  straight back to `/dashboard`. To exercise them manually, **register a
+  brand-new account** instead (§6) — analysis fires automatically on the
+  wizard's Analysis step, and its *Compute uniqueness score* button fires the
+  second call.
 
 If the backend is down or a call 401s unexpectedly, some views fall back to
 local mock data and log a warning to the console — check the Network tab
@@ -333,17 +399,17 @@ response body for the actual error before assuming it's a frontend bug.
 
 ```powershell
 # Login to get a token
-$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/auth/login `
+$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/auth/login `
     -ContentType 'application/json' `
     -Body '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'
 $token = $login.token
 
 # Use it on a protected route
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/business-profile `
+Invoke-RestMethod -Uri http://localhost:8080/api/business-profile `
     -Headers @{ Authorization = "Bearer $token" }
 
 # Markets (also requires auth now)
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/forecasting/markets `
+Invoke-RestMethod -Uri http://localhost:8080/api/forecasting/markets `
     -Headers @{ Authorization = "Bearer $token" }
 ```
 
@@ -403,7 +469,7 @@ Get-Process node   | Stop-Process -Force
 | Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
 | `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
-| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/v1/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
+| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
 | Port 8080/8000/8001/3000 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
 | `fastapi-sbert` takes forever to become healthy on first run | Expected — it's downloading the ~1.1GB SBERT/E5 encoder from HuggingFace (`start_period: 600s` in the healthcheck accounts for this). Subsequent runs reuse the cached model via the `ceview-hf-cache` Docker volume. |
 | Playwright e2e tests fail with connection errors | The stack isn't running yet — Playwright doesn't start it for you. Bring up backend + frontend first (§3, §4), then run `npx playwright test`. |
@@ -415,13 +481,15 @@ Get-Process node   | Stop-Process -Force
 ```
 CeView/
 ├── frontend/                       # React 19 + Vite frontend
-│   ├── components/auth/          # LoginPage, RegisterPage, AuthGate
+│   ├── components/auth/          # LoginPage (sign-in + create-account tabs), AuthGate
 │   └── services/
 │       ├── apiClient.ts          # all backend calls live here, attaches JWT
-│       ├── auth.tsx              # AuthProvider / useAuth() — session state
-│       └── geminiService.ts      # legacy direct-to-Gemini (kept for unwired flows)
+│       └── auth.tsx              # AuthProvider / useAuth() — session state
 ├── e2e/                          # Playwright end-to-end tests
-│   └── tests/smoke.spec.ts       # login flow + core navigation smoke test
+│   └── tests/
+│       ├── login.spec.ts         # login flow + shell/routing/overlay coverage
+│       ├── journey.spec.ts       # full authenticated journey against the real stack
+│       └── *.spec.ts             # one per screen (dashboard, calendar, content-studio, …)
 ├── backend/
 │   ├── docker-compose.yml        # Path A
 │   ├── .env.example

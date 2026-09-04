@@ -21,16 +21,26 @@ describe('apiClient (fixture mode)', () => {
     await expect(apiClient.notifications.list()).resolves.toEqual(MOCK_NOTIFICATIONS);
   });
 
-  it('content.list resolves the MOCK_CONTENT shape', async () => {
+  it('content.generate resolves the MOCK_CONTENT shape', async () => {
     const { apiClient } = await import('./apiClient');
     const { MOCK_CONTENT } = await import('./fixtures/content');
-    await expect(apiClient.content.list()).resolves.toEqual(MOCK_CONTENT);
+    await expect(
+      apiClient.content.generate({
+        market: 'korea',
+        businessName: 'Moalboal FreeDive Cebu',
+        description: 'Freediving in Moalboal.',
+        categories: ['Coastal & Island'],
+        trend: 'surging',
+      }),
+    ).resolves.toEqual(MOCK_CONTENT);
   });
 
-  it('omcs.evaluate resolves the MOCK_OMCS shape', async () => {
+  it('compliance.omcsAnalyze resolves the MOCK_OMCS shape', async () => {
     const { apiClient } = await import('./apiClient');
     const { MOCK_OMCS } = await import('./fixtures/omcs');
-    await expect(apiClient.omcs.evaluate()).resolves.toEqual(MOCK_OMCS);
+    await expect(
+      apiClient.compliance.omcsAnalyze({ caption: 'caption', imageUrl: 'https://example.invalid/x.jpg' }),
+    ).resolves.toEqual(MOCK_OMCS);
   });
 
   it('campaign.report resolves the MOCK_REPORT shape', async () => {

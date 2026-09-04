@@ -3,6 +3,7 @@ package com.ceview.module2.submodule22;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.NotificationDtos.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -43,19 +44,15 @@ public class NotificationService {
         this.categoryRankService = categoryRankService;
     }
 
+    /**
+     * Pure DB read — demand alerts only. Deliberately does NOT call
+     * {@link CategoryRankNotificationService}: that hop round-trips to FastAPI's
+     * PyTrends-backed rank-markets endpoint per category (up to 75s) and would
+     * make this endpoint unusably slow. See {@link #getKeywordTrendNotifications}.
+     */
     public NotificationsResponse getNotificationsForProfile(UUID profileId) {
-        // Fetch keyword-trend notifications regardless of whether demand alerts exist
-        List<String> profileCategories = (profileId != null)
-                ? profileRepo.findById(profileId)
-                        .map(p -> p.categoriesList())
-                        .orElse(List.of())
-                : List.of();
-
-        List<NotificationDto> keywordNotifications =
-                categoryRankService.buildForCategories(profileCategories);
-
         if (profileId == null) {
-            return new NotificationsResponse(keywordNotifications);
+            return new NotificationsResponse(List.of());
         }
 
         // Gather latest ForecastResult per market → join to MarketScore → DemandAlert
@@ -66,7 +63,7 @@ public class NotificationService {
         }
 
         if (forecasts.isEmpty()) {
-            return new NotificationsResponse(keywordNotifications);
+            return new NotificationsResponse(List.of());
         }
 
         List<UUID> forecastIds = forecasts.stream()
@@ -75,7 +72,7 @@ public class NotificationService {
 
         List<MarketScore> scores = scoreRepo.findByForecastResultIdIn(forecastIds);
         if (scores.isEmpty()) {
-            return new NotificationsResponse(keywordNotifications);
+            return new NotificationsResponse(List.of());
         }
 
         List<UUID> scoreIds = scores.stream()
@@ -94,11 +91,38 @@ public class NotificationService {
                 .map(a -> toNotificationDto(a, scoreById, forecastById))
                 .collect(Collectors.toList());
 
-        // Keyword trend notifications appear first (most recent signal), then demand alerts
-        List<NotificationDto> merged = new ArrayList<>(keywordNotifications);
-        merged.addAll(demandNotifications);
+        return new NotificationsResponse(demandNotifications);
+    }
 
-        return new NotificationsResponse(merged);
+    /**
+     * Keyword-trend notifications only, split out of {@link #getNotificationsForProfile}
+     * because each category round-trips to PyTrends via FastAPI rank-markets (up to 75s).
+     * The frontend loads this endpoint independently so a slow AI hop cannot block the
+     * fast demand-alert feed.
+     */
+    public NotificationsResponse getKeywordTrendNotifications(UUID profileId) {
+        List<String> profileCategories = (profileId != null)
+                ? profileRepo.findById(profileId)
+                        .map(p -> p.categoriesList())
+                        .orElse(List.of())
+                : List.of();
+
+        List<NotificationDto> keywordNotifications =
+                categoryRankService.buildForCategories(profileCategories);
+
+        return new NotificationsResponse(keywordNotifications);
+    }
+
+    /**
+     * Marks one alert read, scoped to the owning profile so an operator cannot
+     * mutate another tenant's notification. No-ops when the id doesn't belong to
+     * this profile — read-marking is fire-and-forget from the client, and a
+     * silent no-op avoids leaking cross-tenant existence via a 404.
+     */
+    @Transactional
+    public void markRead(UUID profileId, UUID notificationId) {
+        alertRepo.findOwnedBy(notificationId, profileId)
+                 .ifPresent(a -> { a.setIsRead(true); alertRepo.save(a); });
     }
 
     // ─── mapping helpers ─────────────────────────────────────────────────────
@@ -120,6 +144,8 @@ public class NotificationService {
 
         DetailsDto details = buildDetails(ms, fr);
 
+        String category = fr != null ? fr.getCategory() : null;
+
         return new NotificationDto(
                 alert.getDemandAlertId().toString(),
                 dateStr,
@@ -127,8 +153,11 @@ public class NotificationService {
                 marketName,
                 marketId,
                 trend,
-                false,
-                details
+                Boolean.TRUE.equals(alert.getIsRead()),
+                details,
+                category,
+                alert.getAlertLevel(),
+                alert.getAlertMessage()
         );
     }
 

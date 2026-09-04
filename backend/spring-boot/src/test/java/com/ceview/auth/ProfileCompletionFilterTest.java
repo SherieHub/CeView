@@ -46,8 +46,8 @@ class ProfileCompletionFilterTest {
         op.setContactNumber(null);
         when(repo.findById(operatorId)).thenReturn(Optional.of(op));
 
-        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/v1/business-profile");
-        req.setServletPath("/api/v1/business-profile");
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/business-profile");
+        req.setServletPath("/api/business-profile");
         MockHttpServletResponse res = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -67,8 +67,8 @@ class ProfileCompletionFilterTest {
         op.setContactNumber("0917");
         when(repo.findById(operatorId)).thenReturn(Optional.of(op));
 
-        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/v1/business-profile");
-        req.setServletPath("/api/v1/business-profile");
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/business-profile");
+        req.setServletPath("/api/business-profile");
         MockHttpServletResponse res = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -82,8 +82,8 @@ class ProfileCompletionFilterTest {
         UUID operatorId = UUID.randomUUID();
         authenticateAs(operatorId);
 
-        MockHttpServletRequest req = new MockHttpServletRequest("PATCH", "/api/v1/auth/profile");
-        req.setServletPath("/api/v1/auth/profile");
+        MockHttpServletRequest req = new MockHttpServletRequest("PATCH", "/api/auth/profile");
+        req.setServletPath("/api/auth/profile");
         MockHttpServletResponse res = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -96,8 +96,8 @@ class ProfileCompletionFilterTest {
     void passesThroughUnauthenticatedRequestsToDownstreamEntryPoint() throws Exception {
         SecurityContextHolder.clearContext();
 
-        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/v1/business-profile");
-        req.setServletPath("/api/v1/business-profile");
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/business-profile");
+        req.setServletPath("/api/business-profile");
         MockHttpServletResponse res = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 

@@ -3,6 +3,10 @@
  * ui-ux-prototype.html:1093–1391 (ContentResponseDTO / CaptionsByPlatform).
  */
 
+import type { CaptionMetadata, PlatformCaptions, ContentResponse } from '../../types';
+
+export type { CaptionMetadata, PlatformCaptions, ContentResponse };
+
 export const ARCHETYPES = [
   'Witty, Trend-Conscious & High-Energy',
   'Formal, Educational & Value-Driven',
@@ -10,14 +14,6 @@ export const ARCHETYPES = [
 ];
 
 export const ARCHETYPE_SUB = ['Gen Z / Younger Demographic', 'Mature Planners / Family', 'Aspirational / Experiential'];
-
-export interface CaptionMetadata {
-  core_business_context: string;
-  market_cultural_localization: string;
-  psychological_elements: string;
-  creative_tone_atmosphere: string;
-  algorithmic_platform_architecture: string;
-}
 
 function meta(
   a: string,
@@ -32,25 +28,6 @@ function meta(
     psychological_elements: c,
     creative_tone_atmosphere: d,
     algorithmic_platform_architecture: e,
-  };
-}
-
-export interface PlatformCaptions {
-  optionNames: string[];
-  options: string[];
-  optionMetadata: CaptionMetadata[];
-  guide: string[];
-}
-
-export interface ContentResponse {
-  market: { country: string; city: string; flag: string };
-  framework: string;
-  source: string;
-  captions: {
-    instagram: PlatformCaptions;
-    tiktok: PlatformCaptions;
-    facebook: PlatformCaptions;
-    naver: PlatformCaptions;
   };
 }
 
@@ -169,20 +146,6 @@ export const MOCK_CONTENT: ContentResponse = {
         'Lead with a 6–10 second silent-readable video; Facebook autoplays muted.',
         "Put the offer in the first two lines, above the 'See more' fold.",
         'Link previews outperform bare URLs — post the link so the card renders.',
-      ],
-    },
-    naver: {
-      optionNames: ['힐링 스팟 스토리 (Healing Spot Story)', '여행 후기 (Travel Review)'],
-      options: [
-        '세부에서 찾은 나만의 힐링 스팟 🌴\n\n모알보알 선셋코브 리조트 후기입니다. 숙소 앞 30m 지점에서 사딘런(정어리 떼)을 연중 볼 수 있다는 점이 가장 인상 깊었어요. 아침에 스노클링하고, 낮에는 해먹에서 쉬고, 저녁에는 아무 계획 없이 보내는 하루.\n\n리조트에 해양생물학자가 상주해서 다이빙 브리핑이 정말 꼼꼼했습니다. 이 구간에서 유일한 친환경 인증 리조트라고 하네요.\n\n성수기는 7~8월, 12~1월. 6주 전 예약이 가장 합리적이었습니다.',
-        '직장인 필수 코스! 세부 모알보알 3박 4일 후기\n\n비행 3시간 45분이면 도착하는 거리라 주말 끼고 다녀오기 딱 좋았습니다. 선셋코브는 막탄에서 차로 약 3시간 거리인데, 그만큼 사람이 적고 조용해요.\n\n가장 좋았던 것: 사딘런. 배 타고 멀리 나갈 필요 없이 숙소 앞에서 바로 볼 수 있습니다.\n아쉬웠던 것: 저녁 식사 옵션이 많지는 않아요. 근처 로컬 식당 이용을 추천합니다.\n\n총평: 액티비티보다 \'쉼\'이 목적이라면 강력 추천합니다.',
-      ],
-      optionMetadata: [],
-      guide: [
-        'Long-form editorial blog layout — Naver readers expect 800+ words with inline photos every 2–3 paragraphs.',
-        'Lead with a first-person 후기 (review) framing; Naver rewards experiential authenticity over promotion.',
-        'Include practical logistics: transfer time from Mactan, cost ranges, what disappointed. Balanced reviews rank better.',
-        'Naver Blog is the primary discovery surface for Korean travellers — treat it as SEO, not social.',
       ],
     },
   },

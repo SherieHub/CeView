@@ -61,9 +61,9 @@ whatever the API returns, not a separate endpoint.
 
 | Call | When | Endpoint |
 |---|---|---|
-| `apiClient.listNotifications` | on mount | `GET /api/v1/notifications?profileId=UUID` |
-| `apiClient.listMarkets` | on mount | `GET /api/v1/forecasting/markets?profileId=UUID` |
-| `apiClient.analyzeMarkets` | Refresh forecast click | `POST /api/v1/forecasting/analyze/{profileId}` |
+| `apiClient.listNotifications` | on mount | `GET /api/notifications?profileId=UUID` |
+| `apiClient.listMarkets` | on mount | `GET /api/forecasting/markets?profileId=UUID` |
+| `apiClient.analyzeMarkets` | Refresh forecast click | `POST /api/forecasting/analyze/{profileId}` |
 
 ## Backend requirement
 

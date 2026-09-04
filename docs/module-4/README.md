@@ -26,9 +26,9 @@ report (4.3) is documented in full in
 
 | Submodule | Endpoint | Scope |
 |---|---|---|
-| [`module-4.1/`](module-4.1/) | `POST /api/v1/analytics/manual` | KPI + funnel ingestion |
-| [`module-4.2/`](module-4.2/) | `GET /api/v1/analytics/pes/{campaignId}` | PES computation |
-| [`module-4.3/`](module-4.3/) | `POST /api/v1/analytics/report` | AI prescriptive report |
+| [`module-4.1/`](module-4.1/) | `POST /api/analytics/manual` | KPI + funnel ingestion |
+| [`module-4.2/`](module-4.2/) | `GET /api/analytics/pes/{campaignId}` | PES computation |
+| [`module-4.3/`](module-4.3/) | `POST /api/analytics/report` | AI prescriptive report |
 
 ## Changed in the UI/UX overhaul
 
