@@ -26,6 +26,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NAV } from './nav';
 import { useAuth } from '../services/auth';
+import { useUnreadAlerts } from '../services/unreadAlertsStore';
 
 /** One size and weight for every glyph in the rail, including the toggle. */
 const ICON = { size: 18, strokeWidth: 1.75 } as const;
@@ -37,6 +38,10 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed = false, onToggleCollapsed }: SidebarProps) {
   const { user, logout } = useAuth();
+  // The Dashboard row is the only one that carries a count, and it reads the
+  // dashboard's own derived figure rather than a constant in the nav table —
+  // see services/unreadAlertsStore.tsx for why that constant had to go.
+  const { unreadCount } = useUnreadAlerts();
   const { pathname: rawPath } = useLocation();
   const navigate = useNavigate();
 
@@ -86,6 +91,9 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
 
           const Icon = entry.icon;
           const isActive = pathname.startsWith(entry.path);
+          // Nothing to say when the count is unknown (null) or zero: an empty
+          // inbox is not news, and a badge is a claim about live data.
+          const badge = entry.id === 'dashboard' && unreadCount ? unreadCount : null;
 
           return (
             <li key={entry.id}>
@@ -98,7 +106,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
               >
                 <Icon {...ICON} aria-hidden="true" />
                 <span className="sb-label">{entry.label}</span>
-                {entry.badge != null && <span className="sb-badge">{entry.badge}</span>}
+                {badge != null && (
+                  <span className="sb-badge">
+                    {badge}
+                    <span className="sr"> unread alerts</span>
+                  </span>
+                )}
               </button>
             </li>
           );

@@ -14,6 +14,7 @@ import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksS
 import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
 import { PostStoreProvider } from './services/postStore';
 import { ConnectionsStoreProvider } from './services/connectionsStore';
+import { UnreadAlertsProvider } from './services/unreadAlertsStore';
 import DashboardView from './components/module-2/2.1-dashboard/DashboardView';
 import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
@@ -91,7 +92,9 @@ function DashboardPreviewShell() {
 
   return (
     <ProfileProvider initial={profile}>
-      <AppShell />
+      <UnreadAlertsProvider>
+        <AppShell />
+      </UnreadAlertsProvider>
     </ProfileProvider>
   );
 }
@@ -150,7 +153,11 @@ const router = createBrowserRouter([
                 element: (
                   <PostStoreProvider>
                     <ConnectionsStoreProvider>
-                      <AppShell />
+                      {/* Above AppShell so the rail's Dashboard badge and the
+                          dashboard screen itself read one unread count. */}
+                      <UnreadAlertsProvider>
+                        <AppShell />
+                      </UnreadAlertsProvider>
                     </ConnectionsStoreProvider>
                   </PostStoreProvider>
                 ),
