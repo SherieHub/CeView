@@ -3545,6 +3545,7 @@
      without space-between, which would strand it left once it wraps alone. */
   .studio-head-act {
     margin-left: auto;
+    font-size: 0.875rem;
   }
 
   /* Note block — the recurring "explanatory prose in a mint panel" this
