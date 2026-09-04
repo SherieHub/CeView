@@ -34,18 +34,13 @@ function renderView() {
   );
 }
 
-// PesTrendChart is a stub, but per the Trend Charts card text ("this card
-// only owns the toggle control and rendering"), the real 4/8-week toggle UI
-// lives inside PesTrendChart itself, not the shell — the shell only holds
-// `weeks` state and re-slices `window` when it changes. Replace the stub with
-// a probe that surfaces its received props and lets the test trigger
-// onWeeksChange the same way the real component eventually will.
+// The 4WK/8WK toggle is a single shared control the shell renders above all
+// three trend charts. PesTrendChart is replaced with a probe that just
+// surfaces the length of the `window` slice it was handed, so the test can
+// assert the shell re-slices when the shared toggle changes.
 vi.mock('./PesTrendChart', () => ({
-  default: ({ window, weeks, onWeeksChange }: { window: unknown[]; weeks: number; onWeeksChange: (w: 4 | 8) => void }) => (
-    <div>
-      <div data-testid="pes-trend-probe" data-weeks={weeks} data-window-length={window.length} />
-      <button type="button" onClick={() => onWeeksChange(8)}>probe-set-8-weeks</button>
-    </div>
+  default: ({ window }: { window: unknown[] }) => (
+    <div data-testid="pes-trend-probe" data-window-length={window.length} />
   ),
 }));
 
@@ -131,7 +126,7 @@ describe('CampaignAnalyticsView', () => {
     expect(screen.getByTestId('pes-score-value')).toBeInTheDocument();
   });
 
-  it('re-slices the trend window when weeks changes from 4 to 8', async () => {
+  it('re-slices the trend window for every chart when the shared toggle changes from 4 to 8', async () => {
     renderView();
 
     submitDefaultCampaign();
@@ -157,12 +152,9 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute('data-weeks', '4');
 
-    // Simulates PesTrendChart's own toggle calling back up via onWeeksChange —
-    // the real toggle UI belongs to that (still-stubbed) sibling card, not
-    // this shell; this exercises the shell's own re-slicing logic.
-    fireEvent.click(screen.getByRole('button', { name: 'probe-set-8-weeks' }));
+    fireEvent.click(screen.getByRole('button', { name: '8WK' }));
 
-    expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute('data-weeks', '8');
+    expect(screen.getByRole('button', { name: '8WK' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('pes-trend-probe')).toHaveAttribute(
       'data-window-length',
       String(MOCK_HISTORY.slice(-8).length)
