@@ -32,6 +32,9 @@
 **Owner:** Dev A, alone.
 **Prerequisite:** none.
 **Blocks:** every task in `02-` … `05-`. Nothing else starts until this merges.
+**Purpose:** Freeze the four things every later task depends on — the embedding scheme, the seeded
+reference corpus, the response contract, and the `AnalysisStep.tsx` split — so Tasks 6–21 can run in
+parallel with no shared files and no waiting on each other.
 
 This task exists so the other four never wait on each other. It owns the three things they all share
 — how text becomes a vector, what data everyone scores against, and the interfaces they code to —

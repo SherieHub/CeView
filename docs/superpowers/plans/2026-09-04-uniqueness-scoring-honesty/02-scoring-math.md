@@ -3,6 +3,9 @@
 **Owner:** Dev B, alone.
 **Prerequisite:** `01-prerequisites.md` merged, dump imported.
 **Runs in parallel with:** 03, 04, 05. Touches no file they touch.
+**Purpose:** Make the number mean something — replace the unreachable 0.5-distance constant with a
+percentile rank against the operator's own category cohort, publish the cohort statistics that make
+that rank readable, and refuse to score at all when the cohort is too small to rank against.
 
 **Files owned by this task — no other task edits them:**
 - `backend/fastapi-sbert/app/services/ml_classifier.py`

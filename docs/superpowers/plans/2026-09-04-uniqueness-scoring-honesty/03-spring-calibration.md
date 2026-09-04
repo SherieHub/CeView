@@ -3,6 +3,9 @@
 **Owner:** Dev C, alone.
 **Prerequisite:** `01-prerequisites.md` merged, dump imported.
 **Runs in parallel with:** 02, 04, 05. Touches no file they touch.
+**Purpose:** Carry the new cohort fields through the orchestration layer intact — without silent zero
+defaults and without letting reference rows leak into tenant-scoped queries — and produce independent
+evidence, from the seeded corpus alone, that the percentile thresholds are defensible.
 
 **Files owned by this task — no other task edits them:**
 - `backend/spring-boot/src/main/java/com/ceview/module1/uniquenessscoring/**`

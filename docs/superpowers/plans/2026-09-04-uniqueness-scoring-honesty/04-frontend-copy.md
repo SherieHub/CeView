@@ -3,6 +3,9 @@
 **Owner:** Dev D, alone.
 **Prerequisite:** `01-prerequisites.md` merged, dump imported.
 **Runs in parallel with:** 02, 03, 05. Touches no file they touch.
+**Purpose:** Make the words around the number true — every label names what the API actually measured,
+the comparison cohort is disclosed next to the percentile, and a crowded category is reframed from
+real data instead of warned about.
 
 **Files owned by this task — no other task edits them:**
 - `frontend/components/module-1/onboarding/steps/analysis/ScoreTiles.tsx`

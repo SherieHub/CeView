@@ -3,6 +3,9 @@
 **Owner:** Dev E, alone.
 **Prerequisite:** `01-prerequisites.md` merged, dump imported.
 **Runs in parallel with:** 02, 03, 04. Touches no file they touch.
+**Purpose:** Make the frame around that copy honest — one score visually dominant over two
+explanations, every backend state (recompute, insufficient cohort) actually rendered, and the whole
+screen operable without a mouse and locked down by unit and e2e coverage.
 
 **Files owned by this task — no other task edits them:**
 - `frontend/components/module-1/onboarding/steps/AnalysisStep.tsx`
