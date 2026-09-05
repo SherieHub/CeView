@@ -80,7 +80,24 @@ test.describe('Platforms', () => {
       }),
     );
 
-    await page.getByRole('button', { name: 'Select' }).click();
+    // Wait for the option cards before touching the drawer below: the Visual
+    // Guide mounts in the same render as the studio content, so "the cards are
+    // here" is what makes the drawer's own state settled enough to read.
+    const selectOption = page.getByRole('button', { name: 'Select' });
+    await selectOption.waitFor();
+
+    // The Visual Guide drawer auto-opens on a first visit (useFirstRunDrawer).
+    // It is `position: fixed; right: 0; width: min(560px, 100vw); z-index: 30`,
+    // so it sits ON TOP of the caption grid's right-hand column and its
+    // .drawer-body swallows the click on Select. Dismiss it first — closing it
+    // also writes the FTUE flag, so it stays shut for the rest of the context.
+    const visualGuide = page.getByRole('dialog', { name: 'Visual Guide' });
+    if (await visualGuide.isVisible()) {
+      await visualGuide.getByRole('button', { name: 'Close' }).click();
+      await expect(visualGuide).toBeHidden();
+    }
+
+    await selectOption.click();
     await page.locator('input[type="file"]').setInputFiles({
       name: 'media.png', mimeType: 'image/png', buffer: Buffer.from(TINY_PNG_BASE64, 'base64'),
     });
@@ -126,6 +143,12 @@ test.describe('Platforms', () => {
   });
 
   test('connecting a platform unlocks it in Content Studio\'s publish picker without a reload', async ({ page }) => {
+    // Two full stage-and-audit cycles (once per visit to the studio), each
+    // carrying the compliance panel's six 420ms stepper ticks, plus the
+    // connect modal's own simulated redirect. The 30s default leaves no room
+    // for that on CI's slower runners.
+    test.setTimeout(60_000);
+
     await mockConnections(page);
     await page.route('**/api/notifications', (route) =>
       route.fulfill({
@@ -203,6 +226,9 @@ test.describe('Platforms', () => {
   });
 
   test('disconnecting a platform locks it back out of Content Studio\'s publish picker', async ({ page }) => {
+    // Two stage-and-audit cycles — see the previous test's comment.
+    test.setTimeout(60_000);
+
     await mockConnections(page);
     await page.route('**/api/notifications', (route) =>
       route.fulfill({
