@@ -17,7 +17,7 @@ export default function ComputeUniquenessButton({
         type="button"
         onClick={onClick}
         disabled={disabled || isLoading}
-        className="btn btn-gold btn-lg btn-block w-full py-3.5 px-6 rounded-md bg-gold hover:bg-gold-dark text-navy font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-1 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3.5 px-6 rounded-md bg-gold hover:bg-gold-dark text-navy font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-1 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <>

@@ -385,7 +385,35 @@ export interface OmcsAuditResult {
 }
 
 /**
- * Module 3 creative direction — the VisualDirectionBoard's data.
+ * One shot in the creative direction's shot list.
+ *
+ * `label`, `description` and `lighting` are what
+ * POST /api/creative-direction/generate actually returns today.
+ *
+ * The rest are OPTIONAL because the FastAPI service does not emit them yet:
+ * the drawer renders the structured directives when they are present and falls
+ * back to the narrative `description` when they are not, so a live response
+ * still renders correctly. Emitting them from the service is a backend
+ * follow-up — see backend/CONTRACT.md.
+ */
+export interface CreativeDirectionShot {
+  label: string;
+  description: string;
+  lighting: string;
+  /** Uppercase eyebrow — the kind of shot ("Hero", "Threshold"). */
+  shotType?: string;
+  /** What is in frame ("Sardine run, mid-shoal"). */
+  subject?: string;
+  /** Where the camera is. */
+  placement?: string;
+  /** What it does from there. */
+  action?: string;
+  /** Why the shot exists — which caption or platform it serves. */
+  context?: string;
+}
+
+/**
+ * Module 3 creative direction — CampaignBriefDrawer's data.
  *
  * Deviates from the plan's assumed `{shotListRecommendations, visualRecommendations,
  * lightingSuggestions, moodboardReferences}` shape — the live
@@ -395,11 +423,7 @@ export interface OmcsAuditResult {
  */
 export interface CreativeDirection {
   visualGuide: string[];
-  shots: Array<{
-    label: string;
-    description: string;
-    lighting: string;
-  }>;
+  shots: CreativeDirectionShot[];
   moodboard: {
     palette: string;
     references: string[];

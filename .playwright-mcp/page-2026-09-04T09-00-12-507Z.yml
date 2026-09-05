@@ -1,0 +1,83 @@
+- generic [ref=f3e34]:
+  - navigation "Main" [ref=f3e35]:
+    - generic [ref=f3e36]:
+      - generic [ref=f3e37]: Ce
+      - generic [ref=f3e38]: CeView
+      - button "Collapse sidebar" [expanded] [ref=f3e40] [cursor=pointer]
+    - list [ref=f3e45]:
+      - listitem [ref=f3e46]: Intelligence
+      - listitem [ref=f3e47]:
+        - button "Dashboard" [ref=f3e48] [cursor=pointer]
+      - listitem [ref=f3e55]: Create
+      - listitem [ref=f3e56]:
+        - button "Content Studio" [ref=f3e57] [cursor=pointer]
+      - listitem [ref=f3e62]:
+        - button "Calendar" [ref=f3e63] [cursor=pointer]
+      - listitem [ref=f3e67]: Measure
+      - listitem [ref=f3e68]:
+        - button "Performance" [ref=f3e69] [cursor=pointer]
+      - listitem [ref=f3e74]: Settings
+      - listitem [ref=f3e75]:
+        - button "Business Profile" [ref=f3e76] [cursor=pointer]
+      - listitem [ref=f3e82]:
+        - button "Platforms" [ref=f3e83] [cursor=pointer]
+      - listitem [ref=f3e91]:
+        - button "Workspace" [ref=f3e92] [cursor=pointer]
+    - generic [ref=f3e99]:
+      - generic [ref=f3e100]: christian.mendiola@ceview.local
+      - button "Sign out" [ref=f3e101] [cursor=pointer]
+  - generic [ref=f3e103]:
+    - banner [ref=f3e104]:
+      - button "Search" [disabled] [ref=f3e105]
+      - button "Notifications" [disabled] [ref=f3e110]
+    - main [ref=f3e115]:
+      - generic [ref=f3e116]:
+        - generic [ref=f3e117]:
+          - generic [ref=f3e118]:
+            - heading "Good morning, Mactan Sunset Beachfront Resort" [level=1] [ref=f3e119]
+            - paragraph [ref=f3e120]: Select an alert to see the markets ranked for its category.
+          - generic [ref=f3e121]:
+            - generic [ref=f3e122]:
+              - generic [ref=f3e123]: "68"
+              - generic [ref=f3e124]: Uniqueness
+            - button "Refresh forecast" [ref=f3e129] [cursor=pointer]
+        - generic [ref=f3e135]:
+          - generic [ref=f3e136]:
+            - generic [ref=f3e142]:
+              - generic [ref=f3e143]: Unread alerts
+              - generic [ref=f3e144]: "0"
+            - generic [ref=f3e145]: You are all caught up
+          - generic [ref=f3e146]:
+            - generic [ref=f3e150]:
+              - generic [ref=f3e151]: Confirmed surges
+              - generic [ref=f3e152]: "1"
+            - generic [ref=f3e153]: South Korea
+          - button "Top market now South Korea 83/100 · Accommodation & Staycation" [ref=f3e154] [cursor=pointer]:
+            - generic [ref=f3e159]:
+              - generic [ref=f3e160]: Top market now
+              - generic [ref=f3e161]: South Korea
+            - generic [ref=f3e162]: 83/100 · Accommodation & Staycation
+        - generic [ref=f3e166]:
+          - region "Surge Alerts" [ref=f3e167]:
+            - generic [ref=f3e168]:
+              - heading "Surge Alerts" [level=2] [ref=f3e169]
+              - group "Filter alerts" [ref=f3e170]:
+                - button "All" [pressed] [ref=f3e171] [cursor=pointer]
+                - button "Unread (0)" [ref=f3e172] [cursor=pointer]
+                - button "Surges (1)" [ref=f3e173] [cursor=pointer]
+            - button "Jul 27, 2026 Surge Demand Surge Detected — South Korea Sharp demand spike detected for Korea — Mactan Sunset Beachfront Resort search interest is 32% above baseline heading into peak season. South Korea Accommodation & Staycation Demand spike View target markets" [ref=f3e175] [cursor=pointer]:
+              - generic [ref=f3e176]:
+                - generic [ref=f3e177]: Jul 27, 2026
+                - generic [ref=f3e178]: Surge
+              - heading "Demand Surge Detected — South Korea" [level=3] [ref=f3e181]
+              - paragraph [ref=f3e182]: Sharp demand spike detected for Korea — Mactan Sunset Beachfront Resort search interest is 32% above baseline heading into peak season.
+              - generic [ref=f3e183]:
+                - generic [ref=f3e184]: South Korea
+                - generic [ref=f3e188]: Accommodation & Staycation
+                - generic [ref=f3e192]: Demand spike
+              - generic [ref=f3e196]: View target markets
+          - region "Top Target Markets" [ref=f3e199]:
+            - heading "Top Target Markets" [level=2] [ref=f3e201]
+            - generic [ref=f3e203]:
+              - heading "Select a surge alert" [level=3] [ref=f3e211]
+              - paragraph [ref=f3e212]: Markets are ranked for the category of whichever alert you open, so this list changes with your selection.

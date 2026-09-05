@@ -83,7 +83,7 @@ export default function ContentTargetPicker({ onPicked }: Props) {
               Pick a target market for {pickedAlert.category}
             </h2>
           </div>
-          <button type="button" className="btn-ghost" onClick={backToAlerts}>
+          <button type="button" className="btn-outline" onClick={backToAlerts}>
             <ArrowLeft size={16} aria-hidden="true" /> Back to alerts
           </button>
         </div>
