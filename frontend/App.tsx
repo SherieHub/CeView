@@ -22,8 +22,7 @@ import CalendarView from './components/module-3/3.2-calendar/CalendarView';
 import BusinessProfileSettings from './components/settings/BusinessProfileSettings';
 import PlatformsSettings from './components/settings/PlatformsSettings';
 import WorkspaceSettings from './components/settings/WorkspaceSettings';
-import { DEMO_DRAFT, DEMO_BOARD_POSTS } from './components/module-3/3.1-content-studio/previewFixtures';
-import path from 'path/win32';
+import { DEMO_DRAFT, DEMO_BOARD_POSTS, DEMO_TARGET } from './components/module-3/3.1-content-studio/previewFixtures';
 
 /**
  * DEV-ONLY preview routes.
@@ -79,12 +78,19 @@ const devPreviewRoutes = import.meta.env.DEV
         // moment a Module 3 screen wires up to publish(). Matches
         // DashboardPreviewShell below. DEV-only, so production users still enter
         // through the gated tree.
+        //
+        // TargetSelectionProvider is seeded rather than merely mounted:
+        // ContentStudioView gates its whole screen behind an explicit surge +
+        // market pick, so an empty provider would leave every preview stuck on
+        // step 1 of the picker with none of the panels reachable.
         path: '/preview',
         element: (
           <ProfileProvider initial={DEMO_PROFILE}>
             <PostStoreProvider>
               <ConnectionsStoreProvider>
-                <AppShell />
+                <TargetSelectionProvider initial={DEMO_TARGET}>
+                  <AppShell />
+                </TargetSelectionProvider>
               </ConnectionsStoreProvider>
             </PostStoreProvider>
           </ProfileProvider>

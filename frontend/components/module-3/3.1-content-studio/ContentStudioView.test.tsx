@@ -6,16 +6,19 @@
  * the single most misleading state in the app if it silently renders as real
  * content), and "Change target market" clearing the pick.
  */
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ContentStudioView from './ContentStudioView';
 import { buildContentResponse } from './testFixtures';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
+import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import { MOCK_CREATIVE_DIRECTION } from '../../../services/fixtures/creativeDirection';
+import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { ApiError } from '../../../services/apiError';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import type { BusinessProfile } from '../../../types';
+import type { BusinessProfile, DemandAlert, Market, PlatformId } from '../../../types';
+import type { PublishDraftState } from './contentStudioTypes';
 
 const BASE_PROFILE: BusinessProfile = {
   businessProfileId: 'bp-1',
@@ -44,6 +47,15 @@ const BASE_PROFILE: BusinessProfile = {
  */
 const SLOW = { timeout: 8000 } as const;
 
+/**
+ * The surge + market a case is "arriving with", standing in for the pick the
+ * Dashboard hand-off or ContentTargetPicker would have made. Taken from the
+ * fixtures rather than hand-built so the category really is one of
+ * BASE_PROFILE's — the picker filters alerts by exactly that.
+ */
+const ALERT: DemandAlert = MOCK_NOTIFICATIONS.find((n) => n.category === 'Coastal & Island')!;
+const MARKET: Market = MOCK_MARKETS[0];
+
 vi.mock('../../../services/profileContext', () => ({
   useProfile: () => ({ profile: BASE_PROFILE, setProfile: vi.fn(), isLoading: false }),
 }));
@@ -52,6 +64,7 @@ const generateMock = vi.fn();
 const creativeDirectionMock = vi.fn();
 const notificationsListMock = vi.fn();
 const marketsForCategoryMock = vi.fn();
+const omcsAnalyzeMock = vi.fn();
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
@@ -61,7 +74,7 @@ vi.mock('../../../services/apiClient', () => ({
     creativeDirection: {
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
-    compliance: { omcsAnalyze: vi.fn(() => Promise.reject(new Error('not used in this test'))) },
+    compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
   },
 }));
 
@@ -106,7 +119,12 @@ beforeEach(() => {
   setTargetMock.mockReset();
   clearTargetMock.mockReset();
   notificationsListMock.mockReset().mockResolvedValue([]);
-  marketsForCategoryMock.mockReset().mockResolvedValue([]);
+  marketsForCategoryMock.mockReset().mockResolvedValue(MOCK_MARKETS);
+  omcsAnalyzeMock.mockReset().mockResolvedValue(MOCK_OMCS);
+  // Explicit per-case rather than inherited: `mockTarget` is module-level, and
+  // leaving it set by whichever case ran last made every assertion below
+  // depend on file order. Cases that want the picker set it back to null.
+  mockTarget = { alert: ALERT, market: MARKET };
   creativeDirectionMock.mockResolvedValue({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } });
   mockIsConnected = () => false;
   disconnectCallback = null;
@@ -114,6 +132,7 @@ beforeEach(() => {
 
 describe('ContentStudioView — gating', () => {
   it('does not call generate() and shows the picker when no target is picked', async () => {
+    mockTarget = null;
     render(<ContentStudioView />);
 
     expect(await screen.findByText(/pick a surge alert/i)).toBeInTheDocument();
@@ -121,6 +140,7 @@ describe('ContentStudioView — gating', () => {
   });
 
   it('shows the empty-alerts state instead of a picker when the operator has no surges', async () => {
+    mockTarget = null;
     notificationsListMock.mockResolvedValue([]);
 
     render(<ContentStudioView />);
@@ -162,26 +182,37 @@ describe('ContentStudioView — generate request', () => {
     });
   });
 
-  it('shows the picked market and category in the header, not a free-choice selector', async () => {
-    mockTarget = { alert: ALERT, market: MARKET };
+  // The header selector is scoped to the PICKED ALERT's category, not to the
+  // operator's overall market ranking — so it can only ever offer markets that
+  // surge actually reaches. Asking for the category is the assertion; a call
+  // to markets.list() here would mean the screen had gone back to inferring.
+  it('offers only the markets for the picked alert’s category', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
 
-    render(<ContentStudioView />);
+    renderStudio();
 
-    await waitFor(() => expect(generateMock).toHaveBeenCalled());
-    expect(screen.getByText(new RegExp(`${MARKET.name} — ${ALERT.category}`))).toBeInTheDocument();
-    expect(screen.queryByText('Target market')).not.toBeInTheDocument();
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    expect(marketsForCategoryMock).toHaveBeenCalledWith(ALERT.category);
+
+    const select = screen.getByLabelText('Target market') as HTMLSelectElement;
+    expect(select.value).toBe(MARKET.id);
+    expect(Array.from(select.options).map((o) => o.textContent))
+      .toEqual(MOCK_MARKETS.map((m) => m.name));
   });
 
-  it('"Change target market" clears the pick', async () => {
-    mockTarget = { alert: ALERT, market: MARKET };
+  // The selector writes through the shared store rather than into local state.
+  // Bound to a private value it would look identical and do nothing, because
+  // generation reads target.market.id — so what it CALLS is the whole point.
+  it('switches market through the shared store, keeping the same alert', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
 
-    render(<ContentStudioView />);
-    await waitFor(() => expect(generateMock).toHaveBeenCalled());
+    renderStudio();
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
-    fireEvent.click(screen.getByRole('button', { name: /change target market/i }));
-    expect(clearTargetMock).toHaveBeenCalled();
+    const other = MOCK_MARKETS[1];
+    await userEvent.selectOptions(screen.getByLabelText('Target market'), other.id);
+
+    expect(setTargetMock).toHaveBeenCalledWith(ALERT, other);
   });
 
   it('renders ApiErrorPanel naming the dependency when generate() is rejected as a missing dependency', async () => {
@@ -306,22 +337,43 @@ describe('ContentStudioView — generate request', () => {
 });
 
 describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
-  it('removes a platform from the in-progress "Publish to" selection when it is disconnected elsewhere', async () => {
-    mockTarget = { alert: ALERT, market: MARKET };
+  /** A draft far enough along that the audit's own gate (caption + media) opens. */
+  const STAGED: PublishDraftState = {
+    caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+    visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false,
+  };
+
+  /**
+   * Observed through Publish rather than through a checkbox. Destinations moved
+   * into the publish modal in the studio rebuild, so there is no platform
+   * checkbox on the screen itself any more — but the rule the disconnect
+   * enforces is bigger than the tick anyway: a draft bound for a platform the
+   * operator has just disconnected must not stay publishable. The audit pass is
+   * what reveals Publish, and the disconnect handler resets it.
+   */
+  it('withdraws a passed audit when a selected platform is disconnected elsewhere', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
-    mockIsConnected = () => true; // every platform "connected" so its checkbox is enabled
+    mockIsConnected = () => true;
 
-    render(<ContentStudioView />);
-    await waitFor(() => expect(generateMock).toHaveBeenCalled());
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={STAGED} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
-    const instagram = screen.getByRole('checkbox', { name: /instagram/i });
-    fireEvent.click(instagram);
-    expect(instagram).toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/i }));
+    // Six 420ms stepper ticks stand between the click and the verdict.
+    const publish = await screen.findByRole('button', { name: /^Publish/ }, SLOW);
+    expect(publish).toBeTruthy();
 
-    // Settings -> Platforms fires this when the operator disconnects
-    // Instagram there — no reload, no re-render of Content Studio itself.
+    // Settings -> Platforms fires this when the operator disconnects Instagram
+    // there — no reload, no re-render of Content Studio itself.
     act(() => disconnectCallback?.('instagram'));
 
-    expect(instagram).not.toBeChecked();
-  });
+    await waitFor(() => expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull(), SLOW);
+    // Six real 420ms stepper ticks put this past vitest's 5s default before the
+    // waitFor budgets above are even reached — it timed out in the full-suite
+    // run and passed alone, which is the tell.
+  }, 30000);
 });

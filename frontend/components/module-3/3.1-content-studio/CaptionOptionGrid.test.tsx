@@ -22,13 +22,22 @@ describe('CaptionOptionGrid', () => {
     expect(screen.getByText('Witty, Trend-Conscious & High-Energy')).toBeTruthy();
   });
 
-  // The grid is platform-agnostic and must not assume three. MOCK_CONTENT's
-  // naver entry is the only two-option set in the fixtures, so it stands in as
-  // data here even though the studio no longer offers that platform — auto-fit
-  // rather than a hard three-column track is what this covers.
+  // The grid is platform-agnostic and must not assume three: auto-fit rather
+  // than a hard three-column track is what this covers. Built here rather than
+  // read from a fixture — MOCK_CONTENT's naver entry used to be the only
+  // two-option set, and it went with the platform.
   it('renders a two-option set without a placeholder card', () => {
     renderGrid(
-      <CaptionOptionGrid captions={MOCK_CONTENT.captions.naver} selectedIndex={null} onSelect={vi.fn()} />,
+      <CaptionOptionGrid
+        captions={{
+          optionNames: IG.optionNames.slice(0, 2),
+          options: IG.options.slice(0, 2),
+          optionMetadata: IG.optionMetadata.slice(0, 2),
+          guide: IG.guide,
+        }}
+        selectedIndex={null}
+        onSelect={vi.fn()}
+      />,
     );
     expect(screen.getAllByRole('article').length).toBe(2);
   });
