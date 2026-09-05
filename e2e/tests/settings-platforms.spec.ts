@@ -52,6 +52,61 @@ test.describe('Platforms', () => {
     await expect(page).toHaveURL(/\/dashboard$/);
   }
 
+  /** A 1x1 transparent PNG, inlined so staging media needs no fixture file on disk. */
+  const TINY_PNG_BASE64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+  /**
+   * Content Studio's platform picker moved into the Publish modal in the
+   * studio rebuild — it used to sit inline in the composer, reachable the
+   * moment a market was picked, which is what the two tests below originally
+   * assumed. The modal only opens once the compliance audit has passed, so
+   * reaching the picker now means staging a caption and media and running
+   * that audit first.
+   */
+  async function stageAndOpenPublish(page: import('@playwright/test').Page) {
+    await page.route('**/api/compliance/omcs-analyze', (route) =>
+      route.fulfill({
+        json: {
+          profileSemanticScore: 85.5,
+          rubricEvaluationData: { scores: {}, total: 83.4 },
+          recommendationsPictureScore: 83.4,
+          pubmatConsistencyScore: 81.0,
+          consistencyExplanation: 'Consistent.',
+          omcsScore: 83.8,
+          status: 'Pass',
+          feedback: 'Passes comfortably.',
+        },
+      }),
+    );
+
+    await page.getByRole('button', { name: 'Select' }).click();
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'media.png', mimeType: 'image/png', buffer: Buffer.from(TINY_PNG_BASE64, 'base64'),
+    });
+    await page.getByRole('button', { name: 'Run Compliance Audit' }).click();
+    // Six 420ms stepper ticks stand between the click and the modal's trigger.
+    await page.getByRole('button', { name: /^Publish/ }).click({ timeout: 15_000 });
+    await expect(page.getByRole('dialog', { name: 'Publish' })).toBeVisible();
+  }
+
+  /** One real Instagram option — the mocked /api/content/generate response
+   *  used to return every platform empty, which rendered zero caption cards
+   *  and made the picker (now behind that selection) unreachable. */
+  const CAPTIONS_WITH_ONE_OPTION = {
+    instagram: {
+      optionNames: ['Option 1'],
+      options: ['A staged caption for e2e.'],
+      optionMetadata: [{
+        core_business_context: '', market_cultural_localization: '', psychological_elements: '',
+        creative_tone_atmosphere: '', algorithmic_platform_architecture: '',
+      }],
+      guide: [],
+    },
+    tiktok: { optionNames: [], options: [], optionMetadata: [], guide: [] },
+    facebook: { optionNames: [], options: [], optionMetadata: [], guide: [] },
+  };
+
   test('connect flow: redirecting spinner -> scope-grant list -> Grant scope -> connected toast', async ({ page }) => {
     await mockConnections(page);
     await login(page);
@@ -105,11 +160,7 @@ test.describe('Platforms', () => {
         json: {
           market: { country: 'South Korea', city: 'Seoul', flag: 'KR' },
           framework: 'SOR', source: 'groq',
-          captions: {
-            instagram: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-            tiktok: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-            facebook: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-          },
+          captions: CAPTIONS_WITH_ONE_OPTION,
         },
       }),
     );
@@ -123,8 +174,12 @@ test.describe('Platforms', () => {
     await page.getByRole('heading', { name: 'Demand Surge — South Korea' }).click();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
-    const tiktokCheckbox = page.getByRole('checkbox', { name: 'TikTok' });
-    await expect(tiktokCheckbox).toBeDisabled();
+    // The picker lives inside the Publish modal, reachable once the audit has
+    // passed — see stageAndOpenPublish's own comment for why.
+    await stageAndOpenPublish(page);
+    await expect(page.getByRole('checkbox', { name: 'TikTok' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('dialog', { name: 'Publish' })).toHaveCount(0);
 
     // Connect TikTok elsewhere in the app — sidebar clicks only, so this is
     // client-side routing, never a full reload (login.spec.ts's own
@@ -136,11 +191,18 @@ test.describe('Platforms', () => {
     await page.getByText(/requesting permission/i).waitFor({ timeout: 3_000 });
     await page.getByRole('button', { name: /grant scope/i }).click();
 
+    // Content Studio's own draft (caption, media, audit) is local component
+    // state, so it does not survive the round trip through /settings/platforms
+    // — only the picked target and the connection itself are shared state
+    // (TargetSelectionProvider / connectionsStore, both mounted above the
+    // route's <Outlet/>). Redoing the audit is what reaches the picker again;
+    // it is the shared connection state underneath it this test is about.
     await page.getByRole('button', { name: 'Content Studio' }).click();
+    await stageAndOpenPublish(page);
     await expect(page.getByRole('checkbox', { name: 'TikTok' })).toBeEnabled();
   });
 
-  test('disconnecting a platform removes it from Content Studio\'s in-progress selection', async ({ page }) => {
+  test('disconnecting a platform locks it back out of Content Studio\'s publish picker', async ({ page }) => {
     await mockConnections(page);
     await page.route('**/api/notifications', (route) =>
       route.fulfill({
@@ -175,11 +237,7 @@ test.describe('Platforms', () => {
         json: {
           market: { country: 'South Korea', city: 'Seoul', flag: 'KR' },
           framework: 'SOR', source: 'groq',
-          captions: {
-            instagram: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-            tiktok: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-            facebook: { optionNames: [], options: [], optionMetadata: [], guide: [] },
-          },
+          captions: CAPTIONS_WITH_ONE_OPTION,
         },
       }),
     );
@@ -192,20 +250,27 @@ test.describe('Platforms', () => {
     await page.getByRole('heading', { name: 'Demand Surge — South Korea' }).click();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
-    // Instagram starts connected — select it for publishing.
+    // Instagram starts connected — selectable in the picker, in the Publish
+    // modal (see stageAndOpenPublish's own comment for why it lives there now).
+    await stageAndOpenPublish(page);
     const instagramCheckbox = page.getByRole('checkbox', { name: 'Instagram' });
     await expect(instagramCheckbox).toBeEnabled();
     await instagramCheckbox.check();
     await expect(instagramCheckbox).toBeChecked();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByRole('dialog', { name: 'Publish' })).toHaveCount(0);
 
     // Disconnect elsewhere in the app — client-side navigation, not a reload
     // (see the previous test's comment on why that matters here).
     await page.getByRole('button', { name: 'Platforms' }).click();
     await page.getByRole('button', { name: 'Disconnect' }).click();
 
+    // Content Studio's own draft is local state and does not survive the round
+    // trip (see the previous test's comment) — the connection state
+    // underneath it does, which is what this asserts: a platform disconnected
+    // elsewhere cannot be picked again without reconnecting it first.
     await page.getByRole('button', { name: 'Content Studio' }).click();
-    const stillThere = page.getByRole('checkbox', { name: 'Instagram' });
-    await expect(stillThere).not.toBeChecked();
-    await expect(stillThere).toBeDisabled();
+    await stageAndOpenPublish(page);
+    await expect(page.getByRole('checkbox', { name: 'Instagram' })).toBeDisabled();
   });
 });

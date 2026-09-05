@@ -15,7 +15,6 @@ import { ImagePlus, Maximize2, Trash2 } from 'lucide-react';
 import Modal from '../../shared/Modal';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
-import { useConnections } from '../../../services/connectionsStore';
 
 /**
  * What is still missing before the audit can run. Scoped to this panel's own

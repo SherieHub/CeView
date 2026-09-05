@@ -1,14 +1,30 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PublishModal, { PREVIEW_FIT_MARGIN } from './PublishModal';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import type { PublishDraftState } from './contentStudioTypes';
+import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 
 const DRAFT: PublishDraftState = {
   caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
   visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false,
 };
+
+// Defaults every platform to connected, so the existing cases below — none of
+// which are about connection state — see the same unconstrained picker they
+// always have. The connection-gating cases set this per test.
+let mockIsConnected = (_platform: StudioPlatformId) => true;
+
+vi.mock('../../../services/connectionsStore', () => ({
+  useConnections: () => ({
+    connections: [], isConnected: (platform: StudioPlatformId) => mockIsConnected(platform),
+    connect: vi.fn(), disconnect: vi.fn(), onDisconnect: () => () => {},
+  }),
+}));
+
+beforeEach(() => {
+  mockIsConnected = () => true;
+});
 
 function setup(over: Partial<PublishDraftState> = {}, onConfirm = vi.fn(), onDraftChange = vi.fn()) {
   // Spreads the render result so cases can reach `container` as well as the
@@ -42,6 +58,27 @@ describe('PublishModal', () => {
     // ...and only the result of it is on the right.
     expect(preview.querySelector('.device-frame')).not.toBeNull();
     expect(within(preview).queryByRole('checkbox')).toBeNull();
+  });
+
+  // A disconnected platform cannot be added to "Publish to" without first
+  // connecting it (Settings -> Platforms). Destination choice moved into this
+  // modal from the composer, and the connection gate had to move with it.
+  it('disables a platform not yet connected, and leaves a connected one selectable', () => {
+    mockIsConnected = (platform) => platform === 'instagram';
+    setup();
+
+    const tiktok = screen.getByRole('checkbox', { name: /TikTok/ });
+    expect(tiktok).toBeDisabled();
+    const instagram = screen.getByRole('checkbox', { name: /Instagram/ });
+    expect(instagram).toBeEnabled();
+  });
+
+  it('does not toggle a disabled platform on click', async () => {
+    mockIsConnected = (platform) => platform === 'instagram';
+    const { onDraftChange } = setup();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /TikTok/ }));
+    expect(onDraftChange).not.toHaveBeenCalled();
   });
 
   // The platform pills used to sit above the phone, which put the control that
