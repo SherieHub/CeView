@@ -16,7 +16,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ContentStudioView from './ContentStudioView';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import { DEMO_DRAFT } from './previewFixtures';
+import { DEMO_DRAFT, DEMO_TARGET } from './previewFixtures';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { buildContentResponse } from './testFixtures';
@@ -32,9 +32,25 @@ vi.mock('../../../services/profileContext', () => ({
   useProfile: () => ({ profile: PROFILE, setProfile: vi.fn(), isLoading: false }),
 }));
 
+// The journey starts AFTER the surge + market pick — that gate has its own
+// coverage in ContentStudioView.test.tsx, and re-walking the picker here would
+// only add two clicks between this test and the thing it is actually about.
+vi.mock('../../../services/targetSelectionStore', () => ({
+  useTargetSelection: () => ({ target: DEMO_TARGET, setTarget: vi.fn(), clearTarget: vi.fn() }),
+}));
+
+// The view subscribes to Settings -> Platforms disconnects; nothing in this
+// journey disconnects anything, so an inert unsubscribe is enough.
+vi.mock('../../../services/connectionsStore', () => ({
+  useConnections: () => ({
+    connections: [], isConnected: () => true, connect: vi.fn(), disconnect: vi.fn(),
+    onDisconnect: () => () => {},
+  }),
+}));
+
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    markets: { list: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
+    markets: { forCategory: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
     content: { generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))) },
     creativeDirection: { generate: vi.fn(() => Promise.resolve({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } })) },
     compliance: { omcsAnalyze: vi.fn(() => Promise.resolve(MOCK_OMCS)) },

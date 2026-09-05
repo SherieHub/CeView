@@ -22,6 +22,7 @@ import DevicePreview, { PREVIEW_DEVICES } from './DevicePreview';
 import type { PreviewDevice } from './DevicePreview';
 import { STUDIO_PLATFORMS } from './contentStudioTypes';
 import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
+import { useConnections } from '../../../services/connectionsStore';
 
 /**
  * Fitted frames stop just short of the canvas edge. A preview touching the
@@ -39,6 +40,12 @@ export interface PublishModalProps {
 
 export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm }: PublishModalProps) {
   const [device, setDevice] = useState<PreviewDevice>('mobile');
+  // A disconnected platform cannot be added to "Publish to" without first
+  // connecting it (Settings -> Platforms, docs/superpowers/plans/
+  // 2026-08-10-ui-ux-overhaul-frontend/04-module-3.md, "Publish Composer
+  // (connection-gated)"). Read here rather than in PublishComposer: that panel
+  // no longer owns destination choice, this modal does.
+  const { isConnected } = useConnections();
 
   /**
    * Scale the device frame down until it fits the canvas whole.
@@ -115,16 +122,26 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
           <fieldset className="pub-group">
             <legend>Publish to</legend>
             <div className="pub-plats">
-              {STUDIO_PLATFORMS.map(({ id, label }) => (
-                <label key={id} className="plat-opt" data-on={draft.platforms.includes(id)}>
-                  <input
-                    type="checkbox"
-                    checked={draft.platforms.includes(id)}
-                    onChange={() => togglePlatform(id)}
-                  />
-                  {label}
-                </label>
-              ))}
+              {STUDIO_PLATFORMS.map(({ id, label }) => {
+                const connected = isConnected(id);
+                return (
+                  <label
+                    key={id}
+                    className="plat-opt"
+                    data-on={draft.platforms.includes(id)}
+                    data-disabled={!connected}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={draft.platforms.includes(id)}
+                      disabled={!connected}
+                      onChange={() => togglePlatform(id)}
+                    />
+                    {label}
+                    {!connected && <span className="text-meta">{' '}Not connected</span>}
+                  </label>
+                );
+              })}
             </div>
           </fieldset>
 

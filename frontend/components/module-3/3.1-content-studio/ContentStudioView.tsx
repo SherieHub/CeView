@@ -69,7 +69,18 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // behalf. It renders nothing until both are explicitly picked, either via
   // ContentTargetPicker below or by arriving from the Dashboard's "Target
   // this market" flow (DashboardView writes the pick into this same store).
-  const { target, setTarget, clearTarget } = useTargetSelection();
+  const { target, setTarget } = useTargetSelection();
+  const { onDisconnect } = useConnections();
+
+  // The markets the header selector offers, scoped to the PICKED ALERT's
+  // category rather than to the operator's overall ranking. The screen still
+  // never infers a market — `target` is the source of truth and only
+  // ContentTargetPicker (or the Dashboard hand-off) can establish one — but
+  // once a surge is chosen, swapping between the markets that surge actually
+  // reaches is a move worth having on the title's baseline instead of behind
+  // a full re-pick.
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [marketsError, setMarketsError] = useState<unknown | null>(null);
 
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [contentError, setContentError] = useState<unknown | null>(null);
@@ -112,7 +123,21 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     return () => { cancelled = true; };
   }, []);
 
-  const selectedMarket = markets.find((m) => m.id === selectedMarketId) ?? null;
+  // Depended on directly rather than through `target`, so re-picking the same
+  // category (a different market on the same surge) does not refetch a list
+  // that cannot have changed.
+  const targetCategory = target?.alert.category ?? null;
+
+  useEffect(() => {
+    if (!targetCategory) return;
+    let cancelled = false;
+    apiClient.markets
+      .forCategory(targetCategory)
+      .then((list) => { if (!cancelled) setMarkets(list); })
+      .catch((e) => { if (!cancelled) setMarketsError(e); });
+    return () => { cancelled = true; };
+  }, [targetCategory]);
+
   // No dedicated "trend" field ships on Market — spikeIndicator is the closest
   // live signal for "is this market surging right now".
   const marketTrend = target ? (target.market.spikeIndicator ? 'surging' : 'steady') : 'steady';
@@ -215,10 +240,17 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           markets.length > 0 ? (
             <label className="studio-market">
               <span className="studio-market-label">Target market</span>
+              {/* Writes back into the shared target store rather than into
+                  local state: content generation reads `target.market.id`, so
+                  a select bound to a private value would look right and change
+                  nothing. */}
               <select
                 className="studio-select"
-                value={selectedMarketId ?? ''}
-                onChange={(event) => setSelectedMarketId(event.target.value)}
+                value={target.market.id}
+                onChange={(event) => {
+                  const next = markets.find((m) => m.id === event.target.value);
+                  if (next) setTarget(target.alert, next);
+                }}
               >
                 {markets.map((market) => (
                   <option key={market.id} value={market.id}>{market.name}</option>

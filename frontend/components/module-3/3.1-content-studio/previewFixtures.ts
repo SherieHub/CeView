@@ -30,9 +30,35 @@
  * is a module-3 type: putting it in services/ would make the shared fixture
  * layer depend on a component folder.
  */
-import type { PublishedPost } from '../../../types';
+import { MOCK_MARKETS } from '../../../services/fixtures/markets';
+import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
+import type { DemandAlert, Market, PublishedPost } from '../../../types';
 import type { PublishDraftState } from './contentStudioTypes';
 import { BRIEF_SEEN_KEY } from './useFirstRunDrawer';
+
+/**
+ * TEMPORARY. The surge + market pick the preview opens with.
+ *
+ * Content Studio gates everything behind an explicit pick (see
+ * ContentTargetPicker), so without a seed /preview/content lands on step 1 of
+ * that two-step picker and none of the panels below it can be looked at — the
+ * same problem DEMO_DRAFT solves for the composer.
+ *
+ * Korea deliberately: it is the market the rest of these fixtures are written
+ * for (DEMO_DRAFT's caption is Korean-localised, MOCK_CREATIVE_DIRECTION talks
+ * about Korean feeds), and its category is one of DEMO_PROFILE's, so the
+ * picker would have offered this exact alert anyway.
+ *
+ * Non-null asserted against the fixtures rather than hardcoded: if either id
+ * is renamed this throws on load instead of silently seeding `undefined`.
+ */
+const DEMO_ALERT = MOCK_NOTIFICATIONS.find((n) => n.id === 'n1') as DemandAlert;
+const DEMO_MARKET = MOCK_MARKETS.find((m) => m.id === 'korea') as Market;
+
+export const DEMO_TARGET: { alert: DemandAlert; market: Market } = {
+  alert: DEMO_ALERT,
+  market: DEMO_MARKET,
+};
 
 /**
  * Stand-in publication media, inlined as an SVG data URI rather than shipped
