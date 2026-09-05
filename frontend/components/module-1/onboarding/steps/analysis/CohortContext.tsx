@@ -42,7 +42,7 @@ interface Props {
 export default function CohortContext({ scores, onGoToStep }: Props) {
   if (scores.overallScore >= PASS_THRESHOLD) {
     return (
-      <div className="banner banner--info mt-4" role="status">
+      <div className="banner banner--info mt-4" role="status" data-testid="cohort-context">
         <ThumbsUp aria-hidden="true" />
         <div>
           <b>Strong differentiation.</b> Your profile stands out clearly against the local cohort in
@@ -53,7 +53,7 @@ export default function CohortContext({ scores, onGoToStep }: Props) {
   }
 
   return (
-    <div className="banner banner--warn mt-4" role="status">
+    <div className="banner banner--warn mt-4" role="status" data-testid="cohort-context">
       <X aria-hidden="true" />
       <div>
         <b>Room to sharpen your positioning.</b> A more specific UVP usually raises this score.{' '}

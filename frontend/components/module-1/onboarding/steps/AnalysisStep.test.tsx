@@ -17,10 +17,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AnalysisStep from './AnalysisStep';
-import { EMPTY_OB_DRAFT, ObDraftProvider, useObDraft } from '../obDraft';
+import { EMPTY_OB_DRAFT, ObDraftProvider, stepValid, useObDraft } from '../obDraft';
 import type { ObDraft } from '../obDraft';
 import { ToastProvider } from '../../../shared/Toast';
 import { ApiError } from '../../../../services/apiError';
+import type { UniquenessResult } from '../../../../types';
 
 const analyzeMock = vi.fn();
 const uniquenessMock = vi.fn();
@@ -62,12 +63,36 @@ function renderStep(initial: ObDraft = DRAFT, onGoToStep = vi.fn()) {
   );
 }
 
-const SCORES = {
+/**
+ * Typed, not a bare literal: this fixture predates the cohort fields and went
+ * on satisfying an untyped `vi.fn()` mock without them. The moment anything
+ * branches on `sufficientCohort`, `undefined` reads as false and every case in
+ * this file silently renders the small-cohort state instead. `UniquenessResult`
+ * is what stops that happening again.
+ */
+const SCORES: UniquenessResult = {
   overallScore: 72,
   semanticsScore: 70,
   categoryScore: 74,
+  semanticPercentile: 72,
+  cohortSize: 34,
+  cohortMedianScore: 41,
+  cohortCategories: ['Coastal & Island'],
+  categoryDensity: 'dense',
+  sufficientCohort: true,
   descriptionFeedback: 'Solid.',
   categoryFeedback: 'Good fit.',
+};
+
+/** The backend's valid "too few to rank against" answer — not an error. */
+const SMALL_COHORT: UniquenessResult = {
+  ...SCORES,
+  overallScore: 0,
+  semanticPercentile: 0,
+  cohortSize: 2,
+  cohortMedianScore: 0,
+  categoryDensity: 'sparse',
+  sufficientCohort: false,
 };
 
 beforeEach(() => {
@@ -159,5 +184,69 @@ describe('AnalysisStep', () => {
 
     expect(await screen.findByText(/Room to sharpen your positioning/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Strengthen my UVP/ })).toBeInTheDocument();
+  });
+
+  // Readers trust layout over labels: three equal cards say "three components
+  // of one number", which is the misreading this whole plan exists to fix.
+  // Task 18 — 05-frontend-shell.md.
+  it('renders the percentile as a primary card above the two diagnostics', async () => {
+    await reachCategories();
+    uniquenessMock.mockResolvedValue(SCORES);
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    const primary = await screen.findByTestId('score-primary');
+    expect(primary).toHaveTextContent('72');
+    // The primary carries the largest type on the screen; the diagnostics do not.
+    expect(primary.querySelector('.heading-xl')).not.toBeNull();
+
+    const diagnostics = screen.getByTestId('score-diagnostics');
+    expect(diagnostics.querySelector('.heading-xl')).toBeNull();
+    // ...and it sits above them in DOM order, which is also reading order.
+    expect(primary.compareDocumentPosition(diagnostics))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('states that the diagnostics explain the score rather than combining into it', async () => {
+    await reachCategories();
+    uniquenessMock.mockResolvedValue(SCORES);
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    expect(await screen.findByText(/These two explain the score above/i)).toBeInTheDocument();
+  });
+
+  // Task 19 — 05-frontend-shell.md.
+  it('flips the button to "Recompute score" once scored', async () => {
+    await reachCategories();
+    uniquenessMock.mockResolvedValue(SCORES);
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    expect(await screen.findByRole('button', { name: /Recompute score/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Compute uniqueness score/ })).toBeNull();
+  });
+
+  // sufficientCohort: false is a VALID response, not an error. Rendering the
+  // number anyway is the silent-100 problem the backend already fixed; showing
+  // ApiErrorPanel would call a correct answer a failure.
+  it('renders the small-cohort state instead of a number, and never as an error', async () => {
+    await reachCategories();
+    uniquenessMock.mockResolvedValue(SMALL_COHORT);
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    await waitFor(() => expect(screen.getByTestId('cohort-context')).toBeInTheDocument());
+    expect(screen.queryByTestId('score-primary')).toBeNull();
+    expect(screen.queryByTestId('score-diagnostics')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  // The one place this task can accidentally trap an operator on Step 5.
+  it('leaves Finish reachable when the cohort is too small to rank against', async () => {
+    await reachCategories();
+    uniquenessMock.mockResolvedValue(SMALL_COHORT);
+    fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+    await waitFor(() => expect(latestDraft?.cohortInsufficient).toBe(true));
+    // No defensible number, so none is written — the flag is what unblocks Finish.
+    expect(latestDraft?.uniquenessScore).toBeNull();
+    expect(stepValid(latestDraft!, 4)).toBe(true);
   });
 });
