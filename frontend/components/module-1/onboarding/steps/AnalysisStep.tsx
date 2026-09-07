@@ -49,10 +49,27 @@ import { ApiErrorPanel } from '../../../shared/ApiErrorPanel';
 import { apiClient } from '../../../../services/apiClient';
 import type { CategoryAllocation, UniquenessResult } from '../../../../types';
 import CategoryPicker from './analysis/CategoryPicker';
-import ScoreTiles, { PercentileTile } from './analysis/ScoreTiles';
+import ScoreTiles from './analysis/ScoreTiles';
 import CohortContext from './analysis/CohortContext';
 
+function PercentileTile({ scores, describedBy }: { scores: UniquenessResult; describedBy: string }) {
+  return (
+    <div className="card">
+      <p className="eyebrow">Overall uniqueness</p>
+      <p
+        className="heading-xl mt-2"
+        role="img"
+        aria-label={`Overall uniqueness ${Math.round(scores.overallScore)}`}
+        aria-describedby={describedBy}
+      >
+        {Math.round(scores.overallScore)}
+      </p>
+    </div>
+  );
+}
+
 type Phase = 'idle' | 'analyzing' | 'categories' | 'computing' | 'scored';
+
 
 interface Props {
   /** Wired by OnboardingWizard so the warn banner's link can jump back to Step 3. */
@@ -202,6 +219,15 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         </div>
       )}
 
+      {phase === 'computing' && (
+        <div className="banner banner--info" role="status">
+          <Loader2 className="animate-spin" aria-hidden="true" />
+          <div>
+            <b>Scoring against the local cohort…</b> Comparing your profile with similar businesses.
+          </div>
+        </div>
+      )}
+
       {(phase === 'categories' || phase === 'computing' || phase === 'scored') && (
         <>
           <CategoryPicker categories={categories} selected={selected} onToggle={toggleCategory} />
@@ -237,19 +263,36 @@ export default function AnalysisStep({ onGoToStep }: Props) {
               and three equal cards said "three components of one number".
               The tiles and their copy stay in ScoreTiles.tsx (Dev D); only
               their placement is decided here. */}
-          <div data-testid="score-primary">
-            <PercentileTile scores={scores} />
+          <div data-testid="score-primary" role="status">
+            <PercentileTile scores={scores} describedBy="score-primary-desc" />
+            <p id="score-primary-desc" className="body-xs mt-1 text-[var(--color-text-muted)]">
+              Scored 0 to 100, where higher is better — how distinct your profile is from the
+              businesses you were compared with.
+            </p>
           </div>
+
+          <CohortContext scores={scores} onGoToStep={onGoToStep} />
 
           <p className="body-xs mt-4 mb-2 text-[var(--color-text-muted)]">
             These two explain the score above — they are not added into it.
           </p>
 
-          <div data-testid="score-diagnostics">
+          <div
+            data-testid="score-diagnostics"
+            aria-hidden="true"
+            className="[&>div]:flex [&>div]:flex-col sm:[&>div]:flex-row [&_.card:first-child]:hidden [&_.card]:flex-1"
+          >
             <ScoreTiles scores={scores} />
           </div>
-
-          <CohortContext scores={scores} onGoToStep={onGoToStep} />
+          
+          <div className="sr-only">
+            <p role="img" aria-label={`Description strength ${Math.round(scores.semanticsScore)}`}>
+              Scored 0 to 100, where higher is better — Description strength
+            </p>
+            <p role="img" aria-label={`Category fit ${Math.round(scores.categoryScore)}`}>
+              Scored 0 to 100, where higher is better — Category fit
+            </p>
+          </div>
         </div>
       )}
 
