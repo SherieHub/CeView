@@ -40,7 +40,6 @@ export interface NavItem {
   icon: LucideIcon;
   title: string;
   sub: string;
-  badge?: number;
 }
 
 export type NavEntry = NavSection | NavItem;
@@ -51,7 +50,7 @@ function isNavItem(entry: NavEntry): entry is NavItem {
 
 export const NAV: NavEntry[] = [
   { section: 'Intelligence' },
-  { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, title: 'Dashboard', sub: 'Alert command center', badge: 2 },
+  { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, title: 'Dashboard', sub: 'Alert command center' },
   { section: 'Create' },
   { id: 'content', path: '/content', label: 'Content Studio', icon: Sparkles, title: 'Content Studio', sub: 'Draft, audit and publish' },
   { id: 'calendar', path: '/calendar', label: 'Calendar', icon: CalendarDays, title: 'Calendar', sub: 'Publishing schedule' },

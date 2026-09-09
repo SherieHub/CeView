@@ -1,0 +1,5 @@
+[     508ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=bc76ec06:20102
+[     683ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[     687ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788511704418:35:11)
+[     687ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0

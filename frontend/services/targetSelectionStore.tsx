@@ -33,8 +33,23 @@ export interface TargetSelectionStore {
 
 const TargetSelectionContext = createContext<TargetSelectionStore | null>(null);
 
-export function TargetSelectionProvider({ children }: { children: ReactNode }) {
-  const [target, setTargetState] = useState<TargetSelection | null>(null);
+export function TargetSelectionProvider({
+  children,
+  initial,
+}: {
+  children: ReactNode;
+  /**
+   * Seed the pick instead of starting empty. Only the dev preview routes pass
+   * this — the real app always starts null and makes the operator choose, which
+   * is the whole point of the gate. Mirrors ProfileProvider's `initial`.
+   *
+   * Unlike ProfileProvider's, this seed is NOT authoritative: it is just the
+   * initial state, so the header's market selector and "re-pick" still write
+   * over it normally.
+   */
+  initial?: TargetSelection;
+}) {
+  const [target, setTargetState] = useState<TargetSelection | null>(initial ?? null);
 
   const value = useMemo<TargetSelectionStore>(
     () => ({

@@ -46,8 +46,8 @@ export default function AiActionPlan({ report }: ActionPlanSlotProps) {
           list that the detail cards below expand on. */}
       <div className="card grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-2">
-          <h2 className="heading-lg flex items-center gap-2">
-            <Sparkles size={22} className="text-teal-accent" aria-hidden="true" />
+          <h2 className="heading-md flex items-center gap-2">
+            <Sparkles size={20} className="text-teal-accent" aria-hidden="true" />
             AI Action Plan
           </h2>
           <p className="body-sm">{report.executiveSummary}</p>

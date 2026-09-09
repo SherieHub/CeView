@@ -155,11 +155,14 @@ test.describe('End-to-end authenticated journey', () => {
 
     // The prescriptive report now returns a real executiveSummary — assert
     // the AI Action Plan renders, not the "Loading report…" or "returned no
-    // content" placeholder states. 35s, not 20s: Spring's own proxy timeout
-    // to FastAPI (ceview.fastapi.timeout-seconds) is 30s, so a stricter wait
-    // here can fail on a real, still-in-flight report rather than a genuine
-    // problem — see this test's setTimeout comment above for the evidence.
-    await expect(page.getByRole('heading', { name: 'AI Action Plan' })).toBeVisible({ timeout: 35_000 });
+    // content" placeholder states. 45s, not 35s: Spring's own proxy timeout to
+    // FastAPI (ceview.fastapi.timeout-seconds) is 30s, and 35s left only 5s of
+    // headroom over it — not enough to absorb a cold first Groq call, which is
+    // what this kept failing on (a 39.7s first attempt, then a 11.9s pass on
+    // retry, i.e. warm). A stricter wait fails on a real, still-in-flight
+    // report rather than a genuine problem. Still well inside the 90s budget
+    // set above.
+    await expect(page.getByRole('heading', { name: 'AI Action Plan' })).toBeVisible({ timeout: 45_000 });
     const firstDiagnostic = page.getByTestId('action-plan-card-0');
     await expect(firstDiagnostic).toBeVisible();
     await expect(firstDiagnostic).not.toHaveText('');
@@ -184,22 +187,44 @@ test.describe('End-to-end authenticated journey', () => {
     await expect(page.getByText('Step 2 of 2')).toBeVisible();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
-    // Visual Direction Board (POST /api/creative-direction/generate -> Spring's
-    // AIInferenceGatewayService.generateCreative -> fastapi-sbert) has no known
-    // defect on the happy path and fastapi-sbert IS started in the e2e-journey
-    // CI job (see this file's header comment) — but a live Groq call can still
-    // fail transiently, in which case this falls through to
-    // VisualDirectionBoard.tsx's <ApiErrorPanel> instead. Accept either outcome,
-    // mirroring the caption-panel assertion below, and only require real content
-    // when the "Shot list" heading actually rendered.
-    const visualDirection = page.locator('section[aria-labelledby="visual-direction-title"]');
-    const shotListHeading = visualDirection.getByRole('heading', { name: 'Shot list' });
-    const visualDirectionError = visualDirection.getByRole('alert');
-    await expect(shotListHeading.or(visualDirectionError)).toBeVisible({ timeout: 20_000 });
-    if (await shotListHeading.isVisible()) {
-      await expect(visualDirection).not.toContainText('undefined');
-      await expect(visualDirection).not.toContainText('NaN');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Create content that fits the market' }),
+    ).toBeVisible();
+
+    // The shot list lives in the "Visual Guide" drawer now — the inline
+    // VisualDirectionBoard (section[aria-labelledby="visual-direction-title"])
+    // was removed in the studio rebuild, which is what this assertion used to
+    // reach for. The drawer auto-opens on a first visit (useFirstRunDrawer);
+    // the floating trigger opens it if that FTUE flag has already been set.
+    const visualGuide = page.getByRole('dialog', { name: 'Visual Guide' });
+    if (!(await visualGuide.isVisible())) {
+      await page.getByRole('button', { name: 'Visual Guide' }).click();
     }
+    await expect(visualGuide).toBeVisible();
+
+    // POST /api/creative-direction/generate -> Spring's
+    // AIInferenceGatewayService.generateCreative -> fastapi-sbert has no known
+    // defect on the happy path, and fastapi-sbert IS started in the e2e-journey
+    // CI job (see this file's header comment) — but a live Groq call can still
+    // fail transiently. ContentStudioView catches that into `direction = null`,
+    // which renders the drawer's header with no sections and NO error panel, so
+    // there is nothing to assert on in that branch. Require real content only
+    // when the shot list actually rendered, mirroring the caption-panel
+    // assertion below.
+    const shotListHeading = visualGuide.getByRole('heading', { name: 'Shot list' });
+    const shotListRendered = await shotListHeading
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (shotListRendered) {
+      await expect(visualGuide).not.toContainText('undefined');
+      await expect(visualGuide).not.toContainText('NaN');
+    }
+
+    // Close it before asserting on the caption matrix underneath — the drawer
+    // scrim covers the column the cards are in.
+    await visualGuide.getByRole('button', { name: 'Close' }).click();
+    await expect(visualGuide).toBeHidden();
 
     // POST /api/content/generate currently 500s with
     // MOD31_CAPTION_AGENT_FAILED — a known, out-of-scope defect in the
@@ -208,7 +233,9 @@ test.describe('End-to-end authenticated journey', () => {
     // appearing. Do not assert the 500 as required: once the caption agent is
     // fixed, this must keep passing on the happy path too.
     const errorPanel = page.getByRole('alert').filter({ hasText: 'Content Studio' });
-    const captionOption = page.getByRole('article').filter({ hasText: 'Approve' });
+    // "Select", not "Approve": the option cards stage a caption into the
+    // composer now rather than approving in place.
+    const captionOption = page.getByRole('article').filter({ hasText: 'Select' });
     await expect(errorPanel.or(captionOption).first()).toBeVisible({ timeout: 60_000 });
   });
 });

@@ -153,8 +153,20 @@ export default function CampaignAnalyticsView() {
         ))}
       </div>
 
-      <PesGauge score={score} label={label} metrics={metrics} />
+      {/* Score and recent-post performance are both "how are we doing"
+          overview content. Both cards are pinned to the exact same fixed
+          height (660px — see PesGauge.tsx / PreviouslyPublished.tsx) rather
+          than sized by content, so the row never has dead space under a
+          shorter card and never grows just because a business has a long
+          post history — the post list scrolls internally instead. */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <PesGauge score={score} label={label} metrics={metrics} />
+        <PreviouslyPublished />
+      </div>
 
+      {/* Full width: the flow needs horizontal room to read left-to-right,
+          and its own responsive breakpoints assume the viewport's width, not
+          a halved grid column's. */}
       <CustomerJourneyFunnel input={campaign} />
 
       {/* One shared window control governs all three charts below — it used to
@@ -188,9 +200,9 @@ export default function CampaignAnalyticsView() {
 
       {error != null && <ApiErrorPanel error={error} label="Campaign Analytics" />}
 
-      {/* Full width, stacked: the action plan grows with the number of
-          diagnostics and has no fixed-height partner, so putting the post list
-          beside it just stranded whitespace under the list. */}
+      {/* Full width: the summary card and the diagnostics row both carry
+          their own responsive column counts (see AiActionPlan.tsx), which
+          assume the full content width — halving it would over-pack them. */}
       {isReportPopulated(report) ? (
         <AiActionPlan report={report as PrescriptiveReport} />
       ) : report === null && error == null ? (
@@ -208,7 +220,6 @@ export default function CampaignAnalyticsView() {
           </p>
         </div>
       ) : null}
-      <PreviouslyPublished />
     </div>
   );
 }

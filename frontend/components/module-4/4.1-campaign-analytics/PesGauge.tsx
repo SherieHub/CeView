@@ -98,7 +98,10 @@ export function computeContributions(metrics: Metrics): Contribution[] {
   return specs.map((s) => ({ ...s, contribution: s.normalized * (s.weightPct / 100) }));
 }
 
-const GAUGE_SIZE = 200;
+// Sized (and the surrounding gaps kept tight) so this card lands close to
+// PreviouslyPublished's height when the two sit side by side — see
+// CampaignAnalyticsView.tsx's pairing comment.
+const GAUGE_SIZE = 176;
 
 export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
   const clampedScore = clamp01(score);
@@ -107,10 +110,18 @@ export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
   const contributions = computeContributions(metrics);
 
   return (
-    <div className="card flex flex-col gap-6">
+    // Hard h-[660px] (not min-h) so this card is *exactly* the same size as
+    // PreviouslyPublished, which is also fixed at 660px — a min-height only
+    // guarantees "at least", and the two drifted apart under real content.
+    // 660px, not 600: this card's fixed content (title + 176px gauge + label
+    // + "Contribution breakdown" heading + 5 metric rows + formula line +
+    // card padding) measures to ~636px on its own, so 600 clipped it into a
+    // visible scrollbar. overflow-y-auto stays as a safety net for future
+    // content growth, not because this card is expected to scroll today.
+    <div className="card flex h-[660px] flex-col gap-4 overflow-y-auto">
       <h3 className="heading-md">Performance Score</h3>
 
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-2">
         <div className="relative" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
           <RadialBarChart
             width={GAUGE_SIZE}
@@ -145,7 +156,7 @@ export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <h4 className="text-meta font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Contribution breakdown
         </h4>

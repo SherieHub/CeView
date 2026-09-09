@@ -1,0 +1,224 @@
+- generic [ref=e5]:
+  - navigation "Main" [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Ce
+      - generic [ref=e9]: CeView
+      - button "Collapse sidebar" [expanded] [ref=e11] [cursor=pointer]
+    - list [ref=e16]:
+      - listitem [ref=e17]: Intelligence
+      - listitem [ref=e18]:
+        - button "Dashboard" [ref=e19] [cursor=pointer]
+      - listitem [ref=e26]: Create
+      - listitem [ref=e27]:
+        - button "Content Studio" [ref=e28] [cursor=pointer]
+      - listitem [ref=e33]:
+        - button "Calendar" [ref=e34] [cursor=pointer]
+      - listitem [ref=e38]: Measure
+      - listitem [ref=e39]:
+        - button "Performance" [ref=e40] [cursor=pointer]
+      - listitem [ref=e45]: Settings
+      - listitem [ref=e46]:
+        - button "Business Profile" [ref=e47] [cursor=pointer]
+      - listitem [ref=e53]:
+        - button "Platforms" [ref=e54] [cursor=pointer]
+      - listitem [ref=e62]:
+        - button "Workspace" [ref=e63] [cursor=pointer]
+    - button "Sign out" [ref=e71] [cursor=pointer]
+  - generic [ref=e73]:
+    - banner [ref=e74]:
+      - button "Search" [disabled] [ref=e75]
+      - button "Notifications" [disabled] [ref=e80]
+    - main [ref=e85]:
+      - main "Content Studio" [ref=e86]:
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - paragraph [ref=e89]: Content Studio
+            - heading "Create content that fits the market" [level=1] [ref=e90]
+            - paragraph [ref=e91]: Choose an AI direction, stage your media, then validate it before publishing.
+          - generic [ref=e93]:
+            - generic [ref=e94]: Target market
+            - combobox "Target market" [ref=e95]:
+              - option "South Korea" [selected]
+        - alert [ref=e96]:
+          - heading "fastapi is unavailable" [level=3] [ref=e101]
+          - paragraph [ref=e102]: Content Studio
+          - paragraph [ref=e103]: This screen needs a dependency that is not answering. Nothing below is simulated — the data is simply not available.
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - term [ref=e106]: Request
+              - definition [ref=e107]: POST /api/content/generate
+            - generic [ref=e108]:
+              - term [ref=e109]: Status
+              - definition [ref=e110]: 500 · AI_SERVICE_UNREACHABLE
+            - generic [ref=e111]:
+              - term [ref=e112]: Message
+              - definition [ref=e113]: The AI service did not respond with a usable error.
+            - generic [ref=e114]:
+              - term [ref=e115]: Cause
+              - definition [ref=e116]: HTTP 500 with no unavailability body
+            - generic [ref=e117]:
+              - term [ref=e118]: Stage
+              - definition [ref=e119]: spring/generation/caption
+        - generic [ref=e120]:
+          - generic [ref=e121]:
+            - region [ref=e122]:
+              - generic [ref=e128]:
+                - heading "AI Copywriting Matrix" [level=2] [ref=e129]
+                - paragraph [ref=e130]: Localised copy, tailored to platform and audience.
+              - tablist "Content platform" [ref=e131]:
+                - tab "Instagram" [selected] [ref=e132] [cursor=pointer]
+                - tab "TikTok" [ref=e133] [cursor=pointer]
+                - tab "Facebook" [ref=e134] [cursor=pointer]
+                - tab "Naver Blog" [ref=e135] [cursor=pointer]
+              - paragraph [ref=e136]: No generated content yet for this platform.
+            - region [ref=e137]:
+              - generic [ref=e143]:
+                - heading "Visual direction" [level=2] [ref=e144]
+                - paragraph [ref=e145]: Shot-list guidance for instagram.
+              - list [ref=e146]:
+                - listitem [ref=e147]:
+                  - generic [ref=e148]: "1"
+                  - generic [ref=e149]: 와이드 앵글로 인피니티 풀과 프라이빗 코브를 배경에 담아 일몰을 강조
+                - listitem [ref=e150]:
+                  - generic [ref=e151]: "2"
+                  - generic [ref=e152]: 커플이 풀에 발을 담그며 햇빛이 물에 반사되는 순간 클로즈업
+                - listitem [ref=e153]:
+                  - generic [ref=e154]: "3"
+                  - generic [ref=e155]: 드론으로 공항에서 리조트까지 10분 이동 경로를 따라 촬영
+                - listitem [ref=e156]:
+                  - generic [ref=e157]: "4"
+                  - generic [ref=e158]: 밤에 라탄 조명과 촛불로 꾸민 해변 산책로를 부드럽게 비춤
+                - listitem [ref=e159]:
+                  - generic [ref=e160]: "5"
+                  - generic [ref=e161]: 발코니에서 제공되는 세부 현지 요리와 열대 과일 디테일 샷
+              - generic [ref=e162]:
+                - heading "Shot list" [level=3] [ref=e163]
+                - generic [ref=e164]:
+                  - paragraph [ref=e165]: Sunset Infinity
+                  - paragraph [ref=e166]: 풀 가장자리에서 일몰을 바라보는 전신 샷, 인피니티 라인이 화면 중앙에 위치
+                  - paragraph [ref=e167]: "Lighting: golden hour, soft backlight with rim lighting"
+                - generic [ref=e168]:
+                  - paragraph [ref=e169]: Arrival Journey
+                  - paragraph [ref=e170]: 공항 출발부터 리조트 입구까지 차량 내부와 외부를 교차 편집, 10분 거리 강조
+                  - paragraph [ref=e171]: "Lighting: morning natural light, high contrast"
+                - generic [ref=e172]:
+                  - paragraph [ref=e173]: Evening Relaxation
+                  - paragraph [ref=e174]: 밤에 라탄 체어와 조명이 비치는 해변에서 커플이 와인 잔을 들고 대화하는 장면
+                  - paragraph [ref=e175]: "Lighting: twilight, warm ambient with subtle fill"
+              - generic [ref=e176]:
+                - heading "Moodboard" [level=3] [ref=e177]
+                - paragraph [ref=e178]: 따뜻한 골드와 오렌지 일몰 톤, 청량한 터키석 블루, 부드러운 핑크와 뉴트럴 베이지 조화
+                - list [ref=e179]:
+                  - listitem [ref=e180]: K‑style lifestyle blog aesthetic with clean layouts
+                  - listitem [ref=e181]: Cebu beach cinematic with pastel‑washed horizons
+                  - listitem [ref=e182]: Minimalist luxury Instagram feeds emphasizing texture and light
+              - generic [ref=e183]: Keep the final asset aligned with this direction—the compliance check evaluates caption-to-media consistency.
+          - generic [ref=e189]:
+            - region [ref=e190]:
+              - generic [ref=e196]:
+                - heading "Publish composer" [level=2] [ref=e197]
+                - paragraph [ref=e198]: Prepare the final caption and publishing details.
+              - generic [ref=e199]: Staged caption
+              - textbox "Staged caption" [ref=e200]:
+                - /placeholder: Approve a matrix option or write your own caption.
+              - paragraph [ref=e201]: 0 / 5,000 characters
+              - generic [ref=e202]:
+                - generic [ref=e203]: Publication media
+                - generic [ref=e204] [cursor=pointer]:
+                  - text: Upload PNG, JPG, or WEBP
+                  - generic [ref=e209]: Up to 20 MB
+                  - button "Upload PNG, JPG, or WEBP Up to 20 MB" [ref=e210]
+              - group "Publish to" [ref=e211]:
+                - generic [ref=e213]:
+                  - generic [ref=e214] [cursor=pointer]:
+                    - checkbox "Instagram" [ref=e215]
+                    - text: Instagram
+                  - generic [ref=e216] [cursor=pointer]:
+                    - checkbox "TikTok" [ref=e217]
+                    - text: TikTok
+                  - generic [ref=e218] [cursor=pointer]:
+                    - checkbox "Facebook" [ref=e219]
+                    - text: Facebook
+                  - generic [ref=e220] [cursor=pointer]:
+                    - checkbox "Naver Blog" [ref=e221]
+                    - text: Naver Blog
+              - generic [ref=e222]:
+                - generic [ref=e223]:
+                  - text: Visibility
+                  - combobox "Visibility" [ref=e224]:
+                    - option "Public" [selected]
+                    - option "Private"
+                - generic [ref=e225]:
+                  - checkbox "Comments on" [checked] [ref=e226]
+                  - text: Comments on
+                - generic [ref=e227]:
+                  - checkbox "Paid partnership" [ref=e228]
+                  - text: Paid partnership
+              - generic [ref=e229]:
+                - checkbox "I confirm I am authorised to publish this media and caption. Checking this starts the compliance audit when all inputs are ready." [ref=e230]
+                - generic [ref=e231]: I confirm I am authorised to publish this media and caption. Checking this starts the compliance audit when all inputs are ready.
+              - status [ref=e235]: Approve or write a caption first.
+            - region [ref=e236]:
+              - generic [ref=e242]:
+                - heading "Compliance audit" [level=2] [ref=e243]
+                - paragraph [ref=e244]: Checks the caption and selected media before publishing.
+              - paragraph [ref=e245]: Add a caption, media, and a publish destination, then confirm authorisation to begin the six-step audit.
+        - region [ref=e246]:
+          - generic [ref=e247]:
+            - generic [ref=e252]:
+              - heading "Content board" [level=2] [ref=e253]
+              - paragraph [ref=e254]: Review drafts and published content in one place.
+            - button "Publish" [disabled] [ref=e256]
+          - generic [ref=e260]:
+            - button "all" [ref=e261] [cursor=pointer]
+            - button "draft" [ref=e262] [cursor=pointer]
+            - button "published" [ref=e263] [cursor=pointer]
+          - generic [ref=e264]:
+            - article [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e267]: instagram
+                - generic [ref=e268]: published
+              - paragraph [ref=e269]: "POV: you booked the 호캉스 you kept postponing 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon."
+              - generic [ref=e270]:
+                - generic [ref=e271]: 2026-08-04
+                - generic [ref=e272]: Reach 31,200
+                - generic [ref=e273]: Likes 2,810
+            - article [ref=e274]:
+              - generic [ref=e275]:
+                - generic [ref=e276]: tiktok
+                - generic [ref=e277]: published
+              - paragraph [ref=e278]: no thoughts. just sardines. 🐟🌊 30m from breakfast, Moalboal
+              - generic [ref=e279]:
+                - generic [ref=e280]: 2026-08-02
+                - generic [ref=e281]: Reach 45,400
+                - generic [ref=e282]: Likes 3,520
+            - article [ref=e283]:
+              - generic [ref=e284]:
+                - generic [ref=e285]: facebook
+                - generic [ref=e286]: published
+              - paragraph [ref=e287]: Sunset Cove Beach Resort — Moalboal, Cebu. Direct shoreline access to the sardine run, visible year-round.
+              - generic [ref=e288]:
+                - generic [ref=e289]: 2026-07-30
+                - generic [ref=e290]: Reach 22,100
+                - generic [ref=e291]: Likes 1,510
+            - article [ref=e292]:
+              - generic [ref=e293]:
+                - generic [ref=e294]: instagram
+                - generic [ref=e295]: published
+              - paragraph [ref=e296]: The water goes quiet first. Then the light shifts, and a wall of silver turns beneath you.
+              - generic [ref=e297]:
+                - generic [ref=e298]: 2026-07-28
+                - generic [ref=e299]: Reach 18,600
+                - generic [ref=e300]: Likes 1,180
+            - article [ref=e301]:
+              - generic [ref=e302]:
+                - generic [ref=e303]: facebook
+                - generic [ref=e304]: draft
+              - paragraph [ref=e305]: Golden Week bundle — flight + stay + guided dive, one price. Draft pending rate confirmation.
+              - generic [ref=e306]: 2026-08-12
+            - article [ref=e308]:
+              - generic [ref=e309]:
+                - generic [ref=e310]: Naver Blog
+                - generic [ref=e311]: draft
+              - paragraph [ref=e312]: 세부에서 찾은 나만의 힐링 스팟 🌴 모알보알 선셋코브 리조트 후기입니다.
+              - generic [ref=e313]: 2026-08-18

@@ -52,7 +52,24 @@ import CategoryPicker from './analysis/CategoryPicker';
 import ScoreTiles from './analysis/ScoreTiles';
 import CohortContext from './analysis/CohortContext';
 
+function PercentileTile({ scores, describedBy }: { scores: UniquenessResult; describedBy: string }) {
+  return (
+    <div className="card">
+      <p className="eyebrow">Overall uniqueness</p>
+      <p
+        className="heading-xl mt-2"
+        role="img"
+        aria-label={`Overall uniqueness ${Math.round(scores.overallScore)}`}
+        aria-describedby={describedBy}
+      >
+        {Math.round(scores.overallScore)}
+      </p>
+    </div>
+  );
+}
+
 type Phase = 'idle' | 'analyzing' | 'categories' | 'computing' | 'scored';
+
 
 interface Props {
   /** Wired by OnboardingWizard so the warn banner's link can jump back to Step 3. */
@@ -119,7 +136,9 @@ export default function AnalysisStep({ onGoToStep }: Props) {
     // fall back to the picker rather than showing a number that lies.
     if (phase === 'scored') {
       setScores(null);
-      setDraft({ ...draft, categories: next, uniquenessScore: null });
+      // The cohort verdict belonged to the old selection too — a stale
+      // "insufficient" would otherwise keep Finish enabled with nothing behind it.
+      setDraft({ ...draft, categories: next, uniquenessScore: null, cohortInsufficient: false });
       setPhase('categories');
     }
   }
@@ -139,16 +158,26 @@ export default function AnalysisStep({ onGoToStep }: Props) {
       .then((result) => {
         setScores(result);
         setPhase('scored');
-        // Written into the draft immediately so OnboardingWizard's Finish
-        // button (gated on stepValid case 4 -> draft.uniquenessScore != null)
-        // enables the moment this resolves.
-        setDraft({ ...draft, categories: selected, uniquenessScore: result.overallScore });
+        // Written into the draft immediately so OnboardingWizard's Finish button
+        // (stepValid case 4) enables the moment this resolves. A cohort too small
+        // to rank against leaves no defensible number, so none is written — the
+        // flag satisfies that gate instead. See ObDraft.cohortInsufficient.
+        setDraft({
+          ...draft,
+          categories: selected,
+          uniquenessScore: result.sufficientCohort ? result.overallScore : null,
+          cohortInsufficient: !result.sufficientCohort,
+        });
       })
       .catch((e) => {
         setError(e);
         setPhase('categories');
       });
   }
+
+  // A VALID backend answer, not a failure: the cohort was too small to rank
+  // against. It must never reach ApiErrorPanel, and must never show a number.
+  const insufficientCohort = phase === 'scored' && scores != null && !scores.sufficientCohort;
 
   if (error != null) {
     return (
@@ -190,6 +219,15 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         </div>
       )}
 
+      {phase === 'computing' && (
+        <div className="banner banner--info" role="status">
+          <Loader2 className="animate-spin" aria-hidden="true" />
+          <div>
+            <b>Scoring against the local cohort…</b> Comparing your profile with similar businesses.
+          </div>
+        </div>
+      )}
+
       {(phase === 'categories' || phase === 'computing' || phase === 'scored') && (
         <>
           <CategoryPicker categories={categories} selected={selected} onToggle={toggleCategory} />
@@ -206,16 +244,63 @@ export default function AnalysisStep({ onGoToStep }: Props) {
               </>
             ) : (
               <>
-                <Sparkles size={16} aria-hidden="true" /> Compute uniqueness score
+                <Sparkles size={16} aria-hidden="true" />
+                {/* Once a score is on screen, "Compute" reads as though nothing
+                    has happened yet. */}
+                {phase === 'scored' ? 'Recompute score' : 'Compute uniqueness score'}
               </>
             )}
           </button>
         </>
       )}
 
-      {phase === 'scored' && scores && (
+      {phase === 'scored' && scores && !insufficientCohort && (
         <div className="mt-6">
-          <ScoreTiles scores={scores} />
+          {/* One score, two explanations. The percentile gets its own full-width
+              card and the largest type on the screen; the diagnostics sit below
+              at .heading-md. Layout has to carry this on its own — a reader who
+              never reads a label still has to come away with the right idea,
+              and three equal cards said "three components of one number".
+              The tiles and their copy stay in ScoreTiles.tsx (Dev D); only
+              their placement is decided here. */}
+          <div data-testid="score-primary" role="status">
+            <PercentileTile scores={scores} describedBy="score-primary-desc" />
+            <p id="score-primary-desc" className="body-xs mt-1 text-[var(--color-text-muted)]">
+              Scored 0 to 100, where higher is better — how distinct your profile is from the
+              businesses you were compared with.
+            </p>
+          </div>
+
+          <CohortContext scores={scores} onGoToStep={onGoToStep} />
+
+          <p className="body-xs mt-4 mb-2 text-[var(--color-text-muted)]">
+            These two explain the score above — they are not added into it.
+          </p>
+
+          <div
+            data-testid="score-diagnostics"
+            aria-hidden="true"
+            className="[&>div]:flex [&>div]:flex-col sm:[&>div]:flex-row [&_.card:first-child]:hidden [&_.card]:flex-1"
+          >
+            <ScoreTiles scores={scores} />
+          </div>
+          
+          <div className="sr-only">
+            <p role="img" aria-label={`Description strength ${Math.round(scores.semanticsScore)}`}>
+              Scored 0 to 100, where higher is better — Description strength
+            </p>
+            <p role="img" aria-label={`Category fit ${Math.round(scores.categoryScore)}`}>
+              Scored 0 to 100, where higher is better — Category fit
+            </p>
+          </div>
+        </div>
+      )}
+
+      {insufficientCohort && scores && (
+        /* No number, no percentile, no success banner — showing any of them is
+           the silent-100 problem the backend's cohort floor already fixed.
+           CohortContext supplies the small-cohort sentence; this is the frame. */
+        <div className="mt-6">
           <CohortContext scores={scores} onGoToStep={onGoToStep} />
         </div>
       )}

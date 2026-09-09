@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../../services/apiClient';
 import { useProfile } from '../../../services/profileContext';
+import { useUnreadAlerts } from '../../../services/unreadAlertsStore';
 import { isSurge } from '@/types';
 import type { Market } from '@/types';
 import type { DemandAlert } from '@/types';
@@ -164,6 +165,15 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
 
   const surgeCount = useMemo(() => myAlerts.filter(isSurge).length, [myAlerts]);
 
+  // The sidebar's Dashboard badge shows this same figure. Published rather than
+  // re-fetched: the keyword-trend hop behind it can take tens of seconds, and a
+  // second caller would pay it again. Null while loading so the rail shows no
+  // badge instead of a stale or invented one.
+  const { setUnreadCount } = useUnreadAlerts();
+  useEffect(() => {
+    setUnreadCount(status === 'loading' ? null : unreadCount);
+  }, [status, unreadCount, setUnreadCount]);
+
   const visibleAlerts = useMemo(
     () => myAlerts.filter((a) => matchesFilter(a, feedFilter, readIds)),
     [myAlerts, feedFilter, readIds],
@@ -265,12 +275,18 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     // operator they have no alerts when the request simply never arrived.
     // "Your data may be stale" is honest; "you have nothing" is not.
     if (aiServiceDown) return 'ai-down';
-    // `empty` means no forecast has ever run — distinct from "your categories
-    // match nothing right now", which the feed renders from myAlerts.length.
-    // Different copy, different remedy.
-    if (alerts.length === 0) return 'empty';
+    // `empty` means nothing has been loaded at all — distinct from "your
+    // categories match nothing right now", which the feed renders from
+    // myAlerts.length. Different copy, different remedy.
+    //
+    // Counted over allAlerts, not `alerts`: keyword-trend alerts arrive on
+    // their own hop and are already counted by unreadCount/surgeCount below.
+    // Deriving `empty` from the demand-alert list alone let the feed render
+    // "No notifications yet" while the tiles above it counted keyword alerts
+    // the operator had no way to reach. One list decides both.
+    if (allAlerts.length === 0) return 'empty';
     return 'normal';
-  }, [forceMode, status, alerts.length, aiServiceDown]);
+  }, [forceMode, status, allAlerts.length, aiServiceDown]);
 
   const showMarkets = (mode === 'normal' || mode === 'ai-down') && selectedAlert != null;
 

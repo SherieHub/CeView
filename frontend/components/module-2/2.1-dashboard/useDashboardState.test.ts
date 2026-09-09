@@ -181,6 +181,25 @@ describe('useDashboardState — the two distinct empties', () => {
     expect(result.current.mode).toBe('empty');
   });
 
+  // The regression this replaces: `empty` was derived from the demand-alert
+  // list alone, so a profile with no forecast but live keyword trends rendered
+  // "No notifications yet" under a summary tile counting those same alerts —
+  // two unreachable alerts and no way to see them.
+  it('is not empty when only keyword-trend alerts arrived', async () => {
+    mockProfile.categories = DEMO_CATEGORIES;
+    const keyword = { ...alerts()[0], id: 'keyword-1', isRead: false };
+    keywordTrendsMock.mockResolvedValue([keyword]);
+    listMock.mockResolvedValue([]);
+    statusMock.mockResolvedValue({ available: true });
+    forCategoryMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.myAlerts).toHaveLength(1));
+
+    expect(result.current.mode).toBe('normal');
+    expect(result.current.unreadCount).toBe(1);
+  });
+
   it('stays in normal mode when alerts exist but none match the categories', async () => {
     const { result } = await renderReady(['Wellness & Spa']);
 

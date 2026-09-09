@@ -1,0 +1,7 @@
+[     857ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=bc76ec06:20102
+[    1005ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/favicon.ico:0
+[    1179ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[    1179ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[    1185ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788511704418:35:11)
+[   10830ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ http://localhost:8080/api/content/generate:0

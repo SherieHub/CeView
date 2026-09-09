@@ -244,6 +244,7 @@
      control's own border-radius instead of stacking a second outlined
      rectangle inside it. */
   --ring-focus: 0 0 0 3px rgba(95, 214, 166, 0.32);
+
 }
 
 /* ============================================================
@@ -644,12 +645,40 @@
     padding: 0 18px;
     border-width: 1.25px;
   }
+  /* Same compact size on the mint pill, so a Copy/Approve pair sitting in one
+     card footer is a matched set rather than two different button heights. A
+     size modifier, not a fourth variant — the three fills above are unchanged. */
+  .btn-primary--sm {
+    font-size: 0.875rem;
+    height: var(--btn-sm-h);
+    padding: 0 18px;
+  }
   /* The busy state swaps a 14px icon for the 16px spinner, which grew the
      button by 2px mid-refresh and nudged the row. Match the icon instead. */
   .btn-outline--sm .spinner {
     width: 14px;
     height: 14px;
     border-width: 1.5px;
+  }
+
+  /* A SIZE modifier, not a fourth variant — §4's three variants stand. Pairs
+     with .btn-outline--sm on the same --btn-sm-h token so a mint/outline pair
+     sits level, which the Content Studio's caption cards and content board
+     both need: .btn-primary's 12px/32px is a page-level control, and at that
+     size it dominated the card it sat inside. */
+  .btn-primary--sm {
+    font-size: 0.875rem;
+    height: var(--btn-sm-h);
+    padding: 0 18px;
+  }
+
+  /* Same idea for the CTA. .btn-cta's 14px/36px is sized for a drawer footer;
+     the caption cards need the same colour at card scale. */
+  .btn-cta--sm {
+    font-size: 0.875rem;
+    font-weight: 600;
+    height: var(--btn-sm-h);
+    padding: 0 18px;
   }
 }
 
@@ -1350,6 +1379,39 @@
     background: var(--color-success-bg);
     color: var(--color-success-text);
   }
+  /* Neutral tone, for a status that is genuinely not a state — "Draft" beside
+     a green "Published". A plain .chip is mint-pale, which on a status pill
+     reads as mildly positive and paired with the green as two shades of the
+     same verdict.
+     --color-text-body on this fill is 4.85:1, clearing AA at the chip's 13px.
+     --color-gray-text was the obvious pick and measures only 3.83:1 here — the
+     same trap --color-critical-text and --color-success-text were added for. */
+  .chip--muted {
+    background: #EEF1F4;
+    color: var(--color-text-body);
+  }
+  .chip--muted svg {
+    color: var(--color-text-body);
+  }
+  /* A chip carrying a full clause rather than a one- or two-word label.
+     .chip is white-space:nowrap, which is right for "Surge" or "Direct" but
+     turns a 110-character lighting instruction into a single unbreakable
+     ~700px box — fine in a wide column, horizontal page scroll on a phone.
+     This variant wraps and left-aligns instead. Everything else (the pale
+     mint fill, the pill radius) is inherited, so it still reads as one of
+     the same family. */
+  .chip--wrap {
+    display: inline-flex;
+    align-items: flex-start;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.45;
+    padding: 7px 14px;
+    max-width: 100%;
+  }
+  .chip--wrap svg {
+    margin-top: 2px;
+  }
   /* For chips sitting ON chrome (rail, dark surfaces). */
   .chip--inverse {
     background: var(--chrome-raised);
@@ -2006,10 +2068,18 @@
     gap: var(--space-sm);
     height: var(--topbar-h);
     padding: 0 var(--space-md);
-    /* Solid, not a frosted backdrop: content scrolling underneath stayed
-       faintly legible through the blur. An opaque fill hides it outright, and
-       the hairline below carries the edge. */
-    background: var(--color-white);
+    /* The canvas wash rather than a white slab, so the bar reads as part of the
+       page rather than a lid on top of it.
+       Still fully OPAQUE, and that is the constraint: .app-col already paints
+       this gradient behind the bar, but the bar is sticky, so going transparent
+       would let content scroll visibly underneath it — which is why it was a
+       flat fill in the first place. A frosted backdrop had the same problem;
+       the text stayed faintly legible through the blur.
+       Each element paints its gradient inside its own box, so this is a
+       matching wash rather than a mathematically continuous one — at 60px tall
+       against a light canvas the join is not perceptible, and the hairline
+       below carries the edge either way. */
+    background: var(--gradient-canvas);
     /* A hairline, not --color-gray-light: at 1px across the full width a solid
        border reads as a hard rule against the soft canvas. A low-opacity navy
        tint sits in the gradient rather than on top of it. */
@@ -2663,6 +2733,21 @@
     background: var(--color-white);
     box-shadow: var(--shadow-overlay);
   }
+  /* Edge-to-edge variant. Owns no header of its own — the publishing modal
+     supplies one, because its header carries platform tabs. */
+  /* Edge to edge, and TRANSPARENT: the backdrop above is the only fill. A
+     panel with its own background made a box inside a box, which is exactly
+     the clutter this variant exists to avoid. */
+  .modal-panel--full {
+    max-width: none;
+    width: 100vw;
+    height: 100dvh;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: hidden;
+  }
 }
 
 /* ============================================================
@@ -3221,5 +3306,2017 @@
       opacity: 0;
       pointer-events: none;
     }
+  }
+}
+
+/* ============================================================
+   CONTENT STUDIO — /content, Module 3.1.
+
+   Reuses the Dashboard's vocabulary wholesale — .card, .chip, .seg, .bar,
+   .banner, .empty, .conn-ico, .textarea, .upload-zone and the §3 type scale
+   (see the DASHBOARD and CHIPS/BARS blocks above). Only the layout and the
+   handful of objects unique to this screen are defined here.
+
+   ARRANGEMENT is a single centred column (.studio-flow), not a master/detail
+   grid: the work is a linear draft -> attach -> validate journey, and a
+   second column invited the operator to work two steps out of order. A
+   numbered step rail runs as a single horizontal row above the first card,
+   at every width.
+   ============================================================ */
+@layer components {
+  /* ACCESSIBILITY: --color-text-muted is #8A97A3, which is 2.98:1 on white,
+     2.66:1 on mint-pale and 2.83:1 on off-white — all three fail WCAG AA's
+     4.5:1 for body text. It carries the character counts, the card metadata,
+     every placeholder and the pending audit steps, so on this screen it is
+     doing a lot of work it cannot legibly do.
+
+     #63707F is the LIGHTEST value that clears 4.5:1 on all three surfaces
+     (5.05 / 4.51 / 4.79), so the text stays visibly secondary while becoming
+     readable. Overridden as a token on the screen root rather than restated
+     per rule: every .text-meta, .body-xs and ::placeholder below inherits it
+     with no further edits.
+
+     Scoped here because the token is app-wide and this change was asked for
+     on the Content Studio. The same failure exists on every other screen —
+     promoting these two lines to :root is the real fix. */
+  .studio-screen {
+    --color-text-muted: #63707F;
+  }
+
+  /* Roomier than the shared 24px. Scoped to this screen rather than changed on
+     .modal-panel itself, because module-4's PostAnalyticsModal uses the same
+     object and was not part of this request. */
+  .studio-screen .modal-panel {
+    padding: var(--spacing-8);
+  }
+
+  /* The market selector sits level with the title block rather than pinned to
+     its first line — with the eyebrow gone there is nothing up there for it to
+     align to. Scoped: the dashboard's own actions row is unaffected. */
+  .studio-screen .page-head {
+    align-items: center;
+  }
+
+  /* LINEAR WORKSPACE.
+     One column, not a master/detail grid. The journey is
+     draft -> attach -> validate -> publish, and a second column invited the
+     operator to work two steps at once.
+
+     NO max-width of its own. .studio-screen is .app-main's direct child, so
+     `.app-main > *` already caps the stack at --content-max and centres it —
+     the same cap the dashboard sits under. A second, narrower cap here made
+     the cards visibly inset compared with every other screen. */
+  .studio-flow {
+    display: grid;
+    gap: var(--space-lg);
+  }
+
+  /* The media half of the merged Post composer card. A sunken panel rather
+     than a hairline: the same 5% --color-chrome-light wash the dashboard's
+     Top Target Markets column carries, so a recessed working surface reads
+     the same way on both screens. Being a distinct ground, it separates the
+     two halves without a rule. */
+  .studio-attach {
+    margin-top: var(--spacing-8);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-chrome-light) 5%, transparent);
+  }
+
+  /* The staged caption. Smaller than .textarea's 16px because this field
+     holds a finished social caption being checked over, not prose being
+     composed from scratch — and at 14px a 2,200-character Instagram caption
+     stays a readable block rather than a wall.
+
+     No scrollbar and no drag handle: PublishComposer measures the content and
+     sets the height on every change, so the field always shows the whole
+     caption. A manual resize would be overwritten on the next keystroke, and
+     an overflow scrollbar would never appear. (CSS `field-sizing: content`
+     does this natively but is Chromium-only today, and mixing the two would
+     have both fighting to set height.) */
+  .textarea--caption {
+    /* Matches the media frame's floor. The JS auto-size sets an explicit
+       height, but min-height still wins, so a short caption cannot collapse
+       below the image beside it. */
+    min-height: var(--composer-field-min);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    resize: none;
+    overflow-y: hidden;
+  }
+
+  /* Caption beside media rather than stacked. A CONTAINER query, not a media
+     one: this sits inside the Post composer card, whose width is set by the
+     content column rather than by the viewport. 640px is where two columns
+     stop squeezing the textarea narrower than its own character counter. */
+  /* align-items defaults to stretch, deliberately: the media column grows to
+     whatever height the auto-sizing caption beside it settles at, so the two
+     halves of the panel end level instead of the image floating beside a tall
+     column of text. */
+  .composer-grid {
+    /* ONE floor for both halves, so an empty caption and an empty upload zone
+       start level. Two separate values drifted the moment either changed. */
+    --composer-field-min: 232px;
+    display: grid;
+    gap: var(--spacing-8);
+  }
+  /* Each half is a column so the frame below the label can take the slack. */
+  .composer-grid > * {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  @container (min-width: 640px) {
+    .composer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Each numbered section is a scroll target for the rail. scroll-margin-top
+     clears the sticky topbar, otherwise an anchored heading lands underneath
+     it. */
+  .studio-section {
+    scroll-margin-top: calc(var(--topbar-h) + var(--space-md));
+  }
+
+  /* Each panel is a query container, so the controls inside it size against
+     the card they are in rather than the window — the same reason .stat-tile
+     carries container-type on the dashboard. */
+  .studio-section > .card,
+  .studio-board > .card {
+    container-type: inline-size;
+  }
+
+  /* ELEVATION. The canvas is a mint gradient, and a white card carrying only
+     --shadow-card's soft 8% navy blur sat almost flush against it.
+     NOTE: the reference value suggested for this (0 4px 12px rgba(0,0,0,.05))
+     is WEAKER than --shadow-card (0 4px 20px rgba(27,58,92,.08)) on both blur
+     and alpha, so applying it literally would have flattened these further.
+     Taking the intent instead: a crisp hairline to define the edge, plus a
+     second tighter shadow under the existing diffuse one for contact. The
+     hairline is what actually separates card from canvas; the shadow gives
+     it lift. */
+  /* Roomier than the shared .card's 24px. Applied to every card on this screen
+     rather than to the audit alone: one card with different padding from its
+     siblings reads as a mistake, not as emphasis. */
+  .studio-screen .card {
+    padding: var(--spacing-8);
+    border: 1px solid rgba(27, 58, 92, 0.08);
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card);
+  }
+  .studio-screen .card:hover {
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card-hover);
+  }
+
+  /* Target-market selector, sitting in PageHead's actions slot where the
+     dashboard puts its score badge and refresh button. Stacked rather than
+     inline: the actions row is centre-aligned, and a label to the left of a
+     control pushed the select off the row's baseline at narrow widths. */
+  .studio-market {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  /* Same 12px/700/uppercase as .score-badge-label — the two sit in the same
+     slot on sibling screens, so a second label idiom here would show. */
+  .studio-market-label {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: var(--color-text-body);
+  }
+  /* A compact .input: same elevated-white-card treatment and the same
+     hover/focus contract, sized to sit level with .btn-outline--sm in the
+     actions row instead of towering over it. */
+  .studio-select {
+    max-width: 220px;
+    padding: 7px 12px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    background: var(--color-white);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .studio-select:hover {
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--shadow-card-hover);
+  }
+  .studio-select:focus,
+  .studio-select:focus-visible {
+    outline: none;
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--ring-focus), var(--shadow-card);
+  }
+
+  /* Card header: glyph chip, title block, optional trailing control. The
+     hairline is .dash-markets .feed-head's, so a panel head is the same
+     object on both screens. */
+  .studio-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .studio-head-text {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+  /* Card headers step down from the §3 scale. .heading-md's 24px and
+     .body-sm's 16px were set for a screen-level section title; repeated on
+     four stacked cards they competed with the page's own <h1> and with the
+     content underneath. 20px over 14px keeps the same three-signal separation
+     (size, weight, colour) at a weight the card can carry.
+     .brief-head is the drawer's version of the same object and moves with it,
+     so a panel header is one size everywhere rather than two. */
+  .studio-head .heading-md,
+  .brief-head .heading-md {
+    font-size: 1.25rem;
+  }
+  .studio-head .body-sm,
+  .brief-head .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  /* Pushes a trailing control (the board's Publish button) to the far end
+     without space-between, which would strand it left once it wraps alone. */
+  .studio-head-act {
+    margin-left: auto;
+    font-size: 0.875rem;
+  }
+
+  /* Note block — the recurring "explanatory prose in a mint panel" this
+     screen leans on heavily (Naver guidance, loading lines, audit prompts,
+     compliance feedback). Was six near-identical Tailwind runs of
+     `rounded-lg bg-mint-pale p-3 text-sm`; one object instead, so the radius
+     and leading cannot drift apart between them. */
+  .studio-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--color-navy-dark);
+  }
+  .studio-note svg {
+    flex: none;
+    color: var(--color-cyan-deep);
+  }
+  /* Outlined sibling, for notes that are caveats rather than guidance. */
+  .studio-note--line {
+    background: transparent;
+    border: 1px solid var(--color-gray-light);
+    color: var(--color-text-body);
+  }
+
+  /* An aside sitting directly on the card's white ground — no fill, no rule,
+     no box. For a closing caveat that should be readable but must not read as
+     another item in the list above it. Space above does the separating. */
+  .studio-aside {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: var(--spacing-8);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+  }
+  .studio-aside svg {
+    flex: none;
+    color: var(--color-teal-accent);
+  }
+
+  /* FLATTENED SUB-SECTIONS.
+     Shot list and Moodboard used to be bordered boxes (.studio-sub) sitting
+     inside a card — and each shot was a further bordered box inside that. Three
+     nested rectangles deep, which is the box-in-a-box the canvas already
+     suffers from. The border is gone; a divider and vertical space carry the
+     separation instead, which is all they were ever doing.
+
+     .studio-block: a titled section of a card, separated from what precedes
+     it by one hairline. */
+  /* A titled section of a card. NO rule above it — the space and the heading
+     do the separating. A divider here plus a divider between every item below
+     turned one card into a ruled table. 32px is the gap that lets a heading
+     read as starting a new section without a line under the previous one. */
+  .studio-block {
+    margin-top: var(--spacing-8);
+  }
+  /* A rule only BETWEEN blocks, never above the first — `+` rather than a
+     border on every block, which would draw a line under the panel header. */
+  .studio-block + .studio-block {
+    padding-top: var(--spacing-8);
+    border-top: 1px solid rgba(27, 58, 92, 0.10);
+  }
+  .studio-block > h3 {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-text-heading);
+    margin-bottom: var(--space-sm);
+  }
+
+  /* .studio-list: items sit directly on the card's white ground, separated by
+     whitespace alone. No box each, and no rule between — the numbered badge
+     already marks where one step ends and the next begins, so a divider was
+     drawing a boundary the content had already established. 24px is the gap
+     that reads as separation without a line; below ~16px the steps run
+     together and the rule becomes necessary again. */
+  .studio-list {
+    display: grid;
+    gap: var(--space-md);
+  }
+  .studio-list > li,
+  .studio-list > div {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+  /* Shot entries stack their label, description and lighting tag vertically,
+     so they opt out of the row flex above. */
+  .studio-list--stack > div {
+    display: block;
+  }
+
+  /* ---- Caption options -------------------------------------------------
+     One card per AI caption. Deliberately the .alert-card object: white,
+     --radius-md, --shadow-card, and a 3px transparent left border that turns
+     --color-mint-primary when chosen. That is the app's ONE selection
+     language — sidebar active row, wizard current step, selected alert — and
+     approving a caption is the same gesture. Replaces a
+     `border-success ring-2 ring-success/15` ring used nowhere else. */
+  .cap-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    /* Hairline on three sides; the left edge stays 3px and transparent so the
+       approved state can colour it without changing the card's geometry. */
+    border: 1px solid rgba(27, 58, 92, 0.08);
+    border-left: 3px solid transparent;
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.16s ease;
+  }
+  .cap-card[data-approved="true"] {
+    border-left-color: var(--color-mint-primary);
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card-hover);
+  }
+  .cap-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  /* 17px/700 over the 14px caption body below — the same three-signal
+     separation .alert-card uses between its title and description. */
+  .cap-title {
+    margin-top: 10px;
+    font-family: var(--font-heading);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--color-text-heading);
+  }
+  /* Character budget. Tabular figures so the count does not jitter sideways
+     as it climbs — it updates on every keystroke. */
+  .cap-count {
+    margin-top: var(--space-xs);
+    text-align: right;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-body);
+  }
+  .cap-count[data-over="true"] {
+    color: var(--color-critical-text);
+  }
+  .cap-why {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .cap-why-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-cyan-deep);
+    cursor: pointer;
+  }
+  .cap-why-toggle svg {
+    flex: none;
+    transition: transform 0.2s var(--ease-brand);
+  }
+  .cap-why-toggle[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+  .cap-why-list {
+    display: grid;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+  }
+  .cap-why-list dt {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-navy-dark);
+  }
+  .cap-why-list dd {
+    margin-top: 3px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-body);
+  }
+  .cap-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+    margin-top: var(--space-md);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cap-card,
+    .cap-why-toggle svg {
+      transition: none;
+    }
+  }
+
+  /* ---- Compliance audit ----------------------------------------------- */
+  .audit-steps {
+    display: grid;
+    gap: var(--space-sm);
+  }
+  .audit-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+  }
+  .audit-step-no {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    color: var(--color-cyan-deep);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .audit-step[data-state="done"],
+  .audit-step[data-state="active"] {
+    color: var(--color-navy-dark);
+  }
+  /* Done takes the accent gradient, matching .rank-no[data-lead] and the
+     wizard's completed .ob-dot — "this one is finished" reads the same way
+     everywhere. */
+  .audit-step[data-state="done"] .audit-step-no {
+    background: var(--gradient-accent);
+    color: var(--color-navy-dark);
+  }
+
+  .audit-result {
+    display: grid;
+    gap: var(--space-md);
+  }
+  .audit-score {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  /* Score dial. The ring is a conic gradient driven by --omcs so the figure
+     is shown as well as printed — a flat 8px border said nothing about how
+     close 72 was to the threshold. Pass rides mint; fail switches to
+     --color-critical. */
+  .omcs-dial {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 148px;
+    height: 148px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: conic-gradient(
+      var(--color-mint-primary) calc(var(--omcs, 0) * 1%),
+      var(--color-mint-pale) 0
+    );
+  }
+  .omcs-dial[data-pass="false"] {
+    background: conic-gradient(
+      var(--color-critical) calc(var(--omcs, 0) * 1%),
+      var(--color-critical-bg) 0
+    );
+  }
+  .omcs-dial::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border-radius: inherit;
+    background: var(--color-white);
+  }
+  /* The figure is already GEOMETRICALLY centred — the dial is place-items:
+     center with no padding or border. This 2px is an optical correction:
+     Poppins' lining figures carry more right side-bearing than left, so a
+     two-digit score reads a touch left of the ring's axis. */
+  .omcs-dial b {
+    position: relative;
+    transform: translateX(2px);
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-text-heading);
+  }
+  .omcs-rubric {
+    display: grid;
+    gap: var(--space-sm);
+  }
+  .omcs-rubric-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: 5px;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-body);
+  }
+  .omcs-rubric-head .num {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Publish composer ----------------------------------------------- */
+  /* Two-up platform picker. Each option is a hit target, so it reads
+     selected with the mint pair the rest of the app uses for a chosen
+     option rather than only by its checkbox. */
+  /* One column until the card is wide enough for two — "Naver Blog" plus its
+     checkbox does not survive a half-track inside the rail. */
+  .plat-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xs);
+  }
+  @container (min-width: 330px) {
+    .plat-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .plat-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* 16px vertical is the padding floor for this pass; the row is a hit
+       target as well as a label, so the extra height is useful twice. */
+    padding: var(--space-sm) 14px;
+    border: 1px solid var(--color-gray-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-navy-dark);
+    cursor: pointer;
+    transition: border-color 0.16s ease, background-color 0.16s ease;
+  }
+  .plat-opt:hover:not([data-disabled="true"]) {
+    border-color: var(--color-mint-primary);
+  }
+  .plat-opt[data-on="true"] {
+    border-color: var(--color-mint-primary);
+    background: var(--color-mint-pale-alt);
+  }
+  .plat-opt[data-disabled="true"] {
+    color: var(--color-gray-text);
+    background: var(--color-off-white);
+    cursor: not-allowed;
+  }
+  /* The label wraps the checkbox, so the ring belongs to the row — one ring
+     around the whole option, never one nested inside a bordered row. */
+  .plat-opt:focus-within {
+    border-color: var(--color-mint-primary);
+    box-shadow: var(--ring-focus);
+  }
+
+  /* Media preview. The remove control sits on the image, so it needs its own
+     ground to stay legible against an arbitrary photo. */
+  /* flex:1 so the frame absorbs whatever height the caption column sets, with
+     a floor for the case where the caption is one short line. */
+  .media-frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-gray-light);
+    flex: 1;
+    min-height: var(--composer-field-min);
+  }
+  /* Absolutely filled rather than height:100%. A percentage height resolves
+     against a parent whose own height comes from `flex: 1`, which browsers
+     handle inconsistently — inset:0 sidesteps that entirely, so the image
+     always fills whatever height the caption column settles at. */
+  .media-frame img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* The empty state takes the same slack, so swapping an image in or out does
+     not change the panel's height. */
+  .composer-grid .upload-zone {
+    flex: 1;
+    min-height: var(--composer-field-min);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Controls on the image. They need their own ground to stay legible against
+     an arbitrary photo. */
+  .media-acts {
+    position: absolute;
+    top: var(--space-xs);
+    right: var(--space-xs);
+    display: flex;
+    gap: 6px;
+  }
+  .media-act {
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+  /* The maximised image. Capped so a tall portrait asset cannot push the modal
+     past the viewport, and contained so nothing is cropped — being uncropped
+     is the entire reason for opening it. */
+  .media-full {
+    display: block;
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    background: var(--color-off-white);
+  }
+
+  /* Visibility select plus the two checkbox rows beside it. The old markup
+     padded the checkboxes down with pt-6 to fake alignment against the
+     select's label; align-items:end does it honestly. */
+  .composer-opts {
+    display: grid;
+    gap: var(--space-sm);
+  }
+  /* CONTAINER query, not a viewport one. The composer sits in the 420px rail,
+     so a wide viewport says nothing about the room this row actually has —
+     a `@media (min-width: 480px)` here forced three columns into ~324px of
+     card and overflowed. Same reasoning as .stat-tile's container-type on the
+     dashboard: the rail narrows without the viewport moving. */
+  @container (min-width: 400px) {
+    .composer-opts {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: end;
+    }
+  }
+  .composer-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 9px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-navy-dark);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  /* The authorisation gate. Mint panel, because checking it is what starts
+     the audit — it is an action, not fine print. */
+  .composer-agree {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-navy-dark);
+    cursor: pointer;
+  }
+  .composer-agree input {
+    margin-top: 2px;
+    flex: none;
+  }
+  .composer-agree svg {
+    color: var(--color-cyan-deep);
+    vertical-align: -2px;
+  }
+
+  /* ---- Content board -------------------------------------------------- */
+  /* Capped at THREE columns. auto-fill with a 240px floor fitted five across
+     a 1440px board, which made every card a narrow vertical strip: the caption
+     wrapped every three or four words and the reach/likes row wrapped onto its
+     own line. Three wide cards read as records; five narrow ones read as a
+     wall. */
+  .post-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+  }
+  @media (min-width: 720px) {
+    .post-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1100px) {
+    .post-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  /* .rank-card's object without the button affordances — these are records,
+     not controls. Full --space-md padding now the cards are wide enough to
+     earn it; at 16px the text sat close to the edge. */
+  .post-card {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    border: 1px solid rgba(27, 58, 92, 0.08);
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card);
+  }
+  .post-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+  }
+  /* Platform ids and statuses arrive lowercase from the fixtures ('instagram',
+     'draft'); capitalising in CSS keeps the raw value intact in the DOM. */
+  .post-plat,
+  .post-head .chip {
+    text-transform: capitalize;
+  }
+  .post-plat {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-navy-dark);
+  }
+  .post-cap {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(27, 58, 92, 0.07);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--color-text-body);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* The metrics row. 24px between figures rather than 16px, and 14px above
+     it: at three columns the card is wide enough that "Reach 52,400" and
+     "Likes 4,870" no longer wrap onto separate lines, and the wider gap is
+     what stops the two numbers reading as one run-on string. 13px rather
+     than 12px so the figures hold their own under the caption. */
+  .post-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-xs) var(--space-md);
+    margin-top: 14px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--color-text-body);
+  }
+  /* Pins the date left and lets the metrics sit together at the other end,
+     so the eye reads "when" and "how it did" as two groups. */
+  .post-facts > :first-child {
+    margin-right: auto;
+  }
+
+  /* .seg drives the platform tabs and the board filters from role="tab" /
+     aria-selected — those are genuine tab sets, not the toggle group
+     aria-pressed describes. Same selected treatment, correct semantics. */
+  .seg button[aria-selected="true"] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  /* Four platform names do not fit one line inside a card in the 1fr column
+     once the rail is reserved. */
+  .seg--wrap {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  /* "Has an approved caption" marker on a platform tab. Coral, matching
+     .alert-dot — the app's one attention dot — and it stays visible on the
+     mint fill a selected segment takes. */
+  .seg-dot {
+    width: 6px;
+    height: 6px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-coral-cta);
+  }
+
+  /* Step rail — a single horizontal row above the first card, and the flow's
+     first grid row rather than an absolutely-positioned margin element. It
+     used to sit in the left margin, which meant it only existed above 1280px
+     and pushed the whole column off-centre to make room; in the flow it costs
+     no horizontal space and shows at every width.
+
+     Wraps rather than scrolls on narrow screens: three steps with labels and
+     connectors need ~345px, so a phone will usually hold them on one line and
+     drop to two when it cannot. */
+  .step-rail > ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    /* Centred on a measure of its own rather than spanning the full card:
+       three steps stretched across 1440px would put so much rule between them
+       that they stop reading as one sequence. */
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  .step-rail li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 0 0 auto;
+  }
+  /* Every step after the first absorbs the slack, and the connector inside it
+     is what actually grows — so the three steps space themselves evenly
+     instead of huddling at the left edge. */
+  .step-rail li + li {
+    flex: 1 1 auto;
+  }
+  .step-rail a {
+    flex: none;
+  }
+  /* Connector between consecutive steps — drawn on the later item so the row
+     never ends on a dangling line. Fixed rather than flexible: stretched
+     across a 1440px canvas the rule would dominate the three things it is
+     meant to relate. */
+  .step-rail li + li::before {
+    content: '';
+    flex: 1 1 auto;
+    min-width: 32px;
+    height: 1px;
+    background: rgba(27, 58, 92, 0.16);
+  }
+  .step-rail a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    transition: color 0.16s ease;
+  }
+  .step-rail a:hover {
+    color: var(--color-navy-primary);
+  }
+  .step-rail a[data-state='current'] {
+    color: var(--color-navy-dark);
+  }
+  .step-rail-no {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    border: 1px solid rgba(27, 58, 92, 0.12);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: inherit;
+    transition: background 0.16s ease, border-color 0.16s ease;
+  }
+  /* Current and done both take the accent gradient — the same treatment
+     .rank-no[data-lead] and the wizard's .ob-dot use, so "reached" reads the
+     same way across the app. */
+  .step-rail a[data-state='current'] .step-rail-no,
+  .step-rail a[data-state='done'] .step-rail-no {
+    background: var(--gradient-accent);
+    border-color: transparent;
+    color: var(--color-navy-dark);
+  }
+  .brief-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .brief-option + .brief-option {
+    margin-top: var(--space-md);
+  }
+  .brief-option .cap-title {
+    margin-bottom: var(--space-xs);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step-rail a,
+    .step-rail-no {
+      transition: none;
+    }
+  }
+
+  /* Sticky trigger for the campaign brief. Fixed to the right edge, vertically
+     centred, so it is reachable from any scroll position without occupying a
+     row in the column.
+
+     It is a SIBLING of .studio-flow, never a descendant: the flow carries a
+     margin offset above 1280px, and were this nested inside it any future
+     transform on the flow would make it a containing block and this would stop
+     being viewport-fixed. */
+  .brief-trigger {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background: var(--gradient-chrome);
+    color: var(--color-text-inverse);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-overlay);
+    cursor: pointer;
+  }
+  .brief-trigger svg {
+    flex: none;
+  }
+  /* Hidden while the drawer it opens is on screen — the drawer covers this
+     edge, and a trigger sitting under an open panel is a dead control. */
+  .brief-trigger[data-hidden='true'] {
+    display: none;
+  }
+
+  /* Onboarding pulse. A ring on a pseudo-element rather than on the button
+     itself, so the hit target never moves under the cursor mid-animation. */
+  .brief-trigger[data-pulse='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--color-mint-primary);
+    animation: brief-pulse 2s var(--ease-brand) infinite;
+    pointer-events: none;
+  }
+  @keyframes brief-pulse {
+    0% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    70% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+  }
+  .brief-tip {
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--color-navy-dark);
+    color: var(--color-text-inverse);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-card);
+  }
+  /* A decorative attention-getter must not animate for anyone who asked for
+     less motion; the tooltip beside it still carries the discovery. */
+  @media (prefers-reduced-motion: reduce) {
+    .brief-trigger[data-pulse='true']::after {
+      animation: none;
+      opacity: 0.9;
+      transform: none;
+    }
+  }
+
+  /* 1 row x 3 columns of caption options, side by side for comparison.
+     auto-fit, not repeat(3): MOCK_CONTENT.captions.naver ships only TWO
+     options, and a hard three-column track would leave a dead cell. */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .cap-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+  /* Uniform height comes from clamping the body to four lines, not from
+     stretching the cards: equal-height cards with unequal content just move
+     the ragged edge inside the card. */
+  .cap-body {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--color-text-body);
+  }
+  /* Reading in full happens in a modal, so the clamp is unconditional — the
+     card never grows and never shifts the two options beside it. */
+  .cap-head-act {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex: none;
+  }
+  /* Sized down from .icon-btn's 36px: it sits beside a 20px badge in a card
+     header, where the full control would outweigh the label it accompanies. */
+  .cap-zoom {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--color-cyan-deep);
+  }
+  /* The maximised caption. Wider measure than the card it came from, and
+     pre-wrap because these carry deliberate blank lines between paragraphs. */
+  .cap-full {
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text-body);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  /* The selected option keeps the app's one selection idiom — the 3px mint
+     left border used by the sidebar's active row and the selected alert. */
+  .cap-card[data-selected='true'] {
+    border-left-color: var(--color-mint-primary);
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card-hover);
+  }
+
+  /* Confirms where a selected option landed. A highlight on the DESTINATION,
+     not an animation of the text flying down: the two are far apart on a long
+     page and a travelling element would be off-screen for most of its trip. */
+  @keyframes staged-flash {
+    from {
+      box-shadow: 0 0 0 3px rgba(95, 214, 166, 0.55), var(--shadow-card);
+    }
+    to {
+      box-shadow: 0 0 0 3px rgba(95, 214, 166, 0), var(--shadow-card);
+    }
+  }
+  .textarea[data-flash='true'] {
+    animation: staged-flash 0.9s var(--ease-brand);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .textarea[data-flash='true'] {
+      animation: none;
+    }
+  }
+  /* A button that behaves as a link — it opens an overlay, not a URL, so it
+     must not be an <a> with a fake href. */
+  /* Label on the left, the brief link opposite it — a row rather than a
+     stacked pair, so the link sits on the label's baseline instead of
+     pushing the upload zone down. */
+  .media-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .media-head .field-label {
+    margin-bottom: 0;
+  }
+  .link-inline {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-cyan-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  /* .seg drives the platform tabs and the board filters from role="tab" /
+     aria-selected — those are genuine tab sets, not the toggle group
+     aria-pressed describes. Same selected treatment, correct semantics. */
+  .seg button[aria-selected="true"] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  /* Four platform names do not fit one line inside a card in the 1fr column
+     once the rail is reserved. */
+  .seg--wrap {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  /* "Has an approved caption" marker on a platform tab. Coral, matching
+     .alert-dot — the app's one attention dot — and it stays visible on the
+     mint fill a selected segment takes. */
+  .seg-dot {
+    width: 6px;
+    height: 6px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-coral-cta);
+  }
+
+  /* Step rail — a single horizontal row above the first card, and the flow's
+     first grid row rather than an absolutely-positioned margin element. It
+     used to sit in the left margin, which meant it only existed above 1280px
+     and pushed the whole column off-centre to make room; in the flow it costs
+     no horizontal space and shows at every width.
+
+     Wraps rather than scrolls on narrow screens: three steps with labels and
+     connectors need ~345px, so a phone will usually hold them on one line and
+     drop to two when it cannot. */
+  .step-rail > ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    /* Centred on a measure of its own rather than spanning the full card:
+       three steps stretched across 1440px would put so much rule between them
+       that they stop reading as one sequence. */
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  .step-rail li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex: 0 0 auto;
+  }
+  /* Every step after the first absorbs the slack, and the connector inside it
+     is what actually grows — so the three steps space themselves evenly
+     instead of huddling at the left edge. */
+  .step-rail li + li {
+    flex: 1 1 auto;
+  }
+  .step-rail a {
+    flex: none;
+  }
+  /* Connector between consecutive steps — drawn on the later item so the row
+     never ends on a dangling line. Fixed rather than flexible: stretched
+     across a 1440px canvas the rule would dominate the three things it is
+     meant to relate. */
+  .step-rail li + li::before {
+    content: '';
+    flex: 1 1 auto;
+    min-width: 32px;
+    height: 1px;
+    background: rgba(27, 58, 92, 0.16);
+  }
+  .step-rail a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    transition: color 0.16s ease;
+  }
+  .step-rail a:hover {
+    color: var(--color-navy-primary);
+  }
+  .step-rail a[data-state='current'] {
+    color: var(--color-navy-dark);
+  }
+  .step-rail-no {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    border: 1px solid rgba(27, 58, 92, 0.12);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: inherit;
+    transition: background 0.16s ease, border-color 0.16s ease;
+  }
+  /* Current and done both take the accent gradient — the same treatment
+     .rank-no[data-lead] and the wizard's .ob-dot use, so "reached" reads the
+     same way across the app. */
+  .step-rail a[data-state='current'] .step-rail-no,
+  .step-rail a[data-state='done'] .step-rail-no {
+    background: var(--gradient-accent);
+    border-color: transparent;
+    color: var(--color-navy-dark);
+  }
+  .brief-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(27, 58, 92, 0.07);
+  }
+  .brief-option + .brief-option {
+    margin-top: var(--space-md);
+  }
+  .brief-option .cap-title {
+    margin-bottom: var(--space-xs);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step-rail a,
+    .step-rail-no {
+      transition: none;
+    }
+  }
+
+  /* Sticky trigger for the campaign brief. Fixed to the right edge, vertically
+     centred, so it is reachable from any scroll position without occupying a
+     row in the column.
+
+     It is a SIBLING of .studio-flow, never a descendant: the flow carries a
+     margin offset above 1280px, and were this nested inside it any future
+     transform on the flow would make it a containing block and this would stop
+     being viewport-fixed. */
+  .brief-trigger {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    background: var(--gradient-chrome);
+    color: var(--color-text-inverse);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-overlay);
+    cursor: pointer;
+  }
+  .brief-trigger svg {
+    flex: none;
+  }
+  /* Hidden while the drawer it opens is on screen — the drawer covers this
+     edge, and a trigger sitting under an open panel is a dead control. */
+  .brief-trigger[data-hidden='true'] {
+    display: none;
+  }
+
+  /* Onboarding pulse. A ring on a pseudo-element rather than on the button
+     itself, so the hit target never moves under the cursor mid-animation. */
+  .brief-trigger[data-pulse='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--color-mint-primary);
+    animation: brief-pulse 2s var(--ease-brand) infinite;
+    pointer-events: none;
+  }
+  @keyframes brief-pulse {
+    0% {
+      opacity: 0.9;
+      transform: scale(1);
+    }
+    70% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+  }
+  .brief-tip {
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--color-navy-dark);
+    color: var(--color-text-inverse);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-card);
+  }
+  /* A decorative attention-getter must not animate for anyone who asked for
+     less motion; the tooltip beside it still carries the discovery. */
+  @media (prefers-reduced-motion: reduce) {
+    .brief-trigger[data-pulse='true']::after {
+      animation: none;
+      opacity: 0.9;
+      transform: none;
+    }
+  }
+
+  /* 1 row x 3 columns of caption options, side by side for comparison.
+     auto-fit, not repeat(3): MOCK_CONTENT.captions.naver ships only TWO
+     options, and a hard three-column track would leave a dead cell. */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .cap-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+  /* Uniform height comes from clamping the body to four lines, not from
+     stretching the cards: equal-height cards with unequal content just move
+     the ragged edge inside the card. */
+  .cap-body {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--color-text-body);
+  }
+  /* Reading in full happens in a modal, so the clamp is unconditional — the
+     card never grows and never shifts the two options beside it. */
+  .cap-head-act {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex: none;
+  }
+  /* Sized down from .icon-btn's 36px: it sits beside a 20px badge in a card
+     header, where the full control would outweigh the label it accompanies. */
+  .cap-zoom {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--color-cyan-deep);
+  }
+  /* The maximised caption. Wider measure than the card it came from, and
+     pre-wrap because these carry deliberate blank lines between paragraphs. */
+  .cap-full {
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text-body);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  /* The selected option keeps the app's one selection idiom — the 3px mint
+     left border used by the sidebar's active row and the selected alert. */
+  .cap-card[data-selected='true'] {
+    border-left-color: var(--color-mint-primary);
+    box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card-hover);
+  }
+
+  /* Confirms where a selected option landed. A highlight on the DESTINATION,
+     not an animation of the text flying down: the two are far apart on a long
+     page and a travelling element would be off-screen for most of its trip. */
+  @keyframes staged-flash {
+    from {
+      box-shadow: 0 0 0 3px rgba(95, 214, 166, 0.55), var(--shadow-card);
+    }
+    to {
+      box-shadow: 0 0 0 3px rgba(95, 214, 166, 0), var(--shadow-card);
+    }
+  }
+  .textarea[data-flash='true'] {
+    animation: staged-flash 0.9s var(--ease-brand);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .textarea[data-flash='true'] {
+      animation: none;
+    }
+  }
+  /* A button that behaves as a link — it opens an overlay, not a URL, so it
+     must not be an <a> with a fake href. */
+  /* Label on the left, the brief link opposite it — a row rather than a
+     stacked pair, so the link sits on the label's baseline instead of
+     pushing the upload zone down. */
+  .media-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .media-head .field-label {
+    margin-bottom: 0;
+  }
+  .link-inline {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-cyan-deep);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+
+  /* Dark publishing surface. Uses the brand's chrome tokens rather than a new
+     grey ramp — --gradient-chrome is the same surface the sidebar and the
+     onboarding rail run, so the modal reads as this product in a dark mood
+     rather than as a different application. */
+  .pub-shell {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
+    height: 100%;
+    color: var(--color-text-inverse);
+    overflow-y: auto;
+  }
+  @media (min-width: 900px) {
+    .pub-shell {
+      /* 30/70 — the settings drawer takes only what it needs so the preview
+         gets the rest of the window. */
+      grid-template-columns: 25% 75%;
+      grid-template-rows: minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+    .pub-foot {
+      grid-column: 1 / -1;
+    }
+    /* Each panel scrolls independently so the sticky footer below stays put
+       however long the control column gets. */
+    .pub-controls,
+    .pub-preview {
+      overflow-y: auto;
+    }
+  }
+  /* Sticky, bottom-right, always reachable however far the left panel has
+     been scrolled. */
+  .pub-foot {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-lg);
+  }
+
+  /* SHOT LIST — editorial register.
+     Deliberately steps outside the screen's navy/mint for a monochromatic
+     slate scale: this is a reference document a photographer scans on set, and
+     the brand's high-contrast accents made every shot compete with the next.
+     Sage is the only accent, and it is used for a rule and an icon rather than
+     for text — at 3.59:1 on white it clears the 3:1 non-text floor but would
+     fail AA as body copy. */
+  .shot-list {
+    --shot-ink: #2E3A45;
+    --shot-slate: #55636E;
+    --shot-eyebrow: #6B7280;
+    --shot-sage: #7C8B7F;
+    --shot-rule: #E3E7EA;
+
+    display: grid;
+    gap: 0;
+  }
+  /* Crisp 1px rules define the zones — no bounding boxes, so the list reads as
+     one document rather than a stack of cards inside an already-nested panel. */
+  .shot + .shot {
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--shot-rule);
+  }
+
+  /* Eyebrow and subject on one line, split by a hairline pipe. */
+  .shot-title {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: var(--space-sm);
+  }
+  .shot-type {
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--shot-eyebrow);
+  }
+  /* The pipe is drawn rather than typed, so it cannot be selected or read out
+     as punctuation between the two halves of the title. */
+  .shot-type::after {
+    content: '';
+    display: inline-block;
+    width: 1px;
+    height: 0.85em;
+    margin-left: 10px;
+    vertical-align: -0.1em;
+    background: var(--shot-rule);
+  }
+  .shot-subject {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--shot-ink);
+  }
+
+  /* Directives as a label/value list. The label column is fixed so the values
+     start on one line down the whole list, which is what makes it scannable
+     at a glance rather than merely shorter than a paragraph. */
+  .shot-specs {
+    display: grid;
+    gap: 8px;
+  }
+  .shot-specs > div {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: var(--space-sm);
+    align-items: baseline;
+  }
+  .shot-specs dt {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--shot-eyebrow);
+  }
+  .shot-specs dd,
+  .shot-narrative {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    /* 1.55 — above the 1.5 floor, because these are dense single-sentence
+       directives read off a phone on a boat. */
+    line-height: 1.55;
+    color: var(--shot-slate);
+  }
+  /* Below this the fixed label column leaves the values too narrow to read, so
+     the labels sit above their values instead. */
+  @container (max-width: 420px) {
+    .shot-specs > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
+
+  /* Technical constraint as an inset rule rather than a filled pill: a pill
+     read as a status chip, which is what the rest of this app uses them for. */
+  .shot-lighting {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: var(--space-sm);
+    padding: 2px 0 2px var(--space-sm);
+    border-left: 2px solid var(--shot-sage);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--shot-slate);
+  }
+  .shot-lighting svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--shot-sage);
+  }
+  .shot-lighting b {
+    font-weight: 600;
+    color: var(--shot-ink);
+  }
+
+  /* AUDIT RESULT — verdict beside detail.
+     The dial is what you read at a glance; the bars are what you study if the
+     verdict surprises you. Stacking them made the card long without making
+     either easier to read. */
+  .audit-verdict {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin-bottom: 4px;
+  }
+  /* The dial and its labels stack, so the figure reads as the heading of the
+     column rather than as a bullet beside it. */
+  .audit-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+  .audit-metrics {
+    display: grid;
+    gap: var(--space-md);
+    align-content: start;
+    /* Its own container: the rubric below splits on the width of THIS column,
+       not of the card, which is a third wider than the space the bars get. */
+    container-type: inline-size;
+  }
+  @container (min-width: 760px) {
+    .audit-result {
+      grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+      column-gap: var(--space-lg);
+      align-items: start;
+    }
+  }
+  /* Trails the metrics rather than the card, and sits at the far end of it. */
+  .audit-foot {
+    display: flex;
+    justify-content: flex-end;
+  }
+  /* The audit trigger carries a longer label than the caption grid's "Select",
+     so it needs more room around it. Scoped here rather than widened on
+     .btn-cta--sm itself, which would pad out every Select in the row too. */
+  .audit-foot .btn-cta {
+    height: 40px;
+    padding: 0 24px;
+  }
+
+  /* Seven single-line metrics in one column was the tallest thing on the
+     screen. Two columns halve that without shrinking anything.
+     A CONTAINER query: this card's width is set by the content column, not by
+     the viewport. */
+  @container (min-width: 560px) {
+    .omcs-rubric {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--space-lg);
+    }
+  }
+
+  /* Delicate rather than dominating: at 8px these read as seven stacked
+     status bars competing with the score above them. The track drops to a
+     faint neutral so only the filled portion carries colour — mint-pale was
+     close enough to the fill to read as a second value. */
+  .omcs-rubric .bar {
+    height: 5px;
+    background: rgba(27, 58, 92, 0.08);
+  }
+
+  /* Backdrop. Dark teal rather than neutral black so the dim reads as this
+     product's, and a blur so the page behind stays recognisable as context
+     without any of it staying legible. */
+  /* The single background layer. The panel above it is transparent, so this
+     one dark teal wash plus the blur is the whole treatment — no stacked
+     surfaces, no inner box. */
+  .modal {
+    background: rgba(15, 35, 40, 0.72);
+    backdrop-filter: blur(8px);
+    padding: 0;
+  }
+
+  /* Left column. A flex column so the caption group can take the slack and the
+     authorisation stays pinned at the bottom whatever the caption's length. */
+  /* Docked flush to the window's left edge, with no fill of its own — the
+     controls float on the one backdrop. */
+  .pub-controls {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--space-lg);
+    gap: var(--spacing-8);
+  }
+  /* These three were lost in an earlier edit, which is why the heading and the
+     field labels rendered dark against the dark backdrop and every group ran
+     into the next. Restored, and the group rhythm widened: on a dark ground
+     the labels are the only structure, so they need room to act like it. */
+  .pub-title {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-text-inverse);
+    margin-bottom: var(--space-xs);
+  }
+  .pub-group {
+    display: grid;
+    gap: var(--space-sm);
+  }
+  .pub-group legend,
+  .pub-controls .field-label {
+    display: block;
+    margin-bottom: 2px;
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-text-inverse);
+  }
+  /* OUTLINED, not filled. White slabs on a dark ground read as panels stacked
+     on the backdrop — the thing this modal was flattened to avoid. A light
+     teal edge marks the control without adding another surface, and the label
+     stays white so the text is the brightest thing in the row. */
+  .pub-controls {
+    --pub-edge: color-mix(in srgb, var(--color-mint-primary) 45%, transparent);
+  }
+  .pub-controls .plat-opt,
+  .pub-controls .pub-switch,
+  .pub-controls .composer-agree,
+  .pub-controls .textarea {
+    background: transparent;
+    border: 1px solid var(--pub-edge);
+    color: var(--color-text-inverse);
+    box-shadow: none;
+  }
+  .pub-controls .plat-opt:hover:not([data-disabled='true']),
+  .pub-controls .pub-switch:hover,
+  .pub-controls .textarea:hover:not(:disabled) {
+    border-color: var(--color-mint-primary);
+  }
+  /* Chosen destinations take the solid edge plus the faintest wash — enough to
+     separate them from the unchosen without becoming a filled card. */
+  .pub-controls .plat-opt[data-on='true'] {
+    border-color: var(--color-mint-primary);
+    background: rgba(95, 214, 166, 0.14);
+  }
+  .pub-controls .textarea::placeholder {
+    color: var(--color-text-inverse-muted);
+  }
+  .pub-controls .pub-switch svg,
+  .pub-controls .composer-agree svg {
+    color: var(--color-mint-primary);
+  }
+  .pub-controls .composer-agree {
+    flex-shrink: 0;
+    margin-top: var(--space-sm);
+  }
+  .pub-group--grow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  /* Fixed height instead of flex-filling — prevents the caption from
+     consuming all space and overlapping the authorisation checkbox. */
+  .pub-caption {
+    height: 160px;
+    min-height: 100px;
+    resize: vertical;
+  }
+  .pub-plats {
+    display: grid;
+    gap: var(--space-xs);
+  }
+  /* Distribution controls stack under their segmented visibility toggle. */
+  .pub-group .seg {
+    margin-bottom: var(--space-sm);
+  }
+  .pub-group .seg button {
+    flex: 1;
+    justify-content: center;
+  }
+  .pub-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px var(--space-sm);
+    border: 1px solid var(--chrome-line);
+    border-radius: var(--radius-sm);
+    background: var(--chrome-raised);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-inverse);
+    cursor: pointer;
+  }
+  .pub-switch svg {
+    flex: none;
+    color: var(--color-mint-primary);
+  }
+
+  /* Right column. The size toggle sits centred above the canvas — the space
+     the platform pills used to occupy, now given to the form factor. */
+  /* No align-content: start. It packed the tracks to the top instead of letting
+     the 1fr canvas take the rest of the column, so the canvas measured zero
+     height, the fit bailed, and the frame rendered unscaled and clipped. */
+  .pub-preview {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-md);
+    justify-items: center;
+    min-height: 0;
+    padding: var(--space-lg) var(--space-md);
+  }
+  /* A bounding surface for the mockup, so the device reads as sitting ON
+     something rather than floating on the chrome. */
+  /* No fill, no border, no padding — the preview sits directly on the backdrop.
+     overflow:hidden rather than auto: the frame is SCALED to fit (see
+     --preview-scale below), so a scrollbar would mean the fit failed. */
+  /* The frame is positioned OUT OF FLOW inside this box (see .device-frame).
+     While it was a centred grid item, its layout box was routinely larger than
+     the canvas, and where an oversized item lands under `place-items: center`
+     inside an `overflow: hidden` scroll container is not something to rely on —
+     the desktop frame ended up entirely outside the visible area. Absolute
+     centring removes the question. */
+  .pub-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* DEVICE FRAME. One box, three form factors — the width and the furniture
+     change, the content inside does not. */
+  /* Scaled, not squeezed. --preview-scale is measured by PublishModal against
+     the canvas; a transform keeps the frame's proportions exactly and simply
+     shows it smaller, which is what "fit the whole thing on screen" means. It
+     also costs no layout, so the canvas never gains a scrollbar.
+     transform-origin is the top so a tall frame shrinks toward the toggle
+     above it rather than drifting off both edges. */
+  .device-frame {
+    /* Pinned to the canvas centre and then scaled about that same point, so the
+       visible result is centred no matter how far the unscaled box overflows.
+       translate before scale: the order matters — scale first and the -50%
+       offsets would themselves be scaled. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    transform: translate(-50%, -50%) scale(var(--preview-scale, 1));
+    transform-origin: center;
+    /* Only the transform animates. Transitioning `width` meant the fit was
+       measured mid-animation, so the same device button produced a different
+       zoom every time it was pressed. */
+    transition: transform 0.28s var(--ease-brand);
+    padding: 12px;
+    border-radius: 38px;
+    background: #0b1a2a;
+    border: 1px solid var(--chrome-line);
+    box-shadow: var(--shadow-overlay);
+  }
+  .device-frame[data-device='tablet'] {
+    width: 460px;
+    border-radius: 26px;
+  }
+  .device-frame[data-device='desktop'] {
+    width: 1920px;
+    border-radius: 14px;
+    padding: 0 0 10px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .device-frame {
+      transition: none;
+    }
+  }
+
+  .device-notch {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 84px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.22);
+  }
+  /* Traffic lights — the one piece of furniture that says "browser" without a
+     word of label. */
+  .device-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 14px;
+  }
+  .device-titlebar span {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.26);
+  }
+
+  .device-screen {
+    border-radius: 28px;
+    background: var(--color-white);
+    overflow: hidden;
+    padding-top: 28px;
+  }
+  .device-frame[data-device='desktop'] .device-screen {
+    border-radius: 6px;
+    padding-top: 0;
+    margin-inline: 10px;
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 480px;
+  }
+  .device-frame[data-device='desktop'] .device-media {
+    max-width: 480px;
+  }
+  .device-frame[data-device='desktop'] .device-actions {
+    max-width: 480px;
+    width: 100%;
+    color: #ccc;
+  }
+  .device-frame[data-device='desktop'] .device-caption {
+    max-width: 480px;
+    width: 100%;
+    color: #e0e0e0;
+  }
+  .device-frame[data-device='desktop'] .device-more {
+    color: #888;
+  }
+  .device-media {
+    width: 100%;
+    background: var(--color-mint-pale);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    /* aspect-ratio is set inline, per platform. */
+  }
+  .device-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .device-media-empty {
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  .device-actions {
+    display: flex;
+    gap: var(--space-sm);
+    padding: 10px var(--space-sm) 0;
+    color: var(--color-navy-dark);
+  }
+  .device-caption {
+    padding: var(--space-xs) var(--space-sm) var(--space-sm);
+    font-family: var(--font-body);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-navy-dark);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .device-more {
+    color: var(--color-text-muted);
+  }
+  /* TikTok is full-bleed: no action row above the caption. */
+  .device-frame[data-chrome='feed'] .device-actions {
+    display: none;
   }
 }

@@ -123,13 +123,34 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      # setup-java's `cache: 'maven'` covers ~/.m2/repository ONLY — not
+      # ~/.m2/wrapper, where the wrapper unpacks the Maven distribution itself.
+      # maven-wrapper.properties uses distributionType=only-script, so without
+      # this every job in the matrix above re-downloads the same ~9MB
+      # apache-maven-3.9.9-bin.zip from Maven Central on every run. Roughly a
+      # dozen parallel jobs asking for one file is what gets refused, which is
+      # how this surfaced: `wget: Failed to fetch ...apache-maven-3.9.9-bin.zip`
+      # twice in a row, before Maven had even started.
+      - name: Cache the Maven wrapper distribution
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/wrapper
+          key: maven-wrapper-${{ hashFiles('backend/spring-boot/.mvn/wrapper/maven-wrapper.properties') }}
+
       - name: Build Spring Boot jar
         working-directory: backend/spring-boot
         run: |
           chmod +x mvnw
-          # Retry: Maven Central occasionally returns a transient 502/503 on a
-          # single artifact fetch — one retry clears it without failing the job.
-          ./mvnw -B package -DskipTests || ./mvnw -B package -DskipTests
+          # Backstop for the above, and for a transient 502/503 on a single
+          # artifact fetch. The previous `cmd || cmd` retried instantly, which
+          # does nothing for a rate-limit or a short outage — back off instead.
+          for attempt in 1 2 3; do
+            if ./mvnw -B package -DskipTests; then exit 0; fi
+            echo "::warning::Maven build attempt $attempt failed; retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          echo "::error::Maven build failed after 3 attempts"
+          exit 1
 
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend

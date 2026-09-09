@@ -46,18 +46,30 @@ const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({
   children,
-  initial = EMPTY_PROFILE,
+  initial,
 }: {
   children: ReactNode;
   /**
    * Seed the profile instead of starting empty. Only the dev preview routes
    * and tests pass this — the authenticated app always starts at EMPTY_PROFILE
    * and lets the fetch below fill it in. Mirrors ObDraftProvider's `initial`.
+   *
+   * A seed is AUTHORITATIVE: when one is supplied the fetch below is skipped
+   * entirely. It used to run anyway, and with a live session in localStorage
+   * (which a dev preview inherits — the routes bypass AuthGate, not the token)
+   * businessProfile.load() resolved and overwrote the seed. Under
+   * VITE_USE_FIXTURES that load answers EMPTY_BUSINESS_PROFILE_DTO, so every
+   * preview route silently reset to a blank operator a moment after mounting:
+   * the Content Studio stopped generating captions (its effect requires a
+   * businessName) and the dashboard's feed matched no categories. The bug was
+   * invisible to tests, which run with an empty localStorage and therefore
+   * always took the unauthenticated branch that already preserved the seed.
    */
   initial?: BusinessProfile;
 }) {
+  const seeded = initial !== undefined;
   const { isAuthenticated } = useAuth();
-  const [profile, setProfile] = useState<BusinessProfile>(initial);
+  const [profile, setProfile] = useState<BusinessProfile>(initial ?? EMPTY_PROFILE);
   // Starts true when already authenticated on mount (e.g. a fresh full page
   // load with a valid persisted token) so the very first render shows the
   // loading state instead of racing ahead with the still-empty profile —
@@ -65,7 +77,9 @@ export function ProfileProvider({
   // to /onboarding before the real fetch even starts, then redirects again
   // to /dashboard once it resolves, losing whatever route was actually
   // requested either way.
-  const [isLoading, setIsLoading] = useState(isAuthenticated);
+  // A seeded provider has nothing to load, so it must not start in the
+  // loading state either — ProfileGate would hold the preview on a spinner.
+  const [isLoading, setIsLoading] = useState(isAuthenticated && !seeded);
 
   // Request-ordering guard: a fast logout-then-login-as-someone-else while a
   // fetch is still in flight must not let a stale response land after a
@@ -74,10 +88,17 @@ export function ProfileProvider({
   // Held in a ref so the reset below can reach it without putting a caller-
   // supplied object in the effect's dependency array, where a fresh literal
   // each render would re-run the fetch forever.
-  const initialRef = useRef(initial);
+  const initialRef = useRef(initial ?? EMPTY_PROFILE);
 
   useEffect(() => {
     const token = ++requestToken.current;
+
+    // Seeded: the caller owns this profile. Skipping the fetch is the whole
+    // point — see the `initial` docblock above.
+    if (seeded) {
+      setIsLoading(false);
+      return;
+    }
 
     if (!isAuthenticated) {
       // Back to the starting profile, not a hardcoded empty one — for the real
@@ -103,7 +124,7 @@ export function ProfileProvider({
         if (requestToken.current !== token) return; // superseded — discard
         setIsLoading(false);
       });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, seeded]);
 
   const value = useMemo(() => ({ profile, setProfile, isLoading }), [profile, isLoading]);
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

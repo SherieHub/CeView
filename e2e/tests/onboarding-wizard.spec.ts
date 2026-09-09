@@ -1,4 +1,6 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { requireBackend } from './support/stack';
 
 // Screen: /onboarding — docs/module-1/screens/onboarding-wizard.md
 // Cards: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/02-module-1.md
@@ -58,3 +60,4 @@ test.describe.skip('Step 5 Analysis', () => {
     test.fixme();
   });
 });
+

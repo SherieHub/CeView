@@ -37,6 +37,16 @@ public class BusinessProfile {
     @Column(name = "created_at")         private OffsetDateTime createdAt;
     @Column(name = "updated_at")         private OffsetDateTime updatedAt;
 
+    /**
+     * TRUE for uniqueness-corpus reference rows (V26). These have no operator
+     * (user_id IS NULL) and must be excluded from every operator-scoped read —
+     * the uniqueness cohort query is the only reader that wants them. See
+     * {@code BusinessProfileRepository#findAllNonReference} and
+     * {@code ReferenceProfileIsolationTest}.
+     */
+    @Column(name = "is_reference", nullable = false)
+    private boolean isReference = false;
+
     @PrePersist
     void onCreate() {
         if (businessProfileId == null) businessProfileId = UUID.randomUUID();

@@ -56,7 +56,11 @@ public class MarketDataIngestionJob {
         jobLog.setStatus("STARTED");
         jobLogRepo.save(jobLog);
 
-        List<BusinessProfile> profiles = profileRepo.findAll();
+        // findAllNonReference(), not findAll(): the V26 uniqueness corpus lives in
+        // tbl_business_profile as is_reference rows with no operator. They must
+        // never reach tenant-facing work like this daily ingestion sweep. See
+        // ReferenceProfileIsolationTest.
+        List<BusinessProfile> profiles = profileRepo.findAllNonReference();
         int marketsProcessed = 0;
         int recordsIngested  = 0;
         StringBuilder errors = new StringBuilder();

@@ -193,10 +193,19 @@ describe('OnboardingWizard', () => {
 
   it('persists with the 0-1 scale conversion and navigates to /dashboard on Finish', async () => {
     analyzeMock.mockResolvedValue([{ name: 'Coastal & Island', percentage: 90 }]);
+    // Must carry the cohort fields: AnalysisStep writes no score when
+    // `sufficientCohort` is falsy, so a partial fixture silently produces a
+    // draft with uniquenessScore: null and this assertion fails on the DTO.
     uniquenessMock.mockResolvedValue({
       overallScore: 72,
       semanticsScore: 70,
       categoryScore: 74,
+      semanticPercentile: 72,
+      cohortSize: 34,
+      cohortMedianScore: 41,
+      cohortCategories: ['Coastal & Island'],
+      categoryDensity: 'dense',
+      sufficientCohort: true,
       descriptionFeedback: '',
       categoryFeedback: '',
     });

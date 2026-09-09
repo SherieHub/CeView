@@ -126,7 +126,7 @@ export default function PlatformsSettings() {
                   <span className="badge badge--teal">Verified</span>
                   <button
                     type="button"
-                    className="btn-ghost"
+                    className="btn-outline--sm"
                     onClick={() => handleDisconnect(platform)}
                   >
                     Disconnect
@@ -168,7 +168,7 @@ export default function PlatformsSettings() {
               ))}
             </ul>
             <div className="flex justify-end gap-3">
-              <button type="button" className="btn-ghost" onClick={closeModal}>
+              <button type="button" className="btn-outline" onClick={closeModal}>
                 Cancel
               </button>
               <button type="button" className="btn-primary" onClick={grantScope}>
