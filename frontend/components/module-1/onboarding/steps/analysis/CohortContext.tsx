@@ -9,59 +9,49 @@
  * behaviour, markup or copy — AnalysisStep.test.tsx passes against it without
  * edits.
  *
- * KNOWN WRONG, and Tasks 16–17's job to fix — deliberately left intact here so
- * the extraction stays reviewable as a pure move:
- *
- *   - "A more specific UVP usually raises this score" is unactionable advice.
- *     The score is corpus-relative and compressed; rewriting the UVP moves it
- *     very little. An operator who sharpens their UVP three times and sees a
- *     flat number learns to distrust the product.
- *   - The message appears only below the threshold, so it reads as a
- *     reprimand. Task 17 replaces it with an always-visible, data-driven
- *     density explainer sourced from `categoryDensity` and `cohortSize`.
- *   - Nothing discloses the comparison set. A percentile without its cohort
- *     size is unreadable — Task 16 adds that line.
- *   - Nothing says a low score does not gate anything, though `stepValid`
- *     case 4 only checks that a score exists. Task 17 says it out loud.
- *
- * The `scores` prop is already the full UniquenessResult, so Tasks 16–17 need
- * no signature change to reach the cohort fields.
+ * Discloses the comparison cohort and provides always-visible context driven
+ * by its measured density, independent of whether the percentile is high or low.
  */
-import { ThumbsUp, X } from 'lucide-react';
 import type { UniquenessResult } from '../../../../../types';
-
-/** Kept here with the banner it gates; Task 18 may relocate it with the hierarchy work. */
-export const PASS_THRESHOLD = 70;
 
 interface Props {
   scores: UniquenessResult;
-  /** Wired by OnboardingWizard so the banner's link can jump back to Step 3. */
+  /** Retained while AnalysisStep's navigation contract is updated by its owner. */
   onGoToStep?: (index: number) => void;
 }
 
-export default function CohortContext({ scores, onGoToStep }: Props) {
-  if (scores.overallScore >= PASS_THRESHOLD) {
-    return (
-      <div className="banner banner--info mt-4" role="status" data-testid="cohort-context">
-        <ThumbsUp aria-hidden="true" />
-        <div>
-          <b>Strong differentiation.</b> Your profile stands out clearly against the local cohort in
-          these categories.
-        </div>
-      </div>
-    );
-  }
+export default function CohortContext({ scores }: Props) {
+  const cohortSize = scores.cohortSize ?? 0;
+  const categories = scores.cohortCategories?.join(', ') || 'your selected categories';
+  const businessLabel = cohortSize === 1 ? 'business' : 'businesses';
+
+  const densityCopy = {
+    dense: `${categories} is one of Cebu's most crowded categories (${cohortSize} ${businessLabel} on record). Scores here cluster lower than in quieter categories, because you are being compared against many similar operators. A ${Math.round(scores.overallScore)} here is not the same as a ${Math.round(scores.overallScore)} in a sparse category.`,
+    moderate: `${categories} has a mid-sized cohort (${cohortSize} ${businessLabel} on record), so scores here spread fairly evenly.`,
+    sparse: `${categories} has few businesses on record (${cohortSize}), so scores here run high and will settle as more operators join.`,
+  } as const;
 
   return (
-    <div className="banner banner--warn mt-4" role="status" data-testid="cohort-context">
-      <X aria-hidden="true" />
+    <div className="banner banner--info mt-4" role="status">
       <div>
-        <b>Room to sharpen your positioning.</b> A more specific UVP usually raises this score.{' '}
-        {onGoToStep && (
-          <button type="button" className="underline font-semibold" onClick={() => onGoToStep(2)}>
-            Strengthen my UVP
-          </button>
+        {scores.sufficientCohort === true ? (
+          <>
+            <p>
+              Compared against {cohortSize} {categories} {businessLabel} in Cebu. The median
+              score in this group is {Math.round(scores.cohortMedianScore)}.
+            </p>
+            {scores.categoryDensity && <p className="mt-2">{densityCopy[scores.categoryDensity]}</p>}
+          </>
+        ) : (
+          <p>
+            Only {cohortSize} comparable {businessLabel} {cohortSize === 1 ? 'is' : 'are'} on
+            record, too few to rank against. Your score will sharpen as more operators in your category join.
+          </p>
         )}
+        <p className="mt-2">
+          This score does not gate anything. You can finish setting up and refine your profile later
+          from Settings.
+        </p>
       </div>
     </div>
   );
