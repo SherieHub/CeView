@@ -47,6 +47,13 @@ public class BusinessProfileController {
         // Reject silent ownership takeover: a client could otherwise pass another
         // operator's businessProfileId and overwrite it via this upsert.
         existing.ifPresent(p -> {
+            // A V26 uniqueness-corpus row also has a null userId, but it is reference
+            // material, not an orphan — adopting it would rewrite a reference profile
+            // as a tenant's own and corrupt the cohort. Rejected before the adoption
+            // branch below. See ReferenceProfileIsolationTest.
+            if (p.isReference()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "business profile is a reference-corpus row and cannot be edited");
+            }
             if (p.getUserId() != null && !p.getUserId().equals(operatorId)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "business profile belongs to a different operator");
             }
