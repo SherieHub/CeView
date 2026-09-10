@@ -53,7 +53,7 @@ def test_stub_receives_sequence_and_returns_contract_response():
     response = TestClient(app).post("/internal/forecasting/inference", json=sequence_payload())
     assert response.status_code == 200
     body = response.json()
-    assert body["source"] == "stub"
+    assert body["source"] == "stub-v1"
     assert len(body["weekly_forecasts"]) == 12
     assert body["low_confidence_disclaimer"] is True
 

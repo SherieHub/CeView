@@ -1,7 +1,6 @@
 """Forecast-engine registry for the frozen Module 2 inference contract."""
 from __future__ import annotations
 
-import math
 import os
 from typing import Any, Protocol
 
@@ -20,34 +19,16 @@ class ForecastEngine(Protocol):
 
 
 class StubForecastEngine:
-    """Local deterministic seam. It is intentionally marked unvalidated."""
+    """Adapter for the versioned, deterministic placeholder engine."""
     name = "stub"
 
     def forecast(self, request: dict[str, Any]) -> dict[str, Any]:
-        sequence = request.get("sequence") or []
-        trends = [float(row["trendIndex"]) for row in sequence]
-        if len(trends) != WINDOW_LENGTH:
-            raise ValueError("sequence must contain exactly 12 weekly rows")
-        baseline = sum(trends[-4:]) / 4.0
-        slope = (trends[-1] - trends[0]) / (WINDOW_LENGTH - 1)
-        weekly = [round(max(0.0, min(100.0, baseline + slope * (week + 1) * 0.25)), 4)
-                  for week in range(WINDOW_LENGTH)]
-        return {
-            "predicted_demand_4w": round(sum(weekly[:4]) / 4.0, 4),
-            "predicted_demand_12w": round(sum(weekly) / WINDOW_LENGTH, 4),
-            "weekly_forecasts": weekly,
-            "mape": 100.0,
-            "mae": 100.0,
-            "rmse": 100.0,
-            "confidence": 0.0,
-            "passed": False,
-            "low_confidence_disclaimer": True,
-            "message": "Deterministic stub forecast — not a validated model prediction.",
-            "source": self.name,
-        }
+        from app.services import stub_forecaster
+        return stub_forecaster.forecast(request)
 
     def forecast_batch(self, requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-        return {str(request["market"]): self.forecast(request) for request in requests}
+        from app.services import stub_forecaster
+        return stub_forecaster.forecast_batch(requests)
 
 
 class GroqForecastEngine:

@@ -163,9 +163,9 @@ class ForecastResponse(BaseModel):
     # Spring Boot ForecastingService to render a real trend line on the chart
     # instead of a flat repeated value.
     weekly_forecasts:        list[float] = Field(default_factory=list)
-    mape:                    float
-    mae:                     float
-    rmse:                    float
+    mape:                    float | None
+    mae:                     float | None
+    rmse:                    float | None
     confidence:              float
     passed:                  bool
     low_confidence_disclaimer: bool = False
