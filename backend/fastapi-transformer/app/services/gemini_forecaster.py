@@ -31,26 +31,30 @@ logger = logging.getLogger(__name__)
 
 # ─── API initialisation ───────────────────────────────────────────────────────
 
-_API_KEY    = os.getenv("GROQ_API_KEY", "")
 _MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
-_groq_client = None   # set below on successful import
+_groq_client = None
 
-if _API_KEY:
+
+def is_loaded() -> bool:
+    """True only after the lazy client was successfully constructed."""
+    return _groq_client is not None
+
+
+def _client():
+    """Construct Groq only when the groq engine receives its first request."""
+    global _groq_client
+    if _groq_client is not None:
+        return _groq_client
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY environment variable is not set.")
     try:
         from openai import OpenAI  # type: ignore[import]
-        _groq_client = OpenAI(
-            api_key=_API_KEY,
-            base_url="https://api.groq.com/openai/v1",
-        )
-        logger.info("Groq API initialised — model=%s", _MODEL_NAME)
+        _groq_client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
+        logger.info("Groq API initialised lazily — model=%s", _MODEL_NAME)
+        return _groq_client
     except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to initialise Groq API: %s", exc)
         raise RuntimeError(f"Groq API initialisation failed: {exc}") from exc
-else:
-    raise RuntimeError(
-        "GROQ_API_KEY environment variable is not set. "
-        "Groq forecasting requires a valid API key."
-    )
 
 
 # ─── public interface ─────────────────────────────────────────────────────────
@@ -101,6 +105,44 @@ def forecast(
     return {**result, **validation}
 
 
+def forecast_request(request: dict) -> dict:
+    """Groq adapter for the new sequence contract.
+
+    The complete request remains available to this function (including sequence,
+    imputedMask, category and data freshness metadata). The current Groq prompt
+    consumes its trend projection and scalar compatibility fields; the future
+    BiLSTM adapter will consume all six row features directly.
+    """
+    sequence = request.get("sequence") or []
+    trend_series = [float(row["trendIndex"]) for row in sequence] or request.get("trendSeries", [])
+    if not trend_series:
+        raise ValueError("sequence/trendSeries is required for forecasting")
+    trailing = trend_series[-7:]
+    rolling_7d = request.get("rolling7dAvg")
+    if rolling_7d is None:
+        rolling_7d = sum(trailing) / len(trailing)
+    rolling_30d = request.get("rolling30dAvg")
+    if rolling_30d is None:
+        trailing30 = trend_series[-30:]
+        rolling_30d = sum(trailing30) / len(trailing30)
+    return forecast(
+        market=request["market"], trend_series=trend_series,
+        rolling_7d=float(rolling_7d), rolling_30d=float(rolling_30d),
+        rolling_std_7d=float(request.get("rollingStd7d") or 0.0),
+        spike_indicator=bool(request.get("spikeIndicator", sequence[-1].get("spikeIndicator", 0.0) if sequence else False)),
+        yoy_ratio=request.get("yoyRatio"),
+        seasonality_score=float(request.get("seasonalityScore", sequence[-1].get("seasonalityScore", 0.0) if sequence else 0.0)),
+        forex_rate=float(request.get("forexRate", sequence[-1].get("forexRate", 0.0) if sequence else 0.0)),
+        gdp_growth=float(request.get("gdpGrowth", sequence[-1].get("gdpGrowth", 0.0) if sequence else 0.0)),
+        gdp_trend_direction=request.get("gdpTrendDirection"), gdp_trend_delta=request.get("gdpTrendDelta"),
+    )
+
+
+def forecast_batch_requests(requests: list[dict]) -> dict[str, dict]:
+    """Sequence-preserving batch adapter used by the registry."""
+    return {str(request["market"]): forecast_request(request) for request in requests}
+
+
 # ─── Groq inference ───────────────────────────────────────────────────────────
 
 def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -> str:
@@ -117,7 +159,7 @@ def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -
     last_exc: Exception | None = None
     for attempt in range(3):
         try:
-            response = _groq_client.chat.completions.create(
+            response = _client().chat.completions.create(
                 model=_MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.10,

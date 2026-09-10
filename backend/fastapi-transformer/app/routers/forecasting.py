@@ -7,11 +7,15 @@ Phase 2 architecture:
 from __future__ import annotations
 
 import logging
+import math
+from datetime import date
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.services import gemini_forecaster, xgboost_scorer
+from app.services import xgboost_scorer
+from app.services.forecast_engine import ACTIVE_ENGINE, WINDOW_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +37,8 @@ class ForexTrendPoint(BaseModel):
 
 
 class GeminiForecastRequest(BaseModel):
-    """Payload built by Spring Boot EnrichedSequenceBuilder and sent to Gemini."""
+    """Deprecated pre-feature-matrix payload; accepted during client rollout."""
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"deprecated": True})
     profileId: str = ""
     market: str
     # Full chronological series of weekly normalised trend indices (0–100).
@@ -57,6 +62,100 @@ class GeminiForecastRequest(BaseModel):
     forexTrend:  list[ForexTrendPoint] = Field(default_factory=list)
 
 
+class WeeklyFeatureRow(BaseModel):
+    """One fixed-order feature row, represented by named fields at the HTTP seam."""
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    iso_year: int = Field(validation_alias=AliasChoices("isoYear", "iso_year"), ge=2000, le=2100)
+    iso_week: int = Field(validation_alias=AliasChoices("isoWeek", "iso_week"), ge=1, le=53)
+    week_start_date: date = Field(validation_alias=AliasChoices("weekStartDate", "week_start_date"))
+    trend_index: float = Field(validation_alias=AliasChoices("trendIndex", "trend_index"), ge=0.0, le=100.0)
+    forex_rate: float = Field(validation_alias=AliasChoices("forexRate", "forex_rate"), gt=0.0)
+    gdp_growth: float = Field(validation_alias=AliasChoices("gdpGrowth", "gdp_growth"))
+    seasonality_score: float = Field(validation_alias=AliasChoices("seasonalityScore", "seasonality_score"), ge=0.0, le=1.0)
+    spike_indicator: float = Field(validation_alias=AliasChoices("spikeIndicator", "spike_indicator"), ge=0.0, le=1.0)
+    holiday_flag: float = Field(validation_alias=AliasChoices("holidayFlag", "holiday_flag"), ge=0.0, le=1.0)
+
+    @field_validator("trend_index", "forex_rate", "gdp_growth", "seasonality_score", "spike_indicator", "holiday_flag")
+    @classmethod
+    def finite_float(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("must be a finite float, not null, NaN, or infinity")
+        return value
+
+    @field_validator("spike_indicator", "holiday_flag")
+    @classmethod
+    def binary_float(cls, value: float) -> float:
+        if value not in (0.0, 1.0):
+            raise ValueError("must be 0.0 or 1.0")
+        return value
+
+    @model_validator(mode="after")
+    def matches_iso_week(self) -> "WeeklyFeatureRow":
+        iso = self.week_start_date.isocalendar()
+        if (iso.year, iso.week) != (self.iso_year, self.iso_week):
+            raise ValueError("weekStartDate does not match isoYear/isoWeek")
+        if self.week_start_date.weekday() != 0:
+            raise ValueError("weekStartDate must be the Monday UTC date for its ISO week")
+        return self
+
+
+class SequenceForecastRequest(BaseModel):
+    """Module 2 fixed 12-week forecasting request (C-02/T-09/T-10)."""
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    profile_id: str = Field(validation_alias=AliasChoices("profileId", "profile_id"))
+    market: str = Field(min_length=1)
+    category: str | None = None
+    data_as_of: str | None = Field(default=None, validation_alias=AliasChoices("dataAsOf", "data_as_of"))
+    data_stale: bool = Field(default=False, validation_alias=AliasChoices("dataStale", "data_stale"))
+    sequence: list[WeeklyFeatureRow] = Field(min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
+    imputed_mask: list[dict[str, bool]] = Field(validation_alias=AliasChoices("imputedMask", "imputed_mask"), min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
+    # Deprecated scalar compatibility fields are retained for Groq rollout.
+    trend_series: list[float] | None = Field(default=None, validation_alias=AliasChoices("trendSeries", "trend_series"))
+    rolling_7d_avg: float | None = Field(default=None, validation_alias=AliasChoices("rolling7dAvg", "rolling_7d_avg"))
+    rolling_30d_avg: float | None = Field(default=None, validation_alias=AliasChoices("rolling30dAvg", "rolling_30d_avg"))
+    rolling_std_7d: float | None = Field(default=None, validation_alias=AliasChoices("rollingStd7d", "rolling_std_7d"))
+    spike_indicator: bool | None = Field(default=None, validation_alias=AliasChoices("spikeIndicator", "spike_indicator"))
+    yoy_ratio: float | None = Field(default=None, validation_alias=AliasChoices("yoyRatio", "yoy_ratio"))
+    seasonality_score: float | None = Field(default=None, validation_alias=AliasChoices("seasonalityScore", "seasonality_score"))
+    forex_rate: float | None = Field(default=None, validation_alias=AliasChoices("forexRate", "forex_rate"))
+    gdp_growth: float | None = Field(default=None, validation_alias=AliasChoices("gdpGrowth", "gdp_growth"))
+
+    @model_validator(mode="after")
+    def increasing_weeks_and_masks(self) -> "SequenceForecastRequest":
+        starts = [row.week_start_date for row in self.sequence]
+        if any(right <= left for left, right in zip(starts, starts[1:])):
+            raise ValueError("sequence must be strictly increasing by ISO week")
+        required = {"trendIndex", "forexRate", "gdpGrowth", "seasonalityScore", "spikeIndicator", "holidayFlag"}
+        for index, mask in enumerate(self.imputed_mask):
+            if set(mask) != required:
+                raise ValueError(f"imputedMask[{index}] must contain exactly {sorted(required)}")
+        return self
+
+    def engine_payload(self) -> dict:
+        payload = self.model_dump()
+        payload["profileId"] = payload.pop("profile_id")
+        payload["dataAsOf"] = payload.pop("data_as_of")
+        payload["dataStale"] = payload.pop("data_stale")
+        payload["imputedMask"] = payload.pop("imputed_mask")
+        payload["trendSeries"] = payload.pop("trend_series")
+        payload["rolling7dAvg"] = payload.pop("rolling_7d_avg")
+        payload["rolling30dAvg"] = payload.pop("rolling_30d_avg")
+        payload["rollingStd7d"] = payload.pop("rolling_std_7d")
+        payload["spikeIndicator"] = payload.pop("spike_indicator")
+        payload["yoyRatio"] = payload.pop("yoy_ratio")
+        payload["seasonalityScore"] = payload.pop("seasonality_score")
+        payload["forexRate"] = payload.pop("forex_rate")
+        payload["gdpGrowth"] = payload.pop("gdp_growth")
+        payload["sequence"] = [{
+            "isoYear": row["iso_year"], "isoWeek": row["iso_week"], "weekStartDate": row["week_start_date"].isoformat(),
+            "trendIndex": row["trend_index"], "forexRate": row["forex_rate"], "gdpGrowth": row["gdp_growth"],
+            "seasonalityScore": row["seasonality_score"], "spikeIndicator": row["spike_indicator"], "holidayFlag": row["holiday_flag"],
+        } for row in payload["sequence"]]
+        return payload
+
+
 class ForecastResponse(BaseModel):
     predicted_demand_4w:     float
     predicted_demand_12w:    float
@@ -74,9 +173,12 @@ class ForecastResponse(BaseModel):
     source:                  str   = "gemini"
 
 
+ForecastRequest = Annotated[SequenceForecastRequest | GeminiForecastRequest, Field(union_mode="left_to_right")]
+
+
 class GeminiBatchForecastRequest(BaseModel):
-    """Batch payload: all markets' sequences in one call to avoid per-market RPM hits."""
-    markets: list[GeminiForecastRequest]
+    """Batch accepts fixed sequence requests and deprecated Gemini requests."""
+    markets: list[ForecastRequest]
 
 
 class GeminiBatchForecastResponse(BaseModel):
@@ -110,8 +212,14 @@ class EconomicScoreResponse(BaseModel):
 
 # ─── Submodule 2.2: Gemini demand forecasting (FR2.11) ────────────────────────
 
+def _engine_payload(body: ForecastRequest) -> dict:
+    if isinstance(body, SequenceForecastRequest):
+        return body.engine_payload()
+    return body.model_dump()
+
+
 @router.post("/inference", response_model=ForecastResponse)
-def run_inference(body: GeminiForecastRequest) -> ForecastResponse:
+def run_inference(body: ForecastRequest) -> ForecastResponse:
     """Gemini-powered 4-week and 12-week demand forecasting (FR2.11).
 
     Constructs a structured prompt from the trend series and rolling statistics,
@@ -123,20 +231,7 @@ def run_inference(body: GeminiForecastRequest) -> ForecastResponse:
     the error body without an UnsupportedMediaTypeException.
     """
     try:
-        result = gemini_forecaster.forecast(
-            market              = body.market,
-            trend_series        = body.trendSeries,
-            rolling_7d          = body.rolling7dAvg,
-            rolling_30d         = body.rolling30dAvg,
-            rolling_std_7d      = body.rollingStd7d,
-            spike_indicator     = body.spikeIndicator,
-            yoy_ratio           = body.yoyRatio,
-            seasonality_score   = body.seasonalityScore,
-            forex_rate          = body.forexRate,
-            gdp_growth          = body.gdpGrowth,
-            gdp_trend_direction = body.gdpTrendDirection,
-            gdp_trend_delta     = body.gdpTrendDelta,
-        )
+        result = ACTIVE_ENGINE.forecast(_engine_payload(body))
     except ValueError as exc:
         # Missing trend_series — ingestion has not run yet.
         error_msg = str(exc)
@@ -196,26 +291,10 @@ def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecast
     if not body.markets:
         raise HTTPException(status_code=422, detail="markets list must not be empty")
 
-    markets_data = [
-        {
-            "market":              m.market,
-            "trend_series":        m.trendSeries,
-            "rolling_7d":          m.rolling7dAvg,
-            "rolling_30d":         m.rolling30dAvg,
-            "rolling_std_7d":      m.rollingStd7d,
-            "spike_indicator":     m.spikeIndicator,
-            "yoy_ratio":           m.yoyRatio,
-            "seasonality_score":   m.seasonalityScore,
-            "forex_rate":          m.forexRate,
-            "gdp_growth":          m.gdpGrowth,
-            "gdp_trend_direction": m.gdpTrendDirection,
-            "gdp_trend_delta":     m.gdpTrendDelta,
-        }
-        for m in body.markets
-    ]
+    markets_data = [_engine_payload(m) for m in body.markets]
 
     try:
-        batch_result = gemini_forecaster.forecast_batch(markets_data)
+        batch_result = ACTIVE_ENGINE.forecast_batch(markets_data)
     except ValueError as exc:
         logger.error("[MOD22_MISSING_TREND_DATA] batch inference: %s", exc)
         raise HTTPException(
