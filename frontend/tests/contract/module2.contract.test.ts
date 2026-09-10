@@ -17,10 +17,12 @@ describeIfBackend(up, 'module 2 endpoints', () => {
     if (body.notifications.length > 0) {
       expect(body.notifications[0]).toMatchObject({
         id: expect.any(String),
-        category: expect.any(String),
         alertLevel: expect.stringMatching(/^(INFO|WARNING|CRITICAL)$/),
-        alertMessage: expect.any(String),
       });
+      expect(body.notifications[0]).toHaveProperty('category');
+      expect(body.notifications[0]).toHaveProperty('alertMessage');
+      expect(body.notifications[0]).toHaveProperty('windowOpenDate');
+      expect(body.notifications[0]).toHaveProperty('upliftPct');
     }
   });
 

@@ -71,7 +71,8 @@ class KeywordTrendSplitTest {
         Mockito.when(profileRepo.findById(PROFILE_ID)).thenReturn(Optional.of(profile));
         NotificationDto fakeTrend = new NotificationDto(
                 UUID.randomUUID().toString(), "Aug 29, 2026", "Keyword Trend Alert — Dive Shop",
-                "South Korea", "korea", "Top keyword: diving", false, null, "Dive Shop", "INFO", null);
+                "South Korea", "korea", "Top keyword: diving", false, null, "Dive Shop", "INFO", null,
+                null, null);
         Mockito.when(categoryRankService.buildForCategories(Mockito.anyList()))
                 .thenReturn(List.of(fakeTrend));
 

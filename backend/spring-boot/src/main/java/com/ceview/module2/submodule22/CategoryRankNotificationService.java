@@ -164,6 +164,8 @@ public class CategoryRankNotificationService {
                 details,
                 category,
                 "INFO",
+                null,
+                null,
                 null
         );
     }

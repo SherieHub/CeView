@@ -51,14 +51,14 @@ export default function AlertCard({ alert, isRead, isSelected, onSelect }: Alert
       </div>
 
       <h3 className="heading-sm">{alert.title}</h3>
-      <p className="body-sm">{alert.alertMessage}</p>
+      <p className="body-sm">{alert.alertMessage ?? 'No alert message is available for this legacy record.'}</p>
 
       <div className="chip-row mt-3">
         <span className="chip">
           <MapPin aria-hidden="true" /> {alert.market}
         </span>
         <span className="chip">
-          <Tag aria-hidden="true" /> {alert.category}
+          <Tag aria-hidden="true" /> {alert.category ?? 'Uncategorized'}
         </span>
         <span className="chip">
           <TrendingUp aria-hidden="true" /> {alert.trend}

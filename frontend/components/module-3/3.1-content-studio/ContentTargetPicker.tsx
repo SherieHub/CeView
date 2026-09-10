@@ -41,13 +41,20 @@ export default function ContentTargetPicker({ onPicked }: Props) {
         if (cancelled) return;
         // Same scoping as the dashboard's myAlerts — a surge that doesn't
         // touch one of the operator's own categories isn't theirs to target.
-        setAlerts((list as DemandAlert[]).filter((a) => profile.categories.includes(a.category)));
+        // Category-less legacy alerts remain visible in the Module 2 feed, but
+        // cannot be used to request category-scoped market rankings here.
+        setAlerts((list as DemandAlert[]).filter(
+          (a) => a.category !== null && profile.categories.includes(a.category),
+        ));
       })
       .catch((e) => { if (!cancelled) setAlertsError(e); });
     return () => { cancelled = true; };
   }, [profile.categories]);
 
   function pickAlert(alert: DemandAlert) {
+    if (alert.category === null) {
+      return;
+    }
     setPickedAlert(alert);
     setMarketsError(null);
     apiClient.markets
@@ -80,7 +87,7 @@ export default function ContentTargetPicker({ onPicked }: Props) {
           <div>
             <p className="ob-step-eyebrow">Step 2 of 2</p>
             <h2 className="heading-lg" style={{ margin: '6px 0 8px' }}>
-              Pick a target market for {pickedAlert.category}
+              Pick a target market for {pickedAlert.category ?? 'this alert'}
             </h2>
           </div>
           <button type="button" className="btn-outline" onClick={backToAlerts}>
@@ -189,10 +196,10 @@ export default function ContentTargetPicker({ onPicked }: Props) {
                 )}
               </div>
               <h3 className="heading-sm">{alert.title}</h3>
-              <p className="body-sm">{alert.alertMessage}</p>
+              <p className="body-sm">{alert.alertMessage ?? 'No alert message is available for this legacy record.'}</p>
               <div className="chip-row mt-3">
                 <span className="chip"><MapPin aria-hidden="true" /> {alert.market}</span>
-                <span className="chip"><Tag aria-hidden="true" /> {alert.category}</span>
+                <span className="chip"><Tag aria-hidden="true" /> {alert.category ?? 'Uncategorized'}</span>
                 <span className="chip"><TrendingUp aria-hidden="true" /> {alert.trend}</span>
               </div>
               <span className="alert-cta">

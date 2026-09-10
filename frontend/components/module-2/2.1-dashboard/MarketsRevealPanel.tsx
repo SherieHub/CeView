@@ -27,7 +27,7 @@ export default function MarketsRevealPanel({
         <h2 className="heading-md">Top Target Markets</h2>
         {selectedAlert && (
           <span className="chip chip--attention">
-            <Tag aria-hidden="true" /> {selectedAlert.category}
+            <Tag aria-hidden="true" /> {selectedAlert.category ?? 'Uncategorized'}
           </span>
         )}
       </div>

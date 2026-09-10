@@ -154,7 +154,9 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   // is no undifferentiated "all alerts" feed in the real system either.
   // ui-ux-prototype.html:2376.
   const myAlerts = useMemo(
-    () => allAlerts.filter((a) => profile.categories.includes(a.category)),
+    // Legacy alerts can have no category. Keep them visible rather than
+    // silently treating an incomplete historical row as another tenant's data.
+    () => allAlerts.filter((a) => a.category === null || profile.categories.includes(a.category)),
     [allAlerts, profile.categories],
   );
 
@@ -190,7 +192,7 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const [rankedMarkets, setRankedMarkets] = useState<Market[]>([]);
 
   useEffect(() => {
-    if (!selectedAlert) {
+    if (!selectedAlert || selectedAlert.category === null) {
       setRankedMarkets([]);
       return;
     }

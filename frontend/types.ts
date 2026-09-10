@@ -234,7 +234,8 @@ export interface DemandAlert {
   title: string;
   market: string;
   marketId: string;
-  category: string;
+  /** Nullable on the wire for alerts written before category persistence. */
+  category: string | null;
   trend: string;
   isRead: boolean;
   /**
@@ -245,7 +246,12 @@ export interface DemandAlert {
    * CRITICAL alerts silently drop out of the surge count.
    */
   alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
-  alertMessage: string;
+  /** Nullable on the wire for legacy alerts without an operator message. */
+  alertMessage: string | null;
+  /** ISO timestamp for the first forecast week crossing the alert threshold. */
+  windowOpenDate: string | null;
+  /** Forecast uplift over the rolling baseline, in percent. */
+  upliftPct: number | null;
 }
 
 // ─── Module 4 — Campaign Analytics ────────────────────────────────────────

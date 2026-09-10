@@ -13,7 +13,7 @@ const accommodationAlert = MOCK_NOTIFICATIONS.find((a) => a.id === 'n1')!; // Ac
 const adventureAlert = MOCK_NOTIFICATIONS.find((a) => a.id === 'n3')!; // Adventure & Nature
 
 function renderPanel(alert: typeof accommodationAlert | null, onOpenMarket = vi.fn()) {
-  const markets = alert ? marketsForCategory(alert.category) : [];
+  const markets = alert?.category ? marketsForCategory(alert.category) : [];
   const view = render(
     <MarketsRevealPanel selectedAlert={alert} markets={markets} onOpenMarket={onOpenMarket} />,
   );

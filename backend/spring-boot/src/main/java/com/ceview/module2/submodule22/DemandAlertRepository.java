@@ -14,9 +14,9 @@ public interface DemandAlertRepository extends JpaRepository<DemandAlert, UUID> 
 
     /**
      * Direct tenant-scoped read against the denormalized business_profile_id (V29),
-     * backed by idx_demand_alert_profile_date. Not yet called by any service; added
-     * so the repository maps the new column ahead of the alert-rules step that will
-     * use it to replace the 3-table join in NotificationService.
+     * backed by idx_demand_alert_profile_date. NotificationService uses this as
+     * the primary demand-alert feed query so category-specific alerts are not
+     * lost behind a single latest-forecast-per-market lookup.
      */
     List<DemandAlert> findByBusinessProfileIdOrderByAlertDateDesc(UUID businessProfileId);
 
