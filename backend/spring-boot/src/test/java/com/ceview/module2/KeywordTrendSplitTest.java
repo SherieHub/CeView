@@ -1,87 +1,36 @@
 package com.ceview.module2;
 
-import com.ceview.module1.businessinput.BusinessProfile;
-import com.ceview.module1.businessinput.BusinessProfileRepository;
-import com.ceview.module2.dto.NotificationDtos.NotificationDto;
-import com.ceview.module2.submodule22.CategoryRankNotificationService;
-import com.ceview.module2.submodule22.DemandAlertRepository;
-import com.ceview.module2.submodule22.ForecastResultRepository;
-import com.ceview.module2.submodule22.MarketScoreRepository;
-import com.ceview.module2.submodule22.NotificationService;
+import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.module2.submodule22.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Task 7a regression guard: GET /api/notifications must be a pure, fast DB
- * read that never calls CategoryRankNotificationService (PyTrends round-trip,
- * up to 75s per category). The keyword-trend work now lives in its own
- * method/endpoint, called separately.
- */
+/** The dashboard keyword endpoint is a persisted read, never a PyTrends hop. */
 class KeywordTrendSplitTest {
 
-    private static final UUID PROFILE_ID = UUID.fromString("30000000-0000-0000-0000-000000000001");
-
-    private NotificationService buildService(DemandAlertRepository alertRepo,
-                                              MarketScoreRepository scoreRepo,
-                                              ForecastResultRepository forecastRepo,
-                                              BusinessProfileRepository profileRepo,
-                                              CategoryRankNotificationService categoryRankService) {
-        return new NotificationService(alertRepo, scoreRepo, forecastRepo, profileRepo, categoryRankService);
-    }
-
     @Test
-    void getNotificationsForProfileNeverInvokesCategoryRankNotificationService() {
-        DemandAlertRepository alertRepo = Mockito.mock(DemandAlertRepository.class);
-        MarketScoreRepository scoreRepo = Mockito.mock(MarketScoreRepository.class);
-        ForecastResultRepository forecastRepo = Mockito.mock(ForecastResultRepository.class);
-        BusinessProfileRepository profileRepo = Mockito.mock(BusinessProfileRepository.class);
-        CategoryRankNotificationService categoryRankService = Mockito.mock(CategoryRankNotificationService.class);
+    void dashboardKeywordReadMakesZeroRankMarketsCalls() {
+        UUID profileId = UUID.randomUUID();
+        AIInferenceGatewayService ai = Mockito.mock(AIInferenceGatewayService.class);
+        KeywordTrendAlertRepository keywordRepo = Mockito.mock(KeywordTrendAlertRepository.class);
+        // This is the only service that can invoke rankMarketsForCategory. It is
+        // intentionally not a dependency of NotificationService.
+        new CategoryRankNotificationService(ai, keywordRepo);
+        NotificationService notifications = new NotificationService(
+                Mockito.mock(DemandAlertRepository.class),
+                Mockito.mock(MarketScoreRepository.class),
+                Mockito.mock(ForecastResultRepository.class),
+                keywordRepo);
+        Mockito.when(keywordRepo.findByBusinessProfileIdOrderByCreatedAtDesc(profileId)).thenReturn(List.of());
 
-        Mockito.when(forecastRepo
-                .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
-                        Mockito.eq(PROFILE_ID), Mockito.anyString(), Mockito.eq(4)))
-                .thenReturn(Optional.empty());
-
-        NotificationService service = buildService(alertRepo, scoreRepo, forecastRepo, profileRepo, categoryRankService);
-
-        var response = service.getNotificationsForProfile(PROFILE_ID);
+        var response = notifications.getKeywordTrendNotifications(profileId);
 
         assertThat(response.notifications()).isEmpty();
-        Mockito.verify(categoryRankService, Mockito.never()).buildForCategories(Mockito.anyList());
-        Mockito.verifyNoInteractions(profileRepo);
-    }
-
-    @Test
-    void getKeywordTrendNotificationsInvokesCategoryRankNotificationService() {
-        DemandAlertRepository alertRepo = Mockito.mock(DemandAlertRepository.class);
-        MarketScoreRepository scoreRepo = Mockito.mock(MarketScoreRepository.class);
-        ForecastResultRepository forecastRepo = Mockito.mock(ForecastResultRepository.class);
-        BusinessProfileRepository profileRepo = Mockito.mock(BusinessProfileRepository.class);
-        CategoryRankNotificationService categoryRankService = Mockito.mock(CategoryRankNotificationService.class);
-
-        BusinessProfile profile = new BusinessProfile();
-        profile.setBusinessProfileId(PROFILE_ID);
-        profile.setCategories("Dive Shop,Cafe");
-        Mockito.when(profileRepo.findById(PROFILE_ID)).thenReturn(Optional.of(profile));
-        NotificationDto fakeTrend = new NotificationDto(
-                UUID.randomUUID().toString(), "Aug 29, 2026", "Keyword Trend Alert — Dive Shop",
-                "South Korea", "korea", "Top keyword: diving", false, null, "Dive Shop", "INFO", null,
-                null, null);
-        Mockito.when(categoryRankService.buildForCategories(Mockito.anyList()))
-                .thenReturn(List.of(fakeTrend));
-
-        NotificationService service = buildService(alertRepo, scoreRepo, forecastRepo, profileRepo, categoryRankService);
-
-        var response = service.getKeywordTrendNotifications(PROFILE_ID);
-
-        assertThat(response.notifications()).hasSize(1);
-        Mockito.verify(categoryRankService).buildForCategories(Mockito.anyList());
-        Mockito.verifyNoInteractions(alertRepo, scoreRepo, forecastRepo);
+        Mockito.verifyNoInteractions(ai);
     }
 }

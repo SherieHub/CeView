@@ -34,8 +34,7 @@ class NotificationMarkReadTest {
         NotificationService service = new NotificationService(
                 alertRepo, Mockito.mock(com.ceview.module2.submodule22.MarketScoreRepository.class),
                 Mockito.mock(com.ceview.module2.submodule22.ForecastResultRepository.class),
-                Mockito.mock(com.ceview.module1.businessinput.BusinessProfileRepository.class),
-                Mockito.mock(com.ceview.module2.submodule22.CategoryRankNotificationService.class));
+                Mockito.mock(com.ceview.module2.submodule22.KeywordTrendAlertRepository.class));
 
         service.markRead(OWNER_PROFILE, ALERT_ID);
 
@@ -53,8 +52,7 @@ class NotificationMarkReadTest {
         NotificationService service = new NotificationService(
                 alertRepo, Mockito.mock(com.ceview.module2.submodule22.MarketScoreRepository.class),
                 Mockito.mock(com.ceview.module2.submodule22.ForecastResultRepository.class),
-                Mockito.mock(com.ceview.module1.businessinput.BusinessProfileRepository.class),
-                Mockito.mock(com.ceview.module2.submodule22.CategoryRankNotificationService.class));
+                Mockito.mock(com.ceview.module2.submodule22.KeywordTrendAlertRepository.class));
 
         service.markRead(OTHER_PROFILE, ALERT_ID);
 

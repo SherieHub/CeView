@@ -1,6 +1,5 @@
 package com.ceview.module2.submodule22;
 
-import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.NotificationDtos.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,19 +27,16 @@ public class NotificationService {
     private final DemandAlertRepository alertRepo;
     private final MarketScoreRepository scoreRepo;
     private final ForecastResultRepository forecastRepo;
-    private final BusinessProfileRepository profileRepo;
-    private final CategoryRankNotificationService categoryRankService;
+    private final KeywordTrendAlertRepository keywordAlertRepo;
 
     public NotificationService(DemandAlertRepository alertRepo,
                                 MarketScoreRepository scoreRepo,
                                 ForecastResultRepository forecastRepo,
-                                BusinessProfileRepository profileRepo,
-                                CategoryRankNotificationService categoryRankService) {
+                                KeywordTrendAlertRepository keywordAlertRepo) {
         this.alertRepo           = alertRepo;
         this.scoreRepo           = scoreRepo;
         this.forecastRepo        = forecastRepo;
-        this.profileRepo         = profileRepo;
-        this.categoryRankService = categoryRankService;
+        this.keywordAlertRepo    = keywordAlertRepo;
     }
 
     /**
@@ -93,22 +89,17 @@ public class NotificationService {
     }
 
     /**
-     * Keyword-trend notifications only, split out of {@link #getNotificationsForProfile}
-     * because each category round-trips to PyTrends via FastAPI rank-markets (up to 75s).
-     * The frontend loads this endpoint independently so a slow AI hop cannot block the
-     * fast demand-alert feed.
+     * Keyword-trend notifications are a pure DB read. If this week's scheduled
+     * producer has not finished yet, this deliberately returns older persisted
+     * rows (or an empty list); it never starts a 75-second PyTrends call.
      */
     public NotificationsResponse getKeywordTrendNotifications(UUID profileId) {
-        List<String> profileCategories = (profileId != null)
-                ? profileRepo.findById(profileId)
-                        .map(p -> p.categoriesList())
-                        .orElse(List.of())
-                : List.of();
-
-        List<NotificationDto> keywordNotifications =
-                categoryRankService.buildForCategories(profileCategories);
-
-        return new NotificationsResponse(keywordNotifications);
+        if (profileId == null) return new NotificationsResponse(List.of());
+        return new NotificationsResponse(keywordAlertRepo
+                .findByBusinessProfileIdOrderByCreatedAtDesc(profileId)
+                .stream()
+                .map(this::toKeywordNotificationDto)
+                .toList());
     }
 
     /**
@@ -119,8 +110,13 @@ public class NotificationService {
      */
     @Transactional
     public void markRead(UUID profileId, UUID notificationId) {
-        alertRepo.findOwnedBy(notificationId, profileId)
-                 .ifPresent(a -> { a.setIsRead(true); alertRepo.save(a); });
+        if (alertRepo.findOwnedBy(notificationId, profileId)
+                .map(a -> { a.setIsRead(true); alertRepo.save(a); return true; })
+                .orElse(false)) {
+            return;
+        }
+        keywordAlertRepo.findByKeywordTrendAlertIdAndBusinessProfileId(notificationId, profileId)
+                .ifPresent(a -> { a.setIsRead(true); keywordAlertRepo.save(a); });
     }
 
     // ─── mapping helpers ─────────────────────────────────────────────────────
@@ -154,6 +150,27 @@ public class NotificationService {
                 alert.getAlertMessage(),
                 alert.getWindowOpenDate(),
                 alert.getUpliftPct()
+        );
+    }
+
+    private NotificationDto toKeywordNotificationDto(KeywordTrendAlert alert) {
+        String marketId = alert.getTargetMarket();
+        String marketName = MARKET_NAMES.getOrDefault(marketId, marketId);
+        String date = alert.getCreatedAt() != null ? alert.getCreatedAt().format(DATE_FMT) : "";
+        return new NotificationDto(
+                alert.getKeywordTrendAlertId().toString(),
+                date,
+                "Keyword Trend Alert — " + alert.getCategory(),
+                marketName,
+                marketId,
+                "Top keyword: " + alert.getTopKeyword(),
+                Boolean.TRUE.equals(alert.getIsRead()),
+                null,
+                alert.getCategory(),
+                "INFO",
+                alert.getAlertMessage(),
+                null,
+                null
         );
     }
 }

@@ -25,8 +25,7 @@ class NotificationServiceReadPathTest {
         MarketScoreRepository scoreRepo = Mockito.mock(MarketScoreRepository.class);
         ForecastResultRepository forecastRepo = Mockito.mock(ForecastResultRepository.class);
         NotificationService service = new NotificationService(alertRepo, scoreRepo, forecastRepo,
-                Mockito.mock(com.ceview.module1.businessinput.BusinessProfileRepository.class),
-                Mockito.mock(CategoryRankNotificationService.class));
+                Mockito.mock(KeywordTrendAlertRepository.class));
 
         List<DemandAlert> ownerAlerts = new ArrayList<>();
         List<MarketScore> scores = new ArrayList<>();
@@ -74,8 +73,7 @@ class NotificationServiceReadPathTest {
         MarketScoreRepository scoreRepo = Mockito.mock(MarketScoreRepository.class);
         ForecastResultRepository forecastRepo = Mockito.mock(ForecastResultRepository.class);
         NotificationService service = new NotificationService(alertRepo, scoreRepo, forecastRepo,
-                Mockito.mock(com.ceview.module1.businessinput.BusinessProfileRepository.class),
-                Mockito.mock(CategoryRankNotificationService.class));
+                Mockito.mock(KeywordTrendAlertRepository.class));
 
         UUID scoreId = UUID.randomUUID();
         UUID forecastId = UUID.randomUUID();

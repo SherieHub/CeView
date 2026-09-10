@@ -184,9 +184,8 @@ export const apiClient = {
         ? delay({ ok: true })
         : request<void>(`/api/notifications/${id}/read`, { method: 'PATCH' }),
     /**
-     * Keyword-trend alerts. Separate from list() because each category
-     * round-trips to PyTrends and can take tens of seconds — the dashboard
-     * renders demand alerts first and merges these in when they arrive.
+     * Persisted keyword-trend alerts. The backend's scheduled producer performs
+     * any slow PyTrends refresh, so this read never waits on a rank request.
      */
     keywordTrends: () =>
       USE_FIXTURES

@@ -13,4 +13,7 @@ public interface KeywordTrendAlertRepository extends JpaRepository<KeywordTrendA
             UUID businessProfileId, String category, Short isoYear, Short isoWeek);
 
     List<KeywordTrendAlert> findByBusinessProfileIdOrderByCreatedAtDesc(UUID businessProfileId);
+
+    Optional<KeywordTrendAlert> findByKeywordTrendAlertIdAndBusinessProfileId(
+            UUID keywordTrendAlertId, UUID businessProfileId);
 }

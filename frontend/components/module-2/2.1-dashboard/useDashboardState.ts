@@ -117,10 +117,8 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
    * race on one setter: if this resolved first, the primary load's
    * `setAlerts(listResult.value)` would overwrite it.
    *
-   * Today that ordering is practically unreachable (this hop is ~9s of
-   * PyTrends, the primary read is ~0.15s) — but the known next improvement is
-   * to cache rank-markets server-side, which would make this fast and the race
-   * live. Separate state removes the failure mode instead of relying on timing.
+   * Both are now DB reads, but they remain separate because the scheduled
+   * keyword producer may update its rows independently of demand alerts.
    */
   const [keywordAlerts, setKeywordAlerts] = useState<DemandAlert[]>([]);
 
@@ -168,9 +166,8 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const surgeCount = useMemo(() => myAlerts.filter(isSurge).length, [myAlerts]);
 
   // The sidebar's Dashboard badge shows this same figure. Published rather than
-  // re-fetched: the keyword-trend hop behind it can take tens of seconds, and a
-  // second caller would pay it again. Null while loading so the rail shows no
-  // badge instead of a stale or invented one.
+  // re-fetched so independently refreshed keyword rows cannot create conflicting
+  // client-side counts. Null while loading avoids a stale or invented badge.
   const { setUnreadCount } = useUnreadAlerts();
   useEffect(() => {
     setUnreadCount(status === 'loading' ? null : unreadCount);
