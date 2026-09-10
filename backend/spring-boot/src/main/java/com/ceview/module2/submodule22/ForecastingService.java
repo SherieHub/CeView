@@ -120,8 +120,8 @@ public class ForecastingService {
      * between "we measured low demand" and "we could not measure".
      */
     public static AiDependencyException noMarketData(String market, String lastIngestionError) {
-        return AiDependencyException.fromBody(503, java.util.Map.of(
-                "code", "MOD22_NO_MARKET_DATA",
+        return AiDependencyException.fromBody(424, java.util.Map.of(
+                "code", Module2ErrorCodes.MOD22_NO_MARKET_DATA,
                 "message", "No measured demand data exists for " + market + " yet.",
                 "dependency", "pytrends",
                 "cause", lastIngestionError == null
@@ -160,8 +160,11 @@ public class ForecastingService {
         try {
             return runPipeline(profileId);
         } catch (IllegalStateException e) {
-            if ("enriched_dataset_empty".equals(e.getMessage())) {
-                MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
+            // Step 7: EnrichedSequenceBuilder now suffixes this with the reason
+            // (":count=N" / ":field=X") — startsWith, not equals, so that detail
+            // doesn't defeat this match.
+            if (e.getMessage() != null && e.getMessage().startsWith("enriched_dataset_empty")) {
+                MDC.put("code", Module2ErrorCodes.MOD22_NO_MARKET_DATA);
                 log.error("No enriched market data for profile={} — ingestion has not run yet", profileId);
                 MDC.remove("code");
                 throw new IllegalStateException(
@@ -372,8 +375,13 @@ public class ForecastingService {
                                 t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
                         double latest = t.getGdpLatest() != null ? t.getGdpLatest()
                                 : (pts.isEmpty() ? 2.0 : pts.get(pts.size() - 1).value());
+                        OffsetDateTime asOf = t.getGdpFetchedAt() != null ? t.getGdpFetchedAt() : t.getFetchedAt();
+                        // Reading straight from tbl_market_economic_trend, never a live call — a
+                        // persisted row's own gdp_source (Step 6) survives the round-trip; "unknown"
+                        // only for pre-Step-6 rows that never had a tag written.
+                        String source = t.getGdpSource() != null ? t.getGdpSource() : "unknown";
                         return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
-                                pts, latest, t.getFetchedAt());
+                                pts, latest, asOf, source);
                     } catch (Exception e) {
                         return null;
                     }
@@ -390,8 +398,10 @@ public class ForecastingService {
                                 t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
                         double latest = t.getForexLatest() != null ? t.getForexLatest()
                                 : (pts.isEmpty() ? 1.0 : pts.get(pts.size() - 1).value());
+                        OffsetDateTime asOf = t.getForexFetchedAt() != null ? t.getForexFetchedAt() : t.getFetchedAt();
+                        String source = t.getForexSource() != null ? t.getForexSource() : "unknown";
                         return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
-                                pts, latest, t.getFetchedAt());
+                                pts, latest, asOf, source);
                     } catch (Exception e) {
                         return null;
                     }
@@ -411,12 +421,13 @@ public class ForecastingService {
      * unscoped finder.
      */
     private List<MarketSignalRecord> loadCategoryScopedHistory(UUID profileId, String market, String category) {
+        // Step 4 (contract §2): ordered by observation week, not write time — see
+        // MarketSignalRecordRepository.findByProfileMarketCategoryOrderByWeekDesc.
         List<MarketSignalRecord> scoped = category != null
-                ? signalRepo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                        profileId, market, category)
+                ? signalRepo.findByProfileMarketCategoryOrderByWeekDesc(profileId, market, category)
                 : List.of();
         if (!scoped.isEmpty()) return scoped;
-        return signalRepo.findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        return signalRepo.findByProfileMarketOrderByWeekDesc(profileId, market);
     }
 
     // ─── pipeline ─────────────────────────────────────────────────────────────
@@ -485,16 +496,26 @@ public class ForecastingService {
             try {
                 sequence = sequenceBuilder.buildSequence(profileId, market, primaryCategory);
             } catch (IllegalStateException seqEx) {
-                if ("enriched_dataset_empty".equals(seqEx.getMessage())) {
-                    MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
+                String seqMsg = seqEx.getMessage();
+                if (seqMsg != null && seqMsg.startsWith("enriched_dataset_empty")) {
+                    MDC.put("code", Module2ErrorCodes.MOD22_NO_MARKET_DATA);
                     String lastError = jobRepo.findTopByMarketOrderByLastAttemptedAtDesc(market)
                             .map(TrendFetchJob::getLastError)
                             .orElse(null);
+                    // Step 7 (contract §3.1): surface WHY the matrix couldn't be built —
+                    // the real weekly-row count, or which feature had no usable earlier
+                    // value to carry forward — rather than a bare "no data" message.
+                    String detail = seqMsg.contains(":") ? seqMsg.substring(seqMsg.indexOf(':') + 1) : null;
+                    StringBuilder combinedErrorBuilder = new StringBuilder(detail != null
+                            ? "insufficient real weekly history (" + detail + ") for the 12-week feature matrix"
+                            : "no measured signal data");
+                    if (lastError != null) combinedErrorBuilder.append("; last ingestion error: ").append(lastError);
+                    String combinedError = combinedErrorBuilder.toString();
                     log.warn("No measured signal data for market={} profile={} — "
-                             + "MOD22_NO_MARKET_DATA (last ingestion error: {})",
-                            market, profileId, lastError);
+                             + "MOD22_NO_MARKET_DATA ({})",
+                            market, profileId, combinedError);
                     MDC.remove("code");
-                    throw noMarketData(market, lastError);
+                    throw noMarketData(market, combinedError);
                 }
                 throw seqEx;
             }
@@ -547,12 +568,16 @@ public class ForecastingService {
                         "MOD22_FORECAST_FAILED :: Batch response missing results for market=" + market);
             }
 
-            double demand4w   = num(inference, "predicted_demand_4w",  50.0);
-            double demand12w  = num(inference, "predicted_demand_12w", 50.0);
-            double mape       = num(inference, "mape",       10.0);
-            double mae        = num(inference, "mae",         6.0);
-            double rmse       = num(inference, "rmse",        9.0);
-            double confidence = num(inference, "confidence",  0.8);
+            // Step 6 (contract; H-29): a missing field here used to silently become
+            // demand=50 / mape=10 / mae=6 / rmse=9 / confidence=0.8 — indistinguishable
+            // from a real measurement once persisted and charted. requireNum throws
+            // instead, so an incomplete Gemini/Groq response fails loudly.
+            double demand4w   = requireNum(inference, "predicted_demand_4w",  market);
+            double demand12w  = requireNum(inference, "predicted_demand_12w", market);
+            double mape       = requireNum(inference, "mape",       market);
+            double mae        = requireNum(inference, "mae",        market);
+            double rmse       = requireNum(inference, "rmse",       market);
+            double confidence = requireNum(inference, "confidence", market);
 
             // Per-week forecasts [Wk+1..Wk+12] — Gemini returns varying values
             // so the chart shows a real trend line (not a flat repeated scalar).
@@ -577,12 +602,19 @@ public class ForecastingService {
                 List<MarketSignalRecord> history = loadCategoryScopedHistory(profileId, market, category);
                 MarketSignalRecord latest = history.isEmpty() ? null : history.get(0);
 
-                // seasonalityScore is stored 0–1 (SeasonalShiftDetector composite)
-                double seasonality = latest != null && latest.getSeasonalityScore() != null
-                        ? latest.getSeasonalityScore() : 0.5;
+                // Step 6 (contract; H-29): seasonality/gdp/forex used to silently default to
+                // 0.5 / 2.0 / 1.0 when `latest` (or one of its fields) was null — indistinguishable
+                // from a real measurement once it fed the XGBoost score and chart. Scans the
+                // full week-ordered history for the most recent NON-null reading of each field
+                // (a genuine last-known-good, same three-tier spirit as the macro-input policy)
+                // and throws only when NO row in the category's history has ever measured it.
+                double seasonality = requireLatestMeasured(history, market, category,
+                        "seasonality_score", MarketSignalRecord::getSeasonalityScore);
                 boolean spike = latest != null && Boolean.TRUE.equals(latest.getSpikeIndicator());
-                double gdp    = latest != null && latest.getGdpGrowth() != null ? latest.getGdpGrowth() : 2.0;
-                double forex  = latest != null && latest.getForexRate()  != null ? latest.getForexRate()  : 1.0;
+                double gdp    = requireLatestMeasured(history, market, category,
+                        "gdp_growth", MarketSignalRecord::getGdpGrowth);
+                double forex  = requireLatestMeasured(history, market, category,
+                        "forex_rate", MarketSignalRecord::getForexRate);
                 Double yoyRatio = latest != null ? latest.getYoyRatio() : null;
 
                 // Persist ForecastResult (4w + 12w) — only when a valid profile row exists
@@ -820,6 +852,21 @@ public class ForecastingService {
         String  dataAsOf  = signalAsOf != null ? signalAsOf.toString() : null;
         boolean dataStale = EnrichedSequenceBuilder.isStale(signalAsOf, OffsetDateTime.now());
 
+        // Macro-input provenance (Step 6, contract; C-06, H-18) — which tier produced
+        // gdpValue/forexValue, and how old the older of the two readings is, so the
+        // operator can tell a live number from a last-known-good one on screen.
+        String gdpSource   = b.gdpTrend()   != null ? b.gdpTrend().source()   : null;
+        String forexSource = b.forexTrend() != null ? b.forexTrend().source() : null;
+        OffsetDateTime gdpAsOfInstant   = b.gdpTrend()   != null ? b.gdpTrend().fetchedAt()   : null;
+        OffsetDateTime forexAsOfInstant = b.forexTrend() != null ? b.forexTrend().fetchedAt() : null;
+        OffsetDateTime macroAsOfInstant;
+        if (gdpAsOfInstant != null && forexAsOfInstant != null) {
+            macroAsOfInstant = gdpAsOfInstant.isBefore(forexAsOfInstant) ? gdpAsOfInstant : forexAsOfInstant;
+        } else {
+            macroAsOfInstant = gdpAsOfInstant != null ? gdpAsOfInstant : forexAsOfInstant;
+        }
+        String macroAsOf = macroAsOfInstant != null ? macroAsOfInstant.toString() : null;
+
         return new MarketDto(
                 market, rank, meta[0], meta[1], matchScore, directive,
                 flight.directFlight(), flight.flightHours(), flight.distanceKm(),
@@ -829,21 +876,24 @@ public class ForecastingService {
                 avgFlightPrice,
                 airlines,
                 PEAK_MONTHS.getOrDefault(market, List.of()),
-                buildEconomyInsight(b.ms()),
+                buildEconomyInsight(b.ms(), b.forexTrend()),
                 buildSeasonalityInsight(b.ms()),
                 chartData,
                 gdpTrendDtos,
                 forexTrendDtos,
                 MarketFlags.isoFor(market),
                 currency,
-                currency.isBlank() ? "" : "PHP per 1 " + currency,
+                forexLabel(currency),
                 gdpValue,
                 forexValue,
                 ms.getSeasonalityScore() != null ? ms.getSeasonalityScore() : 0.0,
                 ms.getYoyRatio(),
                 Boolean.TRUE.equals(ms.getSpikeIndicator()),
                 dataAsOf,
-                dataStale
+                dataStale,
+                gdpSource,
+                forexSource,
+                macroAsOf
         );
     }
 
@@ -956,31 +1006,67 @@ public class ForecastingService {
                 + "Maintain consistent content cadence and monitor for emerging trend spikes.";
     }
 
-    private String buildEconomyInsight(MarketScore ms) {
-        double gdp   = ms.getGdpPerCapitaGrowth() != null ? ms.getGdpPerCapitaGrowth() : 0.0;
-        double forex = ms.getForexVsPhp()          != null ? ms.getForexVsPhp()          : 1.0;
+    /** Contract §1.3: the single template every forex axis label is built from. */
+    private static final String FOREX_LABEL_FORMAT = "PHP per 1 %s";
 
+    static String forexLabel(String currency) {
+        return currency.isBlank() ? "" : String.format(FOREX_LABEL_FORMAT, currency);
+    }
+
+    /**
+     * Contract §1: forex is canonical PHP per 1 unit of foreign currency everywhere, so a
+     * fixed magnitude threshold (the previous "&gt; 15.0 = exceptional") is meaningless
+     * across markets — canonical rates span more than three orders of magnitude purely
+     * from how many units of each currency equal one peso (korea ≈ 0.04, japan ≈ 0.38,
+     * usa ≈ 57), which is a currency-denomination artifact, not a real difference in
+     * purchasing power. The purchasing-power signal here is instead the CURRENT rate's
+     * % deviation from the mean of its own forex_trend_json series — a ratio of two
+     * values in the same unit, so it is comparable across every market regardless of
+     * that unit's magnitude.
+     */
+    static String buildEconomyInsight(MarketScore ms, ExternalMarketDataClient.ForexTrendDto forexTrend) {
+        double gdp = ms.getGdpPerCapitaGrowth() != null ? ms.getGdpPerCapitaGrowth() : 0.0;
         String gdpTrend = gdp > 3.0 ? "strong growth" : gdp > 1.5 ? "moderate growth" : "stable";
 
-        // forex_vs_php is stored as foreign-currency units per PHP.
-        // KRW≈23, JPY≈0.37, USD≈0.018 — high value = weak PHP relative to that currency
-        // (meaning the visitor's currency buys more PHP → better Cebu value).
+        Double changePct = forexChangeVsTwelveMonthMeanPct(forexTrend);
         String forexSentiment;
-        if (forex > 15.0) {        // KRW range: visitors have strong purchasing power
-            forexSentiment = "exceptional";
-        } else if (forex > 0.3) {  // JPY range: good purchasing power
-            forexSentiment = "favourable";
-        } else if (forex > 0.015) {// USD range: strong purchasing power relative to PHP
-            forexSentiment = "strong";
+        String trendClause;
+        if (changePct == null) {
+            forexSentiment = "an undetermined";
+            trendClause = "not enough exchange-rate history yet to compare against";
+        } else if (changePct >= 3.0) {
+            forexSentiment = "an improving";
+            trendClause = String.format("%.1f%% stronger than its own 12-month average", changePct);
+        } else if (changePct <= -3.0) {
+            forexSentiment = "a softening";
+            trendClause = String.format("%.1f%% weaker than its own 12-month average", changePct);
         } else {
-            forexSentiment = "moderate";
+            forexSentiment = "a stable";
+            trendClause = "close to its own 12-month average";
         }
 
         return String.format(
-                "GDP is showing %s (%.1f%% YoY). The exchange rate signals %s purchasing power "
-                + "for visitors spending in Cebu — an XGBoost economic viability score was used "
-                + "to weight this market's accessibility alongside flight data.",
-                gdpTrend, gdp, forexSentiment);
+                "GDP is showing %s (%.1f%% YoY). The exchange rate signals %s purchasing power trend "
+                + "for visitors spending in Cebu — the currency is currently %s. An XGBoost economic "
+                + "viability score was used to weight this market's accessibility alongside flight data.",
+                gdpTrend, gdp, forexSentiment, trendClause);
+    }
+
+    /**
+     * % difference between a market's latest forex reading and the mean of its own
+     * forex_trend_json series (up to 12 monthly points, contract §1 canonical unit).
+     * Unit-independent by construction — both operands are in the same unit, so the
+     * ratio is comparable across every market regardless of that unit's magnitude.
+     * Null when there is no trend history yet, or its mean is non-positive.
+     */
+    static Double forexChangeVsTwelveMonthMeanPct(ExternalMarketDataClient.ForexTrendDto forexTrend) {
+        if (forexTrend == null || forexTrend.points().isEmpty()) return null;
+        double mean = forexTrend.points().stream()
+                .mapToDouble(ForexTrendPoint::value)
+                .average()
+                .orElse(0.0);
+        if (mean <= 0) return null;
+        return (forexTrend.latest() - mean) / mean * 100.0;
     }
 
     /**
@@ -1022,6 +1108,10 @@ public class ForecastingService {
             trend.setGdpLatest(gdp != null ? gdp.latest() : null);
             trend.setForexLatest(forex != null ? forex.latest() : null);
             trend.setCurrencyCode(forex != null ? forex.currencyCode() : null);
+            trend.setGdpSource(gdp != null ? gdp.source() : null);
+            trend.setGdpFetchedAt(gdp != null ? gdp.fetchedAt() : null);
+            trend.setForexSource(forex != null ? forex.source() : null);
+            trend.setForexFetchedAt(forex != null ? forex.fetchedAt() : null);
 
             if (gdp != null && !gdp.points().isEmpty()) {
                 StringBuilder sb = new StringBuilder("[");
@@ -1058,6 +1148,48 @@ public class ForecastingService {
     private double num(Map<String, Object> map, String key, double def) {
         Object v = map.get(key);
         return v instanceof Number ? ((Number) v).doubleValue() : def;
+    }
+
+    /**
+     * Like {@link #num} but never falls back to a fabricated default (Step 6,
+     * contract; H-29) — a batch-inference response missing a required numeric
+     * field throws instead of silently becoming demand=50 / mape=10 / etc.
+     */
+    private static double requireNum(Map<String, Object> map, String key, String market) {
+        Object v = map.get(key);
+        if (v instanceof Number n) return n.doubleValue();
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Forecast inference for " + market + " is missing required field '" + key + "'.",
+                "dependency", "groq",
+                "cause", "batch inference response for " + market + " did not include a numeric '" + key + "' value",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    /**
+     * The most recent non-null reading of one signal field across a category's
+     * week-ordered history (Step 6, contract; H-29) — the "last-known-good"
+     * counterpart of {@link #requireNum} for signal-derived inputs (seasonality,
+     * GDP, forex) rather than inference-response fields. Throws only when NOT A
+     * SINGLE row in the history has ever measured this field — never fabricates
+     * the 0.5 / 2.0 / 1.0 constants this replaces.
+     */
+    private static double requireLatestMeasured(List<MarketSignalRecord> historyWeekDesc, String market,
+            String category, String field, java.util.function.Function<MarketSignalRecord, Double> getter) {
+        for (MarketSignalRecord r : historyWeekDesc) {
+            Double v = getter.apply(r);
+            if (v != null) return v;
+        }
+        throw noMeasuredCategoryInput(market, category, field);
+    }
+
+    private static AiDependencyException noMeasuredCategoryInput(String market, String category, String field) {
+        return AiDependencyException.fromBody(503, Map.of(
+                "code", "MOD22_NO_MARKET_DATA",
+                "message", "No measured " + field + " exists for " + market + "/" + category + " yet.",
+                "dependency", "market-signal",
+                "cause", "no MarketSignalRecord in history for this (market, category) has a non-null " + field,
+                "stage", "spring/forecasting"), "forecasting/pipeline");
     }
 
     private double safeScore(MarketScore ms) {

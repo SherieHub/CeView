@@ -23,7 +23,7 @@ class NoMarketDataTest {
                     assertThat(ex.getCode()).isEqualTo("MOD22_NO_MARKET_DATA");
                     assertThat(ex.getDependency()).isEqualTo("pytrends");
                     assertThat(ex.getCause2()).contains("429");
-                    assertThat(ex.getStatus()).isEqualTo(503);
+                    assertThat(ex.getStatus()).isEqualTo(424);
                 });
     }
 }
