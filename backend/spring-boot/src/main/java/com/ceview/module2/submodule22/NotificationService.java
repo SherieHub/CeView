@@ -1,5 +1,6 @@
 package com.ceview.module2.submodule22;
 
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.dto.NotificationDtos.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,12 +18,6 @@ public class NotificationService {
 
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("MMM d, yyyy");
-
-    private static final Map<String, String> MARKET_NAMES = Map.of(
-            "korea", "South Korea",
-            "japan", "Japan",
-            "usa",   "United States"
-    );
 
     private final DemandAlertRepository alertRepo;
     private final MarketScoreRepository scoreRepo;
@@ -83,7 +78,7 @@ public class NotificationService {
 
         List<NotificationDto> demandNotifications = alerts.stream()
                 .map(a -> toNotificationDto(a, scoreById, forecastById))
-                .collect(Collectors.toList());
+                .toList();
 
         return new NotificationsResponse(demandNotifications);
     }
@@ -128,7 +123,7 @@ public class NotificationService {
         ForecastResult fr = ms != null ? forecastById.get(ms.getForecastResultId()) : null;
 
         String marketId   = fr != null ? fr.getTargetMarket() : "unknown";
-        String marketName = MARKET_NAMES.getOrDefault(marketId, marketId);
+        String marketName = MarketCatalog.displayName(marketId);
         String dateStr    = alert.getAlertDate() != null
                 ? alert.getAlertDate().format(DATE_FMT) : "";
 
@@ -155,7 +150,7 @@ public class NotificationService {
 
     private NotificationDto toKeywordNotificationDto(KeywordTrendAlert alert) {
         String marketId = alert.getTargetMarket();
-        String marketName = MARKET_NAMES.getOrDefault(marketId, marketId);
+        String marketName = MarketCatalog.displayName(marketId);
         String date = alert.getCreatedAt() != null ? alert.getCreatedAt().format(DATE_FMT) : "";
         return new NotificationDto(
                 alert.getKeywordTrendAlertId().toString(),

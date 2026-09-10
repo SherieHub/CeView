@@ -2,6 +2,7 @@ package com.ceview.module2.submodule21;
 
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.module1.businessinput.BusinessProfile;
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.Module2ErrorCodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,6 @@ public class MarketDataIngestionService {
 
     private static final Logger log = LoggerFactory.getLogger(MarketDataIngestionService.class);
 
-    private static final List<String> MARKETS              = List.of("korea", "japan", "usa");
     private static final int          FOREX_ROLLING_WINDOW = 30;  // 30-period rolling for forex
     /** Step 4 (contract §2): the one ISO-week API used everywhere in this class —
      *  never dayOfYear/7+1, which misclassifies weeks straddling a year boundary. */
@@ -71,7 +71,7 @@ public class MarketDataIngestionService {
         }
 
         int count = 0;
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             for (String category : categories) {
                 try {
                     ingestMarket(profile, market, category);

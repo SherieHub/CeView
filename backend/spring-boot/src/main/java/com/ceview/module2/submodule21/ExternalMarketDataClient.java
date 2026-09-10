@@ -1,5 +1,6 @@
 package com.ceview.module2.submodule21;
 
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.Module2ErrorCodes;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,10 +94,6 @@ public class ExternalMarketDataClient {
         return iso.isBlank() ? "US" : iso;
     }
 
-    // Market → currency code
-    private static final Map<String, String> CURRENCY_CODE = Map.of(
-            "korea", "KRW", "japan", "JPY", "usa", "USD");
-
     public ExternalMarketDataClient(
             @Value("${ceview.external.worldbank.base-url}") String worldBankUrl,
             @Value("${ceview.external.forex.base-url}") String forexUrl,
@@ -153,7 +150,7 @@ public class ExternalMarketDataClient {
     }
 
     public ForexDataDto fetchForexRate(String marketId) {
-        String currencyCode = CURRENCY_CODE.getOrDefault(marketId, "USD");
+        String currencyCode = MarketCatalog.currencyCode(marketId);
         String currencyLower = currencyCode.toLowerCase();
         try {
             // fawazahmed0/currency-api: PHP as base, returns foreign units per 1 PHP —
@@ -309,7 +306,7 @@ public class ExternalMarketDataClient {
      * ({@code MOD21_MACRO_UNAVAILABLE}) — never a synthetic flat series.
      */
     public ForexTrendDto fetchForexTrend(String marketId) {
-        String currencyCode  = CURRENCY_CODE.getOrDefault(marketId, "USD");
+        String currencyCode  = MarketCatalog.currencyCode(marketId);
         String currencyLower = currencyCode.toLowerCase();
         LocalDate today      = LocalDate.now();
         DateTimeFormatter isoFmt   = DateTimeFormatter.ISO_LOCAL_DATE;

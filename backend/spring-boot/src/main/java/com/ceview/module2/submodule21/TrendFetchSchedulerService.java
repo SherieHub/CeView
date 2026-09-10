@@ -1,6 +1,7 @@
 package com.ceview.module2.submodule21;
 
 import com.ceview.common.TraceIdFilter;
+import com.ceview.module2.MarketCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -66,8 +67,6 @@ public class TrendFetchSchedulerService {
         "Culinary & Gastronomy",
         "Accommodation & Staycation"
     );
-
-    private static final List<String> MARKETS = List.of("korea", "japan", "usa");
 
     /** FastAPI jitter adds 4–12 s per request; allow 30 s total per HTTP call. */
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
@@ -232,7 +231,7 @@ public class TrendFetchSchedulerService {
     private int upsertPendingJobs(String weekOf) {
         int created = 0;
         for (String category : CATEGORIES) {
-            for (String market : MARKETS) {
+            for (String market : MarketCatalog.IDS) {
                 Optional<TrendFetchJob> existing =
                     jobRepo.findByWeekOfAndCategoryAndMarket(weekOf, category, market);
                 if (existing.isEmpty()) {

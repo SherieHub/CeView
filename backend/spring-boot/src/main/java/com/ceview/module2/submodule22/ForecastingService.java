@@ -4,6 +4,7 @@ import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.ai.AiDependencyException;
 import com.ceview.module1.businessinput.BusinessProfile;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.MarketFlags;
 import com.ceview.module2.Module2ErrorCodes;
 import com.ceview.module2.dto.MarketDtos.*;
@@ -61,7 +62,6 @@ public class ForecastingService {
     private static final Logger log = LoggerFactory.getLogger(ForecastingService.class);
     private static final double MAPE_THRESHOLD = 15.0;
     private static final double DEMAND_WINDOW_MULTIPLIER = 1.2;
-    private static final List<String> MARKETS = List.of("korea", "japan", "usa");
 
     // Static display metadata: [name, city, nearestAirport (full), destinationAirport (full)]
     private static final Map<String, String[]> MARKET_META = Map.of(
@@ -206,7 +206,7 @@ public class ForecastingService {
         }
 
         OffsetDateTime newest = null;
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             Optional<ForecastResult> fr = forecastRepo
                     .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
                             profileId, market, 4);
@@ -284,7 +284,7 @@ public class ForecastingService {
             categories = List.of(categoryFilter);
         }
 
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             ForecastResult fr4w = null;
             MarketScore ms = null;
 
@@ -481,7 +481,7 @@ public class ForecastingService {
         String primaryCategory = categories.get(0);
 
         // ── Phase A: build all market sequences (no AI calls) ────────────────
-        // Stores (market, gdpTrend, forexTrend, sequence) in MARKETS order so
+        // Stores (market, gdpTrend, forexTrend, sequence) in MarketCatalog.IDS order so
         // Phase B can submit them as a batch and Phase C can zip results back.
         record MarketSetup(
                 String market,
@@ -490,7 +490,7 @@ public class ForecastingService {
                 Map<String, Object> sequence) {}
 
         List<MarketSetup> setups = new ArrayList<>();
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             // Fetch economic trend time-series so the GDP direction can be
             // injected into the Gemini prompt context below (FR2.13 extension)
             GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
@@ -554,7 +554,7 @@ public class ForecastingService {
         // confidence) is looked up ONCE per market from the Phase B batch response,
         // which is keyed by plain market name — it is built from exactly one
         // sequence per market (the profile's primary category, Phase A), so the
-        // live Gemini call count stays bounded at MARKETS.size() regardless of how
+        // live Gemini call count stays bounded at MarketCatalog.IDS.size() regardless of how
         // many categories the profile has (see class Javadoc / Task 1a.2b report).
         // What genuinely varies per category is seasonality, spike, GDP/forex
         // context and therefore the XGBoost economic-viability score — those are
