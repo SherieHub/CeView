@@ -27,7 +27,9 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -662,10 +664,11 @@ public class ForecastingService {
                 if (canPersist) {
                     ms = persistMarketScore(
                             fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio);
-                    double rollingAvg = requireRollingBaseline(latest, market, category);
-                    if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
-                        persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
-                    }
+                    // An absent/invalid baseline is not replaced with a made-up value:
+                    // it simply cannot produce a baseline-relative demand-window alert.
+                    Double rollingAvg = latest != null ? latest.getRollingAverage7d() : null;
+                    persistDemandAlert(profileId, category, ms.getMarketScoreId(), market, demand4w,
+                            rollingAvg, spike, yoyRatio, weeklyForecasts, latest);
                 } else {
                     // In-memory stub — no FK writes
                     ms = new MarketScore();
@@ -770,24 +773,109 @@ public class ForecastingService {
         return scoreRepo.save(ms);
     }
 
-    private void persistDemandAlert(UUID marketScoreId, String market, double demand4w) {
+    private void persistDemandAlert(UUID profileId, String category, UUID marketScoreId, String market,
+                                    double demand4w, Double rolling7dAverage, boolean spikeIndicator,
+                                    Double yoyRatio, List<Double> weeklyForecasts,
+                                    MarketSignalRecord latestSignal) {
+        OffsetDateTime firstForecastWeek = firstForecastWeekStart(latestSignal);
+        Optional<DemandAlertDecision> decision = deriveDemandAlert(
+                demand4w, rolling7dAverage, spikeIndicator, yoyRatio, weeklyForecasts, firstForecastWeek);
+        if (decision.isEmpty()) {
+            return;
+        }
+
+        DemandAlertDecision alertDecision = decision.get();
         String marketName = MARKET_META.getOrDefault(market,
                 new String[]{market, market, "???", "CEB"})[0];
-        String trendLabel = "Rising demand window";
 
         DemandAlert alert = new DemandAlert();
         alert.setMarketScoreId(marketScoreId);
-        alert.setAlertLevel("WARNING");
+        alert.setBusinessProfileId(profileId);
+        alert.setCategory(category);
+        alert.setAlertLevel(alertDecision.level());
+        alert.setUpliftPct(alertDecision.upliftPct());
         alert.setAlertMessage(String.format(
-                "Demand window opening for %s — predicted demand %.1f%% above baseline. "
-                + "Target within 4 weeks for maximum reach.", marketName, (DEMAND_WINDOW_MULTIPLIER - 1) * 100));
-        alert.setTrend(trendLabel);
+                "%s for %s — the 4-week forecast is %.1f%% above the rolling baseline. "
+                + "First forecast week crossing the demand-window threshold starts %s.",
+                alertDecision.level().equals("CRITICAL") ? "Critical demand window" : "Demand window detected",
+                marketName, alertDecision.upliftPct(), alertDecision.windowOpenDate().toLocalDate()));
+        alert.setTrend(alertDecision.trend());
         alert.setIsRead(false);
-        alert.setWindowOpenDate(OffsetDateTime.now().plusWeeks(1));
+        alert.setWindowOpenDate(alertDecision.windowOpenDate());
         alertRepo.save(alert);
         MDC.put("code", Module2ErrorCodes.MOD22_ALERT_GENERATED);
-        log.info("Demand alert generated for market={} demand4w={}", market, demand4w);
+        log.info("Demand alert generated for market={} level={} upliftPct={}",
+                market, alertDecision.level(), alertDecision.upliftPct());
         MDC.remove("code");
+    }
+
+    /**
+     * Implements the frozen demand-window rule. This is deliberately not called
+     * a "surge": the rule measures a 20% rolling-baseline uplift, while a surge
+     * has the stricter 2σ definition used by the UI's surge surfaces.
+     *
+     * <p>A missing year-over-year ratio can never elevate an alert to CRITICAL;
+     * it remains WARNING when every other warning condition is met.
+     */
+    static Optional<DemandAlertDecision> deriveDemandAlert(double predictedDemand4w,
+                                                            Double rolling7dAverage,
+                                                            boolean spikeIndicator,
+                                                            Double yoyRatio,
+                                                            List<Double> weeklyForecasts,
+                                                            OffsetDateTime firstForecastWeek) {
+        if (rolling7dAverage == null || !Double.isFinite(rolling7dAverage) || rolling7dAverage <= 0.0) {
+            return Optional.empty();
+        }
+        if (!Double.isFinite(predictedDemand4w) || weeklyForecasts == null || firstForecastWeek == null) {
+            return Optional.empty();
+        }
+
+        double threshold = rolling7dAverage * DEMAND_WINDOW_MULTIPLIER;
+        if (predictedDemand4w <= threshold) {
+            return Optional.empty();
+        }
+
+        int firstCrossingWeek = -1;
+        for (int i = 0; i < weeklyForecasts.size(); i++) {
+            Double weeklyForecast = weeklyForecasts.get(i);
+            if (weeklyForecast != null && Double.isFinite(weeklyForecast) && weeklyForecast > threshold) {
+                firstCrossingWeek = i;
+                break;
+            }
+        }
+        if (firstCrossingWeek < 0) {
+            return Optional.empty();
+        }
+
+        double upliftPct = calculateUpliftPct(predictedDemand4w, rolling7dAverage);
+        boolean critical = spikeIndicator && yoyRatio != null && Double.isFinite(yoyRatio) && yoyRatio >= 1.0;
+        return Optional.of(new DemandAlertDecision(
+                critical ? "CRITICAL" : "WARNING",
+                upliftPct,
+                spikeIndicator ? "Sudden interest spike" : "Rising demand window",
+                firstForecastWeek.plusWeeks(firstCrossingWeek)));
+    }
+
+    static double calculateUpliftPct(double predictedDemand4w, double rolling7dAverage) {
+        if (!Double.isFinite(rolling7dAverage) || rolling7dAverage <= 0.0) {
+            throw new IllegalArgumentException("rolling_7d_avg must be a finite positive number");
+        }
+        if (!Double.isFinite(predictedDemand4w)) {
+            throw new IllegalArgumentException("predicted_demand_4w must be finite");
+        }
+        return (predictedDemand4w / rolling7dAverage - 1.0) * 100.0;
+    }
+
+    private static OffsetDateTime firstForecastWeekStart(MarketSignalRecord latestSignal) {
+        LocalDate latestWeekStart = latestSignal != null ? latestSignal.getWeekStartDate() : null;
+        if (latestWeekStart == null && latestSignal != null && latestSignal.getAggregatedAt() != null) {
+            LocalDate observedDate = latestSignal.getAggregatedAt().withOffsetSameInstant(ZoneOffset.UTC).toLocalDate();
+            latestWeekStart = observedDate.minusDays(observedDate.getDayOfWeek().getValue() - 1L);
+        }
+        if (latestWeekStart == null) {
+            throw new IllegalStateException("Cannot derive forecast window without a latest signal week");
+        }
+        return latestWeekStart.plusWeeks(1).atStartOfDay().atOffset(ZoneOffset.UTC);
     }
 
     // ─── DTO assembly ─────────────────────────────────────────────────────────
@@ -1204,14 +1292,6 @@ public class ForecastingService {
         return List.copyOf(weekly);
     }
 
-    private static double requireRollingBaseline(MarketSignalRecord latest, String market, String category) {
-        if (latest != null && latest.getRollingAverage7d() != null
-                && Double.isFinite(latest.getRollingAverage7d()) && latest.getRollingAverage7d() > 0.0) {
-            return latest.getRollingAverage7d();
-        }
-        throw noMeasuredCategoryInput(market, category, "rolling_average_7d");
-    }
-
     /**
      * The most recent non-null reading of one signal field across a category's
      * week-ordered history (Step 6, contract; H-29) — the "last-known-good"
@@ -1254,4 +1334,7 @@ public class ForecastingService {
             ForexTrendDto forexTrend,
             List<Double> weeklyForecasts,
             MarketSignalRecord latestSignal) {}
+
+    /** Package-visible pure result of the frozen demand-window alert rule. */
+    record DemandAlertDecision(String level, double upliftPct, String trend, OffsetDateTime windowOpenDate) {}
 }
