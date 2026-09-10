@@ -1,6 +1,7 @@
 package com.ceview.module4.adconnections.client;
 
 import com.ceview.module4.adconnections.AdConnectionDtos.AdAccountOption;
+import com.ceview.module4.adconnections.AdConnectionDtos.AdCampaignOption;
 import com.ceview.module4.adconnections.AdProvider;
 import com.ceview.module4.adconnections.AdProviderProperties;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -161,7 +162,33 @@ public class TikTokAdsClient implements AdPlatformClient {
     }
 
     /**
-     * Advertiser-level totals for one reporting period.
+     * Every campaign on one advertiser account. A single page of up to 1000: an
+     * advertiser with more campaigns than that is not a realistic MSME, and
+     * {@link #listAccounts} does not page either.
+     */
+    @Override
+    public List<AdCampaignOption> listCampaigns(String accessToken, String advertiserId) {
+        JsonNode data = unwrap(get("/campaign/get/", accessToken, uri -> uri
+                .queryParam("advertiser_id", encode(advertiserId))
+                .queryParam("fields", encode("[\"campaign_id\",\"campaign_name\",\"operation_status\"]"))
+                .queryParam("page_size", 1000)));
+
+        List<AdCampaignOption> campaigns = new ArrayList<>();
+        JsonNode list = data.get("list");
+        if (list != null && list.isArray()) {
+            for (JsonNode c : list) {
+                String id = text(c, "campaign_id");
+                if (id == null) continue;
+                campaigns.add(new AdCampaignOption(id, text(c, "campaign_name"),
+                        text(c, "operation_status")));
+            }
+        }
+        return campaigns;
+    }
+
+    /**
+     * Advertiser-level totals for one reporting period, or one campaign's when
+     * {@code externalCampaignId} is non-null (see Task 6).
      *
      * <p>{@code data_level=AUCTION_ADVERTISER} with the {@code advertiser_id}
      * dimension collapses every campaign into a single row — the analogue of
@@ -172,16 +199,28 @@ public class TikTokAdsClient implements AdPlatformClient {
      */
     @Override
     public AdInsightData fetchInsights(String accessToken, String advertiserId,
+                                       String externalCampaignId,
                                        LocalDate periodStart, LocalDate periodEnd) {
-        JsonNode envelope = get("/report/integrated/get/", accessToken, uri -> uri
-                .queryParam("advertiser_id", encode(advertiserId))
-                .queryParam("report_type", encode("BASIC"))
-                .queryParam("data_level", encode("AUCTION_ADVERTISER"))
-                .queryParam("dimensions", encode("[\"advertiser_id\"]"))
-                .queryParam("metrics", encode("[\"impressions\",\"clicks\",\"spend\",\"conversion\"]"))
-                .queryParam("start_date", encode(periodStart.toString()))
-                .queryParam("end_date", encode(periodEnd.toString()))
-                .queryParam("page_size", 100));
+        boolean byCampaign = externalCampaignId != null && !externalCampaignId.isBlank();
+        String dataLevel  = byCampaign ? "AUCTION_CAMPAIGN" : "AUCTION_ADVERTISER";
+        String dimensions = byCampaign ? "[\"campaign_id\"]" : "[\"advertiser_id\"]";
+
+        JsonNode envelope = get("/report/integrated/get/", accessToken, uri -> {
+            uri.queryParam("advertiser_id", encode(advertiserId))
+               .queryParam("report_type", encode("BASIC"))
+               .queryParam("data_level", encode(dataLevel))
+               .queryParam("dimensions", encode(dimensions))
+               .queryParam("metrics", encode("[\"impressions\",\"clicks\",\"spend\",\"conversion\"]"))
+               .queryParam("start_date", encode(periodStart.toString()))
+               .queryParam("end_date", encode(periodEnd.toString()))
+               .queryParam("page_size", 100);
+            if (byCampaign) {
+                String filtering = "[{\"field_name\":\"campaign_ids\",\"filter_type\":\"IN\","
+                        + "\"filter_value\":\"[\\\"" + externalCampaignId + "\\\"]\"}]";
+                uri.queryParam("filtering", encode(filtering));
+            }
+            return uri;
+        });
 
         String raw = envelope.toString();
         JsonNode data = unwrap(envelope);

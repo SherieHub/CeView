@@ -31,6 +31,8 @@ function connection(over: Partial<AdConnection>): AdConnection {
     status: 'DISCONNECTED',
     accountName: null,
     currency: null,
+    campaignId: null,
+    campaignName: null,
     connectedAt: null,
     lastSyncedAt: null,
     ...over,
@@ -151,5 +153,15 @@ describe('AdAccountsSection', () => {
     await waitFor(() =>
       expect(screen.getByText(/could not disconnect from meta ads/i)).toBeInTheDocument(),
     );
+  });
+
+  it('does not show a campaign / reporting-scope control (that lives on Performance now)', async () => {
+    listMock.mockResolvedValue([
+      connection({ status: 'ACTIVE', accountName: 'Cebu Dive Co. Ads', currency: 'PHP',
+                   campaignId: 'cmp_1', campaignName: 'Dry-Season Promo' }),
+    ]);
+    renderSection();
+    await screen.findByRole('button', { name: /disconnect/i });
+    expect(screen.queryByText(/reporting on/i)).not.toBeInTheDocument();
   });
 });

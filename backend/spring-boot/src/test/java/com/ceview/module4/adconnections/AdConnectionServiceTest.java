@@ -199,4 +199,62 @@ class AdConnectionServiceTest {
 
         assertEquals("USABLE-TOKEN", service.accessTokenOf(conn));
     }
+
+    // ── selectCampaign ───────────────────────────────────────────────────────
+
+    private void activateMeta() {
+        service.storeGrant(profileId, AdProvider.META, new TokenGrant("T", null, null, "s"));
+        service.selectAccount(profileId, AdProvider.META,
+                new AdConnectionDtos.AdAccountOption("act_1", "Acct", "PHP"));
+    }
+
+    @Test
+    void selectCampaignPinsTheConnectionToOneCampaign() {
+        activateMeta();
+
+        service.selectCampaign(profileId, AdProvider.META,
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Dry-Season Promo", "ACTIVE"));
+
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        assertEquals("cmp_1", conn.getExternalCampaignId());
+        assertEquals("Dry-Season Promo", conn.getExternalCampaignName());
+        assertEquals(AdPlatformConnection.STATUS_ACTIVE, conn.getStatus());
+    }
+
+    @Test
+    void selectCampaignWithNullClearsBackToWholeAccount() {
+        activateMeta();
+        service.selectCampaign(profileId, AdProvider.META,
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Promo", "ACTIVE"));
+
+        service.selectCampaign(profileId, AdProvider.META, null);
+
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        assertNull(conn.getExternalCampaignId());
+        assertNull(conn.getExternalCampaignName());
+    }
+
+    @Test
+    void selectCampaignBeforeAnAccountIsChosenIsRejected() {
+        service.storeGrant(profileId, AdProvider.META, new TokenGrant("T", null, null, "s"));
+
+        assertThrows(IllegalStateException.class, () -> service.selectCampaign(profileId,
+                AdProvider.META, new AdConnectionDtos.AdCampaignOption("cmp_1", "Promo", "ACTIVE")));
+    }
+
+    @Test
+    void changingTheAdAccountClearsAPreviouslySelectedCampaign() {
+        activateMeta();
+        service.selectCampaign(profileId, AdProvider.META,
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Promo", "ACTIVE"));
+
+        service.selectAccount(profileId, AdProvider.META,
+                new AdConnectionDtos.AdAccountOption("act_2", "Acct 2", "PHP"));
+
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        assertNull(conn.getExternalCampaignId(), "a campaign from the old account must not carry over");
+    }
 }

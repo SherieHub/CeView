@@ -40,6 +40,7 @@ class MetricsTenantScopingTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     @MockBean private MetricsCalculationService metricsSvc;
     @MockBean private AIInferenceGatewayService ai;
@@ -65,6 +66,8 @@ class MetricsTenantScopingTest {
 
         UUID operatorA = UUID.randomUUID();
         UUID operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
 

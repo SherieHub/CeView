@@ -18,6 +18,7 @@ export interface AdConnectionsState {
   forProvider(provider: AdProvider): AdConnection | null;
   refresh(): Promise<void>;
   disconnect(provider: AdProvider): Promise<void>;
+  selectCampaign(provider: AdProvider, campaignId: string | null): Promise<void>;
 }
 
 export function useAdConnections(): AdConnectionsState {
@@ -48,6 +49,14 @@ export function useAdConnections(): AdConnectionsState {
     [refresh],
   );
 
+  const selectCampaign = useCallback(
+    async (provider: AdProvider, campaignId: string | null) => {
+      await apiClient.adConnections.selectCampaign(provider, campaignId);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const forProvider = useCallback(
     (provider: AdProvider) => connections?.find((c) => c.provider === provider) ?? null,
     [connections],
@@ -60,5 +69,6 @@ export function useAdConnections(): AdConnectionsState {
     forProvider,
     refresh,
     disconnect,
+    selectCampaign,
   };
 }

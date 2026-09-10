@@ -3,10 +3,12 @@ package com.ceview.module4.adconnections;
 import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.common.TraceIdFilter;
 import com.ceview.module4.adconnections.AdConnectionDtos.AdAccountOption;
+import com.ceview.module4.adconnections.AdConnectionDtos.AdCampaignOption;
 import com.ceview.module4.adconnections.AdConnectionDtos.AdConnectionView;
 import com.ceview.module4.adconnections.AdConnectionDtos.AuthorizeUrlResponse;
 import com.ceview.module4.adconnections.AdConnectionDtos.InsightsResponse;
 import com.ceview.module4.adconnections.AdConnectionDtos.SelectAccountRequest;
+import com.ceview.module4.adconnections.AdConnectionDtos.SelectCampaignRequest;
 import com.ceview.module4.adconnections.client.AdPlatformClient;
 import com.ceview.module4.adconnections.client.AdPlatformException;
 import com.ceview.module4.adconnections.client.TokenGrant;
@@ -99,7 +101,7 @@ public class AdConnectionController {
         boolean configured = props.isConfigured(provider);
         if (conn == null) {
             return new AdConnectionView(provider.key(), configured,
-                    AdConnectionDtos.STATUS_DISCONNECTED, null, null, null, null);
+                    AdConnectionDtos.STATUS_DISCONNECTED, null, null, null, null, null, null);
         }
         return new AdConnectionView(
                 provider.key(),
@@ -108,7 +110,9 @@ public class AdConnectionController {
                 conn.getExternalAccountName(),
                 conn.getCurrency(),
                 conn.getConnectedAt(),
-                conn.getLastSyncedAt());
+                conn.getLastSyncedAt(),
+                conn.getExternalCampaignId(),
+                conn.getExternalCampaignName());
     }
 
     /**
@@ -123,7 +127,8 @@ public class AdConnectionController {
     @GetMapping("/insights")
     public InsightsResponse insights(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodStart,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodEnd) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodEnd,
+            @RequestParam(required = false) List<String> providers) {
 
         if (periodEnd.isBefore(periodStart)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -133,7 +138,14 @@ public class AdConnectionController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "date range must not exceed 366 days");
         }
-        return syncService.sync(currentBusinessProfile.resolveProfileId(), periodStart, periodEnd);
+
+        // Absent/empty = sync every connected account; a list = only those the
+        // operator chose to include in this analysis.
+        Set<AdProvider> only = null;
+        if (providers != null && !providers.isEmpty()) {
+            only = providers.stream().map(this::parseProvider).collect(Collectors.toSet());
+        }
+        return syncService.sync(currentBusinessProfile.resolveProfileId(), periodStart, periodEnd, only);
     }
 
     /** POST /{provider}/authorize — mints OAuth state and returns the consent-screen URL. */
@@ -176,6 +188,42 @@ public class AdConnectionController {
                         "that ad account is not available to this connection"));
 
         return toView(p, service.selectAccount(profileId, p, chosen));
+    }
+
+    /** GET /{provider}/campaigns — the campaigns on the connection's selected ad account. */
+    @GetMapping("/{provider}/campaigns")
+    public List<AdCampaignOption> campaigns(@PathVariable String provider) {
+        AdProvider p = parseProvider(provider);
+        requireConfigured(p);
+        return listCampaignsFor(p, currentBusinessProfile.resolveProfileId());
+    }
+
+    /** POST /{provider}/campaign — pins the sync to one campaign, or clears it with a null id. */
+    @PostMapping("/{provider}/campaign")
+    public AdConnectionView selectCampaign(@PathVariable String provider,
+                                           @RequestBody(required = false) SelectCampaignRequest body) {
+        AdProvider p = parseProvider(provider);
+        requireConfigured(p);
+        UUID profileId = currentBusinessProfile.resolveProfileId();
+
+        String campaignId = body == null ? null : body.externalCampaignId();
+        if (campaignId == null || campaignId.isBlank()) {
+            try {
+                return toView(p, service.selectCampaign(profileId, p, null));
+            } catch (IllegalStateException e) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+            }
+        }
+
+        // Re-fetch and match, exactly as selectAccount guards against an
+        // arbitrary posted id.
+        AdCampaignOption chosen = listCampaignsFor(p, profileId).stream()
+                .filter(c -> campaignId.equals(c.id()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "that campaign is not available on this ad account"));
+
+        return toView(p, service.selectCampaign(profileId, p, chosen));
     }
 
     /** DELETE /{provider} — revokes the stored grant. */
@@ -272,6 +320,24 @@ public class AdConnectionController {
         }
         try {
             return clientFor(p).listAccounts(service.accessTokenOf(conn));
+        } catch (AdPlatformException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage());
+        }
+    }
+
+    private List<AdCampaignOption> listCampaignsFor(AdProvider p, UUID profileId) {
+        AdPlatformConnection conn;
+        try {
+            conn = service.requireConnection(profileId, p);
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        if (conn.getExternalAccountId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "choose an ad account before choosing a campaign");
+        }
+        try {
+            return clientFor(p).listCampaigns(service.accessTokenOf(conn), conn.getExternalAccountId());
         } catch (AdPlatformException e) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, e.getMessage());
         }

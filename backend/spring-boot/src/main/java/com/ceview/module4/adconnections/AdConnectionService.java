@@ -124,6 +124,8 @@ public class AdConnectionService {
         conn.setExternalAccountId(null);
         conn.setExternalAccountName(null);
         conn.setCurrency(null);
+        conn.setExternalCampaignId(null);
+        conn.setExternalCampaignName(null);
 
         connectionRepo.save(conn);
         log.info("[Module4] stored {} grant for profile={}", provider.key(), businessProfileId);
@@ -138,10 +140,42 @@ public class AdConnectionService {
         conn.setExternalAccountId(account.id());
         conn.setExternalAccountName(account.name());
         conn.setCurrency(account.currency() == null ? null : account.currency().toUpperCase());
+        // A campaign belongs to the account it was chosen from — dropping the
+        // account invalidates it.
+        conn.setExternalCampaignId(null);
+        conn.setExternalCampaignName(null);
         conn.setStatus(AdPlatformConnection.STATUS_ACTIVE);
 
         log.info("[Module4] {} connection activated for profile={} account={}",
                  provider.key(), businessProfileId, account.id());
+        return connectionRepo.save(conn);
+    }
+
+    /**
+     * Pins the connection to one campaign, or clears the pin when {@code campaign}
+     * is null (report on the whole account again).
+     *
+     * @throws IllegalStateException if no ad account has been chosen yet — a
+     *         campaign only makes sense within a selected account
+     */
+    @Transactional
+    public AdPlatformConnection selectCampaign(UUID businessProfileId, AdProvider provider,
+                                               AdConnectionDtos.AdCampaignOption campaign) {
+        AdPlatformConnection conn = requireConnection(businessProfileId, provider);
+        if (conn.getExternalAccountId() == null) {
+            throw new IllegalStateException(
+                    "choose an ad account before choosing a campaign for " + provider.key());
+        }
+        if (campaign == null) {
+            conn.setExternalCampaignId(null);
+            conn.setExternalCampaignName(null);
+        } else {
+            conn.setExternalCampaignId(campaign.id());
+            conn.setExternalCampaignName(campaign.name());
+        }
+        log.info("[Module4] {} reporting scope set for profile={}: {}",
+                 provider.key(), businessProfileId,
+                 campaign == null ? "whole account" : "campaign " + campaign.id());
         return connectionRepo.save(conn);
     }
 

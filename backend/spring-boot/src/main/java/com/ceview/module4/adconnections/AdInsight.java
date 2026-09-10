@@ -39,6 +39,10 @@ public class AdInsight {
     @Column(name = "external_account_id", nullable = false, length = 128)
     private String externalAccountId;
 
+    /** The campaign this cached row was scoped to, or null for a whole-account row. */
+    @Column(name = "external_campaign_id", length = 128)
+    private String externalCampaignId;
+
     @Column(name = "period_start", nullable = false) private LocalDate periodStart;
     @Column(name = "period_end",   nullable = false) private LocalDate periodEnd;
 

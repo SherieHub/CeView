@@ -104,6 +104,31 @@ class MetaAdsClientInsightsTest {
     }
 
     @Test
+    void scopesTheRequestToOneCampaignWhenGivenACampaignId() throws Exception {
+        server.enqueue(json(fixture("meta-insights.json")));
+
+        client.fetchInsights("TOKEN", "act_111", "23851234567890123", START, END);
+
+        RecordedRequest request = server.takeRequest();
+        String path = URLDecoder.decode(request.getPath(), StandardCharsets.UTF_8);
+        assertTrue(path.contains("/act_111/insights"), path);
+        assertTrue(path.contains("level=account"), path);
+        assertTrue(path.contains("\"field\":\"campaign.id\""), path);
+        assertTrue(path.contains("\"value\":[\"23851234567890123\"]"), path);
+    }
+
+    @Test
+    void sendsNoFilteringParamForAWholeAccountFetch() throws Exception {
+        server.enqueue(json(fixture("meta-insights.json")));
+
+        client.fetchInsights("TOKEN", "act_111", null, START, END);
+
+        RecordedRequest request = server.takeRequest();
+        String path = URLDecoder.decode(request.getPath(), StandardCharsets.UTF_8);
+        assertFalse(path.contains("filtering="), path);
+    }
+
+    @Test
     void returnsZeroesForAnAccountWithNoSpendInThePeriod() throws Exception {
         // A brand-new ad account behaves exactly like this. It is not an error,
         // and the UI must be able to say "connected, no data for this period".

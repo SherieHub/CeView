@@ -42,6 +42,7 @@ class EngagementMetricsControllerTest {
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
     @Autowired private CampaignRecordRepository campaignRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     @MockBean private AIInferenceGatewayService ai;
 
@@ -62,6 +63,9 @@ class EngagementMetricsControllerTest {
         operatorA = UUID.randomUUID();
         operatorB = UUID.randomUUID();
         operatorNoProfile = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
+        testOperators.create(operatorNoProfile);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
         tokenNoProfile = jwtService.issue(operatorNoProfile, "noprofile@example.com");

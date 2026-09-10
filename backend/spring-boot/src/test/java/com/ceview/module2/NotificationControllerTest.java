@@ -28,6 +28,7 @@ class NotificationControllerTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     private UUID operatorA;
     private String tokenA;
@@ -39,6 +40,8 @@ class NotificationControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         UUID operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
 
         BusinessProfile pA = new BusinessProfile();
@@ -88,6 +91,7 @@ class NotificationControllerTest {
     @Test
     void operatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
 
         mvc.perform(get("/api/notifications").header("Authorization", "Bearer " + tokenWithoutProfile))

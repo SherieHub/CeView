@@ -85,6 +85,32 @@ class TikTokAdsClientInsightsTest {
     }
 
     @Test
+    void scopesTheReportToOneCampaignWhenGivenACampaignId() throws Exception {
+        server.enqueue(json(fixture("tiktok-report.json")));
+
+        client.fetchInsights("TOKEN", "7000000000000000001", "1790000000000000001", START, END);
+
+        RecordedRequest request = server.takeRequest();
+        String path = URLDecoder.decode(request.getPath(), StandardCharsets.UTF_8);
+        assertTrue(path.contains("data_level=AUCTION_CAMPAIGN"), path);
+        assertTrue(path.contains("campaign_id"), path);
+        assertTrue(path.contains("campaign_ids"), path);
+        assertTrue(path.contains("1790000000000000001"), path);
+    }
+
+    @Test
+    void usesAdvertiserLevelForAWholeAccountFetch() throws Exception {
+        server.enqueue(json(fixture("tiktok-report.json")));
+
+        client.fetchInsights("TOKEN", "7000000000000000001", null, START, END);
+
+        RecordedRequest request = server.takeRequest();
+        String path = URLDecoder.decode(request.getPath(), StandardCharsets.UTF_8);
+        assertTrue(path.contains("data_level=AUCTION_ADVERTISER"), path);
+        assertFalse(path.contains("campaign_ids"), path);
+    }
+
+    @Test
     void returnsZeroesForAPeriodWithNoSpend() throws Exception {
         server.enqueue(json(fixture("tiktok-report-empty.json")));
 

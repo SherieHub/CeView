@@ -54,6 +54,23 @@ describe('apiClient.adConnections', () => {
     expect(String(calledInit().body)).toContain('act_111111111');
   });
 
+  it('lists the campaigns on a connected account', async () => {
+    await apiClient.adConnections.campaigns('meta');
+    expect(calledPath()).toContain('/api/ad-connections/meta/campaigns');
+  });
+
+  it('posts the chosen campaign id', async () => {
+    await apiClient.adConnections.selectCampaign('meta', 'cmp_1');
+    expect(calledPath()).toContain('/api/ad-connections/meta/campaign');
+    expect(calledInit().method).toBe('POST');
+    expect(String(calledInit().body)).toBe(JSON.stringify({ externalCampaignId: 'cmp_1' }));
+  });
+
+  it('posts a null campaign id to clear the selection', async () => {
+    await apiClient.adConnections.selectCampaign('meta', null);
+    expect(String(calledInit().body)).toBe(JSON.stringify({ externalCampaignId: null }));
+  });
+
   it('deletes a connection to disconnect it', async () => {
     await apiClient.adConnections.disconnect('meta');
     expect(calledPath()).toContain('/api/ad-connections/meta');
@@ -65,5 +82,11 @@ describe('apiClient.adConnections', () => {
     expect(calledPath()).toContain('/api/ad-connections/insights');
     expect(calledPath()).toContain('periodStart=2026-08-31');
     expect(calledPath()).toContain('periodEnd=2026-09-06');
+    expect(calledPath()).not.toContain('providers=');
+  });
+
+  it('scopes insights to a subset of providers when given', async () => {
+    await apiClient.adConnections.insights('2026-08-31', '2026-09-06', ['tiktok']);
+    expect(calledPath()).toContain('providers=tiktok');
   });
 });

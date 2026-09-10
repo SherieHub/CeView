@@ -1,6 +1,7 @@
 package com.ceview.module4.adconnections.client;
 
 import com.ceview.module4.adconnections.AdConnectionDtos.AdAccountOption;
+import com.ceview.module4.adconnections.AdConnectionDtos.AdCampaignOption;
 import com.ceview.module4.adconnections.AdProvider;
 import com.ceview.module4.adconnections.AdProviderProperties;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -251,26 +252,73 @@ public class MetaAdsClient implements AdPlatformClient {
     }
 
     /**
+     * Every campaign on one ad account, following Meta's cursor paging (mirrors
+     * {@link #listAccounts} — same {@code getAbsoluteJson} + {@link #MAX_PAGES} cap).
+     */
+    @Override
+    public List<AdCampaignOption> listCampaigns(String accessToken, String externalAccountId) {
+        List<AdCampaignOption> campaigns = new ArrayList<>();
+
+        JsonNode page = getJson("/" + externalAccountId + "/campaigns", uri -> uri
+                .queryParam("fields", "id,name,status")
+                .queryParam("limit", 200)
+                .queryParam("access_token", accessToken));
+
+        int pageCount = 1;
+        while (page != null) {
+            JsonNode data = page.get("data");
+            if (data != null && data.isArray()) {
+                for (JsonNode c : data) {
+                    campaigns.add(new AdCampaignOption(
+                            text(c, "id"), text(c, "name"), text(c, "status")));
+                }
+            }
+            String next = page.path("paging").path("next").asText(null);
+            if (next == null || next.isBlank()) break;
+            if (campaigns.size() > 2000) {
+                log.warn("[Module4] Meta campaign paging exceeded 2000 rows; stopping");
+                break;
+            }
+            if (pageCount >= MAX_PAGES) {
+                log.warn("[Module4] Meta campaign paging exceeded {} pages; stopping", MAX_PAGES);
+                break;
+            }
+            page = getAbsoluteJson(next);
+            pageCount++;
+        }
+        return campaigns;
+    }
+
+    /**
      * Account-level totals for one closed reporting period.
      *
-     * <p>{@code level=account} collapses every campaign, ad set, and ad into a
-     * single row, which is what Module 4's weekly campaign record needs. Meta
-     * returns all numbers as strings; {@link #asLong} and {@link #asDecimal}
-     * handle that.
+     * <p>{@code level=account} collapses every ad set and ad into a single row.
+     * When {@code externalCampaignId} is non-null the totals are scoped to that
+     * one campaign (see Task 4). Meta returns all numbers as strings;
+     * {@link #asLong} and {@link #asDecimal} handle that.
      */
     @Override
     public AdInsightData fetchInsights(String accessToken, String externalAccountId,
+                                       String externalCampaignId,
                                        LocalDate periodStart, LocalDate periodEnd) {
         String timeRange = "{\"since\":\"" + periodStart + "\",\"until\":\"" + periodEnd + "\"}";
 
         // Deliberately no `breakdowns` or `time_increment` param: either would
         // make Meta return multiple rows for this window, and this method only
-        // reads data.get(0) — the rest would be silently dropped.
-        JsonNode response = getJson("/" + externalAccountId + "/insights", uri -> uri
-                .queryParam("level", "account")
-                .queryParam("fields", "impressions,clicks,spend,actions")
-                .queryParam("time_range", encode(timeRange))
-                .queryParam("access_token", encode(accessToken)));
+        // reads data.get(0) — the rest would be silently dropped. A campaign
+        // filter narrows the single row to one campaign; `level` stays account.
+        JsonNode response = getJson("/" + externalAccountId + "/insights", uri -> {
+            uri.queryParam("level", "account")
+               .queryParam("fields", "impressions,clicks,spend,actions")
+               .queryParam("time_range", encode(timeRange))
+               .queryParam("access_token", encode(accessToken));
+            if (externalCampaignId != null && !externalCampaignId.isBlank()) {
+                String filtering = "[{\"field\":\"campaign.id\",\"operator\":\"IN\",\"value\":[\""
+                        + externalCampaignId + "\"]}]";
+                uri.queryParam("filtering", encode(filtering));
+            }
+            return uri;
+        });
 
         JsonNode data = response.get("data");
         if (data == null || !data.isArray() || data.isEmpty()) {

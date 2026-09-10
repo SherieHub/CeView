@@ -45,6 +45,7 @@ class AdConnectionFlowTest {
     @Autowired private AdPlatformConnectionRepository connectionRepo;
     @Autowired private AdOAuthStateRepository stateRepo;
     @Autowired private AdConnectionService service;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     /** Replaces the real Meta client so no network call happens. */
     @MockBean private com.ceview.module4.adconnections.client.MetaAdsClient metaClient;
@@ -62,6 +63,7 @@ class AdConnectionFlowTest {
         profileRepo.deleteAll();
 
         UUID operatorId = UUID.randomUUID();
+        testOperators.create(operatorId);
         token = jwtService.issue(operatorId, "operator@example.com");
 
         BusinessProfile profile = new BusinessProfile();
@@ -252,5 +254,98 @@ class AdConnectionFlowTest {
         mvc.perform(post("/api/ad-connections/naver/authorize")
                         .header("Authorization", "Bearer " + token))
            .andExpect(status().isBadRequest());
+    }
+
+    // ── campaign list + select ───────────────────────────────────────────────
+
+    private void activateMetaWithAccount(String accountId) throws Exception {
+        service.storeGrant(profileId, AdProvider.META,
+                new TokenGrant("TOKEN", null, null, "ads_read"));
+        when(metaClient.listAccounts("TOKEN")).thenReturn(List.of(
+                new AdAccountOption(accountId, "Dive Ads", "PHP")));
+        mvc.perform(post("/api/ad-connections/meta/account")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalAccountId\":\"" + accountId + "\"}"))
+           .andExpect(status().isOk());
+    }
+
+    @Test
+    void campaignsListsWhatTheAccountCanSee() throws Exception {
+        activateMetaWithAccount("act_1");
+        when(metaClient.listCampaigns("TOKEN", "act_1")).thenReturn(List.of(
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Dry-Season Promo", "ACTIVE"),
+                new AdConnectionDtos.AdCampaignOption("cmp_2", "Brand", "PAUSED")));
+
+        mvc.perform(get("/api/ad-connections/meta/campaigns")
+                        .header("Authorization", "Bearer " + token))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.length()").value(2))
+           .andExpect(jsonPath("$[0].id").value("cmp_1"))
+           .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+    }
+
+    @Test
+    void campaignsIs409WhenNoAccountIsSelectedYet() throws Exception {
+        service.storeGrant(profileId, AdProvider.META,
+                new TokenGrant("TOKEN", null, null, "ads_read"));
+
+        mvc.perform(get("/api/ad-connections/meta/campaigns")
+                        .header("Authorization", "Bearer " + token))
+           .andExpect(status().isConflict());
+    }
+
+    @Test
+    void selectingACampaignRecordsItOnTheConnection() throws Exception {
+        activateMetaWithAccount("act_1");
+        when(metaClient.listCampaigns("TOKEN", "act_1")).thenReturn(List.of(
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Dry-Season Promo", "ACTIVE")));
+
+        mvc.perform(post("/api/ad-connections/meta/campaign")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalCampaignId\":\"cmp_1\"}"))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.campaignName").value("Dry-Season Promo"));
+
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("cmp_1", conn.getExternalCampaignId());
+    }
+
+    @Test
+    void selectingACampaignTheAccountCannotSeeIsRejected() throws Exception {
+        activateMetaWithAccount("act_1");
+        when(metaClient.listCampaigns("TOKEN", "act_1")).thenReturn(List.of(
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Promo", "ACTIVE")));
+
+        mvc.perform(post("/api/ad-connections/meta/campaign")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalCampaignId\":\"cmp_SOMEONE_ELSE\"}"))
+           .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void postingANullCampaignIdClearsBackToWholeAccount() throws Exception {
+        activateMetaWithAccount("act_1");
+        when(metaClient.listCampaigns("TOKEN", "act_1")).thenReturn(List.of(
+                new AdConnectionDtos.AdCampaignOption("cmp_1", "Promo", "ACTIVE")));
+        mvc.perform(post("/api/ad-connections/meta/campaign")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalCampaignId\":\"cmp_1\"}"))
+           .andExpect(status().isOk());
+
+        mvc.perform(post("/api/ad-connections/meta/campaign")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"externalCampaignId\":null}"))
+           .andExpect(status().isOk())
+           .andExpect(jsonPath("$.campaignName").doesNotExist());
+
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        org.junit.jupiter.api.Assertions.assertNull(conn.getExternalCampaignId());
     }
 }

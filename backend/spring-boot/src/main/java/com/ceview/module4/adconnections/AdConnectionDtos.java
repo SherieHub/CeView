@@ -31,7 +31,9 @@ public final class AdConnectionDtos {
             String accountName,
             String currency,
             OffsetDateTime connectedAt,
-            OffsetDateTime lastSyncedAt
+            OffsetDateTime lastSyncedAt,
+            String campaignId,           // null = whole account; the pinned scope
+            String campaignName          // display name for campaignId
     ) {}
 
     /** POST /api/ad-connections/{provider}/authorize response. */
@@ -40,8 +42,14 @@ public final class AdConnectionDtos {
     /** One selectable ad account, from GET /{provider}/accounts. */
     public record AdAccountOption(String id, String name, String currency) {}
 
+    /** One selectable campaign, from GET /{provider}/campaigns. */
+    public record AdCampaignOption(String id, String name, String status) {}
+
     /** POST /{provider}/account request body. */
     public record SelectAccountRequest(String externalAccountId) {}
+
+    /** POST /{provider}/campaign request body. A null id clears the selection. */
+    public record SelectCampaignRequest(String externalCampaignId) {}
 
     /** What one provider contributed to a sync. */
     public record InsightSource(
@@ -51,7 +59,8 @@ public final class AdConnectionDtos {
             long clicks,
             BigDecimal spend,
             long conversions,
-            String currency
+            String currency,
+            String campaignName          // null = whole account
     ) {}
 
     /**

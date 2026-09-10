@@ -38,13 +38,13 @@
  * KPI cards and the funnel still recompute client-side from the same input
  * via campaignMetrics.ts — only the PES headline is server-sourced now.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { useAdConnections } from '../../../services/useAdConnections';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
-import type { AdProvider, CampaignInput, ManualIngestPes } from '@/types';
+import type { AdCampaignOption, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
 
 /**
  * Which of the seven fields the ad platforms can actually fill.
@@ -78,6 +78,9 @@ function fieldsFor(currency: string): { key: keyof CampaignInput; label: string;
 const DEFAULT_CURRENCY = '₱';
 
 const PROVIDER_LABELS: Record<AdProvider, string> = { meta: 'Meta', tiktok: 'TikTok' };
+
+/** Scope-select value meaning "leave this ad account out of this analysis". */
+const EXCLUDE = '__none__';
 
 function initialValues(): Record<keyof CampaignInput, string> {
   const values = {} as Record<keyof CampaignInput, string>;
@@ -120,21 +123,90 @@ export default function IngestionForm({
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const fields = useMemo(() => fieldsFor(currency), [currency]);
 
-  const { hasActive } = useAdConnections();
+  const { connections, refresh: refreshConnections } = useAdConnections();
+  const activeConnections = useMemo(
+    () => (connections ?? []).filter((c) => c.status === 'ACTIVE'),
+    [connections],
+  );
+  const hasActive = activeConnections.length > 0;
+
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
   const [syncedKeys, setSyncedKeys] = useState<string[]>([]);
 
+  /** Loaded campaign lists per provider (for the scope selects). */
+  const [campaignOptions, setCampaignOptions] = useState<
+    Partial<Record<AdProvider, AdCampaignOption[]>>
+  >({});
+  /** The scope select's value per provider: a campaign id, or '' for whole account. */
+  const [scope, setScope] = useState<Partial<Record<AdProvider, string>>>({});
+
+  // Seed each select from the connection's saved campaign, and fetch that
+  // account's campaigns so the operator can change it. Keyed on the active
+  // providers so it re-runs when a connection flips to ACTIVE.
+  const activeKey = activeConnections.map((c) => c.provider).join(',');
+  useEffect(() => {
+    let cancelled = false;
+    setScope((current) => {
+      const next = { ...current };
+      for (const c of activeConnections) {
+        if (next[c.provider] === undefined) next[c.provider] = c.campaignId ?? '';
+      }
+      return next;
+    });
+    for (const c of activeConnections) {
+      if (campaignOptions[c.provider] !== undefined) continue;
+      apiClient.adConnections
+        .campaigns(c.provider)
+        .then((list) => { if (!cancelled) setCampaignOptions((o) => ({ ...o, [c.provider]: list })); })
+        .catch(() => { if (!cancelled) setCampaignOptions((o) => ({ ...o, [c.provider]: [] })); });
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKey]);
+
   /**
    * Pulls the same period the form submits, so the synced figures and the
-   * persisted campaign record describe the same week.
+   * persisted campaign record describe the same week. Any scope the operator
+   * changed is persisted first (it becomes the default for next time), then the
+   * sync reads the now-current scope.
    */
+  const included = useMemo(
+    () => activeConnections.filter((c) => (scope[c.provider] ?? '') !== EXCLUDE),
+    [activeConnections, scope],
+  );
+
   async function syncFromAdAccounts() {
     setSyncing(true);
     setSyncNote(null);
     try {
+      if (included.length === 0) {
+        setSyncNote('Choose at least one ad account to sync from.');
+        return;
+      }
+
+      const scopeChanges = included.filter(
+        (c) => (scope[c.provider] ?? '') !== (c.campaignId ?? ''),
+      );
+      if (scopeChanges.length > 0) {
+        await Promise.all(
+          scopeChanges.map((c) =>
+            apiClient.adConnections.selectCampaign(c.provider, scope[c.provider] || null),
+          ),
+        );
+        await refreshConnections();
+      }
+
       const { periodStart, periodEnd } = lastCompleteWeek();
-      const summary = await apiClient.adConnections.insights(periodStart, periodEnd);
+      const providerFilter =
+        included.length === activeConnections.length
+          ? undefined
+          : included.map((c) => c.provider);
+      const summary = await apiClient.adConnections.insights(
+        periodStart,
+        periodEnd,
+        providerFilter,
+      );
 
       if (summary.warnings.length > 0) {
         setSyncNote(summary.warnings.join(' '));
@@ -156,8 +228,12 @@ export default function IngestionForm({
       setSyncedKeys([...SYNCABLE_FIELDS]);
       if (summary.currency) setCurrency(summary.currency);
       if (summary.warnings.length === 0) {
-        const names = summary.sources.map((s) => PROVIDER_LABELS[s.provider]);
-        setSyncNote(`Filled from ${names.join(' and ')}.`);
+        const names = summary.sources.map((s) =>
+          s.campaignName
+            ? `${PROVIDER_LABELS[s.provider]} (${s.campaignName})`
+            : PROVIDER_LABELS[s.provider],
+        );
+        setSyncNote(`Filled from ${names.join(' and ')}`);
       }
     } catch (err) {
       console.error('Ad account sync failed', err);
@@ -256,47 +332,79 @@ export default function IngestionForm({
 
       <form onSubmit={handleSubmit}>
         <div className="mb-10">
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <h4 className="body-sm" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
-              From your ad accounts
-            </h4>
-            {hasActive && (
-              // Ghost/icon-btn treatment, not .btn-outline--sm's bordered pill —
-              // this is a frequent, low-commitment secondary action sitting right
-              // next to a section label, not a page-level control; a bordered
-              // pill next to plain text over-weighted it. Mirrors .icon-btn's own
-              // transparent -> mint-pale hover language rather than inventing a
-              // new button variant.
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold transition-colors hover:bg-[var(--color-mint-pale)] disabled:cursor-not-allowed disabled:opacity-50"
-                style={{ color: 'var(--color-teal-accent)' }}
-                onClick={syncFromAdAccounts}
-                disabled={syncing}
-              >
-                <RefreshCw className={syncing ? 'animate-spin' : ''} size={14} aria-hidden="true" />
-                {syncing ? 'Syncing…' : 'Sync from ad accounts'}
-              </button>
-            )}
-          </div>
+          <h4 className="body-sm mb-3" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
+            From your ad accounts
+          </h4>
 
           {hasActive ? (
-            <p className="body-xs text-[var(--color-text-muted)] mb-3">
-              Fills impressions, clicks, spend, and conversions.
-            </p>
+            <div
+              className="mb-4 flex flex-col gap-4 rounded-[var(--radius-md)] p-4"
+              style={{ background: 'var(--color-mint-pale)' }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="body-xs text-[var(--color-text-body)]">
+                  Pull last week&rsquo;s impressions, clicks, spend, and conversions from your
+                  connected {activeConnections.length > 1 ? 'ad accounts' : 'ad account'}.
+                </p>
+                <button
+                  type="button"
+                  className="btn-outline btn-outline--sm shrink-0"
+                  onClick={syncFromAdAccounts}
+                  disabled={syncing || included.length === 0}
+                >
+                  <RefreshCw
+                    className={syncing ? 'animate-spin' : ''}
+                    size={14}
+                    aria-hidden="true"
+                  />
+                  {syncing ? 'Syncing…' : 'Sync from ad accounts'}
+                </button>
+              </div>
+
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+              >
+                {activeConnections.map((c) => (
+                  <label key={c.provider} className="block">
+                    <span className="field-label">{PROVIDER_LABELS[c.provider]} campaign</span>
+                    <select
+                      className="input"
+                      aria-label={`${PROVIDER_LABELS[c.provider]} campaign`}
+                      value={scope[c.provider] ?? ''}
+                      disabled={syncing}
+                      onChange={(e) =>
+                        setScope((s) => ({ ...s, [c.provider]: e.target.value }))
+                      }
+                    >
+                      <option value={EXCLUDE}>Don&rsquo;t include</option>
+                      <option value="">Whole account</option>
+                      {(campaignOptions[c.provider] ?? []).map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.name ?? opt.id}
+                          {opt.status && opt.status !== 'ACTIVE' && opt.status !== 'ENABLE'
+                            ? ` (${opt.status.toLowerCase()})`
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+
+              {syncNote && (
+                <p
+                  className="body-xs rounded-md px-3 py-2"
+                  style={{ background: 'var(--color-white)', color: 'var(--color-navy-primary)' }}
+                >
+                  {syncNote}
+                </p>
+              )}
+            </div>
           ) : (
-            <p className="body-xs text-[var(--color-text-muted)] mb-3">
+            <p className="body-xs text-[var(--color-text-muted)] mb-4">
               Connect a Meta or TikTok Ads account in Settings → Platforms to fill these
               automatically, or enter them yourself below.
-            </p>
-          )}
-
-          {syncNote && (
-            <p
-              className="body-xs mb-3 rounded-md px-3 py-2"
-              style={{ background: 'var(--color-mint-pale)', color: 'var(--color-navy-primary)' }}
-            >
-              {syncNote}
             </p>
           )}
 
