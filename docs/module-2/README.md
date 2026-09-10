@@ -70,6 +70,14 @@ Reference index for every frontend and backend component in Module 2. Companion 
 | **Service**       | `pytrends_client`         | `app/services/pytrends_client.py`                                                                                  | PyTrends wrapper; 4–12 s jitter sleep per request (sole rate-limit mitigation); native-language keyword mappings per (category, geo); curated 52-week stub series on HTTP 429                                                                                                                                    |
 | **Service**       | `forecast_validator`      | `app/services/forecast_validator.py`                                                                               | MAPE ≤ 15% quality gate (FR2.12); returns `low_confidence_disclaimer: true` when threshold exceeded; stub always produces MAPE ≤ 14.9%                                                                                                                                                                           |
 
+### FastAPI SBERT Microservice (`backend/fastapi-sbert/`)
+
+| Layer           | Component                  | File                                      | Responsibility                                                                                                                                                                                                                               |
+| --------------- | -------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Router**      | `demand_forecast`          | `app/routers/demand_forecast.py`          | Exposes `POST /internal/forecasting/forecast/series` (raw numbers, auto calendar week), `POST /internal/forecasting/forecast` (tensor json), and `GET /internal/forecasting/status`; dispatches async Weights & Biases telemetry             |
+| **Service**     | `demand_forecast_service`  | `app/services/demand_forecast_service.py` | Communicates with Hugging Face Space `JamJamzz/ceview-demand-prediction-model` via `gradio_client.Client`; normalizes inputs; auto-detects current ISO calendar week and builds 52-week cyclical tensor `[trend_scaled, week_sin, week_cos]` |
+| **Model / DTO** | `DemandForecastInputClass` | `app/model/DemandForecastInputClass.py`   | Pydantic request & response models: `DemandForecastInputClass`, `DemandForecastOutputClass`, `WeeklyForecastPoint`                                                                                                                           |
+
 ---
 
 ## REST Endpoints
@@ -82,7 +90,15 @@ Reference index for every frontend and backend component in Module 2. Companion 
 | `POST` | `/api/v1/forecasting/analyze/{profileId}`    | `ForecastingController.analyze` | `apiClient.analyzeMarkets()` — "Refresh Forecast" button |
 | `GET`  | `/api/v1/notifications?profileId=UUID`       | `NotificationController.list`   | `apiClient.listNotifications()` — `HomeView` on mount    |
 
-### Internal — Spring Boot → FastAPI Transformer
+### Internal — Forecasting Microservice (`fastapi-sbert` :8000)
+
+| Method | Path                                    | Caller / Consumer                | Handler & Responsibility                                                               |
+| ------ | --------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------- |
+| `POST` | `/internal/forecasting/forecast/series` | Frontend / Postman / Spring Boot | High-level 12-week forecast from raw 0-100 trends; auto-computes current calendar week |
+| `POST` | `/internal/forecasting/forecast`        | Backend services                 | Low-level forecast from 52-row `[trend_scaled, week_sin, week_cos]` JSON array         |
+| `GET`  | `/internal/forecasting/status`          | Monitoring / Health checks       | Returns Hugging Face Space connectivity, W&B project status, and taxonomy              |
+
+### Internal — Spring Boot → FastAPI Transformer (:8001)
 
 | Method | Path                                    | Spring Boot Caller                                    | FastAPI Handler                          |
 | ------ | --------------------------------------- | ----------------------------------------------------- | ---------------------------------------- |

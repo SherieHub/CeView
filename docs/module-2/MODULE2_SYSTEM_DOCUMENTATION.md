@@ -771,6 +771,41 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ---
 
+### Transformer Demand Forecasting Service & Endpoints (`fastapi-sbert`)
+
+CeView integrates a dedicated **Transformer Demand Forecasting Model** hosted on Hugging Face Spaces (`JamJamzz/ceview-demand-prediction-model`). The microservice layer in `backend/fastapi-sbert` encapsulates model communication, cyclical calendar encoding, automatic calendar-week detection, and production telemetry via **Weights & Biases**.
+
+#### Endpoints Summary
+
+- **`POST /internal/forecasting/forecast/series`** (Recommended high-level endpoint):
+  - Ingests raw numerical Google Trends values (`0–100` scale).
+  - Automatically derives the current calendar week (`datetime.date.today().isocalendar().week`).
+  - Calculates $\sin\left(\frac{2\pi \cdot \text{week}}{52}\right)$ and $\cos\left(\frac{2\pi \cdot \text{week}}{52}\right)$ cyclical calendar encodings for all 52 time steps.
+  - Returns 12-week forecast trajectory, 4-week mean, 12-week mean, and model metadata.
+  - Queues an asynchronous Weights & Biases telemetry log without blocking response latency.
+
+- **`POST /internal/forecasting/forecast`** (Low-level tensor endpoint):
+  - Ingests a raw 52×3 matrix `history_json` serialized string `[[trend_scaled, week_sin, week_cos], ...]`.
+
+- **`GET /internal/forecasting/status`**:
+  - Diagnostic health check reporting Space ID, endpoint route, active markets, supported categories, and Weights & Biases configuration.
+
+#### Automated Calendar Week Deduction
+
+Because search demand has sharp seasonality, the Transformer relies on sinusoidal week features. To keep client payloads minimal, the server dynamically calculates:
+$$\text{start\_iso\_week} = (\text{current\_iso\_week} \pmod{52}) + 1$$
+This aligns the final point (index 51) with the current week and cycles backwards to anchor the entire sequence. The client does not need to compute or supply week indices.
+
+#### Weights & Biases (W&B) Telemetry & Drift Monitoring
+
+- **Non-blocking Execution**: Handled asynchronously using FastAPI `BackgroundTasks`.
+- **Metrics Logged**: `inference_latency_seconds`, `status`, `input/market`, `input/category`, `input/trend_mean`, `input/trend_latest`, `forecast/mean_4_weeks`, `forecast/mean_12_weeks`, and individual predicted points `forecast/week_1` through `week_12`.
+- **Configuration**: Configured in `backend/.env` with `WANDB_API_KEY`, `WANDB_PROJECT=ceview-demand-forecast`, and `ENABLE_WANDB=true`.
+
+For complete architectural details, see [`TRANSFORMER_MODEL_INTEGRATION.md`](TRANSFORMER_MODEL_INTEGRATION.md).
+
+---
+
 ### Database Schema — Module 2 Tables
 
 | Table                          | Key Columns                                                                                                                                                                                                                                                                                                                                                 | Purpose                                                                                                                      |
