@@ -57,26 +57,24 @@ class CategoryDimensionTest {
         culinaryRecord.setTargetMarket("korea");
         culinaryRecord.setCategory("Culinary & Gastronomy");
 
-        when(repo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+        when(repo.findByProfileMarketCategoryOrderByWeekDesc(
                 profileId, "korea", "Coastal & Island"))
                 .thenReturn(List.of(coastalRecord));
-        when(repo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+        when(repo.findByProfileMarketCategoryOrderByWeekDesc(
                 profileId, "korea", "Culinary & Gastronomy"))
                 .thenReturn(List.of(culinaryRecord));
 
         List<MarketSignalRecord> coastalHistory = repo
-                .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                .findByProfileMarketCategoryOrderByWeekDesc(
                         profileId, "korea", "Coastal & Island");
         List<MarketSignalRecord> culinaryHistory = repo
-                .findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
+                .findByProfileMarketCategoryOrderByWeekDesc(
                         profileId, "korea", "Culinary & Gastronomy");
 
         assertThat(coastalHistory).containsExactly(coastalRecord);
         assertThat(culinaryHistory).containsExactly(culinaryRecord);
 
-        verify(repo).findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, "korea", "Coastal & Island");
-        verify(repo).findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                profileId, "korea", "Culinary & Gastronomy");
+        verify(repo).findByProfileMarketCategoryOrderByWeekDesc(profileId, "korea", "Coastal & Island");
+        verify(repo).findByProfileMarketCategoryOrderByWeekDesc(profileId, "korea", "Culinary & Gastronomy");
     }
 }

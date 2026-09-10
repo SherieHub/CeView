@@ -26,7 +26,8 @@ class MarketDtoMappingTest {
                 2.2, 23.8, 0.65,
                 yoyRatio,
                 true,
-                "2026-08-24T03:00:00Z", false
+                "2026-08-24T03:00:00Z", false,
+                "live", "last_known_good", "2026-08-24T02:00:00Z"
         );
     }
 
@@ -42,6 +43,9 @@ class MarketDtoMappingTest {
         assertThat(dto.seasonalityScore()).isEqualTo(0.65);
         assertThat(dto.yoyRatio()).isEqualTo(1.12);
         assertThat(dto.spikeIndicator()).isTrue();
+        assertThat(dto.gdpSource()).isEqualTo("live");
+        assertThat(dto.forexSource()).isEqualTo("last_known_good");
+        assertThat(dto.macroAsOf()).isEqualTo("2026-08-24T02:00:00Z");
     }
 
     @Test

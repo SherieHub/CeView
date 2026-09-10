@@ -37,11 +37,11 @@ public class MarketDtos {
     public record GdpTrendPointDto(int year, double value) {}
 
     /**
-     * One month of forex rate (foreign-currency units per PHP) for the trend chart.
+     * One month of forex rate for the trend chart.
      * Maps to {@code ExternalMarketDataClient.ForexTrendPoint}.
      *
      * @param date  ISO month string "YYYY-MM"
-     * @param value foreign-currency units per PHP
+     * @param value PHP per 1 unit of the foreign currency (contract §1 canonical unit)
      */
     public record ForexTrendPointDto(String date, double value) {}
 
@@ -94,7 +94,21 @@ public class MarketDtos {
         /** ISO-8601 timestamp of the newest measured signal behind this market, or null. */
         String dataAsOf,
         /** True when dataAsOf is older than EnrichedSequenceBuilder.STALE_AFTER. */
-        boolean dataStale
+        boolean dataStale,
+        /**
+         * Which tier produced {@code gdpValue}: {@code "live"}, {@code "last_known_good"},
+         * or {@code "unknown"} (a pre-Step-6 persisted row with no tag). Null when no
+         * economic trend has ever been fetched for this market (Step 6, C-06, H-18).
+         */
+        String gdpSource,
+        /** Which tier produced {@code forexValue}. See {@link #gdpSource}. */
+        String forexSource,
+        /**
+         * ISO-8601 timestamp of the OLDER of the two macro readings behind gdpValue/
+         * forexValue — the conservative "as of" bound for the pair, since each can now
+         * age independently. Null when neither has ever been fetched.
+         */
+        String macroAsOf
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

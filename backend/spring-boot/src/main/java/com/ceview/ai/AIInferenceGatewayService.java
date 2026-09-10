@@ -112,6 +112,19 @@ public class AIInferenceGatewayService {
         return postTransformer("/internal/market-data/seasonality", payload);
     }
 
+    /**
+     * Real per-week seasonal-shift statistics for a full historical series (Step 5,
+     * C-04, H-33) — the SAME math as {@link #computeSeasonality}, applied once per
+     * chronological prefix, so a PyTrends backfill can persist genuine per-week
+     * rolling/spike/seasonality figures instead of a placeholder constant. Response
+     * shape: {@code {"market": ..., "points": [{seasonality_score, rolling_7d_avg,
+     * rolling_30d_avg, rolling_7d_std, spike_indicator, yoy_ratio,
+     * stats_window_weeks}, ...]}}, one entry per input week, same order.
+     */
+    public Map<String, Object> computeSeasonalitySeries(Map<String, Object> payload) {
+        return postTransformer("/internal/market-data/seasonality/series", payload);
+    }
+
     // ─── Module 2.2 — Gemini demand forecasting + XGBoost economic scoring ───
 
     /** Run Gemini-powered demand forecasting — 4w + 12w predictions (FR2.11). */

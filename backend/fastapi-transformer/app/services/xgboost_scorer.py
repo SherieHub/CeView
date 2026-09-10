@@ -5,7 +5,9 @@ ECONOMIC SIGNALS exclusively:
 
     Input features (5 economic):
         gdp_growth          — annual GDP growth rate (%)
-        forex_vs_php        — units of foreign currency per PHP (inverse rate)
+        forex_vs_php        — PHP per 1 unit of foreign currency (canonical unit —
+                              docs/module-2/MODULE_2_E2E_CONTRACT.md §1). E.g.
+                              korea ≈ 0.04, japan ≈ 0.38, usa ≈ 57-58.
         direct_flight       — bool: direct flights available
         distance_km         — great-circle distance from origin city to Cebu
         flight_frequency    — weekly scheduled flights to Cebu (direct or via MNL)
@@ -22,6 +24,7 @@ Falls back to a weighted linear approximation when the model file is absent.
 from __future__ import annotations
 
 import logging
+import math
 import os
 
 logger = logging.getLogger(__name__)
@@ -74,7 +77,8 @@ def score(features: dict) -> dict:
             seasonality_score   (float 0-1)     — from SeasonalShiftDetector
             spike_indicator     (bool)
             gdp_growth          (float)          — annual % GDP growth
-            forex_vs_php        (float)          — foreign currency units per PHP
+            forex_vs_php        (float)          — PHP per 1 unit of foreign currency
+                                                    (canonical unit — contract §1)
             direct_flight       (bool)
             distance_km         (int)
             flight_frequency    (int)
@@ -131,14 +135,39 @@ def _xgb_economic(features: dict) -> float:
 
 # ─── feature engineering ──────────────────────────────────────────────────────
 
+# ─── forex normalisation bounds (log scale — see _forex_norm docstring) ──────
+_FOREX_LOG_MIN = -2.0   # log10(0.01): a very low PHP-per-foreign-unit currency
+_FOREX_LOG_MAX = 2.0    # log10(100):  a very high PHP-per-foreign-unit currency
+
+
+def _forex_norm(forex_vs_php: float) -> float:
+    """Normalise a canonical forex_vs_php reading onto [0, 1] on a LOG scale.
+
+    ASSUMPTION (docs/module-2/MODULE_2_E2E_CONTRACT.md §1): forex_vs_php is PHP
+    per 1 unit of the foreign currency — korea ≈ 0.04, japan ≈ 0.38, usa ≈ 57-58.
+
+    A LINEAR scale (the previous ``forex_vs_php / 60.0``) is unusable here: the
+    three tracked markets' canonical rates span more than three orders of
+    magnitude purely because of how many units of each currency equal one peso
+    — a currency-denomination artifact, not a real difference in visitor
+    purchasing power — so a linear divisor forced every low-denomination
+    currency (KRW, JPY) toward 0 regardless of the real exchange-rate trend,
+    while only a USD-sized rate ever produced a non-trivial score. A log10
+    scale compresses that span so all three markets land in a comparable,
+    non-degenerate band: 0.0416 KRW → ~0.15, 0.38 JPY → ~0.40, 57 USD → ~0.94.
+    """
+    if forex_vs_php <= 0:
+        return 0.0
+    log_rate = math.log10(forex_vs_php)
+    return min(max((log_rate - _FOREX_LOG_MIN) / (_FOREX_LOG_MAX - _FOREX_LOG_MIN), 0.0), 1.0)
+
+
 def _feature_vector(features: dict) -> list[float]:
     """Normalise all economic inputs to [0, 1].
 
     Normalisation rationale:
         gdp_growth_norm     : 0% → 0.0; ≥5% → 1.0 (linear)
-        forex_norm          : 0 PHP/unit → 0.0; ≥60 PHP/unit → 1.0
-                              (USD≈57, KRW≈23, JPY≈0.37 PHP per unit)
-                              Using inverse rate: PHP per 1 unit of foreign currency.
+        forex_norm          : log10 scale — see _forex_norm()
         direct_flight       : binary 0/1
         distance_norm       : 0 km → 1.0 (best); ≥15,000 km → 0.0 (worst)
         flight_frequency    : 0 flights/week → 0.0; ≥20 flights/week → 1.0
@@ -151,7 +180,7 @@ def _feature_vector(features: dict) -> list[float]:
 
     return [
         min(max(gdp / 5.0, 0.0), 1.0),                   # gdp_growth_norm
-        min(max(forex / 60.0, 0.0), 1.0),                 # forex_norm
+        _forex_norm(forex),                               # forex_norm
         1.0 if direct else 0.0,                           # direct_flight
         max(0.0, 1.0 - min(1.0, dist / 15_000.0)),        # distance_norm
         min(max(freq / 20.0, 0.0), 1.0),                  # flight_frequency_norm
