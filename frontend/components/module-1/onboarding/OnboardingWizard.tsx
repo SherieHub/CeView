@@ -40,6 +40,7 @@ import AssetsLinksStep from './steps/AssetsLinksStep';
 import AnalysisStep from './steps/AnalysisStep';
 import { apiClient } from '../../../services/apiClient';
 import { useProfile } from '../../../services/profileContext';
+import { markJustOnboarded } from '../../../services/justOnboardedFlag';
 import { useToast } from '../../shared/Toast';
 
 interface StepPanelProps {
@@ -83,6 +84,12 @@ export default function OnboardingWizard() {
         uniquenessScore: (draft.uniquenessScore ?? 0) / 100,
       });
       setProfile({ ...profile, ...saved });
+      // Marked before navigating, not carried as router navigation state:
+      // ProfileGate reacts to the setProfile above and fires its own
+      // redirect to /dashboard once uniquenessScore is set, which can win
+      // the race against this navigate call and would strip any state
+      // attached to it. See services/justOnboardedFlag.ts.
+      markJustOnboarded();
       navigate('/dashboard');
     } catch {
       showToast('Could not save your profile — please try again.');

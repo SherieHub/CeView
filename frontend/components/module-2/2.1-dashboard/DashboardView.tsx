@@ -29,6 +29,8 @@ import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
 import SignalSummary from './SignalSummary';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
+import { useJustOnboardedTutorial } from './useJustOnboardedTutorial';
+import TutorialModal from '../../shared/TutorialModal';
 
 interface DashboardViewProps {
   /** Dev-preview only — pins the state machine to one mode. */
@@ -41,6 +43,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
   const navigate = useNavigate();
   const state = useDashboardState({ forceMode });
   const { setTarget } = useTargetSelection();
+  const tutorial = useJustOnboardedTutorial();
 
   // The radar drawer reads ?market=<id>, so it is linkable and the browser back
   // button closes it. See 03-module-2.md's M2-F card.
@@ -166,6 +169,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           navigate('/content');
         }}
       />
+      <TutorialModal open={tutorial.open} onClose={tutorial.close} />
     </div>
   );
 }

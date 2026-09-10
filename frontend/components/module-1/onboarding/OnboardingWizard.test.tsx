@@ -22,6 +22,7 @@ import OnboardingWizard from './OnboardingWizard';
 import { DEMO_OB_DRAFT, EMPTY_OB_DRAFT, ObDraftProvider, stepValid } from './obDraft';
 import type { ObDraft } from './obDraft';
 import { ToastProvider } from '../../shared/Toast';
+import { consumeJustOnboarded } from '../../../services/justOnboardedFlag';
 import type { BusinessProfile, BusinessProfileDto } from '../../../types';
 
 const BASE_PROFILE: BusinessProfile = {
@@ -69,6 +70,7 @@ beforeEach(() => {
   analyzeMock.mockReset().mockReturnValue(new Promise(() => {})); // never resolves by default
   uniquenessMock.mockReset();
   saveMock.mockReset();
+  consumeJustOnboarded(); // drain any flag left set by a prior test
 });
 
 function renderWizard(initial: ObDraft) {
@@ -229,6 +231,11 @@ describe('OnboardingWizard', () => {
     fireEvent.click(finishButton);
 
     await waitFor(() => expect(screen.getByText('Dashboard')).toBeInTheDocument());
+    // Marked via the flag module rather than router navigation state — see
+    // OnboardingWizard.tsx's handleFinish and services/justOnboardedFlag.ts
+    // for why (a stateless ProfileGate redirect can race a stateful
+    // navigate() call and win, stripping router state).
+    expect(consumeJustOnboarded()).toBe(true);
 
     expect(saveMock).toHaveBeenCalledWith(
       expect.objectContaining({
