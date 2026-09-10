@@ -44,3 +44,7 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
   specific category rather than showing one fixed global top-3. See
   [`backend/category-scoped-ranking.md`](backend/category-scoped-ranking.md) for the backend work
   this requires.
+
+## Transformer Demand Prediction Model
+
+The Hugging Face Space JamJamzz/ceview-demand-prediction-model forecasts 12 weeks of search demand from 52 weeks of history, market, and category inputs. See [Transformer model integration](TRANSFORMER_MODEL_INTEGRATION.md) for the model contract and integration details.
