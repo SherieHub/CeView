@@ -66,12 +66,14 @@ Handled by `ceview/components/module-2/2.2-market-radar/MarketRadarView.tsx`.
 ### Sub-Flow D — Economic Insights Board (`EconomicInsightsBoard.tsx`)
 
 **Tab 1 — Economic Purchasing Power**:
+
 - Shows latest forex rate (e.g., `PHP → KRW`) and GDP growth as KPI numbers.
 - A contextual insight paragraph (from `market.economyInsight`) explains what the rate means for the Cebu business.
 - Two side-by-side mini line charts: forex rate trend (12 months from DB) and GDP growth trend (5 years from World Bank).
 - Falls back to per-week values from `chartData` if rich trend arrays are absent.
 
 **Tab 2 — Seasonal Travel Patterns**:
+
 - A 12-month calendar grid highlights peak months in red-orange (`market.peakMonths`).
 - A contextual seasonality narrative paragraph (`market.seasonalityInsight`).
 - A seasonality area chart (blue fill) over the weekly window.
@@ -166,26 +168,30 @@ Module 2 has **two distinct operational modes**: an automated background data co
 
 Google Trends uses relative search interest (0–100, normalized to the peak within the request). For Asian markets, English keyword proxies return near-zero volume and produce biased signals. The `MACRO_TREND_MAPPING` in `keyword_mapping.py` resolves native-language umbrella phrases per `(category, geo)`:
 
-| Category | Korea (KR) | Japan (JP) | USA (US) |
-|---|---|---|---|
-| Coastal & Island | 세부 여행 (Cebu travel) | セブ島 (Cebu Island) | Cebu beach |
-| Adventure & Nature | 세부 액티비티 (Cebu activities) | セブ島 アクティビティ | Cebu hiking |
+| Category              | Korea (KR)                        | Japan (JP)                   | USA (US)       |
+| --------------------- | --------------------------------- | ---------------------------- | -------------- |
+| Coastal & Island      | 세부 여행 (Cebu travel)           | セブ島 (Cebu Island)         | Cebu beach     |
+| Adventure & Nature    | 세부 액티비티 (Cebu activities)   | セブ島 アクティビティ        | Cebu hiking    |
 | Culinary & Gastronomy | 세부 맛집 (Cebu restaurant guide) | セブ島 グルメ (Cebu gourmet) | Cebu food tour |
-| Accommodation | 호캉스 세부 (hotel+vacation Cebu) | セブ島 ホテル (Cebu hotel) | Cebu resort |
+| Accommodation         | 호캉스 세부 (hotel+vacation Cebu) | セブ島 ホテル (Cebu hotel)   | Cebu resort    |
 
 **Step 2 — pytrends request:**
+
 ```
 TrendReq(hl=hl, tz=tz_offset, timeout=(10, 30))
 build_payload(kw_list=keywords[:5], timeframe="today 5-y", geo=geo_code)
 # "today 5-y" → ~260 weekly data points (satisfies the 52-week YoY requirement)
 ```
+
 Google Trends limits each request to **5 keywords**. For the category-volume pipeline (`fetch_category_volume`), the 10 fixed `CATEGORY_KEYWORDS` are split into two batches of 5, each with its own jitter sleep and independent failure handling.
 
 **Step 3 — Jitter sleep (rate-limit mitigation):**
+
 ```python
 delay = random.uniform(4.0, 12.0)   # JITTER_MIN_S to JITTER_MAX_S
 time.sleep(delay)
 ```
+
 Executed after **every single** `build_payload()` call. This mimics human browsing cadence and is the **only** mitigation against HTTP 429 from Google Trends. Callers should expect 4–12 s of natural latency per request; the Spring Boot `TrendFetchSchedulerService` uses a 30 s timeout to accommodate this. **Do not remove or shorten this sleep.**
 
 **Step 4 — Series extraction:**
@@ -210,6 +216,7 @@ rolling_30d_avg(t) = ( x[t] + x[t-1] + … + x[t-29] ) / min(30, len)
 - `WINDOW_30D = 30` weekly samples ≈ longer-term baseline; reveals monthly direction.
 
 **Acceleration signal (§2.4):**
+
 - `rolling_7d_avg > rolling_30d_avg` → demand **ACCELERATING** (short-term above long-term baseline)
 - `rolling_7d_avg < rolling_30d_avg` → demand **DECELERATING**
 - `rolling_7d_avg ≈ rolling_30d_avg` → demand **STABLE**
@@ -284,12 +291,12 @@ else:
 
 **Score band interpretation (§5.2):**
 
-| Range | Label | Meaning |
-|-------|-------|---------|
-| 0.85 – 1.00 | **Strong** | Confirmed seasonal pattern — YoY-validated, low variance |
-| 0.70 – 0.84 | **Moderate** | Likely seasonal — monitor YoY development |
-| 0.40 – 0.69 | **Weak / Emerging** | Signal present but unconfirmed |
-| 0.00 – 0.39 | **No seasonal basis** | Noise or isolated event |
+| Range       | Label                 | Meaning                                                  |
+| ----------- | --------------------- | -------------------------------------------------------- |
+| 0.85 – 1.00 | **Strong**            | Confirmed seasonal pattern — YoY-validated, low variance |
+| 0.70 – 0.84 | **Moderate**          | Likely seasonal — monitor YoY development                |
+| 0.40 – 0.69 | **Weak / Emerging**   | Signal present but unconfirmed                           |
+| 0.00 – 0.39 | **No seasonal basis** | Noise or isolated event                                  |
 
 ---
 
@@ -322,6 +329,7 @@ ECONOMIC CONTEXT:
 ```
 
 **Forecasting rules injected into the prompt:**
+
 1. All 12 weekly values must be **distinct** — no two consecutive weeks identical.
 2. Continue current momentum direction, **dampening progressively** toward the 7d rolling average.
 3. **Hard ceiling**: if current > 65, no week may exceed 92 (Google Trends indices mean-revert after surges).
@@ -332,6 +340,7 @@ ECONOMIC CONTEXT:
 8. GDP multi-year trend DECLINING → −2% dampener across weeks 5–12.
 
 **Batch mode (single API call for all 3 markets):**
+
 - `forecast_batch(markets_data)` bundles all market prompts into a single Groq call (1 RPM slot vs. 3).
 - Output schema: `{ "korea": { "week_1": f, ..., "week_12": f }, "japan": {...}, "usa": {...} }`.
 - Spring Boot calls `ai.runForecastInferenceBatch()` → FastAPI `POST /internal/forecasting/inference-batch`.
@@ -371,6 +380,7 @@ confidence = max(0.70, 1.0 − mape / 100.0)
 **3-attempt exponential back-off**: `1 s → 2 s → fail`. On the 3rd failure, `RuntimeError` propagates to the FastAPI router which returns a structured `503` with `code: MOD22_AI_QUOTA_EXCEEDED / MOD22_AI_AUTH_FAILED / MOD22_AI_TIMEOUT / MOD22_AI_UNAVAILABLE`.
 
 **Stub fallback** (`_stub_forecast`): When Groq is unavailable:
+
 ```python
 # Linear regression on last 4 trend values to derive slope
 slope = (Σ(x - x̄)(y - ȳ)) / (Σ(x - x̄)²)
@@ -419,13 +429,13 @@ flight_frequency_norm = min(max(flight_frequency / 20.0, 0.0), 1.0)
 
 **Economic feature weights (sum to 1.0):**
 
-| Feature | Weight | Rationale |
-|---------|--------|-----------|
-| `gdp_growth_norm` | **0.30** | GDP growth most strongly predicts outbound tourism budgets |
-| `forex_norm` | **0.30** | Exchange rate directly determines Cebu's price competitiveness |
-| `direct_flight` | **0.20** | Direct route is the single biggest travel-friction reducer |
-| `distance_norm` | **0.10** | Proximity lowers cost and time commitment |
-| `flight_frequency_norm` | **0.10** | More schedules → more booking flexibility |
+| Feature                 | Weight   | Rationale                                                      |
+| ----------------------- | -------- | -------------------------------------------------------------- |
+| `gdp_growth_norm`       | **0.30** | GDP growth most strongly predicts outbound tourism budgets     |
+| `forex_norm`            | **0.30** | Exchange rate directly determines Cebu's price competitiveness |
+| `direct_flight`         | **0.20** | Direct route is the single biggest travel-friction reducer     |
+| `distance_norm`         | **0.10** | Proximity lowers cost and time commitment                      |
+| `flight_frequency_norm` | **0.10** | More schedules → more booking flexibility                      |
 
 **When `xgboost_market.json` is present**: `_xgb_economic()` runs `xgb.Booster().predict(DMatrix(X))`.
 **When absent**: `_stub_economic()` / `_linear_economic()` computes the same weighted sum via Python — output range and interpretation are identical.
@@ -496,12 +506,14 @@ These alerts are what feed the `HomeView` notification cards via `GET /api/v1/no
 ### External API Clients (`ExternalMarketDataClient.java`)
 
 **World Bank GDP API** (`fetchGdpGrowth`, `fetchGdpTrend`):
+
 - Endpoint: `{WORLDBANK_BASE_URL}/country/{code}/indicator/NY.GDP.MKTP.KD.ZG?format=json&mrv=5`
 - Returns: last 5 annual GDP growth values (newest-first from World Bank; reversed to chronological in code).
 - Country codes: `korea → KR`, `japan → JP`, `usa → US`.
 - 10 s timeout; fallback to static defaults: `{KR: 2.2%, JP: 1.4%, US: 2.5%}`.
 
 **fawazahmed0 CDN Forex API** (`fetchForexRate`, `fetchForexTrend`):
+
 - Endpoint: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{date}/v1/currencies/php.min.json`
 - PHP as base; response: `{ "date": "...", "php": { "krw": 23.5, "jpy": 2.1, "usd": 0.018 } }`.
 - All currency codes lowercase in the response.
@@ -510,11 +522,11 @@ These alerts are what feed the `HomeView` notification cards via `GET /api/v1/no
 
 **Static Flight Reference** (hardcoded in `FLIGHT_REFS` map, never changes):
 
-| Market | Direct | Duration | Distance | Weekly Flights | Airlines |
-|--------|--------|----------|----------|----------------|---------|
-| Korea | ✓ | 3h 45m | 2,640 km | 14 | Korean Air, Cebu Pacific, Air Busan |
-| Japan | ✓ | 2h 50m | 2,186 km | 8 | PAL, Cebu Pacific |
-| USA | ✗ via MNL | 16h+ | 11,027 km | 3 | PAL (via Manila) |
+| Market | Direct    | Duration | Distance  | Weekly Flights | Airlines                            |
+| ------ | --------- | -------- | --------- | -------------- | ----------------------------------- |
+| Korea  | ✓         | 3h 45m   | 2,640 km  | 14             | Korean Air, Cebu Pacific, Air Busan |
+| Japan  | ✓         | 2h 50m   | 2,186 km  | 8              | PAL, Cebu Pacific                   |
+| USA    | ✗ via MNL | 16h+     | 11,027 km | 3              | PAL (via Manila)                    |
 
 ---
 
@@ -522,17 +534,18 @@ These alerts are what feed the `HomeView` notification cards via `GET /api/v1/no
 
 ### Spring Boot Public Endpoints (consumed by React frontend)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/api/v1/forecasting/markets` | `permitAll` | DB-only market list (fast, no AI) |
-| `POST` | `/api/v1/forecasting/analyze/{profileId}` | `permitAll` | Full AI pipeline + ingestion |
-| `GET` | `/api/v1/notifications` | `permitAll` | Demand alert notification list |
+| Method | Path                                      | Auth        | Description                       |
+| ------ | ----------------------------------------- | ----------- | --------------------------------- |
+| `GET`  | `/api/v1/forecasting/markets`             | `permitAll` | DB-only market list (fast, no AI) |
+| `POST` | `/api/v1/forecasting/analyze/{profileId}` | `permitAll` | Full AI pipeline + ingestion      |
+| `GET`  | `/api/v1/notifications`                   | `permitAll` | Demand alert notification list    |
 
 ---
 
 #### `GET /api/v1/forecasting/markets?profileId={UUID}`
 
 **Response** `200 OK`:
+
 ```json
 {
   "markets": [
@@ -552,28 +565,55 @@ These alerts are what feed the `HomeView` notification cards via `GET /api/v1/no
       "flightFrequency": 14,
       "avgFlightPrice": "₱8,000 – ₱15,000",
       "airlines": [
-        { "name": "Korean Air", "code": "KE", "frequency": "7x / week", "direct": true }
+        {
+          "name": "Korean Air",
+          "code": "KE",
+          "frequency": "7x / week",
+          "direct": true
+        }
       ],
       "peakMonths": ["Jul", "Aug", "Dec", "Jan"],
       "economyInsight": "GDP is showing moderate growth (2.2% YoY). The exchange rate signals exceptional purchasing power...",
       "seasonalityInsight": "Strong recurring seasonal patterns detected (high YoY ratio)...",
       "chartData": [
-        { "week": "Wk -11", "history": 45.0, "forecast": null, "seasonality": 52.0, "forex": 23.8, "gdp": 2.2, "spike": 0 },
+        {
+          "week": "Wk -11",
+          "history": 45.0,
+          "forecast": null,
+          "seasonality": 52.0,
+          "forex": 23.8,
+          "gdp": 2.2,
+          "spike": 0
+        },
         "... 22 more points ...",
-        { "week": "Wk +12", "history": null, "forecast": 78.0, "seasonality": 65.0, "forex": 23.8, "gdp": 2.2, "spike": 0 }
+        {
+          "week": "Wk +12",
+          "history": null,
+          "forecast": 78.0,
+          "seasonality": 65.0,
+          "forex": 23.8,
+          "gdp": 2.2,
+          "spike": 0
+        }
       ],
       "gdpTrend": [
-        { "year": 2021, "value": 4.1 }, { "year": 2022, "value": 2.6 }, { "year": 2023, "value": 1.4 },
-        { "year": 2024, "value": 2.0 }, { "year": 2025, "value": 2.2 }
+        { "year": 2021, "value": 4.1 },
+        { "year": 2022, "value": 2.6 },
+        { "year": 2023, "value": 1.4 },
+        { "year": 2024, "value": 2.0 },
+        { "year": 2025, "value": 2.2 }
       ],
       "forexTrend": [
-        { "date": "2025-06", "value": 23.50 }, "...", { "date": "2026-05", "value": 23.80 }
+        { "date": "2025-06", "value": 23.5 },
+        "...",
+        { "date": "2026-05", "value": 23.8 }
       ]
     },
     "... japan, usa ..."
   ]
 }
 ```
+
 Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ---
@@ -584,21 +624,22 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 **Error responses**:
 
-| Code | HTTP | Meaning |
-|------|------|---------|
-| `MOD22_PROFILE_NOT_READY` | 400 | Profile categories not set — complete UC-1.1 first |
-| `MOD21_ENRICHED_DATASET_EMPTY` | 500 | No signal records exist — ingestion has not run |
-| `MOD22_AI_QUOTA_EXCEEDED` | 503 | Groq daily token limit reached (`GROQ_API_KEY` exhausted) |
-| `MOD22_AI_AUTH_FAILED` | 503 | Invalid or missing API key |
-| `MOD22_AI_TIMEOUT` | 503 | AI model timed out after 3 retries |
-| `MOD22_AI_UNAVAILABLE` | 503 | General AI service failure |
-| `MOD22_XGBOOST_MODEL_MISSING` | 503 | `xgboost_market.json` not found in container |
+| Code                           | HTTP | Meaning                                                   |
+| ------------------------------ | ---- | --------------------------------------------------------- |
+| `MOD22_PROFILE_NOT_READY`      | 400  | Profile categories not set — complete UC-1.1 first        |
+| `MOD21_ENRICHED_DATASET_EMPTY` | 500  | No signal records exist — ingestion has not run           |
+| `MOD22_AI_QUOTA_EXCEEDED`      | 503  | Groq daily token limit reached (`GROQ_API_KEY` exhausted) |
+| `MOD22_AI_AUTH_FAILED`         | 503  | Invalid or missing API key                                |
+| `MOD22_AI_TIMEOUT`             | 503  | AI model timed out after 3 retries                        |
+| `MOD22_AI_UNAVAILABLE`         | 503  | General AI service failure                                |
+| `MOD22_XGBOOST_MODEL_MISSING`  | 503  | `xgboost_market.json` not found in container              |
 
 ---
 
 #### `GET /api/v1/notifications?profileId={UUID}`
 
 **Response** `200 OK`:
+
 ```json
 {
   "notifications": [
@@ -619,19 +660,21 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ### FastAPI Transformer Internal Endpoints (consumed by Spring Boot only)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/internal/market-data/trends` | Current-week PyTrends index (2.1 normal ingestion) |
-| `POST` | `/internal/market-data/trends/history` | 12-week historical PyTrends backfill (first run) |
-| `POST` | `/internal/market-data/seasonality` | Seasonal shift computation from weekly series |
-| `POST` | `/internal/forecasting/inference` | Single-market Groq demand forecast |
-| `POST` | `/internal/forecasting/inference-batch` | Batch Groq forecast for all 3 markets (1 RPM) |
-| `POST` | `/internal/forecasting/score` | XGBoost economic viability scoring |
-| `POST` | `/api/v1/trends/fetch` | TrendFetchScheduler: one (category, market) pair |
-| `POST` | `/api/v1/trends/rank-markets` | Cross-market keyword volume ranking |
-| `GET` | `/healthz` | Liveness probe |
+| Method     | Path                                    | Description                                                                                                                                                                                |
+| ---------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST`     | `/internal/market-data/trends`          | Current-week PyTrends index (2.1 normal ingestion)                                                                                                                                         |
+| `POST`     | `/internal/market-data/trends/history`  | 12-week historical PyTrends backfill (first run)                                                                                                                                           |
+| `POST`     | `/internal/market-data/seasonality`     | Seasonal shift computation from weekly series                                                                                                                                              |
+| `POST`     | `/internal/forecasting/inference`       | Single-market Groq demand forecast                                                                                                                                                         |
+| `POST`     | `/internal/forecasting/inference-batch` | Batch Groq forecast for all 3 markets (1 RPM)                                                                                                                                              |
+| `POST`     | `/internal/forecasting/score`           | XGBoost economic viability scoring                                                                                                                                                         |
+| `POST`     | `/api/v1/trends/fetch`                  | TrendFetchScheduler: one (category, market) pair                                                                                                                                           |
+| `POST`     | `/api/v1/trends/rank-markets`           | Cross-market keyword volume ranking                                                                                                                                                        |
+| `GET`      | `/healthz`                              | Liveness probe                                                                                                                                                                             |
+| _Cloud AI_ | `HF Space /forecast`                    | Dedicated Transformer Demand Prediction Model (`JamJamzz/ceview-demand-prediction-model`) via `gradio_client` (see [`TRANSFORMER_MODEL_INTEGRATION.md`](TRANSFORMER_MODEL_INTEGRATION.md)) |
 
 **`POST /internal/forecasting/inference-batch`** — request/response:
+
 ```json
 // Request (built by ForecastingService.runPipeline)
 {
@@ -673,6 +716,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 ```
 
 **`POST /api/v1/trends/fetch`** — request/response:
+
 ```json
 // Request
 { "market": "korea", "category": "Coastal & Island" }
@@ -697,6 +741,7 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 ```
 
 **`POST /internal/forecasting/score`** — request/response:
+
 ```json
 // Request
 {
@@ -728,18 +773,19 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ### Database Schema — Module 2 Tables
 
-| Table | Key Columns | Purpose |
-|-------|-------------|---------|
-| `tbl_market_signal_record` | `signal_record_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `trend_index FLOAT`, `forex_rate FLOAT`, `gdp_growth FLOAT`, `seasonality_score FLOAT`, `rolling_average FLOAT`, `rolling_average_7d FLOAT`, `rolling_average_30d FLOAT`, `rolling_std_dev FLOAT`, `spike_indicator BOOLEAN`, `yoy_ratio FLOAT`, `aggregated_at TIMESTAMPTZ` | Per-market weekly signal snapshots; primary source for `EnrichedSequenceBuilder` and chart history |
-| `tbl_forecast_result` | `forecast_result_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `predicted_demand FLOAT`, `forecast_confidence FLOAT`, `mape_score FLOAT`, `mae FLOAT`, `rmse FLOAT`, `forecast_horizon_weeks INT`, `weekly_forecasts_json TEXT` | Groq demand predictions; `weekly_forecasts_json` stores `[wk1..wk12]` array as JSON string |
-| `tbl_market_score` | `market_score_id UUID PK`, `forecast_result_id FK`, `market_score FLOAT`, `seasonality_score FLOAT`, `spike_indicator BOOLEAN`, `gdp_per_capita_growth FLOAT`, `forex_vs_php FLOAT`, `historical_arrivals INT`, `market_rank INT` | Composite XGBoost-weighted score + rank |
-| `tbl_demand_alert` | `demand_alert_id UUID PK`, `market_score_id FK`, `alert_level VARCHAR`, `alert_message TEXT`, `trend VARCHAR`, `is_read BOOLEAN`, `window_open_date TIMESTAMPTZ` | Notifications generated when demand4w > rollingAvg × 1.2 |
-| `tbl_market_economic_trend` | `market VARCHAR`, `gdp_latest FLOAT`, `forex_latest FLOAT`, `currency_code VARCHAR`, `gdp_trend_json TEXT`, `forex_trend_json TEXT`, `gdp_points INT`, `forex_points INT`, `fetched_at TIMESTAMPTZ` | Serialised GDP 5-year + forex 12-month trend arrays for frontend charts |
-| `tbl_ingestion_job_log` | `job_log_id UUID PK`, `job_name VARCHAR`, `status VARCHAR`, `markets_processed INT`, `records_ingested INT`, `error_message TEXT`, `started_at TIMESTAMPTZ`, `completed_at TIMESTAMPTZ` | Daily ingestion job audit trail |
-| `tbl_trend_fetch_job` | `job_id UUID PK`, `category VARCHAR`, `market VARCHAR`, `status VARCHAR CHECK(PENDING\|IN_PROGRESS\|SUCCESS\|FAILED)`, `week_of VARCHAR(10)`, `attempt_count INT`, `max_attempts INT`, `trend_index FLOAT`, `spike_indicator BOOLEAN`, `yoy_ratio FLOAT`, `seasonality_score FLOAT`, `source VARCHAR`, `last_error TEXT` | Weekly Google Trends job state machine — `UNIQUE(category, market, week_of)` enables idempotent upsert and resume-on-failure |
-| `tbl_orig_weekly_demand_value` | Rich weekly demand table with category breakdowns, flight data, forex, GDP, market_rank, seasonality_meaning | Seed/reference data table for initial system state |
+| Table                          | Key Columns                                                                                                                                                                                                                                                                                                                                                 | Purpose                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `tbl_market_signal_record`     | `signal_record_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `trend_index FLOAT`, `forex_rate FLOAT`, `gdp_growth FLOAT`, `seasonality_score FLOAT`, `rolling_average FLOAT`, `rolling_average_7d FLOAT`, `rolling_average_30d FLOAT`, `rolling_std_dev FLOAT`, `spike_indicator BOOLEAN`, `yoy_ratio FLOAT`, `aggregated_at TIMESTAMPTZ` | Per-market weekly signal snapshots; primary source for `EnrichedSequenceBuilder` and chart history                           |
+| `tbl_forecast_result`          | `forecast_result_id UUID PK`, `business_profile_id FK`, `target_market VARCHAR`, `predicted_demand FLOAT`, `forecast_confidence FLOAT`, `mape_score FLOAT`, `mae FLOAT`, `rmse FLOAT`, `forecast_horizon_weeks INT`, `weekly_forecasts_json TEXT`                                                                                                           | Groq demand predictions; `weekly_forecasts_json` stores `[wk1..wk12]` array as JSON string                                   |
+| `tbl_market_score`             | `market_score_id UUID PK`, `forecast_result_id FK`, `market_score FLOAT`, `seasonality_score FLOAT`, `spike_indicator BOOLEAN`, `gdp_per_capita_growth FLOAT`, `forex_vs_php FLOAT`, `historical_arrivals INT`, `market_rank INT`                                                                                                                           | Composite XGBoost-weighted score + rank                                                                                      |
+| `tbl_demand_alert`             | `demand_alert_id UUID PK`, `market_score_id FK`, `alert_level VARCHAR`, `alert_message TEXT`, `trend VARCHAR`, `is_read BOOLEAN`, `window_open_date TIMESTAMPTZ`                                                                                                                                                                                            | Notifications generated when demand4w > rollingAvg × 1.2                                                                     |
+| `tbl_market_economic_trend`    | `market VARCHAR`, `gdp_latest FLOAT`, `forex_latest FLOAT`, `currency_code VARCHAR`, `gdp_trend_json TEXT`, `forex_trend_json TEXT`, `gdp_points INT`, `forex_points INT`, `fetched_at TIMESTAMPTZ`                                                                                                                                                         | Serialised GDP 5-year + forex 12-month trend arrays for frontend charts                                                      |
+| `tbl_ingestion_job_log`        | `job_log_id UUID PK`, `job_name VARCHAR`, `status VARCHAR`, `markets_processed INT`, `records_ingested INT`, `error_message TEXT`, `started_at TIMESTAMPTZ`, `completed_at TIMESTAMPTZ`                                                                                                                                                                     | Daily ingestion job audit trail                                                                                              |
+| `tbl_trend_fetch_job`          | `job_id UUID PK`, `category VARCHAR`, `market VARCHAR`, `status VARCHAR CHECK(PENDING\|IN_PROGRESS\|SUCCESS\|FAILED)`, `week_of VARCHAR(10)`, `attempt_count INT`, `max_attempts INT`, `trend_index FLOAT`, `spike_indicator BOOLEAN`, `yoy_ratio FLOAT`, `seasonality_score FLOAT`, `source VARCHAR`, `last_error TEXT`                                    | Weekly Google Trends job state machine — `UNIQUE(category, market, week_of)` enables idempotent upsert and resume-on-failure |
+| `tbl_orig_weekly_demand_value` | Rich weekly demand table with category breakdowns, flight data, forex, GDP, market_rank, seasonality_meaning                                                                                                                                                                                                                                                | Seed/reference data table for initial system state                                                                           |
 
 **Key indexes:**
+
 - `idx_msr_profile_market` on `(business_profile_id, target_market)` — most common query pattern for `EnrichedSequenceBuilder`
 - `idx_msr_aggregated_at DESC` — latest record lookup
 - `idx_trend_fetch_job_status` on `(status, attempt_count)` — scheduler's retryable-job query
@@ -749,22 +795,23 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 
 ## Technology Stack & Infrastructure
 
-| Layer | Technology | Justification |
-|-------|------------|---------------|
-| **Frontend framework** | React 18 + TypeScript, Vite | Same SPA shell as Module 1; Market Radar and Home share global `ProfileData` state from `App.tsx` |
-| **Chart library** | Recharts (`ComposedChart`, `Line`, `Area`, `ReferenceArea`) | Declarative composition of the multi-series demand chart; `ReferenceArea` enables the 3-zone background demand classification |
-| **Spring Boot scheduler** | `@Scheduled` (Spring Task Execution), cron expressions | Two independent cron triggers: `0 0 0 * * *` (daily ingestion) and `0 0 0 * * SUN` (weekly Google Trends fetch); `ceview.ingestion.enabled` flag allows disabling in CI |
-| **Reactive HTTP (Spring)** | Project Reactor `Flux.merge()` + `Mono` | 12 concurrent forex CDN calls in `fetchForexTrend` execute in parallel with 30 s combined timeout — critical for keeping the pipeline fast without blocking a thread per call |
-| **External GDP API** | World Bank Open Data (`NY.GDP.MKTP.KD.ZG`) | Free, no API key, covers all three target markets; `mrv=5` parameter returns last 5 annual values in one call |
-| **External Forex API** | fawazahmed0/currency-api (jsDelivr CDN) | Free, no API key, supports PHP as the base currency, CDN-backed for high availability; uses date-parameterized URLs for historical monthly trend data |
-| **Google Trends** | `pytrends` Python library | Provides normalized search interest (0–100) — the primary demand proxy for Cebu inbound tourism; native-language keyword localization is critical for accurate Asian-market signals |
-| **Jitter rate-limiting** | `random.uniform(4.0, 12.0)` sleep in FastAPI | Sole HTTP 429 mitigation for Google Trends; must be applied after every single `build_payload()` call; designed into the system architecture, not a workaround |
-| **Demand forecasting** | Groq API (`llama-3.3-70b-versatile`) via OpenAI-compatible client, accessed through `gemini_forecaster.py` | Replaces the original BiLSTM+Transformer model (Phase 2 pivot); prompt-based forecasting enables richer context injection (YoY ratio, GDP trend direction, spike flag) without model retraining. File named `gemini_forecaster.py` — historical artifact from the BiLSTM → AI API pivot. |
-| **Batch inference** | Single LLM call for all 3 markets | Reduces RPM consumption from 3 to 1 per refresh cycle; the `inference-batch` endpoint and `forecast_batch()` function were added specifically to prevent rate-limit 503s on free-tier quotas |
-| **Economic scoring** | XGBoost (`xgboost_market.json`) | Trained tree ensemble for 5-feature economic viability; falls back to a linear weighted-sum stub with identical weights when model file absent |
-| **Signal math** | NumPy (in `market_data_processor.py`) + pure-Python (in `seasonal_shift_detector.py`) | NumPy used for FFT-based legacy seasonality; canonical SeasonalShift pipeline uses pure Python with population std-dev (÷N) to exactly match the SDD §3.2 sample calculation |
-| **Forecast quality gate** | `forecast_validator.py` MAPE ≤ 15% (FR2.12) | Applied after every Groq response; `low_confidence_disclaimer` flag returned when exceeded; stub is always tuned to produce MAPE ≤ 14.9% |
-| **Database** | PostgreSQL 16, `pgvector` extension (shared with Module 1) | `tbl_market_signal_record` uses composite index `(business_profile_id, target_market)` for efficient `EnrichedSequenceBuilder` queries |
-| **Job state machine** | `tbl_trend_fetch_job` (`PENDING → IN_PROGRESS → SUCCESS/FAILED`) | Idempotent upsert + `UNIQUE(category, market, week_of)` prevents duplicate rows; `attempt_count < max_attempts` enables automatic retry on next Sunday's run without human intervention |
-| **Containerisation** | Docker Compose — `fastapi-transformer` port 8001 | Isolated from `fastapi-sbert` (port 8000); Spring Boot `AIInferenceGatewayService` uses separate `@Qualifier("fastapiTransformerClient")` WebClient with 90 s extended timeout for `rank-markets` (6 batches × 4–12 s jitter ≈ up to 75 s live) |
-| **Observability** | MDC error codes (`MOD21_*`, `MOD22_*`), `X-Trace-Id` propagation, `tbl_ingestion_job_log` | Every ingestion run, forecast call, and alert event carries a structured code for log-aggregator filtering; job log table provides operational visibility without log access |
+| Layer                            | Technology                                                                                                 | Justification                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Frontend framework**           | React 18 + TypeScript, Vite                                                                                | Same SPA shell as Module 1; Market Radar and Home share global `ProfileData` state from `App.tsx`                                                                                                                                                                                                                                  |
+| **Chart library**                | Recharts (`ComposedChart`, `Line`, `Area`, `ReferenceArea`)                                                | Declarative composition of the multi-series demand chart; `ReferenceArea` enables the 3-zone background demand classification                                                                                                                                                                                                      |
+| **Spring Boot scheduler**        | `@Scheduled` (Spring Task Execution), cron expressions                                                     | Two independent cron triggers: `0 0 0 * * *` (daily ingestion) and `0 0 0 * * SUN` (weekly Google Trends fetch); `ceview.ingestion.enabled` flag allows disabling in CI                                                                                                                                                            |
+| **Reactive HTTP (Spring)**       | Project Reactor `Flux.merge()` + `Mono`                                                                    | 12 concurrent forex CDN calls in `fetchForexTrend` execute in parallel with 30 s combined timeout — critical for keeping the pipeline fast without blocking a thread per call                                                                                                                                                      |
+| **External GDP API**             | World Bank Open Data (`NY.GDP.MKTP.KD.ZG`)                                                                 | Free, no API key, covers all three target markets; `mrv=5` parameter returns last 5 annual values in one call                                                                                                                                                                                                                      |
+| **External Forex API**           | fawazahmed0/currency-api (jsDelivr CDN)                                                                    | Free, no API key, supports PHP as the base currency, CDN-backed for high availability; uses date-parameterized URLs for historical monthly trend data                                                                                                                                                                              |
+| **Google Trends**                | `pytrends` Python library                                                                                  | Provides normalized search interest (0–100) — the primary demand proxy for Cebu inbound tourism; native-language keyword localization is critical for accurate Asian-market signals                                                                                                                                                |
+| **Jitter rate-limiting**         | `random.uniform(4.0, 12.0)` sleep in FastAPI                                                               | Sole HTTP 429 mitigation for Google Trends; must be applied after every single `build_payload()` call; designed into the system architecture, not a workaround                                                                                                                                                                     |
+| **Demand forecasting**           | Groq API (`llama-3.3-70b-versatile`) via OpenAI-compatible client, accessed through `gemini_forecaster.py` | Replaces the original BiLSTM+Transformer model (Phase 2 pivot); prompt-based forecasting enables richer context injection (YoY ratio, GDP trend direction, spike flag) without model retraining. File named `gemini_forecaster.py` — historical artifact from the BiLSTM → AI API pivot.                                           |
+| **Transformer Prediction Model** | Hugging Face Spaces (`JamJamzz/ceview-demand-prediction-model`)                                            | Dedicated time-series Transformer model hosted on Hugging Face Spaces; accessed via `/forecast` endpoint using `gradio_client`; ingests 52-week history, market (`KR`, `JP`, `US`), and tourism category to predict 12-week search demand trajectory (see [`TRANSFORMER_MODEL_INTEGRATION.md`](TRANSFORMER_MODEL_INTEGRATION.md)). |
+| **Batch inference**              | Single LLM call for all 3 markets                                                                          | Reduces RPM consumption from 3 to 1 per refresh cycle; the `inference-batch` endpoint and `forecast_batch()` function were added specifically to prevent rate-limit 503s on free-tier quotas                                                                                                                                       |
+| **Economic scoring**             | XGBoost (`xgboost_market.json`)                                                                            | Trained tree ensemble for 5-feature economic viability; falls back to a linear weighted-sum stub with identical weights when model file absent                                                                                                                                                                                     |
+| **Signal math**                  | NumPy (in `market_data_processor.py`) + pure-Python (in `seasonal_shift_detector.py`)                      | NumPy used for FFT-based legacy seasonality; canonical SeasonalShift pipeline uses pure Python with population std-dev (÷N) to exactly match the SDD §3.2 sample calculation                                                                                                                                                       |
+| **Forecast quality gate**        | `forecast_validator.py` MAPE ≤ 15% (FR2.12)                                                                | Applied after every Groq response; `low_confidence_disclaimer` flag returned when exceeded; stub is always tuned to produce MAPE ≤ 14.9%                                                                                                                                                                                           |
+| **Database**                     | PostgreSQL 16, `pgvector` extension (shared with Module 1)                                                 | `tbl_market_signal_record` uses composite index `(business_profile_id, target_market)` for efficient `EnrichedSequenceBuilder` queries                                                                                                                                                                                             |
+| **Job state machine**            | `tbl_trend_fetch_job` (`PENDING → IN_PROGRESS → SUCCESS/FAILED`)                                           | Idempotent upsert + `UNIQUE(category, market, week_of)` prevents duplicate rows; `attempt_count < max_attempts` enables automatic retry on next Sunday's run without human intervention                                                                                                                                            |
+| **Containerisation**             | Docker Compose — `fastapi-transformer` port 8001                                                           | Isolated from `fastapi-sbert` (port 8000); Spring Boot `AIInferenceGatewayService` uses separate `@Qualifier("fastapiTransformerClient")` WebClient with 90 s extended timeout for `rank-markets` (6 batches × 4–12 s jitter ≈ up to 75 s live)                                                                                    |
+| **Observability**                | MDC error codes (`MOD21_*`, `MOD22_*`), `X-Trace-Id` propagation, `tbl_ingestion_job_log`                  | Every ingestion run, forecast call, and alert event carries a structured code for log-aggregator filtering; job log table provides operational visibility without log access                                                                                                                                                       |
