@@ -48,3 +48,19 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
 ## Transformer Demand Prediction Model
 
 The Hugging Face Space JamJamzz/ceview-demand-prediction-model forecasts 12 weeks of search demand from 52 weeks of history, market, and category inputs. See [Transformer model integration](TRANSFORMER_MODEL_INTEGRATION.md) for the model contract and integration details.
+
+### FastAPI SBERT Microservice (`backend/fastapi-sbert/`)
+
+| Layer           | Component                  | File                                      | Responsibility                                                                                                                                                                                                                               |
+| --------------- | -------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Router**      | `demand_forecast`          | `app/routers/demand_forecast.py`          | Exposes `POST /internal/forecasting/forecast/series` (raw numbers, auto calendar week), `POST /internal/forecasting/forecast` (tensor json), and `GET /internal/forecasting/status`; dispatches async Weights & Biases telemetry             |
+| **Service**     | `demand_forecast_service`  | `app/services/demand_forecast_service.py` | Communicates with Hugging Face Space `JamJamzz/ceview-demand-prediction-model` via `gradio_client.Client`; normalizes inputs; auto-detects current ISO calendar week and builds 52-week cyclical tensor `[trend_scaled, week_sin, week_cos]` |
+| **Model / DTO** | `DemandForecastInputClass` | `app/model/DemandForecastInputClass.py`   | Pydantic request & response models: `DemandForecastInputClass`, `DemandForecastOutputClass`, `WeeklyForecastPoint`                                                                                                                           |
+
+### Internal — Forecasting Microservice (`fastapi-sbert` :8000)
+
+| Method | Path                                    | Caller / Consumer                | Handler & Responsibility                                                               |
+| ------ | --------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------- |
+| `POST` | `/internal/forecasting/forecast/series` | Frontend / Postman / Spring Boot | High-level 12-week forecast from raw 0-100 trends; auto-computes current calendar week |
+| `POST` | `/internal/forecasting/forecast`        | Backend services                 | Low-level forecast from 52-row `[trend_scaled, week_sin, week_cos]` JSON array         |
+| `GET`  | `/internal/forecasting/status`          | Monitoring / Health checks       | Returns Hugging Face Space connectivity, W&B project status, and taxonomy              |

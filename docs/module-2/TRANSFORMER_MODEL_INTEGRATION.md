@@ -1,173 +1,270 @@
-# Module 2 — Transformer Demand Prediction Model Integration
+# Module 2 — Transformer Demand Prediction Model Integration & API Reference
 
-This document specifies the integration of the CeView Demand Prediction Transformer Model hosted as an inference service on **Hugging Face Spaces**.
-
----
-
-## 1. Overview & Service Metadata
-
-The demand forecasting engine for Module 2.2 (Market Radar) utilizes a dedicated Transformer-based time-series model deployed on Hugging Face Spaces. It receives 52 weeks of historical market data, the target origin market, and the business tourism category, and outputs a 12-week weekly demand forecast trajectory along with 4-week and 12-week demand means.
-
-| Property                 | Value                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Hugging Face Space**   | [`JamJamzz/ceview-demand-prediction-model`](https://huggingface.co/spaces/JamJamzz/ceview-demand-prediction-model) |
-| **API Endpoint / Route** | `/forecast`                                                                                                        |
-| **Interface Protocol**   | Gradio Client (`gradio_client`) / Gradio REST API                                                                  |
-| **Primary Consumer**     | `fastapi-transformer` microservice (orchestrated by Spring Boot `ForecastingService`)                              |
-| **Prediction Horizon**   | 12 weeks ($Wk+1$ through $Wk+12$)                                                                                  |
-| **Lookback Context**     | 52 weeks of weekly history                                                                                         |
+This document provides complete technical documentation for the CeView Tourism Demand Forecasting system powered by the Transformer model hosted on **Hugging Face Spaces**, integrated into the `fastapi-sbert` microservice.
 
 ---
 
-## 2. API Specification (`/forecast`)
+## 1. Architecture Overview
 
-### 2.1 Endpoint Summary
-
-- **API Name**: `/forecast`
-- **Method**: Predict call via `gradio_client.Client` or HTTP POST via the Gradio API route.
-- **Authentication**: Public Space (default). For private Spaces or high-throughput enterprise tiers, pass `hf_token`.
-
-### 2.2 Input Parameters
-
-The `/forecast` endpoint accepts **3 parameters**:
-
-| Parameter          | Type                        | Required | Default                      | Description & Allowed Values                                                                                                                                                                                                                                                                |
-| ------------------ | --------------------------- | -------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`history_json`** | `str`                       | **Yes**  | —                            | A serialized JSON string representing the **52-week historical series** for the market/category. Contains historical search interest trend indices and exogenous variables.                                                                                                                 |
-| **`market`**       | `Literal['JP', 'KR', 'US']` | No       | `"KR"`                       | The target source tourist market code in ISO 3166-1 alpha-2 uppercase format: <br>• `'KR'` (South Korea)<br>• `'JP'` (Japan)<br>• `'US'` (United States)                                                                                                                                    |
-| **`category`**     | `Literal[...]`              | No       | `"accommodation_staycation"` | Standardized snake_case tourism category identifier. Must be one of the 7 valid labels: <br>• `'accommodation_staycation'`<br>• `'adventure_nature'`<br>• `'coastal_island'`<br>• `'culinary_gastronomy'`<br>• `'cultural_heritage'`<br>• `'theme_parks_entertainment'`<br>• `'urban_city'` |
-
-### 2.3 Return Structure
-
-The endpoint returns **1 JSON element** (`dict` / structured object) containing:
-
-- **`weekly_forecasts`**: Ordered array of 12 predicted weekly search demand indices (scale 0–100) for weeks $t+1$ to $t+12$.
-- **`predicted_demand_4w`**: Arithmetic average of predictions for weeks 1–4 (used for short-term scoring and alerts).
-- **`predicted_demand_12w`**: Arithmetic average of all 12 forecast weeks (medium-term outlook).
-- **`model_version`**: Metadata identifying the model checkpoint and architecture release.
-
----
-
-## 3. Integration Code Examples
-
-### 3.1 Python Client (`gradio_client`)
-
-Install the client:
-
-```bash
-pip install gradio_client
-```
-
-Execute a forecast request:
-
-```python
-import json
-from gradio_client import Client
-
-# Initialize client pointing to the Hugging Face Space
-client = Client("JamJamzz/ceview-demand-prediction-model")
-
-# Example 52-week historical payload
-sample_history = {
-    "weeks": [f"W{i:02d}" for i in range(1, 53)],
-    "trend_indices": [45.2 + (i % 8) * 2.1 for i in range(52)],
-    "forex_rates": [55.8] * 52,
-    "gdp_growth": [2.4] * 52,
-}
-history_str = json.dumps(sample_history)
-
-# Execute inference
-result = client.predict(
-    history_json=history_str,
-    market="KR",
-    category="coastal_island",
-    api_name="/forecast",
-)
-
-print("Forecast Output:", result)
-```
-
-### 3.2 Direct REST / cURL Integration
-
-Gradio Spaces also expose standard REST endpoints. Calls can be made directly over HTTPS:
-
-```bash
-curl -X POST "https://jamjamzz-ceview-demand-prediction-model.hf.space/api/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data": [
-      "{\"trend_indices\": [...52 points...]}",
-      "KR",
-      "coastal_island"
-    ],
-    "fn_index": 0
-  }'
-```
-
----
-
-## 4. CeView Domain Mapping
-
-To ensure seamless compatibility between CeView's internal naming conventions and the Hugging Face model API, the backend applies the following mappings:
-
-### 4.1 Market Mapping
-
-| CeView Internal Key | Spring Boot / DB Market | Hugging Face Parameter (`market`) |
-| ------------------- | ----------------------- | --------------------------------- |
-| `korea`             | `"korea"`               | `'KR'`                            |
-| `japan`             | `"japan"`               | `'JP'`                            |
-| `usa`               | `"usa"`                 | `'US'`                            |
-
-### 4.2 Category Mapping
-
-| CeView UI Category          | SBERT Category Label          | Hugging Face Parameter (`category`) |
-| --------------------------- | ----------------------------- | ----------------------------------- |
-| Accommodation & Staycation  | `Accommodation & Staycation`  | `accommodation_staycation`          |
-| Adventure & Nature          | `Adventure & Nature`          | `adventure_nature`                  |
-| Coastal & Island            | `Coastal & Island`            | `coastal_island`                    |
-| Culinary & Gastronomy       | `Culinary & Gastronomy`       | `culinary_gastronomy`               |
-| Cultural & Heritage         | `Cultural & Heritage`         | `cultural_heritage`                 |
-| Theme Parks / Entertainment | `Theme Parks / Entertainment` | `theme_parks_entertainment`         |
-| Urban & City                | `Urban & City`                | `urban_city`                        |
-
----
-
-## 5. Architectural Pipeline & Data Flow
+The demand prediction engine forecasts weekly Google Trends search interest for Cebu tourism across three primary source markets (South Korea, Japan, United States) and seven accommodation/tourism categories.
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as MSME Operator
-    participant FE as React Frontend (Market Radar)
-    participant SB as Spring Boot (ForecastingService)
-    participant FT as FastAPI Transformer (:8001)
-    participant HF as Hugging Face Space (JamJamzz/ceview-demand-prediction-model)
-    participant DB as PostgreSQL (tbl_forecast_result)
+flowchart TD
+    Client["Client / Frontend / Postman / Spring Boot"] -->|POST /internal/forecasting/forecast/series| Router["FastAPI Router<br/>(app/routers/demand_forecast.py)"]
+    Router -->|1. Validate Request| Schema["Pydantic Schemas<br/>(DemandForecastInputClass.py)"]
+    Router -->|2. Build 52-wk Tensor| Service["Demand Forecast Service<br/>(demand_forecast_service.py)"]
+    Service -->|Auto-detect ISO week| Clock["System Clock<br/>(datetime.date.today)"]
+    Service -->|3. Call /forecast| HF["Hugging Face Space<br/>(JamJamzz/ceview-demand-prediction-model)"]
+    HF -->|Return 12-wk predictions| Service
+    Service -->|Output DTO| Router
+    Router -->|4. Return Response| Client
+    Router -.->|5. Non-blocking Background Task| WANDB["Weights & Biases (W&B)<br/>Telemetry & Drift Monitoring"]
+```
 
-    User->>FE: Click "Refresh Forecast"
-    FE->>SB: POST /api/v1/forecasting/analyze/{profileId}
-    activate SB
-    SB->>SB: EnrichedSequenceBuilder compiles 52-week history
-    SB->>FT: POST /internal/forecasting/inference (or batch)
-    activate FT
-    FT->>HF: client.predict(history_json, market, category, api_name="/forecast")
-    activate HF
-    Note over HF: Transformer encoder processes<br/>52-week input sequence
-    HF-->>FT: JSON: { weekly_forecasts: [12], predicted_demand_4w, predicted_demand_12w }
-    deactivate HF
-    FT->>FT: Validate outputs & derive metrics
-    FT-->>SB: Return forecast response payload
-    deactivate FT
-    SB->>DB: Persist ForecastResult & update MarketScore
-    SB-->>FE: Return 24-point ChartData & Market ranks
-    deactivate SB
-    FE-->>User: Render DemandForecastChart & Surge Alert Badges
+### Component Registry
+
+| Component | Path | Role & Description |
+|---|---|---|
+| **AI Model** | [`JamJamzz/ceview-demand-prediction-model`](https://huggingface.co/spaces/JamJamzz/ceview-demand-prediction-model) | Transformer time-series checkpoint deployed on Hugging Face Spaces. Ingests a 52×3 history tensor and predicts a 12-week trajectory. |
+| **Pydantic Models** | [`app/model/DemandForecastInputClass.py`](file:///C:/Dev/CeView/backend/fastapi-sbert/app/model/DemandForecastInputClass.py) | Defines `DemandForecastInputClass`, `DemandForecastOutputClass`, `WeeklyForecastPoint`, and literal constraints. |
+| **Service Layer** | [`app/services/demand_forecast_service.py`](file:///C:/Dev/CeView/backend/fastapi-sbert/app/services/demand_forecast_service.py) | Singleton Gradio client, input normalization, 52-week calendar sin/cos tensor construction, auto-calendar week inference, and HF Space communication. |
+| **Controller / Router** | [`app/routers/demand_forecast.py`](file:///C:/Dev/CeView/backend/fastapi-sbert/app/routers/demand_forecast.py) | Exposes `/forecast`, `/forecast/series`, and `/status`. Dispatches asynchronous Weights & Biases telemetry via `BackgroundTasks`. |
+| **FastAPI Root** | [`app/main.py`](file:///C:/Dev/CeView/backend/fastapi-sbert/app/main.py) | Mounts router at `/internal/forecasting` prefix. |
+
+---
+
+## 2. The AI Model Contract (`Hugging Face Spaces`)
+
+### 2.1 Model Specifications
+- **Space ID**: `JamJamzz/ceview-demand-prediction-model`
+- **Inference Route**: `/forecast`
+- **Lookback Window**: Exactly 52 consecutive weeks ($t-51$ to $t$).
+- **Forecast Horizon**: 12 future weeks ($t+1$ to $t+12$).
+- **Underlying Architecture**: Multi-head self-attention Transformer encoder-decoder trained on historical Google Trends search volume paired with seasonal calendar encodings.
+
+### 2.2 Input Tensor Specification
+The model's `history_json` parameter requires a serialized JSON string containing an **exact 52 × 3 matrix**:
+
+$$\mathbf{X} = \begin{bmatrix}
+\text{trend\_scaled}_0 & \sin(\theta_0) & \cos(\theta_0) \\
+\text{trend\_scaled}_1 & \sin(\theta_1) & \cos(\theta_1) \\
+\vdots & \vdots & \vdots \\
+\text{trend\_scaled}_{51} & \sin(\theta_{51}) & \cos(\theta_{51})
+\end{bmatrix}$$
+
+Where:
+1. **`trend_scaled` $\in [0.0, 1.0]$**: Normalized search interest index calculated as $\text{raw\_trend} / 100.0$.
+2. **$\sin(\theta)$ and $\cos(\theta)$ $\in [-1.0, 1.0]$**: Cyclical week-of-year encoding where:
+   $$\theta = \frac{2 \pi \cdot \text{week\_number}}{52}$$
+   with $\text{week\_number} \in [1, 52]$.
+
+### 2.3 Supported Markets & Categories
+
+#### Markets (`market`)
+| Allowed Model Key | Normalized Aliases Accepted by Service | Country |
+|---|---|---|
+| `'KR'` | `'KR'`, `'korea'`, `'south korea'`, `'south_korea'` | South Korea |
+| `'JP'` | `'JP'`, `'japan'` | Japan |
+| `'US'` | `'US'`, `'usa'`, `'united states'`, `'united_states'` | United States |
+
+#### Categories (`category`)
+| Model Category ID | Supported Display / Aliases |
+|---|---|
+| `accommodation_staycation` | `Accommodation & Staycation`, `accommodation`, `staycation` |
+| `adventure_nature` | `Adventure & Nature`, `adventure`, `nature` |
+| `coastal_island` | `Coastal & Island`, `coastal`, `island`, `beach` |
+| `culinary_gastronomy` | `Culinary & Gastronomy`, `food`, `culinary`, `gastronomy` |
+| `cultural_heritage` | `Cultural & Heritage`, `cultural`, `heritage` |
+| `theme_parks_entertainment` | `Theme Parks / Entertainment`, `theme_parks`, `entertainment` |
+| `urban_city` | `Urban & City`, `urban`, `city` |
+
+---
+
+## 3. Automated Week Deduction (Zero Client-Side Math)
+
+### Why Calendar Encodings Matter
+Because demand patterns are highly seasonal (e.g. summer beach travel, winter holiday peaks), the model requires the calendar cycle $(\sin \theta, \cos \theta)$ for every point.
+
+### How the Server Automatically Handles It
+Clients do **not** need to compute week numbers or trigonometric angles. When `start_iso_week` is omitted in the request:
+1. The server reads the current week using Python's standard library:
+   ```python
+   from datetime import date
+   current_iso_week = date.today().isocalendar().week  # e.g., 37
+   ```
+2. It anchors the 52nd point (the newest observation, $t$) to `current_iso_week`.
+3. It derives the earliest point ($t-51$, 51 weeks ago) via modular arithmetic:
+   ```python
+   start_iso_week = (current_iso_week % 52) + 1
+   ```
+4. It iterates from index $0 \dots 51$ computing:
+   ```python
+   week_num = ((start_iso_week - 1 + index) % 52) + 1
+   angle = 2.0 * math.pi * float(week_num) / 52.0
+   sin_val = math.sin(angle)
+   cos_val = math.cos(angle)
+   ```
+5. If the client provides fewer than 52 points, the oldest observation is smoothly backfilled; if more than 52 are provided, the most recent 52 are sliced.
+
+---
+
+## 4. FastAPI Endpoints Reference
+
+Base URL: `http://127.0.0.1:8000/internal/forecasting`
+
+### 4.1 Check Status & Configuration
+`GET /internal/forecasting/status`
+
+Returns Hugging Face Space connectivity metadata, supported taxonomy, and Weights & Biases tracking status.
+
+**Sample Response**:
+```json
+{
+  "status": "configured",
+  "huggingface_space": "JamJamzz/ceview-demand-prediction-model",
+  "endpoint": "/forecast",
+  "weights_and_biases": {
+    "enabled": true,
+    "api_key_configured": true,
+    "project": "ceview-demand-forecast",
+    "entity": null
+  },
+  "supported_markets": ["JP", "KR", "US"],
+  "supported_categories": [
+    "accommodation_staycation",
+    "adventure_nature",
+    "coastal_island",
+    "culinary_gastronomy",
+    "cultural_heritage",
+    "theme_parks_entertainment",
+    "urban_city"
+  ]
+}
 ```
 
 ---
 
-## 6. Resilience & Fallback Handling
+### 4.2 High-Level Raw Trend Forecast (Recommended)
+`POST /internal/forecasting/forecast/series`
 
-1. **Cold-Start Latency**: Free-tier Hugging Face Spaces sleep after inactivity. The `fastapi-transformer` client implements a configurable timeout (30–60s) with exponential retry.
-2. **Offline Fallback**: If the Hugging Face Space is unreachable or returns a 5xx/429 error, `fastapi-transformer` falls back to the deterministic local linear regression stub (`_stub_forecast`), preventing pipeline failure and returning a valid payload with degraded confidence indicators.
-3. **Validation**: All returned 12-week values are clamped to $[0.0, 100.0]$ and verified against CeView's quality gate ($\text{MAPE} \le 15\%$).
+Takes a simple array of raw 0–100 weekly trend numbers. Automatically encodes the 52-week tensor and runs inference.
+
+**Request Body**:
+```json
+{
+  "trend_series": [
+    35.2, 38.0, 42.1, 45.3, 44.0, 47.5, 50.2, 52.0, 49.8, 53.4,
+    55.1, 58.0, 60.2, 59.5, 62.0, 64.3, 61.8, 63.5, 65.0, 67.2,
+    64.0, 66.5, 69.1, 71.0, 70.2, 68.4, 65.0, 62.5, 60.1, 58.7,
+    56.2, 54.0, 52.8, 50.1, 48.5, 47.0, 49.2, 51.5, 53.0, 55.4,
+    57.1, 59.0, 58.2, 60.5, 62.1, 64.0, 61.5, 63.2, 65.4, 67.0,
+    69.2, 72.0
+  ],
+  "market": "korea",
+  "category": "Accommodation & Staycation"
+}
+```
+
+*Note: `start_iso_week` can be completely omitted.*
+
+**Response Body**:
+```json
+{
+  "market": "KR",
+  "category": "accommodation_staycation",
+  "weekly_forecasts": [
+    { "week_ahead": 1, "google_trends": 73.15 },
+    { "week_ahead": 2, "google_trends": 74.02 },
+    { "week_ahead": 3, "google_trends": 72.88 },
+    { "week_ahead": 4, "google_trends": 71.50 },
+    { "week_ahead": 5, "google_trends": 69.80 },
+    { "week_ahead": 6, "google_trends": 68.45 },
+    { "week_ahead": 7, "google_trends": 67.20 },
+    { "week_ahead": 8, "google_trends": 66.10 },
+    { "week_ahead": 9, "google_trends": 65.40 },
+    { "week_ahead": 10, "google_trends": 64.95 },
+    { "week_ahead": 11, "google_trends": 64.30 },
+    { "week_ahead": 12, "google_trends": 63.80 }
+  ],
+  "mean_demand_4_weeks": 72.89,
+  "mean_demand_12_weeks": 68.46,
+  "model": {
+    "model_version": "1.0.0",
+    "architecture": "Transformer",
+    "horizon_weeks": 12
+  }
+}
+```
+
+---
+
+### 4.3 Low-Level Tensor Forecast
+`POST /internal/forecasting/forecast`
+
+Direct low-level route consuming an already formatted 52×3 JSON string.
+
+**Request Body**:
+```json
+{
+  "history_json": "[[0.50, -0.992709, -0.120537], ...52 rows...]",
+  "market": "KR",
+  "category": "accommodation_staycation"
+}
+```
+
+---
+
+## 5. Weights & Biases (W&B) Telemetry Layer
+
+To monitor model performance, drift, and latency during testing and production deployment, the router includes an asynchronous telemetry layer.
+
+### 5.1 Architecture & Performance Guarantee
+- **Zero API Latency Overhead**: Logging is queued via FastAPI `BackgroundTasks`. The client receives the forecast response immediately without waiting for W&B network calls.
+- **Fail-Safe**: If W&B is unconfigured, network times out, or quota is exceeded, errors are caught and logged at `warning` level without disrupting application responses.
+
+### 5.2 Environment Configuration
+Add the following keys to `backend/.env`:
+
+```env
+# Weights & Biases Telemetry
+WANDB_API_KEY=your_wandb_api_key_here
+WANDB_PROJECT=ceview-demand-forecast
+ENABLE_WANDB=true
+```
+
+### 5.3 Logged Metrics & Telemetry Schema
+Every forecast call logs a record with:
+
+| Telemetry Group | Metric Keys | Description |
+|---|---|---|
+| **System & Latency** | `inference_latency_seconds`, `status`, `request_type` | Model latency, success/failure status, and entrypoint. |
+| **Input Profiling** | `input/market`, `input/category`, `input/trend_mean`, `input/trend_latest`, `input/trend_min`, `input/trend_max` | Search index characteristics to detect input distribution shifts. |
+| **Predictions** | `forecast/mean_4_weeks`, `forecast/mean_12_weeks`, `forecast/week_1` ... `forecast/week_12` | Aggregated windows and individual predicted trajectory values. |
+| **Model Metadata** | `model_version`, `architecture`, `best_epoch` | Checkpoint identity from the Hugging Face Space. |
+
+---
+
+## 6. How to Run & Test
+
+### 6.1 Install Dependencies
+From `backend/fastapi-sbert`:
+```bash
+pip install -r requirements.txt
+```
+
+### 6.2 Start the Server
+```bash
+cd backend\fastapi-sbert
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### 6.3 cURL Verification
+```bash
+curl -X POST "http://127.0.0.1:8000/internal/forecasting/forecast/series" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trend_series": [45.0, 48.0, 52.0, 55.0],
+    "market": "korea",
+    "category": "Accommodation & Staycation"
+  }'
+```
