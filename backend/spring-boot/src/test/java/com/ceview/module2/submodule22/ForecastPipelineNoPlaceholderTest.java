@@ -40,6 +40,8 @@ class ForecastPipelineNoPlaceholderTest {
 
     @Autowired ForecastingService forecastingService;
     @Autowired ForecastResultRepository forecastRepo;
+    @Autowired MarketScoreRepository scoreRepo;
+    @Autowired DemandAlertRepository alertRepo;
     @Autowired BusinessProfileRepository profileRepo;
     @Autowired MarketSignalRecordRepository signalRepo;
 
@@ -50,8 +52,10 @@ class ForecastPipelineNoPlaceholderTest {
 
     @BeforeEach
     void setUp() {
-        signalRepo.deleteAll();
+        alertRepo.deleteAll();
+        scoreRepo.deleteAll();
         forecastRepo.deleteAll();
+        signalRepo.deleteAll();
         profileRepo.deleteAll();
 
         profileId = UUID.randomUUID();
@@ -61,12 +65,13 @@ class ForecastPipelineNoPlaceholderTest {
         profile.setCategoriesList(List.of("Coastal & Island"));
         profileRepo.save(profile);
 
-        // 4 weeks of real, measured history per market — mirrors ChartDataVisualTest's
+        // 12 weeks of real, measured history per market — the frozen feature
+        // matrix must reach Phase B before this test exercises rollback.
         // proven-working seed shape (category left null; loadCategoryScopedHistory
         // falls back to the unscoped finder) so this test fails only for the H-29
         // reason under test, not for an unrelated "no signal data" reason.
         for (String market : List.of("korea", "japan", "usa")) {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 12; i++) {
                 MarketSignalRecord r = new MarketSignalRecord();
                 r.setBusinessProfileId(profileId);
                 r.setTargetMarket(market);
@@ -80,7 +85,7 @@ class ForecastPipelineNoPlaceholderTest {
                 r.setRollingStdDev(3.0);
                 r.setSpikeIndicator(false);
                 r.setSource("pytrends");
-                r.setAggregatedAt(OffsetDateTime.now().minusWeeks(3 - i));
+                r.setAggregatedAt(OffsetDateTime.now().minusWeeks(11 - i));
                 signalRepo.save(r);
             }
         }
@@ -117,5 +122,7 @@ class ForecastPipelineNoPlaceholderTest {
         // was processed before the (deterministically-first) failure.
         assertThat(forecastRepo.findAll())
                 .noneMatch(fr -> profileId.equals(fr.getBusinessProfileId()));
+        assertThat(scoreRepo.findAll()).isEmpty();
+        assertThat(alertRepo.findAll()).isEmpty();
     }
 }

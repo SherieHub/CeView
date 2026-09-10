@@ -134,6 +134,7 @@ public class ForecastingService {
      * Run the full 2.2 pipeline for a profile.
      * Throws IllegalStateException when enriched data is absent — run ingestion first.
      */
+    @Transactional
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
         if (profileId == null) {
             log.error("forecastForProfile called with null profileId — profileId is required");
@@ -578,13 +579,11 @@ public class ForecastingService {
             double mae        = requireNum(inference, "mae",        market);
             double rmse       = requireNum(inference, "rmse",       market);
             double confidence = requireNum(inference, "confidence", market);
+            String source = requireSource(inference, market);
 
             // Per-week forecasts [Wk+1..Wk+12] — Gemini returns varying values
             // so the chart shows a real trend line (not a flat repeated scalar).
-            @SuppressWarnings("unchecked")
-            List<Double> weeklyForecasts = inference.get("weekly_forecasts") instanceof List<?>
-                    ? (List<Double>) inference.get("weekly_forecasts")
-                    : List.of(demand4w, demand4w, demand4w, demand4w);
+            List<Double> weeklyForecasts = requireWeeklyForecasts(inference, market);
 
             // FR2.12 — MAPE warning
             if (mape > MAPE_THRESHOLD) {
@@ -622,8 +621,9 @@ public class ForecastingService {
                 if (canPersist) {
                     fr4w = persistForecastResult(
                             profileId, market, category, demand4w, confidence, mape, mae, rmse, 4,
-                            weeklyForecasts, yoyRatio);
-                    persistForecastResult(profileId, market, category, demand12w, confidence, mape, mae, rmse, 12, yoyRatio);
+                            weeklyForecasts, yoyRatio, source);
+                    persistForecastResult(profileId, market, category, demand12w, confidence, mape, mae, rmse, 12,
+                            yoyRatio, source);
                 } else {
                     // In-memory stub so downstream DTO assembly has a non-null object
                     fr4w = new ForecastResult();
@@ -636,6 +636,7 @@ public class ForecastingService {
                     fr4w.setMapeScore(mape);
                     fr4w.setForecastHorizonWeeks(4);
                     fr4w.setYoyRatio(yoyRatio);
+                    fr4w.setSource(source);
                 }
 
                 // ── XGBoost economic viability scoring (FR2.13) — category-specific
@@ -654,17 +655,14 @@ public class ForecastingService {
                 // No fallback — propagate exception so the controller returns a
                 // structured error response instead of silently using stub values.
                 Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
-                double marketScore = num(scoreResult, "market_score", 0.5);
+                double marketScore = requireNum(scoreResult, "market_score", market);
 
                 // Persist MarketScore (and demand alert) — only when profile row exists
                 MarketScore ms;
                 if (canPersist) {
                     ms = persistMarketScore(
                             fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio);
-                    double rollingAvg = latest != null && latest.getRollingAverage7d() != null
-                            ? latest.getRollingAverage7d()
-                            : (latest != null && latest.getRollingAverage() != null
-                                    ? latest.getRollingAverage() : demand4w);
+                    double rollingAvg = requireRollingBaseline(latest, market, category);
                     if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
                         persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
                     }
@@ -678,7 +676,8 @@ public class ForecastingService {
                     ms.setSpikeIndicator(spike);
                     ms.setGdpPerCapitaGrowth(gdp);
                     ms.setForexVsPhp(forex);
-                    ms.setHistoricalArrivals(80_000);
+                    // historical_arrivals remains nullable: there is no real arrivals feed in
+                    // Module 2, so Step 10 deliberately does not invent a value.
                     ms.setYoyRatio(yoyRatio);
                 }
 
@@ -724,15 +723,15 @@ public class ForecastingService {
     private ForecastResult persistForecastResult(UUID profileId, String market, String category,
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon,
-                                                  Double yoyRatio) {
+                                                  Double yoyRatio, String source) {
         return persistForecastResult(profileId, market, category, demand, confidence, mape, mae, rmse, horizon,
-                null, yoyRatio);
+                null, yoyRatio, source);
     }
 
     private ForecastResult persistForecastResult(UUID profileId, String market, String category,
                                                   double demand, double confidence,
                                                   double mape, double mae, double rmse, int horizon,
-                                                  List<Double> weeklyForecasts, Double yoyRatio) {
+                                                  List<Double> weeklyForecasts, Double yoyRatio, String source) {
         ForecastResult fr = new ForecastResult();
         fr.setBusinessProfileId(profileId);
         fr.setTargetMarket(market);
@@ -744,6 +743,7 @@ public class ForecastingService {
         fr.setRmse(rmse);
         fr.setForecastHorizonWeeks(horizon);
         fr.setYoyRatio(yoyRatio);
+        fr.setSource(source);
         if (horizon == 4 && weeklyForecasts != null && !weeklyForecasts.isEmpty()) {
             try {
                 fr.setWeeklyForecastsJson(objectMapper.writeValueAsString(weeklyForecasts));
@@ -764,7 +764,8 @@ public class ForecastingService {
         ms.setSpikeIndicator(spike);
         ms.setGdpPerCapitaGrowth(gdp);
         ms.setForexVsPhp(forex);
-        ms.setHistoricalArrivals(80_000);
+        // Leave historical_arrivals NULL. The only prior value was the synthetic
+        // 80,000 placeholder; there is no owned, verified arrivals source yet.
         ms.setYoyRatio(yoyRatio);
         return scoreRepo.save(ms);
     }
@@ -1157,13 +1158,58 @@ public class ForecastingService {
      */
     private static double requireNum(Map<String, Object> map, String key, String market) {
         Object v = map.get(key);
-        if (v instanceof Number n) return n.doubleValue();
+        if (v instanceof Number n && Double.isFinite(n.doubleValue())) return n.doubleValue();
         throw AiDependencyException.fromBody(502, Map.of(
                 "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
                 "message", "Forecast inference for " + market + " is missing required field '" + key + "'.",
                 "dependency", "groq",
                 "cause", "batch inference response for " + market + " did not include a numeric '" + key + "' value",
                 "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    private static String requireSource(Map<String, Object> inference, String market) {
+        Object value = inference.get("source");
+        if (value instanceof String source && !source.isBlank()) return source;
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Forecast inference for " + market + " is missing its engine source.",
+                "dependency", "forecast-engine",
+                "cause", "batch inference response for " + market + " omitted non-empty 'source'",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    private static List<Double> requireWeeklyForecasts(Map<String, Object> inference, String market) {
+        Object raw = inference.get("weekly_forecasts");
+        if (!(raw instanceof List<?> values) || values.size() != 12) {
+            throw AiDependencyException.fromBody(502, Map.of(
+                    "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                    "message", "Forecast inference for " + market + " must contain exactly 12 weekly forecasts.",
+                    "dependency", "forecast-engine",
+                    "cause", "weekly_forecasts is absent or has a length other than 12",
+                    "stage", "spring/forecasting"), "forecasting/pipeline");
+        }
+        List<Double> weekly = new ArrayList<>(12);
+        for (Object value : values) {
+            if (!(value instanceof Number number) || !Double.isFinite(number.doubleValue())
+                    || number.doubleValue() < 0.0 || number.doubleValue() > 100.0) {
+                throw AiDependencyException.fromBody(502, Map.of(
+                        "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                        "message", "Forecast inference for " + market + " has an invalid weekly forecast.",
+                        "dependency", "forecast-engine",
+                        "cause", "weekly_forecasts must be 12 finite 0-100 numbers",
+                        "stage", "spring/forecasting"), "forecasting/pipeline");
+            }
+            weekly.add(number.doubleValue());
+        }
+        return List.copyOf(weekly);
+    }
+
+    private static double requireRollingBaseline(MarketSignalRecord latest, String market, String category) {
+        if (latest != null && latest.getRollingAverage7d() != null
+                && Double.isFinite(latest.getRollingAverage7d()) && latest.getRollingAverage7d() > 0.0) {
+            return latest.getRollingAverage7d();
+        }
+        throw noMeasuredCategoryInput(market, category, "rolling_average_7d");
     }
 
     /**
