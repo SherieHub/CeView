@@ -20,6 +20,8 @@ public interface DemandAlertRepository extends JpaRepository<DemandAlert, UUID> 
      */
     List<DemandAlert> findByBusinessProfileIdOrderByAlertDateDesc(UUID businessProfileId);
 
+    Optional<DemandAlert> findTopByMarketScoreIdOrderByAlertDateDesc(UUID marketScoreId);
+
     /**
      * Walks demand_alert -> market_score -> forecast_result to confirm the alert
      * belongs to the given business profile before allowing a mutation. None of

@@ -351,9 +351,14 @@ public class ForecastingService {
             boolean spike      = Boolean.TRUE.equals(ms.getSpikeIndicator());
             double confidence  = fr4w.getForecastConfidence() != null ? fr4w.getForecastConfidence() : 0.8;
 
+            DemandAlert activeAlert = alertRepo.findTopByMarketScoreIdOrderByAlertDateDesc(ms.getMarketScoreId())
+                    .orElse(null);
             bundles.add(new MarketResultBundle(
                     market, marketScore, ms, fr4w, history, spike, confidence,
-                    gdpTrend, forexTrend, weeklyForecasts, latest));
+                    gdpTrend, forexTrend, weeklyForecasts, latest,
+                    activeAlert != null ? activeAlert.getAlertLevel() : null,
+                    activeAlert != null ? activeAlert.getUpliftPct() : null,
+                    activeAlert != null ? activeAlert.getWindowOpenDate() : null));
         }
 
         if (bundles.isEmpty()) {
@@ -658,17 +663,24 @@ public class ForecastingService {
                 // structured error response instead of silently using stub values.
                 Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
                 double marketScore = requireNum(scoreResult, "market_score", market);
+                String scorer = requireScorer(scoreResult, market);
 
                 // Persist MarketScore (and demand alert) — only when profile row exists
                 MarketScore ms;
                 if (canPersist) {
                     ms = persistMarketScore(
-                            fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio);
+                            fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio, scorer);
                     // An absent/invalid baseline is not replaced with a made-up value:
                     // it simply cannot produce a baseline-relative demand-window alert.
                     Double rollingAvg = latest != null ? latest.getRollingAverage7d() : null;
-                    persistDemandAlert(profileId, category, ms.getMarketScoreId(), market, demand4w,
+                    DemandAlert activeAlert = persistDemandAlert(profileId, category, ms.getMarketScoreId(), market, demand4w,
                             rollingAvg, spike, yoyRatio, weeklyForecasts, latest);
+                    allBundles.add(new MarketResultBundle(
+                            market, marketScore, ms, fr4w, history, spike, confidence,
+                            gdpTrend, forexTrend, weeklyForecasts, latest,
+                            activeAlert != null ? activeAlert.getAlertLevel() : null,
+                            activeAlert != null ? activeAlert.getUpliftPct() : null,
+                            activeAlert != null ? activeAlert.getWindowOpenDate() : null));
                 } else {
                     // In-memory stub — no FK writes
                     ms = new MarketScore();
@@ -682,11 +694,11 @@ public class ForecastingService {
                     // historical_arrivals remains nullable: there is no real arrivals feed in
                     // Module 2, so Step 10 deliberately does not invent a value.
                     ms.setYoyRatio(yoyRatio);
+                    ms.setScorer(scorer);
+                    allBundles.add(new MarketResultBundle(
+                            market, marketScore, ms, fr4w, history, spike, confidence,
+                            gdpTrend, forexTrend, weeklyForecasts, latest, null, null, null));
                 }
-
-                allBundles.add(new MarketResultBundle(
-                        market, marketScore, ms, fr4w, history, spike, confidence,
-                        gdpTrend, forexTrend, weeklyForecasts, latest));
             }
 
             // ── Persist economic trend snapshot (once per market) ─────────────────
@@ -759,7 +771,7 @@ public class ForecastingService {
 
     private MarketScore persistMarketScore(UUID forecastResultId, double score,
                                            double seasonality, boolean spike,
-                                           double gdp, double forex, Double yoyRatio) {
+                                           double gdp, double forex, Double yoyRatio, String scorer) {
         MarketScore ms = new MarketScore();
         ms.setForecastResultId(forecastResultId);
         ms.setMarketScore(score);
@@ -770,10 +782,11 @@ public class ForecastingService {
         // Leave historical_arrivals NULL. The only prior value was the synthetic
         // 80,000 placeholder; there is no owned, verified arrivals source yet.
         ms.setYoyRatio(yoyRatio);
+        ms.setScorer(scorer);
         return scoreRepo.save(ms);
     }
 
-    private void persistDemandAlert(UUID profileId, String category, UUID marketScoreId, String market,
+    private DemandAlert persistDemandAlert(UUID profileId, String category, UUID marketScoreId, String market,
                                     double demand4w, Double rolling7dAverage, boolean spikeIndicator,
                                     Double yoyRatio, List<Double> weeklyForecasts,
                                     MarketSignalRecord latestSignal) {
@@ -781,7 +794,7 @@ public class ForecastingService {
         Optional<DemandAlertDecision> decision = deriveDemandAlert(
                 demand4w, rolling7dAverage, spikeIndicator, yoyRatio, weeklyForecasts, firstForecastWeek);
         if (decision.isEmpty()) {
-            return;
+            return null;
         }
 
         DemandAlertDecision alertDecision = decision.get();
@@ -802,17 +815,19 @@ public class ForecastingService {
         alert.setTrend(alertDecision.trend());
         alert.setIsRead(false);
         alert.setWindowOpenDate(alertDecision.windowOpenDate());
-        alertRepo.save(alert);
+        DemandAlert saved = alertRepo.save(alert);
         MDC.put("code", Module2ErrorCodes.MOD22_ALERT_GENERATED);
         log.info("Demand alert generated for market={} level={} upliftPct={}",
                 market, alertDecision.level(), alertDecision.upliftPct());
         MDC.remove("code");
+        return saved;
     }
 
     /**
      * Implements the frozen demand-window rule. This is deliberately not called
-     * a "surge": the rule measures a 20% rolling-baseline uplift, while a surge
-     * has the stricter 2σ definition used by the UI's surge surfaces.
+     * a generic spike: the rule measures a 20% rolling-baseline uplift. Under
+     * the frozen UI vocabulary, a persisted WARNING or CRITICAL is an active
+     * surge; the 2σ spike is only an additional condition for CRITICAL.
      *
      * <p>A missing year-over-year ratio can never elevate an alert to CRITICAL;
      * it remains WARNING when every other warning condition is met.
@@ -903,7 +918,7 @@ public class ForecastingService {
         List<ChartDataPointDto> chartData = buildChartData(
                 b.history(), b.fr4w(), b.weeklyForecasts(), b.latestSignal());
 
-        String directive = buildDirective(market, matchScore, b.spike());
+        String directive = buildDirective(market, b.upliftPct(), b.windowOpenDate(), b.spike(), b.confidence());
 
         // accessibilityScore on 1–10 scale (direct=9, connecting=6) — matches frontend mock
         int accessibilityScore = flight.directFlight() ? 9 : 6;
@@ -982,7 +997,11 @@ public class ForecastingService {
                 dataStale,
                 gdpSource,
                 forexSource,
-                macroAsOf
+                macroAsOf,
+                b.surgeLevel(),
+                b.upliftPct(),
+                b.windowOpenDate() != null ? b.windowOpenDate().toString() : null,
+                ms.getScorer()
         );
     }
 
@@ -1081,18 +1100,23 @@ public class ForecastingService {
         return points;
     }
 
-    private String buildDirective(String market, int matchScore, boolean spike) {
+    /**
+     * Truthful operator directive. Every numeric/date claim comes from the
+     * persisted alert or forecast, rather than from a generic marketing script.
+     */
+    static String buildDirective(String market, Double upliftPct, OffsetDateTime windowOpenDate,
+                                 boolean spike, double confidence) {
         String marketName = MARKET_META.getOrDefault(market, new String[]{market})[0];
-        if (spike) {
-            return "Demand surge detected in " + marketName + ". Activate targeted promotions immediately — "
-                    + "prioritise social content and rate adjustments within 48 hours.";
+        String confidenceText = String.format("%.0f%%", Math.max(0.0, Math.min(1.0, confidence)) * 100.0);
+        if (upliftPct != null && windowOpenDate != null) {
+            return String.format(
+                    "%s has a %.1f%% forecast uplift above its rolling baseline; the demand window opens %s. %s Forecast confidence is %s.",
+                    marketName, upliftPct, windowOpenDate.toLocalDate(),
+                    spike ? "A current interest spike is present." : "No current interest spike is present.",
+                    confidenceText);
         }
-        if (matchScore >= 85) {
-            return marketName + " is your highest-opportunity market. Launch a localised campaign "
-                    + "featuring your top-rated offerings for maximum conversion.";
-        }
-        return marketName + " shows steady demand aligned with your business profile. "
-                + "Maintain consistent content cadence and monitor for emerging trend spikes.";
+        return String.format("No active demand window is currently persisted for %s. Forecast confidence is %s.",
+                marketName, confidenceText);
     }
 
     /** Contract §1.3: the single template every forex axis label is built from. */
@@ -1136,9 +1160,10 @@ public class ForecastingService {
 
         return String.format(
                 "GDP is showing %s (%.1f%% YoY). The exchange rate signals %s purchasing power trend "
-                + "for visitors spending in Cebu — the currency is currently %s. An XGBoost economic "
-                + "viability score was used to weight this market's accessibility alongside flight data.",
-                gdpTrend, gdp, forexSentiment, trendClause);
+                + "for visitors spending in Cebu — the currency is currently %s. The %s economic "
+                + "viability scorer weighted this market's accessibility alongside flight data.",
+                gdpTrend, gdp, forexSentiment, trendClause,
+                "xgboost".equals(ms.getScorer()) ? "XGBoost" : "linear fallback");
     }
 
     /**
@@ -1165,16 +1190,19 @@ public class ForecastingService {
      *   spike confirmed by YoY → no penalty; spike unconfirmed → −0.40.
      * Score bands: 0.85–1.00 Strong, 0.70–0.84 Moderate, 0.40–0.69 Weak, <0.40 None.
      */
-    private String buildSeasonalityInsight(MarketScore ms) {
+    static String buildSeasonalityInsight(MarketScore ms) {
         double score = ms.getSeasonalityScore() != null ? ms.getSeasonalityScore() : 0.5;
-        if (score >= 0.70)
+        if (score >= 0.85)
             return "Strong recurring seasonal patterns detected (high YoY ratio + spike signals). "
                  + "Align campaigns with peak travel windows 6–8 weeks ahead for maximum impact.";
+        if (score >= 0.70)
+            return "Moderate seasonal pattern detected. Use the identified peak months to time campaigns, "
+                 + "while continuing to validate recurrence with new weekly data.";
         if (score >= 0.40)
-            return "Moderate seasonal variation with identifiable peak periods. "
-                 + "Consistent year-round demand — focus campaign timing on the identified peak months.";
-        return "Low seasonality score — demand is relatively flat throughout the year. "
-             + "Maintain a steady always-on content cadence and react quickly to any emerging trend spikes.";
+            return "Weak — emerging seasonal pattern. Keep a steady content cadence and use new weekly "
+                 + "signals to confirm whether the identified peak months recur.";
+        return "No seasonal basis yet. Continue collecting weekly history before assigning campaign timing "
+             + "to a recurring seasonal pattern.";
     }
 
     // ─── economic trend persistence ───────────────────────────────────────────
@@ -1266,6 +1294,19 @@ public class ForecastingService {
                 "stage", "spring/forecasting"), "forecasting/pipeline");
     }
 
+    private static String requireScorer(Map<String, Object> scoreResult, String market) {
+        Object value = scoreResult.get("scorer");
+        if (value instanceof String scorer && ("xgboost".equals(scorer) || "linear".equals(scorer))) {
+            return scorer;
+        }
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Economic score for " + market + " is missing a valid scorer identifier.",
+                "dependency", "economic-scorer",
+                "cause", "score response must contain scorer=xgboost or scorer=linear",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
     private static List<Double> requireWeeklyForecasts(Map<String, Object> inference, String market) {
         Object raw = inference.get("weekly_forecasts");
         if (!(raw instanceof List<?> values) || values.size() != 12) {
@@ -1333,7 +1374,10 @@ public class ForecastingService {
             GdpTrendDto gdpTrend,
             ForexTrendDto forexTrend,
             List<Double> weeklyForecasts,
-            MarketSignalRecord latestSignal) {}
+            MarketSignalRecord latestSignal,
+            String surgeLevel,
+            Double upliftPct,
+            OffsetDateTime windowOpenDate) {}
 
     /** Package-visible pure result of the frozen demand-window alert rule. */
     record DemandAlertDecision(String level, double upliftPct, String trend, OffsetDateTime windowOpenDate) {}

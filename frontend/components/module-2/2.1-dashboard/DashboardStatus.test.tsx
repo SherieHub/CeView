@@ -103,6 +103,7 @@ describe('SignalSummary', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('South Korea')).toBeInTheDocument();
+    expect(screen.getByText('Active surges')).toBeInTheDocument();
     expect(screen.getByText('United States')).toBeInTheDocument();
     expect(screen.getByText('90/100 · Adventure & Nature')).toBeInTheDocument();
   });

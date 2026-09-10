@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import math
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -207,6 +207,7 @@ class EconomicScoreRequest(BaseModel):
 class EconomicScoreResponse(BaseModel):
     market_score:             float
     economic_viability_score: float
+    scorer:                   Literal["xgboost", "linear"]
     components:               dict
 
 

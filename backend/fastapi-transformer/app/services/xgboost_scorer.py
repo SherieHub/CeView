@@ -105,6 +105,8 @@ def score(features: dict) -> dict:
     return {
         "market_score":             round(float(min(max(market_score, 0.0), 1.0)), 4),
         "economic_viability_score": round(float(econ), 4),
+        # Persisted by Spring so UI text cannot credit an unavailable artifact.
+        "scorer":                   "xgboost" if _model is not None else "linear",
         "components": {
             "demand_component":      round(demand_component,      4),
             "seasonality_component": round(seasonality_component, 4),

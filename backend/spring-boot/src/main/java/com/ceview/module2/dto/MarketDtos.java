@@ -108,7 +108,15 @@ public class MarketDtos {
          * forexValue — the conservative "as of" bound for the pair, since each can now
          * age independently. Null when neither has ever been fetched.
          */
-        String macroAsOf
+        String macroAsOf,
+        /** Current demand-window alert state for this category/market, or null when none exists. */
+        String surgeLevel,
+        /** Measured forecast uplift over the rolling baseline; null when no active demand window exists. */
+        Double upliftPct,
+        /** First forecast week that crosses the demand-window threshold, or null. */
+        String windowOpenDate,
+        /** Exact FastAPI economic scorer: xgboost or linear fallback. */
+        String scorer
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

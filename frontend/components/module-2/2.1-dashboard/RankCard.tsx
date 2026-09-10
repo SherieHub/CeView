@@ -9,6 +9,7 @@
  * then reads the same way everywhere in the app.
  */
 import { CalendarClock, Plane, Zap } from 'lucide-react';
+import { marketSurgeState } from '@/types';
 import type { Market } from '@/types';
 
 interface RankCardProps {
@@ -18,7 +19,7 @@ interface RankCardProps {
 
 export default function RankCard({ market, onOpen }: RankCardProps) {
   const isLead = market.rank === 1;
-  const hasSpike = market.chartData.some((point) => point.spike === 1);
+  const surgeState = marketSurgeState(market);
 
   return (
     <button type="button" className="rank-card" onClick={() => onOpen(market.id)}>
@@ -57,7 +58,7 @@ export default function RankCard({ market, onOpen }: RankCardProps) {
           <CalendarClock size={14} aria-hidden="true" />
           {market.flightFrequency}x / week
         </span>
-        {hasSpike && (
+        {surgeState !== 'none' && (
           <span className="chip chip--critical ml-auto">
             <Zap aria-hidden="true" /> Surge active
           </span>

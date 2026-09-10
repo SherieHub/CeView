@@ -217,6 +217,13 @@ export interface Market {
    */
   yoyRatio: number | null;
   spikeIndicator: boolean;
+  /** Current category-scoped demand-window level, sourced from tbl_demand_alert. */
+  surgeLevel: 'WARNING' | 'CRITICAL' | null;
+  /** Measured uplift and first threshold-crossing week for the active demand window. */
+  upliftPct: number | null;
+  windowOpenDate: string | null;
+  /** The economic scorer that actually produced this market's persisted score. */
+  scorer: 'xgboost' | 'linear' | null;
   economyInsight: string;
   seasonalityInsight: string;
   gdpTrend: { year: number; value: number }[];
@@ -478,4 +485,16 @@ export interface PublishedPost {
  */
 export function isSurge(alert: Pick<DemandAlert, 'alertLevel'>): boolean {
   return alert.alertLevel === 'WARNING' || alert.alertLevel === 'CRITICAL';
+}
+
+/**
+ * The market-card source of truth for the same demand-window rule used by
+ * alert cards and the dashboard count. Never infer a surge from chart spikes.
+ */
+export function marketSurgeState(
+  market: Pick<Market, 'surgeLevel'>,
+): 'warning' | 'critical' | 'none' {
+  if (market.surgeLevel === 'CRITICAL') return 'critical';
+  if (market.surgeLevel === 'WARNING') return 'warning';
+  return 'none';
 }

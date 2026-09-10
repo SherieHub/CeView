@@ -60,7 +60,7 @@ export default function SignalSummary({
           <Zap size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div className="stat-head">
-          <span className="stat-label">Confirmed surges</span>
+          <span className="stat-label">Active surges</span>
           <b className="stat-value num">{surgeCount}</b>
         </div>
         <div className="stat-foot">

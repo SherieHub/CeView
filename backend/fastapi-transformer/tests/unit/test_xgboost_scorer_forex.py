@@ -57,6 +57,11 @@ def test_market_score_is_finite_and_bounded_for_every_currency():
         assert 0.0 <= result["economic_viability_score"] <= 1.0
 
 
+def test_score_identifies_the_scorer_that_actually_ran():
+    result = score({**BASE_FEATURES, "gdp_growth": 2.0, "forex_vs_php": USD_FOREX})
+    assert result["scorer"] in {"xgboost", "linear"}
+
+
 def test_zero_or_negative_forex_is_never_inverted_into_a_fabricated_score():
     assert _forex_norm(0.0) == 0.0
     assert _forex_norm(-5.0) == 0.0

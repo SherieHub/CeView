@@ -10,6 +10,7 @@
 import { CloudOff, Sparkles, Zap } from 'lucide-react';
 import DemandForecastChart from './DemandForecastChart';
 import type { DrawerChartSlotProps, Timeframe } from './radarTypes';
+import { marketSurgeState } from '@/types';
 
 const TIMEFRAMES: Timeframe[] = ['4WK', '12WK'];
 
@@ -25,12 +26,15 @@ export default function DrawerChartPanel({
   timeframe,
   onTimeframeChange,
 }: DrawerChartSlotProps) {
+  const surgeState = marketSurgeState(market);
+  const yoyRatio = market.yoyRatio;
+
   return (
     <section className="radar-section" aria-label="Demand forecast">
       {/* Tabbed cards: the label straddles the top edge rather than leading the
           sentence, so the two states are told apart at a glance instead of by
           reading the first three words. */}
-      {market.spikeIndicator === true ? (
+      {surgeState === 'critical' ? (
         <div className="info-card" data-tone="critical" role="status">
           <span className="info-tab">Surge confirmed</span>
           <div className="info-body">
@@ -38,8 +42,23 @@ export default function DrawerChartPanel({
               <Zap size={16} strokeWidth={2} aria-hidden="true" />
             </span>
             <p className="body-sm">
-              Demand has broken the 2σ threshold and the pattern repeats year on year — this is a
-              seasonal inflection, not a one-off.
+              {yoyRatio !== null
+                ? `The demand window is confirmed by a year-on-year comparison (ratio ${yoyRatio.toFixed(2)}).`
+                : 'The demand window is critical, but a year-on-year comparison is not available yet.'}
+            </p>
+          </div>
+        </div>
+      ) : surgeState === 'warning' ? (
+        <div className="info-card" data-tone="accent" role="status">
+          <span className="info-tab">Active demand window</span>
+          <div className="info-body">
+            <span className="info-glyph">
+              <Zap size={16} strokeWidth={2} aria-hidden="true" />
+            </span>
+            <p className="body-sm">
+              {market.upliftPct !== null
+                ? `The 4-week forecast is ${market.upliftPct.toFixed(1)}% above its rolling baseline.`
+                : 'The forecast has crossed the rolling-baseline demand threshold.'}
             </p>
           </div>
         </div>

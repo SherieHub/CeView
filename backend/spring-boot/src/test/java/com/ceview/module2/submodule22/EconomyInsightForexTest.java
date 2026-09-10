@@ -68,6 +68,8 @@ class EconomyInsightForexTest {
         assertThat(korea).contains("improving").doesNotContain("null").doesNotContain("NaN");
         assertThat(japan).contains("stable").doesNotContain("null").doesNotContain("NaN");
         assertThat(usa).contains("improving").doesNotContain("null").doesNotContain("NaN");
+        assertThat(korea).contains("linear fallback economic viability scorer")
+                .doesNotContain("XGBoost economic viability score was used");
     }
 
     @Test
@@ -85,5 +87,35 @@ class EconomyInsightForexTest {
         assertThat(ForecastingService.forexLabel("KRW")).isEqualTo("PHP per 1 KRW");
         assertThat(ForecastingService.forexLabel("USD")).isEqualTo("PHP per 1 USD");
         assertThat(ForecastingService.forexLabel("")).isEmpty();
+    }
+
+    @Test
+    void templatesRenderOnlyMeasuredFactsForKoreaJapanAndUsa() {
+        assertThat(ForecastingService.buildDirective("korea", 28.4,
+                OffsetDateTime.parse("2026-09-07T00:00:00Z"), true, 0.82))
+                .isEqualTo("South Korea has a 28.4% forecast uplift above its rolling baseline; the demand window opens 2026-09-07. A current interest spike is present. Forecast confidence is 82%.");
+        assertThat(ForecastingService.buildDirective("japan", 22.1,
+                OffsetDateTime.parse("2026-09-14T00:00:00Z"), false, 0.76))
+                .isEqualTo("Japan has a 22.1% forecast uplift above its rolling baseline; the demand window opens 2026-09-14. No current interest spike is present. Forecast confidence is 76%.");
+        assertThat(ForecastingService.buildDirective("usa", null, null, false, 0.61))
+                .isEqualTo("No active demand window is currently persisted for United States. Forecast confidence is 61%.");
+    }
+
+    @Test
+    void economyAnd_seasonality_templates_name_the_actual_scorer_and_ui_bands() {
+        MarketScore ms = new MarketScore();
+        ms.setGdpPerCapitaGrowth(2.2);
+        ms.setScorer("xgboost");
+        ms.setSeasonalityScore(0.85);
+        assertThat(ForecastingService.buildEconomyInsight(ms, trend("KRW", 0.04, 0.04)))
+                .contains("The XGBoost economic viability scorer");
+        assertThat(ForecastingService.buildSeasonalityInsight(ms)).startsWith("Strong ");
+
+        ms.setSeasonalityScore(0.70);
+        assertThat(ForecastingService.buildSeasonalityInsight(ms)).startsWith("Moderate ");
+        ms.setSeasonalityScore(0.40);
+        assertThat(ForecastingService.buildSeasonalityInsight(ms)).startsWith("Weak — emerging ");
+        ms.setSeasonalityScore(0.39);
+        assertThat(ForecastingService.buildSeasonalityInsight(ms)).startsWith("No seasonal basis ");
     }
 }

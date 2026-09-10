@@ -51,6 +51,8 @@ describeIfBackend(up, 'module 2 endpoints', () => {
         seasonalityScore: expect.any(Number),
         spikeIndicator: expect.any(Boolean),
       });
+      expect([null, 'WARNING', 'CRITICAL']).toContain(body.markets[0].surgeLevel);
+      expect(['xgboost', 'linear']).toContain(body.markets[0].scorer);
       expect(body.markets[0]).toHaveProperty('chartData');
     }
   });
