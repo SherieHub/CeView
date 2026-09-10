@@ -17,6 +17,7 @@ import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
 import { MOCK_CONNECTIONS } from './fixtures/connections';
 import { MOCK_POST_METRICS } from './fixtures/postMetrics';
+import { MOCK_AD_ACCOUNTS, MOCK_AD_CONNECTIONS, MOCK_AD_INSIGHTS } from './fixtures/adConnections';
 import type {
   WorkspaceMemberFixture,
   PlatformConnection,
@@ -33,6 +34,10 @@ import type {
   ContentResponse,
   OmcsAuditResult,
   CreativeDirection,
+  AdAccountOption,
+  AdConnection,
+  AdInsightSummary,
+  AdProvider,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
@@ -323,6 +328,56 @@ export const apiClient = {
       USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/connect`, { method: 'POST' }),
     disconnect: (platform: string) =>
       USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/disconnect`, { method: 'POST' }),
+  },
+  /**
+   * Ad-platform (Meta / TikTok) account connections and metric sync.
+   *
+   * Distinct from `connections` above, which is the publishing-platform
+   * scaffolding. An ads grant is a different authorisation — see types.ts's
+   * AdProvider doc comment.
+   */
+  adConnections: {
+    list: () =>
+      USE_FIXTURES
+        ? delay<AdConnection[]>(MOCK_AD_CONNECTIONS)
+        : request<AdConnection[]>('/api/ad-connections'),
+
+    /** Returns the consent-screen URL the browser should navigate to. */
+    authorize: (provider: AdProvider) =>
+      USE_FIXTURES
+        ? delay<{ authorizeUrl: string }>({ authorizeUrl: '#fixture-no-oauth' })
+        : request<{ authorizeUrl: string }>(`/api/ad-connections/${provider}/authorize`, {
+            method: 'POST',
+          }),
+
+    accounts: (provider: AdProvider) =>
+      USE_FIXTURES
+        ? delay<AdAccountOption[]>(MOCK_AD_ACCOUNTS)
+        : request<AdAccountOption[]>(`/api/ad-connections/${provider}/accounts`),
+
+    selectAccount: (provider: AdProvider, externalAccountId: string) =>
+      USE_FIXTURES
+        ? delay<AdConnection>(MOCK_AD_CONNECTIONS[0])
+        : request<AdConnection>(`/api/ad-connections/${provider}/account`, {
+            method: 'POST',
+            body: JSON.stringify({ externalAccountId }),
+          }),
+
+    disconnect: (provider: AdProvider) =>
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request(`/api/ad-connections/${provider}`, { method: 'DELETE' }),
+
+    /**
+     * Pulls the period's metrics from every connected ad account. Synchronous
+     * on the backend — this call can take several seconds.
+     */
+    insights: (periodStart: string, periodEnd: string) =>
+      USE_FIXTURES
+        ? delay<AdInsightSummary>(MOCK_AD_INSIGHTS)
+        : request<AdInsightSummary>(
+            `/api/ad-connections/insights?periodStart=${periodStart}&periodEnd=${periodEnd}`,
+          ),
   },
   workspace: {
     // Returns WorkspaceMemberFixture (fixtures/members.ts), not types.ts's WorkspaceMember —

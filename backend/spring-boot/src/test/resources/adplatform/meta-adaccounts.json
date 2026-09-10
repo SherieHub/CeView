@@ -1,0 +1,10 @@
+{
+  "data": [
+    { "id": "act_111111111", "name": "Cebu Dive Co. Ads", "currency": "PHP", "account_status": 1 },
+    { "id": "act_222222222", "name": "Personal Test Account", "currency": "USD", "account_status": 1 }
+  ],
+  "paging": {
+    "cursors": { "before": "MAZDZD", "after": "MjQZD" },
+    "next": "PAGE_2_URL"
+  }
+}

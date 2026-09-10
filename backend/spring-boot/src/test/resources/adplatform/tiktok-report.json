@@ -1,0 +1,18 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      {
+        "dimensions": { "advertiser_id": "7000000000000000001" },
+        "metrics": {
+          "impressions": "31204",
+          "clicks": "894",
+          "spend": "1250.75",
+          "conversion": "22"
+        }
+      }
+    ],
+    "page_info": { "total_number": 1, "page": 1, "page_size": 100, "total_page": 1 }
+  }
+}

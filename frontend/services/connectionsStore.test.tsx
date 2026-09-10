@@ -69,6 +69,19 @@ describe('ConnectionsStoreProvider — seeding', () => {
     expect(captured?.connections).toEqual(MOCK_CONNECTIONS);
   });
 
+  it('falls back to an empty list (not an eternal null) when the initial fetch fails', async () => {
+    // A rejected list() — a 401 from an expired session, a dropped connection,
+    // a 500 — must not leave every Platforms-dependent screen (Settings,
+    // Content Studio's publish picker) stuck on its loading skeleton forever
+    // with no way to recover short of a hard refresh.
+    vi.mocked(apiClient.connections.list).mockRejectedValue(new Error('network error'));
+
+    renderProbe();
+
+    await waitFor(() => expect(captured?.connections).not.toBeNull());
+    expect(captured?.connections).toEqual([]);
+  });
+
   it('isConnected() reflects the seeded state per platform', async () => {
     await seeded();
     expect(captured!.isConnected('instagram')).toBe(true);

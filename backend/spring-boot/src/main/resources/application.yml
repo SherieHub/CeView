@@ -40,6 +40,26 @@ ceview:
     # environments that don't need Google sign-in; the Firebase beans are conditional on
     # this being set, so the app still starts without it (see FirebaseConfig).
     credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+  security:
+    # Base64-encoded 256-bit key encrypting third-party ad-platform OAuth tokens
+    # at rest (see common/crypto/TokenCipher). Blank in environments that don't
+    # connect ad accounts — the ad-connection endpoints then return 503 rather
+    # than the app failing to start. Generate with: openssl rand -base64 32
+    token-encryption-key: ${TOKEN_ENCRYPTION_KEY:}
+  adplatform:
+    # Public HTTPS origin the platforms redirect back to. In local dev this is a
+    # tunnel (ngrok/cloudflared) pointing at :8080 — see AD_PLATFORM_SETUP.md.
+    # It must match the redirect URI registered in each platform's app settings
+    # exactly, including scheme and absence of a trailing slash.
+    redirect-base-url: ${OAUTH_REDIRECT_BASE_URL:}
+    # Where the callback sends the browser after storing the grant.
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+    meta:
+      app-id: ${META_APP_ID:}
+      app-secret: ${META_APP_SECRET:}
+    tiktok:
+      app-id: ${TIKTOK_APP_ID:}
+      app-secret: ${TIKTOK_APP_SECRET:}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3001,http://localhost:3002}
   external:

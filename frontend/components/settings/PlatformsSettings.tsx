@@ -20,7 +20,9 @@ import { CheckCircle2, Circle, Eye, FileEdit, ShieldCheck } from 'lucide-react';
 import Modal from '../shared/Modal';
 import { useToast } from '../shared/Toast';
 import { useConnections } from '../../services/connectionsStore';
-import type { PlatformId } from '../../types';
+import AdAccountsSection from './AdAccountsSection';
+import AdAccountPickerModal from './AdAccountPickerModal';
+import type { AdProvider, PlatformId } from '../../types';
 
 const PLATFORM_LABELS: Record<PlatformId, string> = {
   instagram: 'Instagram',
@@ -41,12 +43,55 @@ const REDIRECT_DELAY_MS = 1300;
 
 type ModalStep = 'redirecting' | 'scope' | null;
 
+/**
+ * Friendly copy for every `adconnect_error` code AdConnectionController can
+ * send (see backend `AdConnectionController.callback`). Anything not listed
+ * here — a code this frontend doesn't know about yet — falls back to a
+ * generic message rather than showing the raw slug to the operator.
+ */
+const AD_CONNECT_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: 'Connection cancelled.',
+  consent_declined: 'Connection cancelled.',
+  invalid_provider: 'Could not complete the connection. Try again.',
+  missing_code_or_state: 'Your session expired mid-connection — try again.',
+  invalid_state: 'Your session expired mid-connection — try again.',
+  token_exchange_failed: "Couldn't connect to that platform — try again.",
+};
+
 export default function PlatformsSettings() {
   const { connections, isConnected, connect, disconnect } = useConnections();
   const { showToast } = useToast();
 
   const [connectingPlatform, setConnectingPlatform] = useState<PlatformId | null>(null);
   const [modalStep, setModalStep] = useState<ModalStep>(null);
+
+  /**
+   * The provider whose account picker is open. Set either by returning from the
+   * OAuth redirect (?adconnect=meta) or by the row's "Choose ad account" button.
+   */
+  const [pickerProvider, setPickerProvider] = useState<AdProvider | null>(null);
+  const [adRefreshKey, setAdRefreshKey] = useState(0);
+
+  // The backend's callback redirects here with ?adconnect=<provider> on success
+  // or ?adconnect_error=<code> on failure. Read them once, then strip them so a
+  // refresh doesn't reopen the picker.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('adconnect');
+    const failed = params.get('adconnect_error');
+
+    if (connected === 'meta' || connected === 'tiktok') {
+      setPickerProvider(connected);
+    } else if (failed) {
+      showToast(
+        AD_CONNECT_ERROR_MESSAGES[failed] ?? 'Could not complete the connection. Try again.',
+      );
+    }
+
+    if (connected || failed) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [showToast]);
 
   function startConnect(platform: PlatformId) {
     setConnectingPlatform(platform);
@@ -92,7 +137,8 @@ export default function PlatformsSettings() {
   }
 
   return (
-    <div className="card p-6">
+    <>
+      <div className="card p-6">
       <h2 className="heading-lg mb-1">Connected platforms</h2>
       <p className="body-sm mb-5">
         Connection state here gates which platforms Content Studio can publish to.
@@ -179,5 +225,23 @@ export default function PlatformsSettings() {
         )}
       </Modal>
     </div>
+
+      <div className="mt-6">
+        <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} />
+      </div>
+
+      {pickerProvider && (
+        <AdAccountPickerModal
+          provider={pickerProvider}
+          onClose={() => setPickerProvider(null)}
+          onSelected={() => {
+            setPickerProvider(null);
+            // Force AdAccountsSection to remount and refetch so the row flips
+            // to ACTIVE without a page reload.
+            setAdRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
+    </>
   );
 }

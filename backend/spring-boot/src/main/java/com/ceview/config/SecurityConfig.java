@@ -39,6 +39,10 @@ public class SecurityConfig {
             .cors(c -> c.configurationSource(corsConfigurationSource))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // The ad-platform OAuth callback is a browser redirect from
+                // Meta/TikTok — it carries no Authorization header, so tenancy
+                // travels in a single-use state token instead (see AdOAuthState).
+                .requestMatchers("/api/ad-connections/*/callback").permitAll()
                 .requestMatchers("/api/auth/**", "/actuator/**", "/error").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint()))

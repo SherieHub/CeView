@@ -128,6 +128,66 @@ export interface PlatformConnection {
 }
 
 /**
+ * Ad platforms CeView can pull campaign metrics from.
+ *
+ * Deliberately separate from `PlatformId`. A Meta ad account covers Facebook
+ * AND Instagram placements in one grant, and an ads grant is a different
+ * authorisation from a publishing grant — collapsing the two would make a
+ * connected ad account look like permission to publish, which it is not.
+ */
+export type AdProvider = 'meta' | 'tiktok';
+
+export type AdConnectionStatus =
+  | 'DISCONNECTED'
+  | 'PENDING_ACCOUNT_SELECTION'
+  | 'ACTIVE'
+  | 'REVOKED';
+
+export interface AdConnection {
+  provider: AdProvider;
+  /** Whether THIS SERVER has credentials for the provider — not whether the operator connected it. */
+  configured: boolean;
+  status: AdConnectionStatus;
+  accountName: string | null;
+  currency: string | null;
+  connectedAt: string | null;
+  lastSyncedAt: string | null;
+}
+
+export interface AdAccountOption {
+  id: string;
+  name: string | null;
+  currency: string | null;
+}
+
+export interface AdInsightSource {
+  provider: AdProvider;
+  accountName: string | null;
+  impressions: number;
+  clicks: number;
+  spend: number;
+  conversions: number;
+  currency: string | null;
+}
+
+/**
+ * Totals are null when the connected accounts report in different currencies —
+ * the backend refuses to sum them. `warnings` says why, and the UI falls back
+ * to per-source prefill.
+ */
+export interface AdInsightSummary {
+  periodStart: string;
+  periodEnd: string;
+  impressions: number | null;
+  clicks: number | null;
+  spend: number | null;
+  conversions: number | null;
+  currency: string | null;
+  sources: AdInsightSource[];
+  warnings: string[];
+}
+
+/**
  * Future real-backend member shape — not what apiClient.workspace.members() returns today.
  * The fixture-backed path returns services/fixtures/members.ts's WorkspaceMemberFixture
  * (role: 'Owner'|'Editor'|'Viewer', initials, no id/status) instead; apiClient.ts is typed

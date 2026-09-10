@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import CampaignAnalyticsView from './CampaignAnalyticsView';
-import { MOCK_HISTORY, MOCK_REPORT } from '../../../services/fixtures/campaign';
+import { DEFAULT_CAMPAIGN_INPUT, MOCK_HISTORY, MOCK_REPORT } from '../../../services/fixtures/campaign';
 import { PostStoreProvider } from '../../../services/postStore';
 import { apiClient } from '../../../services/apiClient';
 import { ApiError } from '../../../services/apiError';
@@ -44,7 +44,29 @@ vi.mock('./PesTrendChart', () => ({
   ),
 }));
 
+/**
+ * IngestionForm no longer seeds its fields from DEFAULT_CAMPAIGN_INPUT — every
+ * field starts blank and `required` (see IngestionForm.tsx's header comment),
+ * so this helper fills them explicitly with the same fixture figures this
+ * file's assertions were written against, before submitting.
+ */
+function fillDefaultCampaignValues() {
+  const fieldQueries: [RegExp, number][] = [
+    [/impressions/i, DEFAULT_CAMPAIGN_INPUT.impressions],
+    [/^clicks/i, DEFAULT_CAMPAIGN_INPUT.clicks],
+    [/ad spend/i, DEFAULT_CAMPAIGN_INPUT.adSpend],
+    [/revenue/i, DEFAULT_CAMPAIGN_INPUT.revenue],
+    [/conversions/i, DEFAULT_CAMPAIGN_INPUT.conversions],
+    [/bookings/i, DEFAULT_CAMPAIGN_INPUT.bookings],
+    [/new customers/i, DEFAULT_CAMPAIGN_INPUT.newCustomers],
+  ];
+  fieldQueries.forEach(([label, value]) => {
+    fireEvent.change(screen.getByLabelText(label), { target: { value: String(value) } });
+  });
+}
+
 function submitDefaultCampaign() {
+  fillDefaultCampaignValues();
   fireEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 }
 
@@ -60,19 +82,23 @@ describe('CampaignAnalyticsView', () => {
   it('renders only the ingestion form when no campaign has been submitted', () => {
     renderView();
 
-    expect(screen.getByText(/no campaign data found/i)).toBeInTheDocument();
+    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 
   it('blocks submission with an inline error when a field is negative', () => {
     renderView();
 
+    // Every other field needs a valid value too, or the browser's own
+    // required-field constraint validation blocks the submit event before
+    // this component's custom "must be non-negative" check ever runs.
+    fillDefaultCampaignValues();
     const impressionsInput = screen.getByLabelText(/impressions/i);
     fireEvent.change(impressionsInput, { target: { value: '-5' } });
-    submitDefaultCampaign();
+    fireEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('All fields must be non-negative numbers.');
-    expect(screen.getByText(/no campaign data found/i)).toBeInTheDocument();
+    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
   });
 
   it('transitions to the full view after a valid submission', async () => {
@@ -90,7 +116,7 @@ describe('CampaignAnalyticsView', () => {
     vi.useRealTimers();
     await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
 
-    expect(screen.queryByText(/no campaign data found/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/log this week.s campaign performance/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
   });
 
@@ -179,7 +205,7 @@ describe('CampaignAnalyticsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /new submission/i }));
 
-    expect(screen.getByText(/no campaign data found/i)).toBeInTheDocument();
+    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 

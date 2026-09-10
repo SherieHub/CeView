@@ -7,13 +7,22 @@
  * Task 16: submits to POST /api/analytics/manual instead of a fake local
  * delay — see docs/superpowers/plans/2026-08-29-frontend-backend-connection/.
  *
- * The 7-field campaign-input form. Field labels/hints/defaults are ported
- * verbatim from the prototype for behavioral parity (`DEFAULT_CAMPAIGN_INPUT`
- * seeds the form's *initial* values only — a legitimate starting form state,
- * not fake data displayed as real); visual treatment follows the
- * tourism-app-branding skill (.field/.input/.card, mint .btn-primary — this
- * is an ordinary form action, not a booking/money action or a wizard's
- * forward step, so coral .btn-cta doesn't apply here).
+ * The 7-field campaign-input form. Field labels/hints are ported verbatim
+ * from the prototype; visual treatment follows the tourism-app-branding
+ * skill (.field/.input/.card, mint .btn-primary — this is an ordinary form
+ * action, not a booking/money action or a wizard's forward step, so coral
+ * .btn-cta doesn't apply here).
+ *
+ * Every field starts BLANK, not seeded from `DEFAULT_CAMPAIGN_INPUT`
+ * (services/fixtures/campaign.ts). An earlier version of this file did seed
+ * from it, on the reasoning that it was "a legitimate starting form state,
+ * not fake data displayed as real" — but a real operator with a real
+ * connected ad account has no way to distinguish "the form pre-filled a
+ * plausible-looking revenue/bookings figure" from "I entered this," and can
+ * submit it as their own real business data without ever having typed
+ * anything. `DEFAULT_CAMPAIGN_INPUT` is fixture/test data (see
+ * IngestionForm.adSync.test.tsx and CampaignAnalyticsView.test.tsx, which
+ * fill fields with it explicitly) — it has no business seeding the live form.
  *
  * Deliberately no `min={0}` on the inputs (the prototype's markup has it):
  * native browser constraint validation would block the form submit event
@@ -29,28 +38,51 @@
  * KPI cards and the funnel still recompute client-side from the same input
  * via campaignMetrics.ts — only the PES headline is server-sourced now.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { BarChart3, Loader2 } from 'lucide-react';
-import { DEFAULT_CAMPAIGN_INPUT } from '../../../services/fixtures/campaign';
+import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
+import { useAdConnections } from '../../../services/useAdConnections';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
-import type { CampaignInput, ManualIngestPes } from '@/types';
+import type { AdProvider, CampaignInput, ManualIngestPes } from '@/types';
 
-const FIELDS: { key: keyof CampaignInput; label: string; hint: string }[] = [
-  { key: 'impressions', label: 'Impressions', hint: 'Total ad impressions served' },
-  { key: 'clicks', label: 'Clicks', hint: 'Total clicks on ads' },
-  { key: 'adSpend', label: 'Ad spend (₱)', hint: 'Total spend in Philippine Pesos' },
-  { key: 'revenue', label: 'Revenue (₱)', hint: 'Revenue attributed to the campaign' },
-  { key: 'conversions', label: 'Conversions (leads)', hint: 'Enquiry form submissions' },
-  { key: 'bookings', label: 'Bookings (sales)', hint: 'Confirmed bookings closed' },
-  { key: 'newCustomers', label: 'New customers', hint: 'Net-new customers acquired' },
-];
+/**
+ * Which of the seven fields the ad platforms can actually fill.
+ *
+ * Revenue, bookings, and new customers are business facts no ad API knows —
+ * they stay the operator's to enter. Prefilling them with zero would make ROAS
+ * and CAC meaningless while looking authoritative.
+ *
+ * The two field lists below are grouped by this same split (syncable, then
+ * manual) rather than the prototype's original interleaved order — grouping
+ * has to be visible before any label is read, per the brand system's form
+ * guidance, and it's what keeps an operator from mistaking a manual field for
+ * one the sync button could have filled (see IngestionForm.tsx's header note
+ * on the prior hardcoded-defaults bug this exact confusion came from).
+ */
+const SYNCABLE_FIELDS = ['impressions', 'clicks', 'adSpend', 'conversions'] as const;
+
+function fieldsFor(currency: string): { key: keyof CampaignInput; label: string; hint: string }[] {
+  return [
+    { key: 'impressions', label: 'Impressions', hint: 'Total ad impressions served' },
+    { key: 'clicks', label: 'Clicks', hint: 'Total clicks on ads' },
+    { key: 'adSpend', label: `Ad spend (${currency})`, hint: `Total spend in ${currency}` },
+    { key: 'conversions', label: 'Conversions (leads)', hint: 'Enquiry form submissions' },
+    { key: 'revenue', label: `Revenue (${currency})`, hint: 'Revenue attributed to the campaign' },
+    { key: 'bookings', label: 'Bookings (sales)', hint: 'Confirmed bookings closed' },
+    { key: 'newCustomers', label: 'New customers', hint: 'Net-new customers acquired' },
+  ];
+}
+
+/** Peso unless a connected ad account reports in something else. */
+const DEFAULT_CURRENCY = '₱';
+
+const PROVIDER_LABELS: Record<AdProvider, string> = { meta: 'Meta', tiktok: 'TikTok' };
 
 function initialValues(): Record<keyof CampaignInput, string> {
   const values = {} as Record<keyof CampaignInput, string>;
-  FIELDS.forEach(({ key }) => {
-    values[key] = String(DEFAULT_CAMPAIGN_INPUT[key]);
+  fieldsFor(DEFAULT_CURRENCY).forEach(({ key }) => {
+    values[key] = '';
   });
   return values;
 }
@@ -85,12 +117,61 @@ export default function IngestionForm({
   const [error, setError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<unknown | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
+  const fields = useMemo(() => fieldsFor(currency), [currency]);
+
+  const { hasActive } = useAdConnections();
+  const [syncing, setSyncing] = useState(false);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const [syncedKeys, setSyncedKeys] = useState<string[]>([]);
+
+  /**
+   * Pulls the same period the form submits, so the synced figures and the
+   * persisted campaign record describe the same week.
+   */
+  async function syncFromAdAccounts() {
+    setSyncing(true);
+    setSyncNote(null);
+    try {
+      const { periodStart, periodEnd } = lastCompleteWeek();
+      const summary = await apiClient.adConnections.insights(periodStart, periodEnd);
+
+      if (summary.warnings.length > 0) {
+        setSyncNote(summary.warnings.join(' '));
+      }
+
+      // Totals are withheld on a currency mismatch — prefilling from a partial
+      // response would be worse than not prefilling at all.
+      if (summary.impressions == null) {
+        return;
+      }
+
+      setValues((current) => ({
+        ...current,
+        impressions: String(summary.impressions ?? current.impressions),
+        clicks: String(summary.clicks ?? current.clicks),
+        adSpend: String(summary.spend ?? current.adSpend),
+        conversions: String(summary.conversions ?? current.conversions),
+      }));
+      setSyncedKeys([...SYNCABLE_FIELDS]);
+      if (summary.currency) setCurrency(summary.currency);
+      if (summary.warnings.length === 0) {
+        const names = summary.sources.map((s) => PROVIDER_LABELS[s.provider]);
+        setSyncNote(`Filled from ${names.join(' and ')}.`);
+      }
+    } catch (err) {
+      console.error('Ad account sync failed', err);
+      setSyncNote('Could not sync from your ad accounts. Enter the figures manually.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const parsed = {} as CampaignInput;
     let bad = false;
-    FIELDS.forEach(({ key }) => {
+    fields.forEach(({ key }) => {
       const v = Number(values[key]);
       if (!(v >= 0) || Number.isNaN(v)) bad = true;
       parsed[key] = v;
@@ -122,11 +203,40 @@ export default function IngestionForm({
     }
   }
 
+  const syncableFields = fields.filter(({ key }) => (SYNCABLE_FIELDS as readonly string[]).includes(key));
+  const manualFields = fields.filter(({ key }) => !(SYNCABLE_FIELDS as readonly string[]).includes(key));
+
+  function renderField({ key, label, hint }: { key: keyof CampaignInput; label: string; hint: string }) {
+    return (
+      <label key={key} className="field" style={{ marginBottom: 0 }}>
+        <span className="field-label">
+          {label}
+          {syncedKeys.includes(key) && <span className="badge badge--teal">synced</span>}
+        </span>
+        <input
+          className="input"
+          type="number"
+          step="any"
+          required
+          value={values[key]}
+          onChange={(e) => {
+            setValues({ ...values, [key]: e.target.value });
+            setSyncedKeys((keys) => keys.filter((k) => k !== key));
+          }}
+        />
+        <span className="field-hint">{hint}</span>
+      </label>
+    );
+  }
+
   return (
     <div className="card" style={{ maxWidth: 760 }}>
-      <div className="empty" style={{ padding: '0 0 var(--space-md)' }}>
-        <h3>No campaign data found</h3>
-        <p>Enter your campaign parameters below to generate analytics.</p>
+      <div className="mb-10">
+        <h3 className="heading-sm">Log this week's campaign performance</h3>
+        <p className="body-sm mt-3">
+          Sync what your ad platforms already know, then add the figures only you have —
+          revenue, bookings, and new customers.
+        </p>
       </div>
 
       {error && (
@@ -145,24 +255,72 @@ export default function IngestionForm({
       )}
 
       <form onSubmit={handleSubmit}>
-        <div
-          className="grid gap-3"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}
-        >
-          {FIELDS.map(({ key, label, hint }) => (
-            <label key={key} className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">{label}</span>
-              <input
-                className="input"
-                type="number"
-                step="any"
-                required
-                value={values[key]}
-                onChange={(e) => setValues({ ...values, [key]: e.target.value })}
-              />
-              <span className="field-hint">{hint}</span>
-            </label>
-          ))}
+        <div className="mb-10">
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h4 className="body-sm" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
+              From your ad accounts
+            </h4>
+            {hasActive && (
+              // Ghost/icon-btn treatment, not .btn-outline--sm's bordered pill —
+              // this is a frequent, low-commitment secondary action sitting right
+              // next to a section label, not a page-level control; a bordered
+              // pill next to plain text over-weighted it. Mirrors .icon-btn's own
+              // transparent -> mint-pale hover language rather than inventing a
+              // new button variant.
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold transition-colors hover:bg-[var(--color-mint-pale)] disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ color: 'var(--color-teal-accent)' }}
+                onClick={syncFromAdAccounts}
+                disabled={syncing}
+              >
+                <RefreshCw className={syncing ? 'animate-spin' : ''} size={14} aria-hidden="true" />
+                {syncing ? 'Syncing…' : 'Sync from ad accounts'}
+              </button>
+            )}
+          </div>
+
+          {hasActive ? (
+            <p className="body-xs text-[var(--color-text-muted)] mb-3">
+              Fills impressions, clicks, spend, and conversions.
+            </p>
+          ) : (
+            <p className="body-xs text-[var(--color-text-muted)] mb-3">
+              Connect a Meta or TikTok Ads account in Settings → Platforms to fill these
+              automatically, or enter them yourself below.
+            </p>
+          )}
+
+          {syncNote && (
+            <p
+              className="body-xs mb-3 rounded-md px-3 py-2"
+              style={{ background: 'var(--color-mint-pale)', color: 'var(--color-navy-primary)' }}
+            >
+              {syncNote}
+            </p>
+          )}
+
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}
+          >
+            {syncableFields.map(renderField)}
+          </div>
+        </div>
+
+        <div>
+          <h4
+            className="body-sm mb-3"
+            style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}
+          >
+            You provide these
+          </h4>
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}
+          >
+            {manualFields.map(renderField)}
+          </div>
         </div>
 
         <button type="submit" disabled={submitting} className="btn-primary mt-10 flex w-full items-center justify-center gap-2">

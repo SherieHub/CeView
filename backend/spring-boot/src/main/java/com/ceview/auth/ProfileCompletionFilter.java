@@ -40,7 +40,7 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
             throws ServletException, IOException {
-        if (isExempt(req.getServletPath())) {
+        if (isExempt(requestPath(req))) {
             chain.doFilter(req, res);
             return;
         }
@@ -72,7 +72,44 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
         chain.doFilter(req, res);
     }
 
+    /**
+     * Reconstructs the dispatched path exactly as {@code isExempt}'s callers expect.
+     *
+     * <p>Pre-existing bug, found while adding the ad-connection callback exemption:
+     * {@code HttpServletRequest.getServletPath()} alone is only the full path when the
+     * dispatcher servlet is mapped with a bare {@code "/"} pattern. Under this app's actual
+     * servlet mapping (confirmed via a full {@code @SpringBootTest}, not the pre-existing
+     * hand-constructed {@code MockHttpServletRequest} unit tests, which set
+     * {@code servletPath} explicitly and so never exercised this), {@code getServletPath()}
+     * returns {@code ""} and the whole path lands in {@code getPathInfo()} instead — so
+     * every {@code isExempt} check silently evaluated against an empty string and always
+     * returned {@code false}, 403'ing every authenticated-but-incomplete-profile request
+     * even to the exempted paths (including {@code /api/auth/profile}, the "complete your
+     * profile" endpoint itself). Concatenating both fields is correct regardless of which
+     * mapping style is in effect, since exactly one of them is ever non-empty.
+     */
+    private static String requestPath(HttpServletRequest req) {
+        String servletPath = req.getServletPath();
+        String pathInfo = req.getPathInfo();
+        return pathInfo == null ? servletPath : servletPath + pathInfo;
+    }
+
     private boolean isExempt(String path) {
-        return path.startsWith("/api/auth/") || path.startsWith("/actuator/") || path.equals("/error");
+        return path.startsWith("/api/auth/")
+            || path.startsWith("/actuator/")
+            || path.equals("/error")
+            // OAuth callback: a redirect from the ad platform, not a UI call.
+            // Blocking it here would 403 an operator mid-redirect with no way
+            // to recover the grant they just approved.
+            || isAdConnectionCallback(path);
+    }
+
+    /**
+     * Matches {@code /api/ad-connections/{provider}/callback} and nothing else —
+     * kept in lockstep with the single-segment {@code /api/ad-connections/*&#47;callback}
+     * Ant matcher in {@code SecurityConfig}.
+     */
+    private boolean isAdConnectionCallback(String path) {
+        return path.matches("^/api/ad-connections/[^/]+/callback$");
     }
 }

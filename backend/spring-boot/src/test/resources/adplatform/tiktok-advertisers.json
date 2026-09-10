@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      { "advertiser_id": "7000000000000000001", "advertiser_name": "Cebu Dive Co." },
+      { "advertiser_id": "7000000000000000002", "advertiser_name": "Test Advertiser" }
+    ]
+  }
+}

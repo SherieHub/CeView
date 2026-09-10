@@ -5,12 +5,30 @@ import IngestionForm from './IngestionForm';
 import { apiClient } from '../../../services/apiClient';
 import { ApiError } from '../../../services/apiError';
 
+/**
+ * Every field starts blank and is `required` (IngestionForm no longer seeds
+ * from fixture data — see IngestionForm.tsx's header comment), so tests that
+ * only care about the submit *path*, not specific field values, need every
+ * field filled with SOME valid number first or the browser's own constraint
+ * validation silently blocks the submit event before React ever sees it.
+ */
+async function fillAllFields() {
+  const values: Record<string, string> = {
+    impressions: '95000', clicks: '2800', 'ad spend': '4000', revenue: '35000',
+    conversions: '185', bookings: '112', 'new customers': '34',
+  };
+  for (const [label, value] of Object.entries(values)) {
+    await userEvent.type(screen.getByLabelText(new RegExp(label, 'i')), value);
+  }
+}
+
 describe('IngestionForm', () => {
   it('submits entered values to the backend as numbers', async () => {
     const ingest = vi.spyOn(apiClient.campaign, 'ingest').mockResolvedValue({ ok: true } as never);
     const onSubmit = vi.fn();
     render(<IngestionForm onSubmit={onSubmit} />);
 
+    await fillAllFields();
     const impressions = screen.getByLabelText(/impressions/i);
     await userEvent.clear(impressions);
     await userEvent.type(impressions, '120000');
@@ -53,6 +71,7 @@ describe('IngestionForm', () => {
     const onSubmit = vi.fn();
     render(<IngestionForm onSubmit={onSubmit} />);
 
+    await fillAllFields();
     await userEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     await waitFor(() =>
@@ -65,6 +84,7 @@ describe('IngestionForm', () => {
     const onSubmit = vi.fn();
     render(<IngestionForm onSubmit={onSubmit} />);
 
+    await fillAllFields();
     await userEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.any(Object), undefined));
@@ -81,6 +101,7 @@ describe('IngestionForm', () => {
     );
     render(<IngestionForm onSubmit={vi.fn()} />);
 
+    await fillAllFields();
     await userEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     expect(await screen.findByText(/complete onboarding/i)).toBeInTheDocument();
@@ -95,6 +116,7 @@ describe('IngestionForm', () => {
     );
     render(<IngestionForm onSubmit={vi.fn()} />);
 
+    await fillAllFields();
     const button = screen.getByRole('button', { name: /generate campaign analytics/i });
     await userEvent.click(button);
 

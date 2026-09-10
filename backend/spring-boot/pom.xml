@@ -93,6 +93,16 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Fakes the Meta/TikTok HTTP endpoints in client tests. The repo's
+             existing convention (@MockBean the client bean) can't cover JSON
+             parsing or the outgoing request shape, which is where integration
+             bugs against a third-party API actually live. -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>4.12.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

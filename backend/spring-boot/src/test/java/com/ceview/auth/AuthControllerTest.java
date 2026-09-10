@@ -35,7 +35,7 @@ class AuthControllerTest {
     private final MsmeOperatorRepository repo = mock(MsmeOperatorRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final JwtService jwt = mock(JwtService.class);
-    private final CurrentOperator currentOperator = new CurrentOperator();
+    private final CurrentOperator currentOperator = new CurrentOperator(repo);
 
     @AfterEach
     void clearContext() {
@@ -304,6 +304,7 @@ class AuthControllerTest {
         MsmeOperator op = new MsmeOperator();
         op.setOperatorId(operatorId);
         op.setContactNumber(null);
+        when(repo.existsById(operatorId)).thenReturn(true);
         when(repo.findById(operatorId)).thenReturn(Optional.of(op));
         when(repo.save(any(MsmeOperator.class))).thenAnswer(inv -> inv.getArgument(0));
         AuthController controller = newController(Optional.empty());

@@ -97,8 +97,11 @@ def upsert_embedding(business_profile_id: str, vector: List[float]) -> None:
         )
 
 
-def fetch_others(exclude_profile_id: str = "") -> List[List[float]]:
-    """Return all stored 768-dim vectors except *exclude_profile_id*'s own.
+def fetch_others(
+    exclude_profile_id: str = "",
+    categories: list[str] | None = None,
+) -> List[List[float]]:
+    """Return stored 768-dim vectors for the cohort, except *exclude_profile_id*'s own.
 
     Used during uniqueness scoring to build the comparison corpus.  Returns an
     empty list when the DB is unreachable or the table has no rows.
@@ -107,6 +110,28 @@ def fetch_others(exclude_profile_id: str = "") -> List[List[float]]:
         exclude_profile_id: UUID string to exclude (the current business's own
                             saved embedding so it is not compared against itself).
                             Pass "" or None to include all rows.
+        categories:         when non-empty, restricts the cohort to profiles
+                            sharing at least one of these categories — the
+                            screen's "against the local cohort in those
+                            categories" claim (02-scoring-math.md Task 7).
+                            `tbl_business_profile.categories` is comma-joined
+                            TEXT, not a join table
+                            (V2__module1_profile_multi_category.sql), so
+                            matching is containment via `string_to_array`, not
+                            an `IN` clause. Pass None or [] for the old
+                            unfiltered behaviour.
+
+                            Deliberately includes `is_reference = TRUE` rows
+                            AND real tenant rows with a saved embedding: an
+                            operator is being compared against the Cebu
+                            market as a whole, not just the seeded corpus —
+                            CohortContext's "sharpens as more operators join"
+                            copy depends on tenant rows counting here. This
+                            resolves the "open item for Dev B" left in
+                            01-prerequisites.md. Every OTHER read in this
+                            codebase must still exclude reference rows from
+                            tenant-scoped results; this function is the one
+                            deliberate exception.
 
     Returns:
         List of 768-element float lists, one per stored business profile.
@@ -115,24 +140,27 @@ def fetch_others(exclude_profile_id: str = "") -> List[List[float]]:
         conn = _connect()
         cur = conn.cursor()
 
+        conditions = ["be.embedding_vector IS NOT NULL"]
+        params: list = []
+
+        if categories:
+            conditions.append("string_to_array(bp.categories, ',') && %s::text[]")
+            params.append(categories)
+
         if exclude_profile_id:
-            cur.execute(
-                """
-                SELECT embedding_vector::text
-                FROM   tbl_business_embedding
-                WHERE  embedding_vector IS NOT NULL
-                  AND  business_profile_id != %s::uuid
-                """,
-                (exclude_profile_id,),
-            )
-        else:
-            cur.execute(
-                """
-                SELECT embedding_vector::text
-                FROM   tbl_business_embedding
-                WHERE  embedding_vector IS NOT NULL
-                """
-            )
+            conditions.append("be.business_profile_id != %s::uuid")
+            params.append(exclude_profile_id)
+
+        cur.execute(
+            f"""
+            SELECT be.embedding_vector::text
+            FROM   tbl_business_embedding be
+            JOIN   tbl_business_profile bp
+                   ON bp.business_profile_id = be.business_profile_id
+            WHERE  {' AND '.join(conditions)}
+            """,
+            params,
+        )
 
         rows = cur.fetchall()
         cur.close()
@@ -168,3 +196,115 @@ def fetch_others(exclude_profile_id: str = "") -> List[List[float]]:
             extra={"code": "MOD1_EMBED_FETCH_FAIL"},
         )
         return []
+
+
+# Category share of the total corpus, above/below which a cohort counts as
+# dense/sparse rather than moderate. Derived from a category's share of the
+# whole corpus rather than a hardcoded list of category names, so this does
+# not go stale the first time the corpus grows — see 02-scoring-math.md Task 8.
+# On the seeded corpus (64 rows: 12/12/12/9/9/5/5) these fall cleanly either
+# side of every category's actual share, with no category landing near a
+# boundary.
+_DENSE_SHARE = 0.15
+_SPARSE_SHARE = 0.10
+
+
+def fetch_cohort_stats(
+    categories: list[str] | None = None,
+    exclude_profile_id: str = "",
+) -> dict:
+    """Return `cohortSize` and `categoryDensity` for the cohort `fetch_others`
+    would build with the same arguments.
+
+    This is a separate, cheap COUNT query rather than len(fetch_others(...))
+    so the caller is not forced to fetch every vector just to report a size —
+    Tasks 16/17 (frontend) need these numbers to disclose the cohort and
+    reassure with, and they come from the same category filter Task 7 already
+    defines.
+
+    `cohortMedianScore` is NOT computed here — it is the median of each
+    cohort member's own distance-based score, which needs the pairwise
+    distance matrix `ml_classifier.compute_semantic_uniqueness` already
+    builds (see `SemanticUniqueness.cohort_scores`). Computing it here would
+    mean a second, redundant pass over the corpus, and would require this
+    module to import `ml_classifier` — which it deliberately does not do (see
+    the module docstring: dependency-free of ML code so it loads without
+    triggering a model load). The router assembles the two pieces together.
+
+    Args:
+        categories:         same semantics as `fetch_others` — non-empty
+                            restricts to profiles sharing at least one of
+                            these categories; empty/None counts the whole
+                            corpus.
+        exclude_profile_id: excluded from the count, matching `fetch_others`.
+
+    Returns:
+        {"cohortSize": int, "categoryDensity": "dense" | "moderate" | "sparse"}
+        Zeros/"" gracefully when the DB is unreachable, matching
+        `fetch_others`'s empty-list-on-failure convention.
+    """
+    try:
+        conn = _connect()
+        cur = conn.cursor()
+
+        conditions = ["be.embedding_vector IS NOT NULL"]
+        params: list = []
+        if categories:
+            conditions.append("string_to_array(bp.categories, ',') && %s::text[]")
+            params.append(categories)
+        if exclude_profile_id:
+            conditions.append("be.business_profile_id != %s::uuid")
+            params.append(exclude_profile_id)
+
+        cur.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM   tbl_business_embedding be
+            JOIN   tbl_business_profile bp
+                   ON bp.business_profile_id = be.business_profile_id
+            WHERE  {' AND '.join(conditions)}
+            """,
+            params,
+        )
+        cohort_size = int(cur.fetchone()[0])
+
+        total_conditions = ["embedding_vector IS NOT NULL"]
+        total_params: list = []
+        if exclude_profile_id:
+            total_conditions.append("business_profile_id != %s::uuid")
+            total_params.append(exclude_profile_id)
+        cur.execute(
+            f"SELECT COUNT(*) FROM tbl_business_embedding WHERE {' AND '.join(total_conditions)}",
+            total_params,
+        )
+        total_size = int(cur.fetchone()[0])
+
+        cur.close()
+        conn.close()
+
+        share = (cohort_size / total_size) if total_size > 0 else 0.0
+        if share >= _DENSE_SHARE:
+            density = "dense"
+        elif share < _SPARSE_SHARE:
+            density = "sparse"
+        else:
+            density = "moderate"
+
+        log.info(
+            "embedding_store.fetch_cohort_stats: size=%d share=%.3f density=%s",
+            cohort_size,
+            share,
+            density,
+        )
+        return {"cohortSize": cohort_size, "categoryDensity": density}
+
+    except RuntimeError as rt:
+        log.info("embedding_store.fetch_cohort_stats: %s — returning zeros", rt)
+        return {"cohortSize": 0, "categoryDensity": "sparse"}
+    except Exception as exc:
+        log.warning(
+            "embedding_store.fetch_cohort_stats: DB error — %s",
+            exc,
+            extra={"code": "MOD1_EMBED_FETCH_FAIL"},
+        )
+        return {"cohortSize": 0, "categoryDensity": "sparse"}

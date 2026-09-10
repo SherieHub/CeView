@@ -32,7 +32,7 @@ export default function CohortContext({ scores }: Props) {
   } as const;
 
   return (
-    <div className="banner banner--info mt-4" role="status">
+    <div className="banner banner--info mt-4" role="status" data-testid="cohort-context">
       <div>
         {scores.sufficientCohort === true ? (
           <>

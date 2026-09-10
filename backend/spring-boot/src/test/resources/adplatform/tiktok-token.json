@@ -1,0 +1,13 @@
+{
+  "code": 0,
+  "message": "OK",
+  "request_id": "20260906120000ABCDEF",
+  "data": {
+    "access_token": "tiktok-access-token-value",
+    "refresh_token": "tiktok-refresh-token-value",
+    "scope": [4, 5],
+    "advertiser_ids": ["7000000000000000001"],
+    "expires_in": 86400,
+    "refresh_token_expires_in": 31536000
+  }
+}
