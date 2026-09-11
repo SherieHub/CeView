@@ -49,6 +49,12 @@ ceview:
       base-url: ${FOREX_BASE_URL:https://api.frankfurter.dev}
   ingestion:
     enabled: ${INGESTION_ENABLED:true}
+  trend-fetch:
+    # Plan P-1 / audit C-07: the profile-agnostic weekly 21-job Google Trends grid.
+    # OFF by default — it writes no signal records (the forecast readers are all
+    # per-profile) and would double-bill the rate-limited PyTrends API against the
+    # per-profile ingestion job. Enable only as an opt-in warm cache / diagnostic.
+    enabled: ${TREND_FETCH_ENABLED:false}
 
 management:
   endpoints:

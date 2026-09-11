@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../../services/apiClient';
+import { isProfileNotReady } from '../../../services/apiError';
 import { useProfile } from '../../../services/profileContext';
 import { useUnreadAlerts } from '../../../services/unreadAlertsStore';
 import { isSurge } from '@/types';
@@ -105,6 +106,37 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
       setAiServiceDown(healthResult.status !== 'fulfilled' || !healthResult.value.available);
 
       setStatus('ready');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * C-09: nudge a live forecast on mount via the staleness-gated `ensure`
+   * endpoint (cheap when the profile's newest forecast is fresh, runs the
+   * pipeline when it is stale/missing), then reload the alert feed so a
+   * first-time operator sees alerts without pressing Refresh.
+   *
+   * Its own effect, not folded into the primary load: `ensure` may run the
+   * ~seconds-long pipeline, and the feed must render immediately from whatever
+   * already exists rather than wait on it. A 409 means onboarding is
+   * incomplete — surface it (ApiErrorPanel shows the onboarding panel for
+   * `isProfileNotReady`); any other failure is swallowed, since `forecast.status`
+   * already owns the degraded-mode signal and a failed nudge must not blank a
+   * feed that loaded fine.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await apiClient.forecast.ensure();
+        if (cancelled) return;
+        const list = (await apiClient.notifications.list()) as DemandAlert[];
+        if (!cancelled) setAlerts(list);
+      } catch (err) {
+        if (!cancelled && isProfileNotReady(err)) setError(err);
+      }
     })();
     return () => {
       cancelled = true;

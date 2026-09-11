@@ -204,6 +204,18 @@ export const apiClient = {
       USE_FIXTURES
         ? delay({ rerankedMarkets: 3 }, 2100)
         : request('/api/forecasting/analyze', { method: 'POST' }),
+    /**
+     * Staleness-gated forecast (audit C-09). Called on dashboard mount: cheap
+     * (a DB read, no pipeline) when the profile's newest forecast is younger
+     * than `maxAgeHours`, or a full pipeline run when it is stale/missing — so a
+     * new operator sees alerts without pressing Refresh. A 409 here means
+     * onboarding is incomplete (`isProfileNotReady`), which the dashboard
+     * surfaces as the "Complete onboarding first" panel.
+     */
+    ensure: (maxAgeHours = 12) =>
+      USE_FIXTURES
+        ? delay({ markets: MOCK_MARKETS })
+        : request(`/api/forecasting/ensure?maxAgeHours=${maxAgeHours}`, { method: 'POST' }),
     /** Drives the dashboard's `ai-down` degraded mode. */
     status: () =>
       USE_FIXTURES

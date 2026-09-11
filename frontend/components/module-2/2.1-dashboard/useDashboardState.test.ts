@@ -22,7 +22,7 @@ vi.mock('../../../services/profileContext', () => ({
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
     notifications: { list: vi.fn(), markRead: vi.fn(), keywordTrends: vi.fn() },
-    forecast: { analyze: vi.fn(), status: vi.fn() },
+    forecast: { analyze: vi.fn(), status: vi.fn(), ensure: vi.fn() },
     markets: { forCategory: vi.fn() },
   },
 }));
@@ -344,7 +344,8 @@ describe('useDashboardState — refresh', () => {
     });
 
     expect(analyzeMock).toHaveBeenCalled();
-    expect(listMock).toHaveBeenCalledTimes(2);
+    // mount primary load (1) + the C-09 ensure-effect reload (1) + refresh() (1).
+    expect(listMock).toHaveBeenCalledTimes(3);
     expect(result.current.isRefreshing).toBe(false);
   });
 });

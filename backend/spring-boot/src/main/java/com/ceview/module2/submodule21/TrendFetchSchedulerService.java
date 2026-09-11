@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,16 @@ import java.util.Optional;
  *   4. For each job: mark IN_PROGRESS → POST FastAPI → mark SUCCESS or FAILED
  *   5. Next run: step 3 picks up only rows that still need processing
  * </pre>
+ *
+ * <h3>Not a signal-record source (audit C-07, plan P-1)</h3>
+ * This grid is profile-agnostic; {@code tbl_market_signal_record} is per-profile,
+ * and every forecast reader queries it by {@code (business_profile_id, market,
+ * category)}. The grid therefore never writes signal records — the only writer is
+ * per-profile {@link MarketDataIngestionService}. Kept as an <em>opt-in</em>
+ * warm-cache / diagnostic (its {@code tbl_trend_fetch_job.last_error} is still
+ * read as the {@code cause} breadcrumb for {@code MOD22_NO_MARKET_DATA}), and
+ * <strong>gated off by default</strong> via {@code ceview.trend-fetch.enabled} so
+ * it does not double-bill the rate-limited PyTrends API.
  */
 @Service
 public class TrendFetchSchedulerService {
@@ -76,12 +87,16 @@ public class TrendFetchSchedulerService {
 
     private final TrendFetchJobRepository jobRepo;
     private final WebClient               transformerClient;
+    /** Plan P-1 / audit C-07: the grid is opt-in and off by default. */
+    private final boolean                 enabled;
 
     public TrendFetchSchedulerService(
             TrendFetchJobRepository jobRepo,
-            @Qualifier("fastapiTransformerClient") WebClient transformerClient) {
+            @Qualifier("fastapiTransformerClient") WebClient transformerClient,
+            @Value("${ceview.trend-fetch.enabled:false}") boolean enabled) {
         this.jobRepo           = jobRepo;
         this.transformerClient = transformerClient;
+        this.enabled           = enabled;
     }
 
     // ─── Weekly cron trigger ──────────────────────────────────────────────────
@@ -100,6 +115,12 @@ public class TrendFetchSchedulerService {
      */
     @Scheduled(cron = "0 0 0 * * SUN", zone = "UTC")
     public void runWeeklyTrendFetch() {
+        if (!enabled) {
+            log.debug("TrendFetchScheduler disabled (ceview.trend-fetch.enabled=false) — skipping. "
+                      + "Per-profile ingestion is the signal-record source; enable only as an opt-in warm cache.");
+            return;
+        }
+
         String weekOf = computeWeekOf();
         MDC.put("weekOf", weekOf);
         log.info("TrendFetchScheduler started — weekOf={}", weekOf);

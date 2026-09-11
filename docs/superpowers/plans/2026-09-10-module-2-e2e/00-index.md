@@ -71,7 +71,7 @@ Spring tests run on H2 with `ddl-auto=create-drop` and **Flyway disabled** (`src
 | 4 | `05-phase-4-alert-rules.md` | contract §6; C-10, C-11, C-13; `journey.spec.ts` title strings | to be written |
 | 5 | `06-phase-5-surge-vocabulary.md` | contract §7; C-12 | to be written |
 | 6 | [`07-phase-6-truthful-presentation.md`](07-phase-6-truthful-presentation.md) | P-4, P-5; C-15, C-16 | Step 15 done (P-5/C-16/H-14/H-16/H-19/H-21/T-06); C-15/P-4 narrative still open |
-| 7 | `08-phase-7-auto-forecast-and-keyword-alerts.md` | P-1, P-2, P-3; C-07, C-08, C-09, C-17, C-18 | to be written |
+| 7 | [`08-phase-7-auto-forecast-and-keyword-alerts.md`](08-phase-7-auto-forecast-and-keyword-alerts.md) | P-1, P-2, P-3; C-07, C-08, C-09, C-17, C-18 | Step 16 done (P-1/P-2; C-07/C-08/C-09). P-3/C-17/C-18 done earlier (`6b16d062`) |
 | 8 | `09-phase-8-frontend-robustness.md` | C-19 … C-23, T-01 … T-08 | to be written |
 | 9 | `10-phase-9-seed-and-docs.md` | C-25, C-27, C-28 | to be written |
 | 10 | `11-phase-10-e2e-tests.md` | C-26 | to be written |
