@@ -16,7 +16,7 @@ import type {
 } from '../../types';
 
 export const MOCK_AD_ACCOUNTS: AdAccountOption[] = [
-  { id: 'act_111111111', name: 'Cebu Dive Co. Ads', currency: 'PHP' },
+  { id: 'act_111111111', name: 'Sunset Cove Beach Resort Ads', currency: 'PHP' },
   { id: 'act_222222222', name: 'Personal Test Account', currency: 'PHP' },
 ];
 
@@ -51,7 +51,7 @@ type ProviderBase = {
 
 const BASE: Record<AdProvider, ProviderBase> = {
   meta: {
-    accountName: 'Cebu Dive Co. Ads',
+    accountName: 'Sunset Cove Beach Resort Ads',
     currency: 'PHP',
     connectedAt: '2026-08-20T02:14:00Z',
     whole: { impressions: 48210, clicks: 1327, spend: 4820.55, conversions: 45, currency: 'PHP' },
@@ -61,7 +61,7 @@ const BASE: Record<AdProvider, ProviderBase> = {
     },
   },
   tiktok: {
-    accountName: 'Cebu Dive Co. (TikTok)',
+    accountName: 'Sunset Cove Beach Resort (TikTok)',
     currency: 'PHP',
     connectedAt: '2026-08-24T05:30:00Z',
     whole: { impressions: 13680, clicks: 385, spend: 1570.0, conversions: 13, currency: 'PHP' },

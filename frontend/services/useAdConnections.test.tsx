@@ -23,7 +23,7 @@ const META_ACTIVE: AdConnection = {
   provider: 'meta',
   configured: true,
   status: 'ACTIVE',
-  accountName: 'Cebu Dive Co. Ads',
+  accountName: 'Sunset Cove Beach Resort Ads',
   currency: 'PHP',
   campaignId: null,
   campaignName: null,
@@ -72,7 +72,7 @@ describe('useAdConnections', () => {
   it('finds one provider by key', async () => {
     const { result } = renderHook(() => useAdConnections());
     await waitFor(() => expect(result.current.connections).toHaveLength(2));
-    expect(result.current.forProvider('meta')?.accountName).toBe('Cebu Dive Co. Ads');
+    expect(result.current.forProvider('meta')?.accountName).toBe('Sunset Cove Beach Resort Ads');
   });
 
   it('disconnecting refetches the list', async () => {

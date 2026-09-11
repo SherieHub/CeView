@@ -35,7 +35,9 @@ export const MOCK_OMCS: OmcsAuditResult = {
   pubmatConsistencyScore: 81.0,
   consistencyExplanation:
     "The caption promises stillness and unstructured rest; the image delivers warm golden-hour light and an uncluttered frame, which supports that promise. The sardine run — the caption's strongest concrete claim — is not visible in the asset, which is the main source of drift.",
-  omcsScore: 83.8,
+  // 0.35×85.5 (CAS) + 0.45×83.4 (VAS) + 0.20×81.0 (HCS) = 83.655 → 83.7,
+  // per the weighted formula in docs/module-3/3.3-compliance/README.md.
+  omcsScore: 83.7,
   status: 'Pass',
   feedback:
     "Passes comfortably. To push above 90, swap in an underwater frame that shows the sardine shoal so the image evidences the caption's central claim rather than only its mood.",

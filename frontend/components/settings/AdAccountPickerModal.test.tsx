@@ -31,7 +31,7 @@ beforeEach(() => {
   selectAccountMock.mockReset();
   selectAccountMock.mockResolvedValue({});
   accountsMock.mockResolvedValue([
-    { id: 'act_1', name: 'Cebu Dive Co. Ads', currency: 'PHP' },
+    { id: 'act_1', name: 'Sunset Cove Beach Resort Ads', currency: 'PHP' },
     { id: 'act_2', name: 'Personal Test', currency: 'USD' },
   ]);
 });
@@ -39,14 +39,14 @@ beforeEach(() => {
 describe('AdAccountPickerModal', () => {
   it('lists the accounts the grant can see, with currency', async () => {
     renderPicker();
-    expect(await screen.findByText('Cebu Dive Co. Ads')).toBeInTheDocument();
+    expect(await screen.findByText('Sunset Cove Beach Resort Ads')).toBeInTheDocument();
     expect(screen.getByText(/USD/)).toBeInTheDocument();
   });
 
   it('submits the chosen account', async () => {
     const onSelected = vi.fn();
     renderPicker(onSelected);
-    fireEvent.click(await screen.findByText('Cebu Dive Co. Ads'));
+    fireEvent.click(await screen.findByText('Sunset Cove Beach Resort Ads'));
     fireEvent.click(screen.getByRole('button', { name: /use this account/i }));
 
     await waitFor(() => expect(selectAccountMock).toHaveBeenCalledWith('meta', 'act_1'));
@@ -55,7 +55,7 @@ describe('AdAccountPickerModal', () => {
 
   it('keeps the confirm button disabled until something is picked', async () => {
     renderPicker();
-    await screen.findByText('Cebu Dive Co. Ads');
+    await screen.findByText('Sunset Cove Beach Resort Ads');
     expect(screen.getByRole('button', { name: /use this account/i })).toBeDisabled();
   });
 

@@ -220,7 +220,7 @@ describe('useDashboardState — category scoping', () => {
 
     expect(result.current.myAlerts).toHaveLength(5);
     expect(result.current.unreadCount).toBe(3);
-    expect(result.current.surgeCount).toBe(2);
+    expect(result.current.surgeCount).toBe(3);
   });
 });
 
@@ -307,7 +307,7 @@ describe('useDashboardState — feed filter', () => {
     expect(result.current.visibleAlerts.map((a) => a.id)).toEqual(['n1', 'n2', 'n8']);
 
     act(() => result.current.setFeedFilter('surge'));
-    expect(result.current.visibleAlerts.map((a) => a.id)).toEqual(['n1', 'n8']);
+    expect(result.current.visibleAlerts.map((a) => a.id)).toEqual(['n1', 'n3', 'n8']);
 
     act(() => result.current.setFeedFilter('all'));
     expect(result.current.visibleAlerts).toHaveLength(5);
@@ -317,8 +317,8 @@ describe('useDashboardState — feed filter', () => {
 describe('useDashboardState — summary derivations', () => {
   it('names the surge markets once each', async () => {
     const { result } = await renderReady(DEMO_CATEGORIES);
-    // n1 and n8 are both South Korea.
-    expect(result.current.surgeMarkets).toEqual(['South Korea']);
+    // n1 and n8 are both South Korea; n3 is United States.
+    expect(result.current.surgeMarkets).toEqual(['South Korea', 'United States']);
   });
 
   it('picks the best-scoring market across every category the operator covers', async () => {

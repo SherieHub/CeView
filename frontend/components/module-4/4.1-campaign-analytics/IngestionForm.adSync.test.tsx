@@ -41,7 +41,7 @@ const ACTIVE_META: AdConnection = {
   provider: 'meta',
   configured: true,
   status: 'ACTIVE',
-  accountName: 'Cebu Dive Co. Ads',
+  accountName: 'Sunset Cove Beach Resort Ads',
   currency: 'PHP',
   campaignId: null,
   campaignName: null,
@@ -53,7 +53,7 @@ const ACTIVE_TIKTOK: AdConnection = {
   provider: 'tiktok',
   configured: true,
   status: 'ACTIVE',
-  accountName: 'Cebu Dive Co. (TikTok)',
+  accountName: 'Sunset Cove Beach Resort (TikTok)',
   currency: 'PHP',
   campaignId: null,
   campaignName: null,
@@ -72,7 +72,7 @@ const SUMMARY: AdInsightSummary = {
   sources: [
     {
       provider: 'meta',
-      accountName: 'Cebu Dive Co. Ads',
+      accountName: 'Sunset Cove Beach Resort Ads',
       impressions: 48210,
       clicks: 1327,
       spend: 4820.55,

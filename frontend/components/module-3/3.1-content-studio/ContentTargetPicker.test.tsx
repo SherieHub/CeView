@@ -57,7 +57,7 @@ describe('ContentTargetPicker', () => {
 
     expect(await screen.findByRole('heading', { name: COASTAL_ALERT.title })).toBeInTheDocument();
     // n3's category ('Adventure & Nature') is not one of PROFILE.categories.
-    expect(screen.queryByText('Summer Planning Window — United States')).not.toBeInTheDocument();
+    expect(screen.queryByText('Demand Window Opening — United States')).not.toBeInTheDocument();
   });
 
   it('shows the "no surge alerts" empty state, naming the profile\'s categories, when none match', async () => {

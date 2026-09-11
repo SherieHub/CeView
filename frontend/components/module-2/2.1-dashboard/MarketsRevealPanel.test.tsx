@@ -50,15 +50,20 @@ describe('MarketsRevealPanel — category-scoped ranking', () => {
     expect(container.querySelectorAll('.bar--lead')).toHaveLength(1);
   });
 
-  // korea's fixture chart has a spike; the others do not.
+  // korea's and usa's fixture charts have a spike; japan's does not. The flag
+  // lives on the Market object itself (not scoped per category), so both
+  // appear here even though this is the Accommodation & Staycation ranking.
   it('flags a live surge only on markets whose chart is spiking', () => {
     const { container } = renderPanel(accommodationAlert);
 
     const surges = [...container.querySelectorAll('.rank-card')].filter((card) =>
       card.textContent?.includes('Surge active'),
     );
-    expect(surges).toHaveLength(1);
-    expect(surges[0]).toHaveTextContent('South Korea');
+    expect(surges).toHaveLength(2);
+    expect(surges.map((s) => s.textContent)).toEqual([
+      expect.stringContaining('South Korea'),
+      expect.stringContaining('United States'),
+    ]);
   });
 
   it('opens the radar for the clicked market', async () => {

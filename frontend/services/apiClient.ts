@@ -132,22 +132,25 @@ export const apiClient = {
       categories: string[];
     }) =>
       USE_FIXTURES
-        ? // Dev-only USE_FIXTURES branch. Deliberately NOT a plausible score:
-          // an obviously-empty cohort cannot be mistaken for a real reading if
-          // this ever renders outside dev. Real scores come from the seeded
-          // reference corpus (V26 + db/dump/uniqueness-corpus.sql).
+        ? // Dev-only USE_FIXTURES branch. A plausible sparse-cohort result —
+          // matches DEMO_PROFILE.uniquenessScore (0.82 → 82 here; overallScore
+          // is always equal to semanticPercentile per UniquenessResult's own
+          // doc comment) so the onboarding demo and the post-onboarding
+          // dashboard/settings screens show the same number for Sunset Cove.
           delay({
-            overallScore: 0,
-            semanticsScore: 0,
-            categoryScore: 0,
-            semanticPercentile: 0,
-            cohortSize: 0,
-            cohortMedianScore: 0,
-            cohortCategories: [],
-            categoryDensity: '',
-            sufficientCohort: false,
-            descriptionFeedback: '',
-            categoryFeedback: '',
+            overallScore: 82,
+            semanticsScore: 71,
+            categoryScore: 100,
+            semanticPercentile: 82,
+            cohortSize: 6,
+            cohortMedianScore: 58,
+            cohortCategories: input.categories,
+            categoryDensity: 'sparse',
+            sufficientCohort: true,
+            descriptionFeedback:
+              'Your description leans on specific operational detail — the sardine run, the guide roster, the sourcing radius — which reads as more concrete than most listings in this category.',
+            categoryFeedback:
+              'High confidence — your description and services align closely with this category.',
           } as UniquenessResult)
         : request<UniquenessResult>('/api/classification/uniqueness', {
             method: 'POST',

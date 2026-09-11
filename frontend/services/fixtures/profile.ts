@@ -12,10 +12,12 @@
  * Sunset Cove looks like after finishing the wizard.
  *
  * The four categories are chosen against MOCK_NOTIFICATIONS to produce a feed
- * worth looking at — 5 matching alerts, 3 unread, 2 of them confirmed surges —
- * and against CATEGORY_MARKET_SCORES so that re-ranking is visibly different
- * per alert (Accommodation leads with korea 87, Adventure & Nature with
- * usa 90). A profile matching only one category would hide both behaviours.
+ * worth looking at — 5 matching alerts, 3 unread, 3 of them confirmed surges
+ * (korea x2, usa x1) — and against CATEGORY_MARKET_SCORES so that re-ranking
+ * is visibly different per alert (Accommodation leads with korea 87,
+ * Adventure & Nature with usa 90 — usa's Adventure & Nature alert is also the
+ * top-scoring market overall, and is a confirmed surge). A profile matching
+ * only one category would hide both behaviours.
  */
 import type { BusinessProfile } from '../../types';
 import { DEMO_BUSINESS } from './demoBusiness';

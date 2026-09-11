@@ -65,20 +65,20 @@ const STATUS_META: Record<PostStatus, { label: string; bg: string; text: string;
 
 const MOCK_POSTS: Post[] = [
   // Published — today (Aug 25 2026)
-  { id: 'p1', title: 'Aerial Overwater Villas', date: '2026-08-25', status: 'published', platform: 'Instagram', reach: 31000, likes: 2800, engagementRate: 12.4 },
-  { id: 'p2', title: 'POV Resort Walkthrough', date: '2026-08-25', status: 'published', platform: 'Facebook', reach: 22000, likes: 1500, engagementRate: 10.1 },
-  { id: 'p3', title: 'Infinity Pool Reflection', date: '2026-08-25', status: 'published', platform: 'Instagram', reach: 14500, likes: 1100, engagementRate: 8.8 },
+  { id: 'p1', title: 'Sardine Run at Sunrise', date: '2026-08-25', status: 'published', platform: 'Instagram', reach: 31000, likes: 2800, engagementRate: 12.4 },
+  { id: 'p2', title: 'Beachfront Villa Walkthrough', date: '2026-08-25', status: 'published', platform: 'Facebook', reach: 22000, likes: 1500, engagementRate: 10.1 },
+  { id: 'p3', title: 'Golden Hour Over the Reef', date: '2026-08-25', status: 'published', platform: 'Instagram', reach: 14500, likes: 1100, engagementRate: 8.8 },
   { id: 'p4', title: 'Golden Hour Beachfront', date: '2026-08-25', status: 'scheduled', platform: 'TikTok' },
   // Rest of the month
-  { id: 'p5', title: 'Sinulog Heritage Trail', date: '2026-08-18', status: 'published', platform: 'Instagram', reach: 18200, likes: 1540, engagementRate: 11.7 },
-  { id: 'p6', title: 'Eco-Villa Plastic-Free', date: '2026-08-18', status: 'published', platform: 'Facebook', reach: 12500, likes: 890, engagementRate: 10.1 },
-  { id: 'p7', title: 'Whale Shark Season Draft', date: '2026-08-20', status: 'draft', platform: 'Instagram' },
+  { id: 'p5', title: 'Local Catch, Resort Table', date: '2026-08-18', status: 'published', platform: 'Instagram', reach: 18200, likes: 1540, engagementRate: 11.7 },
+  { id: 'p6', title: 'Eco-Villa, Plastic-Free Kitchen', date: '2026-08-18', status: 'published', platform: 'Facebook', reach: 12500, likes: 890, engagementRate: 10.1 },
+  { id: 'p7', title: 'House Reef Turtle Encounter Draft', date: '2026-08-20', status: 'draft', platform: 'Instagram' },
   { id: 'p8', title: 'Korean Summer Segment', date: '2026-08-12', status: 'published', platform: 'Facebook', reach: 9800, likes: 620, engagementRate: 9.2 },
   { id: 'p9', title: 'Golden Week Prep (JP)', date: '2026-08-28', status: 'scheduled', platform: 'Instagram', market: 'Japan' },
-  { id: 'p10', title: 'Luxury Dive Resort Post', date: '2026-08-28', status: 'draft' },
-  { id: 'p11', title: 'Oslob Peak Season Alert', date: '2026-08-05', status: 'peak', market: 'GLOBAL' },
+  { id: 'p10', title: 'Guided Dive Briefing Draft', date: '2026-08-28', status: 'draft' },
+  { id: 'p11', title: 'Moalboal Peak Season Alert', date: '2026-08-05', status: 'peak', market: 'GLOBAL' },
   { id: 'p12', title: 'Coral Garden Micro-Season', date: '2026-08-14', status: 'micro-season', market: 'Korea' },
-  { id: 'p13', title: 'Highland Trek Opportunity', date: '2026-08-30', status: 'opportunity', market: 'USA' },
+  { id: 'p13', title: 'Freediving Clinic Opportunity', date: '2026-08-30', status: 'opportunity', market: 'USA' },
   { id: 'p14', title: 'US Summer Campaign', date: '2026-08-30', status: 'scheduled', platform: 'Facebook' },
 ];
 

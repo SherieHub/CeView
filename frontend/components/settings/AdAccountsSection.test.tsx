@@ -83,10 +83,10 @@ describe('AdAccountsSection', () => {
 
   it('shows the account name and currency when active', async () => {
     listMock.mockResolvedValue([
-      connection({ status: 'ACTIVE', accountName: 'Cebu Dive Co. Ads', currency: 'PHP' }),
+      connection({ status: 'ACTIVE', accountName: 'Sunset Cove Beach Resort Ads', currency: 'PHP' }),
     ]);
     renderSection();
-    expect(await screen.findByText(/Cebu Dive Co. Ads/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sunset Cove Beach Resort Ads/)).toBeInTheDocument();
     expect(screen.getByText(/PHP/)).toBeInTheDocument();
   });
 
@@ -157,7 +157,7 @@ describe('AdAccountsSection', () => {
 
   it('does not show a campaign / reporting-scope control (that lives on Performance now)', async () => {
     listMock.mockResolvedValue([
-      connection({ status: 'ACTIVE', accountName: 'Cebu Dive Co. Ads', currency: 'PHP',
+      connection({ status: 'ACTIVE', accountName: 'Sunset Cove Beach Resort Ads', currency: 'PHP',
                    campaignId: 'cmp_1', campaignName: 'Dry-Season Promo' }),
     ]);
     renderSection();

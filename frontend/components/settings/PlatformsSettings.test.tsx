@@ -13,7 +13,7 @@ import { ToastProvider } from '../shared/Toast';
 import type { PlatformConnection } from '../../types';
 
 const CONNECTIONS: PlatformConnection[] = [
-  { platform: 'instagram', connected: true, handle: '@cebu.dive', connectedAt: '2026-05-01T00:00:00Z' },
+  { platform: 'instagram', connected: true, handle: '@sunsetcove.ph', connectedAt: '2026-05-01T00:00:00Z' },
   { platform: 'tiktok', connected: false, handle: null, connectedAt: null },
   { platform: 'facebook', connected: false, handle: null, connectedAt: null },
 ];
@@ -64,7 +64,7 @@ describe('PlatformsSettings', () => {
   it('shows connected platforms as Verified with their handle, and others as Connect', () => {
     renderSettings();
 
-    expect(screen.getByText('@cebu.dive')).toBeInTheDocument();
+    expect(screen.getByText('@sunsetcove.ph')).toBeInTheDocument();
     expect(screen.getAllByText('Verified')).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(2); // tiktok, facebook
   });
