@@ -43,13 +43,17 @@ describeIfBackend(up, 'module 2 endpoints', () => {
       // Every field the radar drawer reads — a regression here renders undefined/NaN.
       expect(body.markets[0]).toMatchObject({
         id: expect.any(String),
-        flag: expect.any(String),
         currency: expect.any(String),
         forexLabel: expect.any(String),
         gdpValue: expect.any(Number),
         forexValue: expect.any(Number),
         seasonalityScore: expect.any(Number),
         spikeIndicator: expect.any(Boolean),
+        accessibilityScore: expect.any(Number),
+        fareMinPhp: expect.any(Number),
+        fareMaxPhp: expect.any(Number),
+        fareSource: expect.any(String),
+        peakMonthsSource: expect.stringMatching(/^(seasonal_history|reference)$/),
       });
       expect([null, 'WARNING', 'CRITICAL']).toContain(body.markets[0].surgeLevel);
       expect(['xgboost', 'linear']).toContain(body.markets[0].scorer);

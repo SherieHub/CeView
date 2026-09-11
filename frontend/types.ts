@@ -169,8 +169,6 @@ export interface ChartDataPoint {
   history: number | null;
   forecast: number | null;
   seasonality: number;
-  forex: number;
-  gdp: number;
   spike: 0 | 1;
 }
 
@@ -178,11 +176,8 @@ export interface Airline {
   name: string;
   code: string;
   frequency: string;
+  /** Per-carrier now (H-21): a route can mix direct and via-Manila carriers. */
   direct: boolean;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  duration?: string;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  tier?: string;
 }
 
 export interface Market {
@@ -190,7 +185,6 @@ export interface Market {
   rank: number;
   name: string;
   city: string;
-  flag: string;
   matchScore: number;
   directive: string;
   directFlight: boolean;
@@ -198,11 +192,20 @@ export interface Market {
   distanceKm: number;
   nearestAirport: string;
   destinationAirport: string;
+  /** 1–10 route-accessibility score, computed backend-side from the route reference (H-14). */
   accessibilityScore: number;
   flightFrequency: number;
-  avgFlightPrice: string;
+  /** Round-trip fare range in PHP, from tbl_market_route_reference (H-16). */
+  fareMinPhp: number;
+  fareMaxPhp: number;
+  /** Provenance of the fare/route figures — e.g. "static_reference_v1". */
+  fareSource: string;
+  /** ISO date the fare/route figures were last validated, or null. */
+  fareAsOf: string | null;
   airlines: Airline[];
   peakMonths: string[];
+  /** "seasonal_history" when derived from ≥52 weeks of signal, else "reference" (H-19). */
+  peakMonthsSource: 'seasonal_history' | 'reference';
   currency: string;
   forexLabel: string;
   gdpValue: number;

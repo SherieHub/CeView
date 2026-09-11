@@ -8,6 +8,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarRange, Sparkles } from 'lucide-react';
 import type { Market } from '@/types';
+import { peakMonthsSourceLabel } from './format';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -60,7 +61,8 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
       </div>
 
       <div className="card mt-4">
-        <p className="eyebrow mb-2">Peak months</p>
+        <p className="eyebrow mb-1">Peak months</p>
+        <p className="text-meta mb-2">{peakMonthsSourceLabel(market.peakMonthsSource)}</p>
         <ul className="month-grid">
           {MONTHS.map((m) => (
             <li key={m} data-peak={peaks.has(m)}>

@@ -48,7 +48,7 @@ Spring tests run on H2 with `ddl-auto=create-drop` and **Flyway disabled** (`src
 | P-2 | After the daily ingestion job ingests a profile it runs that profile's forecast; the dashboard also calls `POST /api/forecasting/ensure` in the background on mount. | C-08, C-09 |
 | P-3 | Keyword-trend alerts are persisted once per (profile, category, ISO week) with stable ids and a message. | C-17, C-18 |
 | P-4 | No new AI agent. Narrative text stays template-based but is made truthful and data-driven. | C-15 |
-| P-5 | Flight, price and peak-month data stay static reference data, centralised in one class and labelled as reference data in the UI. | C-16 |
+| P-5 | Flight, price and peak-month data are reference data, not code. Route/fare/carrier facts live in the versioned `tbl_market_route_reference` table (V31) with `source` + `valid_from` provenance surfaced in the UI; the market-id catalog is one class (`MarketCatalog`, C-16); `accessibilityScore` is computed from the route reference (H-14); peak months are derived from ≥52 weeks of seasonal history when available and fall back to the reference table's list otherwise, with `MarketDto.peakMonthsSource` telling the two apart in the UI (H-19). Superseded the original "one class of Java constants" wording in Step 15. | C-16, H-14, H-16, H-19 |
 
 ## Flyway migrations (`backend/spring-boot/src/main/resources/db/migration/`)
 
@@ -70,7 +70,7 @@ Spring tests run on H2 with `ddl-auto=create-drop` and **Flyway disabled** (`src
 | 3 | `04-phase-3-spring-forecast-consumption.md` | contract §4.3 (no defaults, `forecast_source`, `forecastSource`/`lowConfidence`, chart caveat) | to be written |
 | 4 | `05-phase-4-alert-rules.md` | contract §6; C-10, C-11, C-13; `journey.spec.ts` title strings | to be written |
 | 5 | `06-phase-5-surge-vocabulary.md` | contract §7; C-12 | to be written |
-| 6 | `07-phase-6-truthful-presentation.md` | P-4, P-5; C-15, C-16 | to be written |
+| 6 | [`07-phase-6-truthful-presentation.md`](07-phase-6-truthful-presentation.md) | P-4, P-5; C-15, C-16 | Step 15 done (P-5/C-16/H-14/H-16/H-19/H-21/T-06); C-15/P-4 narrative still open |
 | 7 | `08-phase-7-auto-forecast-and-keyword-alerts.md` | P-1, P-2, P-3; C-07, C-08, C-09, C-17, C-18 | to be written |
 | 8 | `09-phase-8-frontend-robustness.md` | C-19 … C-23, T-01 … T-08 | to be written |
 | 9 | `10-phase-9-seed-and-docs.md` | C-25, C-27, C-28 | to be written |

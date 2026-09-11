@@ -5,7 +5,6 @@ import com.ceview.ai.AiDependencyException;
 import com.ceview.module1.businessinput.BusinessProfile;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.MarketCatalog;
-import com.ceview.module2.MarketFlags;
 import com.ceview.module2.Module2ErrorCodes;
 import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
@@ -63,17 +62,13 @@ public class ForecastingService {
     private static final double MAPE_THRESHOLD = 15.0;
     private static final double DEMAND_WINDOW_MULTIPLIER = 1.2;
 
-    // Static display metadata: [name, city, nearestAirport (full), destinationAirport (full)]
-    private static final Map<String, String[]> MARKET_META = Map.of(
-            "korea", new String[]{"South Korea",   "Seoul",       "ICN — Incheon Int'l",      "CEB — Mactan-Cebu Int'l"},
-            "japan", new String[]{"Japan",          "Osaka",       "KIX — Kansai Int'l",       "CEB — Mactan-Cebu Int'l"},
-            "usa",   new String[]{"United States",  "Los Angeles", "LAX — Los Angeles Int'l",  "MNL — Ninoy Aquino Int'l"}
-    );
-    private static final Map<String, List<String>> PEAK_MONTHS = Map.of(
-            "korea", List.of("Jul", "Aug", "Dec", "Jan"),
-            "japan", List.of("Apr", "May", "Aug", "Mar"),
-            "usa",   List.of("Jun", "Jul", "Aug", "Dec")
-    );
+    private static final String[] MONTH_ABBR = {
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+    /** H-19: minimum weekly signal rows before peak months may be derived rather than read from reference. */
+    private static final int PEAK_MONTHS_MIN_WEEKS = 52;
+    /** H-19: minimum distinct calendar months that must carry data for a derivation to be trustworthy. */
+    private static final int PEAK_MONTHS_MIN_COVERAGE = 8;
 
     private final EnrichedSequenceBuilder sequenceBuilder;
     private final AIInferenceGatewayService ai;
@@ -798,8 +793,7 @@ public class ForecastingService {
         }
 
         DemandAlertDecision alertDecision = decision.get();
-        String marketName = MARKET_META.getOrDefault(market,
-                new String[]{market, market, "???", "CEB"})[0];
+        String marketName = MarketCatalog.displayName(market);
 
         DemandAlert alert = new DemandAlert();
         alert.setMarketScoreId(marketScoreId);
@@ -897,22 +891,21 @@ public class ForecastingService {
 
     private MarketDto buildMarketDto(MarketResultBundle b, int rank) {
         String market = b.market();
-        String[] meta = MARKET_META.getOrDefault(market, new String[]{market, market, "???", "CEB"});
+        String name = MarketCatalog.displayName(market);
+        String city = MarketCatalog.city(market);
         ExternalMarketDataClient.FlightReferenceDto flight = externalClient.getFlightReference(market);
 
         int matchScore = (int) Math.round(b.marketScore() * 100);
 
-        // Airline tier: Full-Service for high-score markets, Budget otherwise
-        String tier = matchScore >= 85 ? "Full-Service" : "Budget";
-
+        // Per-carrier direct flag now comes from the route reference (H-21), not
+        // a blanket route-level value; tier was a matchScore restatement never
+        // rendered by the UI and has been dropped (T-06).
         List<AirlineDto> airlines = flight.airlines().stream()
-                .map(a -> new AirlineDto(
-                        a.getOrDefault("name", ""),
-                        a.getOrDefault("code", ""),
-                        a.getOrDefault("frequency", "").replace("x/", "x / "),
-                        flight.directFlight(),
-                        flight.flightHours(),
-                        tier))
+                .map(c -> new AirlineDto(
+                        c.name(),
+                        c.code(),
+                        c.frequency().replace("x/", "x / "),
+                        c.direct()))
                 .collect(Collectors.toList());
 
         List<ChartDataPointDto> chartData = buildChartData(
@@ -920,11 +913,16 @@ public class ForecastingService {
 
         String directive = buildDirective(market, b.upliftPct(), b.windowOpenDate(), b.spike(), b.confidence());
 
-        // accessibilityScore on 1–10 scale (direct=9, connecting=6) — matches frontend mock
-        int accessibilityScore = flight.directFlight() ? 9 : 6;
+        // H-14: computed from the route reference (frequency, direct/stopover,
+        // block hours) — see MarketDto.accessibilityScore javadoc.
+        int accessibilityScore = computeAccessibility(flight);
 
-        // avgFlightPrice as a display-friendly range string — matches frontend mock format
-        String avgFlightPrice = flight.directFlight() ? "₱8,000 – ₱15,000" : "₱25,000 – ₱40,000";
+        // H-19: derive peak months from ≥52 weeks of seasonal history when it
+        // exists; otherwise fall back to the route table's reference list, and
+        // tell the UI which one it is looking at.
+        Optional<List<String>> derivedPeaks = derivePeakMonths(b.history());
+        List<String> peakMonths = derivedPeaks.orElseGet(flight::peakMonths);
+        String peakMonthsSource = derivedPeaks.isPresent() ? "seasonal_history" : "reference";
 
         // Map economic trend points to DTO records for the frontend charts
         List<GdpTrendPointDto> gdpTrendDtos = b.gdpTrend() != null
@@ -972,20 +970,23 @@ public class ForecastingService {
         String macroAsOf = macroAsOfInstant != null ? macroAsOfInstant.toString() : null;
 
         return new MarketDto(
-                market, rank, meta[0], meta[1], matchScore, directive,
+                market, rank, name, city, matchScore, directive,
                 flight.directFlight(), flight.flightHours(), flight.distanceKm(),
-                meta[2], meta[3],
+                flight.nearestAirport(), flight.destinationAirport(),
                 accessibilityScore,
                 flight.flightFrequency(),
-                avgFlightPrice,
+                flight.fareMinPhp(),
+                flight.fareMaxPhp(),
+                flight.fareSource(),
+                flight.fareValidFrom(),
                 airlines,
-                PEAK_MONTHS.getOrDefault(market, List.of()),
+                peakMonths,
+                peakMonthsSource,
                 buildEconomyInsight(b.ms(), b.forexTrend()),
                 buildSeasonalityInsight(b.ms()),
                 chartData,
                 gdpTrendDtos,
                 forexTrendDtos,
-                MarketFlags.isoFor(market),
                 currency,
                 forexLabel(currency),
                 gdpValue,
@@ -1003,6 +1004,82 @@ public class ForecastingService {
                 b.windowOpenDate() != null ? b.windowOpenDate().toString() : null,
                 ms.getScorer()
         );
+    }
+
+    /**
+     * H-14 route-accessibility score on a 1–10 scale, computed from the route
+     * reference (never a flat {@code direct ? 9 : 6}). See the
+     * {@code MarketDto.accessibilityScore} javadoc for the weighting. Today's
+     * reference data yields Korea 10, Japan 9, USA 4.
+     */
+    static int computeAccessibility(ExternalMarketDataClient.FlightReferenceDto f) {
+        double base      = f.directFlight() ? 6.0 : 3.0;
+        double freqNorm  = Math.min(1.0, Math.max(0, f.flightFrequency()) / 14.0);
+        double hoursNorm = 1.0 - Math.min(1.0, parseBlockHours(f.flightHours()) / 18.0);
+        double raw = base + 2.0 * freqNorm + 2.0 * hoursNorm;
+        return (int) Math.round(Math.max(1.0, Math.min(10.0, raw)));
+    }
+
+    /**
+     * Best-effort block-hours from a route's {@code flightHours} label.
+     * "3h 45m" → 3.75; "16h+ (via MNL)" → 16; anything unparseable → 12.
+     */
+    static double parseBlockHours(String flightHours) {
+        if (flightHours == null) return 12.0;
+        int hIdx = flightHours.indexOf('h');
+        if (hIdx <= 0) return 12.0;
+        try {
+            int start = hIdx;
+            while (start > 0 && Character.isDigit(flightHours.charAt(start - 1))) start--;
+            double hours = Double.parseDouble(flightHours.substring(start, hIdx).trim());
+            int mIdx = flightHours.indexOf('m', hIdx);
+            if (mIdx > hIdx) {
+                int mStart = mIdx;
+                while (mStart > hIdx && Character.isDigit(flightHours.charAt(mStart - 1))) mStart--;
+                String mins = flightHours.substring(mStart, mIdx).trim();
+                if (!mins.isEmpty()) hours += Double.parseDouble(mins) / 60.0;
+            }
+            return hours > 0 ? hours : 12.0;
+        } catch (RuntimeException e) {
+            return 12.0;
+        }
+    }
+
+    /**
+     * H-19: derive the four peak months for a market from its own weekly signal
+     * history — the calendar months whose mean seasonality score is highest.
+     *
+     * <p>Returns empty (caller falls back to the route table's reference list)
+     * unless there are at least {@link #PEAK_MONTHS_MIN_WEEKS} weekly rows AND
+     * data in at least {@link #PEAK_MONTHS_MIN_COVERAGE} distinct calendar
+     * months, so a short or lopsided series never produces a confident-looking
+     * derivation. Months are returned in calendar order.
+     */
+    static Optional<List<String>> derivePeakMonths(List<MarketSignalRecord> history) {
+        if (history == null || history.size() < PEAK_MONTHS_MIN_WEEKS) return Optional.empty();
+
+        double[] sum = new double[12];
+        int[] count = new int[12];
+        for (MarketSignalRecord r : history) {
+            LocalDate week = r.getWeekStartDate();
+            Double seasonality = r.getSeasonalityScore();
+            if (week == null || seasonality == null || !Double.isFinite(seasonality)) continue;
+            int m = week.getMonthValue() - 1;
+            sum[m] += seasonality;
+            count[m]++;
+        }
+
+        List<Integer> withData = new ArrayList<>();
+        for (int m = 0; m < 12; m++) if (count[m] > 0) withData.add(m);
+        if (withData.size() < PEAK_MONTHS_MIN_COVERAGE) return Optional.empty();
+
+        withData.sort((a, b) -> Double.compare(sum[b] / count[b], sum[a] / count[a]));
+        List<Integer> top = new ArrayList<>(withData.subList(0, Math.min(4, withData.size())));
+        top.sort(Integer::compareTo);
+
+        List<String> months = new ArrayList<>();
+        for (int m : top) months.add(MONTH_ABBR[m]);
+        return Optional.of(months);
     }
 
     /**
@@ -1031,13 +1108,12 @@ public class ForecastingService {
 
         double baseDemand = fr4w != null ? fr4w.getPredictedDemand() : 50.0;
 
-        // Latest signal values carried forward into future chart points
+        // Latest signal value carried forward into future chart points. Per-point
+        // forex/gdp were removed (T-06): nothing rendered them — the drawer's
+        // Purchasing Power tab reads MarketDto.gdpValue/forexValue and the
+        // gdpTrend/forexTrend series instead.
         double latestSeasonality = latestSignal != null && latestSignal.getSeasonalityScore() != null
                 ? latestSignal.getSeasonalityScore() * 100.0 : 50.0;
-        double latestForex = latestSignal != null && latestSignal.getForexRate() != null
-                ? latestSignal.getForexRate() : 1.0;
-        double latestGdp   = latestSignal != null && latestSignal.getGdpGrowth() != null
-                ? latestSignal.getGdpGrowth() : 2.0;
 
         // Normalise weekly forecasts — ensure exactly 12 values
         List<Double> wf = new ArrayList<>();
@@ -1055,7 +1131,7 @@ public class ForecastingService {
             int weekNum = 11 - j;   // Wk -11, Wk -10, … Wk -1
             double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 3.0));
             points.add(new ChartDataPointDto(
-                    "Wk -" + weekNum, syntheticDemand, null, 50.0, latestForex, latestGdp, 0.0));
+                    "Wk -" + weekNum, syntheticDemand, null, 50.0, 0.0));
         }
 
         // ── Real history points ───────────────────────────────────────────────
@@ -1067,21 +1143,19 @@ public class ForecastingService {
             String label = isCurrent ? "Current" : "Wk -" + (recent.size() - 1 - i);
             double seasonality100 = (r.getSeasonalityScore() != null)
                     ? r.getSeasonalityScore() * 100.0 : 50.0;
-            double forexVal = (r.getForexRate() != null) ? r.getForexRate() : latestForex;
-            double gdpVal   = (r.getGdpGrowth() != null) ? r.getGdpGrowth() : latestGdp;
             double spikeVal = Boolean.TRUE.equals(r.getSpikeIndicator()) ? 1.0 : 0.0;
             // "Current" shows both history observation and Wk+1 forecast as the transition
             Double forecastValue = isCurrent ? wf.get(0) : null;
 
             points.add(new ChartDataPointDto(
                     label, r.getTrendIndex(), forecastValue,
-                    seasonality100, forexVal, gdpVal, spikeVal));
+                    seasonality100, spikeVal));
         }
 
         // Synthetic "Current" anchor when no real history exists at all
         if (recent.isEmpty()) {
             points.add(new ChartDataPointDto(
-                    "Current", baseDemand, wf.get(0), 50.0, latestForex, latestGdp, 0.0));
+                    "Current", baseDemand, wf.get(0), 50.0, 0.0));
         }
 
         // ── 12 forecast points (Wk +1 … Wk +12) ─────────────────────────────
@@ -1091,8 +1165,6 @@ public class ForecastingService {
                     null,
                     wf.get(w - 1),
                     latestSeasonality,
-                    latestForex,
-                    latestGdp,
                     0.0
             ));
         }
@@ -1106,7 +1178,7 @@ public class ForecastingService {
      */
     static String buildDirective(String market, Double upliftPct, OffsetDateTime windowOpenDate,
                                  boolean spike, double confidence) {
-        String marketName = MARKET_META.getOrDefault(market, new String[]{market})[0];
+        String marketName = MarketCatalog.displayName(market);
         String confidenceText = String.format("%.0f%%", Math.max(0.0, Math.min(1.0, confidence)) * 100.0);
         if (upliftPct != null && windowOpenDate != null) {
             return String.format(

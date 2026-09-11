@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Wire shapes for Module 2 / Market Radar. Mirrors the frontend
- * `Market`, `Airline`, and `ChartDataPoint` types in ceview/types.ts so the
+ * `Market`, `Airline`, and `ChartDataPoint` types in `frontend/types.ts` so the
  * React views can render without remapping.
  */
 public class MarketDtos {
@@ -14,18 +14,19 @@ public class MarketDtos {
         Double history,
         Double forecast,
         double seasonality,
-        double forex,
-        double gdp,
         double spike
     ) {}
 
+    /**
+     * One carrier on the route. {@code direct} is now per-carrier (H-21 /
+     * M2-UI-088) — read from {@code tbl_market_route_reference.airlines_json},
+     * falling back to the route-level flag when a carrier row omits it.
+     */
     public record AirlineDto(
         String name,
         String code,
         String frequency,
-        boolean direct,
-        String duration,
-        String tier
+        boolean direct
     ) {}
 
     // ─── Economic trend-series DTOs ──────────────────────────────────────────
@@ -59,11 +60,34 @@ public class MarketDtos {
         int distanceKm,
         String nearestAirport,
         String destinationAirport,
+        /**
+         * Route-accessibility score on a 1–10 scale (H-14), computed by
+         * {@code ForecastingService.computeAccessibility} from the versioned
+         * route reference — never a flat {@code direct ? 9 : 6} literal.
+         * Weighting: base 6.0 direct / 3.0 stopover; {@code +2·min(1, weeklyFrequency/14)}
+         * (14 = the busiest tracked route); {@code +2·(1 − min(1, blockHours/18))}
+         * (18h ≈ the practical long-haul ceiling); clamped to [1, 10] and rounded.
+         */
         int accessibilityScore,
         int flightFrequency,
-        String avgFlightPrice,
+        /** Lower bound of the round-trip fare range, PHP (tbl_market_route_reference.avg_fare_min_php). */
+        int fareMinPhp,
+        /** Upper bound of the round-trip fare range, PHP (tbl_market_route_reference.avg_fare_max_php). */
+        int fareMaxPhp,
+        /** Provenance of the fare/route figures (tbl_market_route_reference.source), e.g. "static_reference_v1". */
+        String fareSource,
+        /** ISO date the fare/route figures were last validated (tbl_market_route_reference.valid_from), or null. */
+        String fareAsOf,
         List<AirlineDto> airlines,
         List<String> peakMonths,
+        /**
+         * How {@code peakMonths} was produced (H-19): {@code "seasonal_history"}
+         * when ≥52 weekly signal rows across ≥8 calendar months let
+         * {@code ForecastingService.derivePeakMonths} rank them by mean
+         * seasonality; otherwise {@code "reference"} (the route table's
+         * {@code peak_months_json}). The UI labels the two apart.
+         */
+        String peakMonthsSource,
         String economyInsight,
         String seasonalityInsight,
         List<ChartDataPointDto> chartData,
@@ -71,8 +95,6 @@ public class MarketDtos {
         List<GdpTrendPointDto> gdpTrend,
         /** Forex rate time-series (up to 12 months, chronological). Nullable — absent from stub responses. */
         List<ForexTrendPointDto> forexTrend,
-        /** ISO country code for the flag glyph, derived from the market name. */
-        String flag,
         /** ISO currency code — MarketEconomicTrend.currencyCode. */
         String currency,
         /** Human label for the forex axis, e.g. "PHP per 1 KRW". */

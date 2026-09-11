@@ -167,10 +167,12 @@ test.describe('Platforms', () => {
       route.fulfill({
         json: {
           markets: [{
-            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', flag: 'KR', matchScore: 92,
+            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', matchScore: 92,
             directive: '', directFlight: true, flightHours: '4h', distanceKm: 2600, nearestAirport: 'ICN',
-            destinationAirport: 'CEB', accessibilityScore: 90, flightFrequency: 14, avgFlightPrice: '$300',
-            airlines: [], peakMonths: [], currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
+            destinationAirport: 'CEB', accessibilityScore: 9, flightFrequency: 14,
+            fareMinPhp: 8000, fareMaxPhp: 15000, fareSource: 'static_reference_v1', fareAsOf: null,
+            airlines: [], peakMonths: [], peakMonthsSource: 'reference',
+            currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
             forexValue: 0.042, seasonalityScore: 80, yoyRatio: null, spikeIndicator: true,
             economyInsight: '', seasonalityInsight: '', gdpTrend: [], forexTrend: [], chartData: [],
             dataAsOf: null, dataStale: false,
@@ -247,10 +249,12 @@ test.describe('Platforms', () => {
       route.fulfill({
         json: {
           markets: [{
-            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', flag: 'KR', matchScore: 92,
+            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', matchScore: 92,
             directive: '', directFlight: true, flightHours: '4h', distanceKm: 2600, nearestAirport: 'ICN',
-            destinationAirport: 'CEB', accessibilityScore: 90, flightFrequency: 14, avgFlightPrice: '$300',
-            airlines: [], peakMonths: [], currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
+            destinationAirport: 'CEB', accessibilityScore: 9, flightFrequency: 14,
+            fareMinPhp: 8000, fareMaxPhp: 15000, fareSource: 'static_reference_v1', fareAsOf: null,
+            airlines: [], peakMonths: [], peakMonthsSource: 'reference',
+            currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
             forexValue: 0.042, seasonalityScore: 80, yoyRatio: null, spikeIndicator: true,
             economyInsight: '', seasonalityInsight: '', gdpTrend: [], forexTrend: [], chartData: [],
             dataAsOf: null, dataStale: false,

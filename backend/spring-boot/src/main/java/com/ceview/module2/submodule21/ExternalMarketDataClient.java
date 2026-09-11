@@ -72,20 +72,8 @@ public class ExternalMarketDataClient {
     private final WebClient forexClient;
     private final String    forexBaseUrl;   // stored so we can build absolute URIs that bypass WebClient path-normalisation
     private final MarketEconomicTrendRepository economicTrendRepo;
+    private final MarketRouteReferenceRepository routeReferenceRepo;
     private final ObjectMapper objectMapper;
-
-    // Static flight reference data for the three fixed markets
-    private static final Map<String, FlightReferenceDto> FLIGHT_REFS = Map.of(
-            "korea", new FlightReferenceDto("korea", true,  "3h 45m", 2_640, 14,
-                    List.of(Map.of("name", "Korean Air",   "code", "KE", "frequency", "7x / week"),
-                            Map.of("name", "Cebu Pacific", "code", "5J", "frequency", "5x / week"),
-                            Map.of("name", "Air Busan",    "code", "BX", "frequency", "2x / week"))),
-            "japan", new FlightReferenceDto("japan", true,  "2h 50m", 2_186, 8,
-                    List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "5x / week"),
-                            Map.of("name", "Cebu Pacific",        "code", "5J", "frequency", "3x / week"))),
-            "usa",   new FlightReferenceDto("usa",   false, "16h+ (via MNL)", 11_027, 3,
-                    List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "3x / week (via MNL)")))
-    );
 
     // Market → ISO-2 country code (World Bank). Delegates to MarketFlags — the
     // single source of truth for this lookup — rather than keeping a second copy.
@@ -98,12 +86,14 @@ public class ExternalMarketDataClient {
             @Value("${ceview.external.worldbank.base-url}") String worldBankUrl,
             @Value("${ceview.external.forex.base-url}") String forexUrl,
             MarketEconomicTrendRepository economicTrendRepo,
+            MarketRouteReferenceRepository routeReferenceRepo,
             ObjectMapper objectMapper) {
-        this.worldBankClient   = WebClient.builder().baseUrl(worldBankUrl).build();
-        this.forexClient       = WebClient.builder().baseUrl(forexUrl).build();
-        this.forexBaseUrl      = forexUrl.replaceAll("/$", ""); // strip trailing slash
-        this.economicTrendRepo = economicTrendRepo;
-        this.objectMapper      = objectMapper;
+        this.worldBankClient    = WebClient.builder().baseUrl(worldBankUrl).build();
+        this.forexClient        = WebClient.builder().baseUrl(forexUrl).build();
+        this.forexBaseUrl       = forexUrl.replaceAll("/$", ""); // strip trailing slash
+        this.economicTrendRepo  = economicTrendRepo;
+        this.routeReferenceRepo = routeReferenceRepo;
+        this.objectMapper       = objectMapper;
     }
 
     public GdpDataDto fetchGdpGrowth(String marketId) {
@@ -226,9 +216,64 @@ public class ExternalMarketDataClient {
         return 1.0 / foreignUnitsPerPhp;
     }
 
+    /**
+     * Route &amp; carrier reference for a market — the versioned row in
+     * {@code tbl_market_route_reference} (audit C-16 / H-16 / H-21), or the
+     * canonical {@link MarketRouteReferenceData} fallback when no row exists
+     * (chiefly tests, where Flyway — and therefore the V31 seed — is disabled).
+     */
     public FlightReferenceDto getFlightReference(String marketId) {
-        return FLIGHT_REFS.getOrDefault(marketId,
-                new FlightReferenceDto(marketId, false, "unknown", 0, 0, List.of()));
+        return routeReferenceRepo.findById(marketId)
+                .map(this::toFlightReference)
+                .orElseGet(() -> MarketRouteReferenceData.flightReference(marketId));
+    }
+
+    private FlightReferenceDto toFlightReference(MarketRouteReference r) {
+        return new FlightReferenceDto(
+                r.getMarket(),
+                Boolean.TRUE.equals(r.getDirectFlight()),
+                r.getFlightHours(),
+                r.getDistanceKm()      != null ? r.getDistanceKm()      : 0,
+                r.getWeeklyFrequency() != null ? r.getWeeklyFrequency() : 0,
+                r.getNearestAirport(),
+                r.getDestinationAirport(),
+                r.getAvgFareMinPhp() != null ? r.getAvgFareMinPhp() : 0,
+                r.getAvgFareMaxPhp() != null ? r.getAvgFareMaxPhp() : 0,
+                r.getSource(),
+                r.getValidFrom() != null ? r.getValidFrom().toString() : null,
+                parseStringList(r.getPeakMonthsJson()),
+                parseCarriers(r.getAirlinesJson(), Boolean.TRUE.equals(r.getDirectFlight())));
+    }
+
+    private List<CarrierDto> parseCarriers(String json, boolean routeDirect) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<Map<String, Object>> raw =
+                    objectMapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+            List<CarrierDto> carriers = new ArrayList<>();
+            for (Map<String, Object> m : raw) {
+                Object direct = m.get("direct");
+                carriers.add(new CarrierDto(
+                        String.valueOf(m.getOrDefault("name", "")),
+                        String.valueOf(m.getOrDefault("code", "")),
+                        String.valueOf(m.getOrDefault("frequency", "")),
+                        direct instanceof Boolean b ? b : routeDirect));
+            }
+            return carriers;
+        } catch (Exception e) {
+            log.warn("Unreadable airlines_json — treating route as having no listed carriers: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<String> parseStringList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("Unreadable peak_months_json — falling back to no reference peaks: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     // ─── GDP time-series (last 5 annual data points) ─────────────────────────
@@ -450,13 +495,29 @@ public class ExternalMarketDataClient {
         }
     }
 
+    /**
+     * Route &amp; carrier reference for one market, sourced from
+     * {@code tbl_market_route_reference} (or {@link MarketRouteReferenceData}).
+     *
+     * @param fareValidFrom ISO date the fare/route figures were last validated, or null.
+     */
     public record FlightReferenceDto(
             String marketId,
             boolean directFlight,
             String flightHours,
             int distanceKm,
             int flightFrequency,
-            List<Map<String, String>> airlines) {}
+            String nearestAirport,
+            String destinationAirport,
+            int fareMinPhp,
+            int fareMaxPhp,
+            String fareSource,
+            String fareValidFrom,
+            List<String> peakMonths,
+            List<CarrierDto> airlines) {}
+
+    /** One carrier on a route; {@code direct} is per-carrier (H-21 / M2-UI-088). */
+    public record CarrierDto(String name, String code, String frequency, boolean direct) {}
 
     // ─── Trend-series DTOs ────────────────────────────────────────────────────
 

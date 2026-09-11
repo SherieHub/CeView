@@ -10,6 +10,7 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Banknote, Compass, Plane, Sparkles, TrendingUp } from 'lucide-react';
 import type { Market } from '@/types';
+import { formatPhpRange } from './format';
 
 function MiniTrend({
   data,
@@ -78,7 +79,12 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
       foot: market.currency,
     },
     { icon: TrendingUp, label: 'GDP growth', value: `${market.gdpValue}%`, foot: 'Year on year' },
-    { icon: Plane, label: 'Avg flight price', value: market.avgFlightPrice, foot: 'Round trip' },
+    {
+      icon: Plane,
+      label: 'Avg flight price',
+      value: formatPhpRange(market.fareMinPhp, market.fareMaxPhp),
+      foot: market.fareAsOf ? `Round trip · ref. ${market.fareAsOf}` : 'Round trip',
+    },
     {
       icon: Compass,
       label: 'Accessibility',

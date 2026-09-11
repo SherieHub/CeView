@@ -11,6 +11,7 @@ import { render, screen } from '@testing-library/react';
 import DrawerChartPanel from './DrawerChartPanel';
 import SeasonalPatternsTab, { seasonalityBand } from './SeasonalPatternsTab';
 import PurchasingPowerTab from './PurchasingPowerTab';
+import { formatPhpRange } from './format';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import type { Market } from '@/types';
 
@@ -97,7 +98,7 @@ describe('PurchasingPowerTab', () => {
     expect(values).toEqual([
       korea.forexValue.toFixed(2),
       `${korea.gdpValue}%`,
-      korea.avgFlightPrice,
+      formatPhpRange(korea.fareMinPhp, korea.fareMaxPhp),
       `${korea.accessibilityScore}/10`,
     ]);
   });

@@ -99,7 +99,9 @@ class ForecastPipelineNoPlaceholderTest {
                         List.of(new ExternalMarketDataClient.ForexTrendPoint("2026-08", 23.5)),
                         23.5, OffsetDateTime.now()));
         when(externalClient.getFlightReference(anyString())).thenReturn(
-                new ExternalMarketDataClient.FlightReferenceDto("korea", true, "3h", 2_000, 10, List.of()));
+                new ExternalMarketDataClient.FlightReferenceDto("korea", true, "3h", 2_000, 10,
+                        "ICN", "CEB", 8_000, 15_000, "static_reference_v1", "2026-09-11",
+                        List.of("Jul", "Aug", "Dec", "Jan"), List.of()));
 
         // The exact H-29 defect: predicted_demand_4w is missing from every market's
         // batch-inference result.

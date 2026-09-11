@@ -46,6 +46,14 @@ public class MarketRouteReference {
     @Column(name = "airlines_json", nullable = false, columnDefinition = "TEXT")
     private String airlinesJson;
 
+    /**
+     * JSON array of 3-letter month abbreviations ("Jan".."Dec") — the reference
+     * fallback peak months (H-19), used when there is not yet enough weekly
+     * signal history for {@code ForecastingService.derivePeakMonths}. Added in V37.
+     */
+    @Column(name = "peak_months_json", columnDefinition = "TEXT")
+    private String peakMonthsJson;
+
     @Column(name = "source", nullable = false, length = 120)
     private String source;
 

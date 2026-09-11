@@ -115,15 +115,24 @@ class ChartDataVisualTest {
 
         when(externalClient.getFlightReference("korea")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "korea", true,  "3h 45m", 2_640, 14,
-                List.of(Map.of("name", "Korean Air",   "code", "KE", "frequency", "7x / week"),
-                        Map.of("name", "Cebu Pacific", "code", "5J", "frequency", "5x / week"))));
+                "ICN — Incheon Int'l", "CEB — Mactan-Cebu Int'l",
+                8_000, 15_000, "static_reference_v1", "2026-09-11",
+                List.of("Jul", "Aug", "Dec", "Jan"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Korean Air",   "KE", "7x / week", true),
+                        new ExternalMarketDataClient.CarrierDto("Cebu Pacific", "5J", "5x / week", true))));
         when(externalClient.getFlightReference("japan")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "japan", true,  "2h 50m", 2_186, 8,
-                List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "5x / week"),
-                        Map.of("name", "Cebu Pacific",        "code", "5J", "frequency", "3x / week"))));
+                "KIX — Kansai Int'l", "CEB — Mactan-Cebu Int'l",
+                8_000, 15_000, "static_reference_v1", "2026-09-11",
+                List.of("Apr", "May", "Aug", "Mar"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Philippine Airlines", "PR", "5x / week", true),
+                        new ExternalMarketDataClient.CarrierDto("Cebu Pacific",         "5J", "3x / week", true))));
         when(externalClient.getFlightReference("usa")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "usa",   false, "16h+ (via MNL)", 11_027, 3,
-                List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "3x / week"))));
+                "LAX — Los Angeles Int'l", "MNL — Ninoy Aquino Int'l",
+                25_000, 40_000, "static_reference_v1", "2026-09-11",
+                List.of("Jun", "Jul", "Aug", "Dec"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Philippine Airlines", "PR", "3x / week", false))));
 
         // ── Mock AIInferenceGatewayService ────────────────────────────────────
         // runPipeline() submits all markets in a single batch call and zips the

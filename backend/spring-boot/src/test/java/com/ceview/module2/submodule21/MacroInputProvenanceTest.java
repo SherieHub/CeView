@@ -81,7 +81,7 @@ class MacroInputProvenanceTest {
         String worldBankJson = "[{\"page\":1},[{\"date\":\"2024\",\"value\":2.8}]]";
         String baseUrl = startServer("/country/KR/indicator/NY.GDP.MKTP.KD.ZG", worldBankJson);
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                baseUrl, "http://localhost:1", emptyRepo(), new ObjectMapper());
+                baseUrl, "http://localhost:1", emptyRepo(), mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         ExternalMarketDataClient.GdpDataDto dto = client.fetchGdpGrowth("korea");
 
@@ -107,7 +107,7 @@ class MacroInputProvenanceTest {
 
         // Port 1 is reserved/unroutable -> the live World Bank call fails fast.
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", repo, new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", repo, mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         ExternalMarketDataClient.GdpDataDto dto = client.fetchGdpGrowth("korea");
 
@@ -129,7 +129,7 @@ class MacroInputProvenanceTest {
         when(repo.findTopByMarketOrderByFetchedAtDesc("korea")).thenReturn(Optional.of(priorRow));
 
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", repo, new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", repo, mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         ExternalMarketDataClient.ForexDataDto dto = client.fetchForexRate("korea");
 
@@ -143,7 +143,7 @@ class MacroInputProvenanceTest {
     @Test
     void gdpGrowthThrowsMacroUnavailableWhenNeitherTierExists() {
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", emptyRepo(), new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", emptyRepo(), mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         assertThatThrownBy(() -> client.fetchGdpGrowth("korea"))
                 .isInstanceOf(AiDependencyException.class)
@@ -154,7 +154,7 @@ class MacroInputProvenanceTest {
     @Test
     void forexRateThrowsMacroUnavailableWhenNeitherTierExists() {
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", emptyRepo(), new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", emptyRepo(), mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         assertThatThrownBy(() -> client.fetchForexRate("korea"))
                 .isInstanceOf(AiDependencyException.class)
@@ -165,7 +165,7 @@ class MacroInputProvenanceTest {
     @Test
     void gdpTrendThrowsMacroUnavailableWhenNeitherTierExists() {
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", emptyRepo(), new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", emptyRepo(), mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         assertThatThrownBy(() -> client.fetchGdpTrend("korea"))
                 .isInstanceOf(AiDependencyException.class)
@@ -176,7 +176,7 @@ class MacroInputProvenanceTest {
     @Test
     void forexTrendThrowsMacroUnavailableWhenNeitherTierExists() {
         ExternalMarketDataClient client = new ExternalMarketDataClient(
-                "http://localhost:1", "http://localhost:1", emptyRepo(), new ObjectMapper());
+                "http://localhost:1", "http://localhost:1", emptyRepo(), mock(MarketRouteReferenceRepository.class), new ObjectMapper());
 
         assertThatThrownBy(() -> client.fetchForexTrend("korea"))
                 .isInstanceOf(AiDependencyException.class)
