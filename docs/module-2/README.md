@@ -74,6 +74,19 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
 | **Service**       | `seasonal_shift_detector` | `app/services/seasonal_shift_detector.py`                                                                          | 4-step CeView SeasonalShift pipeline: 7d/30d rolling averages → 2σ spike test → YoY ratio (52-week lookback, ≥59 points required) → composite seasonality score [0,1]                                                                                                                                            |
 | **Service**       | `pytrends_client`         | `app/services/pytrends_client.py`                                                                                  | PyTrends wrapper; 4–12 s jitter sleep per request (sole rate-limit mitigation); native-language keyword mappings per (category, geo); curated 52-week stub series on HTTP 429                                                                                                                                    |
 | **Service**       | `forecast_validator`      | `app/services/forecast_validator.py`                                                                               | MAPE ≤ 15% quality gate (FR2.12); returns `low_confidence_disclaimer: true` when threshold exceeded; stub always produces MAPE ≤ 14.9%                                                                                                                                                                           |
+- `HomeView.tsx` is replaced by [`DashboardView`](screens/dashboard.md) — a master/detail alert
+  command center scoped to the operator's own categories, not a flat notification list.
+- `MarketRadarView.tsx` is no longer a full screen; it becomes the
+  [Market Radar drawer](screens/market-radar-drawer.md), opened from a rank card and addressed by
+  `?market=<id>`.
+- Market ranking becomes category-scoped: selecting an alert re-ranks markets for that alert's
+  specific category rather than showing one fixed global top-3. See
+  [`backend/category-scoped-ranking.md`](backend/category-scoped-ranking.md) for the backend work
+  this requires.
+
+## Transformer Demand Prediction Model
+
+The Hugging Face Space JamJamzz/ceview-demand-prediction-model forecasts 12 weeks of search demand from 52 weeks of history, market, and category inputs. See [Transformer model integration](TRANSFORMER_MODEL_INTEGRATION.md) for the model contract and integration details.
 
 ### FastAPI SBERT Microservice (`backend/fastapi-sbert/`)
 
