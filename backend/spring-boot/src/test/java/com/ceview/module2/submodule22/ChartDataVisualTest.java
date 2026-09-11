@@ -135,10 +135,17 @@ class ChartDataVisualTest {
                 List.of(new ExternalMarketDataClient.CarrierDto("Philippine Airlines", "PR", "3x / week", false))));
 
         // ── Mock AIInferenceGatewayService ────────────────────────────────────
-        // runPipeline() submits all markets in a single batch call and zips the
-        // results back by market name, so mock runForecastInferenceBatch (not the
-        // legacy per-market runForecastInference). Each market gets distinct
-        // weekly_forecasts derived from its historical slope.
+        // runPipeline() submits one sequence per (market, category) pair in a
+        // single batch call and zips the results back by "{market}::{category}"
+        // (not bare market name — a market can carry more than one category, see
+        // ForecastingService's CategorySequence.key()), so mock
+        // runForecastInferenceBatch (not the legacy per-market runForecastInference)
+        // with one entry per (market, category). The test profile has two
+        // categories ("Beach Resort", "Adventure Tour"), so 3 markets × 2
+        // categories = 6 entries. Each market gets distinct weekly_forecasts
+        // derived from its historical slope; both categories reuse the same
+        // per-market forecast numbers here purely for mock brevity — production
+        // code now computes a genuinely distinct sequence per category.
         Map<String, Object> koreaForecast = Map.of(      // upward trend continues  63 → 72.5
                 "predicted_demand_4w",  72.5,
                 "predicted_demand_12w", 70.0,
@@ -155,10 +162,13 @@ class ChartDataVisualTest {
                 "weekly_forecasts",     List.of(63.5, 62.2, 61.3, 60.5, 60.2, 60.0, 59.8, 59.6, 59.4, 59.2, 59.0, 58.8),
                 "mape", 10.1, "mae", 6.1, "rmse", 8.6, "confidence", 0.82, "source", "stub-v1");
 
-        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
-                "korea", koreaForecast,
-                "japan", japanForecast,
-                "usa",   usaForecast));
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.ofEntries(
+                Map.entry("korea::Beach Resort",   koreaForecast),
+                Map.entry("korea::Adventure Tour", koreaForecast),
+                Map.entry("japan::Beach Resort",   japanForecast),
+                Map.entry("japan::Adventure Tour", japanForecast),
+                Map.entry("usa::Beach Resort",     usaForecast),
+                Map.entry("usa::Adventure Tour",   usaForecast)));
 
         when(ai.runMarketScoring(any())).thenAnswer(inv -> {
             @SuppressWarnings("unchecked")
@@ -170,7 +180,7 @@ class ChartDataVisualTest {
                 default      -> 0.65;
             };
             return Map.of("market_score", score, "economic_viability_score", score * 0.9,
-                    "components", Map.of());
+                    "scorer", "linear", "components", Map.of());
         });
     }
 
@@ -185,7 +195,8 @@ class ChartDataVisualTest {
         @SuppressWarnings("unchecked")
         org.mockito.ArgumentCaptor<List<Map<String, Object>>> batchPayload = org.mockito.ArgumentCaptor.forClass(List.class);
         verify(ai).runForecastInferenceBatch(batchPayload.capture());
-        assertEquals(3, batchPayload.getValue().size(), "Phase B sends one sequence per market");
+        assertEquals(6, batchPayload.getValue().size(),
+                "Phase B sends one sequence per (market, category) pair — 3 markets × 2 categories");
         assertEquals(12, ((List<?>) batchPayload.getValue().get(0).get("sequence")).size(),
                 "Phase B forwards the fixed 12-week matrix to FastAPI");
 

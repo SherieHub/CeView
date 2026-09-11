@@ -58,8 +58,18 @@ def forecast(request: dict[str, Any]) -> dict[str, Any]:
 
 
 def forecast_batch(requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Run the same deterministic method independently for every market."""
-    return {str(request["market"]): forecast(request) for request in requests}
+    """Run the same deterministic method independently for every (market, category) row.
+
+    Keyed by "{market}::{category}", not bare market — a profile can send more than
+    one category per market (Module 2's per-category demand forecasting), and a
+    bare-market key would silently collide, dropping every category but the last
+    one processed for that market. Spring builds the identical key to look a result
+    back up (ForecastingService's `CategorySequence.key()`) — keep the two in sync.
+    """
+    return {
+        f"{request['market']}::{request.get('category') or ''}": forecast(request)
+        for request in requests
+    }
 
 
 def _project(history: list[float], seasonality_score: float, horizon: int) -> list[float]:

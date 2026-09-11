@@ -54,5 +54,22 @@ def test_batch_returns_each_market():
         request["market"] = market
         requests.append(request)
     results = stub_forecaster.forecast_batch(requests)
-    assert set(results) == {"korea", "japan", "usa"}
+    assert set(results) == {"korea::Food", "japan::Food", "usa::Food"}
     assert all(result["source"] == "stub-v1" for result in results.values())
+
+
+def test_batch_keys_by_market_and_category_not_market_alone():
+    """Two categories for the same market must not collide into one result."""
+    coastal = sequence_payload()
+    coastal["market"] = "korea"
+    coastal["category"] = "Coastal & Island"
+    accommodation = sequence_payload()
+    accommodation["market"] = "korea"
+    accommodation["category"] = "Accommodation & Staycation"
+    for index, row in enumerate(accommodation["sequence"]):
+        row["trendIndex"] = 10.0 + index  # deliberately different from coastal's
+
+    results = stub_forecaster.forecast_batch([coastal, accommodation])
+
+    assert set(results) == {"korea::Coastal & Island", "korea::Accommodation & Staycation"}
+    assert results["korea::Coastal & Island"] != results["korea::Accommodation & Staycation"]

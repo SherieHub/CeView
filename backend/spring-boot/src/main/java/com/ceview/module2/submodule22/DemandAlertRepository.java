@@ -40,4 +40,24 @@ public interface DemandAlertRepository extends JpaRepository<DemandAlert, UUID> 
         """)
     Optional<DemandAlert> findOwnedBy(@Param("alertId") UUID alertId,
                                        @Param("profileId") UUID profileId);
+
+    /**
+     * Every existing alert for this exact (profile, category, market) triple —
+     * used by persistDemandAlert to retire the prior alert(s) before inserting a
+     * fresh one. Without this, every "Refresh forecast" click permanently added
+     * another row for the same pair (nothing ever superseded the last one), so
+     * the feed accumulated duplicate cards for the same market/category with
+     * only their uplift % differing run to run.
+     */
+    @Query("""
+        select da from DemandAlert da
+          join MarketScore ms on ms.marketScoreId = da.marketScoreId
+          join ForecastResult fr on fr.forecastResultId = ms.forecastResultId
+         where fr.businessProfileId = :profileId
+           and da.category = :category
+           and fr.targetMarket = :market
+        """)
+    List<DemandAlert> findByProfileAndCategoryAndMarket(@Param("profileId") UUID profileId,
+                                                          @Param("category") String category,
+                                                          @Param("market") String market);
 }

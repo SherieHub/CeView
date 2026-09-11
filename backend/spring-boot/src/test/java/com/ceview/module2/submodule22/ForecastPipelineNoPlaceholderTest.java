@@ -109,7 +109,9 @@ class ForecastPipelineNoPlaceholderTest {
                 "predicted_demand_12w", 55.0,
                 "mape", 8.0, "mae", 4.0, "rmse", 6.0, "confidence", 0.8);
         when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
-                "korea", incompleteForecast, "japan", incompleteForecast, "usa", incompleteForecast));
+                "korea::Coastal & Island", incompleteForecast,
+                "japan::Coastal & Island", incompleteForecast,
+                "usa::Coastal & Island",   incompleteForecast));
     }
 
     @Test
@@ -126,5 +128,93 @@ class ForecastPipelineNoPlaceholderTest {
                 .noneMatch(fr -> profileId.equals(fr.getBusinessProfileId()));
         assertThat(scoreRepo.findAll()).isEmpty();
         assertThat(alertRepo.findAll()).isEmpty();
+    }
+
+    /**
+     * Unlike predicted_demand_4w/12w and confidence, mape/mae/rmse are declared
+     * nullable in FastAPI's own ForecastResponse contract — null there means
+     * "MAPE is undefined" (e.g. the actual value backtested against was 0), not
+     * a missing/broken field. This must NOT throw, and must persist a genuinely
+     * null mapeScore rather than crashing the whole pipeline over one category's
+     * honestly-uncomputable backtest.
+     */
+    @Test
+    void nullMapeIsPersistedAsNullRatherThanThrowing() {
+        Map<String, Object> forecastWithNullMape = Map.of(
+                "predicted_demand_4w", 60.0, "predicted_demand_12w", 58.0,
+                "weekly_forecasts", List.of(60.0, 60.0, 60.0, 60.0, 58.0, 58.0, 58.0, 58.0, 58.0, 58.0, 58.0, 58.0),
+                "mae", 0.0, "rmse", 0.0, "confidence", 0.8, "source", "stub-v1");
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
+                "korea::Coastal & Island", forecastWithNullMape,
+                "japan::Coastal & Island", forecastWithNullMape,
+                "usa::Coastal & Island",   forecastWithNullMape));
+        when(ai.runMarketScoring(any())).thenReturn(
+                Map.of("market_score", 0.5, "scorer", "linear",
+                        "economic_viability_score", 0.5, "components", Map.of()));
+
+        forecastingService.forecastForProfile(profileId, false);
+
+        List<ForecastResult> results = forecastRepo.findAll().stream()
+                .filter(fr -> profileId.equals(fr.getBusinessProfileId()))
+                .toList();
+        assertThat(results).isNotEmpty();
+        assertThat(results).allSatisfy(fr -> assertThat(fr.getMapeScore()).isNull());
+    }
+
+    /**
+     * Before this fix, persistDemandAlert always INSERTed a fresh row and never
+     * retired the previous one for the same (profile, category, market) — every
+     * "Refresh forecast" click permanently added another duplicate card to the
+     * feed for the same market/category, differing only in uplift %. Running the
+     * pipeline twice must leave exactly one alert per pair, carrying the latest
+     * run's numbers.
+     */
+    @Test
+    void refreshingTheForecastReplacesThePriorAlertInsteadOfAccumulatingIt() {
+        when(ai.runMarketScoring(any())).thenReturn(
+                Map.of("market_score", 0.8, "scorer", "linear",
+                        "economic_viability_score", 0.8, "components", Map.of()));
+
+        // rolling7dAverage seeded at 60.0 in setUp(); DEMAND_WINDOW_MULTIPLIER=1.2
+        // means anything above 72.0 crosses the demand-window threshold.
+        Map<String, Object> firstRunForecast = Map.of(
+                "predicted_demand_4w", 90.0, "predicted_demand_12w", 88.0,
+                "weekly_forecasts", List.of(90.0, 90.0, 90.0, 90.0, 88.0, 88.0, 88.0, 88.0, 88.0, 88.0, 88.0, 88.0),
+                "mape", 5.0, "mae", 2.0, "rmse", 3.0, "confidence", 0.9, "source", "stub-v1");
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
+                "korea::Coastal & Island", firstRunForecast,
+                "japan::Coastal & Island", firstRunForecast,
+                "usa::Coastal & Island",   firstRunForecast));
+
+        forecastingService.forecastForProfile(profileId, false);
+
+        List<DemandAlert> afterFirstRun = alertRepo.findAll().stream()
+                .filter(a -> profileId.equals(a.getBusinessProfileId()))
+                .toList();
+        assertThat(afterFirstRun).hasSize(3); // one per market, all "Coastal & Island"
+        double firstUplift = afterFirstRun.get(0).getUpliftPct();
+
+        // Second run: a different (still above-threshold) demand number, mirroring
+        // a real "Refresh forecast" click where live trend data shifted slightly.
+        Map<String, Object> secondRunForecast = Map.of(
+                "predicted_demand_4w", 95.0, "predicted_demand_12w", 92.0,
+                "weekly_forecasts", List.of(95.0, 95.0, 95.0, 95.0, 92.0, 92.0, 92.0, 92.0, 92.0, 92.0, 92.0, 92.0),
+                "mape", 5.0, "mae", 2.0, "rmse", 3.0, "confidence", 0.9, "source", "stub-v1");
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
+                "korea::Coastal & Island", secondRunForecast,
+                "japan::Coastal & Island", secondRunForecast,
+                "usa::Coastal & Island",   secondRunForecast));
+
+        forecastingService.forecastForProfile(profileId, false);
+
+        List<DemandAlert> afterSecondRun = alertRepo.findAll().stream()
+                .filter(a -> profileId.equals(a.getBusinessProfileId()))
+                .toList();
+        assertThat(afterSecondRun)
+                .as("still exactly one alert per market — the first run's alerts must be replaced, not accumulated")
+                .hasSize(3);
+        assertThat(afterSecondRun.get(0).getUpliftPct())
+                .as("the surviving alert must carry the second run's numbers")
+                .isNotEqualTo(firstUplift);
     }
 }

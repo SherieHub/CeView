@@ -142,7 +142,9 @@ class EnsureFreshForecastTest {
                 "weekly_forecasts", List.of(61.0, 62.0, 63.0, 64.0, 65.0, 65.0, 64.0, 64.0, 63.0, 63.0, 62.0, 62.0),
                 "mape", 8.0, "mae", 4.0, "rmse", 6.0, "confidence", 0.8, "source", "stub-v1");
         when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
-                "korea", completeForecast, "japan", completeForecast, "usa", completeForecast));
+                "korea::Coastal & Island", completeForecast,
+                "japan::Coastal & Island", completeForecast,
+                "usa::Coastal & Island",   completeForecast));
         when(ai.runMarketScoring(any())).thenReturn(
                 Map.of("market_score", 0.7, "scorer", "linear", "economic_viability_score", 0.6, "components", Map.of()));
 

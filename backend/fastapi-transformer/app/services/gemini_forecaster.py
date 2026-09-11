@@ -139,8 +139,17 @@ def forecast_request(request: dict) -> dict:
 
 
 def forecast_batch_requests(requests: list[dict]) -> dict[str, dict]:
-    """Sequence-preserving batch adapter used by the registry."""
-    return {str(request["market"]): forecast_request(request) for request in requests}
+    """Sequence-preserving batch adapter used by the registry.
+
+    Keyed by "{market}::{category}", not bare market — see stub_forecaster.forecast_batch's
+    docstring for why (a profile can send more than one category per market, and a
+    bare-market key would collide). `forecast_request` itself still receives and uses
+    the clean `request["market"]` value untouched — only the outer dict's key changes.
+    """
+    return {
+        f"{request['market']}::{request.get('category') or ''}": forecast_request(request)
+        for request in requests
+    }
 
 
 # ─── Groq inference ───────────────────────────────────────────────────────────
