@@ -145,6 +145,23 @@ class AdConnectionPersistenceTest {
     }
 
     @Test
+    void persistsAndReadsBackTheSelectedCampaign() {
+        AdPlatformConnection conn = new AdPlatformConnection();
+        conn.setBusinessProfileId(profileId);
+        conn.setProvider("meta");
+        conn.setAccessTokenEncrypted("enc");
+        conn.setStatus(AdPlatformConnection.STATUS_ACTIVE);
+        conn.setExternalAccountId("act_1");
+        conn.setExternalCampaignId("cmp_123");
+        conn.setExternalCampaignName("Dry-Season Promo");
+        connectionRepo.saveAndFlush(conn);
+
+        AdPlatformConnection reloaded = connectionRepo.findById(conn.getConnectionId()).orElseThrow();
+        assertEquals("cmp_123", reloaded.getExternalCampaignId());
+        assertEquals("Dry-Season Promo", reloaded.getExternalCampaignName());
+    }
+
+    @Test
     void rejectsADuplicateConnectionForTheSameProfileAndProvider() {
         AdPlatformConnection first = new AdPlatformConnection();
         first.setBusinessProfileId(profileId);

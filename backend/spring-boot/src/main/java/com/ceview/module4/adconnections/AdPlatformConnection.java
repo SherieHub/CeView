@@ -60,6 +60,10 @@ public class AdPlatformConnection {
     @Column(name = "external_account_name", length = 255) private String externalAccountName;
     @Column(name = "currency", length = 3)                private String currency;
 
+    /** Null = report on the whole account (default). Non-null = one campaign only. */
+    @Column(name = "external_campaign_id",   length = 128) private String externalCampaignId;
+    @Column(name = "external_campaign_name", length = 255) private String externalCampaignName;
+
     @Column(name = "scopes", columnDefinition = "TEXT")     private String scopes;
     @Column(name = "status", nullable = false, length = 30) private String status;
 

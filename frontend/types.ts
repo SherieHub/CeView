@@ -150,6 +150,10 @@ export interface AdConnection {
   status: AdConnectionStatus;
   accountName: string | null;
   currency: string | null;
+  /** The pinned campaign scope, or null for the whole account. Chosen on the
+   *  Performance screen's sync control and remembered here as the default. */
+  campaignId: string | null;
+  campaignName: string | null;
   connectedAt: string | null;
   lastSyncedAt: string | null;
 }
@@ -160,6 +164,12 @@ export interface AdAccountOption {
   currency: string | null;
 }
 
+export interface AdCampaignOption {
+  id: string;
+  name: string | null;
+  status: string | null;
+}
+
 export interface AdInsightSource {
   provider: AdProvider;
   accountName: string | null;
@@ -168,6 +178,8 @@ export interface AdInsightSource {
   spend: number;
   conversions: number;
   currency: string | null;
+  /** Set when this source is pinned to one campaign. */
+  campaignName?: string | null;
 }
 
 /**

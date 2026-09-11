@@ -25,6 +25,8 @@ const META_ACTIVE: AdConnection = {
   status: 'ACTIVE',
   accountName: 'Cebu Dive Co. Ads',
   currency: 'PHP',
+  campaignId: null,
+  campaignName: null,
   connectedAt: '2026-08-20T02:14:00Z',
   lastSyncedAt: null,
 };
@@ -35,6 +37,8 @@ const TIKTOK_OFF: AdConnection = {
   status: 'DISCONNECTED',
   accountName: null,
   currency: null,
+  campaignId: null,
+  campaignName: null,
   connectedAt: null,
   lastSyncedAt: null,
 };

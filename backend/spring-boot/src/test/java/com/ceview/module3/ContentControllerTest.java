@@ -44,6 +44,7 @@ class ContentControllerTest {
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Content generation/approval hit the AI gateway + persistence; mocked out
     // here so these tests exercise only the ownership-resolution layer.
@@ -60,6 +61,8 @@ class ContentControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         UUID operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
 
         BusinessProfile pA = new BusinessProfile();
@@ -130,6 +133,7 @@ class ContentControllerTest {
     @Test
     void generateForOperatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
 
         mvc.perform(post("/api/content/generate")
@@ -168,6 +172,7 @@ class ContentControllerTest {
     @Test
     void approveForOperatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile2@example.com");
 
         mvc.perform(post("/api/content/approve")

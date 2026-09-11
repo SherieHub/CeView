@@ -10,11 +10,17 @@ import type { AdConnection, AdInsightSummary } from '../../../types';
 
 const insightsMock = vi.fn();
 const ingestMock = vi.fn();
+const campaignsMock = vi.fn();
+const selectCampaignMock = vi.fn();
 let connections: AdConnection[] = [];
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    adConnections: { insights: (...a: unknown[]) => insightsMock(...a) },
+    adConnections: {
+      insights: (...a: unknown[]) => insightsMock(...a),
+      campaigns: (...a: unknown[]) => campaignsMock(...a),
+      selectCampaign: (...a: unknown[]) => selectCampaignMock(...a),
+    },
     campaign: { ingest: (...a: unknown[]) => ingestMock(...a) },
   },
 }));
@@ -27,6 +33,7 @@ vi.mock('../../../services/useAdConnections', () => ({
     forProvider: (p: string) => connections.find((c) => c.provider === p) ?? null,
     refresh: async () => {},
     disconnect: async () => {},
+    selectCampaign: async () => {},
   }),
 }));
 
@@ -36,7 +43,21 @@ const ACTIVE_META: AdConnection = {
   status: 'ACTIVE',
   accountName: 'Cebu Dive Co. Ads',
   currency: 'PHP',
+  campaignId: null,
+  campaignName: null,
   connectedAt: '2026-08-20T00:00:00Z',
+  lastSyncedAt: null,
+};
+
+const ACTIVE_TIKTOK: AdConnection = {
+  provider: 'tiktok',
+  configured: true,
+  status: 'ACTIVE',
+  accountName: 'Cebu Dive Co. (TikTok)',
+  currency: 'PHP',
+  campaignId: null,
+  campaignName: null,
+  connectedAt: '2026-08-24T00:00:00Z',
   lastSyncedAt: null,
 };
 
@@ -65,8 +86,15 @@ const SUMMARY: AdInsightSummary = {
 beforeEach(() => {
   insightsMock.mockReset();
   ingestMock.mockReset();
+  campaignsMock.mockReset();
+  selectCampaignMock.mockReset();
   ingestMock.mockResolvedValue({});
   insightsMock.mockResolvedValue(SUMMARY);
+  selectCampaignMock.mockResolvedValue({});
+  campaignsMock.mockResolvedValue([
+    { id: 'cmp_1', name: 'Dry-Season Promo', status: 'ACTIVE' },
+    { id: 'cmp_2', name: 'Always-On Brand', status: 'PAUSED' },
+  ]);
   connections = [];
 });
 
@@ -97,7 +125,131 @@ describe('IngestionForm ad sync', () => {
     render(<IngestionForm onSubmit={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
 
-    expect(await screen.findByText(/filled from meta\./i)).toHaveTextContent('Filled from Meta.');
+    expect(await screen.findByText(/^Filled from Meta$/)).toBeInTheDocument();
+  });
+
+  it('names the campaign in the sync note when the source is campaign-scoped', async () => {
+    connections = [ACTIVE_META];
+    insightsMock.mockResolvedValue({
+      ...SUMMARY,
+      sources: [{ ...SUMMARY.sources[0], campaignName: 'Dry-Season Promo' }],
+    });
+
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    expect(await screen.findByText('Filled from Meta (Dry-Season Promo)')).toBeInTheDocument();
+  });
+
+  it('renders a campaign selector for each active connection', async () => {
+    connections = [ACTIVE_META];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+
+    const select = await screen.findByLabelText('Meta campaign');
+    expect(select).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Dry-Season Promo' })).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('option', { name: 'Whole account' })).toBeInTheDocument();
+  });
+
+  it('pre-selects the connection’s saved campaign', async () => {
+    connections = [{ ...ACTIVE_META, campaignId: 'cmp_1', campaignName: 'Dry-Season Promo' }];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+
+    const select = (await screen.findByLabelText('Meta campaign')) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe('cmp_1'));
+  });
+
+  it('persists a changed scope before syncing, then pulls it', async () => {
+    connections = [ACTIVE_META];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+
+    const select = await screen.findByLabelText('Meta campaign');
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Dry-Season Promo' })).toBeInTheDocument(),
+    );
+    fireEvent.change(select, { target: { value: 'cmp_1' } });
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() => expect(selectCampaignMock).toHaveBeenCalledWith('meta', 'cmp_1'));
+    await waitFor(() => expect(insightsMock).toHaveBeenCalled());
+  });
+
+  it('sends null when the operator switches back to "Whole account"', async () => {
+    connections = [{ ...ACTIVE_META, campaignId: 'cmp_1', campaignName: 'Dry-Season Promo' }];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+
+    const select = (await screen.findByLabelText('Meta campaign')) as HTMLSelectElement;
+    await waitFor(() => expect(select.value).toBe('cmp_1'));
+    fireEvent.change(select, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() => expect(selectCampaignMock).toHaveBeenCalledWith('meta', null));
+  });
+
+  it('does not call selectCampaign when the scope is unchanged', async () => {
+    connections = [ACTIVE_META];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    await screen.findByLabelText('Meta campaign');
+
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() => expect(insightsMock).toHaveBeenCalled());
+    expect(selectCampaignMock).not.toHaveBeenCalled();
+  });
+
+  it('syncs from all accounts (no provider filter) when none is excluded', async () => {
+    connections = [ACTIVE_META, ACTIVE_TIKTOK];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    await screen.findByLabelText('Meta campaign');
+    await screen.findByLabelText('TikTok campaign');
+
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() =>
+      expect(insightsMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        undefined,
+      ),
+    );
+  });
+
+  it('excludes a provider set to "Don’t include" from the sync', async () => {
+    connections = [ACTIVE_META, ACTIVE_TIKTOK];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    const meta = await screen.findByLabelText('Meta campaign');
+    await screen.findByLabelText('TikTok campaign');
+
+    fireEvent.change(meta, { target: { value: '__none__' } });
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() =>
+      expect(insightsMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        ['tiktok'],
+      ),
+    );
+    expect(selectCampaignMock).not.toHaveBeenCalledWith('meta', expect.anything());
+  });
+
+  it('disables the sync button and syncs nothing when every account is excluded', async () => {
+    connections = [ACTIVE_META, ACTIVE_TIKTOK];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    const meta = await screen.findByLabelText('Meta campaign');
+    const tiktok = await screen.findByLabelText('TikTok campaign');
+
+    fireEvent.change(meta, { target: { value: '__none__' } });
+    fireEvent.change(tiktok, { target: { value: '__none__' } });
+
+    const button = screen.getByRole('button', { name: /sync from ad accounts/i });
+    await waitFor(() => expect(button).toBeDisabled());
+
+    fireEvent.click(button);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(insightsMock).not.toHaveBeenCalled();
   });
 
   it('shows the sync button when a connection is active', () => {

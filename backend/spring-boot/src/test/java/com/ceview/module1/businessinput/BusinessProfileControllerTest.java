@@ -38,6 +38,7 @@ class BusinessProfileControllerTest {
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Stub out the AI gateway so save() doesn't attempt a real HTTP call to FastAPI.
     @MockBean private AIInferenceGatewayService ai;
@@ -52,6 +53,8 @@ class BusinessProfileControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
     }

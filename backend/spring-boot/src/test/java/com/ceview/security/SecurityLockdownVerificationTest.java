@@ -24,6 +24,9 @@ class SecurityLockdownVerificationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private com.ceview.testsupport.TestOperators testOperators;
+
     @Test
     void actuatorHealthIsPublic() throws Exception {
         mvc.perform(get("/actuator/health"))
@@ -53,7 +56,9 @@ class SecurityLockdownVerificationTest {
 
     @Test
     void protectedModuleEndpointWithValidTokenIsNotRejected() throws Exception {
-        String token = jwtService.issue(UUID.randomUUID(), "someone@example.com");
+        UUID operatorId = UUID.randomUUID();
+        testOperators.create(operatorId);
+        String token = jwtService.issue(operatorId, "someone@example.com");
         mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + token))
             .andExpect(status().isOk());
     }

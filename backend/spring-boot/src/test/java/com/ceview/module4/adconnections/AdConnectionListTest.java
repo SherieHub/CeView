@@ -33,6 +33,7 @@ class AdConnectionListTest {
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
     @Autowired private AdPlatformConnectionRepository connectionRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     private String token;
     private UUID profileId;
@@ -43,6 +44,7 @@ class AdConnectionListTest {
         profileRepo.deleteAll();
 
         UUID operatorId = UUID.randomUUID();
+        testOperators.create(operatorId);
         token = jwtService.issue(operatorId, "operator@example.com");
 
         BusinessProfile profile = new BusinessProfile();

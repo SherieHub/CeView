@@ -17,7 +17,13 @@ import { MOCK_POSTS } from './fixtures/posts';
 import { MOCK_MEMBERS } from './fixtures/members';
 import { MOCK_CONNECTIONS } from './fixtures/connections';
 import { MOCK_POST_METRICS } from './fixtures/postMetrics';
-import { MOCK_AD_ACCOUNTS, MOCK_AD_CONNECTIONS, MOCK_AD_INSIGHTS } from './fixtures/adConnections';
+import {
+  MOCK_AD_ACCOUNTS,
+  mockCampaignsFor,
+  mockConnections,
+  mockInsights,
+  mockSetCampaign,
+} from './fixtures/adConnections';
 import type {
   WorkspaceMemberFixture,
   PlatformConnection,
@@ -35,6 +41,7 @@ import type {
   OmcsAuditResult,
   CreativeDirection,
   AdAccountOption,
+  AdCampaignOption,
   AdConnection,
   AdInsightSummary,
   AdProvider,
@@ -339,7 +346,7 @@ export const apiClient = {
   adConnections: {
     list: () =>
       USE_FIXTURES
-        ? delay<AdConnection[]>(MOCK_AD_CONNECTIONS)
+        ? delay<AdConnection[]>(mockConnections())
         : request<AdConnection[]>('/api/ad-connections'),
 
     /** Returns the consent-screen URL the browser should navigate to. */
@@ -357,10 +364,25 @@ export const apiClient = {
 
     selectAccount: (provider: AdProvider, externalAccountId: string) =>
       USE_FIXTURES
-        ? delay<AdConnection>(MOCK_AD_CONNECTIONS[0])
+        ? delay<AdConnection>(
+            mockConnections().find((c) => c.provider === provider) ?? mockConnections()[0],
+          )
         : request<AdConnection>(`/api/ad-connections/${provider}/account`, {
             method: 'POST',
             body: JSON.stringify({ externalAccountId }),
+          }),
+
+    campaigns: (provider: AdProvider) =>
+      USE_FIXTURES
+        ? delay<AdCampaignOption[]>(mockCampaignsFor(provider))
+        : request<AdCampaignOption[]>(`/api/ad-connections/${provider}/campaigns`),
+
+    selectCampaign: (provider: AdProvider, externalCampaignId: string | null) =>
+      USE_FIXTURES
+        ? delay<AdConnection>(mockSetCampaign(provider, externalCampaignId))
+        : request<AdConnection>(`/api/ad-connections/${provider}/campaign`, {
+            method: 'POST',
+            body: JSON.stringify({ externalCampaignId }),
           }),
 
     disconnect: (provider: AdProvider) =>
@@ -372,12 +394,19 @@ export const apiClient = {
      * Pulls the period's metrics from every connected ad account. Synchronous
      * on the backend — this call can take several seconds.
      */
-    insights: (periodStart: string, periodEnd: string) =>
-      USE_FIXTURES
-        ? delay<AdInsightSummary>(MOCK_AD_INSIGHTS)
-        : request<AdInsightSummary>(
-            `/api/ad-connections/insights?periodStart=${periodStart}&periodEnd=${periodEnd}`,
-          ),
+    /**
+     * @param providers when given, only these ad accounts are synced (the
+     *   operator excluded the others for this analysis). Omit to sync all.
+     */
+    insights: (periodStart: string, periodEnd: string, providers?: AdProvider[]) => {
+      if (USE_FIXTURES) {
+        return delay<AdInsightSummary>(mockInsights(providers));
+      }
+      const qs =
+        `periodStart=${periodStart}&periodEnd=${periodEnd}` +
+        (providers && providers.length > 0 ? `&providers=${providers.join(',')}` : '');
+      return request<AdInsightSummary>(`/api/ad-connections/insights?${qs}`);
+    },
   },
   workspace: {
     // Returns WorkspaceMemberFixture (fixtures/members.ts), not types.ts's WorkspaceMember —

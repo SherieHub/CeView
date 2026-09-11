@@ -37,6 +37,7 @@ class CreativeDirectionControllerTest {
     @Autowired private org.springframework.test.web.servlet.MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Direction generation/approval hit the AI gateway + persistence; mocked out
     // here so these tests exercise only the ownership-resolution layer.
@@ -52,6 +53,8 @@ class CreativeDirectionControllerTest {
         profileRepo.deleteAll();
         UUID operatorA = UUID.randomUUID();
         UUID operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
 
         BusinessProfile pA = new BusinessProfile();
@@ -92,6 +95,7 @@ class CreativeDirectionControllerTest {
     @Test
     void generateForOperatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
 
         // profileId in the path must be a real UUID; since the caller has no
@@ -127,6 +131,7 @@ class CreativeDirectionControllerTest {
     @Test
     void approveForOperatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile2@example.com");
 
         mvc.perform(post("/api/creative-direction/approve/" + UUID.randomUUID())

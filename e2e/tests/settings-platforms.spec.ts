@@ -323,6 +323,8 @@ test.describe('Platforms — ad accounts', () => {
     status: 'DISCONNECTED' | 'PENDING_ACCOUNT_SELECTION' | 'ACTIVE' | 'REVOKED';
     accountName: string | null;
     currency: string | null;
+    campaignId: string | null;
+    campaignName: string | null;
     connectedAt: string | null;
     lastSyncedAt: string | null;
   };
@@ -334,6 +336,8 @@ test.describe('Platforms — ad accounts', () => {
       status: 'DISCONNECTED',
       accountName: null,
       currency: null,
+      campaignId: null,
+      campaignName: null,
       connectedAt: null,
       lastSyncedAt: null,
       ...over,

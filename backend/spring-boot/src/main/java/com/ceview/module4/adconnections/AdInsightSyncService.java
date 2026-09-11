@@ -61,8 +61,24 @@ public class AdInsightSyncService {
 
     @Transactional
     public InsightsResponse sync(UUID businessProfileId, LocalDate periodStart, LocalDate periodEnd) {
+        return sync(businessProfileId, periodStart, periodEnd, null);
+    }
+
+    /**
+     * @param onlyProviders when non-null, only these providers are synced (the
+     *        operator excluded the others for this analysis). Null = every ACTIVE
+     *        connection, the default.
+     */
+    @Transactional
+    public InsightsResponse sync(UUID businessProfileId, LocalDate periodStart, LocalDate periodEnd,
+                                 java.util.Set<AdProvider> onlyProviders) {
         List<AdPlatformConnection> active = connectionRepo.findByBusinessProfileIdAndStatus(
                 businessProfileId, AdPlatformConnection.STATUS_ACTIVE);
+        if (onlyProviders != null) {
+            active = active.stream()
+                    .filter(c -> onlyProviders.contains(AdProvider.fromKey(c.getProvider())))
+                    .toList();
+        }
 
         List<InsightSource> sources = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
@@ -88,7 +104,9 @@ public class AdInsightSyncService {
             try {
                 AdInsightData data = client.fetchInsights(
                         connectionService.accessTokenOf(conn),
-                        conn.getExternalAccountId(), periodStart, periodEnd);
+                        conn.getExternalAccountId(),
+                        conn.getExternalCampaignId(),
+                        periodStart, periodEnd);
 
                 upsertInsight(businessProfileId, conn, data, periodStart, periodEnd);
 
@@ -97,7 +115,7 @@ public class AdInsightSyncService {
 
                 sources.add(new InsightSource(provider.key(), conn.getExternalAccountName(),
                         data.impressions(), data.clicks(), data.spend(), data.conversions(),
-                        conn.getCurrency()));
+                        conn.getCurrency(), conn.getExternalCampaignName()));
 
             } catch (AdPlatformException | IllegalStateException e) {
                 log.warn("[Module4] {} sync failed for profile={}: {}",
@@ -124,6 +142,7 @@ public class AdInsightSyncService {
         insight.setBusinessProfileId(businessProfileId);
         insight.setProvider(conn.getProvider());
         insight.setExternalAccountId(conn.getExternalAccountId());
+        insight.setExternalCampaignId(conn.getExternalCampaignId());
         insight.setPeriodStart(periodStart);
         insight.setPeriodEnd(periodEnd);
         insight.setImpressions(data.impressions());

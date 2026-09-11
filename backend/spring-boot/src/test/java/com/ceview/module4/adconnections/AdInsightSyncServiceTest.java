@@ -76,7 +76,7 @@ class AdInsightSyncServiceTest {
     @Test
     void sumsASingleProvidersMetricsIntoTheTotals() {
         activate(AdProvider.META, "act_1", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(48210, 1327,
                         new BigDecimal("4820.55"), 45, null, "{}"));
 
@@ -95,9 +95,9 @@ class AdInsightSyncServiceTest {
     void combinesTwoProvidersThatShareACurrency() {
         activate(AdProvider.META, "act_1", "PHP");
         activate(AdProvider.TIKTOK, "adv_2", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1000, 50, new BigDecimal("500.00"), 5, null, "{}"));
-        when(tiktokClient.fetchInsights(anyString(), any(), any(), any()))
+        when(tiktokClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(2000, 70, new BigDecimal("250.50"), 3, null, "{}"));
 
         InsightsResponse response = syncService.sync(profileId, START, END);
@@ -116,9 +116,9 @@ class AdInsightSyncServiceTest {
         // would flow straight into ROAS. Report both sources and say why.
         activate(AdProvider.META, "act_1", "USD");
         activate(AdProvider.TIKTOK, "adv_2", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1000, 50, new BigDecimal("100.00"), 5, null, "{}"));
-        when(tiktokClient.fetchInsights(anyString(), any(), any(), any()))
+        when(tiktokClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(2000, 70, new BigDecimal("5000.00"), 3, null, "{}"));
 
         InsightsResponse response = syncService.sync(profileId, START, END);
@@ -141,9 +141,9 @@ class AdInsightSyncServiceTest {
         connectionService.selectAccount(profileId, AdProvider.TIKTOK,
                 new AdConnectionDtos.AdAccountOption("adv_2", "tiktok Ads", null));
 
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1000, 50, new BigDecimal("100.00"), 5, null, "{}"));
-        when(tiktokClient.fetchInsights(anyString(), any(), any(), any()))
+        when(tiktokClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(2000, 70, new BigDecimal("5000.00"), 3, null, "{}"));
 
         InsightsResponse response = syncService.sync(profileId, START, END);
@@ -159,7 +159,7 @@ class AdInsightSyncServiceTest {
     @Test
     void persistsOneInsightRowPerProviderAndPeriod() {
         activate(AdProvider.META, "act_1", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1000, 50, new BigDecimal("500.00"), 5, null, "{\"a\":1}"));
 
         syncService.sync(profileId, START, END);
@@ -175,11 +175,11 @@ class AdInsightSyncServiceTest {
     @Test
     void resyncingThePeriodUpdatesTheRowRatherThanDuplicatingIt() {
         activate(AdProvider.META, "act_1", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1000, 50, new BigDecimal("500.00"), 5, null, "{}"));
         syncService.sync(profileId, START, END);
 
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1800, 90, new BigDecimal("900.00"), 9, null, "{}"));
         syncService.sync(profileId, START, END);
 
@@ -192,7 +192,7 @@ class AdInsightSyncServiceTest {
     @Test
     void stampsLastSyncedAtOnTheConnection() {
         activate(AdProvider.META, "act_1", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(1, 1, BigDecimal.ONE, 1, null, "{}"));
 
         syncService.sync(profileId, START, END);
@@ -206,9 +206,9 @@ class AdInsightSyncServiceTest {
     void oneProviderFailingDoesNotLoseTheOther() {
         activate(AdProvider.META, "act_1", "PHP");
         activate(AdProvider.TIKTOK, "adv_2", "PHP");
-        when(metaClient.fetchInsights(anyString(), any(), any(), any()))
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenThrow(new AdPlatformException("Session has expired"));
-        when(tiktokClient.fetchInsights(anyString(), any(), any(), any()))
+        when(tiktokClient.fetchInsights(anyString(), any(), any(), any(), any()))
                 .thenReturn(new AdInsightData(2000, 70, new BigDecimal("250.50"), 3, null, "{}"));
 
         InsightsResponse response = syncService.sync(profileId, START, END);
@@ -227,5 +227,64 @@ class AdInsightSyncServiceTest {
         InsightsResponse response = syncService.sync(profileId, START, END);
 
         assertTrue(response.sources().isEmpty());
+    }
+
+    @Test
+    void syncsAgainstTheSelectedCampaignAndRecordsItOnTheCachedRow() {
+        activate(AdProvider.META, "act_1", "PHP");
+        AdPlatformConnection conn = connectionRepo
+                .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
+        conn.setExternalCampaignId("cmp_1");
+        conn.setExternalCampaignName("Dry-Season Promo");
+        connectionRepo.save(conn);
+
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
+                .thenReturn(new AdInsightData(100, 10, new BigDecimal("50.00"), 2, null, "{}"));
+
+        InsightsResponse response = syncService.sync(profileId, START, END);
+
+        org.mockito.ArgumentCaptor<String> campaignArg = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(metaClient).fetchInsights(anyString(), any(),
+                campaignArg.capture(), any(), any());
+        assertEquals("cmp_1", campaignArg.getValue());
+
+        assertEquals("Dry-Season Promo", response.sources().get(0).campaignName());
+
+        AdInsight cached = insightRepo
+                .findByBusinessProfileIdAndProviderAndPeriodStartAndPeriodEnd(profileId, "meta", START, END)
+                .orElseThrow();
+        assertEquals("cmp_1", cached.getExternalCampaignId());
+    }
+
+    @Test
+    void onlySyncsTheRequestedProviders() {
+        activate(AdProvider.META, "act_1", "PHP");
+        activate(AdProvider.TIKTOK, "adv_2", "PHP");
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
+                .thenReturn(new AdInsightData(1000, 50, new BigDecimal("500.00"), 5, null, "{}"));
+        when(tiktokClient.fetchInsights(anyString(), any(), any(), any(), any()))
+                .thenReturn(new AdInsightData(2000, 70, new BigDecimal("250.00"), 3, null, "{}"));
+
+        InsightsResponse response =
+                syncService.sync(profileId, START, END, java.util.Set.of(AdProvider.TIKTOK));
+
+        assertEquals(1, response.sources().size());
+        assertEquals("tiktok", response.sources().get(0).provider());
+        org.mockito.Mockito.verify(metaClient, org.mockito.Mockito.never())
+                .fetchInsights(anyString(), any(), any(), any(), any());
+    }
+
+    @Test
+    void aWholeAccountSyncLeavesTheCampaignScopeNull() {
+        activate(AdProvider.META, "act_1", "PHP");
+        when(metaClient.fetchInsights(anyString(), any(), any(), any(), any()))
+                .thenReturn(new AdInsightData(100, 10, new BigDecimal("50.00"), 2, null, "{}"));
+
+        syncService.sync(profileId, START, END);
+
+        AdInsight cached = insightRepo
+                .findByBusinessProfileIdAndProviderAndPeriodStartAndPeriodEnd(profileId, "meta", START, END)
+                .orElseThrow();
+        assertNull(cached.getExternalCampaignId());
     }
 }
