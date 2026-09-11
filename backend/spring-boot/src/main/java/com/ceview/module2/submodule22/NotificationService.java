@@ -1,13 +1,12 @@
 package com.ceview.module2.submodule22;
 
-import com.ceview.module1.businessinput.BusinessProfileRepository;
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.dto.NotificationDtos.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Reads persisted demand alerts from the DB and maps them to the
@@ -20,28 +19,19 @@ public class NotificationService {
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("MMM d, yyyy");
 
-    private static final Map<String, String> MARKET_NAMES = Map.of(
-            "korea", "South Korea",
-            "japan", "Japan",
-            "usa",   "United States"
-    );
-
     private final DemandAlertRepository alertRepo;
     private final MarketScoreRepository scoreRepo;
     private final ForecastResultRepository forecastRepo;
-    private final BusinessProfileRepository profileRepo;
-    private final CategoryRankNotificationService categoryRankService;
+    private final KeywordTrendAlertRepository keywordAlertRepo;
 
     public NotificationService(DemandAlertRepository alertRepo,
                                 MarketScoreRepository scoreRepo,
                                 ForecastResultRepository forecastRepo,
-                                BusinessProfileRepository profileRepo,
-                                CategoryRankNotificationService categoryRankService) {
+                                KeywordTrendAlertRepository keywordAlertRepo) {
         this.alertRepo           = alertRepo;
         this.scoreRepo           = scoreRepo;
         this.forecastRepo        = forecastRepo;
-        this.profileRepo         = profileRepo;
-        this.categoryRankService = categoryRankService;
+        this.keywordAlertRepo    = keywordAlertRepo;
     }
 
     /**
@@ -55,62 +45,56 @@ public class NotificationService {
             return new NotificationsResponse(List.of());
         }
 
-        // Gather latest ForecastResult per market → join to MarketScore → DemandAlert
-        List<ForecastResult> forecasts = new ArrayList<>();
-        for (String market : List.of("korea", "japan", "usa")) {
-            forecastRepo.findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
-                    profileId, market, 4).ifPresent(forecasts::add);
-        }
-
-        if (forecasts.isEmpty()) {
+        // Read directly from tbl_demand_alert's profile key (V29). This is the
+        // tenant boundary for the feed and retains every category/market alert;
+        // the old "latest 4-week forecast per market" path silently dropped
+        // alerts belonging to all but one category.
+        List<DemandAlert> alerts = alertRepo.findByBusinessProfileIdOrderByAlertDateDesc(profileId);
+        if (alerts.isEmpty()) {
             return new NotificationsResponse(List.of());
         }
 
-        List<UUID> forecastIds = forecasts.stream()
-                .map(ForecastResult::getForecastResultId)
-                .collect(Collectors.toList());
-
-        List<MarketScore> scores = scoreRepo.findByForecastResultIdIn(forecastIds);
-        if (scores.isEmpty()) {
-            return new NotificationsResponse(List.of());
+        Set<UUID> scoreIds = new LinkedHashSet<>();
+        for (DemandAlert alert : alerts) {
+            if (alert.getMarketScoreId() != null) scoreIds.add(alert.getMarketScoreId());
+        }
+        Map<UUID, MarketScore> scoreById = new HashMap<>();
+        for (MarketScore score : scoreRepo.findAllById(scoreIds)) {
+            scoreById.put(score.getMarketScoreId(), score);
         }
 
-        List<UUID> scoreIds = scores.stream()
-                .map(MarketScore::getMarketScoreId)
-                .collect(Collectors.toList());
-
-        List<DemandAlert> alerts = alertRepo.findByMarketScoreIdInOrderByAlertDateDesc(scoreIds);
-
-        // Index scores and forecasts for O(1) lookup
-        Map<UUID, MarketScore> scoreById = scores.stream()
-                .collect(Collectors.toMap(MarketScore::getMarketScoreId, s -> s));
-        Map<UUID, ForecastResult> forecastById = forecasts.stream()
-                .collect(Collectors.toMap(ForecastResult::getForecastResultId, f -> f));
+        Set<UUID> forecastIds = new LinkedHashSet<>();
+        for (MarketScore score : scoreById.values()) {
+            if (score.getForecastResultId() != null) forecastIds.add(score.getForecastResultId());
+        }
+        Map<UUID, ForecastResult> forecastById = new HashMap<>();
+        for (ForecastResult forecast : forecastRepo.findAllById(forecastIds)) {
+            // Defense in depth: an inconsistent historic FK must not resolve
+            // market metadata through another tenant's forecast row.
+            if (profileId.equals(forecast.getBusinessProfileId())) {
+                forecastById.put(forecast.getForecastResultId(), forecast);
+            }
+        }
 
         List<NotificationDto> demandNotifications = alerts.stream()
                 .map(a -> toNotificationDto(a, scoreById, forecastById))
-                .collect(Collectors.toList());
+                .toList();
 
         return new NotificationsResponse(demandNotifications);
     }
 
     /**
-     * Keyword-trend notifications only, split out of {@link #getNotificationsForProfile}
-     * because each category round-trips to PyTrends via FastAPI rank-markets (up to 75s).
-     * The frontend loads this endpoint independently so a slow AI hop cannot block the
-     * fast demand-alert feed.
+     * Keyword-trend notifications are a pure DB read. If this week's scheduled
+     * producer has not finished yet, this deliberately returns older persisted
+     * rows (or an empty list); it never starts a 75-second PyTrends call.
      */
     public NotificationsResponse getKeywordTrendNotifications(UUID profileId) {
-        List<String> profileCategories = (profileId != null)
-                ? profileRepo.findById(profileId)
-                        .map(p -> p.categoriesList())
-                        .orElse(List.of())
-                : List.of();
-
-        List<NotificationDto> keywordNotifications =
-                categoryRankService.buildForCategories(profileCategories);
-
-        return new NotificationsResponse(keywordNotifications);
+        if (profileId == null) return new NotificationsResponse(List.of());
+        return new NotificationsResponse(keywordAlertRepo
+                .findByBusinessProfileIdOrderByCreatedAtDesc(profileId)
+                .stream()
+                .map(this::toKeywordNotificationDto)
+                .toList());
     }
 
     /**
@@ -121,8 +105,13 @@ public class NotificationService {
      */
     @Transactional
     public void markRead(UUID profileId, UUID notificationId) {
-        alertRepo.findOwnedBy(notificationId, profileId)
-                 .ifPresent(a -> { a.setIsRead(true); alertRepo.save(a); });
+        if (alertRepo.findOwnedBy(notificationId, profileId)
+                .map(a -> { a.setIsRead(true); alertRepo.save(a); return true; })
+                .orElse(false)) {
+            return;
+        }
+        keywordAlertRepo.findByKeywordTrendAlertIdAndBusinessProfileId(notificationId, profileId)
+                .ifPresent(a -> { a.setIsRead(true); keywordAlertRepo.save(a); });
     }
 
     // ─── mapping helpers ─────────────────────────────────────────────────────
@@ -134,17 +123,13 @@ public class NotificationService {
         ForecastResult fr = ms != null ? forecastById.get(ms.getForecastResultId()) : null;
 
         String marketId   = fr != null ? fr.getTargetMarket() : "unknown";
-        String marketName = MARKET_NAMES.getOrDefault(marketId, marketId);
+        String marketName = MarketCatalog.displayName(marketId);
         String dateStr    = alert.getAlertDate() != null
                 ? alert.getAlertDate().format(DATE_FMT) : "";
 
-        String title = "Demand Surge Detected — " + marketName;
-        String trend = alert.getAlertLevel().equals("WARNING")
-                ? "Rising demand window" : "Demand spike";
-
-        DetailsDto details = buildDetails(ms, fr);
-
-        String category = fr != null ? fr.getCategory() : null;
+        String category = alert.getCategory();
+        String categoryLabel = category != null ? category : "Uncategorized";
+        String title = "Demand window alert — " + marketName + " — " + categoryLabel;
 
         return new NotificationDto(
                 alert.getDemandAlertId().toString(),
@@ -152,46 +137,35 @@ public class NotificationService {
                 title,
                 marketName,
                 marketId,
-                trend,
+                alert.getTrend(),
                 Boolean.TRUE.equals(alert.getIsRead()),
-                details,
+                null,
                 category,
                 alert.getAlertLevel(),
-                alert.getAlertMessage()
+                alert.getAlertMessage(),
+                alert.getWindowOpenDate(),
+                alert.getUpliftPct()
         );
     }
 
-    private DetailsDto buildDetails(MarketScore ms, ForecastResult fr) {
-        int projectedArrivals = ms != null && ms.getHistoricalArrivals() != null
-                ? (int) (ms.getHistoricalArrivals() * 1.05) : 80_000;
-
-        double growthRate = ms != null && ms.getGdpPerCapitaGrowth() != null
-                ? ms.getGdpPerCapitaGrowth() : 2.0;
-
-        double score = ms != null && ms.getMarketScore() != null ? ms.getMarketScore() : 0.5;
-
-        List<TopInterestDto> interests = List.of(
-                new TopInterestDto("Beach & Resort", (int) (score * 100)),
-                new TopInterestDto("Cultural Tours",  (int) (score * 85)),
-                new TopInterestDto("Adventure",       (int) (score * 70))
-        );
-
-        StrategicInsightsDto insights = new StrategicInsightsDto(
-                "Trend alignment: " + (score >= 0.7 ? "Strong" : "Moderate"),
-                ms != null && Boolean.TRUE.equals(ms.getSpikeIndicator())
-                        ? "Demand spike active — immediate action recommended"
-                        : "Steady demand growth observed",
-                String.format("Market score %.0f%%", score * 100)
-        );
-
-        return new DetailsDto(
-                projectedArrivals,
-                growthRate,
-                interests,
-                List.of("Leisure", "Adventure", "Cultural"),
-                insights,
-                List.of(),   // keywordData — populated by Module 3 content service
-                null         // contentStrategy — nullable per DTO spec
+    private NotificationDto toKeywordNotificationDto(KeywordTrendAlert alert) {
+        String marketId = alert.getTargetMarket();
+        String marketName = MarketCatalog.displayName(marketId);
+        String date = alert.getCreatedAt() != null ? alert.getCreatedAt().format(DATE_FMT) : "";
+        return new NotificationDto(
+                alert.getKeywordTrendAlertId().toString(),
+                date,
+                "Keyword Trend Alert — " + alert.getCategory(),
+                marketName,
+                marketId,
+                "Top keyword: " + alert.getTopKeyword(),
+                Boolean.TRUE.equals(alert.getIsRead()),
+                null,
+                alert.getCategory(),
+                "INFO",
+                alert.getAlertMessage(),
+                null,
+                null
         );
     }
 }

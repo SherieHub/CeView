@@ -4,7 +4,7 @@ import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.ai.AiDependencyException;
 import com.ceview.module1.businessinput.BusinessProfile;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
-import com.ceview.module2.MarketFlags;
+import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.Module2ErrorCodes;
 import com.ceview.module2.dto.MarketDtos.*;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
@@ -15,6 +15,8 @@ import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendPoint;
 import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
+import com.ceview.module2.submodule21.MarketIngestionError;
+import com.ceview.module2.submodule21.MarketIngestionErrorRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
 import com.ceview.module2.submodule21.TrendFetchJob;
@@ -27,7 +29,9 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,19 +63,14 @@ public class ForecastingService {
     private static final Logger log = LoggerFactory.getLogger(ForecastingService.class);
     private static final double MAPE_THRESHOLD = 15.0;
     private static final double DEMAND_WINDOW_MULTIPLIER = 1.2;
-    private static final List<String> MARKETS = List.of("korea", "japan", "usa");
 
-    // Static display metadata: [name, city, nearestAirport (full), destinationAirport (full)]
-    private static final Map<String, String[]> MARKET_META = Map.of(
-            "korea", new String[]{"South Korea",   "Seoul",       "ICN — Incheon Int'l",      "CEB — Mactan-Cebu Int'l"},
-            "japan", new String[]{"Japan",          "Osaka",       "KIX — Kansai Int'l",       "CEB — Mactan-Cebu Int'l"},
-            "usa",   new String[]{"United States",  "Los Angeles", "LAX — Los Angeles Int'l",  "MNL — Ninoy Aquino Int'l"}
-    );
-    private static final Map<String, List<String>> PEAK_MONTHS = Map.of(
-            "korea", List.of("Jul", "Aug", "Dec", "Jan"),
-            "japan", List.of("Apr", "May", "Aug", "Mar"),
-            "usa",   List.of("Jun", "Jul", "Aug", "Dec")
-    );
+    private static final String[] MONTH_ABBR = {
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
+    /** H-19: minimum weekly signal rows before peak months may be derived rather than read from reference. */
+    private static final int PEAK_MONTHS_MIN_WEEKS = 52;
+    /** H-19: minimum distinct calendar months that must carry data for a derivation to be trustworthy. */
+    private static final int PEAK_MONTHS_MIN_COVERAGE = 8;
 
     private final EnrichedSequenceBuilder sequenceBuilder;
     private final AIInferenceGatewayService ai;
@@ -85,6 +84,7 @@ public class ForecastingService {
     private final MarketEconomicTrendRepository economicTrendRepo;
     private final TrendFetchJobRepository jobRepo;
     private final ObjectMapper objectMapper;
+    private final MarketIngestionErrorRepository ingestionErrorRepo;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -97,7 +97,8 @@ public class ForecastingService {
                               MarketSignalRecordRepository signalRepo,
                               MarketEconomicTrendRepository economicTrendRepo,
                               TrendFetchJobRepository jobRepo,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              MarketIngestionErrorRepository ingestionErrorRepo) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -110,6 +111,7 @@ public class ForecastingService {
         this.economicTrendRepo  = economicTrendRepo;
         this.jobRepo            = jobRepo;
         this.objectMapper       = objectMapper;
+        this.ingestionErrorRepo = ingestionErrorRepo;
     }
 
     /**
@@ -120,10 +122,10 @@ public class ForecastingService {
      * between "we measured low demand" and "we could not measure".
      */
     public static AiDependencyException noMarketData(String market, String lastIngestionError) {
-        return AiDependencyException.fromBody(503, java.util.Map.of(
-                "code", "MOD22_NO_MARKET_DATA",
+        return AiDependencyException.fromBody(424, java.util.Map.of(
+                "code", Module2ErrorCodes.MOD22_NO_MARKET_DATA,
                 "message", "No measured demand data exists for " + market + " yet.",
-                "dependency", "pytrends",
+                "dependency", "serpapi",
                 "cause", lastIngestionError == null
                         ? "no successful trend fetch has completed for this market"
                         : lastIngestionError,
@@ -134,6 +136,7 @@ public class ForecastingService {
      * Run the full 2.2 pipeline for a profile.
      * Throws IllegalStateException when enriched data is absent — run ingestion first.
      */
+    @Transactional
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
         if (profileId == null) {
             log.error("forecastForProfile called with null profileId — profileId is required");
@@ -160,8 +163,11 @@ public class ForecastingService {
         try {
             return runPipeline(profileId);
         } catch (IllegalStateException e) {
-            if ("enriched_dataset_empty".equals(e.getMessage())) {
-                MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
+            // Step 7: EnrichedSequenceBuilder now suffixes this with the reason
+            // (":count=N" / ":field=X") — startsWith, not equals, so that detail
+            // doesn't defeat this match.
+            if (e.getMessage() != null && e.getMessage().startsWith("enriched_dataset_empty")) {
+                MDC.put("code", Module2ErrorCodes.MOD22_NO_MARKET_DATA);
                 log.error("No enriched market data for profile={} — ingestion has not run yet", profileId);
                 MDC.remove("code");
                 throw new IllegalStateException(
@@ -200,7 +206,7 @@ public class ForecastingService {
         }
 
         OffsetDateTime newest = null;
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             Optional<ForecastResult> fr = forecastRepo
                     .findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
                             profileId, market, 4);
@@ -278,7 +284,7 @@ public class ForecastingService {
             categories = List.of(categoryFilter);
         }
 
-        for (String market : MARKETS) {
+        for (String market : MarketCatalog.IDS) {
             ForecastResult fr4w = null;
             MarketScore ms = null;
 
@@ -345,9 +351,14 @@ public class ForecastingService {
             boolean spike      = Boolean.TRUE.equals(ms.getSpikeIndicator());
             double confidence  = fr4w.getForecastConfidence() != null ? fr4w.getForecastConfidence() : 0.8;
 
+            DemandAlert activeAlert = alertRepo.findTopByMarketScoreIdOrderByAlertDateDesc(ms.getMarketScoreId())
+                    .orElse(null);
             bundles.add(new MarketResultBundle(
                     market, marketScore, ms, fr4w, history, spike, confidence,
-                    gdpTrend, forexTrend, weeklyForecasts, latest));
+                    gdpTrend, forexTrend, weeklyForecasts, latest,
+                    activeAlert != null ? activeAlert.getAlertLevel() : null,
+                    activeAlert != null ? activeAlert.getUpliftPct() : null,
+                    activeAlert != null ? activeAlert.getWindowOpenDate() : null));
         }
 
         if (bundles.isEmpty()) {
@@ -372,8 +383,13 @@ public class ForecastingService {
                                 t.getGdpTrendJson(), new TypeReference<List<GdpTrendPoint>>() {});
                         double latest = t.getGdpLatest() != null ? t.getGdpLatest()
                                 : (pts.isEmpty() ? 2.0 : pts.get(pts.size() - 1).value());
+                        OffsetDateTime asOf = t.getGdpFetchedAt() != null ? t.getGdpFetchedAt() : t.getFetchedAt();
+                        // Reading straight from tbl_market_economic_trend, never a live call — a
+                        // persisted row's own gdp_source (Step 6) survives the round-trip; "unknown"
+                        // only for pre-Step-6 rows that never had a tag written.
+                        String source = t.getGdpSource() != null ? t.getGdpSource() : "unknown";
                         return new GdpTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
-                                pts, latest, t.getFetchedAt());
+                                pts, latest, asOf, source);
                     } catch (Exception e) {
                         return null;
                     }
@@ -390,8 +406,10 @@ public class ForecastingService {
                                 t.getForexTrendJson(), new TypeReference<List<ForexTrendPoint>>() {});
                         double latest = t.getForexLatest() != null ? t.getForexLatest()
                                 : (pts.isEmpty() ? 1.0 : pts.get(pts.size() - 1).value());
+                        OffsetDateTime asOf = t.getForexFetchedAt() != null ? t.getForexFetchedAt() : t.getFetchedAt();
+                        String source = t.getForexSource() != null ? t.getForexSource() : "unknown";
                         return new ForexTrendDto(t.getCurrencyCode() != null ? t.getCurrencyCode() : market,
-                                pts, latest, t.getFetchedAt());
+                                pts, latest, asOf, source);
                     } catch (Exception e) {
                         return null;
                     }
@@ -411,12 +429,13 @@ public class ForecastingService {
      * unscoped finder.
      */
     private List<MarketSignalRecord> loadCategoryScopedHistory(UUID profileId, String market, String category) {
+        // Step 4 (contract §2): ordered by observation week, not write time — see
+        // MarketSignalRecordRepository.findByProfileMarketCategoryOrderByWeekDesc.
         List<MarketSignalRecord> scoped = category != null
-                ? signalRepo.findByBusinessProfileIdAndTargetMarketAndCategoryOrderByAggregatedAtDesc(
-                        profileId, market, category)
+                ? signalRepo.findByProfileMarketCategoryOrderByWeekDesc(profileId, market, category)
                 : List.of();
         if (!scoped.isEmpty()) return scoped;
-        return signalRepo.findByBusinessProfileIdAndTargetMarketOrderByAggregatedAtDesc(profileId, market);
+        return signalRepo.findByProfileMarketOrderByWeekDesc(profileId, market);
     }
 
     // ─── pipeline ─────────────────────────────────────────────────────────────
@@ -455,208 +474,248 @@ public class ForecastingService {
                 ? profile.categoriesList()
                 : Collections.singletonList(null);
 
-        // "Primary" category used to build the ONE Gemini demand-forecast sequence
-        // per market (Phase A/B below stay market-scoped, not category-scoped —
-        // see the Phase C comment for why). Deterministic: first category in the
-        // profile's stored (comma-joined) order.
-        String primaryCategory = categories.get(0);
-
-        // ── Phase A: build all market sequences (no AI calls) ────────────────
-        // Stores (market, gdpTrend, forexTrend, sequence) in MARKETS order so
-        // Phase B can submit them as a batch and Phase C can zip results back.
-        record MarketSetup(
+        // ── Phase A: build one sequence per (market, category) pair (no AI calls) ──
+        // Each market's demand forecast is now computed genuinely per category —
+        // previously only the first-listed ("primary") category ever got a real
+        // demand forecast, and every other category silently reused that same
+        // number, which made every demand-window alert claim the primary category
+        // even when a market was actually surging in a different one. GDP/forex
+        // trend fetches stay per-market (they don't vary by category), cached in
+        // `marketMeta` so they're fetched once and Phase C can persist one economic
+        // trend snapshot per market rather than one per (market, category) row.
+        record MarketMeta(GdpTrendDto gdpTrend, ForexTrendDto forexTrend) {}
+        record CategorySequence(
                 String market,
-                GdpTrendDto gdpTrend,
-                ForexTrendDto forexTrend,
-                Map<String, Object> sequence) {}
+                String category,
+                Map<String, Object> sequence,
+                /** "{market}::{category}" — must match stub_forecaster.forecast_batch's
+                 *  and gemini_forecaster.forecast_batch_requests' key format exactly;
+                 *  a bare market name would collide once a market carries more than
+                 *  one category. */
+                String key) {}
 
-        List<MarketSetup> setups = new ArrayList<>();
-        for (String market : MARKETS) {
-            // Fetch economic trend time-series so the GDP direction can be
-            // injected into the Gemini prompt context below (FR2.13 extension)
+        Map<String, MarketMeta> marketMeta = new LinkedHashMap<>();
+        List<CategorySequence> setups = new ArrayList<>();
+
+        for (String market : MarketCatalog.IDS) {
             GdpTrendDto   gdpTrend   = externalClient.fetchGdpTrend(market);
             ForexTrendDto forexTrend = externalClient.fetchForexTrend(market);
+            marketMeta.put(market, new MarketMeta(gdpTrend, forexTrend));
 
-            // Build enriched sequence. When no genuinely-measured signal data
-            // exists, this is reported as a structured MOD22_NO_MARKET_DATA (503)
-            // rather than fabricating a baseline series — an invented "demand is
-            // ~50" reading is indistinguishable from a real one once forecast.
-            Map<String, Object> sequence;
-            try {
-                sequence = sequenceBuilder.buildSequence(profileId, market, primaryCategory);
-            } catch (IllegalStateException seqEx) {
-                if ("enriched_dataset_empty".equals(seqEx.getMessage())) {
-                    MDC.put("code", Module2ErrorCodes.MOD21_ENRICHED_DATASET_EMPTY);
-                    String lastError = jobRepo.findTopByMarketOrderByLastAttemptedAtDesc(market)
-                            .map(TrendFetchJob::getLastError)
-                            .orElse(null);
-                    log.warn("No measured signal data for market={} profile={} — "
-                             + "MOD22_NO_MARKET_DATA (last ingestion error: {})",
-                            market, profileId, lastError);
-                    MDC.remove("code");
-                    throw noMarketData(market, lastError);
+            for (String category : categories) {
+                // Build enriched sequence. When no genuinely-measured signal data
+                // exists, this is reported as a structured MOD22_NO_MARKET_DATA (503)
+                // rather than fabricating a baseline series — an invented "demand is
+                // ~50" reading is indistinguishable from a real one once forecast.
+                Map<String, Object> sequence;
+                try {
+                    sequence = sequenceBuilder.buildSequence(profileId, market, category);
+                } catch (IllegalStateException seqEx) {
+                    String seqMsg = seqEx.getMessage();
+                    if (seqMsg != null && seqMsg.startsWith("enriched_dataset_empty")) {
+                        MDC.put("code", Module2ErrorCodes.MOD22_NO_MARKET_DATA);
+                        String lastError = jobRepo.findTopByMarketOrderByLastAttemptedAtDesc(market)
+                                .map(TrendFetchJob::getLastError)
+                                .orElse(null);
+                        // Step 7 (contract §3.1): surface WHY the matrix couldn't be built —
+                        // the real weekly-row count, or which feature had no usable earlier
+                        // value to carry forward — rather than a bare "no data" message.
+                        String detail = seqMsg.contains(":") ? seqMsg.substring(seqMsg.indexOf(':') + 1) : null;
+                        StringBuilder combinedErrorBuilder = new StringBuilder(detail != null
+                                ? "insufficient real weekly history (" + detail + ") for the 12-week feature matrix"
+                                : "no measured signal data");
+                        if (lastError != null) combinedErrorBuilder.append("; last ingestion error: ").append(lastError);
+                        String combinedError = combinedErrorBuilder.toString();
+                        log.warn("No measured signal data for market={} category={} profile={} — "
+                                 + "MOD22_NO_MARKET_DATA ({})",
+                                market, category, profileId, combinedError);
+                        MDC.remove("code");
+                        throw noMarketData(market, combinedError);
+                    }
+                    throw seqEx;
                 }
-                throw seqEx;
-            }
 
-            // Inject GDP trend direction into the Gemini prompt context
-            if (gdpTrend != null && gdpTrend.points().size() >= 2) {
-                double delta = gdpTrend.latest()
-                        - gdpTrend.points().get(0).value();   // newest − oldest
-                String direction = delta > 0.3 ? "growing" : delta < -0.3 ? "declining" : "flat";
-                sequence.put("gdpTrendDirection", direction);
-                sequence.put("gdpTrendDelta", Math.round(delta * 100.0) / 100.0);
-            }
+                // NOTE: this used to inject `gdpTrendDirection`/`gdpTrendDelta` into
+                // `sequence` for the old free-text Gemini prompt path. The current
+                // FastAPI endpoint consumes the fixed-width SequenceForecastRequest
+                // shape instead, which has `extra="forbid"` and does not declare
+                // either field — adding them here made every batch call fail with a
+                // 422 ("Extra inputs are not permitted") whenever GDP trend data had
+                // 2+ points. gdpTrend/forexTrend are read from `marketMeta` below by
+                // whatever legitimately needs them later in this pipeline.
 
-            setups.add(new MarketSetup(market, gdpTrend, forexTrend, sequence));
+                String key = market + "::" + (category != null ? category : "");
+                setups.add(new CategorySequence(market, category, sequence, key));
+            }
         }
 
-        // ── Phase B: single batch Gemini call (1 RPM slot for all markets) ───
-        // Collects all sequences and sends them in one prompt; Gemini returns a
-        // JSON object keyed by market name with 12 weekly forecasts each.
+        // ── Phase B: single batch forecast-engine call for every (market, category)
+        // pair ── one HTTP call regardless of how many rows are in `setups`; the
+        // engine itself decides whether that means one shared LLM prompt or N
+        // independent per-row calls (see forecast_engine.py's engine implementations).
         // No fallback — propagate exception so the controller returns a
         // structured error response instead of silently using stub values.
         List<Map<String, Object>> allSequences = new ArrayList<>();
-        for (MarketSetup s : setups) allSequences.add(s.sequence());
+        for (CategorySequence s : setups) allSequences.add(s.sequence());
         Map<String, Map<String, Object>> batchInference = ai.runForecastInferenceBatch(allSequences);
 
-        // ── Phase C: per-market demand read + per-category scoring/persistence ──
-        // The Gemini demand forecast (demand4w/12w, weeklyForecasts, mape/mae/rmse/
-        // confidence) is looked up ONCE per market from the Phase B batch response,
-        // which is keyed by plain market name — it is built from exactly one
-        // sequence per market (the profile's primary category, Phase A), so the
-        // live Gemini call count stays bounded at MARKETS.size() regardless of how
-        // many categories the profile has (see class Javadoc / Task 1a.2b report).
-        // What genuinely varies per category is seasonality, spike, GDP/forex
-        // context and therefore the XGBoost economic-viability score — those are
-        // computed from category-scoped signal history inside the inner loop below,
-        // and one ForecastResult + MarketScore row is persisted per (category,
-        // market) pair so the DB reflects real per-category standing.
+        // ── Phase C: per-(market, category) demand read + scoring/persistence ──
+        // Every field below — demand, seasonality, spike, GDP/forex, and therefore
+        // the XGBoost economic-viability score — is now genuinely computed per
+        // (market, category) pair, so a market's demand-window alert can only ever
+        // be attributed to the category it actually spiked in.
         List<MarketResultBundle> allBundles = new ArrayList<>();
 
-        for (MarketSetup setup : setups) {
-            String              market     = setup.market();
-            GdpTrendDto         gdpTrend   = setup.gdpTrend();
-            ForexTrendDto       forexTrend = setup.forexTrend();
+        for (CategorySequence setup : setups) {
+            String market   = setup.market();
+            String category = setup.category();
+            MarketMeta meta  = marketMeta.get(market);
+            GdpTrendDto   gdpTrend   = meta.gdpTrend();
+            ForexTrendDto forexTrend = meta.forexTrend();
 
-            // Look up this market's Gemini result from the batch response
-            Map<String, Object> inference = batchInference.get(market);
+            // Look up this (market, category) pair's forecast-engine result.
+            Map<String, Object> inference = batchInference.get(setup.key());
             if (inference == null) {
                 throw new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.BAD_GATEWAY,
-                        "MOD22_FORECAST_FAILED :: Batch response missing results for market=" + market);
+                        "MOD22_FORECAST_FAILED :: Batch response missing results for market=" + market
+                                + " category=" + category);
             }
 
-            double demand4w   = num(inference, "predicted_demand_4w",  50.0);
-            double demand12w  = num(inference, "predicted_demand_12w", 50.0);
-            double mape       = num(inference, "mape",       10.0);
-            double mae        = num(inference, "mae",         6.0);
-            double rmse       = num(inference, "rmse",        9.0);
-            double confidence = num(inference, "confidence",  0.8);
+            // Step 6 (contract; H-29): a missing field here used to silently become
+            // demand=50 / mape=10 / mae=6 / rmse=9 / confidence=0.8 — indistinguishable
+            // from a real measurement once persisted and charted. requireNum throws
+            // instead, so an incomplete Gemini/Groq response fails loudly.
+            double demand4w   = requireNum(inference, "predicted_demand_4w",  market);
+            double demand12w  = requireNum(inference, "predicted_demand_12w", market);
+            // mape/mae/rmse are declared `float | None` in FastAPI's own ForecastResponse
+            // schema (backend/fastapi-transformer/app/routers/forecasting.py) — null is a
+            // legitimate, documented value, not a missing-field error. MAPE in particular
+            // is mathematically undefined whenever the actual value is 0 (division by
+            // zero), which is common for a thin-history category with near-zero measured
+            // search interest — requireNum would wrongly abort the entire pipeline for
+            // every market/category over one category's honestly-uncomputable backtest.
+            Double mape       = optionalNum(inference, "mape");
+            Double mae        = optionalNum(inference, "mae");
+            Double rmse       = optionalNum(inference, "rmse");
+            double confidence = requireNum(inference, "confidence", market);
+            String source = requireSource(inference, market);
 
             // Per-week forecasts [Wk+1..Wk+12] — Gemini returns varying values
             // so the chart shows a real trend line (not a flat repeated scalar).
-            @SuppressWarnings("unchecked")
-            List<Double> weeklyForecasts = inference.get("weekly_forecasts") instanceof List<?>
-                    ? (List<Double>) inference.get("weekly_forecasts")
-                    : List.of(demand4w, demand4w, demand4w, demand4w);
+            List<Double> weeklyForecasts = requireWeeklyForecasts(inference, market);
 
             // FR2.12 — MAPE warning
-            if (mape > MAPE_THRESHOLD) {
+            if (mape != null && mape > MAPE_THRESHOLD) {
                 MDC.put("code", Module2ErrorCodes.MOD22_FORECAST_MAPE_WARNING);
-                log.warn("MAPE {}% exceeds threshold for market={}", mape, market);
+                log.warn("MAPE {}% exceeds threshold for market={} category={}", mape, market, category);
                 MDC.remove("code");
             }
 
             ExternalMarketDataClient.FlightReferenceDto flight = externalClient.getFlightReference(market);
 
-            for (String category : categories) {
-                // Category-scoped signal history — falls back to the category-agnostic
-                // finder when empty (new category not yet ingested, or pre-V20 rows
-                // with category=null). See loadCategoryScopedHistory Javadoc.
-                List<MarketSignalRecord> history = loadCategoryScopedHistory(profileId, market, category);
-                MarketSignalRecord latest = history.isEmpty() ? null : history.get(0);
+            // Category-scoped signal history — falls back to the category-agnostic
+            // finder when empty (new category not yet ingested, or pre-V20 rows
+            // with category=null). See loadCategoryScopedHistory Javadoc.
+            List<MarketSignalRecord> history = loadCategoryScopedHistory(profileId, market, category);
+            MarketSignalRecord latest = history.isEmpty() ? null : history.get(0);
 
-                // seasonalityScore is stored 0–1 (SeasonalShiftDetector composite)
-                double seasonality = latest != null && latest.getSeasonalityScore() != null
-                        ? latest.getSeasonalityScore() : 0.5;
-                boolean spike = latest != null && Boolean.TRUE.equals(latest.getSpikeIndicator());
-                double gdp    = latest != null && latest.getGdpGrowth() != null ? latest.getGdpGrowth() : 2.0;
-                double forex  = latest != null && latest.getForexRate()  != null ? latest.getForexRate()  : 1.0;
-                Double yoyRatio = latest != null ? latest.getYoyRatio() : null;
+            // Step 6 (contract; H-29): seasonality/gdp/forex used to silently default to
+            // 0.5 / 2.0 / 1.0 when `latest` (or one of its fields) was null — indistinguishable
+            // from a real measurement once it fed the XGBoost score and chart. Scans the
+            // full week-ordered history for the most recent NON-null reading of each field
+            // (a genuine last-known-good, same three-tier spirit as the macro-input policy)
+            // and throws only when NO row in the category's history has ever measured it.
+            double seasonality = requireLatestMeasured(history, market, category,
+                    "seasonality_score", MarketSignalRecord::getSeasonalityScore);
+            boolean spike = latest != null && Boolean.TRUE.equals(latest.getSpikeIndicator());
+            double gdp    = requireLatestMeasured(history, market, category,
+                    "gdp_growth", MarketSignalRecord::getGdpGrowth);
+            double forex  = requireLatestMeasured(history, market, category,
+                    "forex_rate", MarketSignalRecord::getForexRate);
+            Double yoyRatio = latest != null ? latest.getYoyRatio() : null;
 
-                // Persist ForecastResult (4w + 12w) — only when a valid profile row exists
-                ForecastResult fr4w;
-                if (canPersist) {
-                    fr4w = persistForecastResult(
-                            profileId, market, category, demand4w, confidence, mape, mae, rmse, 4,
-                            weeklyForecasts, yoyRatio);
-                    persistForecastResult(profileId, market, category, demand12w, confidence, mape, mae, rmse, 12, yoyRatio);
-                } else {
-                    // In-memory stub so downstream DTO assembly has a non-null object
-                    fr4w = new ForecastResult();
-                    fr4w.setForecastResultId(UUID.randomUUID());
-                    fr4w.setBusinessProfileId(profileId);
-                    fr4w.setTargetMarket(market);
-                    fr4w.setCategory(category);
-                    fr4w.setPredictedDemand(demand4w);
-                    fr4w.setForecastConfidence(confidence);
-                    fr4w.setMapeScore(mape);
-                    fr4w.setForecastHorizonWeeks(4);
-                    fr4w.setYoyRatio(yoyRatio);
-                }
-
-                // ── XGBoost economic viability scoring (FR2.13) — category-specific
-                // seasonality/spike inputs, so this runs once per (market, category) ──
-                Map<String, Object> scorePayload = new LinkedHashMap<>();
-                scorePayload.put("market",            market);
-                scorePayload.put("predicted_demand",  demand4w);
-                scorePayload.put("seasonality_score", seasonality);
-                scorePayload.put("spike_indicator",   spike);
-                scorePayload.put("gdp_growth",        gdp);
-                scorePayload.put("forex_vs_php",      forex);
-                scorePayload.put("direct_flight",     flight.directFlight());
-                scorePayload.put("distance_km",       flight.distanceKm());
-                scorePayload.put("flight_frequency",  flight.flightFrequency());
-
-                // No fallback — propagate exception so the controller returns a
-                // structured error response instead of silently using stub values.
-                Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
-                double marketScore = num(scoreResult, "market_score", 0.5);
-
-                // Persist MarketScore (and demand alert) — only when profile row exists
-                MarketScore ms;
-                if (canPersist) {
-                    ms = persistMarketScore(
-                            fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio);
-                    double rollingAvg = latest != null && latest.getRollingAverage7d() != null
-                            ? latest.getRollingAverage7d()
-                            : (latest != null && latest.getRollingAverage() != null
-                                    ? latest.getRollingAverage() : demand4w);
-                    if (demand4w > rollingAvg * DEMAND_WINDOW_MULTIPLIER) {
-                        persistDemandAlert(ms.getMarketScoreId(), market, demand4w);
-                    }
-                } else {
-                    // In-memory stub — no FK writes
-                    ms = new MarketScore();
-                    ms.setMarketScoreId(UUID.randomUUID());
-                    ms.setForecastResultId(fr4w.getForecastResultId());
-                    ms.setMarketScore(marketScore);
-                    ms.setSeasonalityScore(seasonality);
-                    ms.setSpikeIndicator(spike);
-                    ms.setGdpPerCapitaGrowth(gdp);
-                    ms.setForexVsPhp(forex);
-                    ms.setHistoricalArrivals(80_000);
-                    ms.setYoyRatio(yoyRatio);
-                }
-
-                allBundles.add(new MarketResultBundle(
-                        market, marketScore, ms, fr4w, history, spike, confidence,
-                        gdpTrend, forexTrend, weeklyForecasts, latest));
+            // Persist ForecastResult (4w + 12w) — only when a valid profile row exists
+            ForecastResult fr4w;
+            if (canPersist) {
+                fr4w = persistForecastResult(
+                        profileId, market, category, demand4w, confidence, mape, mae, rmse, 4,
+                        weeklyForecasts, yoyRatio, source);
+                persistForecastResult(profileId, market, category, demand12w, confidence, mape, mae, rmse, 12,
+                        yoyRatio, source);
+            } else {
+                // In-memory stub so downstream DTO assembly has a non-null object
+                fr4w = new ForecastResult();
+                fr4w.setForecastResultId(UUID.randomUUID());
+                fr4w.setBusinessProfileId(profileId);
+                fr4w.setTargetMarket(market);
+                fr4w.setCategory(category);
+                fr4w.setPredictedDemand(demand4w);
+                fr4w.setForecastConfidence(confidence);
+                fr4w.setMapeScore(mape);
+                fr4w.setForecastHorizonWeeks(4);
+                fr4w.setYoyRatio(yoyRatio);
+                fr4w.setSource(source);
             }
 
-            // ── Persist economic trend snapshot (once per market) ─────────────────
-            persistEconomicTrend(market, gdpTrend, forexTrend);
+            // ── XGBoost economic viability scoring (FR2.13) — category-specific
+            // seasonality/spike inputs, so this runs once per (market, category) ──
+            Map<String, Object> scorePayload = new LinkedHashMap<>();
+            scorePayload.put("market",            market);
+            scorePayload.put("predicted_demand",  demand4w);
+            scorePayload.put("seasonality_score", seasonality);
+            scorePayload.put("spike_indicator",   spike);
+            scorePayload.put("gdp_growth",        gdp);
+            scorePayload.put("forex_vs_php",      forex);
+            scorePayload.put("direct_flight",     flight.directFlight());
+            scorePayload.put("distance_km",       flight.distanceKm());
+            scorePayload.put("flight_frequency",  flight.flightFrequency());
+
+            // No fallback — propagate exception so the controller returns a
+            // structured error response instead of silently using stub values.
+            Map<String, Object> scoreResult = ai.runMarketScoring(scorePayload);
+            double marketScore = requireNum(scoreResult, "market_score", market);
+            String scorer = requireScorer(scoreResult, market);
+
+            // Persist MarketScore (and demand alert) — only when profile row exists
+            MarketScore ms;
+            if (canPersist) {
+                ms = persistMarketScore(
+                        fr4w.getForecastResultId(), marketScore, seasonality, spike, gdp, forex, yoyRatio, scorer);
+                // An absent/invalid baseline is not replaced with a made-up value:
+                // it simply cannot produce a baseline-relative demand-window alert.
+                Double rollingAvg = latest != null ? latest.getRollingAverage7d() : null;
+                DemandAlert activeAlert = persistDemandAlert(profileId, category, ms.getMarketScoreId(), market, demand4w,
+                        rollingAvg, spike, yoyRatio, weeklyForecasts, latest);
+                allBundles.add(new MarketResultBundle(
+                        market, marketScore, ms, fr4w, history, spike, confidence,
+                        gdpTrend, forexTrend, weeklyForecasts, latest,
+                        activeAlert != null ? activeAlert.getAlertLevel() : null,
+                        activeAlert != null ? activeAlert.getUpliftPct() : null,
+                        activeAlert != null ? activeAlert.getWindowOpenDate() : null));
+            } else {
+                // In-memory stub — no FK writes
+                ms = new MarketScore();
+                ms.setMarketScoreId(UUID.randomUUID());
+                ms.setForecastResultId(fr4w.getForecastResultId());
+                ms.setMarketScore(marketScore);
+                ms.setSeasonalityScore(seasonality);
+                ms.setSpikeIndicator(spike);
+                ms.setGdpPerCapitaGrowth(gdp);
+                ms.setForexVsPhp(forex);
+                // historical_arrivals remains nullable: there is no real arrivals feed in
+                // Module 2, so Step 10 deliberately does not invent a value.
+                ms.setYoyRatio(yoyRatio);
+                ms.setScorer(scorer);
+                allBundles.add(new MarketResultBundle(
+                        market, marketScore, ms, fr4w, history, spike, confidence,
+                        gdpTrend, forexTrend, weeklyForecasts, latest, null, null, null));
+            }
+        }
+
+        // ── Persist economic trend snapshot (once per market, not per category) ──
+        for (Map.Entry<String, MarketMeta> entry : marketMeta.entrySet()) {
+            persistEconomicTrend(entry.getKey(), entry.getValue().gdpTrend(), entry.getValue().forexTrend());
         }
 
         // Selection rule (Task 1a.2b): keep one entry per market in the response —
@@ -691,16 +750,16 @@ public class ForecastingService {
 
     private ForecastResult persistForecastResult(UUID profileId, String market, String category,
                                                   double demand, double confidence,
-                                                  double mape, double mae, double rmse, int horizon,
-                                                  Double yoyRatio) {
+                                                  Double mape, Double mae, Double rmse, int horizon,
+                                                  Double yoyRatio, String source) {
         return persistForecastResult(profileId, market, category, demand, confidence, mape, mae, rmse, horizon,
-                null, yoyRatio);
+                null, yoyRatio, source);
     }
 
     private ForecastResult persistForecastResult(UUID profileId, String market, String category,
                                                   double demand, double confidence,
-                                                  double mape, double mae, double rmse, int horizon,
-                                                  List<Double> weeklyForecasts, Double yoyRatio) {
+                                                  Double mape, Double mae, Double rmse, int horizon,
+                                                  List<Double> weeklyForecasts, Double yoyRatio, String source) {
         ForecastResult fr = new ForecastResult();
         fr.setBusinessProfileId(profileId);
         fr.setTargetMarket(market);
@@ -712,6 +771,7 @@ public class ForecastingService {
         fr.setRmse(rmse);
         fr.setForecastHorizonWeeks(horizon);
         fr.setYoyRatio(yoyRatio);
+        fr.setSource(source);
         if (horizon == 4 && weeklyForecasts != null && !weeklyForecasts.isEmpty()) {
             try {
                 fr.setWeeklyForecastsJson(objectMapper.writeValueAsString(weeklyForecasts));
@@ -724,7 +784,7 @@ public class ForecastingService {
 
     private MarketScore persistMarketScore(UUID forecastResultId, double score,
                                            double seasonality, boolean spike,
-                                           double gdp, double forex, Double yoyRatio) {
+                                           double gdp, double forex, Double yoyRatio, String scorer) {
         MarketScore ms = new MarketScore();
         ms.setForecastResultId(forecastResultId);
         ms.setMarketScore(score);
@@ -732,63 +792,165 @@ public class ForecastingService {
         ms.setSpikeIndicator(spike);
         ms.setGdpPerCapitaGrowth(gdp);
         ms.setForexVsPhp(forex);
-        ms.setHistoricalArrivals(80_000);
+        // Leave historical_arrivals NULL. The only prior value was the synthetic
+        // 80,000 placeholder; there is no owned, verified arrivals source yet.
         ms.setYoyRatio(yoyRatio);
+        ms.setScorer(scorer);
         return scoreRepo.save(ms);
     }
 
-    private void persistDemandAlert(UUID marketScoreId, String market, double demand4w) {
-        String marketName = MARKET_META.getOrDefault(market,
-                new String[]{market, market, "???", "CEB"})[0];
-        String trendLabel = "Rising demand window";
+    private DemandAlert persistDemandAlert(UUID profileId, String category, UUID marketScoreId, String market,
+                                    double demand4w, Double rolling7dAverage, boolean spikeIndicator,
+                                    Double yoyRatio, List<Double> weeklyForecasts,
+                                    MarketSignalRecord latestSignal) {
+        // Retire whatever alert(s) already exist for this exact (profile, category,
+        // market) triple before deciding on a new one — every pipeline run used to
+        // INSERT a fresh row here without ever superseding the last one, so the
+        // feed accumulated duplicate cards for the same market/category (only the
+        // uplift % differed run to run), and a market that stopped surging kept
+        // showing its old "active surge" alert forever. Delete-then-maybe-reinsert
+        // makes the feed reflect current state instead of a growing history log.
+        List<DemandAlert> stale = alertRepo.findByProfileAndCategoryAndMarket(profileId, category, market);
+        if (!stale.isEmpty()) alertRepo.deleteAll(stale);
+
+        OffsetDateTime firstForecastWeek = firstForecastWeekStart(latestSignal);
+        Optional<DemandAlertDecision> decision = deriveDemandAlert(
+                demand4w, rolling7dAverage, spikeIndicator, yoyRatio, weeklyForecasts, firstForecastWeek);
+        if (decision.isEmpty()) {
+            return null;
+        }
+
+        DemandAlertDecision alertDecision = decision.get();
+        String marketName = MarketCatalog.displayName(market);
 
         DemandAlert alert = new DemandAlert();
         alert.setMarketScoreId(marketScoreId);
-        alert.setAlertLevel("WARNING");
+        alert.setBusinessProfileId(profileId);
+        alert.setCategory(category);
+        alert.setAlertLevel(alertDecision.level());
+        alert.setUpliftPct(alertDecision.upliftPct());
         alert.setAlertMessage(String.format(
-                "Demand window opening for %s — predicted demand %.1f%% above baseline. "
-                + "Target within 4 weeks for maximum reach.", marketName, (DEMAND_WINDOW_MULTIPLIER - 1) * 100));
-        alert.setTrend(trendLabel);
+                "%s for %s — the 4-week forecast is %.1f%% above the rolling baseline. "
+                + "First forecast week crossing the demand-window threshold starts %s.",
+                alertDecision.level().equals("CRITICAL") ? "Critical demand window" : "Demand window detected",
+                marketName, alertDecision.upliftPct(), alertDecision.windowOpenDate().toLocalDate()));
+        alert.setTrend(alertDecision.trend());
         alert.setIsRead(false);
-        alert.setWindowOpenDate(OffsetDateTime.now().plusWeeks(1));
-        alertRepo.save(alert);
+        alert.setWindowOpenDate(alertDecision.windowOpenDate());
+        DemandAlert saved = alertRepo.save(alert);
         MDC.put("code", Module2ErrorCodes.MOD22_ALERT_GENERATED);
-        log.info("Demand alert generated for market={} demand4w={}", market, demand4w);
+        log.info("Demand alert generated for market={} level={} upliftPct={}",
+                market, alertDecision.level(), alertDecision.upliftPct());
         MDC.remove("code");
+        return saved;
+    }
+
+    /**
+     * Implements the frozen demand-window rule. This is deliberately not called
+     * a generic spike: the rule measures a 20% rolling-baseline uplift. Under
+     * the frozen UI vocabulary, a persisted WARNING or CRITICAL is an active
+     * surge; the 2σ spike is only an additional condition for CRITICAL.
+     *
+     * <p>A missing year-over-year ratio can never elevate an alert to CRITICAL;
+     * it remains WARNING when every other warning condition is met.
+     */
+    static Optional<DemandAlertDecision> deriveDemandAlert(double predictedDemand4w,
+                                                            Double rolling7dAverage,
+                                                            boolean spikeIndicator,
+                                                            Double yoyRatio,
+                                                            List<Double> weeklyForecasts,
+                                                            OffsetDateTime firstForecastWeek) {
+        if (rolling7dAverage == null || !Double.isFinite(rolling7dAverage) || rolling7dAverage <= 0.0) {
+            return Optional.empty();
+        }
+        if (!Double.isFinite(predictedDemand4w) || weeklyForecasts == null || firstForecastWeek == null) {
+            return Optional.empty();
+        }
+
+        double threshold = rolling7dAverage * DEMAND_WINDOW_MULTIPLIER;
+        if (predictedDemand4w <= threshold) {
+            return Optional.empty();
+        }
+
+        int firstCrossingWeek = -1;
+        for (int i = 0; i < weeklyForecasts.size(); i++) {
+            Double weeklyForecast = weeklyForecasts.get(i);
+            if (weeklyForecast != null && Double.isFinite(weeklyForecast) && weeklyForecast > threshold) {
+                firstCrossingWeek = i;
+                break;
+            }
+        }
+        if (firstCrossingWeek < 0) {
+            return Optional.empty();
+        }
+
+        double upliftPct = calculateUpliftPct(predictedDemand4w, rolling7dAverage);
+        boolean critical = spikeIndicator && yoyRatio != null && Double.isFinite(yoyRatio) && yoyRatio >= 1.0;
+        return Optional.of(new DemandAlertDecision(
+                critical ? "CRITICAL" : "WARNING",
+                upliftPct,
+                spikeIndicator ? "Sudden interest spike" : "Rising demand window",
+                firstForecastWeek.plusWeeks(firstCrossingWeek)));
+    }
+
+    static double calculateUpliftPct(double predictedDemand4w, double rolling7dAverage) {
+        if (!Double.isFinite(rolling7dAverage) || rolling7dAverage <= 0.0) {
+            throw new IllegalArgumentException("rolling_7d_avg must be a finite positive number");
+        }
+        if (!Double.isFinite(predictedDemand4w)) {
+            throw new IllegalArgumentException("predicted_demand_4w must be finite");
+        }
+        return (predictedDemand4w / rolling7dAverage - 1.0) * 100.0;
+    }
+
+    private static OffsetDateTime firstForecastWeekStart(MarketSignalRecord latestSignal) {
+        LocalDate latestWeekStart = latestSignal != null ? latestSignal.getWeekStartDate() : null;
+        if (latestWeekStart == null && latestSignal != null && latestSignal.getAggregatedAt() != null) {
+            LocalDate observedDate = latestSignal.getAggregatedAt().withOffsetSameInstant(ZoneOffset.UTC).toLocalDate();
+            latestWeekStart = observedDate.minusDays(observedDate.getDayOfWeek().getValue() - 1L);
+        }
+        if (latestWeekStart == null) {
+            throw new IllegalStateException("Cannot derive forecast window without a latest signal week");
+        }
+        return latestWeekStart.plusWeeks(1).atStartOfDay().atOffset(ZoneOffset.UTC);
     }
 
     // ─── DTO assembly ─────────────────────────────────────────────────────────
 
     private MarketDto buildMarketDto(MarketResultBundle b, int rank) {
         String market = b.market();
-        String[] meta = MARKET_META.getOrDefault(market, new String[]{market, market, "???", "CEB"});
+        String name = MarketCatalog.displayName(market);
+        String city = MarketCatalog.city(market);
         ExternalMarketDataClient.FlightReferenceDto flight = externalClient.getFlightReference(market);
 
         int matchScore = (int) Math.round(b.marketScore() * 100);
 
-        // Airline tier: Full-Service for high-score markets, Budget otherwise
-        String tier = matchScore >= 85 ? "Full-Service" : "Budget";
-
+        // Per-carrier direct flag now comes from the route reference (H-21), not
+        // a blanket route-level value; tier was a matchScore restatement never
+        // rendered by the UI and has been dropped (T-06).
         List<AirlineDto> airlines = flight.airlines().stream()
-                .map(a -> new AirlineDto(
-                        a.getOrDefault("name", ""),
-                        a.getOrDefault("code", ""),
-                        a.getOrDefault("frequency", "").replace("x/", "x / "),
-                        flight.directFlight(),
-                        flight.flightHours(),
-                        tier))
+                .map(c -> new AirlineDto(
+                        c.name(),
+                        c.code(),
+                        c.frequency().replace("x/", "x / "),
+                        c.direct()))
                 .collect(Collectors.toList());
 
         List<ChartDataPointDto> chartData = buildChartData(
                 b.history(), b.fr4w(), b.weeklyForecasts(), b.latestSignal());
 
-        String directive = buildDirective(market, matchScore, b.spike());
+        String directive = buildDirective(market, b.upliftPct(), b.windowOpenDate(), b.spike(), b.confidence());
 
-        // accessibilityScore on 1–10 scale (direct=9, connecting=6) — matches frontend mock
-        int accessibilityScore = flight.directFlight() ? 9 : 6;
+        // H-14: computed from the route reference (frequency, direct/stopover,
+        // block hours) — see MarketDto.accessibilityScore javadoc.
+        int accessibilityScore = computeAccessibility(flight);
 
-        // avgFlightPrice as a display-friendly range string — matches frontend mock format
-        String avgFlightPrice = flight.directFlight() ? "₱8,000 – ₱15,000" : "₱25,000 – ₱40,000";
+        // H-19: derive peak months from ≥52 weeks of seasonal history when it
+        // exists; otherwise fall back to the route table's reference list, and
+        // tell the UI which one it is looking at.
+        Optional<List<String>> derivedPeaks = derivePeakMonths(b.history());
+        List<String> peakMonths = derivedPeaks.orElseGet(flight::peakMonths);
+        String peakMonthsSource = derivedPeaks.isPresent() ? "seasonal_history" : "reference";
 
         // Map economic trend points to DTO records for the frontend charts
         List<GdpTrendPointDto> gdpTrendDtos = b.gdpTrend() != null
@@ -819,32 +981,145 @@ public class ForecastingService {
         OffsetDateTime signalAsOf = b.latestSignal() != null ? b.latestSignal().getAggregatedAt() : null;
         String  dataAsOf  = signalAsOf != null ? signalAsOf.toString() : null;
         boolean dataStale = EnrichedSequenceBuilder.isStale(signalAsOf, OffsetDateTime.now());
+        String dataStaleCause = null;
+        if (dataStale && b.fr4w().getCategory() != null && b.fr4w().getBusinessProfileId() != null) {
+            dataStaleCause = ingestionErrorRepo
+                    .findByBusinessProfileIdAndCategoryAndTargetMarket(
+                            b.fr4w().getBusinessProfileId(), b.fr4w().getCategory(), market)
+                    .map(MarketIngestionError::getErrorMessage)
+                    .orElse(null);
+        }
+
+        // Macro-input provenance (Step 6, contract; C-06, H-18) — which tier produced
+        // gdpValue/forexValue, and how old the older of the two readings is, so the
+        // operator can tell a live number from a last-known-good one on screen.
+        String gdpSource   = b.gdpTrend()   != null ? b.gdpTrend().source()   : null;
+        String forexSource = b.forexTrend() != null ? b.forexTrend().source() : null;
+        OffsetDateTime gdpAsOfInstant   = b.gdpTrend()   != null ? b.gdpTrend().fetchedAt()   : null;
+        OffsetDateTime forexAsOfInstant = b.forexTrend() != null ? b.forexTrend().fetchedAt() : null;
+        OffsetDateTime macroAsOfInstant;
+        if (gdpAsOfInstant != null && forexAsOfInstant != null) {
+            macroAsOfInstant = gdpAsOfInstant.isBefore(forexAsOfInstant) ? gdpAsOfInstant : forexAsOfInstant;
+        } else {
+            macroAsOfInstant = gdpAsOfInstant != null ? gdpAsOfInstant : forexAsOfInstant;
+        }
+        String macroAsOf = macroAsOfInstant != null ? macroAsOfInstant.toString() : null;
 
         return new MarketDto(
-                market, rank, meta[0], meta[1], matchScore, directive,
+                market, rank, name, city, matchScore, directive,
                 flight.directFlight(), flight.flightHours(), flight.distanceKm(),
-                meta[2], meta[3],
+                flight.nearestAirport(), flight.destinationAirport(),
                 accessibilityScore,
                 flight.flightFrequency(),
-                avgFlightPrice,
+                flight.fareMinPhp(),
+                flight.fareMaxPhp(),
+                flight.fareSource(),
+                flight.fareValidFrom(),
                 airlines,
-                PEAK_MONTHS.getOrDefault(market, List.of()),
-                buildEconomyInsight(b.ms()),
+                peakMonths,
+                peakMonthsSource,
+                buildEconomyInsight(b.ms(), b.forexTrend()),
                 buildSeasonalityInsight(b.ms()),
                 chartData,
                 gdpTrendDtos,
                 forexTrendDtos,
-                MarketFlags.isoFor(market),
                 currency,
-                currency.isBlank() ? "" : "PHP per 1 " + currency,
+                forexLabel(currency),
                 gdpValue,
                 forexValue,
                 ms.getSeasonalityScore() != null ? ms.getSeasonalityScore() : 0.0,
                 ms.getYoyRatio(),
                 Boolean.TRUE.equals(ms.getSpikeIndicator()),
                 dataAsOf,
-                dataStale
+                dataStale,
+                dataStaleCause,
+                gdpSource,
+                forexSource,
+                macroAsOf,
+                b.surgeLevel(),
+                b.upliftPct(),
+                b.windowOpenDate() != null ? b.windowOpenDate().toString() : null,
+                ms.getScorer(),
+                b.confidence(),
+                b.fr4w().getMapeScore() != null && b.fr4w().getMapeScore() > MAPE_THRESHOLD,
+                b.fr4w().getSource()
         );
+    }
+
+    /**
+     * H-14 route-accessibility score on a 1–10 scale, computed from the route
+     * reference (never a flat {@code direct ? 9 : 6}). See the
+     * {@code MarketDto.accessibilityScore} javadoc for the weighting. Today's
+     * reference data yields Korea 10, Japan 9, USA 4.
+     */
+    static int computeAccessibility(ExternalMarketDataClient.FlightReferenceDto f) {
+        double base      = f.directFlight() ? 6.0 : 3.0;
+        double freqNorm  = Math.min(1.0, Math.max(0, f.flightFrequency()) / 14.0);
+        double hoursNorm = 1.0 - Math.min(1.0, parseBlockHours(f.flightHours()) / 18.0);
+        double raw = base + 2.0 * freqNorm + 2.0 * hoursNorm;
+        return (int) Math.round(Math.max(1.0, Math.min(10.0, raw)));
+    }
+
+    /**
+     * Best-effort block-hours from a route's {@code flightHours} label.
+     * "3h 45m" → 3.75; "16h+ (via MNL)" → 16; anything unparseable → 12.
+     */
+    static double parseBlockHours(String flightHours) {
+        if (flightHours == null) return 12.0;
+        int hIdx = flightHours.indexOf('h');
+        if (hIdx <= 0) return 12.0;
+        try {
+            int start = hIdx;
+            while (start > 0 && Character.isDigit(flightHours.charAt(start - 1))) start--;
+            double hours = Double.parseDouble(flightHours.substring(start, hIdx).trim());
+            int mIdx = flightHours.indexOf('m', hIdx);
+            if (mIdx > hIdx) {
+                int mStart = mIdx;
+                while (mStart > hIdx && Character.isDigit(flightHours.charAt(mStart - 1))) mStart--;
+                String mins = flightHours.substring(mStart, mIdx).trim();
+                if (!mins.isEmpty()) hours += Double.parseDouble(mins) / 60.0;
+            }
+            return hours > 0 ? hours : 12.0;
+        } catch (RuntimeException e) {
+            return 12.0;
+        }
+    }
+
+    /**
+     * H-19: derive the four peak months for a market from its own weekly signal
+     * history — the calendar months whose mean seasonality score is highest.
+     *
+     * <p>Returns empty (caller falls back to the route table's reference list)
+     * unless there are at least {@link #PEAK_MONTHS_MIN_WEEKS} weekly rows AND
+     * data in at least {@link #PEAK_MONTHS_MIN_COVERAGE} distinct calendar
+     * months, so a short or lopsided series never produces a confident-looking
+     * derivation. Months are returned in calendar order.
+     */
+    static Optional<List<String>> derivePeakMonths(List<MarketSignalRecord> history) {
+        if (history == null || history.size() < PEAK_MONTHS_MIN_WEEKS) return Optional.empty();
+
+        double[] sum = new double[12];
+        int[] count = new int[12];
+        for (MarketSignalRecord r : history) {
+            LocalDate week = r.getWeekStartDate();
+            Double seasonality = r.getSeasonalityScore();
+            if (week == null || seasonality == null || !Double.isFinite(seasonality)) continue;
+            int m = week.getMonthValue() - 1;
+            sum[m] += seasonality;
+            count[m]++;
+        }
+
+        List<Integer> withData = new ArrayList<>();
+        for (int m = 0; m < 12; m++) if (count[m] > 0) withData.add(m);
+        if (withData.size() < PEAK_MONTHS_MIN_COVERAGE) return Optional.empty();
+
+        withData.sort((a, b) -> Double.compare(sum[b] / count[b], sum[a] / count[a]));
+        List<Integer> top = new ArrayList<>(withData.subList(0, Math.min(4, withData.size())));
+        top.sort(Integer::compareTo);
+
+        List<String> months = new ArrayList<>();
+        for (int m : top) months.add(MONTH_ABBR[m]);
+        return Optional.of(months);
     }
 
     /**
@@ -873,14 +1148,10 @@ public class ForecastingService {
 
         double baseDemand = fr4w != null ? fr4w.getPredictedDemand() : 50.0;
 
-        // Latest signal values carried forward into future chart points
-        double latestSeasonality = latestSignal != null && latestSignal.getSeasonalityScore() != null
-                ? latestSignal.getSeasonalityScore() * 100.0 : 50.0;
-        double latestForex = latestSignal != null && latestSignal.getForexRate() != null
-                ? latestSignal.getForexRate() : 1.0;
-        double latestGdp   = latestSignal != null && latestSignal.getGdpGrowth() != null
-                ? latestSignal.getGdpGrowth() : 2.0;
-
+        // Latest signal value carried forward into future chart points. Per-point
+        // forex/gdp were removed (T-06): nothing rendered them — the drawer's
+        // Purchasing Power tab reads MarketDto.gdpValue/forexValue and the
+        // gdpTrend/forexTrend series instead.
         // Normalise weekly forecasts — ensure exactly 12 values
         List<Double> wf = new ArrayList<>();
         if (weeklyForecasts != null) {
@@ -892,14 +1163,6 @@ public class ForecastingService {
         // Each pad fills one of the 12 history slots from the oldest end.
         // Pad at index j occupies position j in a 12-slot array, so its week
         // label is "Wk -" + (11 - j).
-        int syntheticCount = recent.isEmpty() ? 11 : Math.max(0, 12 - recent.size());
-        for (int j = 0; j < syntheticCount; j++) {
-            int weekNum = 11 - j;   // Wk -11, Wk -10, … Wk -1
-            double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 3.0));
-            points.add(new ChartDataPointDto(
-                    "Wk -" + weekNum, syntheticDemand, null, 50.0, latestForex, latestGdp, 0.0));
-        }
-
         // ── Real history points ───────────────────────────────────────────────
         // Formula: label = "Wk -" + (recent.size() - 1 - i) for non-Current slots.
         // This scales to any number of real records (1..12).
@@ -907,34 +1170,28 @@ public class ForecastingService {
             MarketSignalRecord r = recent.get(i);
             boolean isCurrent = (i == recent.size() - 1);
             String label = isCurrent ? "Current" : "Wk -" + (recent.size() - 1 - i);
-            double seasonality100 = (r.getSeasonalityScore() != null)
-                    ? r.getSeasonalityScore() * 100.0 : 50.0;
-            double forexVal = (r.getForexRate() != null) ? r.getForexRate() : latestForex;
-            double gdpVal   = (r.getGdpGrowth() != null) ? r.getGdpGrowth() : latestGdp;
+            Double seasonality100 = (r.getSeasonalityScore() != null)
+                    ? r.getSeasonalityScore() * 100.0 : null;
             double spikeVal = Boolean.TRUE.equals(r.getSpikeIndicator()) ? 1.0 : 0.0;
             // "Current" shows both history observation and Wk+1 forecast as the transition
             Double forecastValue = isCurrent ? wf.get(0) : null;
 
             points.add(new ChartDataPointDto(
-                    label, r.getTrendIndex(), forecastValue,
-                    seasonality100, forexVal, gdpVal, spikeVal));
+                    label, r.getWeekStartDate() != null ? r.getWeekStartDate().toString() : null,
+                    r.getTrendIndex(), forecastValue,
+                    seasonality100, spikeVal));
         }
 
         // Synthetic "Current" anchor when no real history exists at all
-        if (recent.isEmpty()) {
-            points.add(new ChartDataPointDto(
-                    "Current", baseDemand, wf.get(0), 50.0, latestForex, latestGdp, 0.0));
-        }
-
         // ── 12 forecast points (Wk +1 … Wk +12) ─────────────────────────────
         for (int w = 1; w <= 12; w++) {
             points.add(new ChartDataPointDto(
                     "Wk +" + w,
+                    latestSignal != null && latestSignal.getWeekStartDate() != null
+                            ? latestSignal.getWeekStartDate().plusWeeks(w).toString() : null,
                     null,
                     wf.get(w - 1),
-                    latestSeasonality,
-                    latestForex,
-                    latestGdp,
+                    null,
                     0.0
             ));
         }
@@ -942,45 +1199,87 @@ public class ForecastingService {
         return points;
     }
 
-    private String buildDirective(String market, int matchScore, boolean spike) {
-        String marketName = MARKET_META.getOrDefault(market, new String[]{market})[0];
-        if (spike) {
-            return "Demand surge detected in " + marketName + ". Activate targeted promotions immediately — "
-                    + "prioritise social content and rate adjustments within 48 hours.";
+    /**
+     * Truthful operator directive. Every numeric/date claim comes from the
+     * persisted alert or forecast, rather than from a generic marketing script.
+     */
+    static String buildDirective(String market, Double upliftPct, OffsetDateTime windowOpenDate,
+                                 boolean spike, double confidence) {
+        String marketName = MarketCatalog.displayName(market);
+        String confidenceText = String.format("%.0f%%", Math.max(0.0, Math.min(1.0, confidence)) * 100.0);
+        if (upliftPct != null && windowOpenDate != null) {
+            return String.format(
+                    "%s has a %.1f%% forecast uplift above its rolling baseline; the demand window opens %s. %s Forecast confidence is %s.",
+                    marketName, upliftPct, windowOpenDate.toLocalDate(),
+                    spike ? "A current interest spike is present." : "No current interest spike is present.",
+                    confidenceText);
         }
-        if (matchScore >= 85) {
-            return marketName + " is your highest-opportunity market. Launch a localised campaign "
-                    + "featuring your top-rated offerings for maximum conversion.";
-        }
-        return marketName + " shows steady demand aligned with your business profile. "
-                + "Maintain consistent content cadence and monitor for emerging trend spikes.";
+        return String.format("No active demand window is currently persisted for %s. Forecast confidence is %s.",
+                marketName, confidenceText);
     }
 
-    private String buildEconomyInsight(MarketScore ms) {
-        double gdp   = ms.getGdpPerCapitaGrowth() != null ? ms.getGdpPerCapitaGrowth() : 0.0;
-        double forex = ms.getForexVsPhp()          != null ? ms.getForexVsPhp()          : 1.0;
+    /** Contract §1.3: the single template every forex axis label is built from. */
+    private static final String FOREX_LABEL_FORMAT = "PHP per 1 %s";
 
+    static String forexLabel(String currency) {
+        return currency.isBlank() ? "" : String.format(FOREX_LABEL_FORMAT, currency);
+    }
+
+    /**
+     * Contract §1: forex is canonical PHP per 1 unit of foreign currency everywhere, so a
+     * fixed magnitude threshold (the previous "&gt; 15.0 = exceptional") is meaningless
+     * across markets — canonical rates span more than three orders of magnitude purely
+     * from how many units of each currency equal one peso (korea ≈ 0.04, japan ≈ 0.38,
+     * usa ≈ 57), which is a currency-denomination artifact, not a real difference in
+     * purchasing power. The purchasing-power signal here is instead the CURRENT rate's
+     * % deviation from the mean of its own forex_trend_json series — a ratio of two
+     * values in the same unit, so it is comparable across every market regardless of
+     * that unit's magnitude.
+     */
+    static String buildEconomyInsight(MarketScore ms, ExternalMarketDataClient.ForexTrendDto forexTrend) {
+        double gdp = ms.getGdpPerCapitaGrowth() != null ? ms.getGdpPerCapitaGrowth() : 0.0;
         String gdpTrend = gdp > 3.0 ? "strong growth" : gdp > 1.5 ? "moderate growth" : "stable";
 
-        // forex_vs_php is stored as foreign-currency units per PHP.
-        // KRW≈23, JPY≈0.37, USD≈0.018 — high value = weak PHP relative to that currency
-        // (meaning the visitor's currency buys more PHP → better Cebu value).
+        Double changePct = forexChangeVsTwelveMonthMeanPct(forexTrend);
         String forexSentiment;
-        if (forex > 15.0) {        // KRW range: visitors have strong purchasing power
-            forexSentiment = "exceptional";
-        } else if (forex > 0.3) {  // JPY range: good purchasing power
-            forexSentiment = "favourable";
-        } else if (forex > 0.015) {// USD range: strong purchasing power relative to PHP
-            forexSentiment = "strong";
+        String trendClause;
+        if (changePct == null) {
+            forexSentiment = "an undetermined";
+            trendClause = "not enough exchange-rate history yet to compare against";
+        } else if (changePct >= 3.0) {
+            forexSentiment = "an improving";
+            trendClause = String.format("%.1f%% stronger than its own 12-month average", changePct);
+        } else if (changePct <= -3.0) {
+            forexSentiment = "a softening";
+            trendClause = String.format("%.1f%% weaker than its own 12-month average", changePct);
         } else {
-            forexSentiment = "moderate";
+            forexSentiment = "a stable";
+            trendClause = "close to its own 12-month average";
         }
 
         return String.format(
-                "GDP is showing %s (%.1f%% YoY). The exchange rate signals %s purchasing power "
-                + "for visitors spending in Cebu — an XGBoost economic viability score was used "
-                + "to weight this market's accessibility alongside flight data.",
-                gdpTrend, gdp, forexSentiment);
+                "GDP is showing %s (%.1f%% YoY). The exchange rate signals %s purchasing power trend "
+                + "for visitors spending in Cebu — the currency is currently %s. The %s economic "
+                + "viability scorer weighted this market's accessibility alongside flight data.",
+                gdpTrend, gdp, forexSentiment, trendClause,
+                "xgboost".equals(ms.getScorer()) ? "XGBoost" : "linear fallback");
+    }
+
+    /**
+     * % difference between a market's latest forex reading and the mean of its own
+     * forex_trend_json series (up to 12 monthly points, contract §1 canonical unit).
+     * Unit-independent by construction — both operands are in the same unit, so the
+     * ratio is comparable across every market regardless of that unit's magnitude.
+     * Null when there is no trend history yet, or its mean is non-positive.
+     */
+    static Double forexChangeVsTwelveMonthMeanPct(ExternalMarketDataClient.ForexTrendDto forexTrend) {
+        if (forexTrend == null || forexTrend.points().isEmpty()) return null;
+        double mean = forexTrend.points().stream()
+                .mapToDouble(ForexTrendPoint::value)
+                .average()
+                .orElse(0.0);
+        if (mean <= 0) return null;
+        return (forexTrend.latest() - mean) / mean * 100.0;
     }
 
     /**
@@ -990,16 +1289,19 @@ public class ForecastingService {
      *   spike confirmed by YoY → no penalty; spike unconfirmed → −0.40.
      * Score bands: 0.85–1.00 Strong, 0.70–0.84 Moderate, 0.40–0.69 Weak, <0.40 None.
      */
-    private String buildSeasonalityInsight(MarketScore ms) {
+    static String buildSeasonalityInsight(MarketScore ms) {
         double score = ms.getSeasonalityScore() != null ? ms.getSeasonalityScore() : 0.5;
-        if (score >= 0.70)
+        if (score >= 0.85)
             return "Strong recurring seasonal patterns detected (high YoY ratio + spike signals). "
                  + "Align campaigns with peak travel windows 6–8 weeks ahead for maximum impact.";
+        if (score >= 0.70)
+            return "Moderate seasonal pattern detected. Use the identified peak months to time campaigns, "
+                 + "while continuing to validate recurrence with new weekly data.";
         if (score >= 0.40)
-            return "Moderate seasonal variation with identifiable peak periods. "
-                 + "Consistent year-round demand — focus campaign timing on the identified peak months.";
-        return "Low seasonality score — demand is relatively flat throughout the year. "
-             + "Maintain a steady always-on content cadence and react quickly to any emerging trend spikes.";
+            return "Weak — emerging seasonal pattern. Keep a steady content cadence and use new weekly "
+                 + "signals to confirm whether the identified peak months recur.";
+        return "No seasonal basis yet. Continue collecting weekly history before assigning campaign timing "
+             + "to a recurring seasonal pattern.";
     }
 
     // ─── economic trend persistence ───────────────────────────────────────────
@@ -1022,6 +1324,10 @@ public class ForecastingService {
             trend.setGdpLatest(gdp != null ? gdp.latest() : null);
             trend.setForexLatest(forex != null ? forex.latest() : null);
             trend.setCurrencyCode(forex != null ? forex.currencyCode() : null);
+            trend.setGdpSource(gdp != null ? gdp.source() : null);
+            trend.setGdpFetchedAt(gdp != null ? gdp.fetchedAt() : null);
+            trend.setForexSource(forex != null ? forex.source() : null);
+            trend.setForexFetchedAt(forex != null ? forex.fetchedAt() : null);
 
             if (gdp != null && !gdp.points().isEmpty()) {
                 StringBuilder sb = new StringBuilder("[");
@@ -1060,6 +1366,116 @@ public class ForecastingService {
         return v instanceof Number ? ((Number) v).doubleValue() : def;
     }
 
+    /**
+     * Like {@link #num} but never falls back to a fabricated default (Step 6,
+     * contract; H-29) — a batch-inference response missing a required numeric
+     * field throws instead of silently becoming demand=50 / mape=10 / etc.
+     */
+    private static double requireNum(Map<String, Object> map, String key, String market) {
+        Object v = map.get(key);
+        if (v instanceof Number n && Double.isFinite(n.doubleValue())) return n.doubleValue();
+        // "dependency" names whichever engine actually produced this response (stub-v1,
+        // groq, bilstm, ...) rather than a hardcoded "groq" — the same class of stale
+        // label bug already fixed for the pytrends→serpapi migration elsewhere in this
+        // pipeline; this error is reachable under any forecast engine, not only Groq.
+        String dependency = String.valueOf(map.getOrDefault("source", "forecast-engine"));
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Forecast inference for " + market + " is missing required field '" + key + "'.",
+                "dependency", dependency,
+                "cause", "batch inference response for " + market + " did not include a numeric '" + key + "' value",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    /**
+     * Like {@link #requireNum}, but for a field the FastAPI contract itself declares
+     * nullable (mape/mae/rmse in ForecastResponse — see
+     * backend/fastapi-transformer/app/routers/forecasting.py). A null here is a
+     * legitimate "could not be computed" answer (MAPE is undefined when the actual
+     * value is 0, which a thin-history/near-zero-interest category hits often) —
+     * not a missing-field error, so this returns null instead of throwing.
+     */
+    private static Double optionalNum(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return (v instanceof Number n && Double.isFinite(n.doubleValue())) ? n.doubleValue() : null;
+    }
+
+    private static String requireSource(Map<String, Object> inference, String market) {
+        Object value = inference.get("source");
+        if (value instanceof String source && !source.isBlank()) return source;
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Forecast inference for " + market + " is missing its engine source.",
+                "dependency", "forecast-engine",
+                "cause", "batch inference response for " + market + " omitted non-empty 'source'",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    private static String requireScorer(Map<String, Object> scoreResult, String market) {
+        Object value = scoreResult.get("scorer");
+        if (value instanceof String scorer && ("xgboost".equals(scorer) || "linear".equals(scorer))) {
+            return scorer;
+        }
+        throw AiDependencyException.fromBody(502, Map.of(
+                "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                "message", "Economic score for " + market + " is missing a valid scorer identifier.",
+                "dependency", "economic-scorer",
+                "cause", "score response must contain scorer=xgboost or scorer=linear",
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
+    private static List<Double> requireWeeklyForecasts(Map<String, Object> inference, String market) {
+        Object raw = inference.get("weekly_forecasts");
+        if (!(raw instanceof List<?> values) || values.size() != 12) {
+            throw AiDependencyException.fromBody(502, Map.of(
+                    "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                    "message", "Forecast inference for " + market + " must contain exactly 12 weekly forecasts.",
+                    "dependency", "forecast-engine",
+                    "cause", "weekly_forecasts is absent or has a length other than 12",
+                    "stage", "spring/forecasting"), "forecasting/pipeline");
+        }
+        List<Double> weekly = new ArrayList<>(12);
+        for (Object value : values) {
+            if (!(value instanceof Number number) || !Double.isFinite(number.doubleValue())
+                    || number.doubleValue() < 0.0 || number.doubleValue() > 100.0) {
+                throw AiDependencyException.fromBody(502, Map.of(
+                        "code", Module2ErrorCodes.MOD22_INFERENCE_FAILED,
+                        "message", "Forecast inference for " + market + " has an invalid weekly forecast.",
+                        "dependency", "forecast-engine",
+                        "cause", "weekly_forecasts must be 12 finite 0-100 numbers",
+                        "stage", "spring/forecasting"), "forecasting/pipeline");
+            }
+            weekly.add(number.doubleValue());
+        }
+        return List.copyOf(weekly);
+    }
+
+    /**
+     * The most recent non-null reading of one signal field across a category's
+     * week-ordered history (Step 6, contract; H-29) — the "last-known-good"
+     * counterpart of {@link #requireNum} for signal-derived inputs (seasonality,
+     * GDP, forex) rather than inference-response fields. Throws only when NOT A
+     * SINGLE row in the history has ever measured this field — never fabricates
+     * the 0.5 / 2.0 / 1.0 constants this replaces.
+     */
+    private static double requireLatestMeasured(List<MarketSignalRecord> historyWeekDesc, String market,
+            String category, String field, java.util.function.Function<MarketSignalRecord, Double> getter) {
+        for (MarketSignalRecord r : historyWeekDesc) {
+            Double v = getter.apply(r);
+            if (v != null) return v;
+        }
+        throw noMeasuredCategoryInput(market, category, field);
+    }
+
+    private static AiDependencyException noMeasuredCategoryInput(String market, String category, String field) {
+        return AiDependencyException.fromBody(503, Map.of(
+                "code", "MOD22_NO_MARKET_DATA",
+                "message", "No measured " + field + " exists for " + market + "/" + category + " yet.",
+                "dependency", "market-signal",
+                "cause", "no MarketSignalRecord in history for this (market, category) has a non-null " + field,
+                "stage", "spring/forecasting"), "forecasting/pipeline");
+    }
+
     private double safeScore(MarketScore ms) {
         return ms.getMarketScore() != null ? ms.getMarketScore() : 0.0;
     }
@@ -1075,5 +1491,11 @@ public class ForecastingService {
             GdpTrendDto gdpTrend,
             ForexTrendDto forexTrend,
             List<Double> weeklyForecasts,
-            MarketSignalRecord latestSignal) {}
+            MarketSignalRecord latestSignal,
+            String surgeLevel,
+            Double upliftPct,
+            OffsetDateTime windowOpenDate) {}
+
+    /** Package-visible pure result of the frozen demand-window alert rule. */
+    record DemandAlertDecision(String level, double upliftPct, String trend, OffsetDateTime windowOpenDate) {}
 }

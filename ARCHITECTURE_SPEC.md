@@ -69,10 +69,10 @@ score                                     audit                    report
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 2.1 | Home demand alerts | Page load → `POST /api/forecasting/ensure/{profileId}?maxAgeHours=12` (staleness-gated live pipeline) | Trend-alert cards for markets with active/upcoming 2σ spikes |
+| 2.1 | Dashboard demand alerts | `DashboardView` load → `POST /api/forecasting/ensure?maxAgeHours=12`, then `GET /api/notifications` | Tenant-scoped cards; persisted WARNING/CRITICAL records are active demand windows |
 | 2.1 | Scheduled ingestion | Cron / refresh → PyTrends + World Bank + forex fetch → `tbl_market_signal_record` | Enriched weekly signal records (rolling stats, spike, YoY) |
-| 2.2 | Market Radar | User opens **Market Radar** → `GET /api/forecasting/markets` (DB read) | 3 ranked market cards + 24-point demand chart + economic insights |
-| 2.2 | Refresh forecast | **Refresh** → `POST /api/forecasting/analyze/{profileId}` | Fresh ingestion + Groq batch forecast + re-ranked markets |
+| 2.2 | Market Radar | User selects an alert → `GET /api/forecasting/markets?category=` (DB read), then opens the drawer | Category-ranked cards + real-history/forecast chart + economic insights |
+| 2.2 | Refresh forecast | **Refresh forecast** → `POST /api/forecasting/analyze` | Fresh ingestion + active-engine batch forecast + re-ranked markets |
 
 ### 2.3 Module 3 — Content Studio & OMCS Compliance
 
@@ -130,35 +130,28 @@ compute(weekly_series):
 | `yoy_ratio` | float \| None | `None` when < 59 weeks |
 | `seasonality_score` | float 0–1 | Composite (see §4.3) |
 
-### 3.2 LLM Demand Forecasting
+### 3.2 Demand Forecast Engine
 
-**Source:** [gemini_forecaster.py](backend/fastapi-transformer/app/services/gemini_forecaster.py)
+**Sources:** `app/services/forecast_engine.py`, `stub_forecaster.py`, and
+`gemini_forecaster.py` (Groq only). `FORECAST_ENGINE` selects `stub` (the
+default), `groq`, or `bilstm`. The shipped engine is deterministic `stub-v1`,
+which is explicitly **not a trained model**. Groq defaults to
+`openai/gpt-oss-120b` when explicitly selected. `bilstm` reports its artifact
+dependency unavailable until the trained artifact and scaler arrive.
 
-Replaces a prior BiLSTM + Transformer model with a **Groq `llama-3.3-70b-versatile`** prompt pipeline (`temperature=0.10`, `response_format=json_object`, 3-attempt exponential back-off). A single **batch** call returns all three markets at once to conserve rate-limit budget.
+Every engine receives the same twelve-row weekly feature matrix and is called
+only through `POST /internal/forecasting/inference-batch`.
 
-**Prompt construction** injects the signal series (last 12 points), rolling stats, momentum (`accelerating` if `7d > 30d`), the 2σ spike flag, YoY ratio, seasonality score, and economic context (forex, GDP latest, 5-year GDP direction). It then enforces 8 ordered **guard rules** in natural language:
-
-| Rule | Constraint |
-|------|-----------|
-| 1 | All 12 weekly values distinct |
-| 2 | Continue momentum, dampening toward the 7d average |
-| 3 | Hard ceiling: if `current > 65`, no week may exceed 92 |
-| 4 | Mean-reversion pressure on weeks 5–12 |
-| 5 | If `YoY > 1.2`, apply proportional seasonal uplift |
-| 6 | If `spike = YES`, revert toward 7d mean from week 2 |
-| 7 | `GDP > 3%` + high seasonality → ~+3% modifier |
-| 8 | Declining multi-year GDP → −2% dampener on weeks 5–12 |
-
-**Deterministic post-processing** (in code, not the model) hardens the output:
+The stub uses a documented damped-trend projection with a seasonality offset.
+It clamps each point to 0–100 and derives 4-week/12-week demand from the means
+of the first four/all twelve points. Metrics are from a four-week holdout
+backtest; confidence combines backtest error and the imputed-cell ratio.
 
 ```
-parse 12 weekly values, clamp each to [5.0, 100.0]
-missing week → dampened slope extrapolation from prior two values
-Guard 1 (flat line): if all 12 identical → apply dampened linear tilt
-Guard 2 (ceiling/floor): if >=3 values >=99.5 or <=5.5 →
-    re-anchor to a linear path from first valid value toward the 7d mean
-demand_4w  = mean(weekly[0:4])
-demand_12w = mean(weekly[0:12])
+weekly_forecasts = 12 floats, each clamped to [0, 100]
+predicted_demand_4w = mean(weekly_forecasts[0:4])
+predicted_demand_12w = mean(weekly_forecasts[0:12])
+demand-window alert = demand_4w > rolling_average_7d × 1.2
 ```
 
 ### 3.3 XGBoost Economic Viability
@@ -179,7 +172,10 @@ Scores the **economic accessibility** of a source market from 5 features. Uses a
 
 **Source:** [ForecastingService.java](backend/spring-boot/src/main/java/com/ceview/module2/submodule22/ForecastingService.java)
 
-The Spring orchestrator runs the transactional pipeline (`runPipeline`): build per-market sequences → one batched Groq call → per-market XGBoost scoring → persist → rank descending. The final composite is assembled outside the AI service:
+The Spring orchestrator runs the transactional pipeline (`runPipeline`): build
+per-market sequences → one active-engine batch call → per-market economic
+scoring → persist → rank descending. The final composite is assembled outside
+the AI service:
 
 ```
 market_score = 0.40·(predicted_demand/100) + 0.35·seasonality_score + 0.25·economic_viability
@@ -187,7 +183,9 @@ market_score = 0.40·(predicted_demand/100) + 0.35·seasonality_score + 0.25·ec
 
 **Demand-alert trigger:** with `DEMAND_WINDOW_MULTIPLIER = 1.2`, an alert is persisted when `demand_4w > rolling_average_7d × 1.2`.
 
-**Chart assembly** always emits **exactly 24 points** (12 history + 12 forecast). Real `MarketSignalRecord` rows fill history slots newest-last (last labeled `"Current"`); when fewer than 12 exist, synthetic pads back-fill the oldest slots (`max(10, baseDemand − (padsRemaining × 3))`). Forecast slots carry the per-week Groq predictions; seasonality/forex/GDP carry the latest known values forward.
+**Chart assembly** emits only persisted observed weeks followed by the twelve
+forecast weeks. It never synthesizes history pads or extrapolates seasonality,
+forex, or GDP onto forecast points. The UI labels the observed history count.
 
 **`ChartDataPointDto` structure:**
 
@@ -322,15 +320,16 @@ demand alert ⇔ demand_4w > rolling_average_7d × 1.2
 
 ### 4.6 Forecast Error & Validation Metrics
 
-These are **synthetic confidence proxies** derived from the near-term deviation, not backtested errors:
+The active stub engine computes these from an honest four-week holdout backtest;
+they are not synthetic confidence proxies. A real BiLSTM must return the same
+fields under the `ForecastResponse` contract.
 
 ```
-delta      = |demand_4w − current|
-MAPE       = min(14.9, 7.0 + delta × 0.08)
-MAE        = MAPE × 0.60
-RMSE       = MAPE × 0.85
-confidence = max(0.70, 1.0 − MAPE/100)
-passed     = MAPE <= 15.0   (else low-confidence disclaimer)
+MAPE       = mean(|actual - forecast| / |actual|) × 100 (non-zero actuals)
+MAE        = mean(|actual - forecast|)
+RMSE       = sqrt(mean((actual - forecast)^2))
+passed     = MAPE <= 15.0 when MAPE is available
+confidence = bounded combination of holdout error and imputed-cell ratio
 ```
 
 ### 4.7 Economic Viability

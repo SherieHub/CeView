@@ -8,6 +8,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarRange, Sparkles } from 'lucide-react';
 import type { Market } from '@/types';
+import { peakMonthsSourceLabel } from './format';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -21,6 +22,7 @@ export function seasonalityBand(score: number): string {
 
 export default function SeasonalPatternsTab({ market }: { market: Market }) {
   const peaks = new Set(market.peakMonths);
+  const measuredWeeks = market.chartData.filter((point) => point.seasonality != null).length;
 
   return (
     <>
@@ -60,7 +62,8 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
       </div>
 
       <div className="card mt-4">
-        <p className="eyebrow mb-2">Peak months</p>
+        <p className="eyebrow mb-1">Peak months</p>
+        <p className="text-meta mb-2">{peakMonthsSourceLabel(market.peakMonthsSource)}</p>
         <ul className="month-grid">
           {MONTHS.map((m) => (
             <li key={m} data-peak={peaks.has(m)}>
@@ -81,7 +84,9 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
       </div>
 
       <div className="chart-frame">
-        <p className="eyebrow mb-2">Seasonality index · 24 weeks</p>
+        <p className="eyebrow mb-2">
+          Seasonality index · {measuredWeeks} week{measuredWeeks === 1 ? '' : 's'}
+        </p>
         <ResponsiveContainer width="100%" height={160}>
           <AreaChart data={market.chartData} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
             <defs>
@@ -125,6 +130,7 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        <p className="text-meta mt-1">Shown for measured weeks only — not projected into the forecast.</p>
       </div>
     </>
   );

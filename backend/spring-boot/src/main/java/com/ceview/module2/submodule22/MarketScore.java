@@ -26,6 +26,8 @@ public class MarketScore {
     /** Mirrors ForecastResult.yoyRatio so demand-alert consumers of MarketScore
      *  can surface it without an extra join. */
     @Column(name = "yoy_ratio")              private Double yoyRatio;
+    /** Exact scorer returned by FastAPI: xgboost when its artifact ran, otherwise linear. */
+    @Column(name = "scorer", length = 16)    private String scorer;
     @Column(name = "evaluated_at")           private OffsetDateTime evaluatedAt;
 
     @PrePersist

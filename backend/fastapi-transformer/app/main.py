@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # must run before any app module reads os.environ
+
 from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
@@ -15,7 +18,7 @@ app = FastAPI(
     title="CeView Transformer Microservice",
     version="0.2.0",
     description=(
-        "Module 2 market intelligence: PyTrends ingestion, seasonal shift detection "
+        "Module 2 market intelligence: SerpApi (Google Trends) ingestion, seasonal shift detection "
         "(7d/30d rolling avg, 2σ spike, YoY), Gemini demand forecasting, "
         "XGBoost economic viability scoring."
     ),
@@ -32,20 +35,9 @@ def healthz() -> dict:
 
 @app.get("/healthz/models")
 def healthz_models() -> dict:
-    """Reports AI model availability for monitoring dashboards.
-
-    Returns live/stub status for:
-      gemini  — Gemini API availability (requires GEMINI_API_KEY)
-      xgboost — XGBoost model file presence (requires xgboost_market.json)
-    """
-    from app.services.gemini_forecaster import _groq_client
-    from app.services.xgboost_scorer import _model as xgb_model
-
-    return {
-        "groq":    "live"   if _groq_client is not None else "stub",
-        "xgboost": "loaded" if xgb_model    is not None else "stub",
-        "status":  "ok",
-    }
+    """Report deterministic engine and optional-model availability without loading Groq."""
+    from app.services.forecast_engine import model_health
+    return model_health()
 
 
 app.include_router(forecasting.router,         prefix="/internal/forecasting",  tags=["forecasting"])

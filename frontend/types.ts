@@ -238,11 +238,10 @@ export interface PostMetric {
 
 export interface ChartDataPoint {
   week: string;
+  weekStartDate: string | null;
   history: number | null;
   forecast: number | null;
-  seasonality: number;
-  forex: number;
-  gdp: number;
+  seasonality: number | null;
   spike: 0 | 1;
 }
 
@@ -250,11 +249,8 @@ export interface Airline {
   name: string;
   code: string;
   frequency: string;
+  /** Per-carrier now (H-21): a route can mix direct and via-Manila carriers. */
   direct: boolean;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  duration?: string;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  tier?: string;
 }
 
 export interface Market {
@@ -262,7 +258,6 @@ export interface Market {
   rank: number;
   name: string;
   city: string;
-  flag: string;
   matchScore: number;
   directive: string;
   directFlight: boolean;
@@ -270,11 +265,20 @@ export interface Market {
   distanceKm: number;
   nearestAirport: string;
   destinationAirport: string;
+  /** 1–10 route-accessibility score, computed backend-side from the route reference (H-14). */
   accessibilityScore: number;
   flightFrequency: number;
-  avgFlightPrice: string;
+  /** Round-trip fare range in PHP, from tbl_market_route_reference (H-16). */
+  fareMinPhp: number;
+  fareMaxPhp: number;
+  /** Provenance of the fare/route figures — e.g. "static_reference_v1". */
+  fareSource: string;
+  /** ISO date the fare/route figures were last validated, or null. */
+  fareAsOf: string | null;
   airlines: Airline[];
   peakMonths: string[];
+  /** "seasonal_history" when derived from ≥52 weeks of signal, else "reference" (H-19). */
+  peakMonthsSource: 'seasonal_history' | 'reference';
   currency: string;
   forexLabel: string;
   gdpValue: number;
@@ -289,6 +293,19 @@ export interface Market {
    */
   yoyRatio: number | null;
   spikeIndicator: boolean;
+  /** Current category-scoped demand-window level, sourced from tbl_demand_alert. */
+  surgeLevel: 'WARNING' | 'CRITICAL' | null;
+  /** Measured uplift and first threshold-crossing week for the active demand window. */
+  upliftPct: number | null;
+  windowOpenDate: string | null;
+  /** The economic scorer that actually produced this market's persisted score. */
+  scorer: 'xgboost' | 'linear' | null;
+  gdpSource: string | null;
+  forexSource: string | null;
+  macroAsOf: string | null;
+  forecastConfidence: number;
+  lowConfidence: boolean;
+  forecastSource: string;
   economyInsight: string;
   seasonalityInsight: string;
   gdpTrend: { year: number; value: number }[];
@@ -298,7 +315,10 @@ export interface Market {
   dataAsOf: string | null;
   /** True when that measurement is older than 48h — real, but old. */
   dataStale: boolean;
+  dataStaleCause: string | null;
 }
+
+export interface MarketsResponse { markets: Market[]; }
 
 export interface DemandAlert {
   id: string;
@@ -306,7 +326,8 @@ export interface DemandAlert {
   title: string;
   market: string;
   marketId: string;
-  category: string;
+  /** Nullable on the wire for alerts written before category persistence. */
+  category: string | null;
   trend: string;
   isRead: boolean;
   /**
@@ -317,7 +338,12 @@ export interface DemandAlert {
    * CRITICAL alerts silently drop out of the surge count.
    */
   alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
-  alertMessage: string;
+  /** Nullable on the wire for legacy alerts without an operator message. */
+  alertMessage: string | null;
+  /** ISO timestamp for the first forecast week crossing the alert threshold. */
+  windowOpenDate: string | null;
+  /** Forecast uplift over the rolling baseline, in percent. */
+  upliftPct: number | null;
 }
 
 // ─── Module 4 — Campaign Analytics ────────────────────────────────────────
@@ -544,4 +570,16 @@ export interface PublishedPost {
  */
 export function isSurge(alert: Pick<DemandAlert, 'alertLevel'>): boolean {
   return alert.alertLevel === 'WARNING' || alert.alertLevel === 'CRITICAL';
+}
+
+/**
+ * The market-card source of truth for the same demand-window rule used by
+ * alert cards and the dashboard count. Never infer a surge from chart spikes.
+ */
+export function marketSurgeState(
+  market: Pick<Market, 'surgeLevel'>,
+): 'warning' | 'critical' | 'none' {
+  if (market.surgeLevel === 'CRITICAL') return 'critical';
+  if (market.surgeLevel === 'WARNING') return 'warning';
+  return 'none';
 }

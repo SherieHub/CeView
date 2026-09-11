@@ -11,6 +11,7 @@ import { render, screen } from '@testing-library/react';
 import DrawerChartPanel from './DrawerChartPanel';
 import SeasonalPatternsTab, { seasonalityBand } from './SeasonalPatternsTab';
 import PurchasingPowerTab from './PurchasingPowerTab';
+import { formatPhpRange } from './format';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import type { Market } from '@/types';
 
@@ -19,15 +20,42 @@ const market_gdp = (m: Market) => m.gdpTrend.map((g) => g.value);
 const japan = MOCK_MARKETS.find((m) => m.id === 'japan')!; // spikeIndicator: false
 
 describe('DrawerChartPanel — surge banner', () => {
-  it('confirms a surge for a market that is spiking', () => {
+  it('confirms a surge only from the persisted CRITICAL surge level', () => {
     render(<DrawerChartPanel market={korea} timeframe="4WK" onTimeframeChange={vi.fn()} />);
     expect(screen.getByText(/Surge confirmed/)).toBeInTheDocument();
   });
 
-  it('says so plainly when nothing is spiking', () => {
-    render(<DrawerChartPanel market={japan} timeframe="4WK" onTimeframeChange={vi.fn()} />);
+  it('does not infer a surge from a chart spike when no persisted demand window exists', () => {
+    render(
+      <DrawerChartPanel
+        market={{ ...korea, surgeLevel: null, spikeIndicator: true }}
+        timeframe="4WK"
+        onTimeframeChange={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText(/No active surge/)).toBeInTheDocument();
+    expect(screen.queryByText(/Surge confirmed/)).not.toBeInTheDocument();
+  });
+
+  it('uses the warning demand-window copy without asserting YoY confirmation', () => {
+    render(
+      <DrawerChartPanel
+        market={{ ...korea, surgeLevel: 'WARNING', yoyRatio: null, upliftPct: 22.1 }}
+        timeframe="4WK"
+        onTimeframeChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Active demand window')).toBeInTheDocument();
+    expect(screen.getByText(/22.1% above its rolling baseline/)).toBeInTheDocument();
+    expect(screen.queryByText(/year-on-year comparison/)).not.toBeInTheDocument();
+  });
+
+  it('shows an active demand window when the persisted level is WARNING', () => {
+    render(<DrawerChartPanel market={japan} timeframe="4WK" onTimeframeChange={vi.fn()} />);
+
+    expect(screen.getByText(/Active demand window/)).toBeInTheDocument();
     expect(screen.queryByText(/Surge confirmed/)).not.toBeInTheDocument();
   });
 
@@ -70,7 +98,7 @@ describe('PurchasingPowerTab', () => {
     expect(values).toEqual([
       korea.forexValue.toFixed(2),
       `${korea.gdpValue}%`,
-      korea.avgFlightPrice,
+      formatPhpRange(korea.fareMinPhp, korea.fareMaxPhp),
       `${korea.accessibilityScore}/10`,
     ]);
   });

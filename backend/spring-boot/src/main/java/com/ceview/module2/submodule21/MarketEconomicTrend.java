@@ -18,7 +18,7 @@ import java.util.UUID;
  * gdp_trend_json  — array of annual GDP growth points:
  *     [{"year": 2020, "value": -0.9}, {"year": 2021, "value": 4.1}, ...]
  *
- * forex_trend_json — array of monthly forex rates (foreign-currency units per PHP):
+ * forex_trend_json — array of monthly forex rates (PHP per one foreign unit):
  *     [{"date": "2025-01", "value": 23.5}, {"date": "2025-02", "value": 23.8}, ...]
  * </pre>
  */
@@ -46,7 +46,7 @@ public class MarketEconomicTrend {
     private String gdpTrendJson;
 
     /**
-     * JSON array — monthly forex rate (foreign-currency units per PHP) for the last 12 months.
+     * JSON array — monthly forex rate (PHP per one foreign unit) for the last 12 months.
      * Each element: {"date": "YYYY-MM", "value": double}
      */
     @Column(name = "forex_trend_json", columnDefinition = "TEXT")
@@ -56,9 +56,13 @@ public class MarketEconomicTrend {
     @Column(name = "gdp_latest")
     private Double gdpLatest;
 
-    /** Single latest forex rate (foreign-currency per PHP). */
+    /** Single latest forex rate (PHP per one foreign unit). */
     @Column(name = "forex_latest")
     private Double forexLatest;
+
+    /** Unit marker introduced by V27; all values use PHP per one foreign unit. */
+    @Column(name = "forex_unit", nullable = false, length = 32)
+    private String forexUnit = "PHP_PER_FOREIGN";
 
     /** ISO currency code for this market's forex series. */
     @Column(name = "currency_code", length = 10)
@@ -74,6 +78,31 @@ public class MarketEconomicTrend {
 
     @Column(name = "fetched_at", nullable = false)
     private OffsetDateTime fetchedAt;
+
+    /**
+     * Which tier produced {@link #gdpLatest}/{@link #gdpTrendJson}: {@code "live"}
+     * (World Bank fetch succeeded) or {@code "last_known_good"} (fetch failed, this
+     * client's own last persisted reading was reused instead). Null for rows
+     * written before Step 6 (C-06, H-18) — never backfilled, since there is no
+     * honest way to know which tier produced them.
+     */
+    @Column(name = "gdp_source", length = 32)
+    private String gdpSource;
+
+    /** When the reading tagged by {@link #gdpSource} was actually taken — the live-fetch
+     *  instant, or the last-known-good row's own timestamp. Not the same as {@link #fetchedAt}
+     *  once GDP and forex start ageing independently across ingests. */
+    @Column(name = "gdp_fetched_at")
+    private OffsetDateTime gdpFetchedAt;
+
+    /** Which tier produced {@link #forexLatest}/{@link #forexTrendJson}: {@code "live"}
+     *  or {@code "last_known_good"}. See {@link #gdpSource}. */
+    @Column(name = "forex_source", length = 32)
+    private String forexSource;
+
+    /** When the reading tagged by {@link #forexSource} was actually taken. See {@link #gdpFetchedAt}. */
+    @Column(name = "forex_fetched_at")
+    private OffsetDateTime forexFetchedAt;
 
     @PrePersist
     void onCreate() {
