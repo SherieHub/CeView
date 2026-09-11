@@ -158,17 +158,8 @@ export const apiClient = {
   },
 
   markets: {
-    list: () =>
-      USE_FIXTURES
-        ? delay(MOCK_MARKETS)
-        : request<{ markets: Market[] }>('/api/forecasting/markets')
-            .then((r) => r.markets),
-    chartData: (marketId: string) =>
-      USE_FIXTURES
-        ? delay(MOCK_MARKETS.find((m) => m.id === marketId)?.chartData ?? [])
-        // chartData ships inside each MarketDto — no separate round-trip exists.
-        : request<{ markets: Market[] }>('/api/forecasting/markets')
-            .then((r) => r.markets.find((m) => m.id === marketId)?.chartData ?? []),
+    // A category is required.  Dashboard owns this read so rank, chart and
+    // drawer all operate on one coherent category-scoped Market[] response.
     forCategory: (category: string) =>
       USE_FIXTURES
         ? delay(marketsForCategory(category))

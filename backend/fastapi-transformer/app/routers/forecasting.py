@@ -1,7 +1,7 @@
 """Submodule 2.2 — Demand Forecasting & Market Scoring endpoints.
 
 Phase 2 architecture:
-  POST /inference  — Gemini-powered 4w / 12w demand forecasting (replaces BiLSTM)
+  POST /inference-batch — one engine call for all market forecasts
   POST /score      — XGBoost economic viability scoring (GDP, FX, flight, distance)
 """
 from __future__ import annotations
@@ -211,7 +211,7 @@ class EconomicScoreResponse(BaseModel):
     components:               dict
 
 
-# ─── Submodule 2.2: Gemini demand forecasting (FR2.11) ────────────────────────
+# ─── Submodule 2.2: batch demand forecasting (FR2.11) ─────────────────────────
 
 def _engine_payload(body: ForecastRequest) -> dict:
     if isinstance(body, SequenceForecastRequest):
@@ -219,76 +219,11 @@ def _engine_payload(body: ForecastRequest) -> dict:
     return body.model_dump()
 
 
-@router.post("/inference", response_model=ForecastResponse)
-def run_inference(body: ForecastRequest) -> ForecastResponse:
-    """Gemini-powered 4-week and 12-week demand forecasting (FR2.11).
-
-    Constructs a structured prompt from the trend series and rolling statistics,
-    calls the Gemini API with temperature=0.1 and JSON response mode, then
-    parses and validates the output (FR2.12 MAPE ≤ 15%).
-
-    Error handling: Gemini quota exhaustion (429) and transient failures are
-    caught here and returned as 503 JSON so Spring Boot's WebClient can parse
-    the error body without an UnsupportedMediaTypeException.
-    """
-    try:
-        result = ACTIVE_ENGINE.forecast(_engine_payload(body))
-    except ValueError as exc:
-        # Missing trend_series — ingestion has not run yet.
-        error_msg = str(exc)
-        logger.error("[MOD22_MISSING_TREND_DATA] market=%s: %s", body.market, exc)
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "MOD22_MISSING_TREND_DATA",
-                "reason": error_msg,
-                "message": "Trend series is empty — run the ingestion job first to populate signal records.",
-            },
-        )
-    except RuntimeError as exc:
-        error_msg = str(exc)
-        if "429" in error_msg or "quota" in error_msg.lower() or "rate_limit" in error_msg.lower():
-            code = "MOD22_AI_QUOTA_EXCEEDED"
-            human_reason = (
-                "AI model daily token limit reached. "
-                "Wait until the quota resets (rolling 24-hour window) or upgrade the API plan."
-            )
-        elif "api key" in error_msg.lower() or "api_key" in error_msg.lower():
-            code = "MOD22_AI_AUTH_FAILED"
-            human_reason = (
-                "AI model API key is invalid or missing. "
-                "Check that the API key environment variable is set correctly."
-            )
-        elif "timeout" in error_msg.lower() or "deadline" in error_msg.lower():
-            code = "MOD22_AI_TIMEOUT"
-            human_reason = (
-                "AI model request timed out after 3 attempts. "
-                "The service may be experiencing high load — retry in a few minutes."
-            )
-        else:
-            code = "MOD22_AI_UNAVAILABLE"
-            human_reason = f"AI model failed after 3 attempts: {error_msg}"
-        logger.error("[%s] AI forecast failed for market=%s: %s", code, body.market, exc)
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": code,
-                "reason": error_msg,
-                "message": human_reason,
-            },
-        )
-    return ForecastResponse(**result)
-
-
-# ─── Submodule 2.2: Batch Gemini inference (1 call for all markets) ──────────
+# ─── Submodule 2.2: batch inference (one call for all markets) ───────────────
 
 @router.post("/inference-batch", response_model=GeminiBatchForecastResponse)
 def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecastResponse:
-    """Single Gemini call for all markets — replaces N sequential /inference calls.
-
-    Reduces RPM consumption from N to 1, preventing rate-limit 503s when markets
-    are processed back-to-back.  Error handling mirrors the single-market endpoint.
-    """
+    """One engine call for all markets; this is the only forecasting entry point."""
     if not body.markets:
         raise HTTPException(status_code=422, detail="markets list must not be empty")
 

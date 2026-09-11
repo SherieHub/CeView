@@ -9,10 +9,11 @@ describe('apiClient (fixture mode)', () => {
     vi.resetModules();
   });
 
-  it('markets.list resolves the MOCK_MARKETS shape', async () => {
+  it('markets.forCategory resolves the category-scoped MOCK_MARKETS shape', async () => {
     const { apiClient } = await import('./apiClient');
-    const { MOCK_MARKETS } = await import('./fixtures/markets');
-    await expect(apiClient.markets.list()).resolves.toEqual(MOCK_MARKETS);
+    const { marketsForCategory } = await import('./fixtures/markets');
+    await expect(apiClient.markets.forCategory('Accommodation & Staycation'))
+      .resolves.toEqual(marketsForCategory('Accommodation & Staycation'));
   });
 
   it('notifications.list resolves the MOCK_NOTIFICATIONS shape', async () => {

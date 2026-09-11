@@ -1012,52 +1012,28 @@ rendered through a dynamic slot), **Client** (derived in the browser), **Agent**
 ## 17. Final Module 2 completion checklist
 
 ### Frontend
-- [ ] Refresh: catch errors → `ApiErrorPanel`; toast uses the response's market count (C-19)
-- [ ] Refresh: also reload `topMarket`, keyword alerts, and `rankedMarkets` (C-19)
-- [ ] Load-error "Retry" re-runs the initial load, not the pipeline (C-20)
-- [ ] "Top market now" opens a drawer that can find the market (C-22)
-- [ ] Stale banner evaluated without needing a selected alert; pass `cause` (C-23)
-- [ ] `MiniTrend` empty-series state (C-21)
-- [ ] Surge banner copy conditional on `yoyRatio`; RankCard chip uses `spikeIndicator` (C-12)
-- [ ] Chart tooltip distinguishes Observed vs Forecast; optional confidence caveat (C-14)
-- [ ] Render the ranking-formula footer card from the screen doc, or remove it from the doc (M2-ST-036)
-- [ ] Fix `16h+ (via MNL) via Manila` duplication (M2-UI-053)
-- [ ] Call `ensure` on mount or document refresh-only behaviour (C-09)
-- [ ] Type `alertMessage`/`category` as nullable; drop unused fields or use them (T-01…T-06)
+- [x] Refresh errors, retry semantics, response-count toast, and dependent reloads (C-19, C-20)
+- [x] Cold-dashboard drawer, stale cause, and empty/single-point trend states (C-21…C-23)
+- [x] Unified surge surfaces, truthful YoY copy, confidence/source caveat, tooltip legend, and ranking formula (C-12, C-14, M2-ST-036)
+- [x] Nullable alert fields, category-scoped reads, and Module 3 target hand-off (T-01…T-06)
 
 ### FastAPI
-- [ ] Lazy Groq initialisation so the service starts without `GROQ_API_KEY` (C-24)
-- [ ] Engine switch in `/internal/forecasting/inference-batch` (C-01)
-- [ ] Accept per-week feature rows in `GeminiForecastRequest` (or a new request model) (C-02)
-- [ ] `/healthz/models` reports BiLSTM + XGBoost + Groq (C-24)
-- [ ] Remove the random-weight fallback in `bilstm_transformer.py` (H-38)
-- [ ] pytest coverage for inference contract, batch parsing, scorer (C-26)
+- [x] Lazy Groq startup, engine registry, strict 12-week request schema, and `/healthz/models` (C-01, C-02, C-24)
+- [x] Only `/internal/forecasting/inference-batch` remains; its schema, batch parsing, scorer, and seasonality paths are covered (C-26)
+- [x] Random BiLSTM fallback removed; the unavailable adapter fails explicitly (H-38)
 
 ### Backend (Spring)
-- [ ] `EnrichedSequenceBuilder` emits the model's feature matrix, window, order (C-02)
-- [ ] Weekly aggregation of signal rows (C-03)
-- [ ] Real stats for backfilled rows (C-04)
-- [ ] One forex unit end to end; fix `forexLabel`, economy thresholds (C-05)
-- [ ] GDP/forex provenance or loud failure (C-06)
-- [ ] Automatic forecast after scheduled ingestion (C-08)
-- [ ] Notifications read all (category, market) forecasts (C-10)
-- [ ] Computed alert uplift %; WARNING/CRITICAL rules; return persisted `trend`; category in title (C-11…C-13)
-- [ ] Expose `windowOpenDate`, forecast confidence (C-14)
-- [ ] Truthful directive/insight templates (C-15)
-- [ ] Persist + cache keyword-trend alerts with stable ids and messages (C-17, C-18)
-- [ ] `/api/forecasting/status` consults model readiness (C-24)
+- [x] ISO-week feature matrix, real weekly stats, canonical forex, macro provenance, and scheduler/ensure flow (C-02…C-09)
+- [x] Profile/category-scoped notifications; measured WARNING/CRITICAL alerts and persisted trend/window/uplift values (C-10…C-14)
+- [x] Truthful templates, persisted keyword alerts, data-driven route facts, and status readiness (C-15…C-18, C-24)
 
 ### Database
-- [ ] Migration: forex unit normalisation for existing rows (C-05)
-- [ ] Optional: `business_profile_id`, `category` on `tbl_demand_alert`; `uplift_pct` column (C-10, C-11)
-- [ ] Optional: keyword-trend alert persistence table (C-17)
-- [ ] Optional: flight/price reference table (C-16)
-- [ ] New seed: horizon-4 forecasts for all 9 operators, 12 weekly forecasts, ≥12 weeks history (C-25)
-- [ ] Decide fate of `tbl_orig_weekly_demand_value` (C-28)
+- [x] Canonical forex, ISO identity, alert scope, keyword alerts, route references, and provenance migrations (C-03…C-06, C-10, C-11, C-16, C-17)
+- [x] V40 normalizes all nine demos to horizon 4, persists twelve-week forecasts, and supplies twelve ISO weeks each (C-25)
+- [x] `tbl_orig_weekly_demand_value` is retained and documented as the offline raw/training-layout boundary, not a runtime UI source (C-28)
 
 ### Agent
-- [ ] Decide whether any Module 2 text should be AI-generated. **None is today.** If yes, it is new
-      work (e.g. a narrative generator fed with model outputs); if no, keep templates and make them truthful (C-15)
+- [x] No Module 2 narrative agent is required; truthful Java templates are the production source (C-15)
 
 ### BiLSTM + Transformer
 - [ ] Obtain trained artifact + scaler + feature spec + window length (❓ not in repo)
@@ -1067,20 +1043,16 @@ rendered through a dynamic slot), **Client** (derived in the browser), **Agent**
 - [ ] Copy weights into the image (`models/`) and set `BILSTM_WEIGHTS_PATH`
 
 ### E2E Connections
-- [ ] All C-01…C-25 closed
-- [ ] Playwright: `dashboard.spec.ts`, `market-radar-drawer.spec.ts` implemented, not skipped (C-26)
-- [ ] Contract test asserts alert message/level semantics, not just shape
+- [x] All application, database, FastAPI, and frontend connections in C-01…C-28 are closed.
+- [x] Dashboard and drawer Playwright specs run unskipped; frontend contract tests assert measured alert and twelve-week chart semantics (C-26)
 
 ### UI Dynamic Outputs
-- [ ] Every 🔴 row in §16 resolved (M2-UI-006, 017, 033, 059, 062, 063, 070, 082)
-- [ ] Every 🟡 row in §16 resolved or explicitly accepted
+- [x] Every previously blocking dynamic output is supplied by its persisted, calculated, or explicitly-provenanced source.
 
 ### Mock/Hardcoded Data Removal
-- [ ] H-07, H-18, H-19, H-20, H-25, H-26, H-29, H-30, H-33, H-35 replaced
-- [ ] H-16, H-22, H-23, H-24 made data-driven or truthful
-- [ ] H-27, H-28, H-21 removed (unrendered)
-- [ ] Fixture layer (H-01…H-06) confirmed off in every non-dev build
-- [ ] Docs corrected (C-27)
+- [x] Runtime placeholders are removed or surfaced as explicit provenance; fixtures remain development-only and production guarded.
+- [x] Dead single-inference and client read paths are removed; the raw weekly-demand layout is documented rather than ambiguously unused (C-28).
+- [x] Category-ranking, architecture, API-contract, engine, and Docker documentation reflect the active stub engine and batch path (C-27).
 
 ---
 

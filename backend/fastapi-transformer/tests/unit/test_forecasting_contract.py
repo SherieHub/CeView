@@ -32,7 +32,7 @@ def test_sequence_schema_rejects_a_null_feature_with_its_field_path():
     from app.main import app
     payload = sequence_payload()
     payload["sequence"][3]["forexRate"] = None
-    response = TestClient(app).post("/internal/forecasting/inference", json=payload)
+    response = TestClient(app).post("/internal/forecasting/inference-batch", json={"markets": [payload]})
     assert response.status_code == 422
     assert any(error["loc"][-1] == "forexRate" for error in response.json()["detail"])
 
@@ -43,19 +43,27 @@ def test_sequence_schema_rejects_non_increasing_iso_weeks():
     payload["sequence"][2]["weekStartDate"] = payload["sequence"][1]["weekStartDate"]
     payload["sequence"][2]["isoYear"] = payload["sequence"][1]["isoYear"]
     payload["sequence"][2]["isoWeek"] = payload["sequence"][1]["isoWeek"]
-    response = TestClient(app).post("/internal/forecasting/inference", json=payload)
+    response = TestClient(app).post("/internal/forecasting/inference-batch", json={"markets": [payload]})
     assert response.status_code == 422
     assert any("sequence" in str(error["loc"]) or "sequence" in error["msg"] for error in response.json()["detail"])
 
 
-def test_stub_receives_sequence_and_returns_contract_response():
+def test_batch_stub_receives_sequence_and_returns_contract_response():
     from app.main import app
-    response = TestClient(app).post("/internal/forecasting/inference", json=sequence_payload())
+    response = TestClient(app).post("/internal/forecasting/inference-batch", json={"markets": [sequence_payload()]})
     assert response.status_code == 200
-    body = response.json()
+    body = response.json()["results"]["korea"]
     assert body["source"] == "stub-v1"
     assert len(body["weekly_forecasts"]) == 12
-    assert body["low_confidence_disclaimer"] is True
+    # A normal 12-week sequence has a real holdout backtest.  The disclaimer is
+    # therefore derived from the 15% gate, not hardcoded to either state.
+    assert body["low_confidence_disclaimer"] is (not body["passed"])
+
+
+def test_single_inference_endpoint_is_removed_so_all_calls_use_batch_contract():
+    from app.main import app
+    response = TestClient(app).post("/internal/forecasting/inference", json=sequence_payload())
+    assert response.status_code == 404
 
 
 def test_engine_selection_and_unknown_value_fail_fast(monkeypatch):

@@ -26,6 +26,25 @@ describeIfBackend(up, 'module 2 endpoints', () => {
     }
   });
 
+  it('serves measured alert semantics rather than the retired constant 20% copy', async () => {
+    const res = await api('/api/notifications');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const measured = body.notifications.find((n: { upliftPct: unknown }) => typeof n.upliftPct === 'number');
+
+    // V40 deliberately seeds a rule-derived CRITICAL example. Requiring it
+    // here prevents a later seed/API change from quietly reverting to the old
+    // fixed "20.0%" alert copy.
+    expect(measured).toBeDefined();
+    expect(measured.upliftPct).not.toBe(20);
+    expect(measured.alertMessage).toContain(`${measured.upliftPct.toFixed(1)}%`);
+    expect(['WARNING', 'CRITICAL']).toContain(measured.alertLevel);
+
+    const critical = body.notifications.find((n: { alertLevel: string }) => n.alertLevel === 'CRITICAL');
+    expect(critical).toBeDefined();
+    expect(critical.alertMessage).toContain('Critical demand window');
+  });
+
   it('GET /api/forecasting/status reports AI availability', async () => {
     const res = await api('/api/forecasting/status');
     expect(res.status).toBe(200);
@@ -58,6 +77,10 @@ describeIfBackend(up, 'module 2 endpoints', () => {
       expect([null, 'WARNING', 'CRITICAL']).toContain(body.markets[0].surgeLevel);
       expect(['xgboost', 'linear']).toContain(body.markets[0].scorer);
       expect(body.markets[0]).toHaveProperty('chartData');
+      const forecastPoints = body.markets[0].chartData.filter(
+        (point: { forecast: unknown }) => typeof point.forecast === 'number',
+      );
+      expect(forecastPoints).toHaveLength(12);
     }
   });
 

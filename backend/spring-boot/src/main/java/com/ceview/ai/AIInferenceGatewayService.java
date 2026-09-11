@@ -127,18 +127,13 @@ public class AIInferenceGatewayService {
 
     // ─── Module 2.2 — Gemini demand forecasting + XGBoost economic scoring ───
 
-    /** Run Gemini-powered demand forecasting — 4w + 12w predictions (FR2.11). */
-    public Map<String, Object> runForecastInference(Map<String, Object> payload) {
-        return postTransformer("/internal/forecasting/inference", payload);
-    }
-
     /**
-     * Batch Gemini demand forecast — all markets in a single API call (FR2.11).
+     * Batch demand forecast — all markets in a single engine call (FR2.11).
      *
      * <p>Sends all market sequences together so Gemini returns one JSON response
      * with forecasts for every market, consuming only 1 RPM quota slot instead of N.
      *
-     * @param sequences list of per-market payload maps (same shape as runForecastInference)
+     * @param sequences list of per-market fixed sequence payload maps
      * @return Map keyed by market name (e.g. "korea"), each value is the ForecastResponse fields
      */
     @SuppressWarnings("unchecked")

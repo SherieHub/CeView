@@ -1,50 +1,31 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { mockModule2Api } from './module2Fixtures';
 
-// Screen: /dashboard — docs/module-2/screens/dashboard.md
-// Cards: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/03-module-2.md
+test.describe('Module 2 dashboard', () => {
+  test('cold load shows the empty state, then refresh reveals persisted alerts', async ({ page }) => {
+    await mockModule2Api(page, { initiallyEmpty: true });
+    await page.goto('/preview/dashboard');
+    await expect(page.getByText('No notifications yet')).toBeVisible();
 
-test.describe.skip('Alert Feed & Category Filtering', () => {
-  test('only alerts matching the operator\'s own categories render', async ({ page }) => {
-    test.fixme();
+    await page.getByRole('button', { name: 'Refresh forecast' }).click();
+    await expect(page.getByText('Demand window — South Korea')).toBeVisible();
+    await expect(page.getByText('Forecast refreshed — 3 markets re-ranked')).toBeVisible();
   });
 
-  test('clicking an alert marks it read (unread dot disappears)', async ({ page }) => {
-    test.fixme();
-  });
-});
+  test('selecting an alert loads rankings for its category', async ({ page }) => {
+    await mockModule2Api(page);
+    await page.goto('/preview/dashboard');
+    await page.getByRole('button', { name: /Demand window — South Korea/ }).click();
 
-test.describe.skip('Markets Reveal', () => {
-  test('selecting two alerts of different categories produces different market rankings', async ({ page }) => {
-    test.fixme();
-  });
-
-  test('deselecting the selected alert collapses back to single-column', async ({ page }) => {
-    test.fixme();
+    await expect(page.getByRole('heading', { name: 'Top Target Markets' })).toBeVisible();
+    await expect(page.getByLabel('Top Target Markets').getByText('Accommodation & Staycation')).toBeVisible();
+    await expect(page.getByLabel('Top Target Markets').getByRole('button', { name: /South Korea/ })).toBeVisible();
   });
 
-  test('clicking a rank card opens the Market Radar drawer for that market', async ({ page }) => {
-    test.fixme();
-  });
-});
-
-test.describe.skip('States & Refresh Forecast', () => {
-  test('loading state shows 3 skeleton cards', async ({ page }) => {
-    test.fixme();
-  });
-
-  test('empty state (no forecast run yet) shows "No notifications yet"', async ({ page }) => {
-    test.fixme();
-  });
-
-  test('zero matching alerts shows the category-naming empty state', async ({ page }) => {
-    test.fixme();
-  });
-
-  test('ai-down state shows the amber banner and alerts still render from cache', async ({ page }) => {
-    test.fixme();
-  });
-
-  test('Refresh forecast disables the button, shows a spinner label, and shows a toast on completion', async ({ page }) => {
-    test.fixme();
+  test('keeps cached alerts visible in AI-down mode', async ({ page }) => {
+    await mockModule2Api(page, { aiDown: true });
+    await page.goto('/preview/dashboard');
+    await expect(page.getByText('AI Forecast Service Unavailable.')).toBeVisible();
+    await expect(page.getByText('Demand window — South Korea')).toBeVisible();
   });
 });
