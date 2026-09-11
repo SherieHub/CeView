@@ -15,6 +15,7 @@ from app.routers import (
     pes_analysis,
     pes_compute,
     omcs_analysis,
+    demand_forecast,
 )
 
 configure_logging()
@@ -36,3 +37,4 @@ app.include_router(caption_generation.router, prefix="/internal/generation",   t
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
 app.include_router(pes_compute.router,        prefix="/internal/pes-compute",   tags=["pes-compute"])
 app.include_router(omcs_analysis.router,      prefix="/internal/omcs",          tags=["omcs"])
+app.include_router(demand_forecast.router,    prefix="/internal/forecasting",   tags=["forecasting"])

@@ -18,3 +18,6 @@ langgraph>=0.2.0
 langchain-core>=0.3.0
 langchain-openai>=0.1.0
 langchain-groq>=0.1.0
+# Module 2 — Transformer demand model (Hugging Face Spaces) + Weights & Biases tracking
+gradio_client>=2.0.0
+wandb>=0.17.0

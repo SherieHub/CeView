@@ -4,7 +4,11 @@ import java.util.List;
 
 public class AnalyticsDtos {
 
-    public record MetricCard(double value, String unit, double trend, boolean isPositive) {}
+    // trend/isPositive were dropped (they were hardcoded literals, identical
+    // for every operator regardless of real data — never a genuine
+    // period-over-period trend). Nothing consumed them: the frontend KPI
+    // board derives its own display from the raw value instead.
+    public record MetricCard(double value, String unit) {}
 
     public record Metrics(
         MetricCard ctr,

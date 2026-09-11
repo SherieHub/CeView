@@ -9,6 +9,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import WorkspaceSettings from './WorkspaceSettings';
 import { ToastProvider } from '../shared/Toast';
+import { OverlayStackProvider } from '../shared/useOverlayStack';
 import type { WorkspaceMemberFixture } from '../../types';
 
 const MEMBERS: WorkspaceMemberFixture[] = [
@@ -30,9 +31,11 @@ vi.mock('../../services/apiClient', () => ({
 
 function renderSettings() {
   return render(
-    <ToastProvider>
-      <WorkspaceSettings />
-    </ToastProvider>,
+    <OverlayStackProvider>
+      <ToastProvider>
+        <WorkspaceSettings />
+      </ToastProvider>
+    </OverlayStackProvider>,
   );
 }
 
@@ -83,5 +86,16 @@ describe('WorkspaceSettings', () => {
 
     expect(inviteMock).not.toHaveBeenCalled();
     expect(screen.queryByText('Invite pending')).not.toBeInTheDocument();
+  });
+
+  it('"Replay tour" opens the tutorial modal, and it can be closed again', async () => {
+    renderSettings();
+    await screen.findByText('Maria Lopez');
+
+    fireEvent.click(screen.getByRole('button', { name: /replay tour/i }));
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip tour' }));
+    expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument();
   });
 });
