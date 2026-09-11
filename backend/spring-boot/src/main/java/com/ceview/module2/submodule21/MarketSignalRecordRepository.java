@@ -13,8 +13,12 @@ public interface MarketSignalRecordRepository extends JpaRepository<MarketSignal
 
     /**
      * The newest genuinely-measured records for a profile+market, optionally
-     * scoped to a category. Only {@code source = 'pytrends'} qualifies — 'stub'
-     * is purged by V23 and 'unknown' (pre-V22) is untrusted by policy.
+     * scoped to a category. Only {@code source IN ('pytrends', 'serpapi')}
+     * qualifies — 'stub' is purged by V23 and 'unknown' (pre-V22) is untrusted
+     * by policy. Both real-data source labels are trusted: 'pytrends' rows
+     * predate the switch to SerpApi's Google Trends engine (see
+     * fastapi-transformer/app/services/trend_service.py) and remain valid
+     * historical observations; 'serpapi' is what ingestion writes now.
      *
      * <p>Step 4 (contract §2): ordered by {@code weekStartDate}, not
      * {@code aggregatedAt}. Since ingestion now upserts one row per ISO week,
@@ -30,7 +34,7 @@ public interface MarketSignalRecordRepository extends JpaRepository<MarketSignal
             WHERE r.businessProfileId = :profileId
               AND r.targetMarket = :market
               AND (:category IS NULL OR r.category = :category)
-              AND r.source = 'pytrends'
+              AND r.source IN ('pytrends', 'serpapi')
             ORDER BY r.weekStartDate DESC NULLS LAST
            """)
     List<MarketSignalRecord> findRealByProfileAndMarket(

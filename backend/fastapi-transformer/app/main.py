@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()  # must run before any app module reads os.environ
+
 from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
@@ -15,7 +18,7 @@ app = FastAPI(
     title="CeView Transformer Microservice",
     version="0.2.0",
     description=(
-        "Module 2 market intelligence: PyTrends ingestion, seasonal shift detection "
+        "Module 2 market intelligence: SerpApi (Google Trends) ingestion, seasonal shift detection "
         "(7d/30d rolling avg, 2σ spike, YoY), Gemini demand forecasting, "
         "XGBoost economic viability scoring."
     ),

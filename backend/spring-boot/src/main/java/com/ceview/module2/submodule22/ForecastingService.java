@@ -125,7 +125,7 @@ public class ForecastingService {
         return AiDependencyException.fromBody(424, java.util.Map.of(
                 "code", Module2ErrorCodes.MOD22_NO_MARKET_DATA,
                 "message", "No measured demand data exists for " + market + " yet.",
-                "dependency", "pytrends",
+                "dependency", "serpapi",
                 "cause", lastIngestionError == null
                         ? "no successful trend fetch has completed for this market"
                         : lastIngestionError,

@@ -15,13 +15,13 @@ class NoMarketDataTest {
     @Test
     void emptyDatasetBecomesAStructuredUnavailability() {
         assertThatThrownBy(() -> {
-            throw ForecastingService.noMarketData("korea", "pytrends returned 429 on 2026-08-29");
+            throw ForecastingService.noMarketData("korea", "serpapi returned 429 on 2026-08-29");
         })
                 .isInstanceOf(AiDependencyException.class)
                 .satisfies(thrown -> {
                     AiDependencyException ex = (AiDependencyException) thrown;
                     assertThat(ex.getCode()).isEqualTo("MOD22_NO_MARKET_DATA");
-                    assertThat(ex.getDependency()).isEqualTo("pytrends");
+                    assertThat(ex.getDependency()).isEqualTo("serpapi");
                     assertThat(ex.getCause2()).contains("429");
                     assertThat(ex.getStatus()).isEqualTo(424);
                 });
