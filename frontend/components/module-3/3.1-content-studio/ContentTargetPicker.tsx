@@ -109,6 +109,7 @@ export default function ContentTargetPicker({ onPicked }: Props) {
             {markets.map((market) => {
               const isLead = market.rank === 1;
               const hasSpike = market.chartData.some((point) => point.spike === 1);
+              const hasDirectFlight = market.airlines.some((a) => a.direct);
               return (
                 <button
                   key={market.id}
@@ -130,9 +131,9 @@ export default function ContentTargetPicker({ onPicked }: Props) {
                     </div>
                   </div>
                   <div className="rank-facts mt-3">
-                    <span className="rank-fact" data-direct={market.directFlight}>
+                    <span className="rank-fact" data-direct={hasDirectFlight}>
                       <Plane size={14} aria-hidden="true" />
-                      <b>{market.directFlight ? 'Direct' : 'Via Manila'}</b> · {market.flightHours}
+                      <b>{hasDirectFlight ? 'Direct' : 'Via Manila'}</b> · {market.flightHours}
                     </span>
                     <span className="rank-fact">
                       <CalendarClock size={14} aria-hidden="true" />

@@ -35,14 +35,15 @@ describe('AiStatusBanner', () => {
 describe('RefreshForecastButton', () => {
   it('disables itself and reports progress while the pipeline runs', async () => {
     const user = userEvent.setup();
-    let resolve!: () => void;
-    const onRefresh = vi.fn(() => new Promise<void>((r) => (resolve = r)));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolve!: (v: any) => void;
+    const onRefresh = vi.fn(() => new Promise<any>((r) => (resolve = r))); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     withToast(<RefreshForecastButton isRefreshing={false} degraded={false} onRefresh={onRefresh} />);
     await user.click(screen.getByRole('button'));
 
     expect(onRefresh).toHaveBeenCalled();
-    resolve();
+    resolve({ markets: [] });
   });
 
   it('shows the running label while refreshing', () => {
@@ -53,10 +54,14 @@ describe('RefreshForecastButton', () => {
     expect(button).toHaveTextContent('Running pipeline');
   });
 
-  it('confirms a successful refresh', async () => {
+  it('confirms a successful refresh and counts the actual markets re-ranked', async () => {
     const user = userEvent.setup();
     withToast(
-      <RefreshForecastButton isRefreshing={false} degraded={false} onRefresh={vi.fn().mockResolvedValue(undefined)} />,
+      <RefreshForecastButton
+        isRefreshing={false}
+        degraded={false}
+        onRefresh={vi.fn().mockResolvedValue({ markets: [{}, {}, {}] })}
+      />,
     );
 
     await user.click(screen.getByRole('button'));
@@ -66,13 +71,47 @@ describe('RefreshForecastButton', () => {
     );
   });
 
+  it('pluralises correctly for zero markets', async () => {
+    const user = userEvent.setup();
+    withToast(
+      <RefreshForecastButton
+        isRefreshing={false}
+        degraded={false}
+        onRefresh={vi.fn().mockResolvedValue({ markets: [] })}
+      />,
+    );
+    await user.click(screen.getByRole('button'));
+    await waitFor(() =>
+      expect(screen.getByText('Forecast refreshed — 0 markets re-ranked')).toBeInTheDocument(),
+    );
+  });
+
+  it('pluralises correctly for exactly one market', async () => {
+    const user = userEvent.setup();
+    withToast(
+      <RefreshForecastButton
+        isRefreshing={false}
+        degraded={false}
+        onRefresh={vi.fn().mockResolvedValue({ markets: [{}] })}
+      />,
+    );
+    await user.click(screen.getByRole('button'));
+    await waitFor(() =>
+      expect(screen.getByText('Forecast refreshed — 1 market re-ranked')).toBeInTheDocument(),
+    );
+  });
+
   // The prototype's banner said refreshing would not produce new predictions,
   // then toasted that it had. The page contradicted itself in the one state
   // where the operator most needs to trust it.
   it('does not claim a refresh succeeded while the service is down', async () => {
     const user = userEvent.setup();
     withToast(
-      <RefreshForecastButton isRefreshing={false} degraded onRefresh={vi.fn().mockResolvedValue(undefined)} />,
+      <RefreshForecastButton
+        isRefreshing={false}
+        degraded
+        onRefresh={vi.fn().mockResolvedValue({ markets: [{}, {}, {}] })}
+      />,
     );
 
     await user.click(screen.getByRole('button'));
@@ -84,6 +123,21 @@ describe('RefreshForecastButton', () => {
     );
     expect(screen.queryByText(/Forecast refreshed/)).not.toBeInTheDocument();
   });
+
+  // Step 17 (C-19/C-20): a null result means useDashboardState already routed
+  // the failure into ApiErrorPanel — toasting success here would contradict it.
+  it('shows no toast at all when the refresh failed', async () => {
+    const user = userEvent.setup();
+    withToast(
+      <RefreshForecastButton isRefreshing={false} degraded={false} onRefresh={vi.fn().mockResolvedValue(null)} />,
+    );
+
+    await user.click(screen.getByRole('button'));
+
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByText(/Forecast refreshed/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/still unavailable/)).not.toBeInTheDocument();
+  });
 });
 
 describe('SignalSummary', () => {
@@ -93,7 +147,15 @@ describe('SignalSummary', () => {
     unreadCount: 3,
     surgeCount: 2,
     surgeMarkets: ['South Korea'],
-    topMarket: { id: 'usa', name: 'United States', matchScore: 90, category: 'Adventure & Nature' },
+    topMarket: {
+      id: 'usa',
+      name: 'United States',
+      matchScore: 90,
+      category: 'Adventure & Nature',
+      dataStale: false,
+      dataAsOf: '2026-08-30T00:00:00Z',
+      dataStaleCause: null,
+    },
     onOpenMarket: vi.fn(),
   };
 

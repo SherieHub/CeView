@@ -11,9 +11,12 @@ public class MarketDtos {
 
     public record ChartDataPointDto(
         String week,
+        /** Monday starting this persisted ISO-8601 week; null only for legacy rows. */
+        String weekStartDate,
         Double history,
         Double forecast,
-        double seasonality,
+        /** Measured value only; forecast weeks deliberately remain null. */
+        Double seasonality,
         double spike
     ) {}
 
@@ -117,6 +120,8 @@ public class MarketDtos {
         String dataAsOf,
         /** True when dataAsOf is older than EnrichedSequenceBuilder.STALE_AFTER. */
         boolean dataStale,
+        /** Last failed ingestion/trend refresh for this profile/category/market, or null. */
+        String dataStaleCause,
         /**
          * Which tier produced {@code gdpValue}: {@code "live"}, {@code "last_known_good"},
          * or {@code "unknown"} (a pre-Step-6 persisted row with no tag). Null when no
@@ -138,7 +143,13 @@ public class MarketDtos {
         /** First forecast week that crosses the demand-window threshold, or null. */
         String windowOpenDate,
         /** Exact FastAPI economic scorer: xgboost or linear fallback. */
-        String scorer
+        String scorer,
+        /** ForecastResult.forecastConfidence for the four-week forecast (0–1). */
+        double forecastConfidence,
+        /** True when the forecast cannot yet be treated as validated. */
+        boolean lowConfidence,
+        /** Exact engine identifier, including stub-v1 when the placeholder made the series. */
+        String forecastSource
     ) {}
 
     public record MarketsResponse(List<MarketDto> markets) {}

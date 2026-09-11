@@ -29,8 +29,10 @@ class MarketDtoMappingTest {
                 yoyRatio,
                 true,
                 "2026-08-24T03:00:00Z", false,
+                null,
                 "live", "last_known_good", "2026-08-24T02:00:00Z",
-                "CRITICAL", 28.4, "2026-09-07T00:00:00Z", "linear"
+                "CRITICAL", 28.4, "2026-09-07T00:00:00Z", "linear",
+                0.82, false, "stub-v1"
         );
     }
 

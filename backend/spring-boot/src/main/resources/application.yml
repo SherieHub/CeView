@@ -20,6 +20,8 @@ spring:
     baseline-on-migrate: true
 
 ceview:
+  module2:
+    markets: ${MODULE2_MARKETS:korea,japan,usa}
   fastapi:
     # fastapi-sbert — Modules 1, 3, 4 (SBERT / Gemini NLP stack, port 8000)
     sbert:

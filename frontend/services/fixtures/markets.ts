@@ -26,6 +26,7 @@ export function buildChartData(o: BuildChartDataInput): ChartDataPoint[] {
     const isCurrent = i === 0;
     pts.push({
       week: isCurrent ? 'Current' : 'Wk -' + i,
+      weekStartDate: null,
       history: +Math.max(8, Math.min(100, v)).toFixed(1),
       forecast: isCurrent ? o.weekly[0] : null,
       seasonality: +Math.max(10, Math.min(100, o.seasonBase + Math.sin((t + o.seasonPhase) / 2) * 13)).toFixed(1),
@@ -35,9 +36,10 @@ export function buildChartData(o: BuildChartDataInput): ChartDataPoint[] {
   for (let w = 1; w <= 12; w++) {
     pts.push({
       week: 'Wk +' + w,
+      weekStartDate: null,
       history: null,
       forecast: o.weekly[w - 1],
-      seasonality: +Math.max(10, Math.min(100, o.seasonBase + Math.sin((11 + w + o.seasonPhase) / 2) * 13)).toFixed(1),
+      seasonality: null,
       spike: 0,
     });
   }
@@ -62,7 +64,9 @@ export const MOCK_MARKETS: Market[] = [
     currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.2, forexValue: 23.8,
     seasonalityScore: 0.88, yoyRatio: 1.07, spikeIndicator: true,
     surgeLevel: 'CRITICAL', upliftPct: 28.4, windowOpenDate: '2026-09-07T00:00:00Z', scorer: 'linear',
-    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false,
+    gdpSource: 'live', forexSource: 'live', macroAsOf: '2026-08-30T00:00:00Z',
+    forecastConfidence: 0.87, lowConfidence: false, forecastSource: 'stub-v1',
+    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false, dataStaleCause: null,
     economyInsight: 'GDP is growing at a moderate 2.2% and the Won is holding strong against the Peso — Korean visitors currently have roughly 15–20% more purchasing power in Cebu than a year ago. They will upgrade rooms, book premium dive packages and spend generously on dining. Upsell now rather than discount.',
     seasonalityInsight: 'A strong recurring pattern is confirmed (YoY 1.07, seasonality 0.88). Korean travel peaks in the July–August school break and the December–January winter break. Your revenue window opens roughly six weeks ahead of each — start promotions early to reach the planners who book in advance.',
     gdpTrend: [{ year: 2021, value: 4.1 }, { year: 2022, value: 2.6 }, { year: 2023, value: 1.4 }, { year: 2024, value: 2.0 }, { year: 2025, value: 2.2 }],
@@ -85,7 +89,9 @@ export const MOCK_MARKETS: Market[] = [
     currency: 'JPY', forexLabel: 'PHP per 1 JPY', gdpValue: 1.4, forexValue: 2.1,
     seasonalityScore: 0.74, yoyRatio: 1.02, spikeIndicator: false,
     surgeLevel: 'WARNING', upliftPct: 22.1, windowOpenDate: '2026-09-14T00:00:00Z', scorer: 'linear',
-    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false,
+    gdpSource: 'live', forexSource: 'live', macroAsOf: '2026-08-30T00:00:00Z',
+    forecastConfidence: 0.91, lowConfidence: false, forecastSource: 'stub-v1',
+    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false, dataStaleCause: null,
     economyInsight: 'GDP growth is modest at 1.4% and the Yen has been recovering slowly. Japanese travelers are value-conscious rather than price-sensitive — they respond to bundles (flight + stay + tour) that show a clear total saving versus booking separately. Publish the total, not the nightly rate.',
     seasonalityInsight: 'Likely seasonal, still developing (YoY 1.02, seasonality 0.74). Golden Week in late April–early May is the single biggest surge, with a secondary O-bon peak in August. Campaigns should launch eight weeks ahead of each window.',
     gdpTrend: [{ year: 2021, value: 2.2 }, { year: 2022, value: 1.0 }, { year: 2023, value: 1.9 }, { year: 2024, value: 1.5 }, { year: 2025, value: 1.4 }],
@@ -105,7 +111,9 @@ export const MOCK_MARKETS: Market[] = [
     currency: 'USD', forexLabel: 'PHP per 1 USD', gdpValue: 2.5, forexValue: 57.6,
     seasonalityScore: 0.61, yoyRatio: null, spikeIndicator: false,
     surgeLevel: null, upliftPct: null, windowOpenDate: null, scorer: 'linear',
-    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false,
+    gdpSource: 'live', forexSource: 'live', macroAsOf: '2026-08-30T00:00:00Z',
+    forecastConfidence: 0.68, lowConfidence: true, forecastSource: 'stub-v1',
+    dataAsOf: '2026-08-30T00:00:00Z', dataStale: false, dataStaleCause: null,
     economyInsight: 'The Dollar is the strongest of the three currencies against the Peso at roughly ₱57.60. US visitors carry the highest average daily budget of any tracked market, which offsets the long-haul cost. Target premium and adventure experiences to maximise yield per guest.',
     seasonalityInsight: 'Weak / emerging — under 59 weeks of history, so no YoY confirmation is possible yet and the score is capped conservatively at 0.61. The visible pattern points to the June–August summer break and the late-December holiday window.',
     gdpTrend: [{ year: 2021, value: 5.9 }, { year: 2022, value: 2.1 }, { year: 2023, value: 2.5 }, { year: 2024, value: 2.8 }, { year: 2025, value: 2.5 }],

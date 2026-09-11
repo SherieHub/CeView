@@ -166,9 +166,10 @@ export interface PostMetric {
 
 export interface ChartDataPoint {
   week: string;
+  weekStartDate: string | null;
   history: number | null;
   forecast: number | null;
-  seasonality: number;
+  seasonality: number | null;
   spike: 0 | 1;
 }
 
@@ -227,6 +228,12 @@ export interface Market {
   windowOpenDate: string | null;
   /** The economic scorer that actually produced this market's persisted score. */
   scorer: 'xgboost' | 'linear' | null;
+  gdpSource: string | null;
+  forexSource: string | null;
+  macroAsOf: string | null;
+  forecastConfidence: number;
+  lowConfidence: boolean;
+  forecastSource: string;
   economyInsight: string;
   seasonalityInsight: string;
   gdpTrend: { year: number; value: number }[];
@@ -236,7 +243,10 @@ export interface Market {
   dataAsOf: string | null;
   /** True when that measurement is older than 48h — real, but old. */
   dataStale: boolean;
+  dataStaleCause: string | null;
 }
+
+export interface MarketsResponse { markets: Market[]; }
 
 export interface DemandAlert {
   id: string;

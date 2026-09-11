@@ -15,6 +15,8 @@ import com.ceview.module2.submodule21.ExternalMarketDataClient.ForexTrendPoint;
 import com.ceview.module2.submodule21.MarketDataIngestionService;
 import com.ceview.module2.submodule21.MarketEconomicTrend;
 import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
+import com.ceview.module2.submodule21.MarketIngestionError;
+import com.ceview.module2.submodule21.MarketIngestionErrorRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
 import com.ceview.module2.submodule21.TrendFetchJob;
@@ -82,6 +84,7 @@ public class ForecastingService {
     private final MarketEconomicTrendRepository economicTrendRepo;
     private final TrendFetchJobRepository jobRepo;
     private final ObjectMapper objectMapper;
+    private final MarketIngestionErrorRepository ingestionErrorRepo;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -94,7 +97,8 @@ public class ForecastingService {
                               MarketSignalRecordRepository signalRepo,
                               MarketEconomicTrendRepository economicTrendRepo,
                               TrendFetchJobRepository jobRepo,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              MarketIngestionErrorRepository ingestionErrorRepo) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -107,6 +111,7 @@ public class ForecastingService {
         this.economicTrendRepo  = economicTrendRepo;
         this.jobRepo            = jobRepo;
         this.objectMapper       = objectMapper;
+        this.ingestionErrorRepo = ingestionErrorRepo;
     }
 
     /**
@@ -953,6 +958,14 @@ public class ForecastingService {
         OffsetDateTime signalAsOf = b.latestSignal() != null ? b.latestSignal().getAggregatedAt() : null;
         String  dataAsOf  = signalAsOf != null ? signalAsOf.toString() : null;
         boolean dataStale = EnrichedSequenceBuilder.isStale(signalAsOf, OffsetDateTime.now());
+        String dataStaleCause = null;
+        if (dataStale && b.fr4w().getCategory() != null && b.fr4w().getBusinessProfileId() != null) {
+            dataStaleCause = ingestionErrorRepo
+                    .findByBusinessProfileIdAndCategoryAndTargetMarket(
+                            b.fr4w().getBusinessProfileId(), b.fr4w().getCategory(), market)
+                    .map(MarketIngestionError::getErrorMessage)
+                    .orElse(null);
+        }
 
         // Macro-input provenance (Step 6, contract; C-06, H-18) — which tier produced
         // gdpValue/forexValue, and how old the older of the two readings is, so the
@@ -996,13 +1009,17 @@ public class ForecastingService {
                 Boolean.TRUE.equals(ms.getSpikeIndicator()),
                 dataAsOf,
                 dataStale,
+                dataStaleCause,
                 gdpSource,
                 forexSource,
                 macroAsOf,
                 b.surgeLevel(),
                 b.upliftPct(),
                 b.windowOpenDate() != null ? b.windowOpenDate().toString() : null,
-                ms.getScorer()
+                ms.getScorer(),
+                b.confidence(),
+                b.fr4w().getMapeScore() != null && b.fr4w().getMapeScore() > MAPE_THRESHOLD,
+                b.fr4w().getSource()
         );
     }
 
@@ -1112,9 +1129,6 @@ public class ForecastingService {
         // forex/gdp were removed (T-06): nothing rendered them — the drawer's
         // Purchasing Power tab reads MarketDto.gdpValue/forexValue and the
         // gdpTrend/forexTrend series instead.
-        double latestSeasonality = latestSignal != null && latestSignal.getSeasonalityScore() != null
-                ? latestSignal.getSeasonalityScore() * 100.0 : 50.0;
-
         // Normalise weekly forecasts — ensure exactly 12 values
         List<Double> wf = new ArrayList<>();
         if (weeklyForecasts != null) {
@@ -1126,14 +1140,6 @@ public class ForecastingService {
         // Each pad fills one of the 12 history slots from the oldest end.
         // Pad at index j occupies position j in a 12-slot array, so its week
         // label is "Wk -" + (11 - j).
-        int syntheticCount = recent.isEmpty() ? 11 : Math.max(0, 12 - recent.size());
-        for (int j = 0; j < syntheticCount; j++) {
-            int weekNum = 11 - j;   // Wk -11, Wk -10, … Wk -1
-            double syntheticDemand = Math.max(10.0, baseDemand - ((syntheticCount - j) * 3.0));
-            points.add(new ChartDataPointDto(
-                    "Wk -" + weekNum, syntheticDemand, null, 50.0, 0.0));
-        }
-
         // ── Real history points ───────────────────────────────────────────────
         // Formula: label = "Wk -" + (recent.size() - 1 - i) for non-Current slots.
         // This scales to any number of real records (1..12).
@@ -1141,30 +1147,28 @@ public class ForecastingService {
             MarketSignalRecord r = recent.get(i);
             boolean isCurrent = (i == recent.size() - 1);
             String label = isCurrent ? "Current" : "Wk -" + (recent.size() - 1 - i);
-            double seasonality100 = (r.getSeasonalityScore() != null)
-                    ? r.getSeasonalityScore() * 100.0 : 50.0;
+            Double seasonality100 = (r.getSeasonalityScore() != null)
+                    ? r.getSeasonalityScore() * 100.0 : null;
             double spikeVal = Boolean.TRUE.equals(r.getSpikeIndicator()) ? 1.0 : 0.0;
             // "Current" shows both history observation and Wk+1 forecast as the transition
             Double forecastValue = isCurrent ? wf.get(0) : null;
 
             points.add(new ChartDataPointDto(
-                    label, r.getTrendIndex(), forecastValue,
+                    label, r.getWeekStartDate() != null ? r.getWeekStartDate().toString() : null,
+                    r.getTrendIndex(), forecastValue,
                     seasonality100, spikeVal));
         }
 
         // Synthetic "Current" anchor when no real history exists at all
-        if (recent.isEmpty()) {
-            points.add(new ChartDataPointDto(
-                    "Current", baseDemand, wf.get(0), 50.0, 0.0));
-        }
-
         // ── 12 forecast points (Wk +1 … Wk +12) ─────────────────────────────
         for (int w = 1; w <= 12; w++) {
             points.add(new ChartDataPointDto(
                     "Wk +" + w,
+                    latestSignal != null && latestSignal.getWeekStartDate() != null
+                            ? latestSignal.getWeekStartDate().plusWeeks(w).toString() : null,
                     null,
                     wf.get(w - 1),
-                    latestSeasonality,
+                    null,
                     0.0
             ));
         }

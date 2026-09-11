@@ -45,13 +45,16 @@ public class MarketDataIngestionService {
     private final AIInferenceGatewayService    ai;
     private final ExternalMarketDataClient     externalClient;
     private final MarketSignalRecordRepository signalRepo;
+    private final MarketIngestionErrorRepository ingestionErrorRepo;
 
     public MarketDataIngestionService(AIInferenceGatewayService ai,
                                       ExternalMarketDataClient externalClient,
-                                      MarketSignalRecordRepository signalRepo) {
+                                      MarketSignalRecordRepository signalRepo,
+                                      MarketIngestionErrorRepository ingestionErrorRepo) {
         this.ai             = ai;
         this.externalClient = externalClient;
         this.signalRepo     = signalRepo;
+        this.ingestionErrorRepo = ingestionErrorRepo;
     }
 
     /**
@@ -70,21 +73,38 @@ public class MarketDataIngestionService {
             return 0;
         }
 
+        UUID profileId = profile.getBusinessProfileId();
         int count = 0;
         for (String market : MarketCatalog.IDS) {
             for (String category : categories) {
                 try {
                     ingestMarket(profile, market, category);
                     count++;
+                    ingestionErrorRepo.deleteByKey(profileId, category, market);
                 } catch (Exception e) {
                     MDC.put("code", Module2ErrorCodes.MOD21_INGESTION_JOB_FAILED);
                     log.warn("Ingestion failed for profile={} market={} category={}: {}",
                             profile.getBusinessProfileId(), market, category, e.getMessage());
                     MDC.remove("code");
+                    recordIngestionFailure(profileId, category, market, e);
                 }
             }
         }
         return count;
+    }
+
+    /** Keeps the cause shown by the stale banner scoped to the same tenant key. */
+    private void recordIngestionFailure(UUID profileId, String category, String market, Exception e) {
+        MarketIngestionError error = ingestionErrorRepo
+                .findByBusinessProfileIdAndCategoryAndTargetMarket(profileId, category, market)
+                .orElseGet(MarketIngestionError::new);
+        if (error.getIngestionErrorId() == null) error.setIngestionErrorId(UUID.randomUUID());
+        error.setBusinessProfileId(profileId);
+        error.setCategory(category);
+        error.setTargetMarket(market);
+        error.setErrorMessage(e.getClass().getSimpleName() + ": " + e.getMessage());
+        error.setOccurredAt(OffsetDateTime.now(ZoneOffset.UTC));
+        ingestionErrorRepo.save(error);
     }
 
     // ─── private pipeline ────────────────────────────────────────────────────

@@ -7,7 +7,7 @@
  * the drawer shell; the shell owns the timeframe so switching insight tabs
  * cannot reset it.
  */
-import { CloudOff, Sparkles, Zap } from 'lucide-react';
+import { AlertTriangle, CloudOff, Sparkles, Zap } from 'lucide-react';
 import DemandForecastChart from './DemandForecastChart';
 import type { DrawerChartSlotProps, Timeframe } from './radarTypes';
 import { marketSurgeState } from '@/types';
@@ -20,6 +20,23 @@ const ZONES = [
   { label: 'Moderate', range: '31–70', action: 'Hold rates', tone: 'mid' },
   { label: 'High peak', range: '71–100', action: 'Raise rates early', tone: 'high' },
 ];
+
+/**
+ * Step 19 (C-14; M2-ST-036): 0.70 mirrors the "Moderate" seasonality band's
+ * own threshold elsewhere in this drawer (SeasonalPatternsTab) — there is no
+ * separate documented forecast-confidence cutoff, so this reuses the one
+ * threshold already established in this codebase rather than inventing a
+ * second, different number.
+ */
+const LOW_CONFIDENCE_THRESHOLD = 0.7;
+
+/** Never let the UI imply a trained model produced the line when it didn't. */
+function engineLabel(source: string): string {
+  if (source === 'stub') return 'deterministic placeholder (not a trained model)';
+  if (source === 'groq') return 'Groq';
+  if (source === 'bilstm') return 'BiLSTM + Transformer';
+  return source;
+}
 
 export default function DrawerChartPanel({
   market,
@@ -103,7 +120,26 @@ export default function DrawerChartPanel({
         </div>
       </div>
 
+      {/* Step 19 (C-14; M2-ST-036): with the stub engine in place, the UI must
+          never let this line read as coming from a trained, validated model. */}
+      {(market.lowConfidence || market.forecastConfidence < LOW_CONFIDENCE_THRESHOLD) && (
+        <div className="info-card" data-tone="attention" role="status">
+          <span className="info-tab">Unvalidated forecast</span>
+          <div className="info-body">
+            <span className="info-glyph">
+              <AlertTriangle size={16} strokeWidth={2} aria-hidden="true" />
+            </span>
+            <p className="body-sm">
+              This forecast has not been validated against real outcomes yet (confidence{' '}
+              {Math.round(market.forecastConfidence * 100)}%). Treat it as a planning signal, not a
+              committed number.
+            </p>
+          </div>
+        </div>
+      )}
+
       <DemandForecastChart data={market.chartData} timeframe={timeframe} />
+      <p className="text-meta mt-1">Forecast engine: {engineLabel(market.forecastSource)}</p>
 
       <ul className="zone-key">
         {ZONES.map((z) => (
