@@ -1,5 +1,6 @@
 package com.ceview.module2.dto;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -63,12 +64,16 @@ public class NotificationDtos {
         String trend,
         boolean isRead,
         DetailsDto details,
-        /** The signal-grid category this alert came from; null for pre-V20 rows. */
+        /** The signal-grid category this alert came from; nullable for legacy rows. */
         String category,
-        /** tbl_demand_alert.alert_level — "INFO" or "WARNING". Drives the surge filter. */
+        /** tbl_demand_alert.alert_level — INFO, WARNING, or CRITICAL. */
         String alertLevel,
-        /** tbl_demand_alert.alert_message — the operator-facing directive. */
-        String alertMessage
+        /** tbl_demand_alert.alert_message — nullable for legacy rows. */
+        String alertMessage,
+        /** First forecast-week threshold crossing; nullable for legacy rows. */
+        OffsetDateTime windowOpenDate,
+        /** Four-week forecast uplift above the rolling baseline; nullable for legacy rows. */
+        Double upliftPct
     ) {}
 
     public record NotificationsResponse(List<NotificationDto> notifications) {}

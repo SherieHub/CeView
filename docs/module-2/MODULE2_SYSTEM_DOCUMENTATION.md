@@ -649,6 +649,17 @@ Returns `{ "markets": [] }` when no forecast data exists yet for the profile.
 | `POST`     | `/api/v1/trends/fetch`                  | TrendFetchScheduler: one (category, market) pair                                                                                                                                           |
 | `POST`     | `/api/v1/trends/rank-markets`           | Cross-market keyword volume ranking                                                                                                                                                        |
 | `GET`      | `/healthz`                              | Liveness probe                                                                                                                                                                             |
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/internal/market-data/trends` | Current-week PyTrends index (2.1 normal ingestion) |
+| `POST` | `/internal/market-data/trends/history` | 12-week historical PyTrends backfill (first run) |
+| `POST` | `/internal/market-data/seasonality` | Seasonal shift computation from weekly series |
+| `POST` | `/internal/forecasting/inference` | Single-market Groq demand forecast |
+| `POST` | `/internal/forecasting/inference-batch` | Batch Groq forecast for all 3 markets (1 RPM) |
+| `POST` | `/internal/forecasting/score` | XGBoost economic viability scoring |
+| `POST` | `/api/trends/fetch` | TrendFetchScheduler: one (category, market) pair |
+| `POST` | `/api/trends/rank-markets` | Cross-market keyword volume ranking |
+| `GET` | `/healthz` | Liveness probe |
 | _Cloud AI_ | `HF Space /forecast`                    | Dedicated Transformer Demand Prediction Model (`JamJamzz/ceview-demand-prediction-model`) via `gradio_client` (see [`TRANSFORMER_MODEL_INTEGRATION.md`](TRANSFORMER_MODEL_INTEGRATION.md)) |
 
 **`POST /internal/forecasting/inference-batch`** — request/response:

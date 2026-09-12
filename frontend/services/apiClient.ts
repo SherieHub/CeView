@@ -1,9 +1,11 @@
 /**
- * Typed API client. When VITE_USE_FIXTURES=true (or the backend base URL is
- * unset), every method below resolves from the fixture modules in
- * services/fixtures/ instead of issuing a fetch — see
- * 01-foundation.md's "Fixture Data Layer" card. Real endpoints are added as
- * each screen card wires its backend.
+ * Typed API client. Every method below resolves from the fixture modules in
+ * services/fixtures/ instead of issuing a fetch when — and only when —
+ * VITE_USE_FIXTURES is the literal string "true" (see USE_FIXTURES below).
+ * There is no other fallback path into fixture mode: an unset or misconfigured
+ * backend base URL still issues a real (failing) fetch, it does not silently
+ * fall back to fixtures. See 01-foundation.md's "Fixture Data Layer" card.
+ * Real endpoints are added as each screen card wires its backend.
  */
 import { loadTokens } from './authStorage';
 import { ApiError } from './apiError';
@@ -45,10 +47,22 @@ import type {
   AdConnection,
   AdInsightSummary,
   AdProvider,
+  MarketsResponse,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+// Build-time guard (T-01..T-08): import.meta.env.PROD is a compile-time
+// constant Vite replaces during a production build, so this branch is dead
+// code — and its `throw` unreachable — in dev/preview builds, but fails a
+// production bundle immediately on load if VITE_USE_FIXTURES was ever left
+// "true" for that build. Fixture data must never be what a real operator sees.
+if (USE_FIXTURES && import.meta.env.PROD) {
+  throw new Error(
+    'VITE_USE_FIXTURES=true in a production build — fixtures must never ship to real operators.',
+  );
+}
 
 /** Simulated network delay so fixture-backed UI still exercises loading states. */
 function delay<T>(value: T, ms = 250): Promise<T> {
@@ -156,17 +170,8 @@ export const apiClient = {
   },
 
   markets: {
-    list: () =>
-      USE_FIXTURES
-        ? delay(MOCK_MARKETS)
-        : request<{ markets: Market[] }>('/api/forecasting/markets')
-            .then((r) => r.markets),
-    chartData: (marketId: string) =>
-      USE_FIXTURES
-        ? delay(MOCK_MARKETS.find((m) => m.id === marketId)?.chartData ?? [])
-        // chartData ships inside each MarketDto — no separate round-trip exists.
-        : request<{ markets: Market[] }>('/api/forecasting/markets')
-            .then((r) => r.markets.find((m) => m.id === marketId)?.chartData ?? []),
+    // A category is required.  Dashboard owns this read so rank, chart and
+    // drawer all operate on one coherent category-scoped Market[] response.
     forCategory: (category: string) =>
       USE_FIXTURES
         ? delay(marketsForCategory(category))
@@ -196,9 +201,8 @@ export const apiClient = {
         ? delay({ ok: true })
         : request<void>(`/api/notifications/${id}/read`, { method: 'PATCH' }),
     /**
-     * Keyword-trend alerts. Separate from list() because each category
-     * round-trips to PyTrends and can take tens of seconds — the dashboard
-     * renders demand alerts first and merges these in when they arrive.
+     * Persisted keyword-trend alerts. The backend's scheduled producer performs
+     * any slow PyTrends refresh, so this read never waits on a rank request.
      */
     keywordTrends: () =>
       USE_FIXTURES
@@ -212,16 +216,34 @@ export const apiClient = {
      * prototype's own `refreshForecast` timing (ui-ux-prototype.html:2523),
      * moved here so the button owns no timer and tests can await it instead of
      * driving fake timers.
+     *
+     * T-08: the fixture branch returns the same { markets: Market[] } envelope
+     * the live endpoint does — RefreshForecastButton reads markets.length for
+     * its toast, so a fixture-shaped response that lacks it would silently lie
+     * about how many markets were re-ranked.
      */
     analyze: () =>
       USE_FIXTURES
-        ? delay({ rerankedMarkets: 3 }, 2100)
-        : request('/api/forecasting/analyze', { method: 'POST' }),
+        ? delay<MarketsResponse>({ markets: MOCK_MARKETS }, 2100)
+        : request<MarketsResponse>('/api/forecasting/analyze', { method: 'POST' }),
     /** Drives the dashboard's `ai-down` degraded mode. */
     status: () =>
       USE_FIXTURES
         ? delay({ available: true })
         : request<{ available: boolean }>('/api/forecasting/status'),
+    /**
+     * Called once on dashboard mount (Step 16, C-07/C-08/C-09) so a new or
+     * stale operator sees real alerts without pressing Refresh first. Cheap
+     * when data is fresh (a DB read, no pipeline) — the staleness gate lives
+     * in ForecastingService.ensureFreshForecast, not here. A 409
+     * (MOD22_PROFILE_NOT_READY) means onboarding isn't complete; the caller
+     * is expected to route that through isProfileNotReady(), same as any
+     * other screen's ApiErrorPanel.
+     */
+    ensure: (maxAgeHours = 12) =>
+      USE_FIXTURES
+        ? delay(undefined)
+        : request(`/api/forecasting/ensure?maxAgeHours=${maxAgeHours}`, { method: 'POST' }),
   },
   content: {
     /**

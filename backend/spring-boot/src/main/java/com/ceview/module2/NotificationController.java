@@ -10,8 +10,8 @@ import java.util.UUID;
 
 /**
  * HomeView notifications (Submodule 2.2, FR2.15).
- * Reads persisted demand alerts from the DB; falls back to FastAPI stub
- * when no alerts exist for the profile.
+ * Reads persisted Module 2 alerts from the DB. Notification requests never
+ * call external trend services.
  */
 @RestController
 @RequestMapping("/api/notifications")
@@ -42,9 +42,8 @@ public class NotificationController {
     }
 
     /**
-     * Keyword-trend notifications, split out of GET /api/notifications because each
-     * category round-trips to PyTrends via FastAPI rank-markets (up to 75s). The
-     * dashboard loads this independently so a slow AI hop cannot block the alert feed.
+     * Persisted keyword-trend notifications. The scheduled producer performs any
+     * slow PyTrends work separately; this endpoint never waits for it.
      */
     @GetMapping("/keyword-trends")
     public NotificationsResponse keywordTrends() {

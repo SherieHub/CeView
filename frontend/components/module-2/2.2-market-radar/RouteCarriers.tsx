@@ -7,6 +7,7 @@
  */
 import { Plane } from 'lucide-react';
 import type { Market } from '@/types';
+import { formatPhpRange } from './format';
 
 export default function RouteCarriers({ market }: { market: Market }) {
   return (
@@ -14,9 +15,13 @@ export default function RouteCarriers({ market }: { market: Market }) {
       <h3 className="heading-md mb-3">Route &amp; Carriers</h3>
 
       <div className="card">
-        <p className="text-meta mb-3">
+        <p className="text-meta">
           {market.nearestAirport} → {market.destinationAirport} ·{' '}
-          {market.flightFrequency}x / week · {market.avgFlightPrice}
+          {market.flightFrequency}x / week · {formatPhpRange(market.fareMinPhp, market.fareMaxPhp)}
+        </p>
+        <p className="text-meta mb-3">
+          Route &amp; fare figures: {market.fareSource}
+          {market.fareAsOf ? ` · valid from ${market.fareAsOf}` : ''}
         </p>
 
         <ul className="carrier-list">

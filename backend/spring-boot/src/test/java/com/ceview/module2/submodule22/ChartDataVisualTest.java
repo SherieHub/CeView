@@ -22,8 +22,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,6 +55,8 @@ class ChartDataVisualTest {
     // ── Repos (backed by H2) ──────────────────────────────────────────────────
     @Autowired BusinessProfileRepository    profileRepo;
     @Autowired MarketSignalRecordRepository signalRepo;
+    @Autowired ForecastResultRepository     forecastRepo;
+    @Autowired MarketScoreRepository        scoreRepo;
 
     private UUID profileId;
 
@@ -63,13 +67,15 @@ class ChartDataVisualTest {
      * Japan  — flat/declining trend
      * USA    — slight downward trend with a spike
      */
-    private static final double[] KOREA_TREND = { 45.0, 50.5, 56.0, 63.0 };
-    private static final double[] JAPAN_TREND = { 52.0, 50.0, 48.5, 47.0 };
-    private static final double[]   USA_TREND = { 72.0, 75.0, 68.0, 65.0 };  // spike then drop
+    private static final double[] KOREA_TREND = { 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 63 };
+    private static final double[] JAPAN_TREND = { 56, 55, 54, 53, 52, 51, 50, 49, 48.5, 48, 47.5, 47 };
+    private static final double[]   USA_TREND = { 68, 70, 72, 74, 76, 74, 72, 70, 68, 67, 66, 65 };  // spike then drop
 
     @BeforeEach
     void setUp() {
         signalRepo.deleteAll();
+        scoreRepo.deleteAll();
+        forecastRepo.deleteAll();
         profileRepo.deleteAll();
 
         // ── Business profile ──────────────────────────────────────────────────
@@ -109,41 +115,60 @@ class ChartDataVisualTest {
 
         when(externalClient.getFlightReference("korea")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "korea", true,  "3h 45m", 2_640, 14,
-                List.of(Map.of("name", "Korean Air",   "code", "KE", "frequency", "7x / week"),
-                        Map.of("name", "Cebu Pacific", "code", "5J", "frequency", "5x / week"))));
+                "ICN — Incheon Int'l", "CEB — Mactan-Cebu Int'l",
+                8_000, 15_000, "static_reference_v1", "2026-09-11",
+                List.of("Jul", "Aug", "Dec", "Jan"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Korean Air",   "KE", "7x / week", true),
+                        new ExternalMarketDataClient.CarrierDto("Cebu Pacific", "5J", "5x / week", true))));
         when(externalClient.getFlightReference("japan")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "japan", true,  "2h 50m", 2_186, 8,
-                List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "5x / week"),
-                        Map.of("name", "Cebu Pacific",        "code", "5J", "frequency", "3x / week"))));
+                "KIX — Kansai Int'l", "CEB — Mactan-Cebu Int'l",
+                8_000, 15_000, "static_reference_v1", "2026-09-11",
+                List.of("Apr", "May", "Aug", "Mar"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Philippine Airlines", "PR", "5x / week", true),
+                        new ExternalMarketDataClient.CarrierDto("Cebu Pacific",         "5J", "3x / week", true))));
         when(externalClient.getFlightReference("usa")).thenReturn(new ExternalMarketDataClient.FlightReferenceDto(
                 "usa",   false, "16h+ (via MNL)", 11_027, 3,
-                List.of(Map.of("name", "Philippine Airlines", "code", "PR", "frequency", "3x / week"))));
+                "LAX — Los Angeles Int'l", "MNL — Ninoy Aquino Int'l",
+                25_000, 40_000, "static_reference_v1", "2026-09-11",
+                List.of("Jun", "Jul", "Aug", "Dec"),
+                List.of(new ExternalMarketDataClient.CarrierDto("Philippine Airlines", "PR", "3x / week", false))));
 
         // ── Mock AIInferenceGatewayService ────────────────────────────────────
-        // runPipeline() submits all markets in a single batch call and zips the
-        // results back by market name, so mock runForecastInferenceBatch (not the
-        // legacy per-market runForecastInference). Each market gets distinct
-        // weekly_forecasts derived from its historical slope.
+        // runPipeline() submits one sequence per (market, category) pair in a
+        // single batch call and zips the results back by "{market}::{category}"
+        // (not bare market name — a market can carry more than one category, see
+        // ForecastingService's CategorySequence.key()), so mock
+        // runForecastInferenceBatch (not the legacy per-market runForecastInference)
+        // with one entry per (market, category). The test profile has two
+        // categories ("Beach Resort", "Adventure Tour"), so 3 markets × 2
+        // categories = 6 entries. Each market gets distinct weekly_forecasts
+        // derived from its historical slope; both categories reuse the same
+        // per-market forecast numbers here purely for mock brevity — production
+        // code now computes a genuinely distinct sequence per category.
         Map<String, Object> koreaForecast = Map.of(      // upward trend continues  63 → 72.5
                 "predicted_demand_4w",  72.5,
                 "predicted_demand_12w", 70.0,
-                "weekly_forecasts",     List.of(65.2, 67.8, 70.1, 72.5),
-                "mape", 8.2, "mae", 4.9, "rmse", 7.0, "confidence", 0.87);
+                "weekly_forecasts",     List.of(65.2, 67.8, 70.1, 72.5, 72.0, 71.5, 71.0, 70.5, 70.0, 69.5, 69.0, 68.5),
+                "mape", 8.2, "mae", 4.9, "rmse", 7.0, "confidence", 0.87, "source", "stub-v1");
         Map<String, Object> japanForecast = Map.of(      // mild decline  47 → 44 then stabilises
                 "predicted_demand_4w",  44.0,
                 "predicted_demand_12w", 43.5,
-                "weekly_forecasts",     List.of(46.2, 45.4, 44.7, 44.0),
-                "mape", 6.5, "mae", 3.9, "rmse", 5.5, "confidence", 0.91);
+                "weekly_forecasts",     List.of(46.2, 45.4, 44.7, 44.0, 43.8, 43.6, 43.4, 43.2, 43.0, 42.8, 42.6, 42.4),
+                "mape", 6.5, "mae", 3.9, "rmse", 5.5, "confidence", 0.91, "source", "stub-v1");
         Map<String, Object> usaForecast = Map.of(        // spike reverts toward mean  65 → 60.5
                 "predicted_demand_4w",  60.5,
                 "predicted_demand_12w", 63.0,
-                "weekly_forecasts",     List.of(63.5, 62.2, 61.3, 60.5),
-                "mape", 10.1, "mae", 6.1, "rmse", 8.6, "confidence", 0.82);
+                "weekly_forecasts",     List.of(63.5, 62.2, 61.3, 60.5, 60.2, 60.0, 59.8, 59.6, 59.4, 59.2, 59.0, 58.8),
+                "mape", 10.1, "mae", 6.1, "rmse", 8.6, "confidence", 0.82, "source", "stub-v1");
 
-        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
-                "korea", koreaForecast,
-                "japan", japanForecast,
-                "usa",   usaForecast));
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.ofEntries(
+                Map.entry("korea::Beach Resort",   koreaForecast),
+                Map.entry("korea::Adventure Tour", koreaForecast),
+                Map.entry("japan::Beach Resort",   japanForecast),
+                Map.entry("japan::Adventure Tour", japanForecast),
+                Map.entry("usa::Beach Resort",     usaForecast),
+                Map.entry("usa::Adventure Tour",   usaForecast)));
 
         when(ai.runMarketScoring(any())).thenAnswer(inv -> {
             @SuppressWarnings("unchecked")
@@ -155,7 +180,7 @@ class ChartDataVisualTest {
                 default      -> 0.65;
             };
             return Map.of("market_score", score, "economic_viability_score", score * 0.9,
-                    "components", Map.of());
+                    "scorer", "linear", "components", Map.of());
         });
     }
 
@@ -167,12 +192,29 @@ class ChartDataVisualTest {
 
         assertNotNull(response, "response must not be null");
         assertFalse(response.markets().isEmpty(), "markets list must not be empty");
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<List<Map<String, Object>>> batchPayload = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(ai).runForecastInferenceBatch(batchPayload.capture());
+        assertEquals(6, batchPayload.getValue().size(),
+                "Phase B sends one sequence per (market, category) pair — 3 markets × 2 categories");
+        assertEquals(12, ((List<?>) batchPayload.getValue().get(0).get("sequence")).size(),
+                "Phase B forwards the fixed 12-week matrix to FastAPI");
 
         // ── Each market should have exactly 8 chart points ───────────────────
         for (MarketDto market : response.markets()) {
             assertFalse(market.chartData().isEmpty(),
                     market.id() + " chartData must not be empty");
         }
+
+        List<ForecastResult> koreaBeachForecasts = forecastRepo.findAll().stream()
+                .filter(fr -> profileId.equals(fr.getBusinessProfileId()))
+                .filter(fr -> "korea".equals(fr.getTargetMarket()))
+                .filter(fr -> "Beach Resort".equals(fr.getCategory()))
+                .toList();
+        assertEquals(2, koreaBeachForecasts.size(), "one category/market persists 4w and 12w rows");
+        assertEquals("stub-v1", koreaBeachForecasts.stream()
+                .filter(fr -> fr.getForecastHorizonWeeks() == 4).findFirst().orElseThrow().getSource());
+        assertFalse(scoreRepo.findAll().isEmpty(), "Phase C persists a market score after batch inference");
 
         // ── Pretty-print for visual inspection ───────────────────────────────
         String divider = "=".repeat(72);

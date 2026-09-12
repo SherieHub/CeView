@@ -10,21 +10,62 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { Banknote, Compass, Plane, Sparkles, TrendingUp } from 'lucide-react';
 import type { Market } from '@/types';
+import { formatPhpRange } from './format';
+
+/**
+ * Step 18 (C-21/C-22/C-23; H-11): explains an empty trend series using the
+ * provenance fields Step 6 added — a bare "no data" would be honest but
+ * unhelpful; this says whether it's never been fetched at all or only a
+ * stale last-known-good reading exists.
+ */
+function provenanceReason(source: string | null, asOf: string | null): string | null {
+  if (!source) return 'this reading has never been fetched for this market';
+  if (source === 'last_known_good') {
+    const asOfText = asOf ? ` (as of ${new Date(asOf).toLocaleDateString()})` : '';
+    return `only a last-known-good reading exists${asOfText}, with no history series behind it`;
+  }
+  return null;
+}
 
 function MiniTrend({
   data,
   label,
+  emptyReason,
   format = (v: number) => String(v),
 }: {
   data: { value: number }[];
   label: string;
+  /** Why the series is empty, from provenance fields — see provenanceReason(). */
+  emptyReason?: string | null;
   format?: (value: number) => string;
 }) {
   const values = data.map((d) => d.value);
+
+  // An empty series used to reach `values[values.length - 1]` -> undefined,
+  // then `undefined.toFixed(2)` -> a render-crashing TypeError that took the
+  // whole drawer down (H-11). A real empty state instead.
+  if (values.length === 0) {
+    return (
+      <div className="card">
+        <div className="trend-head">
+          <p className="eyebrow">{label}</p>
+        </div>
+        <div className="empty" style={{ minHeight: 90 }}>
+          <p className="body-sm text-meta">
+            No trend data available{emptyReason ? ` — ${emptyReason}.` : '.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const min = Math.min(...values);
   const max = Math.max(...values);
   const latest = values[values.length - 1];
   const rising = latest >= values[0];
+  // A single point has no direction and no range — an arrow and a "X–X" range
+  // both built from the same one number would imply a trend that isn't there.
+  const singlePoint = values.length === 1;
 
   return (
     <div className="card">
@@ -35,9 +76,11 @@ function MiniTrend({
         <p className="eyebrow">{label}</p>
         <div className="trend-now">
           <b className="num">{format(latest)}</b>
-          <span className="text-meta">
-            {rising ? '▲' : '▼'} {format(min)}–{format(max)}
-          </span>
+          {!singlePoint && (
+            <span className="text-meta">
+              {rising ? '▲' : '▼'} {format(min)}–{format(max)}
+            </span>
+          )}
         </div>
       </div>
       <ResponsiveContainer width="100%" height={90}>
@@ -47,6 +90,7 @@ function MiniTrend({
               forex series that only ever moves a few percent. */}
           <YAxis domain={['dataMin', 'dataMax']} hide />
           <Tooltip
+            formatter={(value) => typeof value === 'number' ? format(value) : value}
             contentStyle={{
               borderRadius: 12,
               border: 'none',
@@ -77,8 +121,13 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
       value: market.forexValue.toFixed(2),
       foot: market.currency,
     },
-    { icon: TrendingUp, label: 'GDP growth', value: `${market.gdpValue}%`, foot: 'Year on year' },
-    { icon: Plane, label: 'Avg flight price', value: market.avgFlightPrice, foot: 'Round trip' },
+    { icon: TrendingUp, label: 'GDP growth', value: `${market.gdpValue.toFixed(2)}%`, foot: 'Year on year' },
+    {
+      icon: Plane,
+      label: 'Avg flight price',
+      value: formatPhpRange(market.fareMinPhp, market.fareMaxPhp),
+      foot: market.fareAsOf ? `Round trip · ref. ${market.fareAsOf}` : 'Round trip',
+    },
     {
       icon: Compass,
       label: 'Accessibility',
@@ -104,6 +153,10 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
         ))}
       </div>
 
+      <p className="text-meta mt-2">
+        Fare reference: {market.fareSource} · Effective: {market.fareAsOf ?? 'unknown'}
+      </p>
+
       <div className="info-card" data-tone="accent">
         <span className="info-tab">What this means</span>
         <div className="info-body">
@@ -115,15 +168,20 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
       </div>
 
       <div className="radar-trends">
+        {/* Step 18 (H-11): the label used to hardcode "12 months"/"5 years"
+            regardless of how many points actually came back (the seed has 4) —
+            derived from the real series length instead. */}
         <MiniTrend
           data={market.forexTrend}
-          label={`${market.forexLabel} · 12 months`}
+          label={`${market.forexLabel} · ${market.forexTrend.length} month${market.forexTrend.length === 1 ? '' : 's'}`}
+          emptyReason={provenanceReason(market.forexSource, market.macroAsOf)}
           format={(v) => v.toFixed(2)}
         />
         <MiniTrend
           data={market.gdpTrend}
-          label="GDP growth · 5 years"
-          format={(v) => `${v}%`}
+          label={`GDP growth · ${market.gdpTrend.length} year${market.gdpTrend.length === 1 ? '' : 's'}`}
+          emptyReason={provenanceReason(market.gdpSource, market.macroAsOf)}
+          format={(v) => `${v.toFixed(2)}%`}
         />
       </div>
     </>

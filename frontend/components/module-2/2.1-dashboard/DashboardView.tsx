@@ -104,7 +104,11 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         }
       />
 
-      {state.error != null && <ApiErrorPanel error={state.error} label="Dashboard" onRetry={state.refresh} />}
+      {/* Step 17 (C-19/C-20): Retry re-runs only the initial load — never the
+          forecast pipeline. Only the Refresh button above (state.refresh)
+          runs analyze(); conflating the two meant a stuck "no data yet"
+          error silently kicked off a full pipeline run on every retry. */}
+      {state.error != null && <ApiErrorPanel error={state.error} label="Dashboard" onRetry={state.retry} />}
 
       <AiStatusBanner visible={degraded} />
 
@@ -115,15 +119,34 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         surgeCount={state.surgeCount}
         surgeMarkets={state.surgeMarkets}
         topMarket={state.topMarket}
-        onOpenMarket={openMarket}
+        onOpenMarket={(marketId) => {
+          // Step 18 (C-21/C-22/C-23): pin the category BEFORE navigating so
+          // rankedMarkets loads it — otherwise the drawer looks marketId up in
+          // whatever rankedMarkets already held (empty with no alert selected)
+          // and silently never opens.
+          if (state.topMarket) state.pinCategory(state.topMarket.category);
+          openMarket(marketId);
+        }}
       />
 
-      {/* Real-but-old market data: show its age rather than let the ranking
-          below read as a fresh measurement. Distinct from ApiErrorPanel — see
-          StaleDataBanner's header. */}
-      {state.rankedMarkets.some((m) => m.dataStale) && (
+      {/* Step 18 (H-11): used to be evaluated only from rankedMarkets, which is
+          empty until an alert is selected — a stale dashboard looked fresh
+          until you clicked something. topMarket now carries its own staleness
+          (loaded independently of any alert selection), so this fires on a
+          cold dashboard too; rankedMarkets is still checked for the alert-
+          selected case, where its data can differ from topMarket's category. */}
+      {(state.topMarket?.dataStale || state.rankedMarkets.some((m) => m.dataStale)) && (
         <StaleDataBanner
-          dataAsOf={state.rankedMarkets.find((m) => m.dataStale)?.dataAsOf ?? null}
+          dataAsOf={
+            state.topMarket?.dataStale
+              ? state.topMarket.dataAsOf
+              : (state.rankedMarkets.find((m) => m.dataStale)?.dataAsOf ?? null)
+          }
+          cause={
+            state.topMarket?.dataStale
+              ? (state.topMarket.dataStaleCause ?? undefined)
+              : (state.rankedMarkets.find((m) => m.dataStale)?.dataStaleCause ?? undefined)
+          }
           now={new Date()}
         />
       )}

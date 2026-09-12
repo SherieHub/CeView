@@ -2,6 +2,8 @@ package com.ceview.module2.submodule22;
 
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
+import com.ceview.module2.submodule21.MarketEconomicTrendRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -56,10 +58,10 @@ class CategoryForecastTest {
         String market = "korea";
         String category = "Coastal & Island";
 
-        List<MarketSignalRecord> scopedHistory = fourWeeksOfRecords(category);
+        List<MarketSignalRecord> scopedHistory = twelveWeeksOfRecords(category);
         when(repo.findRealByProfileAndMarket(profileId, market, category)).thenReturn(scopedHistory);
 
-        EnrichedSequenceBuilder builder = new EnrichedSequenceBuilder(repo);
+        EnrichedSequenceBuilder builder = builder(repo);
         Map<String, Object> sequence = builder.buildSequence(profileId, market, category);
 
         assertThat(sequence.get("market")).isEqualTo(market);
@@ -86,9 +88,9 @@ class CategoryForecastTest {
 
         when(repo.findRealByProfileAndMarket(profileId, market, category)).thenReturn(List.of());
         when(repo.findRealByProfileAndMarket(profileId, market, null))
-                .thenReturn(fourWeeksOfRecords(null));
+                .thenReturn(twelveWeeksOfRecords(null));
 
-        EnrichedSequenceBuilder builder = new EnrichedSequenceBuilder(repo);
+        EnrichedSequenceBuilder builder = builder(repo);
         Map<String, Object> sequence = builder.buildSequence(profileId, market, category);
 
         assertThat(sequence).isNotNull();
@@ -96,12 +98,15 @@ class CategoryForecastTest {
         verify(repo).findRealByProfileAndMarket(profileId, market, null);
     }
 
-    private List<MarketSignalRecord> fourWeeksOfRecords(String category) {
-        return List.of(
-                signalRecord(category, 3),
-                signalRecord(category, 2),
-                signalRecord(category, 1),
-                signalRecord(category, 0));
+    private EnrichedSequenceBuilder builder(MarketSignalRecordRepository signalRepo) {
+        return new EnrichedSequenceBuilder(signalRepo, mock(MarketEconomicTrendRepository.class),
+                new MarketHolidayCalendar(new ObjectMapper()), new ObjectMapper());
+    }
+
+    private List<MarketSignalRecord> twelveWeeksOfRecords(String category) {
+        return java.util.stream.IntStream.range(0, 12)
+                .mapToObj(weeksAgo -> signalRecord(category, weeksAgo))
+                .toList();
     }
 
     private MarketSignalRecord signalRecord(String category, int weeksAgo) {

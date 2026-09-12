@@ -1,6 +1,12 @@
-backend/.env
+.env
+.env.*
+!**/.env.example
 
 node_modules/
 dist/
 .vite/
 .worktrees/
+__pycache__/
+*.py[cod]
+.venv/
+venv/

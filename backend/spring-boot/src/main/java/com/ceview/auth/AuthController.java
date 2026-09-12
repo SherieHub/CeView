@@ -72,7 +72,7 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest req) {
         return repo.findByEmail(req.email())
             .filter(o -> encoder.matches(req.password(), o.getPasswordHash()))
-            .map(this::sessionResponse)
+            .<ResponseEntity<?>>map(this::sessionResponse)
             .orElseGet(() -> ResponseEntity.status(401).body(Map.of("error", "invalid credentials")));
     }
 

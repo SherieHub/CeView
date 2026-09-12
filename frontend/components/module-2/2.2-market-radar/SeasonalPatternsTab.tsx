@@ -8,6 +8,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarRange, Sparkles } from 'lucide-react';
 import type { Market } from '@/types';
+import { peakMonthsSourceLabel } from './format';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -21,6 +22,11 @@ export function seasonalityBand(score: number): string {
 
 export default function SeasonalPatternsTab({ market }: { market: Market }) {
   const peaks = new Set(market.peakMonths);
+  // Seasonality is never projected into the forecast (see the caption below),
+  // so the chart's x-axis should stop at the last measured week instead of
+  // reserving empty space out to Wk +12 with nothing plotted there.
+  const measuredChartData = market.chartData.filter((point) => point.seasonality != null);
+  const measuredWeeks = measuredChartData.length;
 
   return (
     <>
@@ -60,7 +66,8 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
       </div>
 
       <div className="card mt-4">
-        <p className="eyebrow mb-2">Peak months</p>
+        <p className="eyebrow mb-1">Peak months</p>
+        <p className="text-meta mb-2">{peakMonthsSourceLabel(market.peakMonthsSource)}</p>
         <ul className="month-grid">
           {MONTHS.map((m) => (
             <li key={m} data-peak={peaks.has(m)}>
@@ -81,9 +88,11 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
       </div>
 
       <div className="chart-frame">
-        <p className="eyebrow mb-2">Seasonality index · 24 weeks</p>
+        <p className="eyebrow mb-2">
+          Seasonality index · {measuredWeeks} week{measuredWeeks === 1 ? '' : 's'}
+        </p>
         <ResponsiveContainer width="100%" height={160}>
-          <AreaChart data={market.chartData} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+          <AreaChart data={measuredChartData} margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="seasonFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="var(--color-cyan-accent)" stopOpacity={0.3} />
@@ -125,6 +134,7 @@ export default function SeasonalPatternsTab({ market }: { market: Market }) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        <p className="text-meta mt-1">Shown for measured weeks only — not projected into the forecast.</p>
       </div>
     </>
   );

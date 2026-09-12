@@ -18,7 +18,9 @@ class NotificationDtoFieldsTest {
                 null,
                 "Coastal & Island",
                 "WARNING",
-                "Demand spike active — immediate action recommended");
+                "Demand spike active — immediate action recommended",
+                null,
+                null);
 
         assertThat(dto.category()).isEqualTo("Coastal & Island");
         assertThat(dto.alertLevel()).isEqualTo("WARNING");

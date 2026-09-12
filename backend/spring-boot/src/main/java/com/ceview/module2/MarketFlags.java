@@ -11,8 +11,7 @@ import java.util.Map;
  * markets.
  *
  * <p>Keyed by the lower-case market id used throughout the pipeline
- * ({@code ForecastingService.MARKETS}: "korea", "japan", "usa"), not the
- * display name.
+ * ({@link MarketCatalog#IDS}: "korea", "japan", "usa"), not the display name.
  */
 public final class MarketFlags {
 

@@ -27,7 +27,7 @@ export default function MarketsRevealPanel({
         <h2 className="heading-md">Top Target Markets</h2>
         {selectedAlert && (
           <span className="chip chip--attention">
-            <Tag aria-hidden="true" /> {selectedAlert.category}
+            <Tag aria-hidden="true" /> {selectedAlert.category ?? 'Uncategorized'}
           </span>
         )}
       </div>
@@ -37,6 +37,14 @@ export default function MarketsRevealPanel({
           {markets.map((market) => (
             <RankCard key={market.id} market={market} onOpen={onOpenMarket} />
           ))}
+          {/* Step 19 (M2-ST-036): docs/module-2/screens/dashboard.md specifies
+              this footer but nothing rendered it — the screen doc and the
+              running app had drifted apart. */}
+          {markets.length > 0 && (
+            <aside data-testid="ranking-formula" className="card text-meta text-center" aria-label="Ranking formula">
+              market_score = 0.40·demand₄w + 0.35·seasonality + 0.25·economic_viability
+            </aside>
+          )}
         </div>
       ) : (
         <div className="card">

@@ -11,3 +11,5 @@ numpy>=1.26.0,<2.0
 # Groq API (OpenAI-compatible) and Gemini API — demand forecasting (Phase 2)
 openai>=1.0.0
 google-generativeai>=0.8.0
+# BiLSTM + Transformer demand model hosted on Hugging Face Spaces (FORECAST_ENGINE=bilstm)
+gradio_client>=2.0.0
