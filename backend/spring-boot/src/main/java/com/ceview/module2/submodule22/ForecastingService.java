@@ -63,6 +63,50 @@ public class ForecastingService {
     private static final Logger log = LoggerFactory.getLogger(ForecastingService.class);
     private static final double MAPE_THRESHOLD = 15.0;
     private static final double DEMAND_WINDOW_MULTIPLIER = 1.2;
+    /**
+     * How long a persisted per-(market, category) demand forecast may be reused
+     * instead of spending another forecast-engine call to recompute it.
+     *
+     * <p>Added after a live run against FORECAST_ENGINE=bilstm: one category
+     * succeeded against Hugging Face's shared ZeroGPU quota, the very next
+     * category in the same batch exhausted it, and — because {@link #runPipeline}
+     * is {@code @Transactional} — the whole batch rolled back, discarding the
+     * successful call along with the failed one. Retrying then unconditionally
+     * re-sent EVERY category, including the one that had just succeeded,
+     * spending quota a second time for no new information.
+     *
+     * <p>This window lets a category with a recent, genuinely-computed demand
+     * number skip the forecast-engine call entirely and reuse it. Every other
+     * part of the pipeline — ingestion, seasonality, GDP/forex, the XGBoost
+     * economic score, and alerts — still recomputes every run; only the scarce,
+     * quota-metered forecast-engine call is cached. The all-or-nothing
+     * transactional guarantee for whatever a run DOES send to the engine is
+     * otherwise unchanged.
+     */
+    private static final long PER_CATEGORY_FORECAST_FRESH_HOURS = 6;
+    /**
+     * Below this rolling-7-day-average trend index, a percentage-change uplift
+     * is not a meaningful number — it isn't capped or floored, it is simply not
+     * reported.
+     *
+     * <p>Percentage change is unbounded by construction: {@code (a/b - 1) * 100}
+     * grows without limit as {@code b} approaches zero. A market whose real
+     * baseline search interest is near-zero (a genuinely thin/emerging market,
+     * not a data error — Google Trends legitimately reports near-0 index values)
+     * can turn an ordinary demand forecast into a percentage in the tens of
+     * thousands, which reads as a bug even though every input is honest.
+     *
+     * <p>5.0 is on the 0-100 Google-Trends-style trend index scale used
+     * throughout this pipeline (see {@code MarketSignalRecord.trendIndex}) —
+     * below it, a percentage comparison against that baseline stops being a
+     * meaningful statement, so {@link #deriveDemandAlert} omits upliftPct
+     * (leaves it {@code null}) rather than reporting an arithmetically correct
+     * but unreadable figure. The demand-window trigger itself (this class's
+     * {@code DEMAND_WINDOW_MULTIPLIER} check) is unaffected — it compares the
+     * same raw ratio regardless of this floor, so detection behavior does not
+     * change, only whether a percentage is shown alongside it.
+     */
+    private static final double MIN_BASELINE_FOR_UPLIFT_PCT = 5.0;
 
     private static final String[] MONTH_ABBR = {
             "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -135,9 +179,36 @@ public class ForecastingService {
     /**
      * Run the full 2.2 pipeline for a profile.
      * Throws IllegalStateException when enriched data is absent — run ingestion first.
+     *
+     * <p>Always forces a genuine forecast-engine call for every (market, category)
+     * pair — see {@link #forecastForProfile(UUID, boolean, boolean)} for the
+     * cache-aware variant. This overload exists so every EXISTING caller (and
+     * test) keeps its current "calling this always produces fresh numbers"
+     * guarantee unchanged.
      */
     @Transactional
     public MarketsResponse forecastForProfile(UUID profileId, boolean refresh) {
+        return forecastForProfile(profileId, refresh, false);
+    }
+
+    /**
+     * Same as {@link #forecastForProfile(UUID, boolean)}, but when
+     * {@code useForecastCache} is true a (market, category) pair with a
+     * persisted forecast younger than {@link #PER_CATEGORY_FORECAST_FRESH_HOURS}
+     * skips the forecast-engine call and reuses it — see that constant's
+     * Javadoc. Ingestion, seasonality, GDP/forex, and the XGBoost economic
+     * score are unaffected and still recompute every run regardless of this
+     * flag; only the scarce, quota-metered forecast-engine call is ever cached.
+     *
+     * <p>Used by the user-facing Analyze/Recompute endpoints and by
+     * {@link #ensureFreshForecast}, where retrying after a partial failure
+     * (see that constant's Javadoc for the incident that motivated this)
+     * should not re-spend quota on a category that already succeeded moments
+     * earlier. NOT used by the nightly ingestion job, which runs once a day
+     * per profile and has no comparable retry-storm risk to guard against.
+     */
+    @Transactional
+    public MarketsResponse forecastForProfile(UUID profileId, boolean refresh, boolean useForecastCache) {
         if (profileId == null) {
             log.error("forecastForProfile called with null profileId — profileId is required");
             throw new IllegalArgumentException("profileId is required");
@@ -161,7 +232,7 @@ public class ForecastingService {
         }
 
         try {
-            return runPipeline(profileId);
+            return runPipeline(profileId, useForecastCache);
         } catch (IllegalStateException e) {
             // Step 7: EnrichedSequenceBuilder now suffixes this with the reason
             // (":count=N" / ":field=X") — startsWith, not equals, so that detail
@@ -222,7 +293,7 @@ public class ForecastingService {
         if (stale) {
             log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
                     profileId, newest, maxAgeHours);
-            return forecastForProfile(profileId, true);
+            return forecastForProfile(profileId, true, true);
         }
 
         log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={}) — serving cached DB rows",
@@ -452,7 +523,7 @@ public class ForecastingService {
      *   - final market_score   = 0.40·demand + 0.35·seasonality + 0.25·economic_viability
      */
     @Transactional
-    protected MarketsResponse runPipeline(UUID profileId) {
+    protected MarketsResponse runPipeline(UUID profileId, boolean useForecastCache) {
         MDC.put("code", Module2ErrorCodes.MOD22_FORECAST_STARTED);
         log.info("Forecast pipeline started for profile={}", profileId);
         MDC.remove("code");
@@ -549,15 +620,51 @@ public class ForecastingService {
             }
         }
 
-        // ── Phase B: single batch forecast-engine call for every (market, category)
-        // pair ── one HTTP call regardless of how many rows are in `setups`; the
-        // engine itself decides whether that means one shared LLM prompt or N
-        // independent per-row calls (see forecast_engine.py's engine implementations).
-        // No fallback — propagate exception so the controller returns a
-        // structured error response instead of silently using stub values.
+        // ── Phase B: single batch forecast-engine call for every STALE (market,
+        // category) pair ── one HTTP call regardless of how many rows end up in
+        // `allSequences`; the engine itself decides whether that means one shared
+        // LLM prompt or N independent per-row calls (see forecast_engine.py's
+        // engine implementations). No fallback for a pair that IS sent — propagate
+        // exception so the controller returns a structured error response instead
+        // of silently using stub values.
+        //
+        // When useForecastCache is true, a pair with a persisted forecast younger
+        // than PER_CATEGORY_FORECAST_FRESH_HOURS is held back from this call
+        // entirely and its result reused below (see buildCachedInferenceResult) —
+        // see that constant's Javadoc for why. `category` is never null here when
+        // `canPersist` is true (categories comes from profile.categoriesList()),
+        // so this cannot mask the legacy category=null path. When useForecastCache
+        // is false (the default forecastForProfile overload — every existing
+        // caller), every pair is always sent, exactly as before this cache existed.
+        List<CategorySequence> staleSetups = new ArrayList<>();
+        Map<String, Map<String, Object>> batchInference = new LinkedHashMap<>();
+        for (CategorySequence s : setups) {
+            Optional<ForecastResult> cached = (useForecastCache && canPersist)
+                    ? forecastRepo.findTopByBusinessProfileIdAndTargetMarketAndCategoryAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                              profileId, s.market(), s.category(), 4)
+                          .filter(fr -> fr.getGeneratedAt() != null
+                                  && fr.getGeneratedAt().isAfter(OffsetDateTime.now().minusHours(PER_CATEGORY_FORECAST_FRESH_HOURS)))
+                    : Optional.empty();
+            if (cached.isPresent()) {
+                Map<String, Object> reused = buildCachedInferenceResult(profileId, s.market(), s.category(), cached.get());
+                if (reused != null) {
+                    log.info("Reusing forecast-engine result for market={} category={} — "
+                            + "generated {} ago, within the {}h freshness window",
+                            s.market(), s.category(),
+                            java.time.Duration.between(cached.get().getGeneratedAt(), OffsetDateTime.now()),
+                            PER_CATEGORY_FORECAST_FRESH_HOURS);
+                    batchInference.put(s.key(), reused);
+                    continue;
+                }
+            }
+            staleSetups.add(s);
+        }
+
         List<Map<String, Object>> allSequences = new ArrayList<>();
-        for (CategorySequence s : setups) allSequences.add(s.sequence());
-        Map<String, Map<String, Object>> batchInference = ai.runForecastInferenceBatch(allSequences);
+        for (CategorySequence s : staleSetups) allSequences.add(s.sequence());
+        if (!allSequences.isEmpty()) {
+            batchInference.putAll(ai.runForecastInferenceBatch(allSequences));
+        }
 
         // ── Phase C: per-(market, category) demand read + scoring/persistence ──
         // Every field below — demand, seasonality, spike, GDP/forex, and therefore
@@ -746,6 +853,57 @@ public class ForecastingService {
         return new MarketsResponse(marketDtos);
     }
 
+    // ─── forecast-engine cache reuse ────────────────────────────────────────
+
+    /**
+     * Rebuilds the map shape {@code batchInference} normally holds for a
+     * (market, category) pair from its own persisted 4-week and 12-week
+     * {@link ForecastResult} rows, so Phase C can process a reused result
+     * through the exact same {@code requireNum}/{@code optionalNum}/
+     * {@code requireSource}/{@code requireWeeklyForecasts} path as a freshly
+     * computed one — see {@link #PER_CATEGORY_FORECAST_FRESH_HOURS}.
+     *
+     * @return the reconstructed map, or {@code null} when the matching 12-week
+     *         row is missing (a pre-migration or partial row) — the caller
+     *         falls through to a real forecast-engine call rather than persist
+     *         a half-reconstructed result.
+     */
+    private Map<String, Object> buildCachedInferenceResult(UUID profileId, String market, String category,
+                                                           ForecastResult fr4w) {
+        Optional<ForecastResult> fr12wOpt = forecastRepo
+                .findTopByBusinessProfileIdAndTargetMarketAndCategoryAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+                        profileId, market, category, 12);
+        if (fr12wOpt.isEmpty()) {
+            log.info("No matching 12-week row for cached market={} category={} — forcing a real recompute",
+                    market, category);
+            return null;
+        }
+
+        List<Double> weeklyForecasts = List.of();
+        if (fr4w.getWeeklyForecastsJson() != null) {
+            try {
+                weeklyForecasts = objectMapper.readValue(
+                        fr4w.getWeeklyForecastsJson(), new TypeReference<List<Double>>() {});
+            } catch (Exception e) {
+                log.warn("Failed to deserialize cached weeklyForecastsJson for market={} category={}: {}",
+                        market, category, e.getMessage());
+                return null;
+            }
+        }
+        if (weeklyForecasts.isEmpty()) return null;   // requireWeeklyForecasts would reject this anyway
+
+        Map<String, Object> reused = new LinkedHashMap<>();
+        reused.put("predicted_demand_4w",  fr4w.getPredictedDemand());
+        reused.put("predicted_demand_12w", fr12wOpt.get().getPredictedDemand());
+        reused.put("mape",       fr4w.getMapeScore());
+        reused.put("mae",        fr4w.getMae());
+        reused.put("rmse",       fr4w.getRmse());
+        reused.put("confidence", fr4w.getForecastConfidence());
+        reused.put("source",     fr4w.getSource());
+        reused.put("weekly_forecasts", weeklyForecasts);
+        return reused;
+    }
+
     // ─── persistence helpers ──────────────────────────────────────────────────
 
     private ForecastResult persistForecastResult(UUID profileId, String market, String category,
@@ -830,10 +988,10 @@ public class ForecastingService {
         alert.setAlertLevel(alertDecision.level());
         alert.setUpliftPct(alertDecision.upliftPct());
         alert.setAlertMessage(String.format(
-                "%s for %s — the 4-week forecast is %.1f%% above the rolling baseline. "
-                + "First forecast week crossing the demand-window threshold starts %s.",
+                "%s for %s — %s First forecast week crossing the demand-window threshold starts %s.",
                 alertDecision.level().equals("CRITICAL") ? "Critical demand window" : "Demand window detected",
-                marketName, alertDecision.upliftPct(), alertDecision.windowOpenDate().toLocalDate()));
+                marketName, upliftClause(alertDecision.upliftPct(), demand4w),
+                alertDecision.windowOpenDate().toLocalDate()));
         alert.setTrend(alertDecision.trend());
         alert.setIsRead(false);
         alert.setWindowOpenDate(alertDecision.windowOpenDate());
@@ -884,7 +1042,13 @@ public class ForecastingService {
             return Optional.empty();
         }
 
-        double upliftPct = calculateUpliftPct(predictedDemand4w, rolling7dAverage);
+        // See MIN_BASELINE_FOR_UPLIFT_PCT: the raw ratio above already decided
+        // whether this is a demand window (predictedDemand4w > threshold) —
+        // that detection is unaffected by this floor. Only whether a percentage
+        // is worth reporting alongside the decision depends on it.
+        Double upliftPct = rolling7dAverage < MIN_BASELINE_FOR_UPLIFT_PCT
+                ? null
+                : calculateUpliftPct(predictedDemand4w, rolling7dAverage);
         boolean critical = spikeIndicator && yoyRatio != null && Double.isFinite(yoyRatio) && yoyRatio >= 1.0;
         return Optional.of(new DemandAlertDecision(
                 critical ? "CRITICAL" : "WARNING",
@@ -901,6 +1065,22 @@ public class ForecastingService {
             throw new IllegalArgumentException("predicted_demand_4w must be finite");
         }
         return (predictedDemand4w / rolling7dAverage - 1.0) * 100.0;
+    }
+
+    /**
+     * The uplift half of a demand-window sentence — a percentage claim when
+     * {@code upliftPct} is meaningful (see {@link #MIN_BASELINE_FOR_UPLIFT_PCT}),
+     * or an absolute-point statement when it is not. Never fabricates a capped
+     * or floored percentage; below the floor it simply stops claiming one.
+     */
+    static String upliftClause(Double upliftPct, double demand4w) {
+        if (upliftPct != null) {
+            return String.format("the 4-week forecast is %.1f%% above the rolling baseline.", upliftPct);
+        }
+        return String.format(
+                "the 4-week forecast reaches %.1f (out of 100), up sharply from a near-zero recent baseline "
+                + "— too low for a percentage comparison to be meaningful.",
+                demand4w);
     }
 
     private static OffsetDateTime firstForecastWeekStart(MarketSignalRecord latestSignal) {
@@ -939,7 +1119,8 @@ public class ForecastingService {
         List<ChartDataPointDto> chartData = buildChartData(
                 b.history(), b.fr4w(), b.weeklyForecasts(), b.latestSignal());
 
-        String directive = buildDirective(market, b.upliftPct(), b.windowOpenDate(), b.spike(), b.confidence());
+        String directive = buildDirective(market, b.upliftPct(), b.windowOpenDate(), b.spike(), b.confidence(),
+                b.fr4w().getPredictedDemand());
 
         // H-14: computed from the route reference (frequency, direct/stopover,
         // block hours) — see MarketDto.accessibilityScore javadoc.
@@ -1204,13 +1385,24 @@ public class ForecastingService {
      * persisted alert or forecast, rather than from a generic marketing script.
      */
     static String buildDirective(String market, Double upliftPct, OffsetDateTime windowOpenDate,
-                                 boolean spike, double confidence) {
+                                 boolean spike, double confidence, double demand4w) {
         String marketName = MarketCatalog.displayName(market);
         String confidenceText = String.format("%.0f%%", Math.max(0.0, Math.min(1.0, confidence)) * 100.0);
-        if (upliftPct != null && windowOpenDate != null) {
+        // windowOpenDate alone decides whether a window is active — upliftPct can
+        // be null on an active window (MIN_BASELINE_FOR_UPLIFT_PCT) and must never
+        // be misread as "no window" (that was a real bug this fix would otherwise
+        // have introduced: a genuine alert with a near-zero baseline would have
+        // silently rendered as "No active demand window").
+        if (windowOpenDate != null) {
+            String upliftPhrase = upliftPct != null
+                    ? String.format("a %.1f%% forecast uplift above its rolling baseline", upliftPct)
+                    : String.format(
+                            "a forecast reaching %.1f (out of 100) — up sharply from a near-zero recent "
+                            + "baseline, too low for a percentage comparison to be meaningful",
+                            demand4w);
             return String.format(
-                    "%s has a %.1f%% forecast uplift above its rolling baseline; the demand window opens %s. %s Forecast confidence is %s.",
-                    marketName, upliftPct, windowOpenDate.toLocalDate(),
+                    "%s has %s; the demand window opens %s. %s Forecast confidence is %s.",
+                    marketName, upliftPhrase, windowOpenDate.toLocalDate(),
                     spike ? "A current interest spike is present." : "No current interest spike is present.",
                     confidenceText);
         }
@@ -1497,5 +1689,10 @@ public class ForecastingService {
             OffsetDateTime windowOpenDate) {}
 
     /** Package-visible pure result of the frozen demand-window alert rule. */
-    record DemandAlertDecision(String level, double upliftPct, String trend, OffsetDateTime windowOpenDate) {}
+    /**
+     * {@code upliftPct} is {@code null} when the rolling-7d baseline is below
+     * {@link #MIN_BASELINE_FOR_UPLIFT_PCT} — see that constant's Javadoc. The
+     * alert itself is still real; only the percentage claim is withheld.
+     */
+    record DemandAlertDecision(String level, Double upliftPct, String trend, OffsetDateTime windowOpenDate) {}
 }

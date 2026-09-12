@@ -91,13 +91,16 @@ class EconomyInsightForexTest {
 
     @Test
     void templatesRenderOnlyMeasuredFactsForKoreaJapanAndUsa() {
+        // demand4w (the trailing argument) is only read when upliftPct is null —
+        // irrelevant to these three assertions, which all have a non-null
+        // upliftPct or no active window at all. See MIN_BASELINE_FOR_UPLIFT_PCT.
         assertThat(ForecastingService.buildDirective("korea", 28.4,
-                OffsetDateTime.parse("2026-09-07T00:00:00Z"), true, 0.82))
+                OffsetDateTime.parse("2026-09-07T00:00:00Z"), true, 0.82, 50.0))
                 .isEqualTo("South Korea has a 28.4% forecast uplift above its rolling baseline; the demand window opens 2026-09-07. A current interest spike is present. Forecast confidence is 82%.");
         assertThat(ForecastingService.buildDirective("japan", 22.1,
-                OffsetDateTime.parse("2026-09-14T00:00:00Z"), false, 0.76))
+                OffsetDateTime.parse("2026-09-14T00:00:00Z"), false, 0.76, 50.0))
                 .isEqualTo("Japan has a 22.1% forecast uplift above its rolling baseline; the demand window opens 2026-09-14. No current interest spike is present. Forecast confidence is 76%.");
-        assertThat(ForecastingService.buildDirective("usa", null, null, false, 0.61))
+        assertThat(ForecastingService.buildDirective("usa", null, null, false, 0.61, 50.0))
                 .isEqualTo("No active demand window is currently persisted for United States. Forecast confidence is 61%.");
     }
 

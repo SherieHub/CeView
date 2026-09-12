@@ -5,6 +5,7 @@ import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.submodule21.IngestionJobLogRepository;
 import com.ceview.module2.submodule21.MarketDataIngestionJob;
 import com.ceview.module2.submodule21.MarketDataIngestionService;
+import com.ceview.module2.submodule22.ForecastingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -129,7 +130,8 @@ class ReferenceProfileIsolationTest {
         when(ingestionService.ingestForProfile(any())).thenReturn(0);
 
         var job = new MarketDataIngestionJob(
-            ingestionService, profileRepo, mock(IngestionJobLogRepository.class), true);
+            ingestionService, mock(ForecastingService.class), profileRepo,
+            mock(IngestionJobLogRepository.class), true);
 
         job.runDailyIngestion();
 

@@ -52,7 +52,10 @@ def test_batch_stub_receives_sequence_and_returns_contract_response():
     from app.main import app
     response = TestClient(app).post("/internal/forecasting/inference-batch", json={"markets": [sequence_payload()]})
     assert response.status_code == 200
-    body = response.json()["results"]["korea"]
+    # Results are keyed "{market}::{category}", not bare market — a profile sends
+    # one request per category and a bare key would collide (see
+    # stub_forecaster.forecast_batch). sequence_payload()'s category is "Food".
+    body = response.json()["results"]["korea::Food"]
     assert body["source"] == "stub-v1"
     assert len(body["weekly_forecasts"]) == 12
     # A normal 12-week sequence has a real holdout backtest.  The disclaimer is
@@ -83,4 +86,7 @@ def test_health_endpoints_boot_without_groq_key(monkeypatch):
     client = TestClient(app)
     assert client.get("/healthz").json() == {"status": "ok"}
     models = client.get("/healthz/models").json()
-    assert models == {"stub": "ok", "groq": "missing", "xgboost": "missing", "bilstm": "missing", "engine": "stub", "status": "ok"}
+    # bilstm reports "configured", not "loaded": the checkpoint lives in a hosted
+    # HF Space, so actual reachability is only knowable by calling it — which costs
+    # GPU quota and must never happen on a health probe.
+    assert models == {"stub": "ok", "groq": "missing", "xgboost": "missing", "bilstm": "configured", "engine": "stub", "status": "ok"}

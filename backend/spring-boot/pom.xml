@@ -16,6 +16,12 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Spring Boot 3.3.4 manages Lombok 1.18.34, which predates JDK 23 and
+             fails on its class-file format. Pinning forward keeps the build working
+             on both the documented JDK 21 and the newer JDKs developers actually
+             have installed. Note this pin alone is NOT sufficient on JDK 23 — see
+             the maven-compiler-plugin annotationProcessorPaths block below. -->
+        <lombok.version>1.18.42</lombok.version>
     </properties>
 
     <dependencies>
@@ -107,6 +113,26 @@
 
     <build>
         <plugins>
+            <!-- JDK 23 (JEP 'implicit annotation processing disabled by default')
+                 no longer runs annotation processors merely because they sit on the
+                 compile classpath. Without an explicit processor path Lombok is
+                 silently skipped: no @Data accessors are generated and the build
+                 fails with hundreds of "cannot find symbol" errors on getters that
+                 are plainly declared. Declaring the path here restores processing on
+                 JDK 23 while remaining correct on the documented JDK 21. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

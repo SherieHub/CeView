@@ -21,14 +21,14 @@ class ForecastingControllerJwtVariantTest {
         ForecastingService service = Mockito.mock(ForecastingService.class);
         CurrentBusinessProfile current = Mockito.mock(CurrentBusinessProfile.class);
         Mockito.when(current.resolveOrValidate(null)).thenReturn(PROFILE);
-        Mockito.when(service.forecastForProfile(PROFILE, true))
+        Mockito.when(service.forecastForProfile(PROFILE, true, true))
                .thenReturn(new MarketsResponse(List.of()));
 
         ForecastingController controller = new ForecastingController(service, current, Mockito.mock(WebClient.class));
 
         assertThat(controller.analyze().getStatusCode().value()).isEqualTo(200);
         Mockito.verify(current).resolveOrValidate(null);
-        Mockito.verify(service).forecastForProfile(PROFILE, true);
+        Mockito.verify(service).forecastForProfile(PROFILE, true, true);
     }
 
     @Test

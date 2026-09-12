@@ -111,6 +111,15 @@ class SequenceForecastRequest(BaseModel):
     data_stale: bool = Field(default=False, validation_alias=AliasChoices("dataStale", "data_stale"))
     sequence: list[WeeklyFeatureRow] = Field(min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
     imputed_mask: list[dict[str, bool]] = Field(validation_alias=AliasChoices("imputedMask", "imputed_mask"), min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
+    # Full measured weekly trend history (oldest first), longer than `sequence`'s
+    # frozen 12-row window. Engines with a longer lookback than WINDOW_LENGTH read
+    # this instead — the BiLSTM + Transformer takes a fixed 52-week input — while
+    # stub/groq ignore it entirely. Optional and defaulted, so every existing
+    # caller stays valid; declared explicitly because model_config forbids extras.
+    trend_history: list[float] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("trendHistory", "trend_history"),
+    )
     # Deprecated scalar compatibility fields are retained for Groq rollout.
     trend_series: list[float] | None = Field(default=None, validation_alias=AliasChoices("trendSeries", "trend_series"))
     rolling_7d_avg: float | None = Field(default=None, validation_alias=AliasChoices("rolling7dAvg", "rolling_7d_avg"))
@@ -148,6 +157,7 @@ class SequenceForecastRequest(BaseModel):
         payload["seasonalityScore"] = payload.pop("seasonality_score")
         payload["forexRate"] = payload.pop("forex_rate")
         payload["gdpGrowth"] = payload.pop("gdp_growth")
+        payload["trendHistory"] = payload.pop("trend_history")
         payload["sequence"] = [{
             "isoYear": row["iso_year"], "isoWeek": row["iso_week"], "weekStartDate": row["week_start_date"].isoformat(),
             "trendIndex": row["trend_index"], "forexRate": row["forex_rate"], "gdpGrowth": row["gdp_growth"],

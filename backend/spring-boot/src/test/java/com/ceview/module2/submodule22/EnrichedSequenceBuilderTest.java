@@ -57,6 +57,42 @@ class EnrichedSequenceBuilderTest {
         assertThat(payload).containsEntry("category", "Food").containsKeys("profileId", "dataAsOf", "dataStale");
     }
 
+    /**
+     * The BiLSTM + Transformer engine reads a 52-week lookback that does not fit the
+     * frozen 12-row `sequence`, so the full measured series rides alongside it as
+     * `trendHistory`. It must carry every genuinely-measured week — never padded up
+     * to the model's window, so an engine with a longer lookback can refuse a short
+     * history instead of forecasting from invented weeks.
+     */
+    @Test
+    void carriesTheFullMeasuredHistoryAlongsideTheTwelveRowWindow() {
+        MarketSignalRecordRepository signalRepo = mock(MarketSignalRecordRepository.class);
+        MarketEconomicTrendRepository macroRepo = mock(MarketEconomicTrendRepository.class);
+        UUID profileId = UUID.randomUUID();
+        // 20 measured weeks — deliberately more than the 12-row window, fewer than 52.
+        List<MarketSignalRecord> history = descendingWeeklyHistory(LocalDate.of(2026, 2, 16), 20);
+        when(signalRepo.findRealByProfileAndMarket(profileId, "japan", "Food")).thenReturn(history);
+        when(macroRepo.findTopByMarketOrderByFetchedAtDesc("japan")).thenReturn(Optional.empty());
+
+        Map<String, Object> payload = builder(signalRepo, macroRepo).buildSequence(profileId, "japan", "Food");
+
+        assertThat(rows(payload.get("sequence"))).hasSize(12);
+
+        @SuppressWarnings("unchecked")
+        List<Double> trendHistory = (List<Double>) payload.get("trendHistory");
+        assertThat(trendHistory)
+                .as("all 20 measured weeks travel, not just the 12-row window and not padded to 52")
+                .hasSize(20)
+                .doesNotContainNull();
+
+        // Oldest first, matching the sequence's own ordering.
+        List<Double> chronological = history.stream()
+                .map(MarketSignalRecord::getTrendIndex)
+                .collect(java.util.stream.Collectors.toList());
+        java.util.Collections.reverse(chronological);
+        assertThat(trendHistory).containsExactlyElementsOf(chronological);
+    }
+
     @Test
     void rejectsShortHistoryWithActualWeeklyCount() {
         MarketSignalRecordRepository signalRepo = mock(MarketSignalRecordRepository.class);

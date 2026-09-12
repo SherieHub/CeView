@@ -224,6 +224,16 @@ public class EnrichedSequenceBuilder {
         payload.put("category",    category);   // extra context; ignored by FastAPI if unused
         payload.put("sequence",    sequence);
         payload.put("imputedMask", imputedMask);
+        // The full MEASURED history, oldest first — not the W-row window above.
+        // An engine whose lookback is longer than W (the BiLSTM + Transformer
+        // takes 52 weeks) reads this; stub/groq ignore it. Only genuinely
+        // measured rows are included: no carry-forward, no padding, so a short
+        // history stays visibly short and the engine can refuse it rather than
+        // forecast from fabricated weeks.
+        payload.put("trendHistory", chronological.stream()
+                .map(MarketSignalRecord::getTrendIndex)
+                .filter(EnrichedSequenceBuilder::usable)
+                .toList());
         payload.put("dataAsOf", latest.getAggregatedAt() == null
                 ? null : latest.getAggregatedAt().toString());
         payload.put("dataStale", isStale(latest.getAggregatedAt(), java.time.OffsetDateTime.now()));

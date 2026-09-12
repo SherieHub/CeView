@@ -128,12 +128,22 @@ public class ForecastingController {
         }
     }
 
-    /** Re-analyze for a specific profile (the "Refresh Forecast" CTA). */
+    /**
+     * Re-analyze for a specific profile (the "Refresh Forecast" CTA).
+     *
+     * <p>{@code useForecastCache=true}: a category that already has a forecast
+     * younger than {@code ForecastingService.PER_CATEGORY_FORECAST_FRESH_HOURS}
+     * is not re-sent to the forecast engine. Without this, clicking Refresh
+     * again moments after a partial failure (one category succeeded, another
+     * exhausted a shared quota such as Hugging Face ZeroGPU, and the whole
+     * {@code @Transactional} run rolled back) would re-spend that quota on the
+     * category that had already succeeded.
+     */
     @PostMapping("/analyze/{profileId}")
     public ResponseEntity<?> analyze(@PathVariable UUID profileId) {
         UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         try {
-            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true);
+            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true, true);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
@@ -156,7 +166,7 @@ public class ForecastingController {
     public ResponseEntity<?> analyze() {
         UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(null);
         try {
-            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true);
+            MarketsResponse result = forecastingService.forecastForProfile(resolvedProfileId, true, true);
             return ResponseEntity.ok(result);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");

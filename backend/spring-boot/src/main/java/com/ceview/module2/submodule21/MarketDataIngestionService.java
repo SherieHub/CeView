@@ -38,6 +38,24 @@ public class MarketDataIngestionService {
     private static final Logger log = LoggerFactory.getLogger(MarketDataIngestionService.class);
 
     private static final int          FOREX_ROLLING_WINDOW = 30;  // 30-period rolling for forex
+    /**
+     * Weeks of real weekly history to backfill on a profile's first ingestion.
+     *
+     * <p>52 because the BiLSTM + Transformer demand model takes a fixed 52-week
+     * lookback (t-51..t) and this codebase does not pad a short series with
+     * fabricated values to reach it — see bilstm_forecaster's MIN_HISTORY_WEEKS
+     * and docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md.
+     *
+     * <p>This costs no extra SerpApi quota: trend_service.fetch_trend_history
+     * already requests the "today 12-m" preset (~52 weekly points) for any
+     * weeks &lt;= 52 and then slices the tail, so asking for 52 simply stops
+     * discarding 40 points that were already fetched and paid for.
+     *
+     * <p>The 12-week model-input window ({@code EnrichedSequenceBuilder.W}) is a
+     * SEPARATE, unchanged contract — this only controls how much real history is
+     * persisted behind it.
+     */
+    private static final int          BACKFILL_WEEKS       = 52;
     /** Step 4 (contract §2): the one ISO-week API used everywhere in this class —
      *  never dayOfYear/7+1, which misclassifies weeks straddling a year boundary. */
     private static final WeekFields   ISO_WEEK             = WeekFields.ISO;
@@ -145,18 +163,42 @@ public class MarketDataIngestionService {
         List<MarketSignalRecord> priorWeeks = priorWeeksOnly(history, isoYear, isoWeek);
 
         // ── First ingestion ever for this (profile, category, market): backfill ─
-        // On first run there are no signal records at all, so the chart would
-        // show a flat line. Fetch 12 weeks of weekly PyTrends data and persist
-        // one MarketSignalRecord per historical week so the chart shows real
-        // week-over-week variance from the very first forecast. Triggered on
-        // history.isEmpty() (not priorWeeks.isEmpty()): a second same-week
+        // Without a backfill the chart would show a flat line, so fetch
+        // BACKFILL_WEEKS of weekly data and persist one MarketSignalRecord per
+        // historical week, giving real week-over-week variance from the very
+        // first forecast.
+        //
+        // The trigger counts REAL history only — the same source filter the
+        // downstream consumers apply (findRealByProfileAndMarket, and through it
+        // EnrichedSequenceBuilder). Counting every row instead would let a
+        // profile that carries non-real rows — a seeded demo operator's
+        // 'seed_demo_v40' series, for instance — skip the backfill forever:
+        // ingestion would take the else-branch and write only the current week,
+        // so the forecaster would keep seeing count=1 and refuse with
+        // MOD22_NO_MARKET_DATA no matter how often it ran. Producer and
+        // consumer must agree on what "has history" means.
+        //
+        // Still "empty", not "shorter than BACKFILL_WEEKS": a second same-week
         // re-ingest must never re-trigger a full backfill just because there is
-        // no PRIOR week yet in a profile's very first week of data.
+        // no PRIOR week yet in a profile's very first week of data (see
+        // WeeklyCadenceIngestionTest). A run that wrote the current week and then
+        // failed therefore stays one week short until the following week's
+        // ingest — the trade this invariant buys.
+        //
+        // Scoped to (profile, category, market) and evaluated against all weeks
+        // rather than priorWeeks: a second same-week re-ingest must never
+        // re-trigger a full backfill just because there is no PRIOR week yet in
+        // a profile's very first week of data. backfillHistory upserts on the
+        // (profile, category, market, ISO week) key, so weeks already occupied
+        // by non-real rows are overwritten with measured data, never duplicated.
+        List<MarketSignalRecord> realHistory = signalRepo
+                .findRealByProfileAndMarket(profileId, market, category);
+
         double trendIndex;
         String source;
-        if (history.isEmpty()) {
+        if (realHistory.isEmpty()) {
             Map<String, Object> historyResult = ai.fetchTrendHistory(
-                    Map.of("market", market, "categories", List.of(category), "weeks", 12));
+                    Map.of("market", market, "categories", List.of(category), "weeks", BACKFILL_WEEKS));
             source = str(historyResult, "source");
             trendIndex = backfillHistory(profileId, market, category, historyResult, gdp, forex, source);
             // Reload so the seasonality call below has the backfilled series —
