@@ -97,7 +97,7 @@ describe('PurchasingPowerTab', () => {
     );
     expect(values).toEqual([
       korea.forexValue.toFixed(2),
-      `${korea.gdpValue}%`,
+      `${korea.gdpValue.toFixed(2)}%`,
       formatPhpRange(korea.fareMinPhp, korea.fareMaxPhp),
       `${korea.accessibilityScore}/10`,
     ]);
@@ -110,9 +110,9 @@ describe('PurchasingPowerTab', () => {
     expect(trends).toHaveLength(2);
     // A sparkline with no scale cannot say whether it moved 1% or 30%.
     const gdp = market_gdp(korea);
-    expect(trends[1].textContent).toContain(`${gdp.at(-1)}%`);
-    expect(trends[1].textContent).toContain(`${Math.min(...gdp)}%`);
-    expect(trends[1].textContent).toContain(`${Math.max(...gdp)}%`);
+    expect(trends[1].textContent).toContain(`${gdp.at(-1)!.toFixed(2)}%`);
+    expect(trends[1].textContent).toContain(`${Math.min(...gdp).toFixed(2)}%`);
+    expect(trends[1].textContent).toContain(`${Math.max(...gdp).toFixed(2)}%`);
   });
 
   it('carries the economic insight', () => {

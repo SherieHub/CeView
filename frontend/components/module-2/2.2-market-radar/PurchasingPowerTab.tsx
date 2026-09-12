@@ -90,6 +90,7 @@ function MiniTrend({
               forex series that only ever moves a few percent. */}
           <YAxis domain={['dataMin', 'dataMax']} hide />
           <Tooltip
+            formatter={(value) => typeof value === 'number' ? format(value) : value}
             contentStyle={{
               borderRadius: 12,
               border: 'none',
@@ -120,7 +121,7 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
       value: market.forexValue.toFixed(2),
       foot: market.currency,
     },
-    { icon: TrendingUp, label: 'GDP growth', value: `${market.gdpValue}%`, foot: 'Year on year' },
+    { icon: TrendingUp, label: 'GDP growth', value: `${market.gdpValue.toFixed(2)}%`, foot: 'Year on year' },
     {
       icon: Plane,
       label: 'Avg flight price',
@@ -180,7 +181,7 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
           data={market.gdpTrend}
           label={`GDP growth · ${market.gdpTrend.length} year${market.gdpTrend.length === 1 ? '' : 's'}`}
           emptyReason={provenanceReason(market.gdpSource, market.macroAsOf)}
-          format={(v) => `${v}%`}
+          format={(v) => `${v.toFixed(2)}%`}
         />
       </div>
     </>
