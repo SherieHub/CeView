@@ -43,4 +43,6 @@ export const DEMO_BUSINESS: ObDraft = {
   website: 'https://sunsetcove.ph',
   categories: [],
   uniquenessScore: null,
+  // Step 5 has not run for this draft, so there is no cohort verdict either.
+  cohortInsufficient: false,
 };

@@ -167,10 +167,12 @@ test.describe('Platforms', () => {
       route.fulfill({
         json: {
           markets: [{
-            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', flag: 'KR', matchScore: 92,
+            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', matchScore: 92,
             directive: '', directFlight: true, flightHours: '4h', distanceKm: 2600, nearestAirport: 'ICN',
-            destinationAirport: 'CEB', accessibilityScore: 90, flightFrequency: 14, avgFlightPrice: '$300',
-            airlines: [], peakMonths: [], currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
+            destinationAirport: 'CEB', accessibilityScore: 9, flightFrequency: 14,
+            fareMinPhp: 8000, fareMaxPhp: 15000, fareSource: 'static_reference_v1', fareAsOf: null,
+            airlines: [], peakMonths: [], peakMonthsSource: 'reference',
+            currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
             forexValue: 0.042, seasonalityScore: 80, yoyRatio: null, spikeIndicator: true,
             economyInsight: '', seasonalityInsight: '', gdpTrend: [], forexTrend: [], chartData: [],
             dataAsOf: null, dataStale: false,
@@ -247,10 +249,12 @@ test.describe('Platforms', () => {
       route.fulfill({
         json: {
           markets: [{
-            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', flag: 'KR', matchScore: 92,
+            id: 'korea', rank: 1, name: 'South Korea', city: 'Seoul', matchScore: 92,
             directive: '', directFlight: true, flightHours: '4h', distanceKm: 2600, nearestAirport: 'ICN',
-            destinationAirport: 'CEB', accessibilityScore: 90, flightFrequency: 14, avgFlightPrice: '$300',
-            airlines: [], peakMonths: [], currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
+            destinationAirport: 'CEB', accessibilityScore: 9, flightFrequency: 14,
+            fareMinPhp: 8000, fareMaxPhp: 15000, fareSource: 'static_reference_v1', fareAsOf: null,
+            airlines: [], peakMonths: [], peakMonthsSource: 'reference',
+            currency: 'KRW', forexLabel: 'PHP per 1 KRW', gdpValue: 2.1,
             forexValue: 0.042, seasonalityScore: 80, yoyRatio: null, spikeIndicator: true,
             economyInsight: '', seasonalityInsight: '', gdpTrend: [], forexTrend: [], chartData: [],
             dataAsOf: null, dataStale: false,
@@ -298,5 +302,159 @@ test.describe('Platforms', () => {
     await page.getByRole('button', { name: 'Content Studio' }).click();
     await stageAndOpenPublish(page);
     await expect(page.getByRole('checkbox', { name: 'Instagram' })).toBeDisabled();
+  });
+});
+
+// ── Ad accounts ─────────────────────────────────────────────────────────────
+//
+// Screen: /settings/platforms — the "Ad accounts" section
+// Spec: docs/superpowers/specs/2026-09-06-ad-platform-connections-design.md
+//
+// SCOPE, STATED HONESTLY: this does NOT test the OAuth round-trip. The consent
+// screen is a page on Meta's/TikTok's own domain behind a login these tests have
+// no credentials for, so /api/ad-connections is stubbed and only the states
+// CeView renders are asserted. The real flow is verified by hand — see
+// AD_PLATFORM_SETUP.md §8.
+
+test.describe('Platforms — ad accounts', () => {
+  test.beforeEach(async () => {
+    await requireBackend();
+  });
+
+  type AdConnection = {
+    provider: 'meta' | 'tiktok';
+    configured: boolean;
+    status: 'DISCONNECTED' | 'PENDING_ACCOUNT_SELECTION' | 'ACTIVE' | 'REVOKED';
+    accountName: string | null;
+    currency: string | null;
+    campaignId: string | null;
+    campaignName: string | null;
+    connectedAt: string | null;
+    lastSyncedAt: string | null;
+  };
+
+  function connection(over: Partial<AdConnection> = {}): AdConnection {
+    return {
+      provider: 'meta',
+      configured: true,
+      status: 'DISCONNECTED',
+      accountName: null,
+      currency: null,
+      campaignId: null,
+      campaignName: null,
+      connectedAt: null,
+      lastSyncedAt: null,
+      ...over,
+    };
+  }
+
+  async function mockAdConnections(
+    page: import('@playwright/test').Page,
+    rows: AdConnection[],
+  ) {
+    await page.route('**/api/ad-connections', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(rows),
+      });
+    });
+  }
+
+  /** The "Ad accounts" card, scoped away from the publishing-platform rows
+   *  above it — both sections render "Connect"/"Disconnect" buttons, so an
+   *  unscoped role query is ambiguous whenever a real /api/connections
+   *  response (this describe block doesn't stub it) also has a connected or
+   *  disconnected row. */
+  function adAccountsCard(page: import('@playwright/test').Page) {
+    return page.locator('.card').filter({ hasText: 'Ad accounts' });
+  }
+
+  async function loginAndOpenPlatforms(page: import('@playwright/test').Page) {
+    await page.goto('/');
+    await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
+    await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
+    await page.goto('/settings/platforms');
+  }
+
+  test('renders a row for each ad provider below the publishing platforms', async ({ page }) => {
+    await mockAdConnections(page, [
+      connection({ provider: 'meta' }),
+      connection({ provider: 'tiktok' }),
+    ]);
+    await loginAndOpenPlatforms(page);
+
+    await expect(page.getByText('Ad accounts')).toBeVisible();
+    await expect(page.getByText('Meta Ads')).toBeVisible();
+    await expect(page.getByText('TikTok Ads')).toBeVisible();
+    // The publishing rows must still be there — this section is additive.
+    await expect(page.getByText('Instagram')).toBeVisible();
+  });
+
+  test('an unconfigured provider says so and cannot be connected', async ({ page }) => {
+    await mockAdConnections(page, [connection({ provider: 'meta', configured: false })]);
+    await loginAndOpenPlatforms(page);
+
+    await expect(page.getByText(/not configured on this server/i)).toBeVisible();
+    await expect(adAccountsCard(page).getByRole('button', { name: 'Connect', exact: true })).toBeDisabled();
+  });
+
+  test('an active connection shows its account name and currency', async ({ page }) => {
+    await mockAdConnections(page, [
+      connection({ status: 'ACTIVE', accountName: 'Cebu Dive Co. Ads', currency: 'PHP' }),
+    ]);
+    await loginAndOpenPlatforms(page);
+
+    await expect(page.getByText('Cebu Dive Co. Ads')).toBeVisible();
+    await expect(page.getByText(/PHP/)).toBeVisible();
+    await expect(adAccountsCard(page).getByRole('button', { name: 'Disconnect', exact: true })).toBeVisible();
+  });
+
+  test('a pending connection prompts the operator to choose an account', async ({ page }) => {
+    await mockAdConnections(page, [connection({ status: 'PENDING_ACCOUNT_SELECTION' })]);
+    await loginAndOpenPlatforms(page);
+
+    await expect(adAccountsCard(page).getByRole('button', { name: 'Choose ad account' })).toBeVisible();
+  });
+
+  test('returning from the redirect with an error surfaces it and clears the query', async ({ page }) => {
+    await mockAdConnections(page, [connection()]);
+    await page.goto('/');
+    await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
+    await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
+
+    await page.goto('/settings/platforms?adconnect_error=access_denied');
+
+    await expect(page.getByText(/connection cancelled/i)).toBeVisible();
+    // The param is stripped so a refresh doesn't re-toast.
+    await expect(page).toHaveURL(/\/settings\/platforms$/);
+  });
+
+  test('returning from a successful redirect opens the account picker', async ({ page }) => {
+    await mockAdConnections(page, [connection({ status: 'PENDING_ACCOUNT_SELECTION' })]);
+    await page.route('**/api/ad-connections/meta/accounts', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { id: 'act_111111111', name: 'Cebu Dive Co. Ads', currency: 'PHP' },
+        ]),
+      });
+    });
+
+    await page.goto('/');
+    await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
+    await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
+
+    await page.goto('/settings/platforms?adconnect=meta');
+
+    await expect(page.getByText(/choose a meta ads account/i)).toBeVisible();
+    await expect(page.getByText('Cebu Dive Co. Ads')).toBeVisible();
   });
 });

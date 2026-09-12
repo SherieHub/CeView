@@ -17,11 +17,32 @@ describeIfBackend(up, 'module 2 endpoints', () => {
     if (body.notifications.length > 0) {
       expect(body.notifications[0]).toMatchObject({
         id: expect.any(String),
-        category: expect.any(String),
         alertLevel: expect.stringMatching(/^(INFO|WARNING|CRITICAL)$/),
-        alertMessage: expect.any(String),
       });
+      expect(body.notifications[0]).toHaveProperty('category');
+      expect(body.notifications[0]).toHaveProperty('alertMessage');
+      expect(body.notifications[0]).toHaveProperty('windowOpenDate');
+      expect(body.notifications[0]).toHaveProperty('upliftPct');
     }
+  });
+
+  it('serves measured alert semantics rather than the retired constant 20% copy', async () => {
+    const res = await api('/api/notifications');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const measured = body.notifications.find((n: { upliftPct: unknown }) => typeof n.upliftPct === 'number');
+
+    // V40 deliberately seeds a rule-derived CRITICAL example. Requiring it
+    // here prevents a later seed/API change from quietly reverting to the old
+    // fixed "20.0%" alert copy.
+    expect(measured).toBeDefined();
+    expect(measured.upliftPct).not.toBe(20);
+    expect(measured.alertMessage).toContain(`${measured.upliftPct.toFixed(1)}%`);
+    expect(['WARNING', 'CRITICAL']).toContain(measured.alertLevel);
+
+    const critical = body.notifications.find((n: { alertLevel: string }) => n.alertLevel === 'CRITICAL');
+    expect(critical).toBeDefined();
+    expect(critical.alertMessage).toContain('Critical demand window');
   });
 
   it('GET /api/forecasting/status reports AI availability', async () => {
@@ -41,15 +62,25 @@ describeIfBackend(up, 'module 2 endpoints', () => {
       // Every field the radar drawer reads — a regression here renders undefined/NaN.
       expect(body.markets[0]).toMatchObject({
         id: expect.any(String),
-        flag: expect.any(String),
         currency: expect.any(String),
         forexLabel: expect.any(String),
         gdpValue: expect.any(Number),
         forexValue: expect.any(Number),
         seasonalityScore: expect.any(Number),
         spikeIndicator: expect.any(Boolean),
+        accessibilityScore: expect.any(Number),
+        fareMinPhp: expect.any(Number),
+        fareMaxPhp: expect.any(Number),
+        fareSource: expect.any(String),
+        peakMonthsSource: expect.stringMatching(/^(seasonal_history|reference)$/),
       });
+      expect([null, 'WARNING', 'CRITICAL']).toContain(body.markets[0].surgeLevel);
+      expect(['xgboost', 'linear']).toContain(body.markets[0].scorer);
       expect(body.markets[0]).toHaveProperty('chartData');
+      const forecastPoints = body.markets[0].chartData.filter(
+        (point: { forecast: unknown }) => typeof point.forecast === 'number',
+      );
+      expect(forecastPoints).toHaveLength(12);
     }
   });
 

@@ -41,6 +41,18 @@ export interface ObDraft {
    */
   categories: string[];
   uniquenessScore: number | null;
+  /**
+   * True when the API answered `sufficientCohort: false` — too few comparable
+   * businesses on record to rank against. That is a VALID answer, not an error,
+   * and it leaves no defensible number to put in `uniquenessScore`.
+   *
+   * Finish still has to be reachable, so `stepValid` case 4 accepts this flag as
+   * the other way of having finished Step 5. The alternatives were both worse:
+   * leaving the score null strands the operator on Step 5 with no way forward,
+   * and writing the unranked score persists a number that was never computed —
+   * the exact failure the backend's own cohort floor exists to prevent.
+   */
+  cohortInsufficient: boolean;
 }
 
 export const EMPTY_OB_DRAFT: ObDraft = {
@@ -56,6 +68,7 @@ export const EMPTY_OB_DRAFT: ObDraft = {
   website: '',
   categories: [],
   uniquenessScore: null,
+  cohortInsufficient: false,
 };
 
 /**
@@ -128,6 +141,11 @@ export function wordCount(text: string): number {
  * reopens category selection afterward), so gating on
  * `draft.uniquenessScore != null` here is equivalent without threading
  * AnalysisStep's phase enum through the wizard shell.
+ *
+ * The one exception is a cohort too small to rank against: the API answers
+ * successfully but there is no defensible number, so 'scored' is reached with
+ * `uniquenessScore` still null. `cohortInsufficient` carries that case — see its
+ * docblock on ObDraft above.
  */
 export function stepValid(draft: ObDraft, index: number): boolean {
   switch (index) {
@@ -141,7 +159,9 @@ export function stepValid(draft: ObDraft, index: number): boolean {
     case 3:
       return true; // Assets & Links — every field optional
     case 4:
-      return draft.uniquenessScore != null; // Analysis — true once obPhase === 'scored'
+      // Either a real score, or an explicit "no rankable cohort" answer. Both
+      // mean the operator has finished Step 5; only one of them has a number.
+      return draft.uniquenessScore != null || draft.cohortInsufficient;
     default:
       return true;
   }

@@ -7,6 +7,13 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * Immutable-shaped raw weekly demand layout retained for offline model-training
+ * and feature-export work. It is intentionally not a Module 2 dashboard or
+ * runtime forecasting input: the live pipeline reads {@link MarketSignalRecord}
+ * and emits the frozen 12-row feature matrix. Do not add UI reads here; doing so
+ * would reintroduce a second, stale data contract beside signal records.
+ */
 @Data
 @Entity
 @Table(name = "tbl_orig_weekly_demand_value")

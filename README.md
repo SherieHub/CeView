@@ -55,6 +55,7 @@ For the native/H2 path (no Docker), the full environment variable reference, see
 | API Contract | [`backend/CONTRACT.md`](backend/CONTRACT.md) | Full REST endpoint contract between frontend and backend |
 | Module 1–4 docs | [`docs/module-1/`](docs/module-1/README.md) … [`docs/module-4/`](docs/module-4/README.md) | Per-module deep dives: components, DB schema, sequence diagrams |
 | Deployment | [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md) | Deploying the full stack to Render |
+| Ad platform setup | [`AD_PLATFORM_SETUP.md`](AD_PLATFORM_SETUP.md) | Connecting Meta and TikTok ad accounts; OAuth setup, env vars, manual testing |
 
 ## Testing & CI
 

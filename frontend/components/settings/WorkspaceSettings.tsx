@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { useToast } from '../shared/Toast';
 import { apiClient } from '../../services/apiClient';
+import TutorialModal from '../shared/TutorialModal';
 import type { WorkspaceMemberFixture } from '../../types';
 
 type InviteRole = 'Editor' | 'Viewer';
@@ -46,6 +47,7 @@ export default function WorkspaceSettings() {
   const [members, setMembers] = useState<WorkspaceMemberFixture[] | null>(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('Editor');
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,8 +80,15 @@ export default function WorkspaceSettings() {
 
   return (
     <div className="card p-6">
-      <h2 className="heading-lg mb-1">Workspace members</h2>
-      <p className="body-sm mb-5">Everyone here shares this business profile and its connected platforms.</p>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="heading-lg mb-1">Workspace members</h2>
+          <p className="body-sm">Everyone here shares this business profile and its connected platforms.</p>
+        </div>
+        <button type="button" className="btn-outline" onClick={() => setTourOpen(true)}>
+          Replay tour
+        </button>
+      </div>
 
       {members == null ? (
         <div className="flex flex-col gap-3" aria-hidden="true">
@@ -137,6 +146,8 @@ export default function WorkspaceSettings() {
           <UserPlus size={16} aria-hidden="true" /> Send invite
         </button>
       </form>
+
+      <TutorialModal open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
 }

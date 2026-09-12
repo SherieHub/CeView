@@ -22,7 +22,7 @@ vi.mock('../../../services/profileContext', () => ({
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
     notifications: { list: vi.fn(), markRead: vi.fn(), keywordTrends: vi.fn() },
-    forecast: { analyze: vi.fn(), status: vi.fn() },
+    forecast: { analyze: vi.fn(), status: vi.fn(), ensure: vi.fn() },
     markets: { forCategory: vi.fn() },
   },
 }));
@@ -37,6 +37,7 @@ const keywordTrendsMock = apiClient.notifications.keywordTrends as unknown as Re
 >;
 const analyzeMock = apiClient.forecast.analyze as unknown as ReturnType<typeof vi.fn>;
 const statusMock = apiClient.forecast.status as unknown as ReturnType<typeof vi.fn>;
+const ensureMock = apiClient.forecast.ensure as unknown as ReturnType<typeof vi.fn>;
 const forCategoryMock = apiClient.markets.forCategory as unknown as ReturnType<typeof vi.fn>;
 
 /** Deep copies so a test can never mutate the shared fixture by accident. */
@@ -49,7 +50,12 @@ function setup(categories: string[], list: DemandAlert[] = alerts(), available =
   listMock.mockResolvedValue(list);
   statusMock.mockResolvedValue({ available });
   markReadMock.mockResolvedValue({ ok: true });
-  analyzeMock.mockResolvedValue({ rerankedMarkets: 3 });
+  // Step 16: called once on every load before the alerts/health read.
+  ensureMock.mockResolvedValue(undefined);
+  // Step 17 (T-08): the live shape is { markets: Market[] }, not the old
+  // fixture-only { rerankedMarkets: 3 } — RefreshForecastButton reads
+  // markets.length for its toast.
+  analyzeMock.mockResolvedValue({ markets: [{}, {}, {}] });
   // Empty by default: most tests don't care about the keyword-trend merge.
   keywordTrendsMock.mockResolvedValue([]);
   // Mirrors the real backend: a category with no scored markets comes back
@@ -346,6 +352,99 @@ describe('useDashboardState — refresh', () => {
     expect(analyzeMock).toHaveBeenCalled();
     expect(listMock).toHaveBeenCalledTimes(2);
     expect(result.current.isRefreshing).toBe(false);
+  });
+
+  // Step 17 (C-19/C-20): refresh used to leave rankedMarkets/topMarket/
+  // keywordAlerts stale, relying on an incidental re-render from a new
+  // selectedAlert object reference that a pipeline run never actually
+  // produces on its own.
+  it('reloads topMarket and keyword alerts after a successful refresh', async () => {
+    const { result } = await renderReady(DEMO_CATEGORIES);
+    const topMarketCallsBeforeRefresh = forCategoryMock.mock.calls.length;
+    const keywordCallsBeforeRefresh = keywordTrendsMock.mock.calls.length;
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(forCategoryMock.mock.calls.length).toBeGreaterThan(topMarketCallsBeforeRefresh);
+    expect(keywordTrendsMock.mock.calls.length).toBeGreaterThan(keywordCallsBeforeRefresh);
+  });
+
+  it('reloads rankedMarkets for the currently-selected alert after a successful refresh', async () => {
+    const { result } = await renderReady(DEMO_CATEGORIES);
+    act(() => result.current.selectAlert('n1')); // Accommodation & Staycation
+    await waitFor(() => expect(result.current.rankedMarkets[0]?.id).toBe('korea'));
+
+    // The category's leader changes after the pipeline run.
+    forCategoryMock.mockImplementation((category: string) =>
+      category === 'Accommodation & Staycation'
+        ? Promise.resolve([{ id: 'usa' }, { id: 'korea' }])
+        : Promise.resolve(category in CATEGORY_MARKET_SCORES ? marketsForCategory(category) : []),
+    );
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.rankedMarkets[0]?.id).toBe('usa');
+  });
+
+  // Step 17 (C-19/C-20): analyze() had no catch at all — a rejection was an
+  // unhandled promise rejection with no toast, no error UI, and a stuck
+  // isRefreshing flag.
+  it('routes a failed pipeline run into error and clears isRefreshing, without throwing', async () => {
+    const { result } = await renderReady(DEMO_CATEGORIES);
+    const failure = new ApiError({
+      status: 503,
+      method: 'POST',
+      path: '/api/forecasting/analyze',
+      body: { code: 'MOD22_FORECAST_FAILED', message: 'Gemini quota exceeded' },
+    });
+    analyzeMock.mockRejectedValue(failure);
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.refresh();
+    });
+
+    expect(outcome).toBeNull();
+    expect(result.current.error).toBe(failure);
+    expect(result.current.isRefreshing).toBe(false);
+  });
+});
+
+describe('useDashboardState — retry', () => {
+  // Step 17 (C-19/C-20): ApiErrorPanel's Retry used to call the same function
+  // as the Refresh button, so a "no data yet" load error silently ran the
+  // full forecast pipeline every time an operator just wanted to try loading
+  // the page again.
+  it('re-runs the initial load without ever calling analyze', async () => {
+    const { result } = await renderReady(DEMO_CATEGORIES);
+    analyzeMock.mockClear();
+    const listCallsBeforeRetry = listMock.mock.calls.length;
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(analyzeMock).not.toHaveBeenCalled();
+    expect(listMock.mock.calls.length).toBeGreaterThan(listCallsBeforeRetry);
+  });
+
+  it('clears a previous load error once the retry succeeds', async () => {
+    setup(DEMO_CATEGORIES);
+    listMock.mockRejectedValueOnce(new Error('offline'));
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+
+    listMock.mockResolvedValue(alerts());
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(result.current.error).toBeNull();
   });
 });
 

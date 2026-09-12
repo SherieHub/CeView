@@ -18,9 +18,11 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | GET  | `/api/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
 | PUT  | `/api/business-profile?operatorId=` | BusinessProfile save | `BusinessProfileDto` |
 | POST | `/api/business-profile/keywords` | BusinessProfile "Recalibrate" | `string[]` (replaces `generateOptimizedKeywords`) |
-| GET  | `/api/notifications` | HomeView | `{ notifications: Notification[] }` |
-| GET  | `/api/forecasting/markets` | MarketRadarView | `{ markets: Market[] }` |
-| POST | `/api/forecasting/analyze/{profileId}` | "Analyze Markets" | `{ markets: Market[] }` |
+| GET  | `/api/notifications` | `DashboardView` initial feed | `{ notifications: NotificationDto[] }` |
+| GET  | `/api/forecasting/markets?category=` | `DashboardView` ranking and drawer | `{ markets: MarketDto[] }` |
+| POST | `/api/forecasting/ensure?maxAgeHours=` | `DashboardView` initial staleness gate | `204 No Content` or readiness error |
+| POST | `/api/forecasting/analyze` | `DashboardView` “Refresh forecast” | `{ markets: MarketDto[] }` |
+| GET  | `/api/forecasting/status` | `DashboardView` degraded-mode banner | `{ available: boolean }` |
 | POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance) |
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
@@ -92,14 +94,25 @@ based on how many chips an operator happened to leave selected. It is also **not
 across different numbers of selected categories**, so it must never be charted or trended.
 
 `sufficientCohort: false` is a **valid response, not an error** — it means the cohort is
-below the comparison floor. The frontend renders a distinct state for it. This case
-previously returned `overallScore: 100`, indistinguishable on screen from a genuinely
-outstanding score.
+below the comparison floor. The frontend renders an **empty state** for it, not an error
+panel. This case previously returned `overallScore: 100`, indistinguishable on screen from
+a genuinely outstanding score.
+
+Distinct from that: if FastAPI returns a result that is **missing** one of the fields above
+(`overallScore`, `semanticsScore`, `categoryScore`, `semanticPercentile`, `cohortSize`,
+`cohortMedianScore`, `categoryDensity`, `sufficientCohort`), Spring answers **503** with the
+dependency-unavailability body (`code`, `message`, `dependency: "fastapi"`, `cause`, `stage`)
+rather than defaulting the field to `0`. A `cohortSize: 0` rendered as "compared against 0
+businesses" would be a fabricated fact; an absent field is an upstream fault and the screen
+shows the error panel. (`descriptionFeedback` / `categoryFeedback` are exempt — an empty
+string is a legitimate value for them today.)
 
 The cohort comes from the reference corpus seeded by `V26__module1_reference_corpus.sql`
 plus `db/dump/uniqueness-corpus.sql` — see [RUNNING.md §5a](../RUNNING.md). Reference rows
 carry `is_reference = TRUE`, have no operator, and must be excluded from every
-operator-scoped query; the uniqueness cohort is the only reader that wants them.
+operator-scoped query; the uniqueness cohort is the only reader that wants them. In Spring,
+`BusinessProfileRepository.findAllNonReference()` is the cross-operator read that enforces
+this — `findAll()` must not be used for tenant-facing work.
 
 ## Notes
 

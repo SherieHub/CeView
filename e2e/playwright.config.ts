@@ -6,10 +6,18 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    // Vite serves the frontend on 3001 (frontend/vite.config.ts). The previous
-    // default of 3000 meant every unconfigured run targeted a dead port.
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3001',
+    // A dedicated port avoids silently reusing a developer's fixture-mode Vite
+    // server on 3001. The browser suite owns the 3012 process below.
+    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3012',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+  },
+  webServer: {
+    command: 'npm run dev -- --host 127.0.0.1 --port 3012',
+    cwd: '../frontend',
+    url: 'http://127.0.0.1:3012',
+    env: { ...process.env, VITE_USE_FIXTURES: 'false' },
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
   },
 });

@@ -28,7 +28,8 @@ import static org.mockito.Mockito.when;
  */
 class CurrentBusinessProfileTest {
 
-    private final CurrentOperator currentOperator = new CurrentOperator();
+    private final MsmeOperatorRepository operatorRepository = mock(MsmeOperatorRepository.class);
+    private final CurrentOperator currentOperator = new CurrentOperator(operatorRepository);
     private final BusinessProfileRepository businessProfileRepository = mock(BusinessProfileRepository.class);
     private final CurrentBusinessProfile currentBusinessProfile =
             new CurrentBusinessProfile(currentOperator, businessProfileRepository);
@@ -38,6 +39,7 @@ class CurrentBusinessProfileTest {
     @BeforeEach
     void authenticate() {
         operatorId = UUID.randomUUID();
+        when(operatorRepository.existsById(operatorId)).thenReturn(true);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(operatorId.toString(), null, List.of()));
     }

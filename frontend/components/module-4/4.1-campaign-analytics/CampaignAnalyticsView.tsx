@@ -35,16 +35,16 @@ import AiActionPlan from './AiActionPlan';
 import PreviouslyPublished from './PreviouslyPublished';
 
 /**
- * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value,
- * inverseGood} per metric, not the KpiSlotProps bundle — the shell mounts 5
- * instances, one per metric, deriving each one's props from `metrics` here.
+ * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value} per
+ * metric, not the KpiSlotProps bundle — the shell mounts 5 instances, one
+ * per metric, deriving each one's props from `metrics` here.
  */
-const KPI_CARD_SPECS: { label: string; key: keyof Metrics; inverseGood?: boolean }[] = [
+const KPI_CARD_SPECS: { label: string; key: keyof Metrics }[] = [
   { label: 'CTR', key: 'ctr' },
-  { label: 'CPC', key: 'cpc', inverseGood: true },
+  { label: 'CPC', key: 'cpc' },
   { label: 'ROAS', key: 'roas' },
   { label: 'CR', key: 'convRate' },
-  { label: 'CAC', key: 'cac', inverseGood: true },
+  { label: 'CAC', key: 'cac' },
 ];
 
 /** Windows the shared trend-window toggle offers; governs all three charts. */
@@ -149,7 +149,7 @@ export default function CampaignAnalyticsView() {
           than five full-width cards stacked down the page. */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {KPI_CARD_SPECS.map((spec) => (
-          <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} inverseGood={spec.inverseGood} />
+          <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} />
         ))}
       </div>
 

@@ -1,5 +1,11 @@
 # Post-level metrics (specified, not yet implemented)
 
+> **Still unimplemented.** The ad-connection work of September 2026 delivered
+> account-level *ad* metrics (`tbl_ad_insight`), not per-post organic insights.
+> Per-post metrics need a publishing connection with `pages_read_engagement` /
+> `instagram_manage_insights` — a different grant from the `ads_read` scope that
+> feature uses.
+
 Backs [`screens/performance.md`](../screens/performance.md)'s "Previously published" list and
 [`screens/_components/post-analytics-modal.md`](../screens/_components/post-analytics-modal.md).
 

@@ -32,6 +32,18 @@ vi.mock('../../services/connectionsStore', () => ({
   }),
 }));
 
+vi.mock('../../services/apiClient', () => ({
+  apiClient: {
+    adConnections: {
+      list: () => Promise.resolve([]),
+      authorize: () => Promise.resolve({ authorizeUrl: '#' }),
+      disconnect: () => Promise.resolve({ ok: true }),
+      accounts: () => Promise.resolve([]),
+      selectAccount: () => Promise.resolve({}),
+    },
+  },
+}));
+
 function renderSettings() {
   return render(
     <ToastProvider>
@@ -110,5 +122,46 @@ describe('PlatformsSettings', () => {
 
     expect(disconnectMock).toHaveBeenCalledWith('instagram');
     await waitFor(() => expect(screen.getByText(/disconnected from instagram/i)).toBeInTheDocument());
+  });
+
+  it('still renders the publishing platforms alongside the ad accounts section', async () => {
+    renderSettings();
+    expect(await screen.findByText('Instagram')).toBeInTheDocument();
+    expect(await screen.findByText('Ad accounts')).toBeInTheDocument();
+  });
+
+  describe('post-redirect handling', () => {
+    afterEach(() => {
+      window.history.replaceState({}, '', '/settings/platforms');
+    });
+
+    it('opens the account picker for ?adconnect=meta', async () => {
+      window.history.pushState({}, '', '/settings/platforms?adconnect=meta');
+      renderSettings();
+
+      expect(await screen.findByRole('dialog', { name: /choose a meta ads account/i })).toBeInTheDocument();
+    });
+
+    it('shows a cancelled toast for ?adconnect_error=access_denied', async () => {
+      window.history.pushState({}, '', '/settings/platforms?adconnect_error=access_denied');
+      renderSettings();
+
+      expect(await screen.findByText(/connection cancelled/i)).toBeInTheDocument();
+    });
+
+    it('shows a specific message for a mapped error code, not the raw slug', async () => {
+      window.history.pushState({}, '', '/settings/platforms?adconnect_error=token_exchange_failed');
+      renderSettings();
+
+      expect(await screen.findByText(/couldn.t connect to that platform/i)).toBeInTheDocument();
+      expect(screen.queryByText(/token_exchange_failed/i)).not.toBeInTheDocument();
+    });
+
+    it('strips the query params after handling them', async () => {
+      window.history.pushState({}, '', '/settings/platforms?adconnect_error=access_denied');
+      renderSettings();
+
+      await waitFor(() => expect(window.location.search).toBe(''));
+    });
   });
 });

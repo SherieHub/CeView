@@ -3,11 +3,13 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # ─── Runtime environment variables ───────────────────────────────────────────
-# Override at deploy time with:  docker run -e GEMINI_API_KEY=your-key  or docker-compose env
+# Override at deploy time with: docker run -e GROQ_API_KEY=your-key, set
+# FORECAST_ENGINE=groq, or set FORECAST_ENGINE=bilstm once its artifact exists.
 ENV XGBOOST_MODEL_PATH=/app/models/xgboost_market.json \
-    GEMINI_MODEL=gemini-2.0-flash
-# GEMINI_API_KEY — set at runtime, never baked into the image for security.
-# When absent the service runs in stub mode (deterministic linear extrapolation).
+    FORECAST_ENGINE=stub \
+    GROQ_MODEL=openai/gpt-oss-120b
+# GROQ_API_KEY is optional in the default deterministic stub mode and is never
+# baked into the image. The stub is contract-compliant, but not a trained model.
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -39,6 +39,8 @@ given row.
 from __future__ import annotations
 from app.core.BertModel import _BertModel, log
 
+from dataclasses import dataclass
+
 import numpy as np
 
 CATEGORY_LABELS: list[str] = [
@@ -109,81 +111,131 @@ def embed_business(
         return None
 
 
+@dataclass(frozen=True)
+class SemanticUniqueness:
+    """Result of scoring one business against its cohort.
+
+    ``semantics_score`` is the pre-existing raw-distance figure
+    (``min(mean_dist / 0.5, 1) * 100``), retained only for continuity in the
+    response contract — see the module docstring and 00-index.md's MEASURED
+    finding for why it floor-bounds every business in every category to
+    roughly 16-32/100 on the real corpus and cannot be trusted as a headline
+    number by itself.
+
+    ``percentile`` is the candidate's rank against the cohort's own internal
+    distance distribution (0 = least distinct, 100 = most distinct within
+    this cohort). This is what actually drives ``overallScore`` — see
+    02-scoring-math.md Task 9.
+
+    ``cohort_scores`` is each cohort member's own ``semantics_score``-style
+    figure (their mean distance to the *rest* of the cohort, excluding
+    themselves), already computed as part of building the percentile. Task 8
+    derives ``cohortMedianScore`` from this list rather than a second pass
+    over the corpus.
+    """
+
+    semantics_score: float
+    percentile: int
+    cohort_scores: list[float]
+
+
+def _raw_score(mean_dist: float) -> float:
+    """The pre-percentile raw-distance figure, unchanged since before this plan.
+
+    Kept only for continuity — see ``SemanticUniqueness.semantics_score``.
+    """
+    return round(min(mean_dist / 0.5, 1.0) * 100.0, 1)
+
+
 def compute_semantic_uniqueness(
-    core_services: list[str],
-    description: str,
-    uvp: str,
+    candidate_embedding: list[float],
     other_embeddings: list[list[float]],
     min_businesses: int = 3,
-) -> float | None:
-    """Compute semantic uniqueness score (0-100) via cosine distance to corpus.
+) -> SemanticUniqueness | None:
+    """Score one business by percentile rank against its cohort's own distance distribution.
 
-    Embeds the current business profile and measures its average cosine distance
-    from every other stored embedding.  Higher distance = more unique = higher score.
+    ``min(mean_dist / 0.5, 1) x 100`` (the old formula, kept as ``semantics_score``
+    below for continuity) assumes a mean cosine distance of 0.5 is attainable.
+    Measured on the seeded corpus, within-category distances run 0.08-0.16, so
+    that formula alone caps every business in every category at roughly
+    16-32/100 — see 00-index.md. Ranking the candidate's distance against the
+    cohort's own internal distances is self-calibrating: it needs no magic
+    constant and cannot go stale when the encoder or the corpus changes.
 
-    Scoring formula::
-
-        cosine_distance_i = 1 − cosine_similarity_i       # range [0, 1] for text
-        mean_distance     = mean(cosine_distance_i)
-        score             = min(mean_distance / 0.5, 1.0) × 100
-
-    A mean distance ≥ 0.5 maps to the maximum score of 100.  This threshold is
-    calibrated for Philippine tourism businesses where descriptions tend to share
-    vocabulary (beach, resort, tropical, etc.) keeping typical distances in the
-    0.10–0.40 range.
+    This function is intentionally pure — it takes vectors and returns
+    numbers, with no model loading and no database access, so it is fully
+    unit-testable with synthetic vectors. The candidate vector must already
+    be encoded (via ``embed_business``) and the corpus already fetched (via
+    ``embedding_store.fetch_others``); wiring those two calls together is the
+    caller's job (see ``app/routers/classification.py``).
 
     Args:
-        core_services:     list of service tags from the business profile.
-        description:       long-form business description text.
-        uvp:               unique value proposition text.
-        other_embeddings:  list of 768-dim float lists from the corpus DB.
-        min_businesses:    minimum corpus size required to produce a score;
-                           returns None when below threshold so the caller can
-                           fall back to the Gemini/stub path.
+        candidate_embedding: the business's own 768-dim vector, already encoded.
+        other_embeddings:    768-dim float lists from the corpus DB — the cohort
+                              to rank against (already category-filtered by the
+                              caller; see ``embedding_store.fetch_others``).
+        min_businesses:      minimum cohort size required to produce a score.
+                              Below this, returns None so the caller can render
+                              the explicit insufficient-cohort state (Task 10)
+                              instead of a fabricated number.
 
     Returns:
-        float 0-100 (one decimal place), or None when corpus is too small or
-        the E5 model is unavailable.
+        A ``SemanticUniqueness``, or None when the cohort is too small.
     """
     if len(other_embeddings) < min_businesses:
         log.info(
-            "ml_classifier: semantic_uniqueness — corpus too small (%d < %d), returning None",
+            "ml_classifier: semantic_uniqueness — cohort too small (%d < %d), returning None",
             len(other_embeddings),
             min_businesses,
         )
         return None
 
-    if _bert is None:
-        log.warning("ml_classifier: semantic_uniqueness — model unavailable, returning None",
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
-        return None
-
     try:
-        text = _build_text(core_services, uvp, description)
-        current_emb = _bert.encoder.encode([text], normalize_embeddings=True)[0]  # (768,)
+        candidate = np.array(candidate_embedding, dtype=np.float32)
+        candidate = candidate / max(float(np.linalg.norm(candidate)), 1e-8)
 
         other_matrix = np.array(other_embeddings, dtype=np.float32)  # (n, 768)
         # L2-normalise corpus rows (stored as normalised but re-normalise for safety)
         norms = np.linalg.norm(other_matrix, axis=1, keepdims=True)
         other_matrix = other_matrix / np.maximum(norms, 1e-8)
 
-        # Cosine similarities via dot product (both sides are unit vectors)
-        similarities = other_matrix @ current_emb.astype(np.float32)   # (n,)
+        # Candidate vs. cohort — cosine similarities via dot product (unit vectors)
+        similarities = other_matrix @ candidate                          # (n,)
         similarities = np.clip(similarities, -1.0, 1.0)
-
-        distances = 1.0 - similarities                                  # (n,) in [0, 2]
+        distances = 1.0 - similarities                                   # (n,) in [0, 2]
         mean_dist = float(np.mean(distances))
+        semantics_score = _raw_score(mean_dist)
 
-        # Scale: 0 → same as everyone (score 0); ≥ 0.5 → very different (score 100)
-        score = round(min(mean_dist / 0.5, 1.0) * 100.0, 1)
+        # Cohort's own internal distances: each member's mean distance to the
+        # REST of the cohort, excluding itself. This is the distribution the
+        # candidate is ranked against, and — Task 8 — the source of
+        # cohortMedianScore with no second pass over the corpus.
+        internal_similarities = other_matrix @ other_matrix.T            # (n, n)
+        internal_similarities = np.clip(internal_similarities, -1.0, 1.0)
+        internal_distances = 1.0 - internal_similarities
+        np.fill_diagonal(internal_distances, np.nan)
+        cohort_mean_dists = np.nanmean(internal_distances, axis=1)       # (n,)
+        cohort_scores = [_raw_score(float(d)) for d in cohort_mean_dists]
+
+        # Percentile rank: share of the cohort whose own mean distance is at
+        # or below the candidate's — higher distance (more different) ranks
+        # higher. `<=` so a candidate that exceeds every cohort member lands
+        # exactly at 100, not just short of it.
+        rank = int(np.sum(cohort_mean_dists <= mean_dist))
+        percentile = round(rank / len(cohort_mean_dists) * 100)
 
         log.info(
-            "ml_classifier: semantic_uniqueness=%.1f mean_dist=%.4f corpus_size=%d",
-            score,
+            "ml_classifier: percentile=%d semantics_score=%.1f mean_dist=%.4f cohort_size=%d",
+            percentile,
+            semantics_score,
             mean_dist,
             len(other_embeddings),
         )
-        return score
+        return SemanticUniqueness(
+            semantics_score=semantics_score,
+            percentile=percentile,
+            cohort_scores=cohort_scores,
+        )
 
     except Exception as exc:
         log.warning("ml_classifier: semantic_uniqueness error — %s", exc,

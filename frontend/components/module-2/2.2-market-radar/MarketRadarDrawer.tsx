@@ -71,6 +71,13 @@ export default function MarketRadarDrawer({ markets, onTargetMarket }: MarketRad
 
   if (!market) return <Drawer open={false} onClose={close}>{null}</Drawer>;
 
+  const hasDirectFlight = market.airlines.some((a) => a.direct);
+  // Step 18 (H-11): a connecting market's flightHours can already spell out the
+  // routing itself ("16h+ (via MNL)" — tbl_market_route_reference's own text),
+  // in which case appending " via Manila" duplicated it ("...via MNL) via
+  // Manila"). Only add the qualifier when flightHours hasn't already said it.
+  const routeAlreadyDescribed = /via/i.test(market.flightHours);
+
   return (
     <Drawer
       open={open}
@@ -116,7 +123,7 @@ export default function MarketRadarDrawer({ markets, onTargetMarket }: MarketRad
             <h2 className="heading-md">{market.name}</h2>
             <p className="text-meta">
               {market.city} · {market.distanceKm.toLocaleString()} km · {market.flightHours}
-              {market.directFlight ? ' direct' : ' via Manila'}
+              {!routeAlreadyDescribed && (hasDirectFlight ? ' direct' : ' via Manila')}
             </p>
           </div>
         </div>

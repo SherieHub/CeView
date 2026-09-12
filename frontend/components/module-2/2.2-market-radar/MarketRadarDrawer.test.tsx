@@ -227,4 +227,23 @@ describe('MarketRadarDrawer — header', () => {
     expect(onTargetMarket).toHaveBeenCalledWith('korea');
     expect(drawer()).toHaveAttribute('data-open', 'false');
   });
+
+  // H-11: usa.flightHours is "16h+ (via MNL)" — tbl_market_route_reference's
+  // own text — and appending " via Manila" for a connecting market duplicated
+  // the routing ("...via MNL) via Manila"). A direct market must still get
+  // its " direct" qualifier since its flightHours doesn't already say so.
+  it('does not duplicate the routing note for a connecting market', () => {
+    renderAt('?market=usa');
+    const head = document.querySelector('.radar-head') as HTMLElement;
+
+    expect(head).toHaveTextContent('16h+ (via MNL)');
+    expect(head.textContent).not.toMatch(/via MNL\).*via Manila/);
+  });
+
+  it('still adds the direct qualifier for a market whose flightHours does not mention routing', () => {
+    renderAt('?market=korea');
+    const head = document.querySelector('.radar-head') as HTMLElement;
+
+    expect(head).toHaveTextContent('3h 45m direct');
+  });
 });

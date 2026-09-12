@@ -10,7 +10,7 @@
  * prototype. See the plan's IA section for why it earns its place.
  */
 import type { DashMode, FeedFilter } from './useDashboardState';
-import type { Market } from '@/types';
+import type { Market, MarketsResponse } from '@/types';
 import type { DemandAlert } from '@/types';
 
 export interface AlertFeedSlotProps {
@@ -45,7 +45,9 @@ export interface RefreshForecastSlotProps {
   isRefreshing: boolean;
   /** Switches the completion toast between refreshed and still-cached copy. */
   degraded: boolean;
-  onRefresh: () => Promise<void>;
+  /** Null return means the run failed — useDashboardState already routed the
+   *  error into ApiErrorPanel, so the button must not also toast success. */
+  onRefresh: () => Promise<MarketsResponse | null>;
 }
 
 export interface SignalSummarySlotProps {
@@ -56,6 +58,14 @@ export interface SignalSummarySlotProps {
   surgeCount: number;
   /** Markets named by the confirmed-surge alerts, for the sub-line. */
   surgeMarkets: string[];
-  topMarket: { id: string; name: string; matchScore: number; category: string } | null;
+  topMarket: {
+    id: string;
+    name: string;
+    matchScore: number;
+    category: string;
+    dataStale: boolean;
+    dataAsOf: string | null;
+    dataStaleCause: string | null;
+  } | null;
   onOpenMarket: (marketId: string) => void;
 }

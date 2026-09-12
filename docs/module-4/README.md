@@ -42,3 +42,15 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
 - New: a "Previously published" post list with per-post analytics, requiring the
   [`PostMetric`](backend/post-metrics.md) entity and endpoints that don't exist yet — this is the one
   genuinely new backend surface Module 4 needs from this overhaul.
+
+## Ad platform connections (Meta Ads, TikTok Ads)
+
+Operators can OAuth-connect their Meta Ads and/or TikTok Ads account from Settings → Platforms and
+pull that period's account-level metrics (impressions, clicks, spend, conversions) straight into
+the [`IngestionForm`](../../frontend/components/module-4/4.1-campaign-analytics/IngestionForm.tsx)
+via a "Sync from ad accounts" button. Revenue, bookings, and new customers stay operator-entered —
+the ad platforms don't know them. This is ads-metrics-only: it does not publish content and is
+unrelated to the (unimplemented) publishing connection in
+[`PlatformConnectionController`](../module-3/backend/PlatformConnectionController.md). Design:
+[`docs/superpowers/specs/2026-09-06-ad-platform-connections-design.md`](../superpowers/specs/2026-09-06-ad-platform-connections-design.md).
+Developer setup: [`AD_PLATFORM_SETUP.md`](../../AD_PLATFORM_SETUP.md).

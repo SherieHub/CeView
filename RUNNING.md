@@ -234,6 +234,13 @@ never commit real keys.** Start from `backend/.env.example`.
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
 | `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
 
+> **Connecting Meta or TikTok ad accounts?** Those variables (`META_APP_ID`,
+> `TIKTOK_APP_ID`, `TOKEN_ENCRYPTION_KEY`, and the tunnel URL) are documented
+> separately in [`AD_PLATFORM_SETUP.md`](AD_PLATFORM_SETUP.md), along with how to
+> register the OAuth redirect URI and test the connection end to end. None of
+> them are required for normal local development — the backend starts without
+> them and the ad-connection endpoints report 503.
+
 ---
 
 ## 5a. Importing the uniqueness reference corpus

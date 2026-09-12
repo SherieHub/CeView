@@ -22,11 +22,11 @@ class ExampleUnitTest {
     @Test
     void compute_returnsExcellentLabel_forStrongMetrics() {
         Metrics metrics = new Metrics(
-                new MetricCard(10.0, "%", 0, true),   // ctr
-                new MetricCard(0.01, "$", 0, true),   // cpc
-                new MetricCard(8.0, "x", 0, true),    // roas
-                new MetricCard(15.0, "%", 0, true),   // convRate
-                new MetricCard(1.0, "$", 0, true)     // cac
+                new MetricCard(10.0, "%"),   // ctr
+                new MetricCard(0.01, "$"),   // cpc
+                new MetricCard(8.0, "x"),    // roas
+                new MetricCard(15.0, "%"),   // convRate
+                new MetricCard(1.0, "$")     // cac
         );
 
         PesResponse result = pesService.compute(metrics);

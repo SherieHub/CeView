@@ -1,5 +1,14 @@
 # `PlatformConnectionController` (specified, not yet implemented)
 
+> **Not the same thing as an ad-account connection.** This document specifies a
+> *publishing* grant (post on the operator's behalf, read post insights) and
+> remains unimplemented. A separate *ads* connection — Meta Ads and TikTok Ads,
+> read-only campaign metrics — was built in September 2026 under
+> `com.ceview.module4.adconnections`; see
+> [`docs/superpowers/specs/2026-09-06-ad-platform-connections-design.md`](../../superpowers/specs/2026-09-06-ad-platform-connections-design.md).
+> The two are different OAuth scopes and different tables. Connecting an ad
+> account does not grant permission to publish.
+
 **Package (proposed):** `com.ceview.module3.connections` · **File (proposed):**
 `backend/spring-boot/src/main/java/com/ceview/module3/connections/PlatformConnectionController.java`
 

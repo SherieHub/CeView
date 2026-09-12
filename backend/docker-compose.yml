@@ -70,6 +70,22 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://192.168.1.194:3000,http://192.168.1.194:5173
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      # Ad-platform (Meta Ads / TikTok Ads) connections — see AD_PLATFORM_SETUP.md.
+      # All optional: absent, the /api/ad-connections endpoints just report
+      # "not configured on this server" rather than failing to start.
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
+      TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+      # Public HTTPS origin the platforms redirect back to. In local dev this
+      # is a native `cloudflared tunnel --url http://localhost:8080` (or
+      # ngrok) run in its own terminal, NOT a container — see
+      # AD_PLATFORM_SETUP.md §4. It mints a new URL every time you restart
+      # it, so update this + the redirect URI registered with Meta/TikTok
+      # (§5) each session.
+      OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3001}
     depends_on:
       postgres:
         condition: service_healthy

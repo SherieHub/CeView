@@ -33,6 +33,7 @@ class ForecastingControllerTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Neither /markets (DB-only read) nor the 403-rejected path in /ensure and
     // /analyze ever reach the AI gateway, but the full app context wires it in,
@@ -52,6 +53,8 @@ class ForecastingControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
 

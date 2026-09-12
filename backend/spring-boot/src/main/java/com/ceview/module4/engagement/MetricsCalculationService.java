@@ -42,11 +42,11 @@ public class MetricsCalculationService {
         double cac      = newCustomers == 0 ? 0 : adSpend / newCustomers;
 
         var metrics = new Metrics(
-            new MetricCard(round(ctr, 1),      "%",  1.2,  true),
-            new MetricCard(round(cpc, 2),      "₱", -0.05, true),
-            new MetricCard(round(roas, 1),     "x",  0.4,  true),
-            new MetricCard(round(convRate, 1), "%", -0.5,  false),
-            new MetricCard(round(cac, 2),      "₱",  5.0,  false)
+            new MetricCard(round(ctr, 1),      "%"),
+            new MetricCard(round(cpc, 2),      "₱"),
+            new MetricCard(round(roas, 1),     "x"),
+            new MetricCard(round(convRate, 1), "%"),
+            new MetricCard(round(cac, 2),      "₱")
         );
 
         long imp  = impressions;

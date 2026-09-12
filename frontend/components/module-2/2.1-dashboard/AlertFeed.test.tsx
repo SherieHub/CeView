@@ -11,7 +11,7 @@ import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import type { AlertFeedSlotProps } from './dashboardTypes';
 
 const CATEGORIES = ['Accommodation & Staycation', 'Culinary & Gastronomy'];
-const MINE = MOCK_NOTIFICATIONS.filter((a) => CATEGORIES.includes(a.category));
+const MINE = MOCK_NOTIFICATIONS.filter((a) => a.category !== null && CATEGORIES.includes(a.category));
 
 function renderFeed(overrides: Partial<AlertFeedSlotProps> = {}) {
   const props: AlertFeedSlotProps = {

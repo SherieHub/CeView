@@ -32,19 +32,28 @@ export default function ScoreTiles({ scores }: Props) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <div className="card">
-        <p className="eyebrow">Overall uniqueness</p>
+        <p className="eyebrow">Distinctiveness percentile</p>
         <p className="heading-xl mt-2">{Math.round(scores.overallScore)}</p>
+        <p className="body-xs mt-2 text-[var(--color-text-muted)]">
+          You rank above {Math.round(scores.overallScore)}% of the businesses you were compared with.
+        </p>
       </div>
       <div className="card">
-        <p className="eyebrow">Description strength</p>
+        <p className="eyebrow">Raw distinctiveness</p>
         <p className="heading-xl mt-2">{Math.round(scores.semanticsScore)}</p>
+        <p className="body-xs mt-2 text-[var(--color-text-muted)]">
+          The underlying distance measure used to calculate your percentile.
+        </p>
         {scores.descriptionFeedback && (
           <p className="body-xs mt-2 text-[var(--color-text-muted)]">{scores.descriptionFeedback}</p>
         )}
       </div>
       <div className="card">
-        <p className="eyebrow">Category fit</p>
+        <p className="eyebrow">Classification confidence</p>
         <p className="heading-xl mt-2">{Math.round(scores.categoryScore)}</p>
+        <p className="body-xs mt-2 text-[var(--color-text-muted)]">
+          Shows how confidently your profile matches these categories. It does not affect the score above.
+        </p>
         {scores.categoryFeedback && (
           <p className="body-xs mt-2 text-[var(--color-text-muted)]">{scores.categoryFeedback}</p>
         )}

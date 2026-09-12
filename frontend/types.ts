@@ -128,6 +128,78 @@ export interface PlatformConnection {
 }
 
 /**
+ * Ad platforms CeView can pull campaign metrics from.
+ *
+ * Deliberately separate from `PlatformId`. A Meta ad account covers Facebook
+ * AND Instagram placements in one grant, and an ads grant is a different
+ * authorisation from a publishing grant — collapsing the two would make a
+ * connected ad account look like permission to publish, which it is not.
+ */
+export type AdProvider = 'meta' | 'tiktok';
+
+export type AdConnectionStatus =
+  | 'DISCONNECTED'
+  | 'PENDING_ACCOUNT_SELECTION'
+  | 'ACTIVE'
+  | 'REVOKED';
+
+export interface AdConnection {
+  provider: AdProvider;
+  /** Whether THIS SERVER has credentials for the provider — not whether the operator connected it. */
+  configured: boolean;
+  status: AdConnectionStatus;
+  accountName: string | null;
+  currency: string | null;
+  /** The pinned campaign scope, or null for the whole account. Chosen on the
+   *  Performance screen's sync control and remembered here as the default. */
+  campaignId: string | null;
+  campaignName: string | null;
+  connectedAt: string | null;
+  lastSyncedAt: string | null;
+}
+
+export interface AdAccountOption {
+  id: string;
+  name: string | null;
+  currency: string | null;
+}
+
+export interface AdCampaignOption {
+  id: string;
+  name: string | null;
+  status: string | null;
+}
+
+export interface AdInsightSource {
+  provider: AdProvider;
+  accountName: string | null;
+  impressions: number;
+  clicks: number;
+  spend: number;
+  conversions: number;
+  currency: string | null;
+  /** Set when this source is pinned to one campaign. */
+  campaignName?: string | null;
+}
+
+/**
+ * Totals are null when the connected accounts report in different currencies —
+ * the backend refuses to sum them. `warnings` says why, and the UI falls back
+ * to per-source prefill.
+ */
+export interface AdInsightSummary {
+  periodStart: string;
+  periodEnd: string;
+  impressions: number | null;
+  clicks: number | null;
+  spend: number | null;
+  conversions: number | null;
+  currency: string | null;
+  sources: AdInsightSource[];
+  warnings: string[];
+}
+
+/**
  * Future real-backend member shape — not what apiClient.workspace.members() returns today.
  * The fixture-backed path returns services/fixtures/members.ts's WorkspaceMemberFixture
  * (role: 'Owner'|'Editor'|'Viewer', initials, no id/status) instead; apiClient.ts is typed
@@ -166,11 +238,10 @@ export interface PostMetric {
 
 export interface ChartDataPoint {
   week: string;
+  weekStartDate: string | null;
   history: number | null;
   forecast: number | null;
-  seasonality: number;
-  forex: number;
-  gdp: number;
+  seasonality: number | null;
   spike: 0 | 1;
 }
 
@@ -178,11 +249,8 @@ export interface Airline {
   name: string;
   code: string;
   frequency: string;
+  /** Per-carrier now (H-21): a route can mix direct and via-Manila carriers. */
   direct: boolean;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  duration?: string;
-  /** Present on backend AirlineDto; absent from older fixtures. */
-  tier?: string;
 }
 
 export interface Market {
@@ -190,7 +258,6 @@ export interface Market {
   rank: number;
   name: string;
   city: string;
-  flag: string;
   matchScore: number;
   directive: string;
   directFlight: boolean;
@@ -198,11 +265,20 @@ export interface Market {
   distanceKm: number;
   nearestAirport: string;
   destinationAirport: string;
+  /** 1–10 route-accessibility score, computed backend-side from the route reference (H-14). */
   accessibilityScore: number;
   flightFrequency: number;
-  avgFlightPrice: string;
+  /** Round-trip fare range in PHP, from tbl_market_route_reference (H-16). */
+  fareMinPhp: number;
+  fareMaxPhp: number;
+  /** Provenance of the fare/route figures — e.g. "static_reference_v1". */
+  fareSource: string;
+  /** ISO date the fare/route figures were last validated, or null. */
+  fareAsOf: string | null;
   airlines: Airline[];
   peakMonths: string[];
+  /** "seasonal_history" when derived from ≥52 weeks of signal, else "reference" (H-19). */
+  peakMonthsSource: 'seasonal_history' | 'reference';
   currency: string;
   forexLabel: string;
   gdpValue: number;
@@ -217,6 +293,19 @@ export interface Market {
    */
   yoyRatio: number | null;
   spikeIndicator: boolean;
+  /** Current category-scoped demand-window level, sourced from tbl_demand_alert. */
+  surgeLevel: 'WARNING' | 'CRITICAL' | null;
+  /** Measured uplift and first threshold-crossing week for the active demand window. */
+  upliftPct: number | null;
+  windowOpenDate: string | null;
+  /** The economic scorer that actually produced this market's persisted score. */
+  scorer: 'xgboost' | 'linear' | null;
+  gdpSource: string | null;
+  forexSource: string | null;
+  macroAsOf: string | null;
+  forecastConfidence: number;
+  lowConfidence: boolean;
+  forecastSource: string;
   economyInsight: string;
   seasonalityInsight: string;
   gdpTrend: { year: number; value: number }[];
@@ -226,7 +315,10 @@ export interface Market {
   dataAsOf: string | null;
   /** True when that measurement is older than 48h — real, but old. */
   dataStale: boolean;
+  dataStaleCause: string | null;
 }
+
+export interface MarketsResponse { markets: Market[]; }
 
 export interface DemandAlert {
   id: string;
@@ -234,7 +326,8 @@ export interface DemandAlert {
   title: string;
   market: string;
   marketId: string;
-  category: string;
+  /** Nullable on the wire for alerts written before category persistence. */
+  category: string | null;
   trend: string;
   isRead: boolean;
   /**
@@ -245,7 +338,12 @@ export interface DemandAlert {
    * CRITICAL alerts silently drop out of the surge count.
    */
   alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
-  alertMessage: string;
+  /** Nullable on the wire for legacy alerts without an operator message. */
+  alertMessage: string | null;
+  /** ISO timestamp for the first forecast week crossing the alert threshold. */
+  windowOpenDate: string | null;
+  /** Forecast uplift over the rolling baseline, in percent. */
+  upliftPct: number | null;
 }
 
 // ─── Module 4 — Campaign Analytics ────────────────────────────────────────
@@ -472,4 +570,16 @@ export interface PublishedPost {
  */
 export function isSurge(alert: Pick<DemandAlert, 'alertLevel'>): boolean {
   return alert.alertLevel === 'WARNING' || alert.alertLevel === 'CRITICAL';
+}
+
+/**
+ * The market-card source of truth for the same demand-window rule used by
+ * alert cards and the dashboard count. Never infer a surge from chart spikes.
+ */
+export function marketSurgeState(
+  market: Pick<Market, 'surgeLevel'>,
+): 'warning' | 'critical' | 'none' {
+  if (market.surgeLevel === 'CRITICAL') return 'critical';
+  if (market.surgeLevel === 'WARNING') return 'warning';
+  return 'none';
 }

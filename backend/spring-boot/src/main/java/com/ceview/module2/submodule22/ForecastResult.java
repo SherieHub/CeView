@@ -29,6 +29,9 @@ public class ForecastResult {
     @Column(name = "generated_at")             private OffsetDateTime generatedAt;
     @Column(name = "weekly_forecasts_json", columnDefinition = "TEXT")
     private String weeklyForecastsJson;
+    /** Engine identifier returned by FastAPI, e.g. {@code stub-v1}, {@code groq}, or {@code bilstm}. */
+    @Column(name = "source", length = 32)
+    private String source;
     /** Year-over-Year ratio input the forecaster consumed; persisted so the
      *  frontend's Market.yoyRatio can be populated instead of always null. */
     @Column(name = "yoy_ratio")                private Double yoyRatio;

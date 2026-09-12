@@ -39,7 +39,18 @@ export function ConnectionsStoreProvider({ children }: { children: ReactNode }) 
   const listeners = useRef(new Set<(platform: PlatformId) => void>());
 
   useEffect(() => {
-    apiClient.connections.list().then((list) => setConnections(list as PlatformConnection[]));
+    apiClient.connections
+      .list()
+      .then((list) => setConnections(list as PlatformConnection[]))
+      .catch(() => {
+        // A failed initial fetch (expired session, dropped connection, 500)
+        // must not leave every screen that reads `connections` — Settings,
+        // Content Studio's publish picker — stuck on its loading skeleton
+        // forever with no way to recover short of a hard refresh. Falling
+        // back to an empty list renders every platform as disconnected,
+        // which is honest: nothing here is confirmed connected right now.
+        setConnections([]);
+      });
   }, []);
 
   function isConnected(platform: PlatformId): boolean {
