@@ -62,11 +62,17 @@ export default function BrandIdentityStep() {
       </p>
 
       <div className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1">
-          <span className="body-xs font-semibold">
+        <div className="flex flex-col gap-1">
+          <span className="body-xs font-semibold" id="vibe-group-label">
             Vibe <span className="text-[var(--color-text-muted)] font-normal">— Pick one or more</span>
           </span>
-          <div className="flex flex-wrap gap-2">
+          {/* role="group" + aria-labelledby, not a <label> — a <label> is meant to
+              associate with exactly one control, and wrapping all 8 toggle buttons
+              in one instead corrupts each button's computed accessible name into
+              the label's full concatenated text (every button then "contains"
+              every other vibe's name, breaking exact-name lookups like Playwright's
+              getByRole('button', { name: 'Adventurous' })). */}
+          <div role="group" aria-labelledby="vibe-group-label" className="flex flex-wrap gap-2">
             {VIBES.map((v) => (
               <button
                 key={v}
@@ -79,7 +85,7 @@ export default function BrandIdentityStep() {
               </button>
             ))}
           </div>
-        </label>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className="body-xs font-semibold">

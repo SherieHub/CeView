@@ -44,7 +44,7 @@ import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { useAdConnections } from '../../../services/useAdConnections';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
-import type { AdCampaignOption, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
+import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
 
 /**
  * Which of the seven fields the ad platforms can actually fill.
@@ -111,6 +111,38 @@ function lastCompleteWeek(): { periodStart: string; periodEnd: string } {
   return { periodStart: iso(start), periodEnd: iso(end) };
 }
 
+/**
+ * Monday of the current week through today, as `YYYY-MM-DD` strings.
+ *
+ * Deliberately a *partial* week — powers the read-only "Live this week"
+ * preview only. Unlike lastCompleteWeek(), this is never sent to
+ * apiClient.campaign.ingest() or written into `values`; a still-open week
+ * must never become the submitted campaign record (see the live-panel
+ * section below).
+ */
+function weekToDate(): { periodStart: string; periodEnd: string } {
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const today = new Date();
+  // getDay(): 0=Sun … 6=Sat. ISO weeks start Monday, so Sunday is 6 days
+  // after Monday rather than 0 — shift by (day + 6) % 7 to count from Monday.
+  const daysSinceMonday = (today.getDay() + 6) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - daysSinceMonday);
+  return { periodStart: iso(start), periodEnd: iso(today) };
+}
+
+/**
+ * Renders a week-to-date range as "Sep 7 – Sep 12, 2026 so far" — states the
+ * live period plainly, since "this week" alone doesn't say which dates that
+ * covers (design spec's live-panel header requirement).
+ */
+function formatLivePeriodLabel(periodStart: string, periodEnd: string): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const year = periodEnd.slice(0, 4);
+  return `${fmt(periodStart)} – ${fmt(periodEnd)}, ${year} so far`;
+}
+
 export default function IngestionForm({
   onSubmit,
 }: {
@@ -133,6 +165,12 @@ export default function IngestionForm({
   const [syncing, setSyncing] = useState(false);
   const [syncNote, setSyncNote] = useState<string | null>(null);
   const [syncedKeys, setSyncedKeys] = useState<string[]>([]);
+
+  // "Live this week" — a read-only, separate preview of the still-open
+  // week. Never written into `values`/`setSyncedKeys`; see syncLiveTotals().
+  const [liveSummary, setLiveSummary] = useState<AdInsightSummary | null>(null);
+  const [liveSyncing, setLiveSyncing] = useState(false);
+  const [liveNote, setLiveNote] = useState<string | null>(null);
 
   /** Loaded campaign lists per provider (for the scope selects). */
   const [campaignOptions, setCampaignOptions] = useState<
@@ -164,6 +202,13 @@ export default function IngestionForm({
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey]);
+
+  // Computed once per render rather than inside the JSX so the live panel's
+  // header label and syncLiveTotals()'s actual fetch always agree on "today."
+  const livePeriodLabel = useMemo(() => {
+    const { periodStart, periodEnd } = weekToDate();
+    return formatLivePeriodLabel(periodStart, periodEnd);
+  }, []);
 
   /**
    * Pulls the same period the form submits, so the synced figures and the
@@ -240,6 +285,50 @@ export default function IngestionForm({
       setSyncNote('Could not sync from your ad accounts. Enter the figures manually.');
     } finally {
       setSyncing(false);
+    }
+  }
+
+  /**
+   * Pulls the current, still-open week's metrics — read-only. Shares
+   * `included`/`scope` with the weekly sync (same accounts, different
+   * window), but its result only ever lands in `liveSummary`, never in
+   * `values` — a partial week must never become the submitted record.
+   *
+   * Note: the backend caches every insights() call as one `ad_insights` row
+   * keyed by (profile, provider, periodStart, periodEnd). Since periodEnd
+   * here is "today", repeated live refreshes across a week accumulate a
+   * handful of extra cache rows — harmless, since nothing else in the
+   * codebase reads that table today.
+   */
+  async function syncLiveTotals() {
+    setLiveSyncing(true);
+    setLiveNote(null);
+    try {
+      if (included.length === 0) {
+        setLiveNote('Choose at least one ad account to sync from.');
+        return;
+      }
+
+      const { periodStart, periodEnd } = weekToDate();
+      const providerFilter =
+        included.length === activeConnections.length
+          ? undefined
+          : included.map((c) => c.provider);
+      const summary = await apiClient.adConnections.insights(
+        periodStart,
+        periodEnd,
+        providerFilter,
+      );
+
+      setLiveSummary(summary);
+      if (summary.warnings.length > 0) {
+        setLiveNote(summary.warnings.join(' '));
+      }
+    } catch (err) {
+      console.error('Live ad account sync failed', err);
+      setLiveNote('Could not fetch live totals. Try again.');
+    } finally {
+      setLiveSyncing(false);
     }
   }
 
@@ -335,6 +424,71 @@ export default function IngestionForm({
           <h4 className="body-sm mb-3" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
             From your ad accounts
           </h4>
+
+          {hasActive && (
+            <div
+              className="mb-4 flex flex-col gap-4 rounded-[var(--radius-md)] border p-4"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="body-xs text-[var(--color-text-body)]">
+                  Live this week (in progress) &mdash; {livePeriodLabel}
+                </p>
+                <button
+                  type="button"
+                  className="btn-outline btn-outline--sm shrink-0"
+                  onClick={syncLiveTotals}
+                  disabled={liveSyncing || included.length === 0}
+                >
+                  <RefreshCw
+                    className={liveSyncing ? 'animate-spin' : ''}
+                    size={14}
+                    aria-hidden="true"
+                  />
+                  {liveSyncing ? 'Refreshing…' : 'Refresh live totals'}
+                </button>
+              </div>
+
+              {liveNote && (
+                <p
+                  className="body-xs rounded-md px-3 py-2"
+                  style={{ background: 'var(--color-white)', color: 'var(--color-navy-primary)' }}
+                >
+                  {liveNote}
+                </p>
+              )}
+
+              {liveSummary && liveSummary.impressions != null && (
+                <div
+                  className="grid gap-3"
+                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+                >
+                  {([
+                    { label: 'Impressions', value: liveSummary.impressions },
+                    { label: 'Clicks', value: liveSummary.clicks },
+                    { label: `Ad spend (${liveSummary.currency ?? currency})`, value: liveSummary.spend },
+                    { label: 'Conversions', value: liveSummary.conversions },
+                  ] as const).map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="rounded-md px-3 py-2"
+                      style={{ background: 'var(--color-white)' }}
+                    >
+                      <div className="body-xs text-[var(--color-text-muted)]">{label}</div>
+                      <div className="body-sm" style={{ fontWeight: 600 }}>
+                        {value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="body-xs text-[var(--color-text-muted)]">
+                Live totals for the week so far — not included in this week&rsquo;s report until
+                the week ends.
+              </p>
+            </div>
+          )}
 
           {hasActive ? (
             <div
