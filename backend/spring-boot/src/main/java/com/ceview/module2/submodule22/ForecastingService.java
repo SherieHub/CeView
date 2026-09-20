@@ -20,6 +20,8 @@ import com.ceview.module2.submodule21.MarketIngestionErrorRepository;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
 import com.ceview.module2.submodule21.TrendFetchJob;
+import com.ceview.module4.attribution.AttributionCodeService;
+import com.ceview.module4.attribution.link.AttributionLinkService;
 import com.ceview.module2.submodule21.TrendFetchJobRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -129,6 +131,8 @@ public class ForecastingService {
     private final TrendFetchJobRepository jobRepo;
     private final ObjectMapper objectMapper;
     private final MarketIngestionErrorRepository ingestionErrorRepo;
+    private final AttributionCodeService attributionCodeService;
+    private final AttributionLinkService attributionLinkService;
 
     public ForecastingService(EnrichedSequenceBuilder sequenceBuilder,
                               AIInferenceGatewayService ai,
@@ -142,7 +146,9 @@ public class ForecastingService {
                               MarketEconomicTrendRepository economicTrendRepo,
                               TrendFetchJobRepository jobRepo,
                               ObjectMapper objectMapper,
-                              MarketIngestionErrorRepository ingestionErrorRepo) {
+                              MarketIngestionErrorRepository ingestionErrorRepo,
+                              AttributionCodeService attributionCodeService,
+                              AttributionLinkService attributionLinkService) {
         this.sequenceBuilder    = sequenceBuilder;
         this.ai                 = ai;
         this.forecastRepo       = forecastRepo;
@@ -156,6 +162,8 @@ public class ForecastingService {
         this.jobRepo            = jobRepo;
         this.objectMapper       = objectMapper;
         this.ingestionErrorRepo = ingestionErrorRepo;
+        this.attributionCodeService = attributionCodeService;
+        this.attributionLinkService = attributionLinkService;
     }
 
     /**
@@ -996,6 +1004,23 @@ public class ForecastingService {
         alert.setIsRead(false);
         alert.setWindowOpenDate(alertDecision.windowOpenDate());
         DemandAlert saved = alertRepo.save(alert);
+
+        // Mint this window's attribution code and trackable link alongside the
+        // alert, in this same transaction: a caption generated from an alert has
+        // to be able to resolve both, and an alert that committed without them
+        // would silently produce untracked content.
+        //
+        // Both mints are keyed on (profile, category, market, windowOpenDate)
+        // rather than on saved.getDemandAlertId(), because the delete-and-
+        // reinsert above means the alert id changes on every pipeline run. A
+        // rerun re-points the existing code and link at the new alert row and
+        // leaves the code string and the slug untouched — the slug in particular
+        // may already be live inside a running paid ad.
+        attributionCodeService.mintForWindow(profileId, category, market,
+                alertDecision.windowOpenDate(), saved.getDemandAlertId());
+        attributionLinkService.mintForWindow(profileId, category, market,
+                alertDecision.windowOpenDate(), saved.getDemandAlertId());
+
         MDC.put("code", Module2ErrorCodes.MOD22_ALERT_GENERATED);
         log.info("Demand alert generated for market={} level={} upliftPct={}",
                 market, alertDecision.level(), alertDecision.upliftPct());

@@ -5,6 +5,21 @@
 **Module:** Primarily 4 (Campaign Analytics & Reporting), with touches to 2 (surge alerts) and 3
 (content generation)
 
+> **Amended 2026-09-20 by
+> [`2026-09-20-link-attribution-design.md`](2026-09-20-link-attribution-design.md), in two places.**
+>
+> 1. **Keying.** This spec's "one row per `DemandAlert`, `UNIQUE` FK on `demand_alert_id`" is not
+>    safe: `ForecastingService.persistDemandAlert` deletes and re-inserts the alert row on every
+>    pipeline run, so the FK would cascade the code away each time. `tbl_attribution_code` is keyed
+>    on `(business_profile_id, category, target_market, window_start)` instead, with
+>    `demand_alert_id` as a refreshed non-FK pointer. See that spec's *Why the window, not the
+>    alert*.
+> 2. **Migration numbers.** `V28` / `db/h2/V19` were stale — both were already taken. The code
+>    tables shipped as `V43` / `db/h2/V20`.
+>
+> Everything else in this spec — the decision table, lift baseline, rollup warning semantics,
+> FareHarbor design — stands as written.
+
 ---
 
 ## Problem

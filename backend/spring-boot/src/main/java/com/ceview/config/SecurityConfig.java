@@ -43,6 +43,13 @@ public class SecurityConfig {
                 // Meta/TikTok — it carries no Authorization header, so tenancy
                 // travels in a single-use state token instead (see AdOAuthState).
                 .requestMatchers("/api/ad-connections/*/callback").permitAll()
+                // The attribution redirect and the hosted enquiry form are hit
+                // by a traveller who clicked an ad — a browser with no JWT and
+                // no CeView account. Authenticating them is not possible, so
+                // the slug carries the tenancy instead (which is why it is
+                // random rather than derived, see SlugGenerator) and the
+                // enquiry additionally requires a valid in-window click id.
+                .requestMatchers("/r/**", "/api/public/attribution/**").permitAll()
                 .requestMatchers("/api/auth/**", "/actuator/**", "/error").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint()))

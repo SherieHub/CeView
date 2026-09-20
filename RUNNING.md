@@ -74,57 +74,40 @@ SBERT encoder; later builds reuse Docker's layer cache unless `pom.xml` or
 When you see `Started CeViewApplication` and the FastAPI worker lines, the
 backend is ready.
 
-**⚠️ If you have an existing Postgres volume from before a schema/seed-data
-change** (e.g. pulling a branch that edits already-applied Flyway migrations,
-or any time `docker-compose.yml`'s `SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"`
-setting lets a modified migration slip through silently): wipe it and start
-fresh rather than debugging stale-schema errors.
+#### Resetting a stale Postgres volume
 
-**How to tell you need this** — any of these symptoms mean your database was
-initialized by an *older* version of the migrations and needs a full reset,
-not a code fix:
-- `ceview-spring exited with code 1` right after a Postgres log line like
-  `insert or update ... violates foreign key constraint` (a migration that
-  changed — e.g. seed data — is inserting rows that reference something an
-  *older, already-applied* version of an earlier migration never created,
-  because Flyway skipped re-running it).
+This project's Flyway migrations are sometimes **edited in place** (seed data
+lives in versioned migrations rather than a separate reset script), and
+`docker-compose.yml` sets `SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"`, so a
+changed migration slips through silently against a database that already
+applied the old version. Any time you pull or switch branches and
+`backend/spring-boot/src/main/resources/db/migration/` changed, reset rather
+than debugging the resulting errors.
+
+**Symptoms that mean "stale volume", not a code bug:**
+- `ceview-spring exited with code 1` right after a Postgres
+  `insert or update ... violates foreign key constraint`.
 - `column "..." does not exist` during a migration.
 - `password authentication failed for user "ceview"` from `ceview-postgres`
-  (a corrupted/inconsistent state, usually downstream of the same stale-volume
-  crash loop above — a fresh volume clears it too).
-- You just pulled a branch/commit that you know edited a migration file
-  that was already applied to your local database (check `git log` on
-  `backend/spring-boot/src/main/resources/db/migration/` if unsure).
+  (usually downstream of the crash loop above).
 
-**Option 1 — full reset (safe default, always works):**
 ```powershell
 cd backend
-docker-compose down -v       # removes ALL named volumes: ceview-pgdata AND ceview-hf-cache
+docker-compose down -v       # full reset: wipes ceview-pgdata AND ceview-hf-cache
 docker-compose up --build
 ```
-This also wipes the cached SBERT/E5 model, so `fastapi-sbert` will re-download
-it (~1.1GB, several minutes) on next start — expected, one-time cost.
 
-**Option 2 — targeted reset (faster, keeps the HF model cache):**
+That also wipes the cached SBERT/E5 model, costing a ~1.1GB re-download. To
+keep the model cache, drop only the database volume instead:
+
 ```powershell
-cd backend
 docker-compose down
 docker volume rm backend_ceview-pgdata
 docker-compose up --build
 ```
-Use this when you specifically need a clean database but don't want to
-re-download the SBERT model every time. (Volume name is prefixed with the
-Compose project name — `backend_` here, since the compose file lives in
-`backend/`; run `docker volume ls` if you're unsure of the exact name on your
-machine.)
 
-**When you need this**: any time you pull changes to this project that touch
-`backend/spring-boot/src/main/resources/db/migration/`, and you already have
-a running/previously-run Postgres container from before that pull. This is
-especially likely right after checking out a new branch or rebasing, since
-this project's Flyway migrations are sometimes edited in place (seed data
-lives in versioned migrations rather than a separate reset script) rather
-than always appended as new files.
+(The volume name is prefixed with the Compose project name — `backend_` here,
+since the compose file lives in `backend/`. Run `docker volume ls` if unsure.)
 
 **Health checks:**
 ```powershell
@@ -149,10 +132,13 @@ Three terminals. Keep all three open while testing.
 ```powershell
 cd backend\fastapi-sbert
 # First time only — install Python deps
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 # Run
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+py -3.12 -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+
+(`py -3.12` is the Windows Python launcher. If you don't have it, substitute
+the full path to your 3.12 interpreter.)
 
 You should see `Uvicorn running on http://127.0.0.1:8000`. Swagger docs at
 http://localhost:8000/docs.
@@ -166,9 +152,9 @@ immediately at startup without it.
 cd backend\fastapi-transformer
 $env:GROQ_API_KEY = "your-groq-key-here"
 # First time only — install Python deps
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 # Run
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+py -3.12 -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
 You should see `Uvicorn running on http://127.0.0.1:8001`. Swagger docs at
@@ -378,16 +364,15 @@ With the backend (Path A or B) and frontend both running:
 | **Dashboard** | (auto on load) | `GET /api/notifications` |
 | **Dashboard** | click a demand alert to open its market ranking, then a ranked market to open the Market Radar drawer | `GET /api/forecasting/markets` |
 | **Performance** | *Generate AI Report* | `POST /api/analytics/report` |
+| **Settings → Business Profile** | *Save* | `PUT /api/business-profile` |
+| **Settings → Platforms** | (auto on load) | `GET /api/ad-connections` |
+| **Settings → Workspace** | (auto on load) | `GET /api/workspace/members` |
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
 
-Two backend-wired flows aren't clickable from the table above yet:
+One backend-wired flow isn't clickable from the table above:
 
-- The Business Profile / Platforms / Workspace Settings screens and the
-  `PUT /api/business-profile` save flow are still unbuilt in `frontend/` as of
-  this writing (`e2e/tests/settings-*.spec.ts` are `test.describe.skip` +
-  `test.fixme()` scaffolding) — nothing to click through there yet.
 - `POST /api/classification/analyze` and `POST /api/classification/uniqueness`
   aren't reachable from a signed-in seeded account — they only fire from the
   **onboarding wizard** (`components/module-1/onboarding/`), which a seeded
@@ -398,9 +383,16 @@ Two backend-wired flows aren't clickable from the table above yet:
   wizard's Analysis step, and its *Compute uniqueness score* button fires the
   second call.
 
-If the backend is down or a call 401s unexpectedly, some views fall back to
-local mock data and log a warning to the console — check the Network tab
-response body for the actual error before assuming it's a frontend bug.
+If the backend is down or a call fails, the screen says so — `apiClient`'s
+`request()` throws an `ApiError` and nothing substitutes fabricated data for a
+failed call (see
+[`docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md`](docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md)).
+Check the Network tab's response body for the real status and Spring's
+`{ code, message }` before assuming it's a frontend bug.
+
+The one place mock data appears is `VITE_USE_FIXTURES=true`, which is an
+explicit opt-in for UI work without a backend, and which a production build
+refuses to compile with.
 
 ### Direct API testing without the frontend
 
@@ -475,9 +467,9 @@ Get-Process node   | Stop-Process -Force
 | `curl`/API calls return `403 {"error":"forbidden",...}` | You're authenticated but requested a resource (business profile / campaign / market data) that belongs to a **different** operator than the one in your token — this is the per-operator isolation working as intended, not a bug. |
 | Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
-| `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
-| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
-| Port 8080/8000/8001/3000 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
+| `mvnw.cmd is not recognized` | You're not in `backend\spring-boot` — `cd` there first, or invoke it explicitly: `& .\mvnw.cmd package -DskipTests`. PowerShell doesn't resolve commands from the current directory without the `.\` prefix. |
+| Frontend shows mock data even when the backend is up | You're running with `VITE_USE_FIXTURES=true`. Nothing else serves mock data — a failed call surfaces an error, it does not silently fall back. Unset the variable and restart Vite. |
+| Port 8080/8000/8001/3001 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
 | `fastapi-sbert` takes forever to become healthy on first run | Expected — it's downloading the ~1.1GB SBERT/E5 encoder from HuggingFace (`start_period: 600s` in the healthcheck accounts for this). Subsequent runs reuse the cached model via the `ceview-hf-cache` Docker volume. |
 | Playwright e2e tests fail with connection errors | The stack isn't running yet — Playwright doesn't start it for you. Bring up backend + frontend first (§3, §4), then run `npx playwright test`. |
 
@@ -508,7 +500,9 @@ CeView/
 │   │   └── src/main/resources/db/
 │   │       ├── migration/        # Postgres Flyway migrations (incl. seed data)
 │   │       │   └── SEED_CREDENTIALS.md   # demo operator login credentials
-│   │       └── h2/               # H2 mirror migrations (for tests / native Path B)
+│   │       └── h2/               # H2 mirror migrations — the `h2` runtime profile
+│                             #   (Path B) ONLY. Tests build their schema from
+│                             #   the JPA entities; spring.flyway.enabled=false.
 │   ├── fastapi-sbert/            # SBERT/Gemini NLP microservice on :8000
 │   │   ├── requirements.txt
 │   │   └── app/

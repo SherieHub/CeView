@@ -26,6 +26,11 @@ import {
   mockInsights,
   mockSetCampaign,
 } from './fixtures/adConnections';
+import {
+  mockLinkPerformance,
+  mockLinks,
+  mockUnconvertedClicks,
+} from './fixtures/attributionLinks';
 import type {
   WorkspaceMemberFixture,
   PlatformConnection,
@@ -48,6 +53,9 @@ import type {
   AdInsightSummary,
   AdProvider,
   MarketsResponse,
+  AttributionLink,
+  LinkPerformance,
+  UnconvertedClick,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
@@ -430,6 +438,61 @@ export const apiClient = {
       return request<AdInsightSummary>(`/api/ad-connections/insights?${qs}`);
     },
   },
+
+  /**
+   * Link attribution — spec: docs/superpowers/specs/2026-09-20-link-attribution-design.md
+   *
+   * Complements the promo-code path rather than replacing it: a link answers
+   * "which creative produced this booking" automatically, a code covers the
+   * Messenger, phone and walk-in bookings a link can never see.
+   *
+   * The redirect (`/r/{slug}`) and the public enquiry endpoint are deliberately
+   * absent from this client. Both are hit by a traveller's browser with no JWT,
+   * and `request()` attaches the operator's token — routing them through here
+   * would be wrong and, for the redirect, meaningless.
+   */
+  attributionLinks: {
+    list: () =>
+      USE_FIXTURES
+        ? delay<AttributionLink[]>(mockLinks())
+        : request<AttributionLink[]>('/api/attribution/links'),
+
+    /**
+     * Switches a link between tier 1 and tier 2. Passing null (or an empty
+     * string) means "use CeView's hosted enquiry page".
+     */
+    setDestination: (linkId: string, destinationUrl: string | null) =>
+      USE_FIXTURES
+        ? delay<AttributionLink>({
+            ...mockLinks()[0],
+            linkId,
+            destinationUrl,
+            hosted: !destinationUrl,
+          })
+        : request<AttributionLink>(`/api/attribution/links/${linkId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ destinationUrl }),
+          }),
+
+    /** Per-creative rollup for the Performance screen's link panel. */
+    performance: (linkId: string) =>
+      USE_FIXTURES
+        ? delay<LinkPerformance>(mockLinkPerformance(linkId))
+        : request<LinkPerformance>(`/api/attribution/links/${linkId}/creatives`),
+
+    /**
+     * Clicks with no booking attached yet, offered when the operator logs one
+     * manually. Windowed on the backend — an unbounded list would be useless
+     * to pick from.
+     */
+    unconvertedClicks: (from: string, to: string) =>
+      USE_FIXTURES
+        ? delay<UnconvertedClick[]>(mockUnconvertedClicks())
+        : request<UnconvertedClick[]>(
+            `/api/attribution/clicks/unconverted?from=${from}&to=${to}`,
+          ),
+  },
+
   workspace: {
     // Returns WorkspaceMemberFixture (fixtures/members.ts), not types.ts's WorkspaceMember —
     // that type models a future real-backend member shape (id/status/lowercase role) that

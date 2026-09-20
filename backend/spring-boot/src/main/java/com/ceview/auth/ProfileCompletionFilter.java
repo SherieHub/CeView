@@ -101,7 +101,13 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
             // OAuth callback: a redirect from the ad platform, not a UI call.
             // Blocking it here would 403 an operator mid-redirect with no way
             // to recover the grant they just approved.
-            || isAdConnectionCallback(path);
+            || isAdConnectionCallback(path)
+            // Attribution redirect and hosted enquiry form. Both are hit by a
+            // traveller's browser, not by the operator's app — there is no
+            // operator behind the request whose profile could be incomplete,
+            // and a 403 here would break a link inside a running paid ad.
+            || path.startsWith("/r/")
+            || path.startsWith("/api/public/attribution/");
     }
 
     /**

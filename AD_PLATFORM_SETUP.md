@@ -6,7 +6,10 @@ account to CeView and pulling real performance figures into Module 4
 
 **What this enables:** once connected, CeView can pull **impressions,
 clicks, spend, and conversions** for a chosen ad account and prefill those
-four fields on the Performance screen's ingestion form.
+four fields on the Performance screen's ingestion form. The sync can
+optionally be **scoped to a single campaign** rather than the whole account
+(§7 step 5) — worth doing if the operator runs several unrelated campaigns on
+one account, since the account total otherwise blends them into one PES score.
 
 **What this does NOT do:**
 - It does **not** publish posts to Facebook, Instagram, or TikTok. That is a
@@ -29,7 +32,7 @@ calendar time than you'd expect — see §2.
   created without one can't request `ads_read` in a way that reaches real ad
   accounts.
 - At least one **ad account** under that Business Portfolio (can be empty —
-  see §9 for what an empty account returns).
+  see §8 for what an empty account returns).
 
 Two things gate who can connect:
 
@@ -94,7 +97,7 @@ version's base URL.
 1. Go to [TikTok for Business Developer Portal](https://business-api.tiktok.com/portal/docs) →
    create a new app.
 2. Apps start in **Sandbox** mode, which only works against sandbox
-   advertiser accounts and synthetic data (see §9). Moving to **Production**
+   advertiser accounts and synthetic data (see §8). Moving to **Production**
    requires submitting the app for review with the scopes it uses; do this
    once you're ready to connect a real advertiser account.
 3. **App ID** and **App Secret** (called "Secret" in TikTok's UI) are on the
@@ -260,9 +263,21 @@ and the backend + frontend running (`RUNNING.md` §3–§4):
 4. **The connections row in Settings → Platforms shows ACTIVE**, with the
    chosen account's name.
 
-5. **Go to Performance** and open the ingestion form for a campaign period.
+5. **Optionally pin the sync to one campaign.** By default the sync reports the
+   **whole ad account**. If the operator runs several unrelated campaigns on one
+   account, that total mixes them into a single PES score. Choosing a campaign
+   (`GET /{provider}/campaigns`, then `POST /{provider}/campaign`) scopes every
+   later sync to it; posting a null or blank `externalCampaignId` clears the
+   pin and returns to whole-account reporting.
 
-6. **Click "Sync from ad accounts."** This calls
+   ```powershell
+   docker exec ceview-postgres psql -U ceview -d ceview -c "SELECT provider, external_campaign_id, external_campaign_name FROM tbl_ad_platform_connection;"
+   ```
+   `NULL` in both columns is the unchanged default, not a failure.
+
+6. **Go to Performance** and open the ingestion form for a campaign period.
+
+7. **Click "Sync from ad accounts."** This calls
    `GET /api/ad-connections/insights?periodStart=...&periodEnd=...`. The
    **Impressions, Clicks, Spend, Conversions** fields fill in and are
    visually tagged as synced (vs. hand-typed).
@@ -365,9 +380,18 @@ Invoke-RestMethod -Uri http://localhost:8080/api/ad-connections/meta/accounts -H
 # 4. Choose one (id from step 3's response)
 Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/ad-connections/meta/account -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" } -Body '{"externalAccountId":"act_1234567890"}'
 
-# 5. Pull insights for a period across every ACTIVE connection (max 366-day range)
+# 5. (optional) List campaigns on the selected ad account
+Invoke-RestMethod -Uri http://localhost:8080/api/ad-connections/meta/campaigns -Headers @{ Authorization = "Bearer $token" }
+
+# 6. (optional) Pin the sync to one campaign — or clear it with a null id
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/ad-connections/meta/campaign -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" } -Body '{"externalCampaignId":"120210"}'
+
+# 7. Pull insights for a period across every ACTIVE connection (max 366-day range)
 Invoke-RestMethod -Uri "http://localhost:8080/api/ad-connections/insights?periodStart=2026-08-01&periodEnd=2026-08-31" -Headers @{ Authorization = "Bearer $token" }
 ```
+
+Both campaign calls re-fetch and match the id server-side, so an arbitrary
+posted `externalCampaignId` is rejected with `400` rather than stored.
 
 `GET /api/ad-connections/insights` rejects any request where
 `periodEnd - periodStart` exceeds 366 days with `400 Bad Request` — request
@@ -375,11 +399,14 @@ it a year or less at a time.
 
 To disconnect and start over: `DELETE /api/ad-connections/{provider}`.
 
-The seven endpoints walked through above (§7 for the manual flow, this section
-for `curl`/PowerShell) are the full ad-connection API surface — there is no
-separate reference document for them. `backend/CONTRACT.md` does not yet cover
-this feature; if it's updated later to include the rest of the API, add
-ad-connections to it too.
+The nine endpoints walked through above (§7 for the manual flow, this section
+for `curl`/PowerShell) are the full ad-connection API surface: `GET /`,
+`POST /{provider}/authorize`, `GET /{provider}/callback`,
+`GET /{provider}/accounts`, `POST /{provider}/account`,
+`GET /{provider}/campaigns`, `POST /{provider}/campaign`, `GET /insights`,
+`DELETE /{provider}`. There is no separate reference document for them.
+`backend/CONTRACT.md` does not yet cover this feature; if it's updated later to
+include the rest of the API, add ad-connections to it too.
 
 ---
 
@@ -402,8 +429,9 @@ ad-connections to it too.
 This guide was written and desk-checked against the actual source
 (`AdConnectionController.java`, `MetaAdsClient.java`, `TikTokAdsClient.java`,
 `AdProviderProperties.java`, `AdConnectionsConfig.java`,
-`AdInsightSyncService.java`, `V27__module4_ad_platform_connections.sql`,
-`application.yml`) but **has not been run end-to-end** against real Meta and
+`AdInsightSyncService.java`, `V41__module4_ad_platform_connections.sql`,
+`V42__module4_ad_campaign_selection.sql`, `application.yml`) but **has not been
+run end-to-end** against real Meta and
 TikTok developer accounts — doing so requires accounts, app review timelines,
 and a live tunnel this environment doesn't have. **Before trusting this
 guide completely, a developer with real Meta and TikTok developer accounts

@@ -583,3 +583,87 @@ export function marketSurgeState(
   if (market.surgeLevel === 'WARNING') return 'warning';
   return 'none';
 }
+
+// ---------------------------------------------------------------------------
+// Link attribution (Module 4)
+//
+// Spec: docs/superpowers/specs/2026-09-20-link-attribution-design.md
+//
+// A link is minted alongside each surge alert's attribution code. The operator
+// pastes `urls.metaAdUrl` (or the TikTok equivalent) into their ad, CeView owns
+// the redirect, and each click records the creative the platform names in the
+// URL — which is the only way to answer "which ad produced this booking".
+// ---------------------------------------------------------------------------
+
+/** The three strings an operator copies out of Content Studio. */
+export interface AttributionLinkUrls {
+  /** Bare link for a caption or link-in-bio. */
+  linkUrl: string;
+  /**
+   * Link plus Meta's URL-parameter macros. Pasting the bare `linkUrl` into an
+   * ad instead of this one is the single likeliest way for the whole feature to
+   * silently degrade to campaign-level attribution.
+   */
+  metaAdUrl: string;
+  tiktokAdUrl: string;
+}
+
+export interface AttributionLink {
+  linkId: string;
+  slug: string;
+  category: string;
+  targetMarket: string;
+  /** Operator's own URL, or null when the link points at CeView's enquiry page. */
+  destinationUrl: string | null;
+  /** True when this link uses CeView's hosted enquiry page (tier 2). */
+  hosted: boolean;
+  windowStart: string;
+  windowEnd: string;
+  urls: AttributionLinkUrls;
+}
+
+/** A click offered to the operator when attaching a manually logged booking. */
+export interface UnconvertedClick {
+  clickId: string;
+  linkId: string;
+  platform: 'META' | 'TIKTOK' | 'UNKNOWN';
+  externalAdId: string | null;
+  adLabel: string | null;
+  /** No macro resolved, so this click cannot name a creative. */
+  untagged: boolean;
+  clickedAt: string;
+}
+
+/**
+ * One row of the per-creative rollup. `externalAdId` is null for the untagged
+ * bucket, which is shown rather than hidden: those clicks are real reach, and
+ * dropping them would make CeView's totals disagree with the ad platform's.
+ */
+export interface CreativePerformance {
+  externalAdId: string | null;
+  adLabel: string | null;
+  untagged: boolean;
+  clicks: number;
+  conversions: number;
+  revenue: number;
+}
+
+export interface LinkPerformance {
+  linkId: string;
+  slug: string;
+  totalClicks: number;
+  totalConversions: number;
+  totalRevenue: number;
+  creatives: CreativePerformance[];
+}
+
+/** Traveller submission on the public enquiry page. `clickId` is the `cv=` value. */
+export interface AttributionEnquiryInput {
+  clickId: string;
+  contactName: string;
+  contactValue: string;
+  partySize?: number;
+  requestedStart?: string;
+  requestedEnd?: string;
+  message?: string;
+}
