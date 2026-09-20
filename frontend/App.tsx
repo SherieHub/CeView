@@ -23,6 +23,7 @@ import BusinessProfileSettings from './components/settings/BusinessProfileSettin
 import PlatformsSettings from './components/settings/PlatformsSettings';
 import WorkspaceSettings from './components/settings/WorkspaceSettings';
 import { DEMO_DRAFT, DEMO_BOARD_POSTS, DEMO_TARGET } from './components/module-3/3.1-content-studio/previewFixtures';
+import LandingPage from './components/LandingPage';
 
 /**
  * DEV-ONLY preview routes.
@@ -168,6 +169,7 @@ function DashboardPreviewScreen() {
  */
 const router = createBrowserRouter([
   ...devPreviewRoutes,
+  { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
   {
     element: <AuthGate />,
@@ -234,3 +236,5 @@ export default function App() {
     </ProfileProvider>
   );
 }
+/ /   t o u c h  
+ 
