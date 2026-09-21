@@ -18,11 +18,23 @@
  * fake data" precedent in MetricsCalculationService.defaultMetrics().
  */
 interface KpiCardProps {
+  /** The acronym, e.g. "CTR". */
   label: string;
   value: number;
+  /** Spelled-out name — an MSME owner shouldn't have to know what CAC stands for. */
+  name?: string;
+  /** One line on what the number means for this business. */
+  hint?: string;
+  /** Rendered beside the value, never inside it: "₱" before, "%" or "×" after. */
+  prefix?: string;
+  suffix?: string;
+  /** This metric's share of the Performance Score, in percent. */
+  weightPct?: number;
+  /** The heaviest-weighted metric gets a larger value so the row has a lead. */
+  featured?: boolean;
 }
 
-export default function KpiCard({ label, value }: KpiCardProps) {
+export default function KpiCard({ label, value, name, hint, prefix, suffix, weightPct, featured = false }: KpiCardProps) {
   const formattedValue = value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -30,8 +42,21 @@ export default function KpiCard({ label, value }: KpiCardProps) {
 
   return (
     <div className="card flex h-full flex-col gap-2">
-      <span className="eyebrow">{label}</span>
-      <span className="num heading-lg">{formattedValue}</span>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="eyebrow">{label}</span>
+        {weightPct != null && <span className="body-xs">{weightPct}% of score</span>}
+      </div>
+      {name && (
+        <span className="body-xs" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
+          {name}
+        </span>
+      )}
+      <span className="mt-auto flex items-baseline gap-1">
+        {prefix && <span className="heading-sm text-[var(--color-text-muted)]">{prefix}</span>}
+        <span className={`num ${featured ? 'heading-xl' : 'heading-lg'}`}>{formattedValue}</span>
+        {suffix && <span className="heading-sm text-[var(--color-text-muted)]">{suffix}</span>}
+      </span>
+      {hint && <span className="body-xs">{hint}</span>}
     </div>
   );
 }

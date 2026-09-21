@@ -203,7 +203,7 @@ forex, or GDP onto forecast points. The UI labels the observed history count.
 
 **Source:** [omcs_agent/node.py](backend/fastapi-sbert/app/agents/omcs_agent/node.py)
 
-A **stateless** LangGraph DAG using a Groq **vision** model (`meta-llama/llama-4-scout-17b-16e-instruct`). Statelessness: each invocation is self-contained, no session store; nodes return only their computed contributions; routing is deterministic.
+A **stateless** LangGraph DAG using a Groq **vision** model (`qwen/qwen3.8-27b`, overridable via `OMCS_VISION_MODEL`; it replaced `meta-llama/llama-4-scout-17b-16e-instruct`, which Groq retired). Statelessness: each invocation is self-contained, no session store; nodes return only their computed contributions; routing is deterministic.
 
 ```
 node_profile_diff      → profile_semantic_score (stub 85.5)

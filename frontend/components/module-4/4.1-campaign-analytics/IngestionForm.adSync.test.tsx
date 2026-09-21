@@ -324,6 +324,68 @@ describe('IngestionForm ad sync', () => {
     expect(String(start) < String(end)).toBe(true);
   });
 
+  it('says there was no ad delivery instead of filling "synced" zeros', async () => {
+    // Meta answers an empty window with no rows, which the backend reports as
+    // all-zero totals. Stamping those zeros "synced" read as a broken sync.
+    connections = [ACTIVE_META];
+    insightsMock.mockResolvedValue({
+      ...SUMMARY,
+      impressions: 0,
+      clicks: 0,
+      spend: 0,
+      conversions: 0,
+      sources: [{ ...SUMMARY.sources[0], impressions: 0, clicks: 0, spend: 0, conversions: 0,
+        campaignName: 'Test campaign' }],
+    });
+
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    expect(await screen.findByText(/no ad delivery for Meta \(Test campaign\)/i)).toBeInTheDocument();
+    expect((screen.getByLabelText(/impressions/i) as HTMLInputElement).value).toBe('');
+    expect(screen.getByLabelText(/impressions/i).closest('label')).not.toHaveTextContent(/synced/i);
+  });
+
+  it('syncs and submits the reporting period picked on the calendar', async () => {
+    connections = [ACTIVE_META];
+    const onSubmit = vi.fn();
+    render(<IngestionForm onSubmit={onSubmit} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /reporting period/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Last month' }));
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+
+    await waitFor(() => expect(insightsMock).toHaveBeenCalled());
+    const [start, end] = insightsMock.mock.calls[0] as [string, string];
+    expect(start).toMatch(/-01$/);
+    expect(start < end).toBe(true);
+
+    for (const label of [/revenue/i, /bookings/i, /new customers/i]) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value: '1' } });
+    }
+    fireEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
+    await waitFor(() =>
+      expect(ingestMock).toHaveBeenCalledWith(
+        expect.objectContaining({ periodStart: start, periodEnd: end }),
+      ),
+    );
+  });
+
+  it('drops the synced badges when the period changes after a sync', async () => {
+    connections = [ACTIVE_META];
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /sync from ad accounts/i }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/impressions/i).closest('label')).toHaveTextContent(/synced/i),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /reporting period/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Last 30 days' }));
+
+    expect(screen.getByLabelText(/impressions/i).closest('label')).not.toHaveTextContent(/synced/i);
+    expect(screen.getByText(/sync again/i)).toBeInTheDocument();
+  });
+
   it('shows the warning and does not prefill when currencies differ', async () => {
     connections = [ACTIVE_META];
     insightsMock.mockResolvedValue({

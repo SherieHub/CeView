@@ -13,11 +13,12 @@
  * This screen renders a labelled <section>, not a <main>: AppShell already
  * owns the page's single main landmark.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Image as ImageIcon, PenLine } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
+import type { VisualGuideStatus } from './CampaignBriefDrawer';
 import CompliancePanel from './CompliancePanel';
 import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
@@ -88,7 +89,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
 
   // Fetched here rather than inside the drawer: the view owns the request so a
   // future consumer does not trigger a second one for the same payload.
+  // Generated only on the operator's explicit "Approve & get visual guide" —
+  // see approveAndGenerateGuide below.
   const [direction, setDirection] = useState<CreativeDirection | null>(null);
+  const [guideStatus, setGuideStatus] = useState<VisualGuideStatus>('idle');
+  const [guideError, setGuideError] = useState<unknown | null>(null);
 
   // Which option is staged for the ACTIVE platform. Held here because the
   // caption itself lives in `draft`, so the grid's highlight and the composer's
@@ -114,14 +119,42 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     });
   }, [onDisconnect]);
 
+  // Approval and the direction are both per market, so a guide generated for
+  // one market must not linger after switching to another. The ref guards the
+  // in-flight request: a response for the old market is dropped on arrival.
+  const guideMarket = target?.market.id ?? null;
+  const guideRequest = useRef(0);
   useEffect(() => {
-    let cancelled = false;
-    apiClient.creativeDirection
-      .generate()
-      .then((result) => { if (!cancelled) setDirection(result); })
-      .catch(() => { if (!cancelled) setDirection(null); });
-    return () => { cancelled = true; };
-  }, []);
+    guideRequest.current += 1;
+    setDirection(null);
+    setGuideError(null);
+    setGuideStatus('idle');
+  }, [guideMarket]);
+
+  /**
+   * The backend generates a direction only from APPROVED captions (400
+   * missing_dependency otherwise), so this approves the market's generated set
+   * first, then generates. It used to fire generate() on mount with no market
+   * — before anything could have been approved — and swallow the 400, which
+   * left the Visual Guide permanently blank.
+   */
+  const approveAndGenerateGuide = async () => {
+    if (!guideMarket) return;
+    const request = ++guideRequest.current;
+    setGuideStatus('loading');
+    setGuideError(null);
+    try {
+      await apiClient.content.approve(guideMarket);
+      const result = await apiClient.creativeDirection.generate(guideMarket);
+      if (request !== guideRequest.current) return;
+      setDirection(result);
+      setGuideStatus('ready');
+    } catch (e) {
+      if (request !== guideRequest.current) return;
+      setGuideError(e);
+      setGuideStatus('error');
+    }
+  };
 
   // Depended on directly rather than through `target`, so re-picking the same
   // category (a different market on the same surge) does not refetch a list
@@ -357,6 +390,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         onClose={brief.closeDrawer}
         showWelcome={brief.showWelcome}
         direction={direction}
+        status={guideStatus}
+        error={guideError}
+        marketName={target.market.name}
+        captionChosen={Boolean(draft.caption.trim())}
+        onApprove={approveAndGenerateGuide}
       />
 
       <PublishModal

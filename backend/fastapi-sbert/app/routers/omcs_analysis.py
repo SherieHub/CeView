@@ -14,8 +14,8 @@ Request body (ComplianceInputClass):
     business_profile — { business_name, business_description, market_category, ... }
     recommendations  — visual-guide recommendations the caption should follow
 
-Response (OmcsAnalysisResponse) — the full graph state:
-    caption, image_url, business_profile, recommendations  (echoed inputs)
+Response (OmcsAnalysisResponse) — the full graph state, minus the image:
+    caption, business_profile, recommendations  (echoed inputs)
     profile_semantic_score        — float
     rubric_evaluation_data        — { scores{...}, total }
     recommendations_picture_score — float (rubric total)
@@ -42,9 +42,14 @@ log = logging.getLogger("module3.omcs")
 
 
 class OmcsAnalysisResponse(BaseModel):
-    """Full omcs_agent state — mirrors CeviewValidationState (omcs_agent/state.py)."""
+    """Full omcs_agent state — mirrors CeviewValidationState (omcs_agent/state.py).
+
+    Deliberately omits `image_url`. Uploads arrive as base64 data URLs, and
+    echoing one back pushed the response past Spring WebClient's 256 KB buffer
+    (DataBufferLimitException → 502) on any real photo. No caller reads it —
+    Spring's mapOmcsAgentResponse keeps only the scores and text.
+    """
     caption: str
-    image_url: str
     business_profile: Dict[str, Any] = Field(default_factory=dict)
     recommendations: Dict[str, Any] = Field(default_factory=dict)
 

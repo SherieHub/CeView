@@ -82,7 +82,7 @@ describe('CampaignAnalyticsView', () => {
   it('renders only the ingestion form when no campaign has been submitted', () => {
     renderView();
 
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 
@@ -98,7 +98,7 @@ describe('CampaignAnalyticsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('All fields must be non-negative numbers.');
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
   });
 
   it('transitions to the full view after a valid submission', async () => {
@@ -116,7 +116,7 @@ describe('CampaignAnalyticsView', () => {
     vi.useRealTimers();
     await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
 
-    expect(screen.queryByText(/log this week.s campaign performance/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/log campaign performance/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
   });
 
@@ -205,7 +205,7 @@ describe('CampaignAnalyticsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /new submission/i }));
 
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 

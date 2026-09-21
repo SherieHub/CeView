@@ -40,10 +40,13 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { BarChart3, Loader2, RefreshCw } from 'lucide-react';
+import { BarChart3, Gauge, Loader2, RefreshCw, Sparkles, TrendingUp, Workflow } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { useAdConnections } from '../../../services/useAdConnections';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
+import DateRangePicker from './DateRangePicker';
+import { formatPeriod, lastCompleteWeek, weekToDate } from './dateRange';
+import type { Period } from './dateRange';
 import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
 
 /**
@@ -90,63 +93,48 @@ function initialValues(): Record<keyof CampaignInput, string> {
   return values;
 }
 
-/**
- * The most recent complete Monday–Sunday week, as `YYYY-MM-DD` strings.
- *
- * Matches the cadence the seeded campaign records use (e.g. 2026-06-08 →
- * 2026-06-14), so manually-ingested rows sort and plot alongside them on the
- * history trend charts. A *complete* week is used rather than the current
- * partial one because each record represents a finished reporting period.
- */
-function lastCompleteWeek(): { periodStart: string; periodEnd: string } {
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const today = new Date();
-  // getDay(): 0=Sun … 6=Sat. Step back to the most recent Sunday; when today
-  // IS Sunday, step back a further week so the period is genuinely complete.
-  const daysSinceSunday = today.getDay();
-  const end = new Date(today);
-  end.setDate(today.getDate() - daysSinceSunday - (daysSinceSunday === 0 ? 7 : 0));
-  const start = new Date(end);
-  start.setDate(end.getDate() - 6);
-  return { periodStart: iso(start), periodEnd: iso(end) };
+/** True when every ad-platform total is zero — the platform had nothing to report. */
+function hasNoDelivery(summary: AdInsightSummary): boolean {
+  return [summary.impressions, summary.clicks, summary.spend, summary.conversions].every(
+    (v) => Number(v ?? 0) === 0,
+  );
+}
+
+/** What the submitted record covered — lets the results view say which dates and currency it shows. */
+export interface SubmissionContext {
+  period: Period;
+  currency: string;
 }
 
 /**
- * Monday of the current week through today, as `YYYY-MM-DD` strings.
- *
- * Deliberately a *partial* week — powers the read-only "Live this week"
- * preview only. Unlike lastCompleteWeek(), this is never sent to
- * apiClient.campaign.ingest() or written into `values`; a still-open week
- * must never become the submitted campaign record (see the live-panel
- * section below).
+ * One numbered step of the form. The numbers give the form a visible order
+ * (dates → what the ad platforms know → what only the operator knows) before
+ * any label is read, which the flat single-card layout didn't.
  */
-function weekToDate(): { periodStart: string; periodEnd: string } {
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const today = new Date();
-  // getDay(): 0=Sun … 6=Sat. ISO weeks start Monday, so Sunday is 6 days
-  // after Monday rather than 0 — shift by (day + 6) % 7 to count from Monday.
-  const daysSinceMonday = (today.getDay() + 6) % 7;
-  const start = new Date(today);
-  start.setDate(today.getDate() - daysSinceMonday);
-  return { periodStart: iso(start), periodEnd: iso(today) };
+function StepHead({ n, id, title, description }: { n: number; id: string; title: string; description: string }) {
+  return (
+    <>
+      <span className="perf-step-num" aria-hidden="true">{n}</span>
+      <div className="perf-step-head">
+        <h2 id={id} className="heading-sm">{title}</h2>
+        <p className="body-xs mt-1">{description}</p>
+      </div>
+    </>
+  );
 }
 
-/**
- * Renders a week-to-date range as "Sep 7 – Sep 12, 2026 so far" — states the
- * live period plainly, since "this week" alone doesn't say which dates that
- * covers (design spec's live-panel header requirement).
- */
-function formatLivePeriodLabel(periodStart: string, periodEnd: string): string {
-  const fmt = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const year = periodEnd.slice(0, 4);
-  return `${fmt(periodStart)} – ${fmt(periodEnd)}, ${year} so far`;
-}
+/** What a submission produces — shown beside the form so the effort has a visible payoff. */
+const OUTCOMES = [
+  { icon: Gauge, title: 'Performance score', text: 'One 0–1 score weighted across five KPIs.' },
+  { icon: Workflow, title: 'Customer journey', text: 'Where people drop off between impression and booking.' },
+  { icon: TrendingUp, title: 'Trends', text: 'This period plotted against your earlier ones.' },
+  { icon: Sparkles, title: 'AI action plan', text: 'The fixes most likely to move your weakest stage.' },
+];
 
 export default function IngestionForm({
   onSubmit,
 }: {
-  onSubmit: (input: CampaignInput, serverPes?: ManualIngestPes) => void;
+  onSubmit: (input: CampaignInput, serverPes?: ManualIngestPes, context?: SubmissionContext) => void;
 }) {
   const [values, setValues] = useState<Record<keyof CampaignInput, string>>(initialValues);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +142,14 @@ export default function IngestionForm({
   const [submitting, setSubmitting] = useState(false);
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const fields = useMemo(() => fieldsFor(currency), [currency]);
+
+  /**
+   * The reporting period this record covers. Defaults to the last complete
+   * week; the operator can pick any past range on the calendar. The sync and
+   * the submitted record both read it, so the synced figures and the persisted
+   * campaign record always describe the same dates.
+   */
+  const [period, setPeriod] = useState<Period>(() => lastCompleteWeek());
 
   const { connections, refresh: refreshConnections } = useAdConnections();
   const activeConnections = useMemo(
@@ -205,16 +201,21 @@ export default function IngestionForm({
 
   // Computed once per render rather than inside the JSX so the live panel's
   // header label and syncLiveTotals()'s actual fetch always agree on "today."
-  const livePeriodLabel = useMemo(() => {
-    const { periodStart, periodEnd } = weekToDate();
-    return formatLivePeriodLabel(periodStart, periodEnd);
-  }, []);
+  const livePeriodLabel = useMemo(() => `${formatPeriod(weekToDate())} so far`, []);
+
+  /** Figures synced for one period don't describe another — drop the badges and say so. */
+  function changePeriod(next: Period) {
+    setPeriod(next);
+    if (syncedKeys.length > 0) {
+      setSyncedKeys([]);
+      setSyncNote('Reporting period changed — sync again to pull figures for the new dates.');
+    }
+  }
 
   /**
-   * Pulls the same period the form submits, so the synced figures and the
-   * persisted campaign record describe the same week. Any scope the operator
-   * changed is persisted first (it becomes the default for next time), then the
-   * sync reads the now-current scope.
+   * Pulls the selected reporting period — the same one the form submits. Any
+   * scope the operator changed is persisted first (it becomes the default for
+   * next time), then the sync reads the now-current scope.
    */
   const included = useMemo(
     () => activeConnections.filter((c) => (scope[c.provider] ?? '') !== EXCLUDE),
@@ -242,7 +243,7 @@ export default function IngestionForm({
         await refreshConnections();
       }
 
-      const { periodStart, periodEnd } = lastCompleteWeek();
+      const { periodStart, periodEnd } = period;
       const providerFilter =
         included.length === activeConnections.length
           ? undefined
@@ -263,6 +264,25 @@ export default function IngestionForm({
         return;
       }
 
+      const names = summary.sources.map((s) =>
+        s.campaignName
+          ? `${PROVIDER_LABELS[s.provider]} (${s.campaignName})`
+          : PROVIDER_LABELS[s.provider],
+      );
+
+      // A platform answers a window with no delivery with no rows at all,
+      // which the backend reports as zeros. Filling those in as "synced" read
+      // like a broken sync — say what actually happened and leave the fields.
+      if (hasNoDelivery(summary)) {
+        setSyncedKeys([]);
+        const noDelivery =
+          `No ad delivery for ${names.length > 0 ? names.join(' and ') : 'your ad accounts'} ` +
+          `on ${formatPeriod(period)}. Pick dates when the campaign was running, or enter the ` +
+          'figures yourself.';
+        setSyncNote([...summary.warnings, noDelivery].join(' '));
+        return;
+      }
+
       setValues((current) => ({
         ...current,
         impressions: String(summary.impressions ?? current.impressions),
@@ -273,11 +293,6 @@ export default function IngestionForm({
       setSyncedKeys([...SYNCABLE_FIELDS]);
       if (summary.currency) setCurrency(summary.currency);
       if (summary.warnings.length === 0) {
-        const names = summary.sources.map((s) =>
-          s.campaignName
-            ? `${PROVIDER_LABELS[s.provider]} (${s.campaignName})`
-            : PROVIDER_LABELS[s.provider],
-        );
         setSyncNote(`Filled from ${names.join(' and ')}`);
       }
     } catch (err) {
@@ -359,8 +374,8 @@ export default function IngestionForm({
       // form was omitting them, so every manually-ingested row persisted with
       // NULL dates and the history trend charts had nothing to plot against
       // (they rendered a degenerate "Jan 1–Jan 1" x-axis).
-      const response = await apiClient.campaign.ingest({ ...parsed, ...lastCompleteWeek() });
-      onSubmit(parsed, response.pes);
+      const response = await apiClient.campaign.ingest({ ...parsed, ...period });
+      onSubmit(parsed, response.pes, { period, currency });
     } catch (err) {
       setSubmitError(err);
     } finally {
@@ -394,209 +409,229 @@ export default function IngestionForm({
     );
   }
 
+  const multipleAccounts = activeConnections.length > 1;
+
   return (
-    <div className="card" style={{ maxWidth: 760 }}>
-      <div className="mb-10">
-        <h3 className="heading-sm">Log this week's campaign performance</h3>
-        <p className="body-sm mt-3">
-          Sync what your ad platforms already know, then add the figures only you have —
-          revenue, bookings, and new customers.
-        </p>
-      </div>
+    <div className="perf-entry">
+      <div className="card perf-form-card">
+        {error && (
+          <div
+            role="alert"
+            className="mb-6 rounded-md border border-critical bg-critical-bg px-4 py-3 text-sm text-critical"
+          >
+            {error}
+          </div>
+        )}
 
-      {error && (
-        <div
-          role="alert"
-          className="mb-6 rounded-md border border-critical bg-critical-bg px-4 py-3 text-sm text-critical"
-        >
-          {error}
-        </div>
-      )}
+        {submitError != null && (
+          <div className="mb-6">
+            <ApiErrorPanel error={submitError} label="Data ingestion" />
+          </div>
+        )}
 
-      {submitError != null && (
-        <div className="mb-6">
-          <ApiErrorPanel error={submitError} label="Data ingestion" />
-        </div>
-      )}
+        <form onSubmit={handleSubmit}>
+          <section className="perf-step" aria-labelledby="perf-step-period">
+            <StepHead
+              n={1}
+              id="perf-step-period"
+              title="Reporting period"
+              description="The dates this record covers. Syncing pulls figures for exactly these dates."
+            />
+            <div className="perf-step-body" style={{ maxWidth: 360 }}>
+              <DateRangePicker value={period} onChange={changePeriod} disabled={syncing || submitting} />
+            </div>
+          </section>
 
-      <form onSubmit={handleSubmit}>
-        <div className="mb-10">
-          <h4 className="body-sm mb-3" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
-            From your ad accounts
-          </h4>
-
-          {hasActive && (
-            <div
-              className="mb-4 flex flex-col gap-4 rounded-[var(--radius-md)] border p-4"
-              style={{ borderColor: 'var(--color-border)' }}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="body-xs text-[var(--color-text-body)]">
-                  Live this week (in progress) &mdash; {livePeriodLabel}
-                </p>
-                <button
-                  type="button"
-                  className="btn-outline btn-outline--sm shrink-0"
-                  onClick={syncLiveTotals}
-                  disabled={liveSyncing || included.length === 0}
-                >
-                  <RefreshCw
-                    className={liveSyncing ? 'animate-spin' : ''}
-                    size={14}
-                    aria-hidden="true"
-                  />
-                  {liveSyncing ? 'Refreshing…' : 'Refresh live totals'}
-                </button>
-              </div>
-
-              {liveNote && (
-                <p
-                  className="body-xs rounded-md px-3 py-2"
-                  style={{ background: 'var(--color-white)', color: 'var(--color-navy-primary)' }}
-                >
-                  {liveNote}
-                </p>
-              )}
-
-              {liveSummary && liveSummary.impressions != null && (
+          <section className="perf-step" aria-labelledby="perf-step-ads">
+            <StepHead
+              n={2}
+              id="perf-step-ads"
+              title="Ad platform figures"
+              description={
+                hasActive
+                  ? `Sync ${formatPeriod(period)} from your connected ${multipleAccounts ? 'ad accounts' : 'ad account'}, or type the figures in.`
+                  : 'Type these in from your ads dashboard — or connect a Meta or TikTok Ads account in Settings → Platforms to fill them automatically.'
+              }
+            />
+            <div className="perf-step-body flex flex-col gap-5">
+              {hasActive && (
                 <div
-                  className="grid gap-3"
-                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+                  className="flex flex-col gap-3 rounded-[var(--radius-md)] p-4"
+                  style={{ background: 'var(--color-mint-pale)' }}
                 >
-                  {([
-                    { label: 'Impressions', value: liveSummary.impressions },
-                    { label: 'Clicks', value: liveSummary.clicks },
-                    { label: `Ad spend (${liveSummary.currency ?? currency})`, value: liveSummary.spend },
-                    { label: 'Conversions', value: liveSummary.conversions },
-                  ] as const).map(({ label, value }) => (
-                    <div
-                      key={label}
-                      className="rounded-md px-3 py-2"
-                      style={{ background: 'var(--color-white)' }}
+                  <div className="flex flex-wrap items-end gap-3">
+                    {activeConnections.map((c) => (
+                      <label key={c.provider} className="block min-w-[200px] flex-1">
+                        <span className="field-label">{PROVIDER_LABELS[c.provider]} campaign</span>
+                        <select
+                          className="input"
+                          aria-label={`${PROVIDER_LABELS[c.provider]} campaign`}
+                          value={scope[c.provider] ?? ''}
+                          disabled={syncing}
+                          onChange={(e) =>
+                            setScope((s) => ({ ...s, [c.provider]: e.target.value }))
+                          }
+                        >
+                          <option value={EXCLUDE}>Don&rsquo;t include</option>
+                          <option value="">Whole account</option>
+                          {(campaignOptions[c.provider] ?? []).map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.name ?? opt.id}
+                              {opt.status && opt.status !== 'ACTIVE' && opt.status !== 'ENABLE'
+                                ? ` (${opt.status.toLowerCase()})`
+                                : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn-outline perf-sync-btn shrink-0"
+                      onClick={syncFromAdAccounts}
+                      disabled={syncing || included.length === 0}
                     >
-                      <div className="body-xs text-[var(--color-text-muted)]">{label}</div>
-                      <div className="body-sm" style={{ fontWeight: 600 }}>
-                        {value}
-                      </div>
-                    </div>
-                  ))}
+                      <RefreshCw
+                        className={syncing ? 'animate-spin' : ''}
+                        size={14}
+                        aria-hidden="true"
+                      />
+                      {syncing ? 'Syncing…' : 'Sync from ad accounts'}
+                    </button>
+                  </div>
+
+                  {syncNote && (
+                    <p
+                      role="status"
+                      className="body-xs rounded-md px-3 py-2"
+                      style={{ background: 'var(--color-white)', color: 'var(--color-navy-primary)' }}
+                    >
+                      {syncNote}
+                    </p>
+                  )}
                 </div>
               )}
 
-              <p className="body-xs text-[var(--color-text-muted)]">
-                Live totals for the week so far — not included in this week&rsquo;s report until
-                the week ends.
-              </p>
+              <div className="perf-field-grid perf-field-grid--4">{syncableFields.map(renderField)}</div>
             </div>
-          )}
+          </section>
 
-          {hasActive ? (
-            <div
-              className="mb-4 flex flex-col gap-4 rounded-[var(--radius-md)] p-4"
-              style={{ background: 'var(--color-mint-pale)' }}
+          <section className="perf-step" aria-labelledby="perf-step-business">
+            <StepHead
+              n={3}
+              id="perf-step-business"
+              title="Your business results"
+              description="Only you know these — ad platforms can't see revenue, bookings, or new customers."
+            />
+            <div className="perf-step-body">
+              <div className="perf-field-grid perf-field-grid--3">{manualFields.map(renderField)}</div>
+            </div>
+          </section>
+
+          <div className="perf-submit">
+            <p className="body-xs">
+              Scores this period and drafts an AI action plan — usually takes a few seconds.
+            </p>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary flex items-center justify-center gap-2"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="body-xs text-[var(--color-text-body)]">
-                  Pull last week&rsquo;s impressions, clicks, spend, and conversions from your
-                  connected {activeConnections.length > 1 ? 'ad accounts' : 'ad account'}.
-                </p>
-                <button
-                  type="button"
-                  className="btn-outline btn-outline--sm shrink-0"
-                  onClick={syncFromAdAccounts}
-                  disabled={syncing || included.length === 0}
-                >
-                  <RefreshCw
-                    className={syncing ? 'animate-spin' : ''}
-                    size={14}
-                    aria-hidden="true"
-                  />
-                  {syncing ? 'Syncing…' : 'Sync from ad accounts'}
-                </button>
-              </div>
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Computing analytics…
+                </>
+              ) : (
+                <>
+                  <BarChart3 size={16} /> Generate campaign analytics
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
 
-              <div
-                className="grid gap-3"
-                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
+      <aside className="perf-aside" aria-label="About this form">
+        {hasActive && (
+          <section className="card flex flex-col gap-4" aria-labelledby="perf-live-head">
+            <div>
+              <p className="eyebrow">In progress</p>
+              <h2 id="perf-live-head" className="heading-sm mt-1">This week so far</h2>
+              <p className="body-xs">{livePeriodLabel}</p>
+            </div>
+
+            {liveNote && (
+              <p
+                className="body-xs rounded-md px-3 py-2"
+                style={{ background: 'var(--color-mint-pale-alt)', color: 'var(--color-navy-primary)' }}
               >
-                {activeConnections.map((c) => (
-                  <label key={c.provider} className="block">
-                    <span className="field-label">{PROVIDER_LABELS[c.provider]} campaign</span>
-                    <select
-                      className="input"
-                      aria-label={`${PROVIDER_LABELS[c.provider]} campaign`}
-                      value={scope[c.provider] ?? ''}
-                      disabled={syncing}
-                      onChange={(e) =>
-                        setScope((s) => ({ ...s, [c.provider]: e.target.value }))
-                      }
-                    >
-                      <option value={EXCLUDE}>Don&rsquo;t include</option>
-                      <option value="">Whole account</option>
-                      {(campaignOptions[c.provider] ?? []).map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.name ?? opt.id}
-                          {opt.status && opt.status !== 'ACTIVE' && opt.status !== 'ENABLE'
-                            ? ` (${opt.status.toLowerCase()})`
-                            : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                {liveNote}
+              </p>
+            )}
+
+            {liveSummary && liveSummary.impressions != null && hasNoDelivery(liveSummary) && (
+              <p className="body-sm">No ad delivery yet this week.</p>
+            )}
+
+            {liveSummary && liveSummary.impressions != null && !hasNoDelivery(liveSummary) && (
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { label: 'Impressions', value: liveSummary.impressions },
+                  { label: 'Clicks', value: liveSummary.clicks },
+                  { label: `Ad spend (${liveSummary.currency ?? currency})`, value: liveSummary.spend },
+                  { label: 'Conversions', value: liveSummary.conversions },
+                ] as const).map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="rounded-[var(--radius-sm)] px-3 py-2"
+                    style={{ background: 'var(--color-mint-pale-alt)' }}
+                  >
+                    <div className="body-xs">{label}</div>
+                    <div className="num body-sm" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
+                      {value}
+                    </div>
+                  </div>
                 ))}
               </div>
+            )}
 
-              {syncNote && (
-                <p
-                  className="body-xs rounded-md px-3 py-2"
-                  style={{ background: 'var(--color-white)', color: 'var(--color-navy-primary)' }}
-                >
-                  {syncNote}
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="body-xs text-[var(--color-text-muted)] mb-4">
-              Connect a Meta or TikTok Ads account in Settings → Platforms to fill these
-              automatically, or enter them yourself below.
-            </p>
-          )}
+            <button
+              type="button"
+              className="btn-outline btn-outline--sm self-start"
+              onClick={syncLiveTotals}
+              disabled={liveSyncing || included.length === 0}
+            >
+              <RefreshCw
+                className={liveSyncing ? 'animate-spin' : ''}
+                size={14}
+                aria-hidden="true"
+              />
+              {liveSyncing ? 'Refreshing…' : 'Refresh live totals'}
+            </button>
 
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}
-          >
-            {syncableFields.map(renderField)}
-          </div>
-        </div>
+            <p className="body-xs">A preview only — this week joins a report once it ends.</p>
+          </section>
+        )}
 
-        <div>
-          <h4
-            className="body-sm mb-3"
-            style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}
-          >
-            You provide these
-          </h4>
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}
-          >
-            {manualFields.map(renderField)}
-          </div>
-        </div>
-
-        <button type="submit" disabled={submitting} className="btn-primary mt-10 flex w-full items-center justify-center gap-2">
-          {submitting ? (
-            <>
-              <Loader2 size={16} className="animate-spin" /> Computing analytics…
-            </>
-          ) : (
-            <>
-              <BarChart3 size={16} /> Generate campaign analytics
-            </>
-          )}
-        </button>
-      </form>
+        <section className="card flex flex-col gap-4" aria-labelledby="perf-outcomes-head">
+          <h2 id="perf-outcomes-head" className="heading-sm">What you&rsquo;ll get</h2>
+          <ul className="flex flex-col gap-4">
+            {OUTCOMES.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex items-start gap-3">
+                <span className="perf-outcome-icon" aria-hidden="true">
+                  <Icon size={16} />
+                </span>
+                <span>
+                  <span className="block body-xs" style={{ fontWeight: 600, color: 'var(--color-text-heading)' }}>
+                    {title}
+                  </span>
+                  <span className="block body-xs">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </aside>
     </div>
   );
 }
