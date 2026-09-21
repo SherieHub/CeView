@@ -41,8 +41,15 @@ view. A "New submission" ghost button in the full view clears the campaign and r
 - **AI action plan** — executive summary card, then the three funnel transitions ranked by business
   impact (Weakest/Moderate/Alright — **not** by raw drop-size), each paired with a recommendation card
   carrying an urgency chip (Most Urgent/Urgent/Not Very Urgent) and a concrete action.
+- **Link-attributed evidence** (new) — A panel showing creative-level performance for tracked campaign links. Includes a link selector (filtered by campaign/window scope) and an evidence table breaking down clicks, conversions (which include zero-revenue enquiries), and revenue by tracked creative ID. Un-tagged traffic is grouped into an "Organic / untagged" bucket. Has distinct evidence labels and does not infer missing inventory (unseen IDs are not listed).
 - **Previously published** (new) — All/TikTok/Instagram/Facebook filter tabs over published posts.
   Each row is clickable and opens a `PostAnalyticsModal`.
+
+## Link Attribution Evidence
+
+The link attribution panel appears both in the entry state (above the ingestion form) and in the full view. It uses a standalone link selector scoped to the campaign window. 
+Note that counts are a floor and not a census. Conversions include zero-revenue enquiries as well as matched bookings.
+The panel is designed to live alongside code-redemption and statistical lift panels, which are implemented via standalone picker integration (`ClickMatchStep`) but are not fully wired up to parent booking actions yet.
 
 ## `PostAnalyticsModal` (new component)
 

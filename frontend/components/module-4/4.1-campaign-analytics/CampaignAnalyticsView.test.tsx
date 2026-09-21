@@ -23,6 +23,10 @@ vi.mock('../../../services/apiClient', () => ({
     posts: {
       list: vi.fn(() => Promise.resolve([])),
     },
+    attributionLinks: {
+      list: vi.fn(() => Promise.resolve([])),
+      performance: vi.fn(() => Promise.resolve(null)),
+    },
   },
 }));
 
@@ -79,10 +83,15 @@ describe('CampaignAnalyticsView', () => {
     vi.useRealTimers();
   });
 
-  it('renders only the ingestion form when no campaign has been submitted', () => {
+  it('renders ingestion form plus evidence and still no computed PES/trends when no campaign has been submitted', async () => {
     renderView();
 
     expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    
+    // Check evidence section is rendered
+    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
+    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
+
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
 
@@ -118,6 +127,10 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.queryByText(/log this week.s campaign performance/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
+    
+    // Check evidence section is still rendered
+    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
+    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
   });
 
   it('shows the server-computed PES score/label in the gauge when the ingest response has one', async () => {
@@ -207,6 +220,9 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
+    
+    // Check evidence section is still rendered
+    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
   });
 
   it('renders the error panel when the report call fails', async () => {

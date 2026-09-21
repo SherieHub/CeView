@@ -33,6 +33,7 @@ import EfficiencyTrendChart from './EfficiencyTrendChart';
 import CostTrendChart from './CostTrendChart';
 import AiActionPlan from './AiActionPlan';
 import PreviouslyPublished from './PreviouslyPublished';
+import AttributionEvidenceSection from './AttributionEvidenceSection';
 
 /**
  * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value} per
@@ -108,8 +109,11 @@ export default function CampaignAnalyticsView() {
 
   if (!campaign) {
     return (
-      <div className="mx-auto max-w-[880px]">
-        <IngestionForm onSubmit={handleCampaignSubmit} />
+      <div className="flex flex-col gap-8">
+        <AttributionEvidenceSection />
+        <div className="mx-auto max-w-[880px] w-full">
+          <IngestionForm onSubmit={handleCampaignSubmit} />
+        </div>
       </div>
     );
   }
@@ -152,6 +156,8 @@ export default function CampaignAnalyticsView() {
           <KpiCard key={spec.label} label={spec.label} value={metrics[spec.key]} />
         ))}
       </div>
+
+      <AttributionEvidenceSection />
 
       {/* Score and recent-post performance are both "how are we doing"
           overview content. Both cards are pinned to the exact same fixed

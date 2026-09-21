@@ -489,7 +489,7 @@ export const apiClient = {
       USE_FIXTURES
         ? delay<UnconvertedClick[]>(mockUnconvertedClicks())
         : request<UnconvertedClick[]>(
-            `/api/attribution/clicks/unconverted?from=${from}&to=${to}`,
+            `/api/attribution/clicks/unconverted?${new URLSearchParams({ from, to }).toString()}`,
           ),
   },
 
