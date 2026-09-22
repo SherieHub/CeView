@@ -6,7 +6,7 @@ import type { LinkPerformance } from '../types';
 
 const performance = vi.hoisted(() => vi.fn());
 vi.mock('./apiClient', () => ({ apiClient: { attributionLinks: { performance } } }));
-beforeEach(() => performance.mockReset());
+beforeEach(() => { performance.mockReset(); });
 const data = mockLinkPerformance(MOCK_LINKS[0].linkId);
 
 describe('useLinkPerformance', () => {

@@ -35,7 +35,7 @@ describe('LinkAttributionPanel', () => {
   });
 
   it('handles links error and retry', async () => {
-    (apiClient.attributionLinks.list as any).mockRejectedValueOnce(new ApiError({ status: 500, body: { message: 'Links Error' } }))
+    (apiClient.attributionLinks.list as any).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Links Error' } }))
                                             .mockResolvedValueOnce([]);
     render(<LinkAttributionPanel />);
     await waitFor(() => {
@@ -72,7 +72,7 @@ describe('LinkAttributionPanel', () => {
   it('handles performance error and retry separately', async () => {
     const links = mockLinks();
     (apiClient.attributionLinks.list as any).mockResolvedValue(links);
-    (apiClient.attributionLinks.performance as any).mockRejectedValueOnce(new ApiError({ status: 500, body: { message: 'Perf Error' } }))
+    (apiClient.attributionLinks.performance as any).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Perf Error' } }))
                                                    .mockResolvedValueOnce(mockLinkPerformance(links[0].linkId));
 
     render(<LinkAttributionPanel />);

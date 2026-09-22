@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useId, useRef } from 'react';
 import { apiClient } from '../../../services/apiClient';
 import type { UnconvertedClick } from '../../../types';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
@@ -23,6 +23,10 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
   const [error, setError] = useState<unknown | null>(null);
   
   const reqIdRef = useRef(0);
+  const groupName = useId();
+  // Read at completion time: the effect's closure would otherwise see the value from when the request started.
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   const fetchCandidates = async (currentFrom: string, currentTo: string, currentLinkId: string) => {
     reqIdRef.current += 1;
@@ -39,7 +43,7 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
         setLoading(false);
         
         // Clear selection if it no longer appears in the list
-        if (value !== null && !filtered.find(c => c.clickId === value)) {
+        if (valueRef.current !== null && !filtered.find(c => c.clickId === valueRef.current)) {
           onChange(null);
         }
       }
@@ -70,8 +74,8 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
   }, [from, to, linkId]);
 
   return (
-    <fieldset className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col space-y-4">
-      <legend className="text-lg font-semibold px-2">Was this from an ad click? (optional)</legend>
+    <fieldset className="card flex flex-col space-y-4">
+      <legend className="heading-sm float-left w-full">Was this from an ad click? (optional)</legend>
       
       {error ? (
         <div className="flex flex-col space-y-2">
@@ -79,11 +83,11 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
           <label className="flex items-center space-x-2">
             <input
               type="radio"
-              name="clickMatch"
+              name={groupName}
               value=""
               checked={value === null}
               onChange={() => onChange(null)}
-              className="form-radio text-blue-600"
+              className="accent-[var(--color-mint-primary)]"
             />
             <span>None of these</span>
           </label>
@@ -93,35 +97,35 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
           <label className="flex items-center space-x-2">
             <input
               type="radio"
-              name="clickMatch"
+              name={groupName}
               value=""
               checked={value === null}
               onChange={() => onChange(null)}
               disabled={loading}
-              className="form-radio text-blue-600"
+              className="accent-[var(--color-mint-primary)]"
             />
             <span>None of these</span>
           </label>
           
           {loading ? (
-            <div className="text-gray-500 py-4">Loading candidates...</div>
+            <div className="body-sm py-4">Loading candidates...</div>
           ) : candidates.length === 0 ? (
-            <p className="text-sm text-gray-500">No unconverted clicks found for this time period.</p>
+            <p className="body-sm">No unconverted clicks found for this time period.</p>
           ) : (
             candidates.map(click => (
               <label key={click.clickId} className="flex items-center space-x-2">
                 <input
                   type="radio"
-                  name="clickMatch"
+                  name={groupName}
                   value={click.clickId}
                   checked={value === click.clickId}
                   onChange={() => onChange(click.clickId)}
                   disabled={loading}
-                  className="form-radio text-blue-600"
+                  className="accent-[var(--color-mint-primary)]"
                 />
                 <div className="flex flex-col">
                   <span>{click.untagged ? 'Organic / untagged' : click.adLabel || `Ad ${click.externalAdId}`}</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="body-xs text-[var(--color-text-muted)]">
                     {click.platform} • {new Date(click.clickedAt).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}
                   </span>
                 </div>

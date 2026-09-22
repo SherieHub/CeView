@@ -7,15 +7,18 @@ import type { UnconvertedClick } from '../../../types';
 const unconvertedClicks = vi.hoisted(() => vi.fn());
 vi.mock('../../../services/apiClient', () => ({ apiClient: { attributionLinks: { unconvertedClicks } } }));
 const props = { linkId: MOCK_LINKS[0].linkId, from: MOCK_LINKS[0].windowStart, to: MOCK_LINKS[0].windowEnd, value: null };
-beforeEach(() => unconvertedClicks.mockReset().mockResolvedValue(mockUnconvertedClicks()));
+beforeEach(() => { unconvertedClicks.mockReset().mockResolvedValue(mockUnconvertedClicks()); });
 
 describe('ClickMatchStep', () => {
   it('lists candidates, defaults to None and passes the chosen click ID', async () => {
     const onChange = vi.fn();
-    render(<ClickMatchStep {...props} onChange={onChange} />);
+    const { rerender } = render(<ClickMatchStep {...props} onChange={onChange} />);
     expect(screen.getByRole('radio', { name: 'None of these' })).toBeChecked();
     fireEvent.click(await screen.findByRole('radio', { name: /Sunset villa/ }));
-    expect(onChange).toHaveBeenLastCalledWith(mockUnconvertedClicks()[0].clickId);
+    const chosen = mockUnconvertedClicks()[0].clickId;
+    expect(onChange).toHaveBeenLastCalledWith(chosen);
+    // Controlled: the parent feeds the choice back before None can be re-selected.
+    rerender(<ClickMatchStep {...props} value={chosen} onChange={onChange} />);
     fireEvent.click(screen.getByRole('radio', { name: 'None of these' }));
     expect(onChange).toHaveBeenLastCalledWith(null);
     expect(unconvertedClicks).toHaveBeenCalledWith(props.from, props.to);

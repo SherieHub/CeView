@@ -37,6 +37,15 @@ describe('CreativePerformanceTable', () => {
     expect(screen.getByText(/An enquiry counts as one conversion/i)).toBeVisible();
   });
 
+  it('keeps equal-conversion null-ID rows in their supplied order and labels the table', () => {
+    const first = { ...creative(null, 2, 1), adLabel: 'first' };
+    const second = { ...creative(null, 3, 1), adLabel: 'second' };
+    render(<CreativePerformanceTable performance={result([creative('A', 1, 1), first, second])} />);
+    const rows = screen.getAllByRole('row').slice(1, -1);
+    expect(rows.map(row => within(row).getAllByRole('cell')[1].textContent)).toEqual(['1', '2', '3']);
+    expect(screen.getByRole('table', { name: /per ad creative/i })).toBeInTheDocument();
+  });
+
   it.each([[[]], [[creative('A', 0, 0)]]])('renders no clicks as an empty state: %j', creatives => {
     render(<CreativePerformanceTable performance={result(creatives)} />);
     expect(screen.getByText(/No tracked clicks yet/i)).toBeVisible();

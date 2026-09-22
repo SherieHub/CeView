@@ -23,26 +23,26 @@ export default function LinkAttributionPanel() {
 
   if (linksError) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <ApiErrorPanel error={linksError} onRetry={refreshLinks} />
+      <div className="card">
+        <ApiErrorPanel error={linksError} onRetry={refreshLinks} label="Link-attributed evidence — campaign links" />
       </div>
     );
   }
 
   if (!links) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <p className="text-gray-500">Loading links...</p>
+      <div className="card">
+        <p className="body-sm">Loading links...</p>
       </div>
     );
   }
 
   if (links.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-1">Link-attributed evidence</h3>
-        <div className="py-8 text-center text-gray-500">
-          <p>No tracked campaign links yet.</p>
+      <div className="card">
+        <h3 className="heading-sm">Link-attributed evidence</h3>
+        <div className="empty">
+          <p className="mx-auto">No tracked campaign links yet.</p>
         </div>
       </div>
     );
@@ -51,15 +51,16 @@ export default function LinkAttributionPanel() {
   const selectedLink = links.find(l => l.linkId === selectedLinkId);
 
   const formatDate = (iso: string) => {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
   };
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Campaign link</label>
+      <div className="card">
+        <label htmlFor="link-attribution-select" className="field-label">Campaign link</label>
         <select
-          className="w-full border-gray-300 rounded-md shadow-sm text-sm p-2 border focus:ring-blue-500 focus:border-blue-500"
+          id="link-attribution-select"
+          className="input"
           value={selectedLinkId || ''}
           onChange={e => setSelectedLinkId(e.target.value)}
         >
@@ -72,12 +73,12 @@ export default function LinkAttributionPanel() {
       </div>
 
       {perfError ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <ApiErrorPanel error={perfError} onRetry={refreshPerf} />
+        <div className="card">
+          <ApiErrorPanel error={perfError} onRetry={refreshPerf} label="Link-attributed evidence — creative performance" />
         </div>
       ) : perfLoading || !performance ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <p className="text-gray-500">Loading performance...</p>
+        <div className="card">
+          <p className="body-sm">Loading performance...</p>
         </div>
       ) : (
         <CreativePerformanceTable performance={performance} />

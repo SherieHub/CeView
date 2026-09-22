@@ -47,9 +47,15 @@ view. A "New submission" ghost button in the full view clears the campaign and r
 
 ## Link Attribution Evidence
 
-The link attribution panel appears both in the entry state (above the ingestion form) and in the full view. It uses a standalone link selector scoped to the campaign window. 
-Note that counts are a floor and not a census. Conversions include zero-revenue enquiries as well as matched bookings.
-The panel is designed to live alongside code-redemption and statistical lift panels, which are implemented via standalone picker integration (`ClickMatchStep`) but are not fully wired up to parent booking actions yet.
+The link attribution panel appears both in the entry state (above the ingestion form) and in the full
+view, so a tracked enquiry can be inspected without submitting weekly data first. It has its own link
+selector; each link covers one campaign window. Counts are a floor, not a census, and conversions
+include zero-revenue enquiries as well as operator-matched bookings.
+
+It sits in a three-column row with the code-redemption and statistical-lift panels
+(`AttributionEvidenceSection`). Those two panels are not built yet, so their columns show a short
+"not available in this build" note rather than a zero. Full behaviour:
+[`link-attribution.md`](link-attribution.md).
 
 ## `PostAnalyticsModal` (new component)
 

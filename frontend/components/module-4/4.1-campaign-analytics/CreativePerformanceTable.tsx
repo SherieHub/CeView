@@ -22,13 +22,13 @@ export default function CreativePerformanceTable({ performance }: Props) {
 
   if (!hasObservedClicks) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-1">Link-attributed evidence</h3>
-        <p className="text-sm text-gray-500 mb-6">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
-        <div className="py-8 text-center text-gray-500">
-          <p>No tracked clicks yet. Share this campaign's ad URL to begin collecting link-attributed evidence.</p>
+      <div className="card">
+        <h3 className="heading-sm">Link-attributed evidence</h3>
+        <p className="body-sm mt-2">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
+        <div className="empty">
+          <p className="mx-auto">No tracked clicks yet. Share this campaign's ad URL to begin collecting link-attributed evidence.</p>
         </div>
-        <div className="mt-6 text-xs text-gray-400">
+        <div className="body-xs mt-4 text-[var(--color-text-muted)]">
           Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.
         </div>
       </div>
@@ -36,48 +36,49 @@ export default function CreativePerformanceTable({ performance }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold mb-1">Link-attributed evidence</h3>
-      <p className="text-sm text-gray-500 mb-4">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
+    <div className="card">
+      <h3 className="heading-sm">Link-attributed evidence</h3>
+      <p className="body-sm mt-2">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
 
       {onlyUntagged && (
-        <div className="mb-4 p-3 bg-amber-50 text-amber-800 text-sm rounded border border-amber-200">
+        <div role="status" className="mt-4 rounded-[var(--radius-sm)] border border-sand bg-mint-pale-alt px-4 py-3 text-sm text-navy-dark">
           All tracked clicks arrived without a creative ID. If you ran paid ads, the bare link may have been pasted instead of the platform-specific ad URL. Copy the Meta or TikTok ad URL from Content Studio. Organic traffic can also appear here.
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="mt-4 overflow-x-auto">
+        <table className="num w-full border-collapse text-left text-sm">
+          <caption className="sr">Clicks, conversions and revenue per ad creative, most conversions first</caption>
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="py-3 pr-4 font-medium text-gray-600">Creative</th>
-              <th className="py-3 px-4 font-medium text-gray-600 text-right">Clicks</th>
-              <th className="py-3 px-4 font-medium text-gray-600 text-right">Conversions</th>
-              <th className="py-3 pl-4 font-medium text-gray-600 text-right">Revenue</th>
+            <tr className="border-b border-gray-light">
+              <th className="py-3 pr-3 font-semibold text-navy-dark">Creative</th>
+              <th className="py-3 px-3 whitespace-nowrap font-semibold text-navy-dark text-right">Clicks</th>
+              <th className="py-3 px-3 whitespace-nowrap font-semibold text-navy-dark text-right">Conversions</th>
+              <th className="py-3 pl-3 whitespace-nowrap font-semibold text-navy-dark text-right">Revenue</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={row.externalAdId ?? `untagged-${i}`} className="border-b border-gray-100 last:border-0">
-                <td className="py-3 pr-4">{row.untagged ? 'Organic / untagged' : (row.adLabel || `Ad ${row.externalAdId}`)}</td>
-                <td className="py-3 px-4 text-right">{row.clicks}</td>
-                <td className="py-3 px-4 text-right">{row.conversions}</td>
-                <td className="py-3 pl-4 text-right">{pesos.format(row.revenue)}</td>
+              <tr key={row.externalAdId ?? `untagged-${i}`} className="border-b border-gray-light last:border-0 text-[var(--color-text-body)]">
+                <td className="min-w-[8rem] break-words py-3 pr-3 text-navy-dark">{row.untagged ? 'Organic / untagged' : (row.adLabel || `Ad ${row.externalAdId}`)}</td>
+                <td className="py-3 px-3 whitespace-nowrap text-right">{row.clicks}</td>
+                <td className="py-3 px-3 whitespace-nowrap text-right">{row.conversions}</td>
+                <td className="py-3 pl-3 whitespace-nowrap text-right">{pesos.format(row.revenue)}</td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="border-t-2 border-gray-200 font-semibold">
+          <tfoot className="border-t-2 border-gray-light font-semibold text-navy-dark">
             <tr>
-              <td className="py-3 pr-4">Total</td>
-              <td className="py-3 px-4 text-right">{performance.totalClicks}</td>
-              <td className="py-3 px-4 text-right">{performance.totalConversions}</td>
-              <td className="py-3 pl-4 text-right">{pesos.format(performance.totalRevenue)}</td>
+              <td className="py-3 pr-3">Total</td>
+              <td className="py-3 px-3 whitespace-nowrap text-right">{performance.totalClicks}</td>
+              <td className="py-3 px-3 whitespace-nowrap text-right">{performance.totalConversions}</td>
+              <td className="py-3 pl-3 whitespace-nowrap text-right">{pesos.format(performance.totalRevenue)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      <div className="mt-6 text-xs text-gray-400 space-y-1">
+      <div className="body-xs mt-4 space-y-1 text-[var(--color-text-muted)]">
         <p>An enquiry counts as one conversion; revenue stays ₱0.00 until an amount is recorded.</p>
         <p>Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.</p>
       </div>
