@@ -61,7 +61,7 @@ describe('IngestionForm', () => {
     // Task 17: onSubmit now also receives the ingest response's `pes` as a
     // second argument — undefined here since the mocked response has none.
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ impressions: 120000 }), undefined),
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ impressions: 120000 }), undefined, expect.objectContaining({ period: expect.any(Object) })),
     );
   });
 
@@ -75,7 +75,7 @@ describe('IngestionForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith(expect.any(Object), serverPes),
+      expect(onSubmit).toHaveBeenCalledWith(expect.any(Object), serverPes, expect.any(Object)),
     );
   });
 
@@ -87,7 +87,7 @@ describe('IngestionForm', () => {
     await fillAllFields();
     await userEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.any(Object), undefined));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.any(Object), undefined, expect.any(Object)));
   });
 
   it('surfaces a submit failure instead of failing silently', async () => {

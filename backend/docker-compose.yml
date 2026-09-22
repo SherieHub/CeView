@@ -23,6 +23,8 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       # Groq decommissions models periodically; override without a rebuild.
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # The compliance audit needs an image-capable model (omcs_agent/node.py).
+      OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
       HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)

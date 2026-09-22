@@ -5320,3 +5320,270 @@
     display: none;
   }
 }
+
+/* ============================================================
+   Performance screen (module-4, /performance)
+   Entry: a numbered three-step form beside a pinned aside (live week +
+   what a submission produces). Results: labelled bands a sticky section
+   nav jumps between. Scoped under .perf-* so nothing leaks to other screens.
+   ============================================================ */
+@layer components {
+  /* Entry caps wider than the 880px form measure: the aside needs its own
+     track, but the form column itself still lands near that measure. */
+  .perf-screen--entry {
+    max-width: 1240px;
+  }
+
+  .perf-entry {
+    display: grid;
+    gap: var(--space-md);
+    align-items: start;
+  }
+  @media (min-width: 1180px) {
+    .perf-entry {
+      grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    /* Pinned like the rails: sticky keeps the grid track, align-self: start
+       lets sticky actually engage. */
+    .perf-aside {
+      position: sticky;
+      top: calc(var(--topbar-h) + var(--space-md));
+      align-self: start;
+    }
+  }
+  .perf-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .perf-form-card {
+    padding: var(--space-md);
+  }
+  @media (min-width: 1024px) {
+    .perf-form-card {
+      padding: 40px;
+    }
+  }
+
+  /* Step: number chip in a narrow track, heading and body in the wide one.
+     Steps are separated by a rule plus the 40px group gap from the form
+     rhythm, so the three groups read as three before any label does. */
+  .perf-step {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: var(--space-md);
+  }
+  .perf-step + .perf-step {
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--color-gray-light);
+  }
+  .perf-step-num {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--color-mint-pale);
+    color: var(--color-navy-primary);
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .perf-step-head {
+    padding-top: 4px;
+  }
+  .perf-step-body {
+    grid-column: 2;
+  }
+  /* Phones: the body takes the full width under the header row. */
+  @media (max-width: 639px) {
+    .perf-step-body {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* Field grids sized to their field count, so four fields never leave one
+     orphaned on a second row the way a fixed three-column grid did. */
+  .perf-field-grid {
+    display: grid;
+    gap: var(--space-md) var(--space-sm);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 640px) {
+    .perf-field-grid--4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .perf-field-grid--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1440px) {
+    .perf-field-grid--4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /* The sync button sits on the mint-pale block; a white fill keeps it from
+     reading as a hole in the surface. */
+  .perf-sync-btn {
+    background: var(--color-white);
+  }
+
+  .perf-submit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-top: 40px;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-gray-light);
+  }
+  .perf-submit .body-xs {
+    max-width: 38ch;
+  }
+  @media (max-width: 639px) {
+    .perf-submit .btn-primary {
+      width: 100%;
+    }
+  }
+
+  .perf-outcome-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--color-mint-pale);
+    color: var(--color-teal-accent);
+  }
+
+  /* ---- Results ---- */
+
+  /* Pinned under the sticky topbar. Frosted rather than opaque so the band
+     scrolling beneath stays faintly visible — it reads as a floating control,
+     not a second header. */
+  .perf-nav {
+    position: sticky;
+    top: calc(var(--topbar-h) + 8px);
+    z-index: 9;
+    display: flex;
+    gap: 4px;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 5px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-card);
+    scrollbar-width: none;
+  }
+  .perf-nav a {
+    padding: 7px 16px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--color-navy-primary);
+    text-decoration: none;
+    transition: background-color 0.2s var(--ease-brand), color 0.2s var(--ease-brand);
+  }
+  .perf-nav a:hover {
+    background: var(--color-mint-pale);
+  }
+  .perf-nav a[aria-current='true'] {
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  .perf-nav a:focus-visible {
+    outline: none;
+    box-shadow: var(--ring-focus);
+  }
+
+  /* The screen's 32px band gap is right between bands but too loose between
+     the title and the nav that belongs to it. */
+  .perf-screen--results > .page-head {
+    margin-bottom: calc(-1 * var(--space-sm));
+  }
+
+  /* Clears the topbar and the pinned nav, so a jumped-to band isn't hidden. */
+  .perf-section {
+    scroll-margin-top: calc(var(--topbar-h) + 72px);
+  }
+
+  .perf-kpi-grid {
+    display: grid;
+    gap: var(--space-sm);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 640px) {
+    .perf-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  /* Beside the fixed-height gauge, the three rows split its height evenly. */
+  @media (min-width: 1024px) {
+    .perf-kpi-grid {
+      grid-auto-rows: 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .perf-nav a {
+      transition: none;
+    }
+  }
+}
+
+/* ============================================================
+   Visual Guide drawer — pre-guide states (CampaignBriefDrawer)
+   Idle (approve prompt), loading, error and empty all share one block so
+   the drawer never renders blank while there is no guide to show.
+   ============================================================ */
+@layer components {
+  .brief-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: var(--spacing-8);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-mint-pale-alt);
+  }
+  .brief-state .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+  .brief-state > [role='alert'],
+  .brief-state > div {
+    align-self: stretch;
+  }
+  .brief-state-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-navy-dark);
+  }
+  .brief-state-row svg {
+    flex: none;
+    color: var(--color-cyan-deep);
+  }
+  .brief-state-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  /* Provenance for a ready guide — which market, from what. */
+  .brief-for {
+    margin-top: var(--spacing-6);
+  }
+}

@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -107,6 +108,80 @@ describe('CampaignBriefDrawer', () => {
       </OverlayStackProvider>,
     );
     expect(screen.getByTestId('brief-welcome')).toBeTruthy();
+  });
+
+  // The backend only generates a direction once the operator has approved
+  // captions for the market — so an empty drawer must say what to do next
+  // rather than sit blank.
+  describe('before a guide exists', () => {
+    function renderState(props: Partial<ComponentProps<typeof CampaignBriefDrawer>>) {
+      const onApprove = vi.fn();
+      render(
+        <OverlayStackProvider>
+          <CampaignBriefDrawer
+            open
+            onClose={vi.fn()}
+            showWelcome={false}
+            direction={null}
+            marketName="United States"
+            onApprove={onApprove}
+            {...props}
+          />
+        </OverlayStackProvider>,
+      );
+      return onApprove;
+    }
+
+    it('asks for a caption first and keeps the approve button disabled', () => {
+      renderState({ status: 'idle', captionChosen: false });
+      expect(screen.getByText(/select a caption option first/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /approve & get visual guide/i })).toBeDisabled();
+    });
+
+    it('approves once a caption is chosen', async () => {
+      const onApprove = renderState({ status: 'idle', captionChosen: true });
+      expect(screen.getByText(/united states/i)).toBeTruthy();
+      await userEvent.click(screen.getByRole('button', { name: /approve & get visual guide/i }));
+      expect(onApprove).toHaveBeenCalled();
+    });
+
+    it('shows progress while generating', () => {
+      renderState({ status: 'loading', captionChosen: true });
+      expect(screen.getByText(/generating your visual guide/i)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /approve & get visual guide/i })).toBeNull();
+    });
+
+    it('reports a failure and offers a retry', async () => {
+      const onApprove = renderState({ status: 'error', error: new Error('boom'), captionChosen: true });
+      await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+      expect(onApprove).toHaveBeenCalled();
+    });
+
+    it('says so when the service returns an empty guide', () => {
+      renderState({
+        status: 'ready',
+        captionChosen: true,
+        direction: { visualGuide: [], shots: [], moodboard: { palette: '', references: [] } },
+      });
+      expect(screen.getByText(/came back empty/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
+    });
+  });
+
+  it('names the market the ready guide was generated for', () => {
+    render(
+      <OverlayStackProvider>
+        <CampaignBriefDrawer
+          open
+          onClose={vi.fn()}
+          showWelcome={false}
+          status="ready"
+          direction={MOCK_CREATIVE_DIRECTION}
+          marketName="United States"
+        />
+      </OverlayStackProvider>,
+    );
+    expect(screen.getByText(/for united states/i)).toBeTruthy();
   });
 
   it('closes on the drawer control', async () => {

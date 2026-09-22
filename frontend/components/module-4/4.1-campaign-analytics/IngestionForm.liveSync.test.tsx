@@ -102,9 +102,23 @@ describe('IngestionForm live week-to-date panel', () => {
 
     await waitFor(() => expect(insightsMock).toHaveBeenCalled());
     const [start, end] = insightsMock.mock.calls[0];
-    const todayIso = new Date().toISOString().slice(0, 10);
+    // Local calendar day — toISOString() would be yesterday before 8am in Manila.
+    const now = new Date();
+    const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     expect(String(end)).toBe(todayIso);
     expect(String(start) <= String(end)).toBe(true);
+  });
+
+  it('says there is no delivery yet instead of a row of zeros', async () => {
+    connections = [ACTIVE_META];
+    insightsMock.mockResolvedValue({
+      ...LIVE_SUMMARY, impressions: 0, clicks: 0, spend: 0, conversions: 0,
+    });
+    render(<IngestionForm onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /refresh live totals/i }));
+
+    expect(await screen.findByText(/no ad delivery yet this week/i)).toBeInTheDocument();
+    expect(screen.queryByText('Impressions', { selector: 'div' })).toBeNull();
   });
 
   it('renders live stat tiles from the response', async () => {

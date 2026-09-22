@@ -15,10 +15,19 @@
  * Built on the shared Drawer so it joins the same overlay stack as the Market
  * Radar drawer: Escape and the scrim close it, and a modal opened above it
  * (the publish modal) closes first.
+ *
+ * The guide is generated ON REQUEST, not on mount: the backend only produces a
+ * direction once the operator has approved captions for the market (400
+ * missing_dependency otherwise). The drawer therefore owns the explicit
+ * "Approve & get visual guide" action and a visible state for every step of
+ * it — it used to render nothing at all when the request had failed.
  */
-import { Camera, Lightbulb, Sparkles } from 'lucide-react';
+import { CheckCircle2, Camera, Lightbulb, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import Drawer from '../../shared/Drawer';
+import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { CreativeDirection } from '../../../types';
+
+export type VisualGuideStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface CampaignBriefDrawerProps {
   open: boolean;
@@ -26,6 +35,15 @@ export interface CampaignBriefDrawerProps {
   /** FTUE only — the one-time explanation of what this panel is for. */
   showWelcome: boolean;
   direction: CreativeDirection | null;
+  /** Defaults to 'ready' when a direction is passed, 'idle' otherwise. */
+  status?: VisualGuideStatus;
+  error?: unknown;
+  /** The market the guide is (or will be) generated for, as the operator knows it. */
+  marketName?: string;
+  /** Approval covers the market's generated captions — gated on one being picked. */
+  captionChosen?: boolean;
+  /** Approves the market's captions, then generates the guide. Also the retry. */
+  onApprove?: () => void;
 }
 
 export default function CampaignBriefDrawer({
@@ -33,7 +51,16 @@ export default function CampaignBriefDrawer({
   onClose,
   showWelcome,
   direction,
+  status = direction ? 'ready' : 'idle',
+  error,
+  marketName,
+  captionChosen = false,
+  onApprove,
 }: CampaignBriefDrawerProps) {
+  const forMarket = marketName ? ` for ${marketName}` : '';
+  const empty = status === 'ready' && direction != null
+    && direction.visualGuide.length === 0 && direction.shots.length === 0;
+
   return (
     <Drawer open={open} onClose={onClose} label="Visual Guide">
       <div className="brief-head">
@@ -52,7 +79,67 @@ export default function CampaignBriefDrawer({
         </p>
       )}
 
-      {direction && direction.visualGuide.length > 0 && (
+      {status === 'idle' && onApprove && (
+        <div className="brief-state">
+          <h3 className="heading-sm">Get a shot list{forMarket}</h3>
+          <p className="body-sm">
+            {captionChosen
+              ? 'Approving marks this market\'s captions as final, then generates the visual direction and shot list to match them.'
+              : 'Select a caption option first. Approving it marks this market\'s captions as final and generates a visual direction and shot list to match.'}
+          </p>
+          <button
+            type="button"
+            className="btn-primary brief-state-action"
+            onClick={onApprove}
+            disabled={!captionChosen}
+          >
+            <CheckCircle2 size={16} aria-hidden="true" />
+            Approve &amp; get visual guide
+          </button>
+        </div>
+      )}
+
+      {status === 'loading' && (
+        <div className="brief-state" role="status">
+          <p className="body-sm brief-state-row">
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            Generating your visual guide{forMarket}…
+          </p>
+          <p className="body-xs">This usually takes a few seconds.</p>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="brief-state">
+          <ApiErrorPanel error={error} label="Visual Guide" />
+          {onApprove && (
+            <button type="button" className="btn-outline brief-state-action" onClick={onApprove}>
+              <RefreshCw size={14} aria-hidden="true" />
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+
+      {empty && (
+        <div className="brief-state">
+          <p className="body-sm">
+            The visual guide{forMarket} came back empty — the AI service returned no direction or shots.
+          </p>
+          {onApprove && (
+            <button type="button" className="btn-outline brief-state-action" onClick={onApprove}>
+              <RefreshCw size={14} aria-hidden="true" />
+              Try again
+            </button>
+          )}
+        </div>
+      )}
+
+      {status === 'ready' && marketName && !empty && (
+        <p className="body-xs brief-for">Generated for {marketName} from your approved captions.</p>
+      )}
+
+      {status === 'ready' && direction && direction.visualGuide.length > 0 && (
         <div className="studio-block">
           <h3>Visual direction</h3>
           <ol className="studio-list">
@@ -66,7 +153,7 @@ export default function CampaignBriefDrawer({
         </div>
       )}
 
-      {direction && direction.shots.length > 0 && (
+      {status === 'ready' && direction && direction.shots.length > 0 && (
         <div className="studio-block">
           <h3>Shot list</h3>
           <ol className="shot-list">

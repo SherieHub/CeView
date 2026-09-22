@@ -297,11 +297,20 @@ export const apiClient = {
           }),
   },
   creativeDirection: {
-    /** Shot list, visual and lighting direction for ShotListAccordion and CampaignBriefDrawer. */
-    generate: () =>
+    /**
+     * Shot list, visual and lighting direction for CampaignBriefDrawer.
+     *
+     * Requires captions for `market` to be approved first (content.approve) —
+     * the backend answers 400 missing_dependency otherwise. The market must be
+     * sent: omitted, the backend silently defaults to "korea".
+     */
+    generate: (market: string) =>
       USE_FIXTURES
         ? delay(MOCK_CREATIVE_DIRECTION)
-        : request<CreativeDirection>('/api/creative-direction/generate', { method: 'POST' }),
+        : request<CreativeDirection>(
+            `/api/creative-direction/generate?market=${encodeURIComponent(market)}`,
+            { method: 'POST' },
+          ),
   },
   campaign: {
     /**

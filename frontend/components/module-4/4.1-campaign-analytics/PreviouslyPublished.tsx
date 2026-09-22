@@ -10,10 +10,10 @@
  * Filter tabs are All/TikTok/Instagram/Facebook exactly as specced — one tab
  * per PlatformId, plus All.
  *
- * Fixed-height card (matches PesGauge, which it's paired with in
- * CampaignAnalyticsView.tsx — both are 660px, sized to fit PesGauge's own
- * fixed content) so the two stay the same size regardless of how many posts
- * exist — the post list scrolls internally instead of growing the card
+ * Height-capped card (max 660px): it now sits alone as the Performance
+ * screen's last band rather than paired with PesGauge, so it shrinks to fit
+ * an empty or short list instead of holding a fixed 660px box open. A long
+ * post history still scrolls internally instead of growing the card
  * (wheel/trackpad/scrollbar all work; no dedicated scroll buttons — the
  * native scrollbar shown by overflow-y-auto is affordance enough).
  *
@@ -46,7 +46,7 @@ export default function PreviouslyPublished() {
   );
 
   return (
-    <div className="card flex h-[660px] flex-col gap-4">
+    <div className="card flex max-h-[660px] flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="heading-md">Previously Published</h3>
         <div role="group" aria-label="Platform filter" className="inline-flex flex-wrap gap-1 rounded-pill bg-mint-pale p-1">
@@ -67,7 +67,7 @@ export default function PreviouslyPublished() {
       </div>
 
       {/* flex-1 + min-h-0 is what lets this area actually shrink to fit the
-          fixed-height card instead of forcing the card to grow with it —
+          height-capped card instead of forcing the card to grow with it —
           without min-h-0 a flex child never shrinks below its content size. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {published.length === 0 ? (
@@ -78,7 +78,7 @@ export default function PreviouslyPublished() {
           // Matches Content Studio's ContentBoard post-card style: bordered
           // tile, platform + status pill, caption preview, meta row — so a
           // published post reads the same way wherever it's shown.
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {published.map((post) => (
               <button
                 key={post.id}

@@ -98,9 +98,8 @@ export function computeContributions(metrics: Metrics): Contribution[] {
   return specs.map((s) => ({ ...s, contribution: s.normalized * (s.weightPct / 100) }));
 }
 
-// Sized (and the surrounding gaps kept tight) so this card lands close to
-// PreviouslyPublished's height when the two sit side by side — see
-// CampaignAnalyticsView.tsx's pairing comment.
+// Sized (and the surrounding gaps kept tight) so the card's fixed 660px holds
+// its content without scrolling — see the height note below.
 const GAUGE_SIZE = 176;
 
 export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
@@ -110,9 +109,9 @@ export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
   const contributions = computeContributions(metrics);
 
   return (
-    // Hard h-[660px] (not min-h) so this card is *exactly* the same size as
-    // PreviouslyPublished, which is also fixed at 660px — a min-height only
-    // guarantees "at least", and the two drifted apart under real content.
+    // Hard h-[660px] (not min-h): CampaignAnalyticsView pairs this card with
+    // the KPI grid, whose three rows split this height evenly — a min-height
+    // only guarantees "at least", and the pair drifted apart under content.
     // 660px, not 600: this card's fixed content (title + 176px gauge + label
     // + "Contribution breakdown" heading + 5 metric rows + formula line +
     // card padding) measures to ~636px on its own, so 600 clipped it into a

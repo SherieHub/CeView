@@ -86,8 +86,8 @@ describe('CampaignAnalyticsView', () => {
   it('renders ingestion form plus evidence and still no computed PES/trends when no campaign has been submitted', async () => {
     renderView();
 
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
-    
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
+
     // Check evidence section is rendered
     expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
     expect(screen.getByText('Statistical lift')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('CampaignAnalyticsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /generate campaign analytics/i }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('All fields must be non-negative numbers.');
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
   });
 
   it('transitions to the full view after a valid submission', async () => {
@@ -125,7 +125,7 @@ describe('CampaignAnalyticsView', () => {
     vi.useRealTimers();
     await waitFor(() => expect(screen.getByTestId('pes-trend-probe')).toBeInTheDocument());
 
-    expect(screen.queryByText(/log this week.s campaign performance/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/log campaign performance/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
     
     // Check evidence section is still rendered
@@ -218,7 +218,7 @@ describe('CampaignAnalyticsView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /new submission/i }));
 
-    expect(screen.getByText(/log this week.s campaign performance/i)).toBeInTheDocument();
+    expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
     
     // Check evidence section is still rendered
