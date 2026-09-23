@@ -99,6 +99,7 @@ const devPreviewRoutes = import.meta.env.DEV
         children: [
           { path: 'content', element: <ContentPreviewScreen /> },
           { path: 'calendar', element: <CalendarView /> },
+          { path: 'performance', element: <CampaignAnalyticsView /> },
         ],
       },
     ]

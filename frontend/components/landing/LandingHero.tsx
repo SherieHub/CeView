@@ -1,92 +1,95 @@
 /**
- * Hero — the app's dark chrome gradient (the same surface as the login brand
- * panel and the sidebar), with the opportunity line as its visual: steady
- * traveler interest warming to orange where a demand window opens.
+ * Hero + market-coverage strip.
+ *
+ * Asymmetric: the promise on the left, the real product on the right — the
+ * dashboard as it looks for a sample resort, with three floating cards whose
+ * values are read straight off that screenshot (no invented metrics).
  */
-import { ArrowRight, MapPin, Play, Zap } from 'lucide-react';
-import { CTA, HERO, LINKS, MARKETS, isPlaceholder } from './landingContent';
-import { OPPORTUNITY_ASPECT, OPPORTUNITY_LAYOUT, OpportunityLine } from './landingParts';
+import { CalendarClock, CircleCheck, Globe, Target, TrendingUp } from 'lucide-react';
+import dashboardShot from './assets/dashboard.webp';
+import { HERO, MARKETS, MARKET_STRIP } from './landingContent';
+import { BrowserFrame, CtaPair, RouteLines } from './landingParts';
 
-/**
- * "Watch Product Walkthrough" — until a video URL is confirmed it scrolls to
- * the in-page product preview rather than pointing at a link that doesn't exist.
- */
-export function walkthroughHref(): { href: string; external: boolean } {
-  return isPlaceholder(LINKS.demoVideo)
-    ? { href: '#product', external: false }
-    : { href: LINKS.demoVideo, external: true };
-}
+const FLOATER_ICON = { coral: TrendingUp, teal: Target, navy: CalendarClock } as const;
 
 export default function LandingHero() {
-  const walkthrough = walkthroughHref();
-
   return (
-    <section className="lp-hero" id="top" aria-labelledby="lp-hero-title">
-      <div className="lp-hero-glow" aria-hidden="true" />
-      <div className="lp-wrap lp-hero-grid">
-        <div className="lp-hero-copy">
-          <p className="lp-eyebrow lp-eyebrow--inverse lp-rise" style={{ animationDelay: '60ms' }}>
-            {HERO.eyebrow}
-          </p>
-          <h1 id="lp-hero-title" className="lp-hero-title lp-rise" style={{ animationDelay: '140ms' }}>
-            {HERO.title}
-          </h1>
-          <p className="lp-hero-lede lp-rise" style={{ animationDelay: '220ms' }}>
-            {HERO.lede}
-          </p>
-
-          <div className="lp-hero-ctas lp-rise" style={{ animationDelay: '300ms' }}>
-            <a href="#request-demo" className="btn-primary lp-btn-lg">
-              {CTA.primary} <ArrowRight size={18} aria-hidden="true" />
-            </a>
-            <a
-              href={walkthrough.href}
-              className="btn-outline btn-outline--inverse lp-btn-lg"
-              {...(walkthrough.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-            >
-              <Play size={16} aria-hidden="true" /> {CTA.secondary}
-            </a>
-          </div>
-
-          <p className="lp-hero-note lp-rise" style={{ animationDelay: '380ms' }}>
-            {HERO.reassurance}
-          </p>
+    <>
+      <section className="lp-hero" id="top" aria-labelledby="lp-hero-title">
+        <div className="lp-hero-bg" aria-hidden="true">
+          <span className="lp-orb lp-orb--cyan" />
+          <span className="lp-orb lp-orb--mint" />
+          <span className="lp-dotgrid" />
         </div>
 
-        <figure className="lp-hero-card lp-rise" style={{ animationDelay: '260ms' }}>
-          <div className="lp-hero-card-head">
-            <div>
-              <p className="lp-card-kicker">Traveler interest · Japan</p>
-              <p className="lp-card-title">Demand window ahead</p>
+        <div className="lp-wrap lp-hero-grid">
+          <div className="lp-hero-copy">
+            <p className="lp-eyebrow lp-rise" style={{ animationDelay: '40ms' }}>
+              <span className="lp-signal-dot" aria-hidden="true" />
+              {HERO.eyebrow}
+            </p>
+            <h1 id="lp-hero-title" className="lp-h1 lp-rise" style={{ animationDelay: '110ms' }}>
+              {HERO.titleLead} <span className="lp-accent-text">{HERO.titleAccent}</span>
+            </h1>
+            <p className="lp-hero-lede lp-rise" style={{ animationDelay: '180ms' }}>
+              {HERO.lede}
+            </p>
+            <div className="lp-rise" style={{ animationDelay: '250ms' }}>
+              <CtaPair />
             </div>
-            <span className="chip chip--attention">
-              <Zap aria-hidden="true" /> Opportunity
-            </span>
+            <ul className="lp-hero-trust lp-rise" style={{ animationDelay: '320ms' }}>
+              {HERO.trust.map((t) => (
+                <li key={t}>
+                  <CircleCheck size={16} aria-hidden="true" />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="lp-oline-frame" style={{ aspectRatio: OPPORTUNITY_ASPECT }}>
-            <OpportunityLine />
-            <span className="lp-oline-tag lp-oline-tag--past" style={{ right: `${100 - OPPORTUNITY_LAYOUT.nowPct}%` }}>
-              Past 12 weeks
-            </span>
-            <span className="lp-oline-tag lp-oline-tag--next" style={{ left: `${OPPORTUNITY_LAYOUT.nowPct}%` }}>
-              Next 12 weeks
-            </span>
-            <span className="lp-oline-flag" style={{ left: `${OPPORTUNITY_LAYOUT.windowPct}%` }}>
-              Window opens
-            </span>
+          <div className="lp-hero-visual lp-rise" style={{ animationDelay: '200ms' }}>
+            <RouteLines className="lp-hero-routes" />
+            <span className="lp-hero-shape" aria-hidden="true" />
+            <BrowserFrame src={dashboardShot} alt={HERO.shotAlt} eager />
+            {HERO.floaters.map((f, i) => {
+              const Icon = FLOATER_ICON[f.tone];
+              return (
+                <div key={f.label} className="lp-floater" data-slot={i} data-tone={f.tone} aria-hidden="true">
+                  <span className="lp-floater-icon">
+                    <Icon size={16} />
+                  </span>
+                  <span className="lp-floater-text">
+                    <span className="lp-floater-label">{f.label}</span>
+                    <span className="lp-floater-value">{f.value}</span>
+                    <span className="lp-floater-note">{f.note}</span>
+                  </span>
+                </div>
+              );
+            })}
+            <p className="lp-shot-note">Real CeView dashboard · sample business and data</p>
           </div>
+        </div>
+      </section>
 
-          <ul className="lp-hero-markets" aria-label="Markets CeView tracks">
+      <section className="lp-markets" aria-label="Markets CeView monitors">
+        <div className="lp-wrap lp-markets-inner">
+          <p className="lp-markets-label">{MARKET_STRIP.label}</p>
+          <ul className="lp-markets-list">
             {MARKETS.map((m) => (
-              <li key={m}>
-                <MapPin size={14} aria-hidden="true" /> {m}
+              <li key={m.code} className="lp-market">
+                <span className="lp-market-globe" aria-hidden="true">
+                  <Globe size={18} />
+                </span>
+                <span className="lp-market-name">{m.name}</span>
+                <span className="lp-market-code" aria-hidden="true">
+                  {m.code}
+                </span>
               </li>
             ))}
           </ul>
-          <figcaption className="lp-illustrative">Illustrative example</figcaption>
-        </figure>
-      </div>
-    </section>
+          <p className="lp-markets-note">{MARKET_STRIP.note}</p>
+        </div>
+      </section>
+    </>
   );
 }
