@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, TrendingUp, Target, Megaphone, ShieldCheck, ChevronDown, CheckCircle2, Globe, MapPin, ArrowRight, Menu, X, Bell } from 'lucide-react';
+import { Sparkles, TrendingUp, Target, Megaphone, ShieldCheck, ChevronDown, CheckCircle2, Globe, MapPin, ArrowRight, Menu, X, Bell, Activity } from 'lucide-react';
 
 const LandingPage: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
