@@ -31,8 +31,8 @@ export const MOCK_LINKS: AttributionLink[] = [
   {
     linkId: '8f1c0a42-1f3c-4a1e-9c7d-2b1e4a6d9f01',
     slug: 'k3f9dqmt',
-    category: 'Resort',
-    targetMarket: 'KR',
+    category: 'Accommodation & Staycation',
+    targetMarket: 'korea',
     // Tier 1: pointed at the operator's own booking page.
     destinationUrl: 'https://kasabeach.ph/book',
     hosted: false,
