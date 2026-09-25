@@ -8,9 +8,11 @@ import { test, expect } from '@playwright/test';
 // workflow). Pattern to copy: navigate, wait for a real UI element that only
 // appears once data has loaded, and assert no server error banner shows.
 //
-// The whole app is gated behind login (AuthGate -> LoginPage), so every
-// authenticated flow has to log in first. Credentials below are one of the 9
-// seeded demo operator accounts documented in
+// The authenticated app is gated behind login (AuthGate -> LoginPage); "/"
+// itself is the public marketing LandingPage (RedirectIfAuthenticated bounces
+// a logged-in visitor from there to /dashboard, and from /login too). Every
+// authenticated flow below still has to log in first. Credentials below are
+// one of the 9 seeded demo operator accounts documented in
 // backend/spring-boot/src/main/resources/db/migration/SEED_CREDENTIALS.md
 // (seed/demo only, never used in production — safe to hardcode here).
 const SEED_EMAIL = 'ramon.delacruz@ceview.local';
@@ -20,10 +22,14 @@ const SEED_PASSWORD = 'MoalboalDive2024!';
 // pass against the app as it stands today — they exercise Login/AuthGate,
 // which the Foundation — Shell & Routing card does not remove, only sits
 // behind a router. They are the pre-existing baseline this file preserves,
-// not new work for that card.
+// not new work for that card. Updated to go to /login directly rather than
+// "/": that used to land on the sign-in form too, back when "/" had no
+// public content of its own and a routing bug sent every unauthenticated
+// visit through AuthGate's redirect regardless (see the "landing page"
+// test below for that route itself).
 test.describe('Shell & Routing — existing coverage', () => {
-  test('unauthenticated visit shows the login page, not the app', async ({ page }) => {
-    await page.goto('/');
+  test('unauthenticated visit to /login shows the login page, not the app', async ({ page }) => {
+    await page.goto('/login');
 
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
     await expect(page.getByPlaceholder('you@example.com')).toBeVisible();
@@ -38,7 +44,7 @@ test.describe('Shell & Routing — existing coverage', () => {
   });
 
   test('login with seeded credentials loads homepage, sidebar renders, and Performance tab navigates without a server error', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
 
@@ -46,8 +52,9 @@ test.describe('Shell & Routing — existing coverage', () => {
     await page.getByPlaceholder('••••••••').fill(SEED_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Post-login lands on /dashboard (App.tsx's index route) inside AppShell.
-    // Topbar carries no route title (Topbar.tsx's own header comment: that
+    // Post-login lands on /dashboard: LoginPage's own submit handler calls
+    // navigate('/dashboard', { replace: true }) directly, not via a router
+    // fallback. Topbar carries no route title (Topbar.tsx's own header comment: that
     // moved to each screen's own PageHead <h1>, and Topbar renders none of
     // its own) — the sidebar's aria-current="page" on the matching nav item
     // is the reliable, router-driven "app has loaded on this route" signal.
@@ -61,10 +68,27 @@ test.describe('Shell & Routing — existing coverage', () => {
     // no backend call surfaced a fatal error on this tab.
     await expect(page.getByRole('button', { name: 'Dismiss' })).toHaveCount(0);
   });
+
+  // Locks in the fix for the routing bug where AuthGate's nested { index: true }
+  // route matched bare "/" too (every layout route above it — AuthGate,
+  // ProfileCompletionGate, ProfileGate, the AppShell providers wrapper — is
+  // pathless) and won the match over the explicit `path: '/'` LandingPage
+  // route, so an unauthenticated visit to "/" redirected straight to /login
+  // and the landing page was never reachable. See App.tsx's router comment.
+  test('unauthenticated visit to / shows the public landing page, not the login form', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { name: /traveler demand is heading/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Sign In' }).first().click();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
+  });
 });
 
 async function loginAsSeedOperator(page: import('@playwright/test').Page) {
-  await page.goto('/');
+  await page.goto('/login');
   await page.getByPlaceholder('you@example.com').fill(SEED_EMAIL);
   await page.getByPlaceholder('••••••••').fill(SEED_PASSWORD);
   await page.getByRole('button', { name: 'Sign In' }).click();

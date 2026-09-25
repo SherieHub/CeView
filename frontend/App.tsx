@@ -23,6 +23,7 @@ import BusinessProfileSettings from './components/settings/BusinessProfileSettin
 import PlatformsSettings from './components/settings/PlatformsSettings';
 import WorkspaceSettings from './components/settings/WorkspaceSettings';
 import { DEMO_DRAFT, DEMO_BOARD_POSTS, DEMO_TARGET } from './components/module-3/3.1-content-studio/previewFixtures';
+import LandingPage from './components/LandingPage';
 
 /**
  * DEV-ONLY preview routes.
@@ -98,6 +99,7 @@ const devPreviewRoutes = import.meta.env.DEV
         children: [
           { path: 'content', element: <ContentPreviewScreen /> },
           { path: 'calendar', element: <CalendarView /> },
+          { path: 'performance', element: <CampaignAnalyticsView /> },
         ],
       },
     ]
@@ -168,6 +170,7 @@ function DashboardPreviewScreen() {
  */
 const router = createBrowserRouter([
   ...devPreviewRoutes,
+  { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
   {
     element: <AuthGate />,
@@ -197,8 +200,17 @@ const router = createBrowserRouter([
                     </ConnectionsStoreProvider>
                   </PostStoreProvider>
                 ),
+                // No `{ index: true, ... }` route here on purpose. AuthGate,
+                // ProfileCompletionGate, ProfileGate and this providers-wrapper
+                // are all pathless layout routes, so an index child here would
+                // match the bare "/" path too — colliding with the explicit
+                // `{ path: '/', element: <RedirectIfAuthenticated><LandingPage />... }`
+                // route above and winning the match. That used to send every
+                // unauthenticated visit to "/" straight through AuthGate's own
+                // redirect to /login, so the landing page was never reachable.
+                // RedirectIfAuthenticated on the "/" route already sends a
+                // logged-in visitor to /dashboard, so nothing here needs to.
                 children: [
-                  { index: true, element: <Navigate to="/dashboard" replace /> },
                   { path: 'performance', element: <CampaignAnalyticsView /> },
                   { path: 'dashboard', element: <DashboardView /> },
                   { path: 'content', element: <ContentStudioView /> },
