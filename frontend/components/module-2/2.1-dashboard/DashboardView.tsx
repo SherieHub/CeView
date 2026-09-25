@@ -31,6 +31,7 @@ import SignalSummary from './SignalSummary';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
 import { useJustOnboardedTutorial } from './useJustOnboardedTutorial';
 import TutorialModal from '../../shared/TutorialModal';
+import EnquiryInbox from '../../module-4/enquiries/EnquiryInbox';
 
 interface DashboardViewProps {
   /** Dev-preview only — pins the state machine to one mode. */
@@ -150,6 +151,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           now={new Date()}
         />
       )}
+
+      {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
 
       <div className="dash-grid">
         <AlertFeed

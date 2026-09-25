@@ -249,7 +249,7 @@ through to the Performance rollup.
 | `ClickTrackingService` | Bot filtering, click persistence, destination URL assembly |
 | `BotFilter` | User-agent deny-list (`facebookexternalhit`, `TikTokBot`, `Bytespider`, headless signatures) plus a same-`ip_hash`-same-slug debounce. Deliberately conservative: over-filtering loses evidence, under-filtering inflates every number on the Performance screen |
 | `RedirectController` | `GET /r/{slug}` — public |
-| `EnquiryService` / `EnquiryController` | Tier 2 submission; writes enquiry + `LINK` redemption atomically, and exposes a tenant-scoped `GET /api/attribution/enquiries` for the operator — see the note below |
+| `EnquiryService` / `EnquiryController` | Tier 2 submission; writes enquiry + `LINK` redemption atomically. The JWT-protected `GET /api/attribution/enquiries` reads the existing enquiry table using its own DTO, surfaced beside dashboard notifications. Public `GET /api/public/attribution/enquiries/context?cv=...` returns only the business name for the `/enquiry` form after click validation; no generic notification row is written. |
 | `LinkAttributionQueryService` | Per-creative rollup: clicks, conversions, revenue grouped by `external_ad_id`, with an explicit untagged bucket |
 | `AttributionLinkController` | The authenticated endpoints below |
 
