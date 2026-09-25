@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Image as ImageIcon, PenLine } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
+import AdUrlBlock from './AdUrlBlock';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
 import type { VisualGuideStatus } from './CampaignBriefDrawer';
 import CompliancePanel from './CompliancePanel';
@@ -28,7 +29,7 @@ import StudioStepRail from './StudioStepRail';
 import { STUDIO_STEPS } from './studioSteps';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
 import type { AuditState, PublishDraftState, StudioPlatformId } from './contentStudioTypes';
-import type { ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
+import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
 // (see docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md
 // §Non-goals). This board stays fixture-backed until that lands.
@@ -86,6 +87,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const [content, setContent] = useState<ContentResponse | null>(null);
   const [contentError, setContentError] = useState<unknown | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
+  const [attributionLink, setAttributionLink] = useState<AttributionLink | null>(null);
 
   // Fetched here rather than inside the drawer: the view owns the request so a
   // future consumer does not trigger a second one for the same payload.
@@ -198,6 +200,30 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
 
     return () => { cancelled = true; };
   }, [target, profile, marketTrend]);
+
+  useEffect(() => {
+    const category = target?.alert.category;
+    const windowStart = target?.alert.windowOpenDate;
+    const targetMarket = target?.market.id;
+    setAttributionLink(null);
+    if (!category || !windowStart || !targetMarket) return;
+
+    let cancelled = false;
+    apiClient.attributionLinks.list()
+      .then((links) => {
+        if (cancelled) return;
+        const alertWindow = new Date(windowStart).getTime();
+        const match = links.find((link) =>
+          link.category === category
+          && link.targetMarket.toLowerCase() === targetMarket.toLowerCase()
+          && new Date(link.windowStart).getTime() === alertWindow,
+        );
+        setAttributionLink(match ?? null);
+      })
+      .catch(() => { if (!cancelled) setAttributionLink(null); });
+
+    return () => { cancelled = true; };
+  }, [target]);
 
   // A different platform has a different option set, so a stale index would
   // highlight the wrong card.
@@ -334,6 +360,8 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
               content={content}
               loading={contentLoading}
             />
+
+            <AdUrlBlock link={attributionLink} onLinkChange={setAttributionLink} />
 
             <div id={STEP_ATTACH.sectionId} className="studio-section studio-attach">
               <PublishComposer

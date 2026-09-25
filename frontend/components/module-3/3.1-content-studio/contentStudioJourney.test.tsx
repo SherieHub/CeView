@@ -54,6 +54,7 @@ vi.mock('../../../services/apiClient', () => ({
     content: { generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))) },
     creativeDirection: { generate: vi.fn(() => Promise.resolve({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } })) },
     compliance: { omcsAnalyze: vi.fn(() => Promise.resolve(MOCK_OMCS)) },
+    attributionLinks: { list: vi.fn(() => Promise.resolve([])) },
   },
 }));
 

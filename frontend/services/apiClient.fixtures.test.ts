@@ -67,4 +67,15 @@ describe('apiClient (fixture mode)', () => {
     const connections = await apiClient.connections.list();
     expect(connections.length).toBeGreaterThan(0);
   });
+
+  it('attributionLinks methods return their fixture shapes without a network call', async () => {
+    const { apiClient } = await import('./apiClient');
+    const { MOCK_LINKS, mockLinkPerformance } = await import('./fixtures/attributionLinks');
+
+    await expect(apiClient.attributionLinks.list()).resolves.toEqual(MOCK_LINKS);
+    await expect(apiClient.attributionLinks.setDestination(MOCK_LINKS[0].linkId, null))
+      .resolves.toMatchObject({ linkId: MOCK_LINKS[0].linkId, hosted: true, destinationUrl: null });
+    await expect(apiClient.attributionLinks.performance(MOCK_LINKS[0].linkId))
+      .resolves.toEqual(mockLinkPerformance(MOCK_LINKS[0].linkId));
+  });
 });
