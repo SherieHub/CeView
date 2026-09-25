@@ -17,7 +17,7 @@ import { MOCK_CREATIVE_DIRECTION } from '../../../services/fixtures/creativeDire
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { ApiError } from '../../../services/apiError';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import type { BusinessProfile, DemandAlert, Market, PlatformId } from '../../../types';
+import type { AttributionLink, BusinessProfile, DemandAlert, Market, PlatformId } from '../../../types';
 import type { PublishDraftState } from './contentStudioTypes';
 
 const BASE_PROFILE: BusinessProfile = {
@@ -55,6 +55,16 @@ const SLOW = { timeout: 8000 } as const;
  */
 const ALERT: DemandAlert = MOCK_NOTIFICATIONS.find((n) => n.category === 'Coastal & Island')!;
 const MARKET: Market = MOCK_MARKETS[0];
+const ATTRIBUTION_LINK: AttributionLink = {
+  linkId: 'link-1', slug: 'k3f9dqmt', category: 'Coastal & Island', targetMarket: 'korea',
+  destinationUrl: null, hosted: true,
+  windowStart: '2026-10-19T00:00:00+08:00', windowEnd: '2026-11-02T00:00:00+08:00',
+  urls: {
+    linkUrl: 'https://ceview.example/r/k3f9dqmt',
+    metaAdUrl: 'https://ceview.example/r/k3f9dqmt?ad={{ad.id}}',
+    tiktokAdUrl: 'https://ceview.example/r/k3f9dqmt?ad=__CID__',
+  },
+};
 
 vi.mock('../../../services/profileContext', () => ({
   useProfile: () => ({ profile: BASE_PROFILE, setProfile: vi.fn(), isLoading: false }),
@@ -66,6 +76,7 @@ const approveMock = vi.fn();
 const notificationsListMock = vi.fn();
 const marketsForCategoryMock = vi.fn();
 const omcsAnalyzeMock = vi.fn();
+const attributionLinksListMock = vi.fn();
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
@@ -79,6 +90,9 @@ vi.mock('../../../services/apiClient', () => ({
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
     compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
+    attributionLinks: {
+      list: (...args: unknown[]) => attributionLinksListMock(...args),
+    },
   },
 }));
 
@@ -126,6 +140,7 @@ beforeEach(() => {
   notificationsListMock.mockReset().mockResolvedValue([]);
   marketsForCategoryMock.mockReset().mockResolvedValue(MOCK_MARKETS);
   omcsAnalyzeMock.mockReset().mockResolvedValue(MOCK_OMCS);
+  attributionLinksListMock.mockReset().mockResolvedValue([]);
   // Explicit per-case rather than inherited: `mockTarget` is module-level, and
   // leaving it set by whichever case ran last made every assertion below
   // depend on file order. Cases that want the picker set it back to null.
@@ -170,6 +185,23 @@ function renderStudio() {
 }
 
 describe('ContentStudioView — generate request', () => {
+  it('shows the Ad URL block only for the matching alert window tuple', async () => {
+    mockTarget = {
+      alert: { ...ALERT, windowOpenDate: ATTRIBUTION_LINK.windowStart },
+      market: { ...MARKET, id: 'korea' },
+    };
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    attributionLinksListMock.mockResolvedValue([
+      { ...ATTRIBUTION_LINK, windowStart: '2026-09-01T00:00:00+08:00' },
+      ATTRIBUTION_LINK,
+    ]);
+
+    renderStudio();
+
+    expect(await screen.findByRole('heading', { name: 'Ad URL' }, SLOW)).toBeInTheDocument();
+    expect(screen.getByText(ATTRIBUTION_LINK.urls.metaAdUrl)).toBeInTheDocument();
+  });
+
   it('builds the generate request from profile + the picked target market', async () => {
     mockTarget = { alert: ALERT, market: MARKET };
     generateMock.mockResolvedValue(buildContentResponse('groq'));

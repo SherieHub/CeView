@@ -3468,6 +3468,151 @@
     box-shadow: 0 1px 2px rgba(27, 58, 92, 0.06), var(--shadow-card-hover);
   }
 
+  /* Link attribution sits inside the composer because the generated ad copy
+     and the URL pasted beside it are one operator task. Macro URLs carry the
+     mint primary treatment; the bare link is deliberately quieter so the
+     three strings never read as interchangeable. */
+  .ad-url-block {
+    display: grid;
+    gap: var(--space-md);
+    margin-top: var(--spacing-8);
+    padding: var(--space-md);
+    border: 1px solid color-mix(in srgb, var(--color-teal-accent) 35%, transparent);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-mint-pale) 68%, var(--color-white));
+  }
+  .ad-url-head,
+  .destination-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+  .ad-url-head { justify-content: flex-start; }
+  .ad-url-icon {
+    display: grid;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: var(--radius-md);
+    background: var(--color-mint-primary);
+    color: var(--color-navy-dark);
+  }
+  .ad-url-icon svg,
+  .destination-head > svg,
+  .ad-url-row button svg {
+    width: 18px;
+    height: 18px;
+  }
+  .ad-url-list {
+    display: grid;
+    gap: 12px;
+  }
+  .ad-url-row {
+    display: grid;
+    grid-template-columns: minmax(140px, 0.85fr) minmax(0, 2fr) auto;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    border: 1px solid color-mix(in srgb, var(--color-mint-primary) 58%, transparent);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+  }
+  .ad-url-row[data-secondary='true'] {
+    border-color: color-mix(in srgb, var(--color-gray-light) 72%, transparent);
+    background: color-mix(in srgb, var(--color-off-white) 80%, var(--color-white));
+    box-shadow: none;
+  }
+  .ad-url-label {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+  .ad-url-label strong {
+    font-family: var(--font-body);
+    color: var(--color-text-heading);
+    font-size: 0.875rem;
+  }
+  .ad-url-label span {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  .ad-url-row code {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--color-navy-primary);
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  .ad-url-row button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ad-url-instruction {
+    max-width: none;
+    margin: 0;
+    padding: 12px var(--space-sm);
+    border-left: 3px solid var(--color-coral-cta);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: color-mix(in srgb, var(--color-sand) 24%, var(--color-white));
+    color: var(--color-text-heading);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .ad-url-instagram { margin: -12px 0 0; }
+  .destination-control {
+    display: grid;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid color-mix(in srgb, var(--color-gray-light) 65%, transparent);
+  }
+  .destination-head > svg { color: var(--color-teal-accent); }
+  .destination-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .destination-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--color-gray-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    color: var(--color-text-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .destination-option:has(input:checked) {
+    border-color: var(--color-mint-primary);
+    background: var(--color-mint-pale-alt);
+  }
+  .destination-option input { accent-color: var(--color-teal-accent); }
+  .destination-field {
+    display: grid;
+    gap: 10px;
+    color: var(--color-text-heading);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .destination-error {
+    max-width: none;
+    margin: 0;
+    color: var(--color-critical-text);
+    font-size: 0.875rem;
+  }
+  .destination-control > button { justify-self: start; }
+  @container (max-width: 700px) {
+    .ad-url-row { grid-template-columns: 1fr auto; }
+    .ad-url-row code { grid-column: 1 / -1; grid-row: 2; }
+    .destination-options { grid-template-columns: 1fr; }
+  }
+
   /* Target-market selector, sitting in PageHead's actions slot where the
      dashboard puts its score badge and refresh button. Stacked rather than
      inline: the actions row is centre-aligned, and a label to the left of a

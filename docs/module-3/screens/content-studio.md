@@ -89,6 +89,32 @@ shot, warm low-contrast filter, 4:5 portrait ratio…"; TikTok: "9:16 vertical, 
   6. Audit has run
   7. Audit status is `Pass`
 
+### Ad URL block (`AdUrlBlock`)
+
+For a Content Studio session opened from a real demand-window alert, the composer loads the
+authenticated operator's attribution links and selects the row with the same stable window tuple:
+category, target market, and window start. It deliberately does not treat `demandAlertId` as a
+durable key because forecasting refreshes alert rows while a link may already be live in a paid ad.
+
+The block renders three strings distinctly and in this order:
+
+1. the bare redirect link, visually secondary, for link-in-bio or other non-creative-specific use;
+2. the Meta macro URL, with its own copy button; and
+3. the TikTok macro URL, with its own copy button.
+
+Each copy button writes its own complete string to the clipboard. The platform rows are visually
+primary, and the block explicitly tells the operator to use the ad URL in Ads Manager's URL
+parameters field rather than in a caption. It also states that Instagram captions do not linkify.
+
+The adjacent destination control switches the same link between the operator's absolute HTTP(S)
+page and CeView's hosted booking form. The backend response replaces the displayed link state after
+save. Unsafe or relative URLs produce a visible error and are not submitted.
+
+If the selected content target has no demand-window timestamp, or no link matches the window tuple,
+the block renders nothing. Ad-hoc generation must not show a blank or disabled attribution surface.
+Operator instructions, including the requirement to preserve Meta's double braces, live in
+[`LINK_ATTRIBUTION_SETUP.md`](../../../LINK_ATTRIBUTION_SETUP.md).
+
 ### Compliance audit (`CompliancePanel`, wraps existing `ComplianceGauge`)
 
 - **Not run yet** — empty state prompting to stage a caption, upload a pubmat, and tick the agreement.
@@ -120,6 +146,8 @@ Publishing appends one post per selected platform to the shared post store (toda
 | Call | When | Endpoint |
 |---|---|---|
 | content generation (on entry, scoped to the targeted market) | screen mount | `POST /api/content/generate` |
+| attribution links | alert-derived target changes | `GET /api/attribution/links` |
+| destination mode | operator saves the control beside the URLs | `PATCH /api/attribution/links/{linkId}` |
 | `apiClient` creative direction | visual direction card | `POST /api/creative-direction/generate/{profileId}` |
 | compliance audit | agreement checkbox ticked | `POST /api/compliance/evaluate` (multipart, with pubmat) |
 | publish | Publish button | see [`backend/PublishingController.md`](../backend/PublishingController.md) — **specified, not yet implemented** |
