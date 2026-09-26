@@ -1,2 +1,0 @@
-ALTER TABLE tbl_business_profile
-    ADD COLUMN IF NOT EXISTS is_reference BOOLEAN NOT NULL DEFAULT FALSE;
