@@ -31,8 +31,8 @@ export const MOCK_LINKS: AttributionLink[] = [
   {
     linkId: '8f1c0a42-1f3c-4a1e-9c7d-2b1e4a6d9f01',
     slug: 'k3f9dqmt',
-    category: 'Resort',
-    targetMarket: 'KR',
+    category: 'Accommodation & Staycation',
+    targetMarket: 'korea',
     // Tier 1: pointed at the operator's own booking page.
     destinationUrl: 'https://kasabeach.ph/book',
     hosted: false,
@@ -89,6 +89,14 @@ const MOCK_CREATIVES: CreativePerformance[] = [
     conversions: 1,
     revenue: 18400,
   },
+  {
+    externalAdId: '120216',
+    adLabel: 'Unclicked creative — KR',
+    untagged: false,
+    clicks: 0,
+    conversions: 0,
+    revenue: 0,
+  },
 ];
 
 export function mockLinks(): AttributionLink[] {
@@ -129,4 +137,51 @@ export function mockUnconvertedClicks(): UnconvertedClick[] {
       clickedAt: '2026-10-21T08:02:00+08:00',
     },
   ];
+}
+
+export function mockUntaggedOnlyPerformance(linkId: string): LinkPerformance {
+  return {
+    linkId,
+    slug: 'untagged',
+    totalClicks: 10,
+    totalConversions: 1,
+    totalRevenue: 500,
+    creatives: [{
+      externalAdId: null,
+      adLabel: 'Organic / untagged',
+      untagged: true,
+      clicks: 10,
+      conversions: 1,
+      revenue: 500,
+    }],
+  };
+}
+
+export function mockEmptyPerformance(linkId: string): LinkPerformance {
+  return {
+    linkId,
+    slug: 'empty123',
+    totalClicks: 0,
+    totalConversions: 0,
+    totalRevenue: 0,
+    creatives: [],
+  };
+}
+
+export function mockZeroClicksPerformance(linkId: string): LinkPerformance {
+  return {
+    linkId,
+    slug: 'zero1234',
+    totalClicks: 0,
+    totalConversions: 0,
+    totalRevenue: 0,
+    creatives: [{
+      externalAdId: '120216',
+      adLabel: 'Unclicked creative — KR',
+      untagged: false,
+      clicks: 0,
+      conversions: 0,
+      revenue: 0,
+    }],
+  };
 }

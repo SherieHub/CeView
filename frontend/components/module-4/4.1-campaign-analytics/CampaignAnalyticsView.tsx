@@ -36,6 +36,7 @@ import EfficiencyTrendChart from './EfficiencyTrendChart';
 import CostTrendChart from './CostTrendChart';
 import AiActionPlan from './AiActionPlan';
 import PreviouslyPublished from './PreviouslyPublished';
+import AttributionEvidenceSection from './AttributionEvidenceSection';
 
 /**
  * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value} per
@@ -75,6 +76,7 @@ const WEEK_OPTIONS: (4 | 8)[] = [4, 8];
 const SECTIONS = [
   { id: 'perf-score', label: 'Score' },
   { id: 'perf-plan', label: 'Action plan' },
+  { id: 'perf-attribution', label: 'Attribution' },
   { id: 'perf-funnel', label: 'Funnel' },
   { id: 'perf-trends', label: 'Trends' },
   { id: 'perf-posts', label: 'Published posts' },
@@ -211,12 +213,16 @@ export default function CampaignAnalyticsView() {
 
   if (!campaign) {
     return (
-      <div className="perf-screen perf-screen--entry">
+      <div className="perf-screen perf-screen--entry flex flex-col gap-8">
         <PageHead
           title="Log campaign performance"
           subtitle="Sync what your ad platforms already know, then add the figures only you have — revenue, bookings, and new customers."
         />
         <IngestionForm onSubmit={handleCampaignSubmit} />
+        {/* Link evidence is readable before any weekly submission: a tracked
+            enquiry should not wait on the form. After it, so the page head
+            still introduces the form it describes. */}
+        <AttributionEvidenceSection />
       </div>
     );
   }
@@ -306,6 +312,12 @@ export default function CampaignAnalyticsView() {
             </p>
           </div>
         ) : null}
+      </section>
+
+      {/* After the action plan, not before it: evidence of which ad worked
+          informs the plan but must not push it down the page. */}
+      <section id="perf-attribution" className="perf-section" aria-label="Attribution evidence">
+        <AttributionEvidenceSection />
       </section>
 
       {/* Full width: the flow needs horizontal room to read left-to-right,

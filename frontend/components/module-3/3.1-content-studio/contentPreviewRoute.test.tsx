@@ -45,6 +45,7 @@ vi.mock('../../../services/apiClient', () => ({
     },
     markets: { forCategory: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
     content: { generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))) },
+    attributionLinks: { list: vi.fn(() => Promise.resolve([])) },
     creativeDirection: {
       generate: vi.fn(() => Promise.resolve({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } })),
     },
