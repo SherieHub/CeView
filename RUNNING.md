@@ -282,8 +282,21 @@ dump and the code drift apart silently.
 
 ## 6. Authentication & seeded demo accounts
 
-The app requires login — every screen is gated behind a Sign In page, and
-every `/api/**` backend route requires a valid JWT.
+Every operator-facing screen requires Sign In. The traveller enquiry page,
+`/enquiry?cv=<clickId>`, is public and has no login prompt.
+
+Backend `/api/**` routes require a valid JWT except these deliberate public paths:
+
+- `/api/auth/**` establishes identity through credentials or verified Google tokens.
+- `/api/ad-connections/*/callback` resolves the operator from a validated OAuth
+  state token; the provider's browser redirect does not carry a JWT header.
+- `/api/public/attribution/**` resolves the business from a valid, unused click id
+  whose link is still inside its attribution window. The context read returns only
+  the business name; submission returns only a receipt acknowledgement.
+
+`/r/**` sits outside `/api` and is public by design. Track 2 resolves the business
+through a random link slug and captures the click. Operator enquiry reads at
+`GET /api/attribution/enquiries` remain JWT-protected and tenant-scoped.
 
 **9 realistic demo MSME operator accounts** are seeded automatically by
 Flyway (`V2__module1_profile_multi_category.sql`) on both Postgres and H2,
@@ -315,8 +328,8 @@ profile instead of pre-seeded data.
 - Logging out and back in as a *different* seeded operator shows *different*
   data — no cross-operator leakage.
 - `curl http://localhost:8080/api/business-profile` **without** an
-  `Authorization` header returns `401` — the API is genuinely locked down,
-  not just the frontend UI.
+  `Authorization` header returns `401`. The operator enquiry list must also return
+  `401` without a token; the public enquiry endpoints must not.
 
 ### Google Sign-In setup (optional)
 
@@ -370,6 +383,26 @@ With the backend (Path A or B) and frontend both running:
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
+6. In a private browser window, open
+   `http://localhost:3001/enquiry?cv=<valid-click-id>`. Use a click captured by
+   Track 2, or seed a click for an active link in the local database while Track 2
+   is unavailable. Confirm the business name and enquiry form appear without
+   signing in. Submit a name and contact, then check the confirmation. Opening
+   `/enquiry` without `cv` must show a plain expired-link message.
+7. Sign in as the receiving operator and open **Dashboard > Traveller enquiries**.
+   Check the compact cards, search by name or contact, and use Next after six
+   enquiries to view the remaining records. A second operator must not see
+   it. Submit the same click again and verify only one enquiry and one `LINK`
+   redemption exist, with `bookings = 1` and `revenue = 0`.
+8. Verify both security boundaries without an `Authorization` header:
+   `GET /api/business-profile` and `GET /api/attribution/enquiries` return `401`;
+   `POST /api/public/attribution/enquiries` with `{}` returns `400`, not `401`.
+   Once Track 2 is available, `GET /r/<known-slug>` returns `302`, not `401`.
+   Check the public page at 360px width and on a phone's in-app browser.
+
+Enquiries refresh every minute while the dashboard is open, and delivery is
+in-app only. Measure how long an operator takes to notice a new enquiry during
+manual testing; email delivery remains outside this ticket.
 
 One backend-wired flow isn't clickable from the table above:
 

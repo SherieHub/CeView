@@ -11,6 +11,7 @@ import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
 import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
 import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
+import EnquiryPage from './components/module-4/enquiries/EnquiryPage';
 import { PostStoreProvider } from './services/postStore';
 import { ConnectionsStoreProvider } from './services/connectionsStore';
 import { TargetSelectionProvider } from './services/targetSelectionStore';
@@ -170,7 +171,7 @@ function DashboardPreviewScreen() {
  */
 const router = createBrowserRouter([
   ...devPreviewRoutes,
-  { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
+  { path: '/enquiry', element: <EnquiryPage /> },
   { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
   {
     element: <AuthGate />,

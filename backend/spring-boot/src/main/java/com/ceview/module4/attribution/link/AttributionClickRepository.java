@@ -18,6 +18,10 @@ public interface AttributionClickRepository extends JpaRepository<AttributionCli
      */
     Optional<AttributionClick> findByClickId(UUID clickId);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from AttributionClick c where c.clickId = :clickId")
+    Optional<AttributionClick> findByClickIdForUpdate(@Param("clickId") UUID clickId);
+
     /** Tenant-scoped variant for anything reached with a JWT. */
     Optional<AttributionClick> findByClickIdAndBusinessProfileId(UUID clickId, UUID businessProfileId);
 
