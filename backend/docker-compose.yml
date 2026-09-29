@@ -82,7 +82,10 @@ services:
       FASTAPI_BASE_URL: http://fastapi:8000
       FASTAPI_SBERT_BASE_URL: http://fastapi:8000
       FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
+      # Both required, no default: this stack runs the Postgres profile, which
+      # refuses to start without real values (issue #51). Set them in backend/.env.
+      JWT_SECRET: ${JWT_SECRET:-}
+      CEVIEW_ATTRIBUTION_IP_HASH_SALT: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:-}
       # :3012 is the dedicated port e2e/playwright.config.ts's webServer boots
       # the frontend on, specifically so an e2e run never shares a developer's
       # fixture-mode Vite server on :3001 — without it here every e2e request

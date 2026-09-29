@@ -34,8 +34,13 @@ ceview:
     # This separate timeout prevents the shared 30 s limit from killing live fetches.
     rank-markets-timeout-seconds: 90
   jwt:
-    secret: ${JWT_SECRET:dev-secret-change-me-please-32chars-min}
+    # No default outside the h2 profile: startup fails if unset (issue #51,
+    # see config/RequiredSecretsEnvironmentPostProcessor).
+    secret: ${JWT_SECRET:}
     expiry-hours: 24
+  attribution:
+    # Salt for hashing traveller IPs. Same rule as the JWT secret above.
+    ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:}
   firebase:
     # Full service-account JSON as a single env var value (not a mounted file path) —
     # matches how other secrets (e.g. GROQ_API_KEY) are handled. Left blank in local/test

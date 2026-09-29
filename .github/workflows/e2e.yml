@@ -152,6 +152,14 @@ jobs:
           echo "::error::Maven build failed after 3 attempts"
           exit 1
 
+      - name: Generate throwaway backend secrets
+        # The stack runs Spring Boot's Postgres profile, which refuses to start
+        # with missing or public dev-default secrets (issue #51). Fresh random
+        # values per run; they protect nothing beyond this CI job.
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend
         env:
@@ -248,6 +256,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - name: Generate throwaway backend secrets
+        # The stack runs Spring Boot's Postgres profile, which refuses to start
+        # with missing or public dev-default secrets (issue #51). Fresh random
+        # values per run; they protect nothing beyond this CI job.
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
 
       - name: Start backend stack
         working-directory: backend
