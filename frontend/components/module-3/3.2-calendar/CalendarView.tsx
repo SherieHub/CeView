@@ -58,7 +58,7 @@ const STATUS_META: Record<PostStatus, { label: string; bg: string; text: string;
   published:     { label: 'Published',    bg: COLORS.GREEN_LIGHT,  text: COLORS.GREEN,       dot: COLORS.GREEN },
   scheduled:     { label: 'Scheduled',    bg: '#EEF3FF',           text: COLORS.LIGHTNAVY,   dot: COLORS.LIGHTNAVY },
   draft:         { label: 'Draft',        bg: '#F1F5F9',           text: COLORS.TEXT_LIGHT,  dot: COLORS.TEXT_LIGHT },
-  peak:          { label: 'Peak Season',  bg: COLORS.GOLD_LIGHT,   text: COLORS.DARK_GOLD,   dot: COLORS.GOLD },
+  peak:          { label: 'Peak Season',  bg: COLORS.GOLD_LIGHT,   text: COLORS.DARK_GOLD,   dot: COLORS.DARK_GOLD },
   'micro-season':{ label: 'Micro-Season', bg: '#EEF9FF',           text: COLORS.TEAL,        dot: COLORS.TEAL },
   opportunity:   { label: 'Opportunity',  bg: '#FFF0F0',           text: COLORS.RED,         dot: COLORS.RED },
 };

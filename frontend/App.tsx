@@ -171,6 +171,7 @@ function DashboardPreviewScreen() {
  */
 const router = createBrowserRouter([
   ...devPreviewRoutes,
+  { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/enquiry', element: <EnquiryPage /> },
   { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
   {

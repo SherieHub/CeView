@@ -35,6 +35,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # vite build only transpiles; tsc is what actually fails on a type error.
+      - name: Type check
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm run test:unit
 
