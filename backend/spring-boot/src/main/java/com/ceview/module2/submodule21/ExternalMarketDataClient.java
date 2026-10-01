@@ -62,8 +62,11 @@ public class ExternalMarketDataClient {
      * this response must invert through {@link #invertToCanonical(double)} before the
      * value is used anywhere else; nothing downstream of that call is allowed to see the
      * raw CDN direction.
+     *
+     * <p>The base ({@code ceview.external.forex.cdn-base}, default
+     * https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@) is injected so tests can
+     * point it at a dead host and exercise the last-known-good / unavailable tiers.
      */
-    private static final String CURRENCY_CDN_BASE   = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@";
     private static final String CURRENCY_CDN_SUFFIX = "/v1/currencies/php.min.json";
 
     private static final Duration TREND_TIMEOUT = Duration.ofSeconds(30); // for 12 parallel CDN calls
@@ -71,6 +74,7 @@ public class ExternalMarketDataClient {
     private final WebClient worldBankClient;
     private final WebClient forexClient;
     private final String    forexBaseUrl;   // stored so we can build absolute URIs that bypass WebClient path-normalisation
+    private final String    currencyCdnBase;
     private final MarketEconomicTrendRepository economicTrendRepo;
     private final MarketRouteReferenceRepository routeReferenceRepo;
     private final ObjectMapper objectMapper;
@@ -85,12 +89,14 @@ public class ExternalMarketDataClient {
     public ExternalMarketDataClient(
             @Value("${ceview.external.worldbank.base-url}") String worldBankUrl,
             @Value("${ceview.external.forex.base-url}") String forexUrl,
+            @Value("${ceview.external.forex.cdn-base}") String currencyCdnBase,
             MarketEconomicTrendRepository economicTrendRepo,
             MarketRouteReferenceRepository routeReferenceRepo,
             ObjectMapper objectMapper) {
         this.worldBankClient    = WebClient.builder().baseUrl(worldBankUrl).build();
         this.forexClient        = WebClient.builder().baseUrl(forexUrl).build();
         this.forexBaseUrl       = forexUrl.replaceAll("/$", ""); // strip trailing slash
+        this.currencyCdnBase    = currencyCdnBase;
         this.economicTrendRepo  = economicTrendRepo;
         this.routeReferenceRepo = routeReferenceRepo;
         this.objectMapper       = objectMapper;
@@ -145,7 +151,7 @@ public class ExternalMarketDataClient {
         try {
             // fawazahmed0/currency-api: PHP as base, returns foreign units per 1 PHP —
             // inverted below to this codebase's canonical unit before it is returned.
-            java.net.URI uri = java.net.URI.create(CURRENCY_CDN_BASE + "latest" + CURRENCY_CDN_SUFFIX);
+            java.net.URI uri = java.net.URI.create(currencyCdnBase + "latest" + CURRENCY_CDN_SUFFIX);
             Map<String, Object> response = forexClient.get()
                     .uri(uri)
                     .retrieve()
@@ -367,7 +373,7 @@ public class ExternalMarketDataClient {
                 String monthKey = firstOfMonth.format(monthFmt);
 
                 java.net.URI uri = java.net.URI.create(
-                        CURRENCY_CDN_BASE + dateStr + CURRENCY_CDN_SUFFIX);
+                        currencyCdnBase + dateStr + CURRENCY_CDN_SUFFIX);
 
                 Mono<ForexTrendPoint> mono = forexClient.get()
                         .uri(uri)
