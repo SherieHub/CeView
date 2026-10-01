@@ -24,7 +24,7 @@ test.describe('End-to-end authenticated journey', () => {
   });
 
   async function loginAsSeedOperator(page: Page) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();

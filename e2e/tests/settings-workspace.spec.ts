@@ -16,7 +16,7 @@ test.describe('Workspace', () => {
   });
 
   async function login(page: import('@playwright/test').Page) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();

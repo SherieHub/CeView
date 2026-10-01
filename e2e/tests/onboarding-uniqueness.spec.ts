@@ -11,7 +11,7 @@ test.describe('Step 5 Analysis', () => {
   }
 
   async function registerAndReachStepFive(page: any) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByRole('tab', { name: 'Create account' }).click();
     await page.getByLabel('First name').fill('E2E');
     await page.getByLabel('Last name').fill('Tester');

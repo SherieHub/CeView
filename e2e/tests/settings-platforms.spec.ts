@@ -45,7 +45,7 @@ test.describe('Platforms', () => {
   }
 
   async function login(page: import('@playwright/test').Page) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -371,7 +371,7 @@ test.describe('Platforms — ad accounts', () => {
   }
 
   async function loginAndOpenPlatforms(page: import('@playwright/test').Page) {
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -421,7 +421,7 @@ test.describe('Platforms — ad accounts', () => {
 
   test('returning from the redirect with an error surfaces it and clears the query', async ({ page }) => {
     await mockAdConnections(page, [connection()]);
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -446,7 +446,7 @@ test.describe('Platforms — ad accounts', () => {
       });
     });
 
-    await page.goto('/');
+    await page.goto('/login');
     await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
     await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
     await page.getByRole('button', { name: 'Sign In' }).click();

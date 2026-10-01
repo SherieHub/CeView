@@ -205,14 +205,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Build and start frontend
+      # A dev server, not `vite build` + `vite preview`: dashboard and
+      # market-radar-drawer drive the DEV-only /preview/* routes (App.tsx),
+      # which a production build tree-shakes out. Same as the journey job below.
+      - name: Start frontend dev server
         working-directory: frontend
         env:
           VITE_API_BASE_URL: http://localhost:8080
         run: |
           npm ci
-          npm run build
-          npm run preview -- --port 3000 --host 0.0.0.0 &
+          npm run dev -- --port 3000 --host 0.0.0.0 &
           timeout 60 bash -c 'until curl -sf http://localhost:3000; do sleep 2; done'
 
       - name: Install Playwright browsers
@@ -224,10 +226,9 @@ jobs:
       - name: Run Playwright tests for this screen
         working-directory: e2e
         env:
-          # playwright.config.ts now defaults baseURL to :3001 (Vite's real dev
-          # port — see the config's own comment). This job builds and serves
-          # the frontend on :3000 above, so it has to override that default
-          # explicitly rather than relying on it.
+          # playwright.config.ts defaults baseURL to its own :3012 dev server.
+          # This job serves the frontend on :3000 above, so it has to override
+          # that default explicitly rather than relying on it.
           E2E_BASE_URL: http://localhost:3000
         run: npx playwright test tests/${{ matrix.screen }}.spec.ts
 
