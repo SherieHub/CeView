@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipContentProps, TooltipPayloadEntry } from 'recharts';
 import type { ChartDataPoint } from '@/types';
 import type { Timeframe } from './radarTypes';
 
@@ -48,16 +49,14 @@ export function formatWeekRange(weekStartDate: string | null): string | null {
   return `${fmt(start)}–${fmt(end)}`;
 }
 
-export interface DemandForecastTooltipProps {
-  active?: boolean;
-  label?: string;
-  payload?: Array<{
-    name?: string;
-    value?: number | string;
-    color?: string;
-    payload?: Pick<ChartDataPoint, 'weekStartDate'>;
-  }>;
-}
+/** The subset of Recharts' tooltip props this tooltip reads; `payload` stays readonly. */
+export type DemandForecastTooltipProps = Partial<Pick<TooltipContentProps, 'active' | 'label'>> & {
+  payload?: ReadonlyArray<
+    Pick<TooltipPayloadEntry, 'name' | 'value' | 'color'> & {
+      payload?: Pick<ChartDataPoint, 'weekStartDate'>;
+    }
+  >;
+};
 
 /** Kept separate from Recharts so the required series labels are RTL-testable. */
 export function DemandForecastTooltip({ active, label, payload = [] }: DemandForecastTooltipProps) {
@@ -123,7 +122,7 @@ export default function DemandForecastChart({ data, timeframe }: DemandForecastC
           <ReferenceLine y={30} stroke="var(--color-gray-light)" strokeDasharray="3 3" />
           <ReferenceLine y={70} stroke="var(--color-gray-light)" strokeDasharray="3 3" />
 
-          <Tooltip content={(props) => <DemandForecastTooltip {...(props as DemandForecastTooltipProps)} />} />
+          <Tooltip content={(props) => <DemandForecastTooltip {...props} />} />
           <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
 
           <Area
