@@ -24,3 +24,9 @@ spring:
 ceview:
   ingestion:
     enabled: false
+  # Local-only dev defaults, so H2 runs need no setup. Every other profile must
+  # set real values or startup fails (RequiredSecretsEnvironmentPostProcessor).
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-please-32chars-min}
+  attribution:
+    ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:dev-attribution-ip-hash-salt}

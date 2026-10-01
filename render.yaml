@@ -49,6 +49,8 @@ services:
           property: hostport
       - key: JWT_SECRET
         generateValue: true
+      - key: CEVIEW_ATTRIBUTION_IP_HASH_SALT
+        generateValue: true
       - key: CORS_ALLOWED_ORIGINS
         sync: false
 

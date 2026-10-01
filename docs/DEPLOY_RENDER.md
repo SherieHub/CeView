@@ -87,6 +87,7 @@ a pre-built jar the way the local `RUNNING.md` workflow historically did.
    | `FASTAPI_SBERT_BASE_URL` | the `fastapi-sbert` service's Render URL, from step 4 |
    | `FASTAPI_TRANSFORMER_BASE_URL` | the `fastapi-transformer` service's Render URL, from step 5 |
    | `JWT_SECRET` | any random 32+ char string |
+   | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | any random string — the service refuses to start without it |
    | `CORS_ALLOWED_ORIGINS` | the frontend's Render URL, from step 6 (you'll circle back and fill this in once it exists) |
 
 5. Health check path: `/actuator/health`.
