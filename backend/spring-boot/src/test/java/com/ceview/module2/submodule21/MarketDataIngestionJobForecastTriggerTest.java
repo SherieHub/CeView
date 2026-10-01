@@ -37,8 +37,12 @@ import static org.mockito.Mockito.when;
  * test is about the JOB's own orchestration (which profiles get forecast,
  * isolation, logging), not either service's internals — those are already
  * covered by MarketDataIngestionService/ForecastingService's own test suites.
+ *
+ * The shared test properties set ceview.ingestion.enabled=false, which makes
+ * runDailyIngestion() a no-op; this class re-enables it to exercise the job.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        properties = "ceview.ingestion.enabled=true")
 class MarketDataIngestionJobForecastTriggerTest {
 
     @Autowired MarketDataIngestionJob job;

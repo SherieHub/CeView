@@ -74,6 +74,7 @@ ceview:
       base-url: ${WORLDBANK_BASE_URL:https://api.worldbank.org/v2}
     forex:
       base-url: ${FOREX_BASE_URL:https://api.frankfurter.dev}
+      cdn-base: ${FOREX_CDN_BASE:https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@}
   ingestion:
     enabled: ${INGESTION_ENABLED:true}
 

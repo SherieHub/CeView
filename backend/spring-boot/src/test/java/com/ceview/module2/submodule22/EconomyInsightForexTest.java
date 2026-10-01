@@ -28,16 +28,18 @@ class EconomyInsightForexTest {
         for (int i = 0; i < values.length; i++) {
             points.add(new ForexTrendPoint(String.format("2026-%02d", i + 1), values[i]));
         }
-        return new ForexTrendDto(currency, points, values[values.length - 1], OffsetDateTime.now());
+        double latest = values.length > 0 ? values[values.length - 1] : 0.0;
+        return new ForexTrendDto(currency, points, latest, OffsetDateTime.now());
     }
 
     @Test
     void aFivePercentRiseReadsTheSameForKrwAndUsd() {
-        // KRW: mean 0.0400, latest 0.0420 -> +5%. USD: mean 57.00, latest 59.85 -> +5%.
+        // The mean includes the latest point. KRW: mean 0.0400, latest 0.0420 -> +5%.
+        // USD (same series x 1425): mean 57.00, latest 59.85 -> +5%.
         Double krwChange = ForecastingService.forexChangeVsTwelveMonthMeanPct(
-                trend("KRW", 0.0390, 0.0400, 0.0410, 0.0420));
+                trend("KRW", 0.0390, 0.0390, 0.0420));
         Double usdChange = ForecastingService.forexChangeVsTwelveMonthMeanPct(
-                trend("USD", 55.575, 57.0, 58.425, 59.85));
+                trend("USD", 55.575, 55.575, 59.85));
 
         assertThat(krwChange).isCloseTo(5.0, within(0.1));
         assertThat(usdChange).isCloseTo(5.0, within(0.1));

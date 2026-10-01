@@ -5,6 +5,7 @@ import com.ceview.module1.businessinput.BusinessProfile;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.dto.MarketDtos.MarketsResponse;
 import com.ceview.module2.submodule21.ExternalMarketDataClient;
+import com.ceview.module2.submodule21.MarketRouteReferenceData;
 import com.ceview.module2.submodule21.MarketSignalRecord;
 import com.ceview.module2.submodule21.MarketSignalRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +22,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -60,6 +64,11 @@ class EnsureFreshForecastTest {
         profile.setBusinessName("Ensure Fresh Test");
         profile.setCategoriesList(List.of("Coastal & Island"));
         profileRepo.save(profile);
+
+        // Route reference is static/DB data, not an external fetch — the mock
+        // would otherwise return null and NPE in buildMarketDto/runPipeline.
+        when(externalClient.getFlightReference(anyString())).thenAnswer(
+                inv -> MarketRouteReferenceData.flightReference(inv.getArgument(0)));
     }
 
     @Test
@@ -89,8 +98,10 @@ class EnsureFreshForecastTest {
         MarketsResponse response = forecastingService.ensureFreshForecast(profileId, 12L);
 
         // The whole point: fresh data means no ingestion and no AI calls at all.
+        // The only client call allowed is the local route-reference lookup.
         verifyNoInteractions(ai);
-        verifyNoInteractions(externalClient);
+        verify(externalClient, atLeastOnce()).getFlightReference(anyString());
+        verifyNoMoreInteractions(externalClient);
         assertThat(response.markets()).isNotEmpty();
     }
 

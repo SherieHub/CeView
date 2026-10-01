@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.within;
 
 /** Contract tests for the persisted demand-window alert values (Step 11). */
 class DemandAlertRulesTest {
@@ -40,7 +41,8 @@ class DemandAlertRulesTest {
 
         assertThat(decision.windowOpenDate()).isEqualTo(FIRST_FORECAST_WEEK.plusWeeks(1));
         assertThat(decision.trend()).isEqualTo("Rising demand window");
-        assertThat(decision.upliftPct()).isEqualTo(30.0);
+        // (130 / 100 - 1) * 100 is 30.000000000000004 in IEEE-754 doubles.
+        assertThat(decision.upliftPct()).isCloseTo(30.0, within(1e-9));
     }
 
     @Test

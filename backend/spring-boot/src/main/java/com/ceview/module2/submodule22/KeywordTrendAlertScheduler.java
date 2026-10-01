@@ -25,7 +25,10 @@ public class KeywordTrendAlertScheduler {
      */
     @Scheduled(cron = "0 15 0 * * *", zone = "UTC")
     public void refreshMissingWeeklyAlerts() {
-        for (BusinessProfile profile : profileRepo.findAll()) {
+        // findAllNonReference(), not findAll(): the V26 uniqueness corpus rows
+        // have no operator and must never get tenant-facing keyword alerts.
+        // See ReferenceProfileIsolationTest.
+        for (BusinessProfile profile : profileRepo.findAllNonReference()) {
             keywordTrendProducer.refreshMissingCurrentWeekAlerts(
                     profile.getBusinessProfileId(), profile.categoriesList());
         }
