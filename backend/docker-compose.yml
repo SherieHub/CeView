@@ -79,7 +79,6 @@ services:
       SPRING_DATASOURCE_USERNAME: ceview
       SPRING_DATASOURCE_PASSWORD: ceview
       SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"
-      FASTAPI_BASE_URL: http://fastapi:8000
       FASTAPI_SBERT_BASE_URL: http://fastapi:8000
       FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
       # Both required, no default: this stack runs the Postgres profile, which
