@@ -1,0 +1,58 @@
+/* ============================================================
+   TOKENS — ported verbatim from ui-ux-prototype.html:15-67
+   Source of truth for design tokens. ceview/constants.ts COLORS
+   is annotated to point back here — keep the two in sync.
+   ============================================================ */
+:root{
+  /* Brand */
+  --navy:#0F2854;
+  --navy-light:#183C7B;
+  --blue:#06388E;
+  --skyblue:#7FBFFF;
+  --navy-muted:#98A7B9;
+  --teal:#007892;
+  --cyan:#71EEFF;
+  --gold:#F4A216;
+  --gold-dark:#D48E15;
+  --gold-light:#FFB941;
+  --gold-wash:#FFF5DF;
+  --yellow:#FFD664;
+  --sand:#F5E5D1;
+  --foliage:#506E53;
+
+  /* Surfaces */
+  --page:#FDFBF7;
+  --panel:#FFFFFF;
+  --panel-sunk:#F7F4EE;
+
+  /* Ink */
+  --ink:#0A2342;
+  --ink-2:#1E293B;
+  --muted:#64748B;
+  --grey:#3C4247;
+
+  /* Lines */
+  --line:#E4DED2;
+  --line-strong:#C7D3E2;
+  --line-navy:#98A7B9;
+
+  /* State */
+  --critical:#A70000;
+  --critical-alt:#ED3F27;
+  --success:#0F7A4E;
+  --success-bg:#E6F4EE;
+
+  /* Platform */
+  --ig:#C13584; --tt:#010101; --fb:#1877F2; --nv:#03C75A;
+
+  /* Geometry */
+  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:20px; --r-full:999px;
+  --sh-1:0 1px 2px rgba(15,40,84,.06), 0 1px 3px rgba(15,40,84,.08);
+  --sh-2:0 4px 12px rgba(15,40,84,.08), 0 2px 4px rgba(15,40,84,.05);
+  --sh-3:0 18px 48px rgba(10,35,66,.22);
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+  --sp-6:24px; --sp-8:32px; --sp-10:40px; --sp-12:48px; --sp-16:64px;
+
+  --sidebar-w:248px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}

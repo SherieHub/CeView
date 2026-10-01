@@ -1,0 +1,43 @@
+/* ============================================================
+   LOGIN — ported verbatim from ui-ux-prototype.html:315-347
+   (view-routing/display-toggle rules at 305-308 are dropped — real
+   routing now handles which view renders, not a data-view attribute)
+   Not part of Card 1 (Design System)'s ported file set; added here
+   because LoginPage needs it and Card 1 didn't cover it. Kept as its
+   own stylesheet rather than folded into shell.css/primitives.css so
+   Card 1's file boundaries stay intact.
+   ============================================================ */
+#view-login{min-height:100dvh;display:grid;grid-template-columns:1fr;}
+.login-brand{
+  background:var(--navy);color:#fff;padding:var(--sp-10) var(--sp-8);
+  display:flex;flex-direction:column;justify-content:space-between;gap:var(--sp-10);
+  position:relative;overflow:hidden;
+}
+.login-brand::after{
+  content:'';position:absolute;right:-140px;bottom:-160px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,rgba(244,162,22,.30),transparent 68%);
+}
+.login-mark{display:flex;align-items:center;gap:11px;position:relative;z-index:1;}
+.login-mark-glyph{
+  width:38px;height:38px;border-radius:11px;background:var(--gold);color:var(--navy);
+  display:grid;place-items:center;font-weight:800;font-size:17px;letter-spacing:-.04em;
+}
+.login-pitch{position:relative;z-index:1;max-width:460px;}
+.login-pitch h1{font-size:clamp(26px,4.4vw,40px);font-weight:800;letter-spacing:-.03em;line-height:1.12;}
+.login-pitch h1 em{font-style:normal;color:var(--gold);}
+.login-pitch p{margin-top:var(--sp-4);font-size:14.5px;color:rgba(255,255,255,.74);line-height:1.65;}
+.login-stats{display:flex;gap:var(--sp-8);position:relative;z-index:1;flex-wrap:wrap;}
+.login-stat b{display:block;font-size:22px;font-weight:800;color:var(--gold);letter-spacing:-.02em;}
+.login-stat span{font-size:11.5px;color:rgba(255,255,255,.6);font-weight:600;}
+.login-pane{display:grid;place-items:center;padding:var(--sp-8) var(--sp-5);}
+.login-card{width:min(400px,100%);}
+
+.oauth-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  padding:11px;border:1.5px solid var(--line-strong);border-radius:var(--r-sm);
+  background:var(--panel);font-size:13px;font-weight:700;transition:all .16s;
+}
+.oauth-btn:disabled{opacity:.6;cursor:not-allowed;}
+.oauth-btn:hover:not(:disabled){border-color:var(--navy);background:var(--panel-sunk);}
+.or-rule{display:flex;align-items:center;gap:12px;margin:var(--sp-5) 0;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.1em;}
+.or-rule::before,.or-rule::after{content:'';flex:1;height:1px;background:var(--line);}

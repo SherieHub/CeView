@@ -33,15 +33,15 @@ Generates a **3-platform × 3-archetype** matrix of market-localized social medi
 | `CopyTargetBtn` | Copy-to-clipboard button with copied-state toggle. | React button component |
 | `DistributionPanel` | Multi-platform deployment cards shown after approval (completion of 3.1). | React panel component |
 | `PlatformSyncCard` | Individual channel card (Instagram / TikTok / Facebook / Naver). | React card component |
-| `api.generateContent` | API client method — `POST /api/v1/content/generate`; requests the caption matrix. | TypeScript API client method |
-| `api.approveContent` | API client method — `POST /api/v1/content/approve` (fire-and-forget) marking approved captions. | TypeScript API client method |
+| `api.generateContent` | API client method — `POST /api/content/generate`; requests the caption matrix. | TypeScript API client method |
+| `api.approveContent` | API client method — `POST /api/content/approve` (fire-and-forget) marking approved captions. | TypeScript API client method |
 | `ContentResponseDTO`, `PlatformContent`, `CaptionMetadata`, `ContentPlatformId` | Response and per-platform option shapes consumed by the view. | TypeScript interfaces |
 
 ### Backend Components — Spring Boot 3 / Java 21
 
 | Component Name | Description & Purpose | Type / Format |
 |----------------|-----------------------|---------------|
-| `ContentController` | Exposes `POST /api/v1/content/generate` and `POST /api/v1/content/approve`. | Spring REST Controller |
+| `ContentController` | Exposes `POST /api/content/generate` and `POST /api/content/approve`. | Spring REST Controller |
 | `ContentGenerationService` | Loads `BusinessProfile`, builds forecast context from Module 2, builds the snake_case payload, delegates to FastAPI via `AIInferenceGatewayService.generateCaption()`, deserializes `ContentResponseDto`, persists 4 rows. | Spring Service |
 | `ContentApprovalService` | Sets `approval_status = true`; exposes `hasApprovedContent()` / `getApprovedCaptions()` used as the 3.2 dependency gate. | Spring Service |
 | `LocalizedPromotionalContent` | JPA entity mapping `tbl_localized_promotional_content` (4 rows per generate call). | JPA Entity |
@@ -99,8 +99,8 @@ Enforced by `PLATFORM_CHAR_LIMITS` in `CopywritingOptionCard.tsx` (UI counters /
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/content/generate` | Generate captions; optional `?profileId={UUID}` enriches from DB and persists rows |
-| POST | `/api/v1/content/approve` | Approve content for a profile + market; body `{ market }`; returns `{ approvedIds, market, count }` |
+| POST | `/api/content/generate` | Generate captions; optional `?profileId={UUID}` enriches from DB and persists rows |
+| POST | `/api/content/approve` | Approve content for a profile + market; body `{ market }`; returns `{ approvedIds, market, count }` |
 
 ## FastAPI Internal Endpoint
 

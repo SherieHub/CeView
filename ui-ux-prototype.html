@@ -1515,7 +1515,10 @@ const APP_STATE = {
     toggles:{ visibility:true, comments:true, paid:false },
     agreed:false,
     omcs:null,
-    auditing:false
+    auditing:false,
+    pickedAlertId:null,   // MOCK_NOTIFICATIONS id chosen in the Content Studio picker's Step 1
+    pickedMarketId:null,  // market id chosen in Step 2 (marketsForCategory(alert.category))
+    pickerStep:'alert'    // 'alert' | 'market' — only meaningful while a pick isn't complete
   },
   posts:MOCK_POSTS.slice(),
   campaign:null,          // ManualIngestResponse once submitted
@@ -2660,9 +2663,12 @@ function renderRadar(){
 function targetThisMarket(id){
   APP_STATE.targetedMarketId = id;
   APP_STATE.activeMarketId = id;
+  APP_STATE.content.pickedAlertId = null;
+  APP_STATE.content.pickedMarketId = null;
+  APP_STATE.content.pickerStep = 'alert';
   closeDrawer();
   goApp('content');
-  showToast('Targeting ' + marketById(id).name + ' — content generated');
+  showToast('Opening Content Studio for ' + marketById(id).name);
 }
 
 /* ============================================================
@@ -2791,9 +2797,123 @@ function csPublish(){
 let csBoardFilter = 'all';
 function csSetBoardFilter(k){ csBoardFilter=k; renderContent(); }
 
+/* ---- Content Studio picker: Step 1 (surge alert), Step 2 (target market) ---- */
+function renderContentAlertStep(){
+  const p = APP_STATE.profile;
+  const myAlerts = MOCK_NOTIFICATIONS.filter(n => p.categories.includes(n.category));
+
+  const body = myAlerts.length===0
+    ? `<div class="card"><div class="empty">
+         <div class="empty-glyph"><i data-lucide="tag"></i></div>
+         <h3>No surge alerts for your categories yet</h3>
+         <p>Nothing is currently trending for ${esc(p.categories.join(', ') || 'your business categories')}. Add another category in Settings → Business Profile to widen coverage.</p>
+       </div></div>`
+    : `<div style="display:grid;gap:var(--sp-3);">${myAlerts.map(n=>`
+        <button class="alert-card ${n.isRead?'':'unread'}" onclick="csPickAlert('${n.id}')">
+          <div class="alert-top">
+            ${n.isRead?'':'<span class="unread-dot"></span>'}
+            <span class="alert-date">${esc(n.date)}</span>
+            ${n.alertLevel==='WARNING'?'<span class="chip chip-red"><i data-lucide="zap"></i> Surge</span>':''}
+          </div>
+          <h4>${esc(n.title)}</h4>
+          <p class="body-sm" style="margin-top:7px;">${esc(n.alertMessage)}</p>
+          <div class="alert-meta">
+            <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(n.market)}</span>
+            <span class="chip"><i data-lucide="tag"></i> ${esc(n.category)}</span>
+            <span class="chip"><i data-lucide="trending-up"></i> ${esc(n.trend)}</span>
+          </div>
+          <div class="alert-cta">Pick this alert <i data-lucide="arrow-right"></i></div>
+        </button>`).join('')}
+      </div>`;
+
+  $('#screen-content').innerHTML = `
+    <div class="page-head">
+      <div>
+        <h2>Content Studio</h2>
+        <p>Step 1 of 2 — pick the surge alert you're creating content for.</p>
+      </div>
+    </div>
+    ${body}`;
+  icons();
+}
+
+function renderContentMarketStep(){
+  const c = C();
+  const alert = MOCK_NOTIFICATIONS.find(n=>n.id===c.pickedAlertId);
+  const list = marketsForCategory(alert.category);
+  const ranks = list.map(m=>{
+    const hasSpike = m.chartData.some(d=>d.spike===1);
+    return `<button class="rank-card" data-rank="${m.rank}" onclick="csPickMarket('${m.id}')">
+      <div class="rank-head">
+        <span class="rank-no">${m.rank}</span>
+        <div style="min-width:0;">
+          <h4>${esc(m.name)}</h4>
+          <p class="rank-sub">${esc(m.city)} · ${num(m.distanceKm)} km to Cebu</p>
+        </div>
+        <div class="rank-score"><b class="num">${m.matchScore}</b><span>Potential</span></div>
+      </div>
+      <div style="margin-top:var(--sp-4);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+          <span class="eyebrow">Market potential</span>
+          <span class="num" style="font-size:11.5px;font-weight:800;">${m.matchScore}/100</span>
+        </div>
+        <div class="bar ${m.rank===1?'gold':''}"><i style="width:${m.matchScore}%"></i></div>
+      </div>
+      <div class="rank-facts">
+        <span class="rank-fact"><i data-lucide="plane" style="stroke:${m.directFlight?'#0F7A4E':'#D48E15'}"></i>
+          <b>${m.directFlight?'Direct':'Via Manila'}</b> · ${esc(m.flightHours)}</span>
+        <span class="rank-fact"><i data-lucide="calendar-clock"></i> ${m.flightFrequency}x / week</span>
+        ${hasSpike?'<span class="chip chip-red" style="margin-left:auto;"><i data-lucide="zap"></i> Surge active</span>':''}
+      </div>
+    </button>`;
+  }).join('');
+
+  $('#screen-content').innerHTML = `
+    <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;">
+      <div>
+        <h2>Content Studio</h2>
+        <p>Step 2 of 2 — pick a target market for ${esc(alert.category)}.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="csBackToAlertStep()">
+        <i data-lucide="arrow-left"></i> Back to alerts</button>
+    </div>
+    <section class="markets-reveal">
+      <div style="display:grid;gap:var(--sp-3);">${ranks}</div>
+    </section>`;
+  icons();
+}
+
+function csPickAlert(id){
+  const c = C();
+  c.pickedAlertId = id;
+  c.pickerStep = 'market';
+  renderContent();
+}
+function csBackToAlertStep(){
+  const c = C();
+  c.pickedAlertId = null;
+  c.pickerStep = 'alert';
+  renderContent();
+}
+function csPickMarket(id){
+  const c = C();
+  c.pickedMarketId = id;
+  renderContent();
+}
+function csChangeTarget(){
+  const c = C();
+  c.pickedAlertId = null;
+  c.pickedMarketId = null;
+  c.pickerStep = 'alert';
+  renderContent();
+}
+
 function renderContent(){
   const c = C();
-  const m = marketById(APP_STATE.activeMarketId);
+  if(!c.pickedAlertId){ renderContentAlertStep(); return; }
+  if(!c.pickedMarketId){ renderContentMarketStep(); return; }
+  const pickedAlert = MOCK_NOTIFICATIONS.find(n=>n.id===c.pickedAlertId);
+  const m = marketById(c.pickedMarketId);
   const plat = c.platform;
   const pc = MOCK_CONTENT.captions[plat];
   const limit = PLATFORM_CHAR_LIMITS[plat];
@@ -2923,12 +3043,14 @@ function renderContent(){
     <div class="page-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-4);flex-wrap:wrap;">
       <div>
         <h2>Content Studio</h2>
-        <p>Localized copy generated for ${esc(m.name)}, gated by a compliance audit before anything leaves the platform.</p>
+        <p>Localized copy generated for ${esc(m.name)} — ${esc(pickedAlert.category)}, gated by a compliance audit before anything leaves the platform.</p>
       </div>
       <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;">
-        <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(MOCK_CONTENT.market.country)} — ${esc(MOCK_CONTENT.market.city)}</span>
+        <span class="chip chip-navy"><i data-lucide="map-pin"></i> ${esc(m.name)} — ${esc(m.city)}</span>
         <span class="chip chip-teal"><i data-lucide="git-branch"></i> ${esc(MOCK_CONTENT.framework)}</span>
         ${MOCK_CONTENT.source==='fallback'?'<span class="chip chip-gold"><i data-lucide="cloud-off"></i> Demo content (LLM offline)</span>':''}
+        <button class="btn btn-ghost btn-sm" onclick="csChangeTarget()">
+          <i data-lucide="refresh-cw"></i> Change target market</button>
       </div>
     </div>
 
@@ -4337,8 +4459,9 @@ const DEV_LINKS = [
     ['Radar — Korea', ()=>{ seedCompletedProfile(); setDashModeAndGo('normal'); openRadar('korea'); }]
   ]],
   ['Screens', [
-    ['Content Studio', ()=>{ seedCompletedProfile(); goApp('content'); }],
-    ['Content — audited', ()=>{ seedCompletedProfile(); primeStudio(); goApp('content'); }],
+    ['Content Studio', ()=>{ seedCompletedProfile(); APP_STATE.content.pickedAlertId='n1'; APP_STATE.content.pickedMarketId='korea'; goApp('content'); }],
+    ['Content Studio — picker', ()=>{ seedCompletedProfile(); APP_STATE.content.pickedAlertId=null; APP_STATE.content.pickedMarketId=null; APP_STATE.content.pickerStep='alert'; goApp('content'); }],
+    ['Content — audited', ()=>{ seedCompletedProfile(); primeStudio(); APP_STATE.content.pickedAlertId='n1'; APP_STATE.content.pickedMarketId='korea'; goApp('content'); }],
     ['Calendar',       ()=>{ seedCompletedProfile(); goApp('calendar'); }],
     ['Performance — empty', ()=>{ seedCompletedProfile(); APP_STATE.campaign=null; goApp('performance'); }],
     ['Performance — full',  ()=>{ seedCompletedProfile(); primeCampaign(); goApp('performance'); }],

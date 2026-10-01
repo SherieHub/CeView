@@ -1,0 +1,7 @@
+{
+  "data": [
+    { "id": "23851234567890123", "name": "Dry-Season Promo", "status": "ACTIVE" },
+    { "id": "23851234567890124", "name": "Always-On Brand", "status": "PAUSED" }
+  ],
+  "paging": { "cursors": { "before": "A", "after": "B" } }
+}

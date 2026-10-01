@@ -1,0 +1,6 @@
+{
+  "code": 40001,
+  "message": "The auth_code is invalid or has expired.",
+  "request_id": "20260906120001ABCDEF",
+  "data": {}
+}

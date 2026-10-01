@@ -135,9 +135,9 @@ VisualDirectionBoard *-- "N" BlueprintStepItem
 SmartOptimizationBoard *-- ComplianceGauge
 
 ' ── Frontend → Spring Boot ──
-apiClient ..> ContentController : /api/v1/content/*
-apiClient ..> CreativeDirectionController : /api/v1/creative-direction/*
-apiClient ..> ComplianceController : /api/v1/compliance/omcs-analyze
+apiClient ..> ContentController : /api/content/*
+apiClient ..> CreativeDirectionController : /api/creative-direction/*
+apiClient ..> ComplianceController : /api/compliance/omcs-analyze
 
 ' ── Spring Boot 3.1 ──
 ContentController --> ContentGenerationService

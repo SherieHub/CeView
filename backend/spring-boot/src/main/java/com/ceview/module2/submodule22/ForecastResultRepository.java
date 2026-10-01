@@ -14,5 +14,15 @@ public interface ForecastResultRepository extends JpaRepository<ForecastResult, 
     Optional<ForecastResult> findTopByBusinessProfileIdAndTargetMarketAndForecastHorizonWeeksOrderByGeneratedAtDesc(
             UUID businessProfileId, String targetMarket, Integer forecastHorizonWeeks);
 
+    /**
+     * Category-scoped variant (Task 1a.2b). With forecasts now produced per
+     * (category, market), the plain finder above only returns whichever
+     * category happened to be written most recently — not necessarily the
+     * best-ranked one. Use this to look up a specific category's latest
+     * forecast so callers can compare across categories and pick a winner.
+     */
+    Optional<ForecastResult> findTopByBusinessProfileIdAndTargetMarketAndCategoryAndForecastHorizonWeeksOrderByGeneratedAtDesc(
+            UUID businessProfileId, String targetMarket, String category, Integer forecastHorizonWeeks);
+
     boolean existsByBusinessProfileId(UUID businessProfileId);
 }

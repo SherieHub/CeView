@@ -12,10 +12,13 @@ logger = logging.getLogger(__name__)
 
 # The omcs_agent needs a VISION-capable model because nodes pass the pubmat
 # image as an image_url content block. The shared AgentLLMModel default
-# (llama-3.3-70b-versatile) is text-only and rejects multimodal input, so this
+# (openai/gpt-oss-120b) is text-only and rejects multimodal input, so this
 # agent uses its own Groq vision model. Overridable via OMCS_VISION_MODEL.
 # Kept isolated so other agents (caption generation, PES report) are unaffected.
-_VISION_MODEL = os.environ.get("OMCS_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+# qwen/qwen3.8-27b: Groq retired meta-llama/llama-4-scout-17b-16e-instruct (it
+# now 404s), and qwen is the only model on the project key that accepts image
+# input. It rejects images under 32px on a side; real pubmats are far larger.
+_VISION_MODEL = os.environ.get("OMCS_VISION_MODEL", "qwen/qwen3.8-27b")
 
 _llm = None
 
@@ -34,7 +37,12 @@ def get_llm():
             return None
         try:
             from langchain_groq import ChatGroq  # type: ignore[import]
-            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key)
+            # max_tokens: without a cap, langchain's JsonOutputParser silently
+            # repairs a truncated response by dropping the last incomplete key
+            # rather than raising — a growing rubric or rationale field could
+            # someday truncate the same way the caption matrix did in
+            # AgentLLMModel before this was added there. Cheap to guard now.
+            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key, max_tokens=2048)
         except Exception as exc:  # pragma: no cover - import/config failure
             logger.error("omcs_agent: failed to init vision LLM (%s): %s", _VISION_MODEL, exc)
             return None
@@ -44,7 +52,7 @@ def get_llm():
 def _extract_json(text: str) -> dict:
     """Extract the first JSON object from an LLM response.
 
-    llama-4-scout frequently wraps its output in prose or markdown fences even
+    Vision models frequently wrap their output in prose or markdown fences even
     when instructed otherwise. A bare json.loads() on that text raises an
     exception and the caller silently returns 0.0. This helper finds the first
     {...} block anywhere in the response so scores are never silently zeroed.

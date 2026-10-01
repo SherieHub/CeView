@@ -1,0 +1,56 @@
+- generic [ref=f22e47]:
+  - complementary [ref=f22e48]:
+    - generic [ref=f22e49]:
+      - generic [ref=f22e50]: Ce
+      - generic [ref=f22e51]:
+        - generic [ref=f22e52]: CeView
+        - text: Set up your profile
+    - paragraph [ref=f22e53]: Required steps
+    - list "Onboarding progress" [ref=f22e54]:
+      - listitem [ref=f22e55]:
+        - generic [ref=f22e57]:
+          - generic [ref=f22e58]: Basic Info
+          - generic [ref=f22e59]: Name, industry, slogan
+      - listitem [ref=f22e60]:
+        - generic [ref=f22e62]:
+          - generic [ref=f22e63]: Brand Identity
+          - generic [ref=f22e64]: Vibe and core services
+      - listitem [ref=f22e65]:
+        - generic [ref=f22e66]: "3"
+        - generic [ref=f22e67]:
+          - generic [ref=f22e68]: Structured Inputs
+          - generic [ref=f22e69]: Description and UVP
+      - listitem [ref=f22e70]:
+        - generic [ref=f22e71]: "4"
+        - generic [ref=f22e72]:
+          - generic [ref=f22e73]: Assets & Links
+          - generic [ref=f22e74]: Socials, logo, website
+      - listitem [ref=f22e75]:
+        - generic [ref=f22e76]: "5"
+        - generic [ref=f22e77]:
+          - generic [ref=f22e78]: Analysis
+          - generic [ref=f22e79]: Categories and uniqueness
+    - generic [ref=f22e80]: Every field feeds the AI. Complete answers produce sharper forecasts and better captions.
+  - main [ref=f22e84]:
+    - generic [ref=f22e157]:
+      - generic [ref=f22e158]:
+        - paragraph [ref=f22e159]: Step 3 · Required
+        - heading "The two fields the AI leans on hardest" [level=2] [ref=f22e160]
+        - paragraph [ref=f22e161]: These are embedded into a 768-dimension vector and compared against every other Cebu MSME in the corpus. Thin answers produce a thin uniqueness score — the thresholds below are enforced, not advisory.
+      - generic [ref=f22e162]:
+        - generic [ref=f22e163]:
+          - text: Full description
+          - generic [ref=f22e164]: Minimum 50 words
+        - textbox "What is the property, where exactly is it, what does a guest actually experience?" [ref=f22e165]: "Sunset Cove Beach Resort sits on the quiet southern stretch of Moalboal, a short walk from the sardine run that draws divers from across the world. We run a small beachfront property of twelve villas, a dive shop staffed entirely by local guides, and a kitchen that sources its fish and produce from the municipality every morning. Guests come for the reef and stay for the pace: no crowds, no scheduled entertainment, just clear water and long evenings."
+        - generic [ref=f22e166]: 78 words — threshold met
+      - generic [ref=f22e171]:
+        - generic [ref=f22e172]:
+          - text: Unique value proposition
+          - generic [ref=f22e173]: Minimum 30 words
+        - textbox "What can a guest get here that they genuinely cannot get from the business next door?" [ref=f22e174]: The only Moalboal resort where every dive guide is a Moalboal native, house reef access is thirty metres from the villa door, and the entire kitchen is sourced within the municipality each morning rather than trucked in from Cebu City.
+        - generic [ref=f22e175]: 40 words — threshold met
+    - generic [ref=f22e104]:
+      - button "Back" [ref=f22e105] [cursor=pointer]
+      - generic [ref=f22e108]:
+        - generic [ref=f22e109]: Step 3 of 5
+        - button "Continue" [active] [ref=f22e110] [cursor=pointer]

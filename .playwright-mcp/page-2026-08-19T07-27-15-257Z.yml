@@ -1,0 +1,32 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]: CeView
+      - generic [ref=f1e6]:
+        - heading "Know the surge before it lands." [level=1] [ref=f1e7]
+        - paragraph [ref=f1e8]: Demand forecasting and market-localized content for Cebu's tourism businesses.
+      - generic [ref=f1e9]:
+        - generic [ref=f1e10]:
+          - generic [ref=f1e11]: "21"
+          - generic [ref=f1e12]: category × market signals
+        - generic [ref=f1e13]:
+          - generic [ref=f1e14]: "3"
+          - generic [ref=f1e15]: tracked source markets
+        - generic [ref=f1e16]:
+          - generic [ref=f1e17]: 24/7
+          - generic [ref=f1e18]: surge monitoring
+    - generic [ref=f1e20]:
+      - generic [ref=f1e21]:
+        - button "Sign in" [ref=f1e22] [cursor=pointer]
+        - button "Create account" [ref=f1e23] [cursor=pointer]
+      - generic [ref=f1e24]:
+        - generic [ref=f1e25]:
+          - generic [ref=f1e26]: Email
+          - textbox "Email" [ref=f1e27]
+        - generic [ref=f1e28]:
+          - generic [ref=f1e29]: Password
+          - textbox "Password" [ref=f1e30]
+        - button "Sign in" [ref=f1e31] [cursor=pointer]
+      - button "Signing in…" [disabled] [ref=f1e32] [cursor=pointer]
+  - iframe [ref=f1e33]:
+    

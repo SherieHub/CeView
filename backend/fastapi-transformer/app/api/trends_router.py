@@ -1,12 +1,12 @@
 """Module 2.1 — Localized Google Trends Fetch API (FR2.2).
 
-  POST /api/v1/trends/fetch
+  POST /api/trends/fetch
       Accept exactly ONE (market, category) pair per request.
       Designed for sequential, decoupled orchestration by the Spring Boot
       TrendFetchSchedulerService (one HTTP call per category/market pair).
 
 Usage in Postman:
-    POST  http://localhost:8001/api/v1/trends/fetch
+    POST  http://localhost:8001/api/trends/fetch
     Body  (raw JSON):
         { "market": "korea", "category": "Coastal & Island" }
 
@@ -31,6 +31,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services.trend_service import fetch_and_process
+from app.unavailable import DependencyUnavailable
 
 router = APIRouter()
 log    = logging.getLogger("module2.trends")
@@ -134,6 +135,11 @@ def fetch_trends(req: TrendsFetchRequest) -> TrendsFetchResponse:
         log.warning("trends.fetch 422 — %s", exc)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    except DependencyUnavailable:
+        # Structured 503 — let the app-level handler emit the contract body
+        # rather than collapsing it into a generic 500 below.
+        raise
+
     except Exception as exc:  # noqa: BLE001
         log.exception(
             "trends.fetch 500 — market=%s category=%s error=%s",
@@ -223,6 +229,9 @@ def rank_markets(req: RankMarketsRequest) -> RankMarketsResponse:
     except ValueError as exc:
         log.warning("trends.rank-markets 422 — %s", exc)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    except DependencyUnavailable:
+        raise
 
     except Exception as exc:  # noqa: BLE001
         log.exception("trends.rank-markets 500 — category=%s error=%s", req.category, exc)

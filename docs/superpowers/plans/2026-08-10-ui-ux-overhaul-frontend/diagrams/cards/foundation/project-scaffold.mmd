@@ -1,0 +1,8 @@
+flowchart TD
+  Start([npm install]) --> Config["Load vite.config.ts,\ntsconfig.json"]
+  Config --> Dev{"npm run dev\nor npm run build?"}
+  Dev -->|dev| DevServer["Serve index.html\nmount index.tsx"]
+  Dev -->|build| BuildOutput["Emit production bundle"]
+  DevServer --> MountApp["index.tsx: createRoot(#root)\nrender AuthProvider > App"]
+  MountApp --> Done([Blank page, no console errors])
+  BuildOutput --> Done2([Build succeeds])

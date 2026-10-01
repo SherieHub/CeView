@@ -1,0 +1,4 @@
+flowchart TD
+  Props(["PesGauge receives score, label, metrics from the shell"]) --> Gauge(["radial gauge shows score in [0,1] + label"])
+  Props --> Bars(["one contribution bar per weighted metric — ROAS 35% / convRate 30% / CAC 15% / CTR 15% / CPC 5%"])
+  Props --> Formula(["weighted-sum formula rendered verbatim below the gauge"])

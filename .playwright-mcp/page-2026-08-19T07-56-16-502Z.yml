@@ -1,0 +1,37 @@
+- generic [ref=f6e3]:
+  - complementary [ref=f6e4]:
+    - generic [ref=f6e5]:
+      - generic [ref=f6e6]: Required steps
+      - generic [ref=f6e7]:
+        - generic [ref=f6e10]:
+          - generic [ref=f6e11]: Basic Info
+          - text: Name, industry, slogan
+        - generic [ref=f6e12]:
+          - generic [ref=f6e13]: "2"
+          - generic [ref=f6e14]:
+            - generic [ref=f6e15]: Brand Identity
+            - text: Vibe and core services
+        - generic [ref=f6e16]:
+          - generic [ref=f6e17]: "3"
+          - generic [ref=f6e18]:
+            - generic [ref=f6e19]: Structured Inputs
+            - text: Description and UVP
+        - generic [ref=f6e20]:
+          - generic [ref=f6e21]: "4"
+          - generic [ref=f6e22]:
+            - generic [ref=f6e23]: Assets & Links
+            - text: Socials, logo, website
+        - generic [ref=f6e24]:
+          - generic [ref=f6e25]: "5"
+          - generic [ref=f6e26]:
+            - generic [ref=f6e27]: Analysis
+            - text: Categories and uniqueness
+  - main [ref=f6e28]:
+    - generic [ref=f6e54]:
+      - heading "Brand Identity" [level=2] [ref=f6e55]
+      - paragraph [ref=f6e56]: Coming in a later card.
+    - generic [ref=f6e46]:
+      - button "Back" [ref=f6e57] [cursor=pointer]
+      - generic [ref=f6e47]:
+        - generic [ref=f6e48]: Step 2 of 5
+        - button "Continue" [disabled] [ref=f6e49] [cursor=pointer]

@@ -1,0 +1,10 @@
+flowchart TD
+  Click(["Publish button clicked\n(canPublish from shell)"]) --> Enabled{"canPublish?"}
+  Enabled -->|no| NoOp(["No-op"])
+  Enabled -->|yes| Publish["postStore.publish(draft) (M3-F0):\none new PublishedPost per platform,\nstatus='published'"]
+  Publish --> Append(["postStore appends — all subscribers re-render"])
+  Append --> Toast(["Confirmation toast:\nN platforms published"])
+  Toast --> OnPublished(["onPublished() → shell (M3-F1) clears draft + audit"])
+  Append --> Readers(["Calendar, Performance\nboth re-render from the same postStore"])
+
+  FilterClick(["Click All/Draft/Published tab"]) --> Filter["visible = posts.filter(status)"]

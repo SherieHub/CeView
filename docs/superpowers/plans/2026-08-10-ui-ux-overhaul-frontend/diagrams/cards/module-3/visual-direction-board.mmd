@@ -1,0 +1,5 @@
+flowchart TD
+  Mount(["VisualDirectionBoard mounted"]) --> ReadPlatform["Read `platform` from\nCard 15's shared state"]
+  ReadPlatform --> Guide["guide = content.captions[platform].guide"]
+  Guide --> Render(["Render numbered\nshot-list"])
+  PlatformChange(["Card 15: platform tab\nswitched"]) --> ReadPlatform

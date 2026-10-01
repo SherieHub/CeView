@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/** SDD §1.1 — exposes POST /api/v1/classification/analyze. */
+/** SDD §1.1 — exposes POST /api/classification/analyze. */
 @RestController
-@RequestMapping("/api/v1/classification")
+@RequestMapping("/api/classification")
 public class ClassificationAnalyzeController {
 
     private final AIInferenceGatewayService ai;

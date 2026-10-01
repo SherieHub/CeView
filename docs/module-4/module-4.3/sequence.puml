@@ -17,7 +17,7 @@ participant "Prescriptive\nReport Service" as RBR
 
 == Prescriptive Report Flow ==
 
-UI -> AC: POST /api/v1/analytics/report\n{weeks: 4|8}
+UI -> AC: POST /api/analytics/report\n{weeks: 4|8}
 note right of UI
   Auto-fires on mount.
   Re-fires when weeks toggle changes.
@@ -76,7 +76,7 @@ end
 
 note over UI, Groq
   Backend-only (no UI trigger yet).
-  POST /api/v1/analytics/pes-analysis triggers PesReportAgent:
+  POST /api/analytics/pes-analysis triggers PesReportAgent:
   [generate_report] -> [evaluate_report] -> route_action
     • score >= 85 AND pass=true  → [finalize_response]
     • iterations >= 3 (MAX_RETRIES) → [finalize_response]

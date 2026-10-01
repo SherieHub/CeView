@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      { "advertiser_id": "7000000000000000001", "name": "Cebu Dive Co.", "currency": "PHP" },
+      { "advertiser_id": "7000000000000000002", "name": "Test Advertiser", "currency": "USD" }
+    ]
+  }
+}

@@ -165,8 +165,8 @@ package "FastAPI — marketDataRouter" {
 package "FastAPI — trendsRouter" {
 
     class trendsRouter <<router>> {
-        +POST /api/v1/trends/fetch : dict
-        +POST /api/v1/trends/rank-markets : dict
+        +POST /api/trends/fetch : dict
+        +POST /api/trends/rank-markets : dict
     }
 }
 
@@ -183,7 +183,7 @@ MarketDataIngestionService --> MarketSignalRecordRepository : save
 MarketDataIngestionService ..> MarketSignalRecord : persists
 
 TrendFetchSchedulerService --> TrendFetchJobRepository : state machine reads / writes
-TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/v1/trends/fetch
+TrendFetchSchedulerService --> AIInferenceGatewayService : POST /api/trends/fetch
 
 ' ══════════════════════════════════════════════════════════════════════════
 ' RELATIONSHIPS — Repository → Entity
@@ -198,7 +198,7 @@ IngestionJobLogRepository ..> IngestionJobLog : manages
 ' ══════════════════════════════════════════════════════════════════════════
 
 AIInferenceGatewayService --> marketDataRouter : POST /internal/market-data/*
-AIInferenceGatewayService --> trendsRouter : POST /api/v1/trends/*
+AIInferenceGatewayService --> trendsRouter : POST /api/trends/*
 
 ' ══════════════════════════════════════════════════════════════════════════
 ' RELATIONSHIPS — FastAPI internal

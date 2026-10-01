@@ -21,12 +21,12 @@ import java.util.UUID;
  *                  persists all generated content rows (FR3.10).
  * POST /approve  — marks generated content as operator-approved (FR3.10 / UC-3.1 step 14).
  *
- * Ownership: profileId — optional on /generate, required on /approve — is derived
+ * Ownership: profileId — optional on both /generate and /approve — is derived
  * from or validated against {@link CurrentBusinessProfile}, which resolves the
  * caller's own profile from the JWT. See Task 8 (mirrors Task 7 for Module 2).
  */
 @RestController
-@RequestMapping("/api/v1/content")
+@RequestMapping("/api/content")
 public class ContentController {
 
     private static final Logger log = LoggerFactory.getLogger(ContentController.class);
@@ -77,7 +77,7 @@ public class ContentController {
      */
     @PostMapping("/approve")
     public ResponseEntity<Map<String, Object>> approve(
-            @RequestParam UUID profileId,
+            @RequestParam(required = false) UUID profileId,
             @RequestBody Map<String, String> body) {
         UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
         String market = body.getOrDefault("market", "korea");

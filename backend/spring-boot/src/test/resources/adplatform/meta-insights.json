@@ -1,0 +1,18 @@
+{
+  "data": [
+    {
+      "impressions": "48210",
+      "clicks": "1327",
+      "spend": "4820.55",
+      "actions": [
+        { "action_type": "post_engagement", "value": "2210" },
+        { "action_type": "link_click", "value": "1327" },
+        { "action_type": "offsite_conversion.fb_pixel_lead", "value": "34" },
+        { "action_type": "offsite_conversion.fb_pixel_purchase", "value": "11" }
+      ],
+      "date_start": "2026-08-31",
+      "date_stop": "2026-09-06"
+    }
+  ],
+  "paging": { "cursors": { "before": "MAZDZD", "after": "MAZDZD" } }
+}

@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [
+      { "campaign_id": "1790000000000000001", "campaign_name": "Dry-Season Promo", "operation_status": "ENABLE" },
+      { "campaign_id": "1790000000000000002", "campaign_name": "Always-On Brand", "operation_status": "DISABLE" }
+    ],
+    "page_info": { "page": 1, "page_size": 1000, "total_number": 2, "total_page": 1 }
+  }
+}

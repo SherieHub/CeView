@@ -27,7 +27,7 @@ import java.util.UUID;
  * See Task 8 (mirrors Task 7 for Module 2).
  */
 @RestController
-@RequestMapping("/api/v1/creative-direction")
+@RequestMapping("/api/creative-direction")
 public class CreativeDirectionController {
 
     private static final Logger log = LoggerFactory.getLogger(CreativeDirectionController.class);
@@ -73,6 +73,12 @@ public class CreativeDirectionController {
             }
             throw e;
         }
+    }
+
+    /** JWT-derived counterpart of {@link #generate(UUID, String)}. */
+    @PostMapping("/generate")
+    public ResponseEntity<?> generate(@RequestParam(required = false) String market) {
+        return generate(currentBusinessProfile.resolveOrValidate(null), market);
     }
 
     /**

@@ -32,8 +32,10 @@ export interface Airline {
   code: string;
   frequency: string;
   direct: boolean;
-  duration: string;
-  tier: string;
+  /** Optional — not populated by all sources (e.g. prototype fixture data omits it). */
+  duration?: string;
+  /** Optional — not populated by all sources (e.g. prototype fixture data omits it). */
+  tier?: string;
 }
 
 export interface Market {
@@ -58,6 +60,22 @@ export interface Market {
   chartData: ChartDataPoint[];
   gdpTrend?: GdpTrendPoint[];
   forexTrend?: ForexTrendPoint[];
+  /** ISO 3166-1 alpha-2 country code for the flag icon (e.g. 'KR', 'JP', 'US'). */
+  flag?: string;
+  /** ISO 4217 currency code for the origin market (e.g. 'KRW', 'JPY', 'USD'). */
+  currency?: string;
+  /** Axis label for forexTrend, e.g. "PHP per 1 KRW". */
+  forexLabel?: string;
+  /** Latest GDP growth rate (%), shown alongside gdpTrend. */
+  gdpValue?: number;
+  /** Latest forex rate value, shown alongside forexTrend. */
+  forexValue?: number;
+  /** Seasonality confidence score, 0-1. */
+  seasonalityScore?: number;
+  /** Year-over-year demand ratio; null when insufficient history exists. */
+  yoyRatio?: number | null;
+  /** True when the current demand reading is a confirmed 2σ spike. */
+  spikeIndicator?: boolean;
 }
 
 export interface SellingPoint {
@@ -116,6 +134,12 @@ export interface Notification {
   marketId: string;
   trend: string;
   isRead: boolean;
+  /** Category this alert is scoped to (one of the business's classification categories). */
+  category?: string;
+  /** Alert severity — drives badge styling on the notification card. */
+  alertLevel?: 'INFO' | 'WARNING' | 'CRITICAL';
+  /** Human-readable alert body shown under the title in the notification card. */
+  alertMessage?: string;
   /** Optional rich payload for a future "Market Analyzer" modal. */
   details?: {
     projectedArrivals: number;
@@ -249,8 +273,8 @@ export interface CaptionsByPlatform {
   naver: PlatformContent;
 }
 
-/** Origin of an AI response — Gemini for real, fallback for hardcoded demo. */
-export type ResponseSource = 'gemini' | 'fallback';
+/** Origin of an AI response — Gemini/Groq for real, fallback for hardcoded demo. */
+export type ResponseSource = 'gemini' | 'groq' | 'fallback';
 
 /** Mirrors backend ContentDtos.ContentResponseDto. */
 export interface ContentResponseDTO {
@@ -432,4 +456,49 @@ export interface CampaignSnapshot {
 /** GET /history response — chronologically ordered snapshots for the trend chart. */
 export interface CampaignHistoryResponse {
   snapshots: CampaignSnapshot[];
+}
+
+// ── Content Studio & Workspace Infra ────────────────────────────────────────
+
+/** Every platform CeView can post to, including Naver Blog (Korea-only, not part of the 3-platform ContentPlatformId set used by caption generation). */
+export type SocialPlatformId = ContentPlatformId | 'naver';
+
+/** A single published or drafted social post, as surfaced in Posts/Analytics screens. */
+export interface SocialPost {
+  id: string;
+  date: string;
+  platform: SocialPlatformId;
+  caption: string;
+  status: 'published' | 'draft';
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagementRate: number;
+  /** Short daily/weekly reach series for a sparkline; empty for unpublished drafts. */
+  series: number[];
+}
+
+/** Whether a given social platform is linked for this business — Settings > Platforms. */
+export interface PlatformConnection {
+  platform: SocialPlatformId;
+  connected: boolean;
+  accountLabel?: string;
+}
+
+/** A workspace collaborator on this business's CeView account — Settings > Team. */
+export interface WorkspaceMember {
+  name: string;
+  email: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
+  initials: string;
+}
+
+/** One time-series data point of a single post's performance, for a post-detail drilldown. */
+export interface PostMetric {
+  date: string;
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
 }

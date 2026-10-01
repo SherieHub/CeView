@@ -1,0 +1,4 @@
+[     483ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=bc76ec06:20102
+[     565ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/business-profile:0
+[     566ms] [ERROR] businessProfile.load failed ApiError: GET /api/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts?t=1788511704418:35:11) @ http://localhost:3001/services/profileContext.tsx?t=1788511704418:46

@@ -1,0 +1,669 @@
+/**
+ * Shared domain types for the frontend/ rebuild. Grows as each screen card
+ * lands (per docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/).
+ * This file currently covers only what the Foundation cards need: auth,
+ * business profile, and the Fixture Data Layer's new shapes.
+ */
+
+export interface AuthUser {
+  id: string;
+  // Nullable because Google sign-in's response body carries no email — it
+  // lives inside the JWT instead (see apiClient.auth.google). Read sites must
+  // handle the absent case rather than assuming a string.
+  email: string | null;
+  businessName: string | null;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  /**
+   * Whether the operator still needs to go through the one-time "complete
+   * your profile" step (missing contactNumber — always true for password
+   * signups since /register requires it, sometimes false for a freshly
+   * provisioned Google sign-in). See services/auth.tsx's profileCompleted.
+   */
+  profileCompleted: boolean;
+}
+
+export interface BusinessProfile {
+  businessProfileId: string | null;
+  businessName: string;
+  categories: string[];
+  coreServices: string[];
+  description: string;
+  uvp: string;
+  imagePreview: string | null;
+  uniquenessScore: number | null;
+  /** Onboarding — Step 2 Brand Identity fields (card 5, 02-module-1.md). */
+  slogan: string;
+  industry: string;
+  vibes: string[];
+  website: string;
+  logo: string | null;
+  socials: Record<string, string>;
+}
+
+/**
+ * The real backend's shape (com.ceview.module1.businessinput.dto.BusinessProfileDto,
+ * GET/PUT /api/business-profile) — a strict subset of BusinessProfile. The
+ * onboarding-only fields (slogan/industry/vibes/website/logo/socials) don't
+ * exist in the backend schema yet (see docs/module-1/backend/schema-delta.md),
+ * so ProfileProvider merges a fetched BusinessProfileDto over EMPTY_PROFILE
+ * rather than assuming the backend returns those fields.
+ */
+export type BusinessProfileDto = Pick<
+  BusinessProfile,
+  'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
+>;
+
+/** One category and its share of the classification — POST /api/classification/analyze. */
+export interface CategoryAllocation {
+  name: string;
+  percentage: number;
+}
+
+/** Cohort density tier, derived from the category's share of the corpus. */
+export type CategoryDensity = 'dense' | 'moderate' | 'sparse';
+
+/**
+ * Uniqueness scoring result — POST /api/classification/uniqueness.
+ * Scores are 0–100. Note the score field is `overallScore`, not `uniquenessScore`.
+ *
+ * TWO RULES THE TYPES CANNOT EXPRESS, both previously got wrong here:
+ *
+ *  1. `overallScore === semanticPercentile`. Nothing else feeds it.
+ *  2. `categoryScore` is NOT a component of `overallScore`. It is a
+ *     classification-confidence indicator shown beside the score, never
+ *     inside it.
+ *
+ * `categoryScore` is a *normalised share* summing to 100 across the selected
+ * categories, so keeping one category yields ~100 mechanically and keeping
+ * three yields ~33 each. It is not comparable across different numbers of
+ * selected categories and must not be charted or trended as if it were.
+ *
+ * See docs/superpowers/plans/2026-09-04-uniqueness-scoring-honesty/.
+ */
+export interface UniquenessResult {
+  /** The headline. Always equal to `semanticPercentile`. */
+  overallScore: number;
+  /** Raw distinctiveness (scaled mean cosine distance). Compressed by the
+   *  encoder into a narrow band — a subordinate diagnostic, not the score. */
+  semanticsScore: number;
+  /** Classification confidence. NOT part of `overallScore` — see above. */
+  categoryScore: number;
+  /** Rank against the cohort's own distance distribution. Self-calibrating. */
+  semanticPercentile: number;
+  /** How many businesses were compared against. A percentile without its
+   *  comparison set is unreadable, so this is always displayed with it. */
+  cohortSize: number;
+  /** Median `semanticsScore` within that cohort. */
+  cohortMedianScore: number;
+  /** Categories the cohort was drawn from, for naming it in the UI. */
+  cohortCategories: string[];
+  /** Drives the always-visible density explainer on Step 5. */
+  categoryDensity: CategoryDensity | '';
+  /** False when the cohort is below the comparison floor. Render a distinct
+   *  state, not a number — this is a valid response, not an error. */
+  sufficientCohort: boolean;
+  descriptionFeedback: string;
+  categoryFeedback: string;
+}
+
+/**
+ * The platforms CeView generates for and publishes to.
+ *
+ * Naver Blog was removed as a generation target (spec §2a) — its captions were
+ * hardcoded Korean text injected on the success path, not model output. The AI
+ * may still *recommend* Naver as a channel; it is simply not something this app
+ * writes copy for.
+ */
+export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
+
+export interface PlatformConnection {
+  platform: PlatformId;
+  connected: boolean;
+  handle: string | null;
+  connectedAt: string | null;
+}
+
+/**
+ * Ad platforms CeView can pull campaign metrics from.
+ *
+ * Deliberately separate from `PlatformId`. A Meta ad account covers Facebook
+ * AND Instagram placements in one grant, and an ads grant is a different
+ * authorisation from a publishing grant — collapsing the two would make a
+ * connected ad account look like permission to publish, which it is not.
+ */
+export type AdProvider = 'meta' | 'tiktok';
+
+export type AdConnectionStatus =
+  | 'DISCONNECTED'
+  | 'PENDING_ACCOUNT_SELECTION'
+  | 'ACTIVE'
+  | 'REVOKED';
+
+export interface AdConnection {
+  provider: AdProvider;
+  /** Whether THIS SERVER has credentials for the provider — not whether the operator connected it. */
+  configured: boolean;
+  status: AdConnectionStatus;
+  accountName: string | null;
+  currency: string | null;
+  /** The pinned campaign scope, or null for the whole account. Chosen on the
+   *  Performance screen's sync control and remembered here as the default. */
+  campaignId: string | null;
+  campaignName: string | null;
+  connectedAt: string | null;
+  lastSyncedAt: string | null;
+}
+
+export interface AdAccountOption {
+  id: string;
+  name: string | null;
+  currency: string | null;
+}
+
+export interface AdCampaignOption {
+  id: string;
+  name: string | null;
+  status: string | null;
+}
+
+export interface AdInsightSource {
+  provider: AdProvider;
+  accountName: string | null;
+  impressions: number;
+  clicks: number;
+  spend: number;
+  conversions: number;
+  currency: string | null;
+  /** Set when this source is pinned to one campaign. */
+  campaignName?: string | null;
+}
+
+/**
+ * Totals are null when the connected accounts report in different currencies —
+ * the backend refuses to sum them. `warnings` says why, and the UI falls back
+ * to per-source prefill.
+ */
+export interface AdInsightSummary {
+  periodStart: string;
+  periodEnd: string;
+  impressions: number | null;
+  clicks: number | null;
+  spend: number | null;
+  conversions: number | null;
+  currency: string | null;
+  sources: AdInsightSource[];
+  warnings: string[];
+}
+
+/**
+ * Future real-backend member shape — not what apiClient.workspace.members() returns today.
+ * The fixture-backed path returns services/fixtures/members.ts's WorkspaceMemberFixture
+ * (role: 'Owner'|'Editor'|'Viewer', initials, no id/status) instead; apiClient.ts is typed
+ * against that fixture shape directly. Reconcile the two once a real endpoint exists.
+ */
+export interface WorkspaceMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'owner' | 'editor' | 'viewer';
+  invitedAt: string;
+  status: 'active' | 'invited';
+}
+
+export type PostStatus = 'draft' | 'scheduled' | 'published';
+
+export interface SocialPost {
+  id: string;
+  platform: PlatformId;
+  status: PostStatus;
+  caption: string;
+  scheduledFor: string | null;
+  publishedAt: string | null;
+  marketId: string | null;
+}
+
+export interface PostMetric {
+  postId: string;
+  impressions: number;
+  engagements: number;
+  clicks: number;
+  engagementRate: number;
+}
+
+// ─── Module 2 — Market Radar ──────────────────────────────────────────────
+
+export interface ChartDataPoint {
+  week: string;
+  weekStartDate: string | null;
+  history: number | null;
+  forecast: number | null;
+  seasonality: number | null;
+  spike: 0 | 1;
+}
+
+export interface Airline {
+  name: string;
+  code: string;
+  frequency: string;
+  /** Per-carrier now (H-21): a route can mix direct and via-Manila carriers. */
+  direct: boolean;
+}
+
+export interface Market {
+  id: string;
+  rank: number;
+  name: string;
+  city: string;
+  matchScore: number;
+  directive: string;
+  directFlight: boolean;
+  flightHours: string;
+  distanceKm: number;
+  nearestAirport: string;
+  destinationAirport: string;
+  /** 1–10 route-accessibility score, computed backend-side from the route reference (H-14). */
+  accessibilityScore: number;
+  flightFrequency: number;
+  /** Round-trip fare range in PHP, from tbl_market_route_reference (H-16). */
+  fareMinPhp: number;
+  fareMaxPhp: number;
+  /** Provenance of the fare/route figures — e.g. "static_reference_v1". */
+  fareSource: string;
+  /** ISO date the fare/route figures were last validated, or null. */
+  fareAsOf: string | null;
+  airlines: Airline[];
+  peakMonths: string[];
+  /** "seasonal_history" when derived from ≥52 weeks of signal, else "reference" (H-19). */
+  peakMonthsSource: 'seasonal_history' | 'reference';
+  currency: string;
+  forexLabel: string;
+  gdpValue: number;
+  forexValue: number;
+  seasonalityScore: number;
+  /**
+   * Year-over-year arrivals ratio. Computed at ingestion and now persisted
+   * (V20 added tbl_forecast_result.yoy_ratio / tbl_market_score.yoy_ratio;
+   * ForecastingService populates them). Still nullable: rows written before
+   * V20 have no value, so the Seasonal Patterns tab keeps its explicit
+   * "not available" state for those.
+   */
+  yoyRatio: number | null;
+  spikeIndicator: boolean;
+  /** Current category-scoped demand-window level, sourced from tbl_demand_alert. */
+  surgeLevel: 'WARNING' | 'CRITICAL' | null;
+  /** Measured uplift and first threshold-crossing week for the active demand window. */
+  upliftPct: number | null;
+  windowOpenDate: string | null;
+  /** The economic scorer that actually produced this market's persisted score. */
+  scorer: 'xgboost' | 'linear' | null;
+  gdpSource: string | null;
+  forexSource: string | null;
+  macroAsOf: string | null;
+  forecastConfidence: number;
+  lowConfidence: boolean;
+  forecastSource: string;
+  economyInsight: string;
+  seasonalityInsight: string;
+  gdpTrend: { year: number; value: number }[];
+  forexTrend: { date: string; value: number }[];
+  chartData: ChartDataPoint[];
+  /** When the newest measured signal behind this market was aggregated. */
+  dataAsOf: string | null;
+  /** True when that measurement is older than 48h — real, but old. */
+  dataStale: boolean;
+  dataStaleCause: string | null;
+}
+
+export interface MarketsResponse { markets: Market[]; }
+
+export interface DemandAlert {
+  id: string;
+  date: string;
+  title: string;
+  market: string;
+  marketId: string;
+  /** Nullable on the wire for alerts written before category persistence. */
+  category: string | null;
+  trend: string;
+  isRead: boolean;
+  /**
+   * tbl_demand_alert.alert_level. The live backend emits WARNING and CRITICAL
+   * (seed data: 3 WARNING, 2 CRITICAL, no INFO); INFO comes from the
+   * category-rank notification path. Anything above INFO counts as a surge —
+   * see isSurge() below, and never compare against 'WARNING' directly or
+   * CRITICAL alerts silently drop out of the surge count.
+   */
+  alertLevel: 'INFO' | 'WARNING' | 'CRITICAL';
+  /** Nullable on the wire for legacy alerts without an operator message. */
+  alertMessage: string | null;
+  /** ISO timestamp for the first forecast week crossing the alert threshold. */
+  windowOpenDate: string | null;
+  /** Forecast uplift over the rolling baseline, in percent. */
+  upliftPct: number | null;
+}
+
+// ─── Module 4 — Campaign Analytics ────────────────────────────────────────
+
+export interface CampaignInput {
+  impressions: number;
+  clicks: number;
+  adSpend: number;
+  revenue: number;
+  conversions: number;
+  bookings: number;
+  newCustomers: number;
+}
+
+export interface CampaignHistoryEntry {
+  periodStart: string;
+  periodEnd: string;
+  pesScore: number;
+  pesLabel: string;
+  ctr: number;
+  cpc: number;
+  roas: number;
+  convRate: number;
+  cac: number;
+}
+
+/**
+ * The `POST /api/analytics/manual` response's `pes` object (see
+ * PESComputationService / ARCHITECTURE_SPEC.md §4.2) — the server-authoritative
+ * score/label the board displays as of Task 17. `weight` is a display string
+ * ("35.0%") the server formats itself; there is no `normalized` component, so
+ * PesGauge's per-metric breakdown bars stay client-derived (see PesGauge.tsx).
+ */
+export interface PesBreakdownItem {
+  metric: string;
+  weight: string;
+  contribution: number;
+}
+
+export interface ManualIngestPes {
+  overallScore: number;
+  label: string;
+  breakdown: PesBreakdownItem[];
+}
+
+/**
+ * `POST /api/analytics/manual`'s full response. Only `pes` is consumed by the
+ * frontend today (Task 17) — `metrics`/`funnel` are computed client-side from
+ * the same input via campaignMetrics.ts, so they're intentionally left
+ * untyped/unused here rather than modeled speculatively.
+ */
+export interface ManualIngestResponse {
+  pes?: ManualIngestPes;
+}
+
+export interface FunnelDiagnostic {
+  stage: string;
+  rank: string;
+  dropRate: string;
+  insight: string;
+}
+
+export interface Recommendation {
+  stage: string;
+  urgency: string;
+  title: string;
+  action: string;
+}
+
+export interface PrescriptiveReport {
+  executiveSummary: string;
+  recommendedPlatform: string;
+  funnelDiagnostics: FunnelDiagnostic[];
+  recommendations: Recommendation[];
+}
+
+// ─── Module 3 — Content Studio ────────────────────────────────────────────
+
+export interface CaptionMetadata {
+  core_business_context: string;
+  market_cultural_localization: string;
+  psychological_elements: string;
+  creative_tone_atmosphere: string;
+  algorithmic_platform_architecture: string;
+}
+
+export interface PlatformCaptions {
+  optionNames: string[];
+  options: string[];
+  optionMetadata: CaptionMetadata[];
+  guide: string[];
+}
+
+/**
+ * Where generated content came from. "fallback" means fastapi-sbert served a
+ * deterministic mock because GROQ_API_KEY is unset — the content looks real but
+ * is not. Screens MUST surface this (see 05-module-3.md Task 25).
+ */
+export type ContentSource = 'groq' | 'gemini' | 'fallback' | 'template';
+
+export interface ContentResponse {
+  market: { country: string; city: string; flag: string };
+  framework: string;
+  source: ContentSource;
+  /**
+   * Deviates from the plan's `Record<string, PlatformCaptions>` — the real
+   * shape is a fixed three-platform object, not an open string-keyed map, so
+   * an empty `{}` doesn't typecheck as a stand-in. Kept explicit to avoid
+   * silently widening/losing the per-platform keys.
+   */
+  captions: {
+    instagram: PlatformCaptions;
+    tiktok: PlatformCaptions;
+    facebook: PlatformCaptions;
+  };
+}
+
+export interface OmcsAuditResult {
+  profileSemanticScore: number;
+  /**
+   * Deviates from the plan's `Record<string, number>` — the fixture's real
+   * shape (ui-ux-prototype.html:1396–1426 / OmcsAuditResultDTO) nests the
+   * rubric scores under `scores`/`total` rather than being a flat map. The
+   * fixture-local `keyof typeof OMCS_RUBRIC_LABELS` key constraint is widened
+   * to `string` here so this type doesn't depend back on services/fixtures/omcs.ts.
+   */
+  rubricEvaluationData: {
+    scores: Record<string, number>;
+    total: number;
+  };
+  recommendationsPictureScore: number;
+  pubmatConsistencyScore: number;
+  consistencyExplanation: string;
+  omcsScore: number;
+  status: 'Pass' | 'Fail';
+  feedback: string;
+}
+
+/**
+ * One shot in the creative direction's shot list.
+ *
+ * `label`, `description` and `lighting` are what
+ * POST /api/creative-direction/generate actually returns today.
+ *
+ * The rest are OPTIONAL because the FastAPI service does not emit them yet:
+ * the drawer renders the structured directives when they are present and falls
+ * back to the narrative `description` when they are not, so a live response
+ * still renders correctly. Emitting them from the service is a backend
+ * follow-up — see backend/CONTRACT.md.
+ */
+export interface CreativeDirectionShot {
+  label: string;
+  description: string;
+  lighting: string;
+  /** Uppercase eyebrow — the kind of shot ("Hero", "Threshold"). */
+  shotType?: string;
+  /** What is in frame ("Sardine run, mid-shoal"). */
+  subject?: string;
+  /** Where the camera is. */
+  placement?: string;
+  /** What it does from there. */
+  action?: string;
+  /** Why the shot exists — which caption or platform it serves. */
+  context?: string;
+}
+
+/**
+ * Module 3 creative direction — CampaignBriefDrawer's data.
+ *
+ * Deviates from the plan's assumed `{shotListRecommendations, visualRecommendations,
+ * lightingSuggestions, moodboardReferences}` shape — the live
+ * POST /api/creative-direction/generate response was verified (Tasks 22-24) to
+ * actually return this nested shape instead. Kept as observed rather than the
+ * plan's guess.
+ */
+export interface CreativeDirection {
+  visualGuide: string[];
+  shots: CreativeDirectionShot[];
+  moodboard: {
+    palette: string;
+    references: string[];
+  };
+}
+
+/**
+ * Not part of Task 1's enumerated fixture list, but the contract test's
+ * "no type import from a fixture module" rule is unconditional, and
+ * services/apiClient.ts imports this type — so it moves here too, following
+ * the same import/re-export pattern as the other fixtures.
+ */
+export interface WorkspaceMemberFixture {
+  name: string;
+  email: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
+  initials: string;
+  /**
+   * Omitted (or 'active') for a real member. 'pending' marks an unaccepted
+   * invite — set client-side for the optimistic row WorkspaceSettings appends
+   * on submit; the backend invite endpoint is proposed, not implemented, so
+   * no real member row is ever fetched back in this state yet.
+   */
+  status?: 'active' | 'pending';
+}
+
+export interface PublishedPost {
+  id: string;
+  date: string;
+  platform: PlatformId;
+  caption: string;
+  status: 'published' | 'draft';
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagementRate: number;
+  series: number[];
+}
+
+/**
+ * True when a demand alert represents an active surge. Centralised because the
+ * dashboard reads it in three places (feed filter, surge count, surge markets)
+ * and each previously compared `alertLevel === 'WARNING'` directly — which
+ * silently excluded CRITICAL, the most urgent level the backend emits.
+ */
+export function isSurge(alert: Pick<DemandAlert, 'alertLevel'>): boolean {
+  return alert.alertLevel === 'WARNING' || alert.alertLevel === 'CRITICAL';
+}
+
+/**
+ * The market-card source of truth for the same demand-window rule used by
+ * alert cards and the dashboard count. Never infer a surge from chart spikes.
+ */
+export function marketSurgeState(
+  market: Pick<Market, 'surgeLevel'>,
+): 'warning' | 'critical' | 'none' {
+  if (market.surgeLevel === 'CRITICAL') return 'critical';
+  if (market.surgeLevel === 'WARNING') return 'warning';
+  return 'none';
+}
+
+// ---------------------------------------------------------------------------
+// Link attribution (Module 4)
+//
+// Spec: docs/superpowers/specs/2026-09-20-link-attribution-design.md
+//
+// A link is minted alongside each surge alert's attribution code. The operator
+// pastes `urls.metaAdUrl` (or the TikTok equivalent) into their ad, CeView owns
+// the redirect, and each click records the creative the platform names in the
+// URL — which is the only way to answer "which ad produced this booking".
+// ---------------------------------------------------------------------------
+
+/** The three strings an operator copies out of Content Studio. */
+export interface AttributionLinkUrls {
+  /** Bare link for a caption or link-in-bio. */
+  linkUrl: string;
+  /**
+   * Link plus Meta's URL-parameter macros. Pasting the bare `linkUrl` into an
+   * ad instead of this one is the single likeliest way for the whole feature to
+   * silently degrade to campaign-level attribution.
+   */
+  metaAdUrl: string;
+  tiktokAdUrl: string;
+}
+
+export interface AttributionLink {
+  linkId: string;
+  slug: string;
+  category: string;
+  targetMarket: string;
+  /** Operator's own URL, or null when the link points at CeView's enquiry page. */
+  destinationUrl: string | null;
+  /** True when this link uses CeView's hosted enquiry page (tier 2). */
+  hosted: boolean;
+  windowStart: string;
+  windowEnd: string;
+  urls: AttributionLinkUrls;
+}
+
+/** A click offered to the operator when attaching a manually logged booking. */
+export interface UnconvertedClick {
+  clickId: string;
+  linkId: string;
+  platform: 'META' | 'TIKTOK' | 'UNKNOWN';
+  externalAdId: string | null;
+  adLabel: string | null;
+  /** No macro resolved, so this click cannot name a creative. */
+  untagged: boolean;
+  clickedAt: string;
+}
+
+/**
+ * One row of the per-creative rollup. `externalAdId` is null for the untagged
+ * bucket, which is shown rather than hidden: those clicks are real reach, and
+ * dropping them would make CeView's totals disagree with the ad platform's.
+ */
+export interface CreativePerformance {
+  externalAdId: string | null;
+  adLabel: string | null;
+  untagged: boolean;
+  clicks: number;
+  conversions: number;
+  revenue: number;
+}
+
+export interface LinkPerformance {
+  linkId: string;
+  slug: string;
+  totalClicks: number;
+  totalConversions: number;
+  totalRevenue: number;
+  creatives: CreativePerformance[];
+}
+
+/** Traveller submission on the public enquiry page. `clickId` is the `cv=` value. */
+export interface AttributionEnquiryInput {
+  clickId: string;
+  contactName: string;
+  contactValue: string;
+  partySize?: number;
+  requestedStart?: string;
+  requestedEnd?: string;
+  message?: string;
+}

@@ -33,7 +33,7 @@ The Uniqueness Scoring Dashboard renders inside the same Calibration view as Tra
 
 | Component Name | Description & Purpose | Type / Format |
 |---|---|---|
-| `UniquenessScoringController` | `POST /api/v1/classification/uniqueness` — routes the uniqueness request to the AI gateway and returns the score package. | Spring `@RestController` |
+| `UniquenessScoringController` | `POST /api/classification/uniqueness` — routes the uniqueness request to the AI gateway and returns the score package. | Spring `@RestController` |
 | `AIInferenceGatewayService` | Reactive WebClient bridge to the FastAPI microservice; method `computeUniqueness`. | Spring `@Service` |
 | `UniquenessRequest` | DTO record carrying the business payload plus the operator-confirmed category allocations. | Java record |
 | `UniquenessResponse` | DTO record carrying `overallScore`, `semanticsScore`, `categoryScore`, `descriptionFeedback`, `categoryFeedback`. | Java record |
@@ -42,13 +42,13 @@ The Uniqueness Scoring Dashboard renders inside the same Calibration view as Tra
 
 | Method | Path | Controller method | Frontend caller |
 |---|---|---|---|
-| `POST` | `/api/v1/classification/uniqueness` | `UniquenessScoringController.uniqueness` | `apiClient.classifyUniqueness` (Calibration Phase 2) |
+| `POST` | `/api/classification/uniqueness` | `UniquenessScoringController.uniqueness` | `apiClient.classifyUniqueness` (Calibration Phase 2) |
 
 ## Processing Logic
 
 1. The operator adjusts the `InferredCategoryBoard` sliders (from Transaction 1.1) until the total reaches 100% and clicks **Compute Final Uniqueness Score**.
 2. `UniquenessCalibrationView` invokes `apiClient.classifyUniqueness` with the business payload plus the active categories (only entries where `percentage > 0` are forwarded).
-3. The frontend POSTs to `/api/v1/classification/uniqueness`; the controller wraps the map in a `UniquenessRequest` and delegates to `AIInferenceGatewayService.computeUniqueness`.
+3. The frontend POSTs to `/api/classification/uniqueness`; the controller wraps the map in a `UniquenessRequest` and delegates to `AIInferenceGatewayService.computeUniqueness`.
 4. The gateway forwards the request to the FastAPI uniqueness pipeline, which produces `overallScore`, `semanticsScore`, `categoryScore`, and the two AI-generated feedback strings.
 5. The controller marshals the result into a `UniquenessResponse` and returns it; `apiClient` exposes it to the view as a `UniquenessResultDTO`.
 6. `UniquenessCalibrationView.setCalibrationResult(result)` triggers a re-render of `CalibrationResultsDashboard`, which fans the data out across the `OverallScoreCard` and the two `ActionableScoreCard` tiles.

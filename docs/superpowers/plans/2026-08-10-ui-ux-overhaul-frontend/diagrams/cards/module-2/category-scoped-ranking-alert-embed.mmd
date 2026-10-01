@@ -1,0 +1,9 @@
+flowchart TD
+  Entry(["NotificationService.getNotificationsForProfile(profileId)"]) --> Build["categoryRankService.buildForCategories(profileId, profile.categories)"]
+  Build --> EachCat{"for each category"}
+  EachCat --> RawRank["ai.rankMarketsForCategory(category)\n(unchanged — powers topInterests/keywordData)"]
+  RawRank --> RawEmpty{"raw empty?"}
+  RawEmpty -->|yes| Skip(["continue — skip this category\n(unchanged skip behavior)"])
+  RawEmpty -->|no| CatRanks["forecastingService.loadMarketsFromDb(profileId, category)\n(M2-B1's overload)"]
+  CatRanks --> Dto["toNotificationDto(category, raw, today, categoryRanks)"]
+  Dto --> Details(["DetailsDto.categoryMarketRanks = categoryRanks"])

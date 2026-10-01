@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from app import errors
 from app.agents.pes_report_agent.state import (
     AgentState,
     ReportOutput,
@@ -20,26 +21,7 @@ from app.agents.pes_report_agent.state import (
 )
 from app.core.AgentLLMModel import AgentLLMModel
 from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
-
-# ── Fallback values used when LLM is unavailable ─────────────────────────────
-
-_FALLBACK_REPORT = ReportOutput(
-    metric_conditions=[],
-    cross_metric_logic=CrossMetricLogic(
-        relationships="LLM unavailable — no analysis performed.",
-        insights="",
-    ),
-    ranked_weaknesses=[],
-)
-
-_FALLBACK_EVALUATION = {
-    "score": 0,
-    "pass": False,
-    "issues": ["LLM unavailable"],
-    "missing_elements": [],
-    "accuracy_check": "incorrect",
-    "recommendation": "regenerate",
-}
+from app.unavailable import DependencyUnavailable
 
 
 # ==========================================
@@ -66,7 +48,13 @@ def generate_report(state: AgentState) -> dict[str, Any]:
     _base_llm = AgentLLMModel().get_model()
 
     if _base_llm is None:
-        return {"report": _FALLBACK_REPORT.model_dump(), "iterations": iterations + 1}
+        raise DependencyUnavailable(
+            code=errors.MOD4_PES_AGENT_FAILED,
+            message="PES report generation is unavailable.",
+            dependency="gemini",
+            cause="the report node produced no structured output",
+            stage="fastapi-sbert/pes_report_agent.generate",
+        )
 
     generator_llm = _base_llm.with_structured_output(ReportOutput)
     messages = generation_prompt.format_messages(
@@ -86,7 +74,13 @@ def evaluate_report(state: AgentState) -> dict[str, Any]:
     _base_llm = AgentLLMModel().get_model()
 
     if _base_llm is None:
-        return {"evaluation": _FALLBACK_EVALUATION}
+        raise DependencyUnavailable(
+            code=errors.MOD4_PES_AGENT_FAILED,
+            message="PES report evaluation is unavailable.",
+            dependency="gemini",
+            cause="the evaluate node produced no structured output",
+            stage="fastapi-sbert/pes_report_agent.evaluate",
+        )
 
     evaluator_llm = _base_llm.with_structured_output(EvaluationResult)
     messages = evaluation_prompt.format_messages(

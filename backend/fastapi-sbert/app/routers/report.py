@@ -1,6 +1,6 @@
 """Module 4 — Prescriptive Performance Report generation.
 
-  POST /generate  — Gemini-powered exhaustive funnel diagnostics (or deterministic fallback)
+  POST /generate  — Gemini-powered exhaustive funnel diagnostics (503 when Gemini is offline)
   POST /pdf       — Returns a minimal valid PDF placeholder for the 'Download Report' button
 
 New schema (Phase 5 / Module 4):
@@ -29,7 +29,9 @@ from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from app import errors
 from app.services import gemini_client
+from app.unavailable import DependencyUnavailable
 
 router = APIRouter()
 log = logging.getLogger("module4.report")
@@ -70,12 +72,7 @@ class ReportRequest(BaseModel):
     market:             str                 = Field(default="korea")
 
 
-# ─── Urgency mapping (rank → urgency label) ───────────────────────────────────
-
-_RANK_LABELS    = ["Weakest", "Moderate", "Alright"]
-_URGENCY_LABELS = ["Most Urgent", "Urgent", "Not Very Urgent"]
-
-# Platform recommendation per market
+# Platform recommendation per market (channel analysis, not fabricated output — spec D6)
 _PLATFORM_MAP = {
     "korea":     "Naver Blog",
     "kr":        "Naver Blog",
@@ -88,67 +85,6 @@ _PLATFORM_MAP = {
 }
 
 
-def _fallback_report(transitions: list[FunnelTransition], market: str) -> dict:
-    """
-    Deterministic fallback used when Gemini is offline.
-    Uses the pre-ranked business-impact order from Spring Boot.
-    Matches the target schema exactly.
-    """
-    # Build funnel diagnostics using business-impact ranking from Spring Boot
-    default_insights = [
-        "Visitors who clicked showed initial interest but the landing page failed to sustain engagement — a mismatch between ad promise and destination experience.",
-        "High-intent leads reached the booking step but abandoned due to form friction and insufficient social proof to overcome commitment hesitation.",
-        "Broad audience targeting resulted in a high raw drop but CTR remains within acceptable range for awareness-stage campaigns; creative refresh needed.",
-    ]
-    default_rec_titles = [
-        "Align Landing Page to Ad Promise",
-        "Streamline the Booking Conversion Path",
-        "Sharpen Ad Creative Targeting",
-    ]
-    default_rec_actions = [
-        "Mirror the headline copy from your best-performing ad variant directly onto the landing page hero section and reduce form fields to Name + Phone only.",
-        "Add trust signals (reviews, booking counter) above the CTA, implement a single-click 'Reserve Now' button, and follow up with an abandoned-booking SMS within 2 hours.",
-        "Shift 25% of ad spend from broad awareness audiences to retargeting pools of past website visitors and lookalike audiences based on confirmed bookers.",
-    ]
-
-    diagnostics = []
-    recommendations = []
-
-    for i, t in enumerate(transitions[:3]):
-        rank    = _RANK_LABELS[i]
-        urgency = _URGENCY_LABELS[i]
-        diagnostics.append({
-            "stage":    t.stage,
-            "rank":     rank,
-            "dropRate": t.dropRate,
-            "insight":  default_insights[i],
-        })
-        recommendations.append({
-            "stage":   t.stage,
-            "urgency": urgency,
-            "title":   default_rec_titles[i],
-            "action":  default_rec_actions[i],
-        })
-
-    platform = _PLATFORM_MAP.get(market.lower(), "Naver Blog")
-
-    return {
-        "executiveSummary": (
-            "Here is what your five campaign metrics mean for your Cebu tourism business: "
-            "CTR (Click-Through Rate) shows the percentage of tourists who saw your ad and clicked — a low or declining CTR means your ad creative or audience targeting is losing relevance with your target market. "
-            "CPC (Cost Per Click) is how much you pay in ₱ for each visitor on platforms like Facebook or Naver Blog — a rising CPC means you are reaching fewer tourists per peso of ad budget. "
-            "ROAS (Return on Ad Spend) is the ₱ revenue your resort or tour packages generate for every ₱1 spent on ads — it directly measures campaign profitability. "
-            "CR (Conversion Rate) is the percentage of clicks that became booking enquiries or form submissions — a falling CR points to a landing page or offer issue that is losing high-intent tourists before they enquire. "
-            "CAC (Customer Acquisition Cost) is the total ₱ you spend to secure one confirmed booking — rising CAC directly erodes your profit margin per customer. "
-            f"Currently, the '{transitions[0].stage if transitions else 'Clicks → Conversions'}' "
-            "stage is your most urgent bottleneck and should be your immediate focus to improve overall campaign efficiency."
-        ),
-        "funnelDiagnostics": diagnostics,
-        "recommendations":   recommendations,
-        "recommendedPlatform": platform,
-    }
-
-
 # ─── /generate ────────────────────────────────────────────────────────────────
 
 @router.post("/generate")
@@ -158,7 +94,8 @@ def generate(req: ReportRequest) -> dict:
 
     When Gemini is available, produces AI-generated insights, root-cause
     diagnoses, and urgency-ranked recommendations for every funnel stage.
-    Falls back to deterministic output when Gemini is offline.
+    Raises 503 MOD4_REPORT_UNAVAILABLE when Gemini is offline — no deterministic
+    stand-in.
 
     Request body (from Spring Boot AnalyticsController):
         metrics            — computed KPI values
@@ -186,8 +123,13 @@ def generate(req: ReportRequest) -> dict:
         transitions = (transitions + defaults)[:3]
 
     if not gemini_client._enabled():
-        log.info("report.generate using deterministic fallback (Gemini offline)")
-        return _fallback_report(transitions, req.market)
+        raise DependencyUnavailable(
+            code=errors.MOD4_REPORT_UNAVAILABLE,
+            message="The prescriptive report is unavailable.",
+            dependency="gemini",
+            cause="the report LLM is offline or returned no usable structure",
+            stage="fastapi-sbert/report.generate",
+        )
 
     result = gemini_client.performance_report(
         metrics=req.metrics.model_dump(),

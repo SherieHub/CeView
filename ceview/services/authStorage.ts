@@ -7,3 +7,4 @@
  */
 export const TOKEN_KEY = 'ceview_token';
 export const OPERATOR_ID_KEY = 'ceview_operator_id';
+export const PROFILE_COMPLETED_KEY = 'ceview_profile_completed';

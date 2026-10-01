@@ -4,16 +4,12 @@ WORKDIR /app
 
 # GEMINI_API_KEY — set at runtime via docker-compose env.
 # When absent the service runs without LLM (caption agent and feedback unavailable).
-ENV KERAS_MODEL_PATH=/app/models/complete_classifier_head.keras
-
 # Install dependencies first (layer-cached separately from app code)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Models are mounted at runtime via docker-compose volume (./fastapi-sbert/models:/app/models:ro)
 # This placeholder keeps the COPY layer from failing when the directory is empty.
-COPY models ./models
-
 COPY app ./app
 
 EXPOSE 8000

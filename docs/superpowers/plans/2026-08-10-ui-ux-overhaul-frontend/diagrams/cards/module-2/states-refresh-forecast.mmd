@@ -1,0 +1,8 @@
+flowchart TD
+  Banner(["AiStatusBanner receives visible"]) --> BCheck{"visible?"}
+  BCheck -->|yes| BShow(["Amber 'AI Forecast Service Unavailable' banner"])
+  BCheck -->|no| BHide(["render null"])
+
+  Btn(["RefreshForecastButton clicked"]) --> Run["running=true, disable + spinner label"]
+  Run --> Call["apiClient.markets.list()"]
+  Call --> Done["running=false, showToast('Forecast refreshed — N markets re-ranked')"]

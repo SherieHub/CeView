@@ -1,0 +1,290 @@
+[
+  {
+    "id": 1,
+    "description": "A family-run dive operator working out of a two-storey shopfront a short walk from the municipal pier. The company runs three fibreglass bancas, maintains its own compressor and rental gear, and serves mostly certified divers on multi-day packages plus a smaller stream of first-timers doing discovery dives. Staff include four instructors and two boat crews.",
+    "uvp": "The outfit holds exclusive mooring rights at two offshore pinnacles that larger operators cannot legally anchor on, so groups reach them before the day-trip fleet arrives. Every guide logs sightings into a shared reef-health record clients receive after their trip.",
+    "services": [
+      "Two-tank offshore pinnacle dive",
+      "Open Water certification course",
+      "Night dive with reef torch guiding",
+      "Nitrox tank fills and gear servicing"
+    ],
+    "labels": ["Coastal & Island"]
+  },
+  {
+    "id": 2,
+    "description": "This charter company operates a fleet of six outrigger boats that ferry small groups between a cluster of offshore islets throughout the dry season. Bookings are handled from a beachfront kiosk, and each departure carries a maximum of twelve passengers with a boatman and a spotter. The business targets independent travellers rather than large tour wholesalers.",
+    "uvp": "Routes are re-planned every morning against tide and swell readings instead of running a fixed circuit, which lets the crew reach sandbars that only surface a few hours a day. Passengers get a smaller, quieter boat than the packed group vessels sold at hotel desks.",
+    "services": [
+      "Half-day three-islet hopping circuit",
+      "Sandbar landing at low tide",
+      "Snorkel gear issue and reef briefing",
+      "Private sunset cruise charter"
+    ],
+    "labels": ["Coastal & Island"]
+  },
+  {
+    "id": 3,
+    "description": "A surf school run from a wooden shack facing a consistent beach break, staffed by six local instructors who grew up riding the same peak. The business rents soft-top boards, runs graded lesson blocks from absolute beginner to turn coaching, and keeps a small repair bench for dinged boards. Most clients are weekend visitors from the capital.",
+    "uvp": "Instructors teach in the water alongside students rather than shouting from shore, and class sizes are held to three learners per coach. The school reads the sandbar each morning and moves its teaching zone so beginners never share a peak with experienced riders.",
+    "services": [
+      "Beginner three-day surf progression course",
+      "One-on-one turn and paddle coaching",
+      "Soft-top and shortboard rental",
+      "Board ding repair service"
+    ],
+    "labels": ["Coastal & Island"]
+  },
+  {
+    "id": 4,
+    "description": "A canyoneering outfitter that guides groups down a river gorge involving fixed-rope descents, controlled jumps into plunge pools, and several hours of scrambling over boulders. The company employs rope-access certified guides, maintains its own helmets and harnesses, and screens clients for fitness before confirming a booking. Trips run from a small mountain-road base camp.",
+    "uvp": "The team rigs its own anchor systems and rotates routes so no gorge section is run more than three days a week, keeping conditions safe and unworn. Guides carry swiftwater rescue certification, which almost no competing operator in the province holds.",
+    "services": [
+      "Full-day gorge descent with rappels",
+      "Guided cliff-jump progression",
+      "Swiftwater safety briefing and gear issue",
+      "Overnight base-camp bunk for early starts"
+    ],
+    "labels": ["Adventure & Nature"]
+  },
+  {
+    "id": 5,
+    "description": "This guiding service specialises in multi-hour cave systems, taking small parties through narrow crawl passages, chest-deep underground streams, and chambers that require helmet lamps throughout. It operates under a permit from the local protected-area office and maintains a strict group cap. Clients are typically fit travellers looking for a physically demanding underground day.",
+    "uvp": "Each party is accompanied by two guides trained in confined-space rescue, allowing routes deeper than the standard tourist chamber most visitors are limited to. The company also runs a lamp-out silence stop that has become the trip's defining moment for repeat clients.",
+    "services": [
+      "Deep chamber traverse with stream wading",
+      "Crawl-passage caving for experienced groups",
+      "Headlamp and helmet issue with technique training",
+      "Cave conservation and safety orientation"
+    ],
+    "labels": ["Adventure & Nature"]
+  },
+  {
+    "id": 6,
+    "description": "A mountain bike tour company running guided descents on forest singletrack across a ridge system, with a support van that shuttles riders and bikes to the upper trailheads. The workshop on site handles suspension setup and trailside repairs. Riders range from confident intermediates to racers using the terrain for off-season training.",
+    "uvp": "The company built and now maintains eleven kilometres of its own singletrack under a community land agreement, so its routes exist nowhere else. Shuttle logistics let riders complete four long descents in a day instead of one grinding climb.",
+    "services": [
+      "Shuttle-assisted singletrack descent day",
+      "Technical skills clinic on berms and drops",
+      "Full-suspension bike and armour rental",
+      "Trailside mechanical support"
+    ],
+    "labels": ["Adventure & Nature"]
+  },
+  {
+    "id": 7,
+    "description": "A small walking-tour company whose guides are trained historians and long-time residents of the old quarter. Tours trace three centuries of civic and religious architecture, stopping at a stone fort, two plazas, and a working parish church. The business runs morning and late-afternoon departures and also handles school and academic group bookings.",
+    "uvp": "Every route is built from parish archives and oral histories rather than a generic script, and guides carry reproduction period maps that let visitors compare street patterns then and now. Group size never exceeds ten so conversation stays possible inside quiet interiors.",
+    "services": [
+      "Old quarter architecture walking tour",
+      "Archive-based colonial history route",
+      "Parish church and fort interior access",
+      "Academic and school group programmes"
+    ],
+    "labels": ["Cultural & Heritage"]
+  },
+  {
+    "id": 8,
+    "description": "A weaving cooperative of thirty-eight member households that opened its production floor to visitors five years ago. Guests watch backstrap looms in operation, learn how natural dyes are prepared, and can sit at a training loom under supervision. Sales of finished textiles and workshop fees are split among members under a written revenue agreement.",
+    "uvp": "Visitors work with the same master weavers who supply the cooperative's commercial orders, not demonstration staff hired for tourism. Each purchased piece carries the weaver's name and the pattern's clan meaning, which the cooperative documents to keep the motif tradition traceable.",
+    "services": [
+      "Backstrap loom demonstration and talk",
+      "Half-day hands-on weaving workshop",
+      "Natural dye preparation session",
+      "Named-weaver textile purchase"
+    ],
+    "labels": ["Cultural & Heritage"]
+  },
+  {
+    "id": 9,
+    "description": "This organisation produces and manages an annual town fiesta, coordinating street dance contingents, a devotional procession, and a week of community programmes. It works year-round with barangay councils, costume makers, and drum corps, and sells grandstand seating and hospitality packages to visitors. A small permanent staff runs logistics, permits, and sponsor relations.",
+    "uvp": "Because the group is community-owned rather than a hired events agency, its programme still follows the religious calendar that gave the fiesta its meaning instead of being reshaped for tourist convenience. Visitors can join rehearsal sessions with contingents in the weeks before the parade.",
+    "services": [
+      "Grandstand seating for the street dance parade",
+      "Devotional procession viewing programme",
+      "Contingent rehearsal observation visits",
+      "Costume atelier tours"
+    ],
+    "labels": ["Cultural & Heritage"]
+  },
+  {
+    "id": 10,
+    "description": "A ticketed waterpark operating eleven slides, a wave pool, and a lazy river across a fenced eight-hectare site. The company sells day passes, cabana upgrades, and annual memberships, and runs its own lifeguard training programme. Peak trade comes from school holidays, corporate outings, and birthday bookings from nearby residential districts.",
+    "uvp": "The park runs a timed-entry ride reservation system that removes most queueing, a rarity among regional waterparks. Its two tallest slides were engineered for the site rather than bought off the shelf, giving them drop profiles that cannot be ridden anywhere else in the country.",
+    "services": [
+      "Multi-slide day admission",
+      "Wave pool sessions on a timed cycle",
+      "Private cabana and locker rental",
+      "Birthday and corporate group packages"
+    ],
+    "labels": ["Theme Parks / Entertainment"]
+  },
+  {
+    "id": 11,
+    "description": "An indoor entertainment centre occupying two floors of a commercial building, combining trampoline courts, a ninja obstacle course, an arcade floor, and party rooms. Admission is sold in timed blocks with mandatory grip socks. The operator markets primarily to families with children aged six to sixteen and to corporate team-building organisers.",
+    "uvp": "Court time is capped by sensor-counted occupancy rather than sold unlimited, so the jump floors never reach the crush that makes similar venues unusable on weekends. A quiet sensory hour each morning is reserved for children who cannot manage the standard noise and lighting.",
+    "services": [
+      "Timed trampoline court sessions",
+      "Ninja obstacle course runs",
+      "Redemption arcade and prize counter",
+      "Private party room hire with host"
+    ],
+    "labels": ["Theme Parks / Entertainment"]
+  },
+  {
+    "id": 12,
+    "description": "A travelling carnival company that assembles a full midway of mechanical rides, game booths, and a nightly variety show, moving between provincial town plazas across a nine-month circuit. It owns its rides, employs its own inspection crew, and negotiates revenue splits with host municipalities. Attendance peaks during town fiesta weeks.",
+    "uvp": "The operator brings a genuine full-scale midway, including a forty-metre Ferris wheel, to towns that have no permanent amusement venue of their own. Its rides are re-certified by an independent engineer at every setup, and the report is posted at the gate.",
+    "services": [
+      "Ferris wheel and mechanical ride tickets",
+      "Midway game booth strip",
+      "Nightly variety and fireworks show",
+      "Unlimited-ride wristband nights"
+    ],
+    "labels": ["Theme Parks / Entertainment"]
+  },
+  {
+    "id": 13,
+    "description": "A night-tour company that walks and shuttles visitors through the business district after dark, covering a rooftop viewing deck, a neon-lit side street of independent shops, and a late-night market of vinyl and secondhand traders. Groups of up to fourteen travel by chartered van between stops. Most clients are first-time visitors to the metro.",
+    "uvp": "The route is built around venues that only open after nine, giving visitors a version of the city that daytime tours structurally cannot show. Guides are working musicians and designers who live in the district, so commentary is current rather than guidebook-sourced.",
+    "services": [
+      "Guided after-dark district walk",
+      "Rooftop skyline viewing stop",
+      "Independent record and vintage shop crawl",
+      "Late-night van shuttle between quarters"
+    ],
+    "labels": ["Urban & City"]
+  },
+  {
+    "id": 14,
+    "description": "This company manages a mixed-use retail complex spanning four levels, with a cinema block, a karaoke floor, a concert-capable atrium, and roughly two hundred tenant units. Its in-house team handles leasing, events programming, and a visitor concierge desk serving out-of-town shoppers. Weekend footfall is driven by scheduled performances and seasonal sales.",
+    "uvp": "Unlike a passive landlord, the operator programmes the atrium with live acts and pop-up markets almost every weekend, turning the complex into a destination rather than a shopping errand. Its concierge arranges same-day delivery of purchases to hotels across the metro.",
+    "services": [
+      "Concert and pop-up programming in the atrium",
+      "Cinema and karaoke floor bookings",
+      "Visitor concierge and hotel delivery service",
+      "Tourist tax-refund processing desk"
+    ],
+    "labels": ["Urban & City"]
+  },
+  {
+    "id": 15,
+    "description": "An entertainment operator running a multi-room karaoke and lounge venue on the upper floors of a downtown tower. It offers twenty-six private rooms of varying size, a members' lounge, and a late licence that keeps the floor open until four in the morning. Corporate after-work groups make up much of its midweek trade.",
+    "uvp": "Rooms are acoustically isolated and fitted with studio-grade microphones and a licensed catalogue in nine languages, which lets the venue serve visiting business delegations that smaller neighbourhood outlets cannot. A soundproof booth lets groups take home a mastered recording.",
+    "services": [
+      "Private karaoke room hire by the hour",
+      "Multilingual song catalogue access",
+      "Studio booth recording of group tracks",
+      "Corporate after-hours function packages"
+    ],
+    "labels": ["Urban & City"]
+  },
+  {
+    "id": 16,
+    "description": "A cooking school operating from a purpose-built teaching kitchen with twelve induction stations and a demonstration counter. Classes cover regional braises, vinegar-based stews, and rice cake preparation, and each session ends with participants eating what they cooked. Enrolment is split between visiting travellers and residents taking evening courses.",
+    "uvp": "Recipes are collected from home cooks in surrounding towns and taught with their original technique intact rather than simplified for visitors. Each student leaves with a spice and vinegar kit measured to reproduce the same dishes with ingredients available abroad.",
+    "services": [
+      "Half-day regional braise cooking class",
+      "Rice cake and native sweets workshop",
+      "Market ingredient sourcing walk with the chef",
+      "Take-home vinegar and spice kit"
+    ],
+    "labels": ["Culinary & Gastronomy"]
+  },
+  {
+    "id": 17,
+    "description": "A craft brewery producing eight core beers on a fifteen-hectolitre system, with a taproom built directly against the glass wall of the brewhouse. Visitors can take a production tour, work through a guided flight, and buy growlers to take away. The business also supplies kegs to about forty accounts across the region.",
+    "uvp": "The brewery ferments with a house yeast isolated from local fruit, giving its beers a profile no contract brewer can replicate. Tour groups taste unfiltered samples pulled straight from the conditioning tanks, something the packaged range never shows.",
+    "services": [
+      "Guided brewhouse production tour",
+      "Eight-beer tasting flight with brewer commentary",
+      "Tank-side unfiltered sampling",
+      "Growler fills and keg supply"
+    ],
+    "labels": ["Culinary & Gastronomy"]
+  },
+  {
+    "id": 18,
+    "description": "A small-batch chocolate maker that buys cacao directly from twelve upland farming families, ferments and roasts on site, and sells bars through a tasting room attached to the production floor. Visitors book structured tastings that move from raw bean to finished bar. The company also runs a wholesale line for cafes and specialty grocers.",
+    "uvp": "Because fermentation happens in-house rather than being outsourced to a consolidator, the tasting room can pour single-farm lots side by side and show how one valley's beans differ from the next. Farmers are named on every wrapper with the price paid.",
+    "services": [
+      "Bean-to-bar guided tasting flight",
+      "Roasting and winnowing floor tour",
+      "Single-farm lot comparison session",
+      "Chocolate tempering workshop"
+    ],
+    "labels": ["Culinary & Gastronomy"]
+  },
+  {
+    "id": 19,
+    "description": "A food tour operator that walks small groups through six eating stops in a single afternoon, covering a noodle stall, a grill house, a fermented condiment stand, and three dessert vendors. The company pre-pays vendors, sets portion sizes, and briefs each group on ordering etiquette. Tours run four times weekly with a maximum of eight guests.",
+    "uvp": "Stops are chosen from vendors the founder's family has bought from for decades, which secures seating and off-menu items walk-in visitors are never offered. Portions are calibrated across six stops so guests can finish the route rather than filling up at the first.",
+    "services": [
+      "Six-stop guided tasting walk",
+      "Off-menu vendor specialities",
+      "Fermented condiment and vinegar tasting",
+      "Dietary-adapted route for vegetarian guests"
+    ],
+    "labels": ["Culinary & Gastronomy"]
+  },
+  {
+    "id": 20,
+    "description": "A capsule hostel with ninety-six sleeping pods arranged across three dormitory floors, plus lockers, shared bathrooms, and a co-working lounge. Check-in is automated through kiosks and the property runs with a lean overnight staff. Guests are mostly solo budget travellers and contract workers staying between two nights and three weeks.",
+    "uvp": "Each pod has its own ventilation, blackout blind, and power dock, so the property delivers genuine privacy at dormitory pricing that conventional bunk hostels cannot match. Long-stay guests get a dedicated quiet floor separated from the nightly turnover.",
+    "services": [
+      "Nightly capsule pod bookings",
+      "Long-stay weekly rates on the quiet floor",
+      "Luggage storage and laundry service",
+      "Co-working lounge with day passes"
+    ],
+    "labels": ["Accommodation & Staycation"]
+  },
+  {
+    "id": 21,
+    "description": "A fourteen-room guesthouse occupying a converted family home, run by the owners who live on the ground floor. Rooms are individually furnished, breakfast is cooked to order, and the property keeps a small garden courtyard for guests. Bookings come mainly through direct enquiry and repeat visitors who return each year.",
+    "uvp": "With only fourteen rooms and resident owners, guests get an itinerary planned in conversation over breakfast rather than a printed leaflet at a desk. The house keeps two rooms permanently unlisted so returning guests can always be accommodated at short notice.",
+    "services": [
+      "En-suite room nightly stays",
+      "Cooked-to-order breakfast service",
+      "Owner-planned itinerary consultation",
+      "Airport and terminal transfer arrangement"
+    ],
+    "labels": ["Accommodation & Staycation"]
+  },
+  {
+    "id": 22,
+    "description": "An operator managing eighty serviced apartment units inside a residential tower, marketed for weekend staycations and extended corporate assignments. Each unit has a kitchenette and washer, and the building provides a pool deck, gym, and twenty-four-hour front desk. Housekeeping runs on a schedule guests select at booking.",
+    "uvp": "The company sells the building's leisure amenities as the product itself, packaging pool-deck cabanas and late checkout into weekend rates aimed at residents who want a break without travelling. Corporate tenants take the same units monthly with billing consolidated per company.",
+    "services": [
+      "Weekend staycation packages with late checkout",
+      "Monthly serviced apartment leases",
+      "Pool deck and gym access with cabana hire",
+      "Scheduled housekeeping and linen service"
+    ],
+    "labels": ["Accommodation & Staycation"]
+  },
+  {
+    "id": 23,
+    "description": "A transit hotel located inside the airport perimeter, selling rooms in six-hour blocks as well as overnight stays. It runs shower-only suites for passengers on short layovers, a soundproofed sleeping wing, and a small business lounge. Occupancy is driven almost entirely by delayed connections and early-morning departures.",
+    "uvp": "Booking is sold by the hour against a flight number, so passengers pay only for the layover they actually have rather than a full night. The sleeping wing is engineered to airline-cabin acoustic standards, letting guests rest through terminal announcements.",
+    "services": [
+      "Six-hour layover room blocks",
+      "Shower and refresh suites",
+      "Soundproofed overnight sleeping wing",
+      "Wake-up and boarding-call service"
+    ],
+    "labels": ["Accommodation & Staycation"]
+  },
+  {
+    "id": 24,
+    "description": "A rental management company operating thirty-one privately owned condominium units as short-stay accommodation. It handles listing, guest vetting, cleaning crews, and maintenance on behalf of the owners, taking a management share of nightly revenue. Guests are typically families and small groups who want more space than a hotel room provides.",
+    "uvp": "Because the company standardises linens, kitchen inventory, and check-in across every unit, guests get consistent hotel-grade delivery from independently owned apartments. Owners receive occupancy reporting and a guaranteed minimum, which keeps the inventory stable year to year.",
+    "services": [
+      "Whole-apartment nightly and weekly stays",
+      "Self check-in with digital access codes",
+      "Mid-stay cleaning and linen change",
+      "Owner revenue management and reporting"
+    ],
+    "labels": ["Accommodation & Staycation"]
+  }
+]

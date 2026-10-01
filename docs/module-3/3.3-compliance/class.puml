@@ -114,7 +114,7 @@ MediaCaptionManager *-- MediaPreviewCard
 SmartOptimizationBoard *-- AuditEmptyBanner
 
 ' ── Frontend → Spring Boot ──
-apiClient ..> ComplianceController : POST /api/v1/compliance/omcs-analyze
+apiClient ..> ComplianceController : POST /api/compliance/omcs-analyze
 
 ' ── Spring Boot ──
 ComplianceController --> AIInferenceGatewayService : analyzeOmcsAgent()

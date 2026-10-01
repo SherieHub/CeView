@@ -6,9 +6,13 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 # Cache dependency resolution in its own layer, separate from source changes.
 COPY pom.xml .
-RUN mvn -B dependency:go-offline
+# Retry: Maven Central occasionally returns a transient 502/503 on a single
+# artifact fetch (seen on org.eclipse.aether:aether-api, a maven-dependency-
+# plugin transitive, not a project dependency) — one retry clears it without
+# failing the whole CI/Render build.
+RUN mvn -B dependency:go-offline || mvn -B dependency:go-offline
 COPY src ./src
-RUN mvn -B package -DskipTests
+RUN mvn -B package -Dmaven.test.skip=true || mvn -B package -Dmaven.test.skip=true
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

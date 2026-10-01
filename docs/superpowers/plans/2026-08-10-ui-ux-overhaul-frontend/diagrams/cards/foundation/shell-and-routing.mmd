@@ -1,0 +1,21 @@
+flowchart TD
+  Visit(["Visit any URL"]) --> AuthCheck{"isAuthenticated?\n(useAuth)"}
+  AuthCheck -->|no, not /login| RedirectLogin["Navigate → /login"]
+  AuthCheck -->|no, is /login| ShowLogin["Render LoginPage"]
+  AuthCheck -->|yes, is /login| RedirectDash1["Navigate → /dashboard"]
+  AuthCheck -->|yes, not /login| ProfileCheck{"profile.uniquenessScore\nset? (useProfile)"}
+
+  ProfileCheck -->|null, not /onboarding| RedirectOnboard["Navigate → /onboarding"]
+  ProfileCheck -->|set, is /onboarding| RedirectDash2["Navigate → /dashboard"]
+  ProfileCheck -->|otherwise| RenderRoute["Render matched route\n(AppShell + Outlet, or\n/onboarding placeholder)"]
+
+  RenderRoute --> Overlay{"Modal/Drawer\nopened?"}
+  Overlay -->|open→true| PushStack["OverlayStack.push(kind)"]
+  Overlay -->|open→false / unmount| PopStack["OverlayStack.pop(kind)"]
+  PushStack --> EscListen["Escape key →\ndismissTop() pops\nlast-pushed kind only"]
+
+  ShowLogin --> SubmitAuth{"Submit:\nsignin or signup?"}
+  SubmitAuth -->|signin| Login["auth.login() → saveTokens\n→ setUser → isAuthenticated=true"]
+  SubmitAuth -->|signup| Register["auth.register() → same\nas login"]
+  Login --> AuthCheck
+  Register --> AuthCheck

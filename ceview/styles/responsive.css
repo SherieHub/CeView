@@ -1,0 +1,34 @@
+/* ============================================================
+   RESPONSIVE — desktop deltas, ported verbatim from
+   ui-ux-prototype.html:868-899
+   Note: some selectors here (.plat-pick, .metric-grid, .kpi-row,
+   .month-grid, .cs-grid, .pes-grid) belong to screens not yet built
+   in later foundation/screen cards. Ported verbatim per the plan;
+   harmless no-ops until those classes exist.
+   ============================================================ */
+@media (min-width:768px){
+  .content{padding:var(--sp-8) var(--sp-8) var(--sp-16);}
+  .topbar{padding:var(--sp-4) var(--sp-8);}
+  .score-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .plat-pick{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .metric-grid{grid-template-columns:repeat(5,minmax(0,1fr));}
+  .kpi-row{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .month-grid{grid-template-columns:repeat(12,minmax(0,1fr));}
+  #view-login{grid-template-columns:1.05fr .95fr;}
+  .login-brand{padding:var(--sp-12);}
+}
+@media (min-width:1024px){
+  .sidebar{position:sticky;inset:0 auto auto auto;transform:none;height:100dvh;top:0;}
+  .burger{display:none;}
+  .ob-wrap{grid-template-columns:290px 1fr;}
+  .ob-main{padding:var(--sp-12) var(--sp-10) var(--sp-12);}
+  .dash-grid{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);}
+  .cs-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);}
+  .pes-grid{grid-template-columns:minmax(0,340px) minmax(0,1fr);}
+}
+@media (max-width:1023px){
+  .drawer{width:100vw;}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+}

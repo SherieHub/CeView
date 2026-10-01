@@ -24,27 +24,35 @@ from app.agents.creative_director_agent.prompts import (
 )
 from app.agents.creative_director_agent.state import SocialAgentState
 from app.core.AgentLLMModel import _wrapper as _llm_wrapper
+from app.unavailable import DependencyUnavailable
 
 logger = logging.getLogger(__name__)
-
-_FALLBACK_SERVICES = ["resort stay", "beach activities", "local tours"]
 
 
 # ── Graph nodes ───────────────────────────────────────────────────────────────
 
 def analyze_services(state: SocialAgentState) -> dict:
     """Node 1 — Filter business services to those relevant to the market category."""
-    
+
     # Safely extract both standard and extra services from the state
     base_services = state.get("business_services") or []
     extra_services = state.get("extra_additional_services") or []
-    
+
     # Combine them so the LLM evaluates the full offering
     all_services = base_services + extra_services
-    
-    # If both were empty, use the fallback
+
+    # No recorded services — report it. Inventing "resort stay" here put words
+    # into captions published under a real operator's name.
     if not all_services:
-        all_services = _FALLBACK_SERVICES
+        raise DependencyUnavailable(
+            code=errors.MOD31_NO_CORE_SERVICES,
+            message="This business profile has no core services recorded.",
+            dependency="business_profile",
+            cause="both core services and extra_additional_services were empty — "
+                  "complete the business profile before generating content",
+            stage="fastapi-sbert/caption_agent.analyze_services",
+            status_code=424,
+        )
 
     llm = _llm_wrapper.get_model()
     if llm is None:
@@ -86,39 +94,23 @@ def analyze_services(state: SocialAgentState) -> dict:
         }
 
 
-def _fallback_captions() -> dict:
-    """Return mock captions in the agent output shape when LLM is unavailable."""
-    from app.services.gemini_client import _mock_captions  # local to avoid circular import
-    mock = _mock_captions()
-    result: dict = {"_source": "fallback"}
-    for platform in ("instagram", "tiktok", "facebook"):
-        pdata    = mock.get(platform, {})
-        options  = pdata.get("options", [])
-        metadata = pdata.get("optionMetadata", [])
-        result[platform] = [
-            {"caption": options[i], **(metadata[i] if i < len(metadata) else {})}
-            for i in range(len(options))
-        ]
-    return result
-
-
 def generate_platform_captions(state: SocialAgentState) -> dict:
     """Node 2 — Generate 3-platform × 3-variation caption matrix.
 
     Passes full market context (target_market, forecast_context, research_context)
     to the platform-aware prompt so the LLM can produce culturally localised,
     platform-rule-compliant captions with named variation types.
-    Falls back to curated mock captions when the LLM is unavailable.
+    Raises DependencyUnavailable when the LLM is unavailable; never substitutes canned copy.
     """
     llm = _llm_wrapper.get_model()
     if llm is None:
-        logger.warning(
-            "[%s] caption_agent.generate_platform_captions: LLM unavailable — "
-            "GROQ_API_KEY may be unset or ChatOpenAI failed to initialise. Returning mock captions.",
-            errors.MOD31_LLM_UNAVAILABLE,
+        raise DependencyUnavailable(
+            code=errors.MOD31_LLM_UNAVAILABLE,
+            message="Caption generation is unavailable.",
+            dependency="groq",
+            cause=getattr(_llm_wrapper, "last_error", None) or "the Groq client is not initialised",
+            stage="fastapi-sbert/caption_agent",
         )
-        fb = _fallback_captions()
-        return {"final_captions": fb, "source": fb.pop("_source", "fallback")}
 
     try:
         chain = caption_generation_prompt | llm | JsonOutputParser()
@@ -135,8 +127,10 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
             "research_context":           state.get("research_context", ""),
             "market_score":               state.get("market_score", ""),
             
-            # These two now match BOTH the State keys and the Prompt Variables
-            "relevant_priority_services": state.get("relevant_priority_services", _FALLBACK_SERVICES),
+            # These two now match BOTH the State keys and the Prompt Variables.
+            # analyze_services runs first in the graph and guarantees a non-empty
+            # list here (it raises otherwise), so this is a plain read.
+            "relevant_priority_services": state["relevant_priority_services"],
             "extra_additional_services":  state.get("extra_additional_services", []),
         }
 

@@ -1,0 +1,7 @@
+flowchart TD
+  Mount(["InsightsTabs receives market, activeTab (owned by M2-F's drawer)"]) --> Tab{"activeTab"}
+  Tab -->|economy| Purchasing(["PurchasingPowerTab: KPI tiles,\nforex+GDP trend charts, AI insight"])
+  Tab -->|seasonality| Seasonal(["SeasonalPatternsTab: score+band,\nYoY chip, peak calendar, AI insight"])
+  Purchasing --> Airlines(["Route & carriers list (market.airlines)\nrenders below both tabs"])
+  Seasonal --> Airlines
+  Airlines -->|click other tab| Switch["onTabChange(otherTab) — drawer scroll/timeframe untouched"]

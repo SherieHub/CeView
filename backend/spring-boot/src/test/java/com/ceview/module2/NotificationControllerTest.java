@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Verifies NotificationController scopes GET /api/v1/notifications to the
+ * Verifies NotificationController scopes GET /api/notifications to the
  * authenticated operator's own business profile instead of trusting a
  * client-supplied profileId — see Task 7.
  */
@@ -28,6 +28,7 @@ class NotificationControllerTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     private UUID operatorA;
     private String tokenA;
@@ -39,6 +40,8 @@ class NotificationControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         UUID operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
 
         BusinessProfile pA = new BusinessProfile();
@@ -56,14 +59,14 @@ class NotificationControllerTest {
 
     @Test
     void omittingProfileIdDerivesTheCallersOwnProfile() throws Exception {
-        mvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + tokenA))
+        mvc.perform(get("/api/notifications").header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.notifications").isArray());
     }
 
     @Test
     void suppliedOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(get("/api/v1/notifications")
+        mvc.perform(get("/api/notifications")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileA.toString()))
             .andExpect(status().isOk())
@@ -72,7 +75,7 @@ class NotificationControllerTest {
 
     @Test
     void suppliedAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(get("/api/v1/notifications")
+        mvc.perform(get("/api/notifications")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileB.toString()))
             .andExpect(status().isForbidden())
@@ -81,16 +84,17 @@ class NotificationControllerTest {
 
     @Test
     void withoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(get("/api/v1/notifications"))
+        mvc.perform(get("/api/notifications"))
             .andExpect(status().isUnauthorized());
     }
 
     @Test
     void operatorWithNoBusinessProfileGets409() throws Exception {
         UUID operatorWithoutProfile = UUID.randomUUID();
+        testOperators.create(operatorWithoutProfile);
         String tokenWithoutProfile = jwtService.issue(operatorWithoutProfile, "no-profile@example.com");
 
-        mvc.perform(get("/api/v1/notifications").header("Authorization", "Bearer " + tokenWithoutProfile))
+        mvc.perform(get("/api/notifications").header("Authorization", "Bearer " + tokenWithoutProfile))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.status").value(409))
             .andExpect(jsonPath("$.error").value("request_failed"))

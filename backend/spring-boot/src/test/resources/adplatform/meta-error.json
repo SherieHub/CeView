@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "This authorization code has been used.",
+    "type": "OAuthException",
+    "code": 100,
+    "fbtrace_id": "A1bC2dE3f"
+  }
+}

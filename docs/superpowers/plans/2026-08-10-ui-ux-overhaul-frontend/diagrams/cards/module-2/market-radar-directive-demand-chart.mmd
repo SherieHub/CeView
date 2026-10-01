@@ -1,0 +1,8 @@
+flowchart TD
+  Mount(["DrawerChartPanel receives market, timeframe"]) --> Spike{"market.spikeIndicator?"}
+  Spike -->|yes| SurgeBanner(["Surge banner"])
+  Spike -->|no| NeutralBanner(["Neutral no-surge banner"])
+  SurgeBanner --> Directive(["AI strategic directive text"])
+  NeutralBanner --> Directive
+  Directive --> Chart(["DemandForecastChart:\nslice chartData to last 4 or 12 weeks\nper timeframe toggle"])
+  Chart -->|toggle 4WK/12WK| OnChange["onTimeframeChange(newTimeframe)"]

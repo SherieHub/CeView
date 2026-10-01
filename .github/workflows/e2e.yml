@@ -1,18 +1,123 @@
-name: E2E (Playwright, full stack)
+name: E2E (Playwright, full stack, per-screen)
 
 on:
   push:
-    branches: [main]
+    branches: [main, task_allocation, ph1-dev]
   pull_request:
-    branches: [main]
+    branches: [main, task_allocation, ph1-dev]
+  schedule:
+    # Full, unfiltered run every night — the path-filtered PR checks below are
+    # a fast-feedback convenience, not a substitute for this safety net.
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
 
 jobs:
-  e2e:
+  # Determines which screens' spec files actually need to run for a given PR,
+  # and resolves that straight down into the `screens` output consumed by the
+  # `e2e` job's `strategy.matrix` below. Every screen still always runs on
+  # push/schedule/workflow_dispatch — only pull_request events get narrowed.
+  # See docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/00-index.md
+  # ("Testing strategy") for the reasoning.
+  #
+  # This used to be a static matrix on the `e2e` job filtered by a per-leg
+  # `if: contains(..., matrix.screen)` — but `matrix` isn't in scope for a
+  # job's own `if:` (only for its steps), so GitHub rejects the whole
+  # workflow file as invalid before any job runs. Computing the matrix
+  # contents here instead avoids referencing `matrix` outside step context.
+  changes:
     runs-on: ubuntu-latest
-    # fastapi-sbert downloads a ~1.1GB HuggingFace model on cold start with no
-    # persistent cache in CI, and docker-compose gates spring-boot on its
-    # health check — this job can take 10+ minutes. Free on this public repo,
-    # but worth knowing before you tune the timeout below.
+    # paths-filter lists the PR's files via the API, which needs
+    # pull-requests: read on a private repo.
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      screens: ${{ steps.screens.outputs.screens }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: none
+          filters: |
+            foundation:
+              - 'frontend/styles/**'
+              - 'frontend/layout/**'
+              - 'frontend/services/**'
+              - 'frontend/App.tsx'
+              - 'frontend/types.ts'
+              - 'e2e/tests/login.spec.ts'
+              - 'backend/**'
+            login:
+              - 'frontend/components/auth/**'
+              - 'e2e/tests/login.spec.ts'
+            onboarding-wizard:
+              - 'frontend/components/module-1/onboarding/**'
+              - 'e2e/tests/onboarding-wizard.spec.ts'
+            settings-business-profile:
+              - 'frontend/components/settings/BusinessProfileSettings.tsx'
+              - 'frontend/components/settings/BusinessProfileSettings.test.tsx'
+              - 'e2e/tests/settings-business-profile.spec.ts'
+            dashboard:
+              - 'frontend/components/module-2/2.1-dashboard/**'
+              - 'e2e/tests/dashboard.spec.ts'
+            market-radar-drawer:
+              - 'frontend/components/module-2/2.2-market-radar/**'
+              - 'e2e/tests/market-radar-drawer.spec.ts'
+            content-studio:
+              - 'frontend/components/module-3/3.1-content-studio/**'
+              - 'e2e/tests/content-studio.spec.ts'
+            calendar:
+              - 'frontend/components/module-3/calendar/**'
+              - 'e2e/tests/calendar.spec.ts'
+            settings-platforms:
+              - 'frontend/components/settings/PlatformsSettings.tsx'
+              - 'frontend/components/settings/PlatformsSettings.test.tsx'
+              - 'frontend/services/connectionsStore.tsx'
+              - 'e2e/tests/settings-platforms.spec.ts'
+            settings-workspace:
+              - 'frontend/components/settings/WorkspaceSettings.tsx'
+              - 'frontend/components/settings/WorkspaceSettings.test.tsx'
+              - 'e2e/tests/settings-workspace.spec.ts'
+            performance:
+              - 'frontend/components/module-4/4.1-campaign-analytics/**'
+              - 'e2e/tests/performance.spec.ts'
+
+      # Resolves the filter output above into the actual list of screens the
+      # `e2e` job's matrix should run: the full roster on push/schedule/
+      # workflow_dispatch (unfiltered safety-net) or on a pull_request that
+      # touched `foundation`; otherwise just the screens whose own paths (or
+      # spec file) changed.
+      - name: Compute the screen matrix to run
+        id: screens
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CHANGED: ${{ steps.filter.outputs.changes }}
+        run: |
+          ALL='["login","onboarding-wizard","settings-business-profile","dashboard","market-radar-drawer","content-studio","calendar","settings-platforms","settings-workspace","performance"]'
+          if [ "$EVENT_NAME" != "pull_request" ] || jq -e 'index("foundation")' <<< "$CHANGED" >/dev/null; then
+            SCREENS="$ALL"
+          else
+            SCREENS=$(jq -cn --argjson all "$ALL" --argjson changed "$CHANGED" \
+              '[$all[] | select(. as $s | $changed | index($s) != null)]')
+          fi
+          echo "screens=$SCREENS" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    needs: changes
+    # Skip the job entirely (rather than expanding a matrix of zero and
+    # having GitHub report a green no-op) when nothing matched — only
+    # possible on a pull_request that touched none of these screens.
+    if: needs.changes.outputs.screens != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        screen: ${{ fromJSON(needs.changes.outputs.screens) }}
+    runs-on: ubuntu-latest
+    name: e2e-screen (${{ matrix.screen }})
+    # See the original workflow's note: fastapi-sbert's cold-start HF model
+    # download + docker-compose health-check gating can take 10+ minutes even
+    # for a single screen's spec file, since the whole stack still has to boot.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -23,11 +128,42 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      # setup-java's `cache: 'maven'` covers ~/.m2/repository ONLY — not
+      # ~/.m2/wrapper, where the wrapper unpacks the Maven distribution itself.
+      # maven-wrapper.properties uses distributionType=only-script, so without
+      # this every job in the matrix above re-downloads the same ~9MB
+      # apache-maven-3.9.9-bin.zip from Maven Central on every run. Roughly a
+      # dozen parallel jobs asking for one file is what gets refused, which is
+      # how this surfaced: `wget: Failed to fetch ...apache-maven-3.9.9-bin.zip`
+      # twice in a row, before Maven had even started.
+      - name: Cache the Maven wrapper distribution
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/wrapper
+          key: maven-wrapper-${{ hashFiles('backend/spring-boot/.mvn/wrapper/maven-wrapper.properties') }}
+
       - name: Build Spring Boot jar
         working-directory: backend/spring-boot
         run: |
           chmod +x mvnw
-          ./mvnw -B package -DskipTests
+          # Backstop for the above, and for a transient 502/503 on a single
+          # artifact fetch. The previous `cmd || cmd` retried instantly, which
+          # does nothing for a rate-limit or a short outage — back off instead.
+          for attempt in 1 2 3; do
+            if ./mvnw -B package -DskipTests; then exit 0; fi
+            echo "::warning::Maven build attempt $attempt failed; retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          echo "::error::Maven build failed after 3 attempts"
+          exit 1
+
+      - name: Generate throwaway backend secrets
+        # The stack runs Spring Boot's Postgres profile, which refuses to start
+        # with missing or public dev-default secrets (issue #51). Fresh random
+        # values per run; they protect nothing beyond this CI job.
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
 
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend
@@ -35,8 +171,8 @@ jobs:
           # Repo secret — see docs/DEPLOY_RENDER.md and the repo README for
           # setup notes. fastapi-transformer hard-fails at startup without a
           # real key; a placeholder is enough to boot but forecasting calls
-          # that actually reach Groq will fail, which the smoke test doesn't
-          # exercise.
+          # that actually reach Groq will fail, which most screen specs don't
+          # exercise directly.
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: docker compose up -d --build
@@ -67,16 +203,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ceview/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Build and start frontend
-        working-directory: ceview
+      # A dev server, not `vite build` + `vite preview`: dashboard and
+      # market-radar-drawer drive the DEV-only /preview/* routes (App.tsx),
+      # which a production build tree-shakes out. Same as the journey job below.
+      - name: Start frontend dev server
+        working-directory: frontend
         env:
           VITE_API_BASE_URL: http://localhost:8080
         run: |
           npm ci
-          npm run build
-          npm run preview -- --port 3000 --host 0.0.0.0 &
+          npm run dev -- --port 3000 --host 0.0.0.0 &
           timeout 60 bash -c 'until curl -sf http://localhost:3000; do sleep 2; done'
 
       - name: Install Playwright browsers
@@ -85,15 +223,132 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests for this screen
         working-directory: e2e
-        run: npx playwright test
+        env:
+          # playwright.config.ts defaults baseURL to its own :3012 dev server.
+          # This job serves the frontend on :3000 above, so it has to override
+          # that default explicitly rather than relying on it.
+          E2E_BASE_URL: http://localhost:3000
+        run: npx playwright test tests/${{ matrix.screen }}.spec.ts
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.screen }}
+          path: e2e/playwright-report/
+          retention-days: 7
+
+      - name: Tear down backend stack
+        if: always()
+        working-directory: backend
+        run: docker compose down -v
+
+  # The one spec that exercises a real, full authenticated journey against the
+  # live stack (see e2e/tests/journey.spec.ts) rather than one isolated
+  # screen. Starts fastapi-sbert (Module 3/4 AI path — report generation,
+  # captions, creative direction) alongside Postgres + Spring Boot: since
+  # commit b5766c09 removed the rule-based report fallback, the performance
+  # test needs a REAL fastapi-sbert response, not a tolerated "unavailable"
+  # state. fastapi-transformer (Module 2 forecasting) stays out — nothing this
+  # spec exercises calls it live; see the docker compose note below.
+  e2e-journey:
+    runs-on: ubuntu-latest
+    name: e2e-journey (full authenticated flow)
+    # fastapi-sbert's cold-start ~1.1GB HF model download can take up to 10
+    # minutes (see its docker-compose healthcheck start_period) — same budget
+    # as the per-screen `e2e` job above, which pays the same cost.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate throwaway backend secrets
+        # The stack runs Spring Boot's Postgres profile, which refuses to start
+        # with missing or public dev-default secrets (issue #51). Fresh random
+        # values per run; they protect nothing beyond this CI job.
+        run: |
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+
+      - name: Start backend stack
+        working-directory: backend
+        env:
+          # Repo secret — see docs/DEPLOY_RENDER.md. fastapi-sbert needs
+          # GROQ_API_KEY for the report/caption/creative Groq calls and
+          # HF_TOKEN to download the E5 encoder its lifespan hook loads
+          # before /healthz serves.
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # --no-deps on spring-boot skips fastapi-transformer, which compose
+          # would otherwise also start via spring-boot's depends_on graph —
+          # fastapi (sbert) is started explicitly instead, on its own line.
+          docker compose up -d postgres
+          docker compose up -d --build fastapi
+          docker compose up -d --no-deps --build spring-boot
+
+      - name: Wait for fastapi-sbert health check
+        run: |
+          echo "Waiting for fastapi-sbert on :8000 (cold model download can take up to 10 min)..."
+          timeout 600 bash -c 'until curl -sf http://localhost:8000/healthz; do sleep 5; done'
+
+      - name: Wait for Spring Boot to be ready
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null -X POST http://localhost:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'; then
+              echo "backend ready"; exit 0
+            fi
+            sleep 5
+          done
+          echo "backend did not become ready"
+          cd backend && docker compose logs spring-boot fastapi
+          exit 1
+
+      - name: Dump container logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          echo "::group::docker compose ps"
+          docker compose ps
+          echo "::endgroup::"
+          docker compose logs spring-boot fastapi postgres || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Start frontend dev server
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: |
+          npm ci
+          npm run dev -- --port 3001 --host 0.0.0.0 &
+          timeout 60 bash -c 'until curl -sf http://localhost:3001; do sleep 2; done'
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run journey spec
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://localhost:3001
+          E2E_API_BASE_URL: http://localhost:8080
+        run: npx playwright test tests/journey.spec.ts
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-journey
           path: e2e/playwright-report/
           retention-days: 7
 

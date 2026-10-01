@@ -1,0 +1,22 @@
+[     500ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=12077155:20102
+[     671ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/v1/business-profile:0
+[     672ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts:25:11) @ http://localhost:3001/services/profileContext.tsx:42
+[  313912ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/styles/index.css?t=1787449322356:0
+[  313917ms] [ERROR] [vite] Failed to reload /styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:3001/@vite/client:881
+[  337691ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/styles/index.css?t=1787449344996:0
+[  337703ms] [ERROR] [vite] Failed to reload /styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:3001/@vite/client:881
+[  338621ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=12077155:20102
+[  338791ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/v1/business-profile:0
+[  338792ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts:25:11) @ http://localhost:3001/services/profileContext.tsx:42
+[  347188ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/styles/index.css?t=1787449355644:0
+[  347191ms] [ERROR] [vite] Failed to reload /styles/index.css. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:3001/@vite/client:881
+[  357172ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=12077155:20102
+[  357328ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/v1/business-profile:0
+[  357328ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts:25:11) @ http://localhost:3001/services/profileContext.tsx:42
+[  365791ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=12077155:20102
+[  365884ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/v1/business-profile:0
+[  365885ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts:25:11) @ http://localhost:3001/services/profileContext.tsx:42

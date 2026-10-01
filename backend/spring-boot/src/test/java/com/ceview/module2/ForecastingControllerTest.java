@@ -33,6 +33,7 @@ class ForecastingControllerTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Neither /markets (DB-only read) nor the 403-rejected path in /ensure and
     // /analyze ever reach the AI gateway, but the full app context wires it in,
@@ -52,6 +53,8 @@ class ForecastingControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
 
@@ -73,14 +76,14 @@ class ForecastingControllerTest {
         // No forecast rows exist for profileA yet — loadMarketsFromDb returns an
         // empty list rather than erroring, so a 200 here proves resolution succeeded
         // (a failed resolve would 401/403/409 before the service is ever called).
-        mvc.perform(get("/api/v1/forecasting/markets").header("Authorization", "Bearer " + tokenA))
+        mvc.perform(get("/api/forecasting/markets").header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.markets").isArray());
     }
 
     @Test
     void marketsWithOwnProfileIdWorksNormally() throws Exception {
-        mvc.perform(get("/api/v1/forecasting/markets")
+        mvc.perform(get("/api/forecasting/markets")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileA.toString()))
             .andExpect(status().isOk())
@@ -89,7 +92,7 @@ class ForecastingControllerTest {
 
     @Test
     void marketsWithAnotherOperatorsProfileIdIsRejected() throws Exception {
-        mvc.perform(get("/api/v1/forecasting/markets")
+        mvc.perform(get("/api/forecasting/markets")
                 .header("Authorization", "Bearer " + tokenA)
                 .param("profileId", profileB.toString()))
             .andExpect(status().isForbidden())
@@ -100,7 +103,7 @@ class ForecastingControllerTest {
     void ensureWithAnotherOperatorsProfileIdInPathIsRejected() throws Exception {
         // Path-variable profileId is still part of the URL shape (unchanged in this
         // task), but must now be validated against the JWT-resolved profile.
-        mvc.perform(post("/api/v1/forecasting/ensure/" + profileB)
+        mvc.perform(post("/api/forecasting/ensure/" + profileB)
                 .header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.error").value("forbidden"));
@@ -108,7 +111,7 @@ class ForecastingControllerTest {
 
     @Test
     void analyzeWithAnotherOperatorsProfileIdInPathIsRejected() throws Exception {
-        mvc.perform(post("/api/v1/forecasting/analyze/" + profileB)
+        mvc.perform(post("/api/forecasting/analyze/" + profileB)
                 .header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.error").value("forbidden"));
@@ -116,7 +119,7 @@ class ForecastingControllerTest {
 
     @Test
     void marketsWithoutAuthenticationIsRejected() throws Exception {
-        mvc.perform(get("/api/v1/forecasting/markets"))
+        mvc.perform(get("/api/forecasting/markets"))
             .andExpect(status().isUnauthorized());
     }
 
@@ -124,7 +127,7 @@ class ForecastingControllerTest {
     void marketsOmittingProfileIdDerivesEachOperatorsOwnProfileIndependently() throws Exception {
         // Operator B omitting profileId must resolve to B's own profile, not A's —
         // proves resolution is per-caller, not a fixed/cached lookup.
-        mvc.perform(get("/api/v1/forecasting/markets").header("Authorization", "Bearer " + tokenB))
+        mvc.perform(get("/api/forecasting/markets").header("Authorization", "Bearer " + tokenB))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.markets").isArray());
     }

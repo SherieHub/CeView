@@ -1,0 +1,64 @@
+%% Module 3 — Content Studio, Calendar, Platforms, Workspace
+%% Content Studio (M3-F1, M3-1..M3-5), Calendar (M3-F2, M3-6..M3-8), Settings (M3-F3, M3-9..M3-10),
+%% shared cross-surface state (M3-F0). See 04-module-3.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef shell fill:#e6eefc,stroke:#3b6fd6,color:#0f2c4a;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+  classDef store fill:#fff2d6,stroke:#c8901f,color:#4a3308;
+
+  PostStore["services/postStore.ts (M3-F0)"]:::store
+  ConnStore["services/connectionsStore.ts (M3-F0)"]:::store
+
+  subgraph ContentStudio["components/module-3/3.1-content-studio/ (route: /content)"]
+    Shell1["ContentStudioView.tsx (M3-F1)\nowns activePlatform, draft, audit"]:::shell
+    Matrix["AIContentMatrixPanel.tsx (M3-1)"]:::newfile
+    CaptionCard["CaptionOptionCard.tsx (M3-1)"]:::newfile
+    VisualBoard["VisualDirectionBoard.tsx (M3-2)"]:::newfile
+    Composer["PublishComposer.tsx (M3-3)"]:::newfile
+    Compliance["CompliancePanel.tsx (M3-4)"]:::newfile
+    Gauge["OmcsGauge.tsx (M3-4)"]:::newfile
+    Board["ContentBoard.tsx (M3-5)"]:::newfile
+  end
+  Shell1 --> Matrix & VisualBoard & Composer & Compliance & Board
+  Matrix --> CaptionCard
+  Compliance --> Gauge
+  CaptionCard -.->|onStageCaption writes back to| Shell1
+  Composer -.->|reads connection state| ConnStore
+  Composer -.->|reads/writes draft via| Shell1
+  Compliance -.->|writes audit state via| Shell1
+  Board -.->|onPublished resets draft via| Shell1
+  Board -.->|calls publish()| PostStore
+
+  subgraph Calendar["components/module-3/3.2-calendar/ (route: /calendar)"]
+    Shell2["CalendarView.tsx (M3-F2)\nowns month, view mode, modal-open"]:::shell
+    CalGrid["CalendarMonthGrid.tsx (M3-6)"]:::newfile
+    CalCell["CalendarCell.tsx (M3-6)"]:::newfile
+    CalList["CalendarListView.tsx (M3-7)"]:::newfile
+    DayModal["DayPostsModal.tsx (M3-8)"]:::newfile
+  end
+  Shell2 --> CalGrid & CalList & DayModal
+  CalGrid --> CalCell
+  Shell2 -.->|reads| PostStore
+  CalGrid -.->|onDayClick| Shell2
+
+  subgraph SettingsMod3["components/settings/ (M3-F3, M3-9..M3-10)"]
+    Shell3["SettingsView.tsx (M3-F3)\ntab rail + routing"]:::shell
+    Profile["BusinessProfileSettings.tsx (Module 1 — Card 9, already built)"]:::foundation
+    PlatSettings["PlatformsSettings.tsx (M3-9)"]:::newfile
+    ConnectModal["ConnectPlatformModal.tsx (M3-9)"]:::newfile
+    WorkSettings["WorkspaceSettings.tsx (M3-10)"]:::newfile
+  end
+  Shell3 --> Profile & PlatSettings & WorkSettings
+  PlatSettings --> ConnectModal
+  PlatSettings -.->|reads/writes| ConnStore
+  ConnStore -.->|onDisconnect prunes selection in| Shell1
+
+  Matrix -.->|MOCK_CONTENT.captions| Fixtures["services/fixtures/content.ts"]:::foundation
+  Compliance -.->|MOCK_OMCS, OMCS_RUBRIC_LABELS| OmcsFixture["services/fixtures/omcs.ts"]:::foundation
+  PostStore -.->|seeds from| PostsFixture["services/fixtures/posts.ts"]:::foundation
+  ConnStore -.->|seeds from| ApiClient["services/apiClient.ts"]:::foundation
+  WorkSettings -.->|workspace.members/invite| ApiClient
+  Composer -.->|Toast on publish| Toast["components/shared/Toast.tsx"]:::foundation
+  DayModal -.->|built on| ModalPrimitive["components/shared/Modal.tsx"]:::foundation
+  ConnectModal -.->|built on| ModalPrimitive

@@ -143,7 +143,7 @@ public class ContentGenerationService {
     private void persistContent(UUID profileId, String market,
                                 ContentResponseDto dto, int uniquenessScore) {
         String framework = dto.framework();
-        String source    = dto.source();
+        String source    = dto.source() == null ? null : dto.source().name();
         CaptionsDto caps = dto.captions();
 
         Map<String, PlatformContentDto> platformMap = new LinkedHashMap<>();
@@ -151,7 +151,6 @@ public class ContentGenerationService {
             if (caps.instagram() != null) platformMap.put("instagram", caps.instagram());
             if (caps.tiktok()    != null) platformMap.put("tiktok",    caps.tiktok());
             if (caps.facebook()  != null) platformMap.put("facebook",  caps.facebook());
-            if (caps.naver()     != null) platformMap.put("naver",     caps.naver());
         }
 
         int saved = 0;

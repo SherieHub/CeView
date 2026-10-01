@@ -129,7 +129,7 @@ package "3.2 Creative Direction and Visual Recommendation Generation" {
 ContentStudioView *-- VisualDirectionBoard
 VisualDirectionBoard *-- "N" BlueprintStepItem
 
-ContentStudioView ..> CreativeDirectionController : POST /api/v1/creative-direction/generate\nPOST /api/v1/creative-direction/approve
+ContentStudioView ..> CreativeDirectionController : POST /api/creative-direction/generate\nPOST /api/creative-direction/approve
 
 CreativeDirectionController --> CreativeDirectionService : generate()
 CreativeDirectionController --> CreativeApprovalService : approveLatest()

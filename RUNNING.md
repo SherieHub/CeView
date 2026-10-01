@@ -74,57 +74,40 @@ SBERT encoder; later builds reuse Docker's layer cache unless `pom.xml` or
 When you see `Started CeViewApplication` and the FastAPI worker lines, the
 backend is ready.
 
-**⚠️ If you have an existing Postgres volume from before a schema/seed-data
-change** (e.g. pulling a branch that edits already-applied Flyway migrations,
-or any time `docker-compose.yml`'s `SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"`
-setting lets a modified migration slip through silently): wipe it and start
-fresh rather than debugging stale-schema errors.
+#### Resetting a stale Postgres volume
 
-**How to tell you need this** — any of these symptoms mean your database was
-initialized by an *older* version of the migrations and needs a full reset,
-not a code fix:
-- `ceview-spring exited with code 1` right after a Postgres log line like
-  `insert or update ... violates foreign key constraint` (a migration that
-  changed — e.g. seed data — is inserting rows that reference something an
-  *older, already-applied* version of an earlier migration never created,
-  because Flyway skipped re-running it).
+This project's Flyway migrations are sometimes **edited in place** (seed data
+lives in versioned migrations rather than a separate reset script), and
+`docker-compose.yml` sets `SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "false"`, so a
+changed migration slips through silently against a database that already
+applied the old version. Any time you pull or switch branches and
+`backend/spring-boot/src/main/resources/db/migration/` changed, reset rather
+than debugging the resulting errors.
+
+**Symptoms that mean "stale volume", not a code bug:**
+- `ceview-spring exited with code 1` right after a Postgres
+  `insert or update ... violates foreign key constraint`.
 - `column "..." does not exist` during a migration.
 - `password authentication failed for user "ceview"` from `ceview-postgres`
-  (a corrupted/inconsistent state, usually downstream of the same stale-volume
-  crash loop above — a fresh volume clears it too).
-- You just pulled a branch/commit that you know edited a migration file
-  that was already applied to your local database (check `git log` on
-  `backend/spring-boot/src/main/resources/db/migration/` if unsure).
+  (usually downstream of the crash loop above).
 
-**Option 1 — full reset (safe default, always works):**
 ```powershell
 cd backend
-docker-compose down -v       # removes ALL named volumes: ceview-pgdata AND ceview-hf-cache
+docker-compose down -v       # full reset: wipes ceview-pgdata AND ceview-hf-cache
 docker-compose up --build
 ```
-This also wipes the cached SBERT/E5 model, so `fastapi-sbert` will re-download
-it (~1.1GB, several minutes) on next start — expected, one-time cost.
 
-**Option 2 — targeted reset (faster, keeps the HF model cache):**
+That also wipes the cached SBERT/E5 model, costing a ~1.1GB re-download. To
+keep the model cache, drop only the database volume instead:
+
 ```powershell
-cd backend
 docker-compose down
 docker volume rm backend_ceview-pgdata
 docker-compose up --build
 ```
-Use this when you specifically need a clean database but don't want to
-re-download the SBERT model every time. (Volume name is prefixed with the
-Compose project name — `backend_` here, since the compose file lives in
-`backend/`; run `docker volume ls` if you're unsure of the exact name on your
-machine.)
 
-**When you need this**: any time you pull changes to this project that touch
-`backend/spring-boot/src/main/resources/db/migration/`, and you already have
-a running/previously-run Postgres container from before that pull. This is
-especially likely right after checking out a new branch or rebasing, since
-this project's Flyway migrations are sometimes edited in place (seed data
-lives in versioned migrations rather than a separate reset script) rather
-than always appended as new files.
+(The volume name is prefixed with the Compose project name — `backend_` here,
+since the compose file lives in `backend/`. Run `docker volume ls` if unsure.)
 
 **Health checks:**
 ```powershell
@@ -149,10 +132,13 @@ Three terminals. Keep all three open while testing.
 ```powershell
 cd backend\fastapi-sbert
 # First time only — install Python deps
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 # Run
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+py -3.12 -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+
+(`py -3.12` is the Windows Python launcher. If you don't have it, substitute
+the full path to your 3.12 interpreter.)
 
 You should see `Uvicorn running on http://127.0.0.1:8000`. Swagger docs at
 http://localhost:8000/docs.
@@ -166,9 +152,9 @@ immediately at startup without it.
 cd backend\fastapi-transformer
 $env:GROQ_API_KEY = "your-groq-key-here"
 # First time only — install Python deps
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 # Run
-C:\Users\austi\AppData\Local\Programs\Python\Python312\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8001
+py -3.12 -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
 
 You should see `Uvicorn running on http://127.0.0.1:8001`. Swagger docs at
@@ -186,7 +172,7 @@ cd backend\spring-boot
     --spring.profiles.active=h2 `
     --ceview.fastapi.sbert.base-url=http://127.0.0.1:8000 `
     --ceview.fastapi.transformer.base-url=http://127.0.0.1:8001 `
-    --ceview.cors.allowed-origins=http://localhost:3000
+    --ceview.cors.allowed-origins=http://localhost:3001
 ```
 
 Wait for `Started CeViewApplication in N seconds`. Health at
@@ -204,12 +190,12 @@ H2 console: http://localhost:8080/h2 — JDBC URL `jdbc:h2:mem:ceview`, user
 ## 4. Frontend
 
 ```powershell
-cd ceview
+cd frontend
 npm install       # first time only
 npm run dev
 ```
 
-Vite reports `http://localhost:3000/`. Open that in your browser.
+Vite reports `http://localhost:3001/`. Open that in your browser.
 
 By default it talks to the backend at `http://localhost:8080`
 (`VITE_API_BASE_URL` env var overrides this if you need to point it
@@ -227,17 +213,93 @@ never commit real keys.** Start from `backend/.env.example`.
 |---|---|---|---|
 | `GROQ_API_KEY` | **Required** for `fastapi-transformer` | `fastapi-transformer`, `fastapi-sbert` | `fastapi-transformer` raises `RuntimeError` and refuses to start without it — no stub mode. `fastapi-sbert` degrades gracefully instead: without it, AI calls (captions, prescriptive reports) return a deterministic fallback tagged `"source": "fallback"`. Get one at https://console.groq.com/keys. |
 | `HF_TOKEN` | Optional | `fastapi-sbert` | Used to download the SBERT/E5 encoder from HuggingFace. **Use a read-only token** — nothing in this codebase writes to HuggingFace. Get one at https://huggingface.co/settings/tokens. |
-| `JWT_SECRET` | Recommended (has a dev default) | `spring-boot` | Signs/verifies login JWTs. Defaults to `dev-secret-change-me-please-32chars-min` if unset — fine for local dev, must be a real 32+ char secret in any shared/deployed environment. |
-| `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3000`/`5173`. Add your frontend's actual origin if it differs. |
+| `JWT_SECRET` | **Required** except Path B (H2) | `spring-boot` | Signs/verifies login JWTs; a random 32+ char string (e.g. `openssl rand -hex 32`). Only the `h2` profile has a built-in dev value. Everywhere else — including Path A (Docker Compose) — Spring Boot refuses to start if it is unset, blank, or that dev value. |
+| `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | **Required** except Path B (H2) | `spring-boot` | Salt for hashing traveller IPs from tracked links; any random string (e.g. `openssl rand -hex 16`). Same rule as `JWT_SECRET`: only the `h2` profile has a dev value. |
+| `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3001`/`5173`. Add your frontend's actual origin if it differs. |
+| `CEVIEW_ATTRIBUTION_BASE_URL` | Has a default | `spring-boot` | Public origin the `/r/{slug}` redirect is served from; bound to `ceview.attribution.base-url`, defaults to `http://localhost:8080`. This string ends up inside live paid ads, so changing it after ads are running breaks every link already in market. |
+| `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | Has a dev default | `spring-boot` | Salt for hashing traveller IPs before they are stored for click debounce. Rotating it resets the debounce because existing `ip_hash` values stop matching new ones. |
+| `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
+| `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
+
+> **Connecting Meta or TikTok ad accounts?** Those variables (`META_APP_ID`,
+> `TIKTOK_APP_ID`, `TOKEN_ENCRYPTION_KEY`, and the tunnel URL) are documented
+> separately in [`AD_PLATFORM_SETUP.md`](AD_PLATFORM_SETUP.md), along with how to
+> register the OAuth redirect URI and test the connection end to end. None of
+> them are required for normal local development — the backend starts without
+> them and the ad-connection endpoints report 503.
 
 ---
 
+## 5a. Importing the uniqueness reference corpus
+
+Module 1's uniqueness score ranks a business against a **cohort** of other
+businesses. That cohort lives in `tbl_business_embedding`, and until it is
+populated the score is meaningless — below three rows the scorer has nothing
+to rank against, and on a machine with a handful of ad-hoc saved profiles the
+score is whatever that machine happens to contain. Two developers would see
+different numbers for the same business.
+
+The corpus therefore ships in two halves:
+
+| Half | Where | Applied by |
+|---|---|---|
+| Profile **text** (64 reference businesses across all 7 categories) | `V26__module1_reference_corpus.sql` | Flyway, automatically |
+| The **vectors** for that text | `backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql` | you, once |
+
+```bash
+# 1. Flyway seeds the text (runs automatically when spring-boot starts)
+docker compose up -d spring-boot
+
+# 2. Import the vectors
+docker exec -i ceview-postgres psql -U ceview -d ceview \
+  < backend/spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql
+```
+
+Verify:
+
+```bash
+docker exec ceview-postgres psql -U ceview -d ceview \
+  -c "SELECT embedding_model_version, COUNT(*) FROM tbl_business_embedding GROUP BY 1;"
+```
+
+You want **one** row back. More than one means a mixed-scheme corpus, which is
+the one failure mode worth understanding: vectors built under different schemes
+are not comparable, and mixing them does not raise an error — it silently
+produces distances driven by the scheme difference rather than by the
+businesses, so the scores look fine and are wrong. Fix it by re-embedding
+everything from the text already in the database:
+
+```bash
+docker exec -i ceview-fastapi python - --all < scripts/generate-reference-corpus.py
+```
+
+Re-run that (without `--all`, then regenerate the dump) after **any** change to
+`ml_classifier._build_text`, the encoder, or `V26` — otherwise the committed
+dump and the code drift apart silently.
+
+> The reference rows are marked `is_reference = TRUE` and have no operator.
+> They are corpus material, not tenants, and must never appear in an
+> operator-scoped query. Only the uniqueness cohort reads them.
+
 ## 6. Authentication & seeded demo accounts
 
-The app requires login — every screen is gated behind a Sign In page, and
-every `/api/v1/**` backend route requires a valid JWT.
+Every operator-facing screen requires Sign In. The traveller enquiry page,
+`/enquiry?cv=<clickId>`, is public and has no login prompt.
+
+Backend `/api/**` routes require a valid JWT except these deliberate public paths:
+
+- `/api/auth/**` establishes identity through credentials or verified Google tokens.
+- `/api/ad-connections/*/callback` resolves the operator from a validated OAuth
+  state token; the provider's browser redirect does not carry a JWT header.
+- `/api/public/attribution/**` resolves the business from a valid, unused click id
+  whose link is still inside its attribution window. The context read returns only
+  the business name; submission returns only a receipt acknowledgement.
+
+`/r/**` sits outside `/api` and is public by design. Track 2 resolves the business
+through a random link slug and captures the click. Operator enquiry reads at
+`GET /api/attribution/enquiries` remain JWT-protected and tenant-scoped.
 
 **9 realistic demo MSME operator accounts** are seeded automatically by
 Flyway (`V2__module1_profile_multi_category.sql`) on both Postgres and H2,
@@ -259,18 +321,44 @@ Quick reference — any of these logs in:
 *(see `SEED_CREDENTIALS.md` for all 9 — these are demo/seed credentials only,
 never reuse them anywhere real)*
 
-You can also register a brand-new account via the Register link on the login
-page (`POST /api/v1/auth/register`) — it starts with an empty business
+You can also register a brand-new account via the "Create account" tab on the
+login page (`POST /api/auth/register`) — it starts with an empty business
 profile instead of pre-seeded data.
 
 **What to verify once logged in:**
-- The business profile / home / campaign analytics screens show *that
-  operator's own* seeded data.
+- The dashboard and performance screens show *that operator's own* seeded
+  data.
 - Logging out and back in as a *different* seeded operator shows *different*
   data — no cross-operator leakage.
-- `curl http://localhost:8080/api/v1/business-profile` **without** an
-  `Authorization` header returns `401` — the API is genuinely locked down,
-  not just the frontend UI.
+- `curl http://localhost:8080/api/business-profile` **without** an
+  `Authorization` header returns `401`. The operator enquiry list must also return
+  `401` without a token; the public enquiry endpoints must not.
+
+### Google Sign-In setup (optional)
+
+The "Continue with Google" button on the login page works without any setup
+— it's just disabled-looking until configured, and `POST /api/auth/google`
+returns `503` if hit without a Firebase credential. To turn it on:
+
+1. In the [Firebase Console](https://console.firebase.google.com/), create
+   (or reuse) a project, add a **Web App**, and enable the **Google**
+   provider under Authentication → Sign-in method.
+2. Copy the web app config (`apiKey`, `authDomain`, `projectId`, `appId`)
+   into the frontend's env as `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
+   `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` (see `frontend/.env.example`).
+3. Project Settings → Service Accounts → **Generate new private key** — this
+   downloads a JSON file. Put its full contents (minified to one line) into
+   `backend/.env` as `FIREBASE_CREDENTIALS_JSON`. **Never commit this file or
+   its contents.**
+4. Add `localhost` (both frontend dev ports) and your deployed domain as
+   authorized origins in the Firebase Auth settings / Google Cloud OAuth
+   consent screen.
+
+A brand-new Google sign-in provisions an operator with no contact number yet
+— they're routed to a one-time "complete your profile" screen
+(`/complete-profile`) before reaching the rest of the app; a Google sign-in
+whose verified email matches an existing password account links to that
+account instead of creating a duplicate.
 
 ---
 
@@ -278,44 +366,85 @@ profile instead of pre-seeded data.
 
 With the backend (Path A or B) and frontend both running:
 
-1. Open **http://localhost:3000** — you should land on the **Sign In** page,
+1. Open **http://localhost:3001** — you should land on the **Sign In** page,
    not the app.
 2. Log in with a seeded account from §6.
 3. Open DevTools (F12) → **Network** tab, filter by `localhost:8080`.
-4. Click through the sidebar and watch requests fire — every request should
-   now carry an `Authorization: Bearer <token>` header and return **200 OK**:
+4. Click through the sidebar (`layout/nav.ts`: **Dashboard, Content Studio,
+   Calendar, Performance**, and **Business Profile / Platforms / Workspace**
+   under Settings) and watch requests fire — every request should now carry
+   an `Authorization: Bearer <token>` header and return **200 OK**:
 
-| Tab | What you click | Backend call |
+| Sidebar item | What you click | Backend call |
 |---|---|---|
-| **Home** | (auto on load) | `GET /api/v1/notifications` |
-| **Market Radar** | (auto on load) | `GET /api/v1/forecasting/markets` |
-| **Uniqueness Score** | Fill all fields → *Analyze Business Profile* | `POST /api/v1/classification/analyze` |
-| **Uniqueness Score** | *Compute Uniqueness* | `POST /api/v1/classification/uniqueness` |
-| **Business Profile** | *Save* | `PUT /api/v1/business-profile` |
-| **Campaign Analytics** | *Generate AI Report* | `POST /api/v1/analytics/report` |
+| **Dashboard** | (auto on load) | `GET /api/notifications` |
+| **Dashboard** | click a demand alert to open its market ranking, then a ranked market to open the Market Radar drawer | `GET /api/forecasting/markets` |
+| **Performance** | *Generate AI Report* | `POST /api/analytics/report` |
+| **Settings → Business Profile** | *Save* | `PUT /api/business-profile` |
+| **Settings → Platforms** | (auto on load) | `GET /api/ad-connections` |
+| **Settings → Workspace** | (auto on load) | `GET /api/workspace/members` |
 
 5. Click **Sign Out** in the sidebar — you should be returned to the Sign In
    page, and further API calls should stop (or 401 if attempted directly).
+6. In a private browser window, open
+   `http://localhost:3001/enquiry?cv=<valid-click-id>`. Use a click captured by
+   Track 2, or seed a click for an active link in the local database while Track 2
+   is unavailable. Confirm the business name and enquiry form appear without
+   signing in. Submit a name and contact, then check the confirmation. Opening
+   `/enquiry` without `cv` must show a plain expired-link message.
+7. Sign in as the receiving operator and open **Dashboard > Traveller enquiries**.
+   Check the compact cards, search by name or contact, and use Next after six
+   enquiries to view the remaining records. A second operator must not see
+   it. Submit the same click again and verify only one enquiry and one `LINK`
+   redemption exist, with `bookings = 1` and `revenue = 0`.
+8. Verify both security boundaries without an `Authorization` header:
+   `GET /api/business-profile` and `GET /api/attribution/enquiries` return `401`;
+   `POST /api/public/attribution/enquiries` with `{}` returns `400`, not `401`.
+   Once Track 2 is available, `GET /r/<known-slug>` returns `302`, not `401`.
+   Check the public page at 360px width and on a phone's in-app browser.
 
-If the backend is down or a call 401s unexpectedly, some views fall back to
-local mock data and log a warning to the console — check the Network tab
-response body for the actual error before assuming it's a frontend bug.
+Enquiries refresh every minute while the dashboard is open, and delivery is
+in-app only. Measure how long an operator takes to notice a new enquiry during
+manual testing; email delivery remains outside this ticket.
+
+One backend-wired flow isn't clickable from the table above:
+
+- `POST /api/classification/analyze` and `POST /api/classification/uniqueness`
+  aren't reachable from a signed-in seeded account — they only fire from the
+  **onboarding wizard** (`components/module-1/onboarding/`), which a seeded
+  demo operator can't reach: their profile already has a `uniquenessScore`, so
+  the profile-completeness guard redirects a direct `/onboarding` visit
+  straight back to `/dashboard`. To exercise them manually, **register a
+  brand-new account** instead (§6) — analysis fires automatically on the
+  wizard's Analysis step, and its *Compute uniqueness score* button fires the
+  second call.
+
+If the backend is down or a call fails, the screen says so — `apiClient`'s
+`request()` throws an `ApiError` and nothing substitutes fabricated data for a
+failed call (see
+[`docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md`](docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md)).
+Check the Network tab's response body for the real status and Spring's
+`{ code, message }` before assuming it's a frontend bug.
+
+The one place mock data appears is `VITE_USE_FIXTURES=true`, which is an
+explicit opt-in for UI work without a backend, and which a production build
+refuses to compile with.
 
 ### Direct API testing without the frontend
 
 ```powershell
 # Login to get a token
-$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/v1/auth/login `
+$login = Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/auth/login `
     -ContentType 'application/json' `
     -Body '{"email":"ramon.delacruz@ceview.local","password":"MoalboalDive2024!"}'
 $token = $login.token
 
 # Use it on a protected route
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/business-profile `
+Invoke-RestMethod -Uri http://localhost:8080/api/business-profile `
     -Headers @{ Authorization = "Bearer $token" }
 
 # Markets (also requires auth now)
-Invoke-RestMethod -Uri http://localhost:8080/api/v1/forecasting/markets `
+Invoke-RestMethod -Uri http://localhost:8080/api/forecasting/markets `
     -Headers @{ Authorization = "Bearer $token" }
 ```
 
@@ -332,7 +461,7 @@ frontend + backend.
 cd e2e
 npm install          # first time only
 npx playwright install   # first time only — downloads browser binaries
-npx playwright test      # runs against http://localhost:3000 by default
+npx playwright test      # runs against http://localhost:3001 by default
 ```
 
 Set `E2E_BASE_URL` to point at a different frontend URL if needed (see
@@ -372,11 +501,13 @@ Get-Process node   | Stop-Process -Force
 | Every screen shows blank/login-prompts you never expected | You're not logged in, or your token expired — the app auto-logs-out on any `401` from the backend. Log back in with a seeded account (§6). |
 | `curl`/API calls return `401 {"error":"unauthorized",...}` | Expected if you didn't send `Authorization: Bearer <token>` — see §7's "Direct API testing" for how to get one. |
 | `curl`/API calls return `403 {"error":"forbidden",...}` | You're authenticated but requested a resource (business profile / campaign / market data) that belongs to a **different** operator than the one in your token — this is the per-operator isolation working as intended, not a bug. |
-| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3000`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
+| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
-| `mvnw.cmd is not recognized` | Run with the absolute path: `& "C:\Users\austi\CeView\backend\spring-boot\mvnw.cmd" package -DskipTests`. |
-| Frontend keeps showing mock data even when backend is up | Open DevTools → Network. If `/api/v1/...` calls return 4xx/5xx, the fallback kicks in. Check the response body for the error. |
-| Port 8080/8000/8001/3000 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
+| `mvnw.cmd is not recognized` | You're not in `backend\spring-boot` — `cd` there first, or invoke it explicitly: `& .\mvnw.cmd package -DskipTests`. PowerShell doesn't resolve commands from the current directory without the `.\` prefix. |
+| Frontend shows mock data even when the backend is up | You're running with `VITE_USE_FIXTURES=true`. Nothing else serves mock data — a failed call surfaces an error, it does not silently fall back. Unset the variable and restart Vite. |
+| `/r/{slug}` returns 404 for a slug you can see in the database | The slug is case-sensitive and the alphabet excludes `0/O/1/I/l`; a hand-typed slug is the usual cause. Copy the stored `slug` exactly. |
+| The redirect takes 30+ seconds on first hit | Expected on a spun-down instance. `render.yaml` runs the Spring service on `plan: free`, and this is blocking for real-world use, not a local-only annoyance: it will be cold exactly when a surge ad first runs. |
+| Port 8080/8000/8001/3001 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
 | `fastapi-sbert` takes forever to become healthy on first run | Expected — it's downloading the ~1.1GB SBERT/E5 encoder from HuggingFace (`start_period: 600s` in the healthcheck accounts for this). Subsequent runs reuse the cached model via the `ceview-hf-cache` Docker volume. |
 | Playwright e2e tests fail with connection errors | The stack isn't running yet — Playwright doesn't start it for you. Bring up backend + frontend first (§3, §4), then run `npx playwright test`. |
 
@@ -386,14 +517,16 @@ Get-Process node   | Stop-Process -Force
 
 ```
 CeView/
-├── ceview/                       # React 19 + Vite frontend
-│   ├── components/auth/          # LoginPage, RegisterPage, AuthGate
+├── frontend/                       # React 19 + Vite frontend
+│   ├── components/auth/          # LoginPage (sign-in + create-account tabs), AuthGate
 │   └── services/
 │       ├── apiClient.ts          # all backend calls live here, attaches JWT
-│       ├── auth.tsx              # AuthProvider / useAuth() — session state
-│       └── geminiService.ts      # legacy direct-to-Gemini (kept for unwired flows)
+│       └── auth.tsx              # AuthProvider / useAuth() — session state
 ├── e2e/                          # Playwright end-to-end tests
-│   └── tests/smoke.spec.ts       # login flow + core navigation smoke test
+│   └── tests/
+│       ├── login.spec.ts         # login flow + shell/routing/overlay coverage
+│       ├── journey.spec.ts       # full authenticated journey against the real stack
+│       └── *.spec.ts             # one per screen (dashboard, calendar, content-studio, …)
 ├── backend/
 │   ├── docker-compose.yml        # Path A
 │   ├── .env.example
@@ -405,7 +538,9 @@ CeView/
 │   │   └── src/main/resources/db/
 │   │       ├── migration/        # Postgres Flyway migrations (incl. seed data)
 │   │       │   └── SEED_CREDENTIALS.md   # demo operator login credentials
-│   │       └── h2/               # H2 mirror migrations (for tests / native Path B)
+│   │       └── h2/               # H2 mirror migrations — the `h2` runtime profile
+│                             #   (Path B) ONLY. Tests build their schema from
+│                             #   the JPA entities; spring.flyway.enabled=false.
 │   ├── fastapi-sbert/            # SBERT/Gemini NLP microservice on :8000
 │   │   ├── requirements.txt
 │   │   └── app/

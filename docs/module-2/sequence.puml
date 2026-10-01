@@ -23,12 +23,12 @@ participant "Groq" as Groq
 participant "PostgreSQL" as DB
 
 ' ══════════════════════════════════════════════════════════════════════════
-' Flow 1 — GET /api/v1/forecasting/markets  (DB-only, no AI calls)
+' Flow 1 — GET /api/forecasting/markets  (DB-only, no AI calls)
 ' ══════════════════════════════════════════════════════════════════════════
 
-note over Client,DB: Flow 1 · GET /api/v1/forecasting/markets — Pure DB read (no AI calls)
+note over Client,DB: Flow 1 · GET /api/forecasting/markets — Pure DB read (no AI calls)
 
-Client -> FC: GET /api/v1/forecasting/markets?profileId=UUID
+Client -> FC: GET /api/forecasting/markets?profileId=UUID
 FC -> FS: loadMarketsFromDb(profileId)
 
 loop For each market in [korea, japan, usa]
@@ -52,12 +52,12 @@ FS --> FC: MarketsResponse
 FC --> Client: 200 OK · MarketsResponse { markets: [...] }
 
 ' ══════════════════════════════════════════════════════════════════════════
-' Flow 2 — POST /api/v1/forecasting/analyze/{profileId}  (Full AI pipeline)
+' Flow 2 — POST /api/forecasting/analyze/{profileId}  (Full AI pipeline)
 ' ══════════════════════════════════════════════════════════════════════════
 
-note over Client,DB: Flow 2 · POST /api/v1/forecasting/analyze/{profileId} — Full AI pipeline
+note over Client,DB: Flow 2 · POST /api/forecasting/analyze/{profileId} — Full AI pipeline
 
-Client -> FC: POST /api/v1/forecasting/analyze/UUID
+Client -> FC: POST /api/forecasting/analyze/UUID
 FC -> FS: forecastForProfile(profileId, refresh=true)
 FS -> DB: BusinessProfileRepo.findById(profileId)
 DB --> FS: BusinessProfile

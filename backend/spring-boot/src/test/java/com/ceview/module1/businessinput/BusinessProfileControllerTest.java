@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -37,6 +38,7 @@ class BusinessProfileControllerTest {
     @Autowired private JwtService jwtService;
     @Autowired private BusinessProfileRepository profileRepo;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
     // Stub out the AI gateway so save() doesn't attempt a real HTTP call to FastAPI.
     @MockBean private AIInferenceGatewayService ai;
@@ -51,6 +53,8 @@ class BusinessProfileControllerTest {
         profileRepo.deleteAll();
         operatorA = UUID.randomUUID();
         operatorB = UUID.randomUUID();
+        testOperators.create(operatorA);
+        testOperators.create(operatorB);
         tokenA = jwtService.issue(operatorA, "a@example.com");
         tokenB = jwtService.issue(operatorB, "b@example.com");
     }
@@ -67,11 +71,11 @@ class BusinessProfileControllerTest {
         profileB.setBusinessName("Operator B's Business");
         profileRepo.save(profileB);
 
-        mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + tokenA))
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenA))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessName").value("Operator A's Business"));
 
-        mvc.perform(get("/api/v1/business-profile").header("Authorization", "Bearer " + tokenB))
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenB))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.businessName").value("Operator B's Business"));
     }
@@ -81,7 +85,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(null, "New Business", List.of("Retail"),
             List.of("Service A"), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -103,7 +107,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(existing.getBusinessProfileId(), "Updated Name", List.of(),
             List.of(), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -126,7 +130,7 @@ class BusinessProfileControllerTest {
             List.of(), "desc", "uvp", null, null);
 
         // Operator A attempts to overwrite operator B's profile by id.
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -137,6 +141,33 @@ class BusinessProfileControllerTest {
         BusinessProfile stillB = profileRepo.findById(ownedByB.getBusinessProfileId()).orElseThrow();
         assertEquals("Operator B's Business", stillB.getBusinessName(), "profile must not be mutated");
         assertEquals(operatorB, stillB.getUserId(), "ownership must not be reassigned");
+    }
+
+    @Test
+    void putWithAReferenceCorpusProfileIdIsRejectedNotAdopted() throws Exception {
+        // A V26 uniqueness-corpus row: no operator, is_reference = TRUE. Its
+        // businessProfileId is in the migration file, so it is not secret — the
+        // controller must refuse to adopt it rather than fall into the
+        // null-userId adoption branch.
+        BusinessProfile reference = new BusinessProfile();
+        reference.setUserId(null);
+        reference.setReference(true);
+        reference.setBusinessName("Reference Corpus Row");
+        profileRepo.save(reference);
+
+        var dto = new BusinessProfileDto(reference.getBusinessProfileId(), "Hijacked Name", List.of(),
+            List.of(), "desc", "uvp", null, null);
+
+        mvc.perform(put("/api/business-profile")
+                .header("Authorization", "Bearer " + tokenA)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+            .andExpect(status().isForbidden());
+
+        BusinessProfile still = profileRepo.findById(reference.getBusinessProfileId()).orElseThrow();
+        assertEquals("Reference Corpus Row", still.getBusinessName(), "reference row must not be mutated");
+        assertNull(still.getUserId(), "reference row must not be adopted by an operator");
+        assertTrue(still.isReference(), "reference flag must survive");
     }
 
     @Test
@@ -152,7 +183,7 @@ class BusinessProfileControllerTest {
         var dto = new BusinessProfileDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
             List.of(), "desc", "uvp", null, null);
 
-        mvc.perform(put("/api/v1/business-profile")
+        mvc.perform(put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))

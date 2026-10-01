@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CeView — Module 4: Campaign Analytics & PES Reporting",
-    "description": "Complete Postman collection for UC-4.1 (data ingestion), UC-4.2 (PES compute), and UC-4.3 (AI prescriptive report). Three request directions are covered:\n  1. Frontend → Spring Boot  (POST /api/v1/analytics/manual)\n  2. Spring Boot → FastAPI   (POST /internal/pes-compute/analyze)\n  3. FastAPI → Spring Boot → Frontend  (final structured response)\n\nAll monetary values are in Philippine Peso (₱).",
+    "description": "Complete Postman collection for UC-4.1 (data ingestion), UC-4.2 (PES compute), and UC-4.3 (AI prescriptive report). Three request directions are covered:\n  1. Frontend → Spring Boot  (POST /api/analytics/manual)\n  2. Spring Boot → FastAPI   (POST /internal/pes-compute/analyze)\n  3. FastAPI → Spring Boot → Frontend  (final structured response)\n\nAll monetary values are in Philippine Peso (₱).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -11,7 +11,7 @@
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": {
-          "raw": "http://localhost:8080/api/v1/analytics/manual",
+          "raw": "http://localhost:8080/api/analytics/manual",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "v1", "analytics", "manual"]
@@ -72,7 +72,7 @@
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": {
-          "raw": "http://localhost:8080/api/v1/analytics/pes-analysis",
+          "raw": "http://localhost:8080/api/analytics/pes-analysis",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "v1", "analytics", "pes-analysis"]
@@ -126,7 +126,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8080/api/v1/analytics/metrics?weeks=4",
+          "raw": "http://localhost:8080/api/analytics/metrics?weeks=4",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "v1", "analytics", "metrics"],
@@ -142,7 +142,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8080/api/v1/analytics/pes/default?weeks=4",
+          "raw": "http://localhost:8080/api/analytics/pes/default?weeks=4",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "v1", "analytics", "pes", "default"],
@@ -158,7 +158,7 @@
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": {
-          "raw": "http://localhost:8080/api/v1/analytics/report",
+          "raw": "http://localhost:8080/api/analytics/report",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "v1", "analytics", "report"]

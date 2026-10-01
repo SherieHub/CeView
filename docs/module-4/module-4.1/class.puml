@@ -135,8 +135,8 @@ EngagementMetricsBoard *-- "5" KpiMetricCard
 KpiMetricCard *-- TrendIndicator
 KpiMetricCard ..> MetricCard : data prop
 
-DataIngestionForm ..down.> EngagementMetricsController : POST /api/v1/analytics/manual
-CustomerJourneyFunnel ..down.> EngagementMetricsController : GET /api/v1/analytics/history
+DataIngestionForm ..down.> EngagementMetricsController : POST /api/analytics/manual
+CustomerJourneyFunnel ..down.> EngagementMetricsController : GET /api/analytics/history
 
 EngagementMetricsController --> MetricsCalculationService : compute KPIs
 EngagementMetricsController --> CampaignRecordRepository : persist record

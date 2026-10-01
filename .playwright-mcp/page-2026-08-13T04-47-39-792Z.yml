@@ -1,0 +1,96 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e73]:
+    - complementary [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e76]: Ce
+        - generic [ref=e77]:
+          - generic [ref=e78]: CeView
+          - text: Market Intelligence
+      - navigation [ref=e79]:
+        - generic [ref=e80]: Intelligence
+        - button "Dashboard 2" [ref=e81] [cursor=pointer]:
+          - generic [ref=e87]: Dashboard
+          - generic [ref=e88]: "2"
+        - generic [ref=e89]: Create
+        - button "Content Studio" [ref=e90] [cursor=pointer]
+        - button "Content Studio (2)" [ref=e94] [cursor=pointer]
+        - button "Calendar" [ref=e100] [cursor=pointer]
+        - generic [ref=e104]: Measure
+        - button "Performance" [ref=e105] [cursor=pointer]
+        - generic [ref=e110]: Account
+        - button "Settings" [ref=e111] [cursor=pointer]
+      - generic [ref=e119]:
+        - generic [ref=e120]: SC
+        - generic [ref=e121]:
+          - generic [ref=e122]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=e123]:
+      - banner [ref=e124]:
+        - generic [ref=e125]:
+          - generic [ref=e126]: Content Studio
+          - text: Draft, audit and publish
+        - generic [ref=e127]:
+          - button "Notifications" [ref=e128] [cursor=pointer]
+          - button "Search" [ref=e133] [cursor=pointer]
+      - generic [ref=e139]:
+        - generic [ref=e242]:
+          - generic [ref=e243]:
+            - heading "Content Studio" [level=2] [ref=e244]
+            - paragraph [ref=e245]: Step 2 of 2 — pick a target market for Accommodation & Staycation.
+          - button "Back to alerts" [ref=e246] [cursor=pointer]
+        - generic [ref=e250]:
+          - button "1 South Korea Seoul · 2,640 km to Cebu 87 Potential Market potential 87/100 Direct · 3h 45m 14x / week Surge active" [ref=e251] [cursor=pointer]:
+            - generic [ref=e252]:
+              - generic [ref=e253]: "1"
+              - generic [ref=e254]:
+                - heading "South Korea" [level=4] [ref=e255]
+                - paragraph [ref=e256]: Seoul · 2,640 km to Cebu
+              - generic [ref=e257]:
+                - generic [ref=e258]: "87"
+                - text: Potential
+            - generic [ref=e260]:
+              - generic [ref=e261]: Market potential
+              - generic [ref=e262]: 87/100
+            - generic [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e269]: Direct
+                - text: · 3h 45m
+              - generic [ref=e270]: 14x / week
+              - generic [ref=e275]: Surge active
+          - button "2 Japan Osaka · 2,186 km to Cebu 79 Potential Market potential 79/100 Direct · 2h 50m 8x / week" [ref=e278] [cursor=pointer]:
+            - generic [ref=e279]:
+              - generic [ref=e280]: "2"
+              - generic [ref=e281]:
+                - heading "Japan" [level=4] [ref=e282]
+                - paragraph [ref=e283]: Osaka · 2,186 km to Cebu
+              - generic [ref=e284]:
+                - generic [ref=e285]: "79"
+                - text: Potential
+            - generic [ref=e287]:
+              - generic [ref=e288]: Market potential
+              - generic [ref=e289]: 79/100
+            - generic [ref=e292]:
+              - generic [ref=e293]:
+                - generic [ref=e296]: Direct
+                - text: · 2h 50m
+              - generic [ref=e297]: 8x / week
+          - button "3 United States Los Angeles · 11,027 km to Cebu 64 Potential Market potential 64/100 Via Manila · 16h+ (via MNL) 3x / week" [ref=e302] [cursor=pointer]:
+            - generic [ref=e303]:
+              - generic [ref=e304]: "3"
+              - generic [ref=e305]:
+                - heading "United States" [level=4] [ref=e306]
+                - paragraph [ref=e307]: Los Angeles · 11,027 km to Cebu
+              - generic [ref=e308]:
+                - generic [ref=e309]: "64"
+                - text: Potential
+            - generic [ref=e311]:
+              - generic [ref=e312]: Market potential
+              - generic [ref=e313]: 64/100
+            - generic [ref=e316]:
+              - generic [ref=e317]:
+                - generic [ref=e320]: Via Manila
+                - text: · 16h+ (via MNL)
+              - generic [ref=e321]: 3x / week
+  - complementary [ref=e44]
+  - dialog
+  - button "Prototype" [ref=e46] [cursor=pointer]

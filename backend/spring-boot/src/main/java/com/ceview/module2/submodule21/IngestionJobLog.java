@@ -19,6 +19,10 @@ public class IngestionJobLog {
     @Column(name = "status")            private String status;
     @Column(name = "markets_processed") private Integer marketsProcessed;
     @Column(name = "records_ingested")  private Integer recordsIngested;
+    /** Step 16 (C-07, C-08, C-09): profiles whose post-ingestion forecast trigger succeeded. Null for runs logged before this step. */
+    @Column(name = "forecasts_triggered") private Integer forecastsTriggered;
+    /** Profiles whose post-ingestion forecast trigger failed — isolated per-profile, never blocks the others. */
+    @Column(name = "forecast_failures")   private Integer forecastFailures;
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
     @Column(name = "started_at")        private OffsetDateTime startedAt;

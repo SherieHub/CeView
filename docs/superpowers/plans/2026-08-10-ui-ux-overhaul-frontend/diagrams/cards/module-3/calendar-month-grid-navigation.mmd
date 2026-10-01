@@ -1,0 +1,11 @@
+flowchart TD
+  Props(["CalendarMonthGrid receives cells + postsByDate from the shell"]) --> Loop["for each GridCell"]
+  Loop -->|cell.inMonth = false| Inert(["render greyed, inert cell — no onClick"])
+  Loop -->|cell.inMonth = true| Cell["CalendarCell: posts = postsByDate[cell.date] ?? []"]
+  Cell --> Today{"cell.isToday?"}
+  Today -->|yes| Ring(["day number rendered with today ring"])
+  Today -->|no| Plain(["day number rendered plain"])
+  Cell --> Chips{"posts.length > 3?"}
+  Chips -->|yes| Overflow(["3 chips + '+N more'"])
+  Chips -->|no| All(["one chip per post"])
+  Cell -->|click| Emit(["onDayClick(cell.date) — shell decides whether to open the modal"])

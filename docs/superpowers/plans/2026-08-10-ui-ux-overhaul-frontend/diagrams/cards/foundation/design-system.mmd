@@ -1,0 +1,9 @@
+flowchart TD
+  Start([styles/index.css]) --> ImportTw["@import tailwindcss"]
+  ImportTw --> Theme["@theme block:\ntranscribe :root tokens 1:1"]
+  Theme --> Reset["Reset + typography helpers"]
+  Reset --> Primitives{"Primitive class\nneeded by a\nconsuming card?"}
+  Primitives -->|yes, this pass| AddPrimitive["Add as @layer components\nor inline Tailwind utility"]
+  Primitives -->|not yet| Skip["Leave for the consuming\ncard to add incrementally"]
+  AddPrimitive --> Verify(["npm run build succeeds,\ntoken-level match vs prototype"])
+  Skip --> Verify

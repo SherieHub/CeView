@@ -1,0 +1,12 @@
+flowchart TD
+  Render(["AIContentMatrixPanel mounted,\nplatform='instagram'"]) -->|click a platform tab| SwitchTab["setPlatform(p)"]
+  SwitchTab --> IsNaver{"platform === 'naver'?"}
+  IsNaver -->|yes| NaverCards["2 curated option cards\n+ info banner, no metadata"]
+  IsNaver -->|no| ArchetypeCards["3 archetype option cards\n(Witty/Formal/Storytelling)"]
+  NaverCards --> Edit
+  ArchetypeCards --> Edit
+  Edit["Edit option text"] -->|per-option, persists| Edit
+  Edit -->|click Approve on option i| ApproveOpt["approved[platform] = i"]
+  ApproveOpt --> Stage["Copy text → composer's\n`staged` field (Card 17)"]
+  Stage --> ClearAudit(["Clear audit result,\nreset agreement checkbox\n(Card 18)"])
+  ApproveOpt --> GoldDot(["Tab shows gold dot"])

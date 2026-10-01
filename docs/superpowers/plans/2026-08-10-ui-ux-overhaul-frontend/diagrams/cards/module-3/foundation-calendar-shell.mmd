@@ -1,0 +1,12 @@
+flowchart TD
+  Mount(["/calendar mounted"]) --> State["useCalendarState():\nyear/month = today, view='month', modalDate=null"]
+  State --> Read["usePosts() → PublishedPost[] | null (loading)"]
+  Read --> Grid["buildGrid(year, month) → GridCell[] (leading/in-month/trailing/isToday)"]
+  Grid --> Render(["Render header (month label, prev/next, Month/List toggle, status counts)"])
+  Render -->|view='month'| MonthSlot(["CalendarMonthGrid slot"])
+  Render -->|view='list'| ListSlot(["CalendarListView slot"])
+  MonthSlot -->|onDayClick(date) with posts.length > 0| SetModal["modalDate = date"]
+  MonthSlot -->|onDayClick(date) with no posts| NoOp(["no-op"])
+  SetModal --> ModalSlot(["DayPostsModal slot"])
+  ModalSlot -->|onClose| ClearModal["modalDate = null"]
+  Render -->|each slot is a stub until its owning card lands| Placeholder(["Slot renders its stub placeholder text"])

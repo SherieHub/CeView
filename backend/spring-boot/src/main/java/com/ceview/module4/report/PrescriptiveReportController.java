@@ -1,10 +1,9 @@
 package com.ceview.module4.report;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.engagement.MetricsCalculationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,29 +19,25 @@ import java.util.*;
  *   <li>{@code GET  /report/{id}/pdf} → binary PDF download</li>
  * </ul>
  *
- * <h3>FR4.26 — Fallback Mechanism</h3>
- * Every call that delegates to FastAPI is wrapped in a {@code try-catch}.  If the
- * AI microservice is unavailable, Spring Boot falls back to the deterministic
- * helpers in {@link PrescriptiveReportService} and the REST response is still
- * fully populated — the UI never crashes.
+ * <p>When the FastAPI AI service is unavailable, the call raises an
+ * {@code AiDependencyException} that the global handler renders as the
+ * unavailability contract — there is no rule-based stand-in report.
  */
 @RestController
-@RequestMapping("/api/v1/analytics")
+@RequestMapping("/api/analytics")
 public class PrescriptiveReportController {
-
-    private static final Logger log = LoggerFactory.getLogger(PrescriptiveReportController.class);
 
     private final MetricsCalculationService metricsSvc;
     private final AIInferenceGatewayService ai;
-    private final PrescriptiveReportService reportSvc;
+    private final CurrentBusinessProfile    currentBusinessProfile;
 
     public PrescriptiveReportController(
             MetricsCalculationService metricsSvc,
             AIInferenceGatewayService ai,
-            PrescriptiveReportService reportSvc) {
+            CurrentBusinessProfile currentBusinessProfile) {
         this.metricsSvc = metricsSvc;
         this.ai         = ai;
-        this.reportSvc  = reportSvc;
+        this.currentBusinessProfile = currentBusinessProfile;
     }
 
     // ─── POST /report ─────────────────────────────────────────────────────────
@@ -52,9 +47,8 @@ public class PrescriptiveReportController {
      *
      * <p>Enriches the payload with KPI metrics + business-impact-ranked funnel
      * transitions and forwards it to FastAPI {@code /internal/report/generate}.
-     *
-     * <p><b>FR4.26:</b> if FastAPI is unavailable, returns a rule-based report
-     * identifying the lowest-weight metric as the primary bottleneck.
+     * An unavailable AI service surfaces as a structured 503, not a rule-based
+     * substitute.
      */
     @PostMapping("/report")
     public Map<String, Object> report(
@@ -63,18 +57,12 @@ public class PrescriptiveReportController {
         var payload = new HashMap<String, Object>(body == null ? Map.of() : body);
         int weeks   = extractWeeks(payload);
 
-        MetricsResponse mr = metricsSvc.defaultMetrics(weeks);
+        MetricsResponse mr = metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks);
         payload.putIfAbsent("metrics", mr);
         payload.put("funnelTransitions", metricsSvc.computeFunnelTransitions(mr.funnel()));
         payload.put("weeks", weeks);
 
-        try {
-            return ai.generateReport(payload);
-        } catch (Exception e) {
-            log.warn("[Module4 FR4.26] report FastAPI unavailable ({}); returning rule-based fallback",
-                     e.getMessage());
-            return reportSvc.buildRuleBasedReport(mr, metricsSvc.computeFunnelTransitions(mr.funnel()));
-        }
+        return ai.generateReport(payload);
     }
 
     // ─── POST /pes-analysis ───────────────────────────────────────────────────
@@ -88,7 +76,8 @@ public class PrescriptiveReportController {
      * {@code metrics_data} does it fall back to a synthetic {@code weeks}-length
      * series so the endpoint still works for ad-hoc/manual calls.
      *
-     * <p><b>FR4.26:</b> if FastAPI is unavailable, returns a minimal offline payload.
+     * <p>An unavailable AI service surfaces as a structured 503, not a minimal
+     * offline payload.
      */
     @PostMapping("/pes-analysis")
     public Map<String, Object> pesAnalysis(
@@ -100,15 +89,10 @@ public class PrescriptiveReportController {
         // Prefer the frontend-supplied series; synthesize only when absent.
         Object timeSeries = (body != null && body.get("metrics_data") instanceof Map<?, ?> m && !m.isEmpty())
                 ? m
-                : metricsSvc.buildTimeSeries(metricsSvc.defaultMetrics(weeks), weeks);
+                : metricsSvc.buildTimeSeries(
+                        metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks), weeks);
 
-        try {
-            return ai.generatePesAnalysis(Map.of("metrics_data", timeSeries, "weeks", weeks));
-        } catch (Exception e) {
-            log.warn("[Module4 FR4.26] pes-analysis FastAPI unavailable ({}); returning offline fallback",
-                     e.getMessage());
-            return reportSvc.buildOfflinePesAnalysisFallback();
-        }
+        return ai.generatePesAnalysis(Map.of("metrics_data", timeSeries, "weeks", weeks));
     }
 
     // ─── GET /report/{id}/pdf ─────────────────────────────────────────────────

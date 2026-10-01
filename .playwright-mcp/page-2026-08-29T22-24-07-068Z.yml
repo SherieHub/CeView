@@ -1,0 +1,178 @@
+- generic [ref=f25e5]:
+  - navigation "Main" [ref=f25e6]:
+    - generic [ref=f25e7]:
+      - generic [ref=f25e8]: Ce
+      - generic [ref=f25e9]: CeView
+      - button "Collapse sidebar" [expanded] [ref=f25e11] [cursor=pointer]
+    - list [ref=f25e16]:
+      - listitem [ref=f25e17]: Intelligence
+      - listitem [ref=f25e18]:
+        - button "Dashboard 2" [ref=f25e19] [cursor=pointer]:
+          - generic [ref=f25e25]: Dashboard
+          - generic [ref=f25e26]: "2"
+      - listitem [ref=f25e27]: Create
+      - listitem [ref=f25e28]:
+        - button "Content Studio" [active] [ref=f25e29] [cursor=pointer]
+      - listitem [ref=f25e34]:
+        - button "Calendar" [ref=f25e35] [cursor=pointer]
+      - listitem [ref=f25e39]: Measure
+      - listitem [ref=f25e40]:
+        - button "Performance" [ref=f25e41] [cursor=pointer]
+      - listitem [ref=f25e46]: Settings
+      - listitem [ref=f25e47]:
+        - button "Business Profile" [ref=f25e48] [cursor=pointer]
+      - listitem [ref=f25e54]:
+        - button "Platforms" [ref=f25e55] [cursor=pointer]
+      - listitem [ref=f25e63]:
+        - button "Workspace" [ref=f25e64] [cursor=pointer]
+    - button "Sign out" [ref=f25e72] [cursor=pointer]
+  - generic [ref=f25e74]:
+    - banner [ref=f25e75]:
+      - button "Search" [disabled] [ref=f25e76]
+      - button "Notifications" [disabled] [ref=f25e81]
+    - main [ref=f25e86]:
+      - main "Content Studio" [ref=f25e148]:
+        - generic [ref=f25e149]:
+          - paragraph [ref=f25e150]: Content Studio
+          - heading "Create content that fits the market" [level=1] [ref=f25e151]
+          - paragraph [ref=f25e152]: Choose an AI direction, stage your media, then validate it before publishing.
+        - generic [ref=f25e153]:
+          - generic [ref=f25e154]:
+            - region [ref=f25e155]:
+              - generic [ref=f25e161]:
+                - heading "AI Copywriting Matrix" [level=2] [ref=f25e162]
+                - paragraph [ref=f25e163]: Localised copy, tailored to platform and audience.
+              - tablist "Content platform" [ref=f25e164]:
+                - tab "Instagram" [selected] [ref=f25e165] [cursor=pointer]
+                - tab "TikTok" [ref=f25e166] [cursor=pointer]
+                - tab "Facebook" [ref=f25e167] [cursor=pointer]
+                - tab "Naver Blog" [ref=f25e168] [cursor=pointer]
+              - paragraph [ref=f25e169]: No generated content yet for this platform.
+            - region [ref=f25e170]:
+              - generic [ref=f25e176]:
+                - heading "Visual direction" [level=2] [ref=f25e177]
+                - paragraph [ref=f25e178]: Shot-list guidance for instagram.
+              - alert [ref=f25e180]:
+                - heading "Something went wrong" [level=3] [ref=f25e184]
+                - paragraph [ref=f25e185]: Visual direction
+                - paragraph [ref=f25e186]: The request to the backend did not succeed.
+                - generic [ref=f25e187]:
+                  - generic [ref=f25e188]:
+                    - term [ref=f25e189]: Request
+                    - definition [ref=f25e190]: POST /api/creative-direction/generate
+                  - generic [ref=f25e191]:
+                    - term [ref=f25e192]: Status
+                    - definition [ref=f25e193]: 400 · missing_dependency
+                  - generic [ref=f25e194]:
+                    - term [ref=f25e195]: Message
+                    - definition [ref=f25e196]: Content from Transaction 3.1 must be approved before generating creative direction.
+              - generic [ref=f25e197]: Keep the final asset aligned with this direction—the compliance check evaluates caption-to-media consistency.
+          - generic [ref=f25e203]:
+            - region [ref=f25e204]:
+              - generic [ref=f25e210]:
+                - heading "Publish composer" [level=2] [ref=f25e211]
+                - paragraph [ref=f25e212]: Prepare the final caption and publishing details.
+              - generic [ref=f25e213]: Staged caption
+              - textbox "Staged caption" [ref=f25e214]:
+                - /placeholder: Approve a matrix option or write your own caption.
+              - paragraph [ref=f25e215]: 0 / 5,000 characters
+              - generic [ref=f25e216]:
+                - generic [ref=f25e217]: Publication media
+                - generic [ref=f25e218] [cursor=pointer]:
+                  - text: Upload PNG, JPG, or WEBP
+                  - generic [ref=f25e223]: Up to 20 MB
+                  - button "Upload PNG, JPG, or WEBP Up to 20 MB" [ref=f25e224]
+              - group "Publish to" [ref=f25e225]:
+                - generic [ref=f25e227]:
+                  - generic [ref=f25e228] [cursor=pointer]:
+                    - checkbox "Instagram" [ref=f25e229]
+                    - text: Instagram
+                  - generic [ref=f25e230] [cursor=pointer]:
+                    - checkbox "TikTok" [ref=f25e231]
+                    - text: TikTok
+                  - generic [ref=f25e232] [cursor=pointer]:
+                    - checkbox "Facebook" [ref=f25e233]
+                    - text: Facebook
+                  - generic [ref=f25e234] [cursor=pointer]:
+                    - checkbox "Naver Blog" [ref=f25e235]
+                    - text: Naver Blog
+              - generic [ref=f25e236]:
+                - generic [ref=f25e237]:
+                  - text: Visibility
+                  - combobox "Visibility" [ref=f25e238]:
+                    - option "Public" [selected]
+                    - option "Private"
+                - generic [ref=f25e239]:
+                  - checkbox "Comments on" [checked] [ref=f25e240]
+                  - text: Comments on
+                - generic [ref=f25e241]:
+                  - checkbox "Paid partnership" [ref=f25e242]
+                  - text: Paid partnership
+              - generic [ref=f25e243]:
+                - checkbox "I confirm I am authorised to publish this media and caption. Checking this starts the compliance audit when all inputs are ready." [ref=f25e244]
+                - generic [ref=f25e245]: I confirm I am authorised to publish this media and caption. Checking this starts the compliance audit when all inputs are ready.
+              - status [ref=f25e249]: Approve or write a caption first.
+            - region [ref=f25e250]:
+              - generic [ref=f25e256]:
+                - heading "Compliance audit" [level=2] [ref=f25e257]
+                - paragraph [ref=f25e258]: Checks the caption and selected media before publishing.
+              - paragraph [ref=f25e259]: Add a caption, media, and a publish destination, then confirm authorisation to begin the six-step audit.
+        - region [ref=f25e260]:
+          - generic [ref=f25e261]:
+            - generic [ref=f25e262]:
+              - heading "Content board" [level=2] [ref=f25e263]
+              - paragraph [ref=f25e264]: Review drafts and published content in one place.
+            - button "Publish" [disabled] [ref=f25e265] [cursor=pointer]
+          - generic [ref=f25e269]:
+            - button "all" [ref=f25e270] [cursor=pointer]
+            - button "draft" [ref=f25e271] [cursor=pointer]
+            - button "published" [ref=f25e272] [cursor=pointer]
+          - generic [ref=f25e273]:
+            - article [ref=f25e274]:
+              - generic [ref=f25e275]:
+                - generic [ref=f25e276]: instagram
+                - generic [ref=f25e277]: published
+              - paragraph [ref=f25e278]: "POV: you booked the 호캉스 you kept postponing 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon."
+              - generic [ref=f25e279]:
+                - generic [ref=f25e280]: 2026-08-04
+                - generic [ref=f25e281]: Reach 31,200
+                - generic [ref=f25e282]: Likes 2,810
+            - article [ref=f25e283]:
+              - generic [ref=f25e284]:
+                - generic [ref=f25e285]: tiktok
+                - generic [ref=f25e286]: published
+              - paragraph [ref=f25e287]: no thoughts. just sardines. 🐟🌊 30m from breakfast, Moalboal
+              - generic [ref=f25e288]:
+                - generic [ref=f25e289]: 2026-08-02
+                - generic [ref=f25e290]: Reach 45,400
+                - generic [ref=f25e291]: Likes 3,520
+            - article [ref=f25e292]:
+              - generic [ref=f25e293]:
+                - generic [ref=f25e294]: facebook
+                - generic [ref=f25e295]: published
+              - paragraph [ref=f25e296]: Sunset Cove Beach Resort — Moalboal, Cebu. Direct shoreline access to the sardine run, visible year-round.
+              - generic [ref=f25e297]:
+                - generic [ref=f25e298]: 2026-07-30
+                - generic [ref=f25e299]: Reach 22,100
+                - generic [ref=f25e300]: Likes 1,510
+            - article [ref=f25e301]:
+              - generic [ref=f25e302]:
+                - generic [ref=f25e303]: instagram
+                - generic [ref=f25e304]: published
+              - paragraph [ref=f25e305]: The water goes quiet first. Then the light shifts, and a wall of silver turns beneath you.
+              - generic [ref=f25e306]:
+                - generic [ref=f25e307]: 2026-07-28
+                - generic [ref=f25e308]: Reach 18,600
+                - generic [ref=f25e309]: Likes 1,180
+            - article [ref=f25e310]:
+              - generic [ref=f25e311]:
+                - generic [ref=f25e312]: facebook
+                - generic [ref=f25e313]: draft
+              - paragraph [ref=f25e314]: Golden Week bundle — flight + stay + guided dive, one price. Draft pending rate confirmation.
+              - generic [ref=f25e315]: 2026-08-12
+            - article [ref=f25e317]:
+              - generic [ref=f25e318]:
+                - generic [ref=f25e319]: Naver Blog
+                - generic [ref=f25e320]: draft
+              - paragraph [ref=f25e321]: 세부에서 찾은 나만의 힐링 스팟 🌴 모알보알 선셋코브 리조트 후기입니다.
+              - generic [ref=f25e322]: 2026-08-18

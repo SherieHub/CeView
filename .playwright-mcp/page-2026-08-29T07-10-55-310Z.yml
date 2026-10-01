@@ -1,0 +1,104 @@
+- generic [ref=e5]:
+  - navigation "Main" [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Ce
+      - generic [ref=e9]: CeView
+      - button "Collapse sidebar" [expanded] [ref=e11] [cursor=pointer]
+    - list [ref=e16]:
+      - listitem [ref=e17]: Intelligence
+      - listitem [ref=e18]:
+        - button "Dashboard 2" [ref=e19] [cursor=pointer]:
+          - generic [ref=e25]: Dashboard
+          - generic [ref=e26]: "2"
+      - listitem [ref=e27]: Create
+      - listitem [ref=e28]:
+        - button "Content Studio" [ref=e29] [cursor=pointer]
+      - listitem [ref=e34]:
+        - button "Calendar" [ref=e35] [cursor=pointer]
+      - listitem [ref=e39]: Measure
+      - listitem [ref=e40]:
+        - button "Performance" [ref=e41] [cursor=pointer]
+      - listitem [ref=e46]: Settings
+      - listitem [ref=e47]:
+        - button "Business Profile" [ref=e48] [cursor=pointer]
+      - listitem [ref=e54]:
+        - button "Platforms" [ref=e55] [cursor=pointer]
+      - listitem [ref=e63]:
+        - button "Workspace" [ref=e64] [cursor=pointer]
+    - button "Sign out" [ref=e72] [cursor=pointer]
+  - generic [ref=e74]:
+    - banner [ref=e75]:
+      - button "Search" [disabled] [ref=e76]
+      - button "Notifications" [disabled] [ref=e81]
+    - main [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - heading "Good morning, Moalboal FreeDive Cebu" [level=1] [ref=e90]
+            - paragraph [ref=e91]: Select an alert to see the markets ranked for its category.
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - generic [ref=e94]: "0.74"
+              - generic [ref=e95]: Uniqueness
+            - button "Refresh forecast" [ref=e100] [cursor=pointer]
+        - status [ref=e106]:
+          - generic [ref=e111]: AI Forecast Service Unavailable. The alerts and rankings below are read from your last successful forecast run. Refreshing will not produce new predictions until the service recovers.
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e119]:
+              - generic [ref=e120]: Unread alerts
+              - generic [ref=e121]: "0"
+            - generic [ref=e122]: You are all caught up
+          - generic [ref=e123]:
+            - generic [ref=e127]:
+              - generic [ref=e128]: Confirmed surges
+              - generic [ref=e129]: "1"
+            - generic [ref=e130]: South Korea
+          - button "Top market now cached South Korea 81/100 · Coastal & Island" [ref=e131] [cursor=pointer]:
+            - generic [ref=e136]:
+              - generic [ref=e137]:
+                - text: Top market now
+                - generic [ref=e138]: cached
+              - generic [ref=e139]: South Korea
+            - generic [ref=e140]: 81/100 · Coastal & Island
+        - generic [ref=e144]:
+          - region "Surge Alerts" [ref=e145]:
+            - generic [ref=e146]:
+              - heading "Surge Alerts" [level=2] [ref=e147]
+              - group "Filter alerts" [ref=e148]:
+                - button "All" [pressed] [ref=e149] [cursor=pointer]
+                - button "Unread (0)" [ref=e193] [cursor=pointer]
+                - button "Surges (1)" [ref=e151] [cursor=pointer]
+            - button "Jul 27, 2026 Surge Demand Surge Detected — South Korea Demand window opening for Korea — Moalboal FreeDive Cebu search interest is 31% above the 30-day baseline. Target Korean-market promotion within the next 4 weeks. South Korea Coastal & Island Rising demand window Hide target markets" [expanded] [active] [ref=e194] [cursor=pointer]:
+              - generic [ref=e154]:
+                - generic [ref=e156]: Jul 27, 2026
+                - generic [ref=e158]: Surge
+              - heading "Demand Surge Detected — South Korea" [level=3] [ref=e161]
+              - paragraph [ref=e162]: Demand window opening for Korea — Moalboal FreeDive Cebu search interest is 31% above the 30-day baseline. Target Korean-market promotion within the next 4 weeks.
+              - generic [ref=e163]:
+                - generic [ref=e164]: South Korea
+                - generic [ref=e168]: Coastal & Island
+                - generic [ref=e172]: Rising demand window
+              - generic [ref=e176]: Hide target markets
+          - region "Top Target Markets" [ref=e179]:
+            - generic [ref=e180]:
+              - heading "Top Target Markets" [level=2] [ref=e181]
+              - generic [ref=e197]: Coastal & Island
+            - button "1 South Korea Seoul · 2,640 km to Cebu 81 Potential Market potential 81/100 Direct · 3h 45m 14x / week Surge active" [ref=e201] [cursor=pointer]:
+              - generic [ref=e202]:
+                - generic [ref=e203]: "1"
+                - generic [ref=e204]:
+                  - heading "South Korea" [level=3] [ref=e205]
+                  - paragraph [ref=e206]: Seoul · 2,640 km to Cebu
+                - generic [ref=e207]:
+                  - generic [ref=e208]: "81"
+                  - text: Potential
+              - generic [ref=e210]:
+                - generic [ref=e211]: Market potential
+                - generic [ref=e212]: 81/100
+              - generic [ref=e215]:
+                - generic [ref=e216]:
+                  - generic [ref=e219]: Direct
+                  - text: · 3h 45m
+                - generic [ref=e220]: 14x / week
+                - generic [ref=e225]: Surge active

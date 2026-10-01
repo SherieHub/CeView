@@ -1,0 +1,36 @@
+%% Module 4 — Campaign Analytics & Reporting
+%% Performance shell (M4-F) + 6 fully-parallel siblings (M4-1..M4-6). See 05-module-4.md.
+flowchart TD
+  classDef foundation fill:#eee,stroke:#999,color:#333;
+  classDef shell fill:#e6eefc,stroke:#3b6fd6,color:#0f2c4a;
+  classDef newfile fill:#e6f6ec,stroke:#2f9e5c,color:#0f3d22;
+  classDef store fill:#fff2d6,stroke:#c8901f,color:#4a3308;
+
+  subgraph Performance["components/module-4/4.1-campaign-analytics/ (route: /performance)"]
+    Shell["CampaignAnalyticsView.tsx (M4-F)\nowns campaign input, weeks toggle"]:::shell
+    Form["IngestionForm.tsx (M4-F)"]:::newfile
+    Metrics["campaignMetrics.ts (M4-F)\ncomputeMetrics / computePes"]:::shell
+    Kpi["KpiCard.tsx (M4-1)"]:::newfile
+    Flag["FlaggedMetricBanner.tsx (M4-1)"]:::newfile
+    Pes["PesGauge.tsx (M4-2)"]:::newfile
+    Funnel["CustomerJourneyFunnel.tsx (M4-3)"]:::newfile
+    PesTrend["PesTrendChart.tsx (M4-4)"]:::newfile
+    EffTrend["EfficiencyTrendChart.tsx (M4-4)"]:::newfile
+    CostTrend["CostTrendChart.tsx (M4-4)"]:::newfile
+    Plan["AiActionPlan.tsx (M4-5)"]:::newfile
+    Prev["PreviouslyPublished.tsx (M4-6)"]:::newfile
+    PostModal["PostAnalyticsModal.tsx (M4-6)"]:::newfile
+  end
+  Shell --> Form
+  Shell -->|campaign submitted| Metrics
+  Metrics --> Kpi & Flag & Pes
+  Shell --> Funnel & PesTrend & EffTrend & CostTrend & Plan & Prev
+  Prev --> PostModal
+
+  PostStore["services/postStore.ts (Module 3's Foundation — Shared Stores)"]:::store
+  Prev -.->|reads| PostStore
+  PostModal -.->|reads per-post metrics| PostStore
+
+  Form -.->|DEFAULT_CAMPAIGN_INPUT| CampaignFixture["services/fixtures/campaign.ts"]:::foundation
+  Shell -.->|campaign.history/report| ApiClient["services/apiClient.ts"]:::foundation
+  PostModal -.->|built on| ModalPrimitive["components/shared/Modal.tsx"]:::foundation

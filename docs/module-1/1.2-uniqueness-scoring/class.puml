@@ -83,7 +83,7 @@ UniquenessCalibrationView *-- ComputeUniquenessButton
 CalibrationResultsDashboard *-- OverallScoreCard
 CalibrationResultsDashboard *-- "2" ActionableScoreCard
 
-UniquenessCalibrationView ..> UniquenessScoringController : POST /api/v1/classification/uniqueness
+UniquenessCalibrationView ..> UniquenessScoringController : POST /api/classification/uniqueness
 
 UniquenessScoringController --> AIInferenceGatewayService : computeUniqueness
 AIInferenceGatewayService ..> ClassificationRouter : POST /internal/classification/uniqueness

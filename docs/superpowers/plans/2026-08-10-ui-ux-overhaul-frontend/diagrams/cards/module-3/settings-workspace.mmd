@@ -1,0 +1,8 @@
+flowchart TD
+  Mount(["/settings/workspace mounted"]) --> Load["apiClient.workspace.members()"]
+  Load --> Render(["Render member list\n+ invite form"])
+  Render -->|fill email + role,\nclick Invite| Derive["name = deriveDisplayName(email)\ninitials = deriveInitials(name)"]
+  Derive --> Optimistic["Append pending member row\nBEFORE network confirmation"]
+  Optimistic --> Confirm["apiClient.workspace.invite(email)"]
+  Confirm --> Toast(["Confirmation toast,\nclear email field"])
+  Toast --> Gap(["No path to 'active' or\nrevoked status — known gap"])

@@ -23,7 +23,7 @@ end note
 == Compute Uniqueness Score ==
 
 O -> CV: Adjust category sliders,\nclick "Compute Final Uniqueness Score"
-CV -> USC: POST /api/v1/classification/uniqueness\n{businessProfileId, businessName, categories,\ncoreServices, description, uvp}
+CV -> USC: POST /api/classification/uniqueness\n{businessProfileId, businessName, categories,\ncoreServices, description, uvp}
 
 USC -> AI: computeUniqueness(payload)
 AI -> FP: POST /internal/classification/uniqueness
@@ -44,7 +44,7 @@ CV -> CV: Render CalibrationResultsDashboard\n[OverallScoreCard + 2× Actionable
 == Confirm & Register Profile ==
 
 O -> CV: Review scores, click\n"Confirm & Register Profile"
-CV -> CV: call api.saveProfile()\n[delegates to 1.1 PUT /api/v1/business-profile\nwith uniquenessScore written to tbl_business_profile]
+CV -> CV: call api.saveProfile()\n[delegates to 1.1 PUT /api/business-profile\nwith uniquenessScore written to tbl_business_profile]
 CV --> O: Navigate to Business Profile dashboard
 
 @enduml

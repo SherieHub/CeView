@@ -1,6 +1,24 @@
 import { CalendarEvent, Market, MarketId, Notification, KeywordTrend, PostPerformance, PerformanceReport } from './types';
 
 // Palette from Pitch Deck Page 9 & User Image
+//
+// NOTE: These are kept as resolved hex strings (not CSS var() refs) because
+// Recharts `stroke`/`fill` props need literal color values, not custom
+// properties. This object is the second copy of the design-system palette —
+// the first, source-of-truth copy lives in `ceview/styles/tokens.css` as
+// CSS custom properties (`--navy`, `--gold`, etc.), ported verbatim from
+// ui-ux-prototype.html:15-67. The two MUST stay in sync; if you change a
+// color here, change the matching `--token` in tokens.css too (and vice
+// versa), and check both in review. Mapping (COLORS key -> tokens.css var):
+//   TEAL -> --teal            CYAN -> --cyan            BEIGE -> --sand
+//   GREEN -> --foliage        WHITE -> (n/a, literal #fff)
+//   OFF_WHITE -> --page       TEXT_DARK -> --ink-2       TEXT_LIGHT -> --muted
+//   NAVY -> --navy            LIGHTNAVY -> --navy-light  BLUE -> --blue
+//   SKYBLUE -> --skyblue      NAVY_LIGHT -> --navy-muted GOLD -> --gold
+//   DARK_GOLD -> --gold-dark  LIGHT_GOLD -> --gold-light LIGHT_YELLOW -> --yellow
+//   GOLD_LIGHT -> --gold-wash RED -> --critical           RED_ORANGE -> --critical-alt
+//   CREAM -> --page           TEXT_MAIN -> --ink          TEXT_MUTED -> --muted
+//   GREY -> --grey            LIGHT_GREY -> --line-strong GREEN_LIGHT -> --success-bg
 export const COLORS = {
   TEAL: '#007892',    // Primary Brand (Deep Ocean)
   CYAN: '#71eeffff',    // Accents / Active (Shallow Water)

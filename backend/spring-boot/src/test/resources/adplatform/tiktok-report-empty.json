@@ -1,0 +1,8 @@
+{
+  "code": 0,
+  "message": "OK",
+  "data": {
+    "list": [],
+    "page_info": { "total_number": 0, "page": 1, "page_size": 100, "total_page": 0 }
+  }
+}

@@ -1,0 +1,73 @@
+- generic [ref=f13e47]:
+  - complementary [ref=f13e48]:
+    - generic [ref=f13e49]:
+      - generic [ref=f13e50]: Ce
+      - generic [ref=f13e51]:
+        - generic [ref=f13e52]: CeView
+        - text: Set up your profile
+    - paragraph [ref=f13e53]: Required steps
+    - list "Onboarding progress" [ref=f13e54]:
+      - listitem [ref=f13e55]:
+        - generic [ref=f13e57]:
+          - generic [ref=f13e58]: Basic Info
+          - generic [ref=f13e59]: Name, industry, slogan
+      - listitem [ref=f13e60]:
+        - generic [ref=f13e61]: "2"
+        - generic [ref=f13e62]:
+          - generic [ref=f13e63]: Brand Identity
+          - generic [ref=f13e64]: Vibe and core services
+      - listitem [ref=f13e65]:
+        - generic [ref=f13e66]: "3"
+        - generic [ref=f13e67]:
+          - generic [ref=f13e68]: Structured Inputs
+          - generic [ref=f13e69]: Description and UVP
+      - listitem [ref=f13e70]:
+        - generic [ref=f13e71]: "4"
+        - generic [ref=f13e72]:
+          - generic [ref=f13e73]: Assets & Links
+          - generic [ref=f13e74]: Socials, logo, website
+      - listitem [ref=f13e75]:
+        - generic [ref=f13e76]: "5"
+        - generic [ref=f13e77]:
+          - generic [ref=f13e78]: Analysis
+          - generic [ref=f13e79]: Categories and uniqueness
+    - generic [ref=f13e80]: Every field feeds the AI. Complete answers produce sharper forecasts and better captions.
+  - main [ref=f13e84]:
+    - generic [ref=f13e87]:
+      - paragraph [ref=f13e115]: Step 2 — Required
+      - heading "How should you sound and what do you sell?" [level=2] [ref=f13e116]
+      - paragraph [ref=f13e117]: Vibe sets the tone of every generated caption. Core services are sorted by the AI into primary offerings and unexpected differentiators before any copy is written.
+      - generic [ref=f13e118]:
+        - generic [ref=f13e119]:
+          - generic [ref=f13e120]: Vibe — Pick one or more
+          - generic [ref=f13e121]:
+            - button "Vibe — Pick one or more Adventurous Luxury & Exclusive Family-Friendly Eco-Conscious Local & Authentic Youthful & Social Romantic" [pressed] [ref=f13e122] [cursor=pointer]: Serene & Restorative
+            - button "Adventurous" [ref=f13e123] [cursor=pointer]
+            - button "Luxury & Exclusive" [ref=f13e124] [cursor=pointer]
+            - button "Family-Friendly" [ref=f13e125] [cursor=pointer]
+            - button "Eco-Conscious" [pressed] [ref=f13e126] [cursor=pointer]
+            - button "Local & Authentic" [ref=f13e127] [cursor=pointer]
+            - button "Youthful & Social" [ref=f13e128] [cursor=pointer]
+            - button "Romantic" [ref=f13e129] [cursor=pointer]
+        - generic [ref=f13e130]:
+          - generic [ref=f13e131]: Core services — At least one
+          - generic [ref=f13e132]:
+            - generic [ref=f13e133]:
+              - text: Scuba Diving
+              - button "Remove Scuba Diving" [ref=f13e134] [cursor=pointer]
+            - generic [ref=f13e138]:
+              - text: Island Hopping
+              - button "Remove Island Hopping" [ref=f13e139] [cursor=pointer]
+            - generic [ref=f13e143]:
+              - text: Snorkeling
+              - button "Remove Snorkeling" [ref=f13e144] [cursor=pointer]
+            - generic [ref=f13e148]:
+              - text: Beachfront Villas
+              - button "Remove Beachfront Villas" [ref=f13e149] [cursor=pointer]
+            - textbox "Type a service and press Enter…" [ref=f13e153]
+          - generic [ref=f13e154]: e.g. Scuba Diving, Island Hopping, Sunset Cruise, Farm-to-table Dining
+    - generic [ref=f13e104]:
+      - button "Back" [ref=f13e105] [cursor=pointer]
+      - generic [ref=f13e108]:
+        - generic [ref=f13e109]: Step 2 of 5
+        - button "Continue" [active] [ref=f13e110] [cursor=pointer]

@@ -1,0 +1,266 @@
+[
+  {
+    "id": 93,
+    "description": "A software company building payroll and attendance systems for mid-sized employers across three countries. Its platform handles statutory contribution filings, shift differentials, and multi-currency disbursement, and is sold on annual per-employee licensing. The team of forty is split between engineering, compliance research, and enterprise support.",
+    "uvp": "The product tracks statutory rule changes in every jurisdiction it serves and pushes calculation updates before the effective date, sparing clients manual reconfiguration. Implementation is handled by in-house compliance analysts rather than resellers, which shortens onboarding considerably.",
+    "services": [
+      "Cloud payroll processing and filing",
+      "Biometric attendance integration",
+      "Statutory contribution compliance updates",
+      "Enterprise onboarding and migration support"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 94,
+    "description": "A rural bank with eleven branches serving farming and small-trader clients, offering deposit accounts, agricultural production loans, and remittance disbursement. Loan officers assess borrowers through field visits rather than credit scores alone. The institution is supervised by the central bank and funds itself largely from local deposits.",
+    "uvp": "Credit decisions are made by officers who walk the borrower's land, allowing lending to farmers no scoring model would approve. Loan schedules are aligned to harvest cycles instead of fixed monthly amortisation, which materially reduces default among crop clients.",
+    "services": [
+      "Agricultural production lending",
+      "Savings and time deposit accounts",
+      "Remittance receiving and disbursement",
+      "Field-based credit assessment"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 95,
+    "description": "A private dialysis centre operating twenty-eight stations across two shifts daily, staffed by nephrology nurses and a visiting consultant. It contracts with the national health insurer for subsidised sessions and maintains its own water treatment plant for dialysate. Patients are typically on long-term thrice-weekly schedules.",
+    "uvp": "The centre runs redundant water purification and generator systems, so treatment continues through the outages that interrupt sessions at comparable facilities. Its slot scheduling guarantees each patient the same chair and shift time every week, which improves adherence.",
+    "services": [
+      "Haemodialysis treatment sessions",
+      "Vascular access monitoring",
+      "Insurer-subsidised session processing",
+      "Nutrition and adherence counselling"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 96,
+    "description": "A law firm specialising in maritime and admiralty practice, representing vessel owners, charterers, and cargo insurers in collision, salvage, and crew injury disputes. The partners appear before admiralty courts and arbitration panels, and the firm keeps a standing retainer arrangement with two protection and indemnity clubs. It employs nine lawyers and four paralegals.",
+    "uvp": "The firm maintains a duty roster that puts a lawyer on a casualty scene within twelve hours anywhere in the archipelago, which preserves evidence competitors reach too late. Its partners previously served as marine surveyors, giving technical fluency few litigation practices hold.",
+    "services": [
+      "Collision and salvage litigation",
+      "Cargo claims and charterparty disputes",
+      "Crew injury and employment representation",
+      "Emergency casualty response attendance"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 97,
+    "description": "A structural steel fabricator running a plant with plasma cutting tables, submerged arc welding lines, and a paint shop. It supplies beams, trusses, and custom weldments to civil contractors and industrial plant builders. Output is certified against international welding standards and the company employs its own testing inspectors.",
+    "uvp": "In-house radiographic and ultrasonic testing lets the plant release certified structural assemblies without waiting on third-party labs, cutting weeks from contractor schedules. Its plasma tables handle plate thicknesses that most regional fabricators must subcontract.",
+    "services": [
+      "Structural beam and truss fabrication",
+      "Certified welding and non-destructive testing",
+      "Industrial shot blasting and coating",
+      "Custom heavy weldment production"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 98,
+    "description": "A civil works contractor undertaking road rehabilitation, drainage, and slope protection projects for provincial governments. It owns a fleet of graders, pavers, and rollers, and maintains an aggregates yard with its own crushing plant. Contracts are won by public bidding and are typically eight to eighteen months long.",
+    "uvp": "Owning both the equipment fleet and the aggregate source removes the supply delays that force competitors to suspend work mid-project. The firm's survey unit does its own post-construction settlement monitoring, which very few provincial contractors provide.",
+    "services": [
+      "Road rehabilitation and asphalt paving",
+      "Drainage and culvert construction",
+      "Slope protection and retaining structures",
+      "Aggregate crushing and supply"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 99,
+    "description": "An accounting practice providing external audit, tax compliance, and forensic engagements to family-owned corporations. Its staff of twenty-six is organised into audit and advisory teams, and it holds accreditation with the securities regulator. Work peaks sharply in the two quarters around statutory filing deadlines.",
+    "uvp": "The firm assigns the same engagement partner across years, so recurring clients avoid re-explaining their structures each audit cycle. Its forensic team is separately staffed, allowing fraud investigations to run without impairing the statutory audit's independence.",
+    "services": [
+      "Statutory external audit",
+      "Corporate tax compliance and filing",
+      "Forensic and fraud investigation engagements",
+      "Regulatory reporting advisory"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 100,
+    "description": "A building supply and hardware retailer occupying a warehouse showroom, stocking cement, plumbing fittings, electrical supplies, and power tools. It serves walk-in homeowners as well as contractor accounts with credit terms and site delivery. Two branches operate in neighbouring municipalities under the same family ownership.",
+    "uvp": "Contractor accounts get same-day site delivery from stock held locally rather than ordered in, which keeps small builders working. The store's tool service bench repairs what it sells, an after-sales function the chain competitors in the area do not offer.",
+    "services": [
+      "Construction material and hardware retail",
+      "Contractor credit accounts",
+      "Same-day site delivery",
+      "Power tool repair and servicing"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 101,
+    "description": "An insurance underwriter specialising in travel and trip-interruption policies sold through airlines, booking platforms, and agency partners. It handles medical evacuation coordination, baggage claims, and cancellation reimbursements through a twenty-four-hour assistance desk. The company holds no hospitality assets and never hosts travellers itself.",
+    "uvp": "Claims for medical evacuation are authorised by in-house physicians rather than routed to an outsourced network, which shortens approval to under two hours. Policies are priced per itinerary segment, letting partners embed cover at the point of booking.",
+    "services": [
+      "Trip cancellation and interruption cover",
+      "Emergency medical evacuation coordination",
+      "Baggage loss and delay claims processing",
+      "Twenty-four-hour assistance desk"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 102,
+    "description": "A commercial laundry and linen rental company serving hotels, resorts, and hospitals across a coastal province. It operates industrial tunnel washers, a flatwork ironing line, and a fleet of delivery trucks running nightly circuits. Clients pay per kilogram or on fixed linen rental contracts.",
+    "uvp": "Nightly collection and pre-dawn return let hotel clients hold roughly half the linen stock they would otherwise need, freeing working capital. The plant's water recovery system meets discharge standards that allow it to operate in protected coastal zones where competitors cannot site facilities.",
+    "services": [
+      "Industrial laundry processing by weight",
+      "Hotel linen rental contracts",
+      "Nightly collection and pre-dawn delivery",
+      "Stain reclamation and linen replacement management"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 103,
+    "description": "A software vendor selling a channel manager and property management system to independent hotels, synchronising rates and inventory across online travel agencies. The product includes a booking engine, housekeeping module, and revenue reporting. Revenue comes from monthly per-room subscriptions and integration fees.",
+    "uvp": "The platform reconciles overbooking conflicts across channels in near real time, a failure mode that costs independent properties more than any other software gap. Its migration team imports historical reservation data, which competing vendors leave to the client.",
+    "services": [
+      "Channel management across booking platforms",
+      "Property management system subscriptions",
+      "Direct booking engine deployment",
+      "Revenue and occupancy analytics reporting"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 104,
+    "description": "A ground handling company contracted by airlines at a regional airport, providing baggage loading, aircraft pushback, cabin cleaning, and passenger boarding assistance. It runs a fleet of tugs, belt loaders, and ground power units, and staffs shifts around the flight schedule. Safety audits are conducted quarterly by its airline clients.",
+    "uvp": "Its crews are cross-trained across ramp and cabin roles, letting the company maintain turnaround times during staff shortages that ground competing handlers. On-site engineering keeps ground support equipment serviceable without the mainland parts delays others face.",
+    "services": [
+      "Ramp baggage loading and unloading",
+      "Aircraft pushback and marshalling",
+      "Cabin cleaning between rotations",
+      "Ground support equipment maintenance"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 105,
+    "description": "A heavy vehicle maintenance workshop servicing tour coach and shuttle fleets, handling engine overhauls, air conditioning systems, brake certification, and body repairs. It operates six bays with a parts inventory for the three chassis brands most common among local operators. Work is booked on fleet maintenance contracts.",
+    "uvp": "Holding chassis-specific parts locally allows the shop to return a coach to service in a day rather than the week an ordered part would take. Its roadworthiness certification is accepted directly by the transport regulator, sparing operators a second inspection.",
+    "services": [
+      "Coach engine and drivetrain overhaul",
+      "Bus air conditioning system servicing",
+      "Brake testing and roadworthiness certification",
+      "Fleet preventive maintenance contracts"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 106,
+    "description": "A licensed manning agency that recruits, documents, and deploys crew for cruise lines and cargo operators. It handles seafarer certification, medical clearance, visa processing, and contract administration for roughly two thousand deployments a year. The agency is audited by both the labour regulator and its principal shipowners.",
+    "uvp": "The agency runs its own accredited training centre, so candidates complete safety and hospitality certification before deployment instead of waiting for external course slots. Its documentation team clears crew visas in half the sector's average processing time.",
+    "services": [
+      "Seafarer recruitment and screening",
+      "Certification and medical clearance processing",
+      "Visa and deployment documentation",
+      "Contract administration and repatriation handling"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 107,
+    "description": "A marketing agency retained by provincial tourism offices and hospitality brands to produce destination campaigns, run paid media, and manage social channels. Its teams cover strategy, video production, and analytics, and it bills on retainers plus media commission. The agency owns no venues and sells nothing directly to travellers.",
+    "uvp": "Campaign work is grounded in the agency's own arrival and search-demand modelling, so creative is briefed against measured market interest rather than assumption. Its in-house production unit shoots and edits locally, removing the cost of flying crews in.",
+    "services": [
+      "Destination campaign strategy and creative",
+      "Paid media planning and buying",
+      "Video and photo production",
+      "Performance analytics and attribution reporting"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 108,
+    "description": "A seafood processing and export company operating a blast freezing plant and cold storage at a fishing port. It buys tuna and reef catch from consolidators, grades and packs to buyer specifications, and ships containers to Japanese and European importers. Traceability documentation is maintained for every lot.",
+    "uvp": "The plant blast-freezes within four hours of landing, holding a grade level that slower processors cannot reach and commanding sashimi-market pricing. Its lot-level traceability satisfies European import controls that exclude most regional exporters.",
+    "services": [
+      "Blast freezing and cold storage",
+      "Export grading and specification packing",
+      "Catch documentation and traceability",
+      "Container consolidation and shipping"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 109,
+    "description": "A feed milling company producing formulated rations for swine, poultry, and aquaculture, operating a pellet mill and its own quality laboratory. It sells through provincial dealers and directly to commercial farms on volume contracts. Formulations are adjusted seasonally against raw material availability.",
+    "uvp": "The in-house laboratory assays every incoming corn and soybean lot, so formulations hold nutritional specification even when raw material quality swings. Its aquaculture line produces a water-stable pellet few regional mills can extrude consistently.",
+    "services": [
+      "Swine and poultry feed manufacturing",
+      "Water-stable aquaculture pellet production",
+      "Raw material laboratory assay",
+      "Dealer distribution and farm supply contracts"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 110,
+    "description": "A veterinary clinic and animal hospital with a surgical suite, in-house diagnostics, and an overnight ward. It treats companion animals during clinic hours and takes emergency cases around the clock. Three veterinarians and six technicians staff the rotation, and the practice also runs a small boarding kennel.",
+    "uvp": "On-site radiography and blood chemistry mean diagnosis and surgery can happen in the same visit rather than across three appointments. Being the only twenty-four-hour emergency veterinary service in the city, it receives referrals from every other clinic in the area.",
+    "services": [
+      "Companion animal consultation and surgery",
+      "In-house diagnostic imaging and laboratory",
+      "Twenty-four-hour emergency treatment",
+      "Overnight ward and boarding"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 111,
+    "description": "A driving school accredited by the land transportation authority, running theoretical modules and practical instruction for student and professional licence applicants. It maintains a fleet of dual-control training vehicles and a small off-road practice pad. Most enrolees are first-time applicants required to complete a mandated course.",
+    "uvp": "Its instructors are certified assessors, so students complete the mandated examination on the same premises instead of queuing at a regional testing centre. The practice pad allows manoeuvring drills to be learned off public roads, which reduces first-attempt failures.",
+    "services": [
+      "Mandated theoretical driving course",
+      "Dual-control practical instruction",
+      "Professional licence upgrade training",
+      "On-site assessment and examination"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 112,
+    "description": "An infrastructure company that builds, owns, and leases telecommunications towers to mobile network operators. It handles site acquisition, permitting, civil works, and power provisioning, then leases vertical space to multiple carriers per structure. Revenue comes from long-term tenancy agreements indexed to inflation.",
+    "uvp": "Designing every tower for at least three tenants from the outset lets carriers co-locate without structural retrofits, accelerating rollout. The company's permitting team handles municipal approvals in-house, which is the bottleneck that stalls most independent tower builds.",
+    "services": [
+      "Tower site acquisition and permitting",
+      "Tower construction and power provisioning",
+      "Multi-carrier co-location leasing",
+      "Site maintenance and security"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 113,
+    "description": "An environmental services company providing septic desludging, grease trap servicing, and wastewater hauling to resorts, restaurants, and residential subdivisions. It operates vacuum tankers and a permitted treatment facility where collected material is processed. Contracts run on scheduled servicing intervals with compliance documentation issued per visit.",
+    "uvp": "Because the company owns a permitted treatment site, clients receive disposal certificates that satisfy environmental inspectors, which haulers without a facility cannot issue. Scheduled servicing prevents the overflow incidents that shut hospitality clients down during peak season.",
+    "services": [
+      "Septic tank desludging",
+      "Grease trap cleaning and servicing",
+      "Permitted wastewater treatment and disposal",
+      "Compliance certification per service visit"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  },
+  {
+    "id": 114,
+    "description": "A real estate brokerage marketing shoreline and hillside lots to buyers looking for second homes and development sites. Its agents handle title verification, zoning checks, and negotiation, and the firm holds exclusive listings on several subdivided coastal estates. It earns commission on completed transfers and does not operate any property it sells.",
+    "uvp": "The firm runs its own title and easement due diligence before listing, so buyers avoid the boundary disputes that plague shoreline transactions in the province. Its agents are licensed appraisers, giving sellers a defensible valuation rather than a speculative asking price.",
+    "services": [
+      "Shoreline and hillside lot brokerage",
+      "Title verification and zoning due diligence",
+      "Licensed property appraisal",
+      "Transfer and registration facilitation"
+    ],
+    "labels": ["OUT_OF_SCOPE"]
+  }
+]

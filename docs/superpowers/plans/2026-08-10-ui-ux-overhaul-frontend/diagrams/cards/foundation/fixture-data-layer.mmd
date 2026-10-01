@@ -1,0 +1,17 @@
+flowchart TD
+  Call(["apiClient.<resource>.<method>() called"]) --> IsAuth{"resource === 'auth'?"}
+  IsAuth -->|yes| AlwaysReal["Always request()\n— no fixture branch"]
+  IsAuth -->|no| CheckFlag{"VITE_USE_FIXTURES\n=== 'true'?"}
+  CheckFlag -->|yes| Fixture["delay(MOCK_* constant\nor derived helper)\nafter ~250ms"]
+  CheckFlag -->|no| Real["request(path, init)"]
+  Real --> Token{"loadTokens()\nreturns tokens?"}
+  Token -->|yes| Bearer["Attach Authorization:\nBearer <token>"]
+  Token -->|no| NoAuth["No Authorization header"]
+  Bearer --> Fetch["fetch(BASE_URL + path)"]
+  NoAuth --> Fetch
+  Fetch --> Status{"res.ok?"}
+  Status -->|no| Throw(["throw Error"])
+  Status -->|yes, 204| Undef(["return undefined"])
+  Status -->|yes, other| Json(["return res.json()"])
+  Fixture --> Resolved(["Resolved value"])
+  AlwaysReal --> Fetch

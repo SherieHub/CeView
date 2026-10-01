@@ -1,0 +1,72 @@
+- generic [ref=f13e47]:
+  - complementary [ref=f13e48]:
+    - generic [ref=f13e49]:
+      - generic [ref=f13e50]: Ce
+      - generic [ref=f13e51]:
+        - generic [ref=f13e52]: CeView
+        - text: Set up your profile
+    - paragraph [ref=f13e53]: Required steps
+    - list "Onboarding progress" [ref=f13e54]:
+      - listitem [ref=f13e55]:
+        - generic [ref=f13e56]: "1"
+        - generic [ref=f13e57]:
+          - generic [ref=f13e58]: Basic Info
+          - generic [ref=f13e59]: Name, industry, slogan
+      - listitem [ref=f13e60]:
+        - generic [ref=f13e61]: "2"
+        - generic [ref=f13e62]:
+          - generic [ref=f13e63]: Brand Identity
+          - generic [ref=f13e64]: Vibe and core services
+      - listitem [ref=f13e65]:
+        - generic [ref=f13e66]: "3"
+        - generic [ref=f13e67]:
+          - generic [ref=f13e68]: Structured Inputs
+          - generic [ref=f13e69]: Description and UVP
+      - listitem [ref=f13e70]:
+        - generic [ref=f13e71]: "4"
+        - generic [ref=f13e72]:
+          - generic [ref=f13e73]: Assets & Links
+          - generic [ref=f13e74]: Socials, logo, website
+      - listitem [ref=f13e75]:
+        - generic [ref=f13e76]: "5"
+        - generic [ref=f13e77]:
+          - generic [ref=f13e78]: Analysis
+          - generic [ref=f13e79]: Categories and uniqueness
+    - generic [ref=f13e80]: Every field feeds the AI. Complete answers produce sharper forecasts and better captions.
+  - main [ref=f13e84]:
+    - generic [ref=f13e87]:
+      - paragraph [ref=f13e88]: Step 1 — Required
+      - heading "Tell us about your business" [level=2] [ref=f13e89]
+      - paragraph [ref=f13e90]: These three fields anchor every AI prompt CeView runs on your behalf — classification, forecasting and caption generation all read from them.
+      - generic [ref=f13e91]:
+        - generic [ref=f13e92]:
+          - generic [ref=f13e93]: Business name
+          - textbox "Business name" [ref=f13e94]:
+            - /placeholder: e.g. Sunset Cove Beach Resort
+            - text: Sunset Cove Beach Resort
+        - generic [ref=f13e95]:
+          - generic [ref=f13e96]:
+            - text: Industry
+            - generic [ref=f13e97]: — Primary tourism category
+          - combobox "Industry — Primary tourism category" [ref=f13e98]:
+            - option "Select your primary category…"
+            - option "Coastal & Island"
+            - option "Adventure & Nature"
+            - option "Cultural & Heritage"
+            - option "Theme Parks / Entertainment"
+            - option "Urban & City"
+            - option "Culinary & Gastronomy"
+            - option "Accommodation & Staycation" [selected]
+        - generic [ref=f13e99]:
+          - generic [ref=f13e100]:
+            - text: Slogan
+            - generic [ref=f13e101]: (optional)
+          - textbox "Slogan (optional)" [ref=f13e102]:
+            - /placeholder: One line that captures what you offer
+            - text: Rest, thirty metres from the sardine run.
+        - button "Fill with demo business" [active] [ref=f13e103] [cursor=pointer]
+    - generic [ref=f13e104]:
+      - button "Back" [disabled] [ref=f13e105]
+      - generic [ref=f13e108]:
+        - generic [ref=f13e109]: Step 1 of 5
+        - button "Continue" [ref=f13e110] [cursor=pointer]

@@ -57,7 +57,7 @@ end note
 note right of BP
   uniqueness_score written here
   after "Confirm & Register Profile"
-  via PUT /api/v1/business-profile
+  via PUT /api/business-profile
 end note
 
 BP ||--o{ BE  : "has embedding\n(upserted by embed job)"

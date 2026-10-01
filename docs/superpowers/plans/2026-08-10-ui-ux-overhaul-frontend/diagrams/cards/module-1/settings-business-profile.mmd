@@ -1,0 +1,11 @@
+flowchart TD
+  Mount(["Navigate to /settings/profile"]) --> Prefill["form ← profile\n(from ProfileContext)"]
+  Prefill --> Render["Render identity header (from profile)\n+ edit form (from form)"]
+  Render -->|edit any field| UpdateForm["setForm({...form, field})"]
+  Render -->|toggle a category| CheckOnly{"selected AND\nonly one selected?"}
+  CheckOnly -->|yes| Block["No-op"]
+  CheckOnly -->|no| ToggleCat["Toggle in form.categories"]
+  UpdateForm --> SaveClick
+  ToggleCat --> SaveClick
+  SaveClick{"Save clicked?"} -->|yes| Persist["apiClient.saveProfile(form)"]
+  Persist --> Resync(["setProfile(form) —\nsidebar re-syncs,\nNO uniqueness recompute\n(known gap)"])

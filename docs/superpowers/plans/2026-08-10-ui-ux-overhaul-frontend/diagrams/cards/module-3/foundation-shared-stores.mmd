@@ -1,0 +1,12 @@
+flowchart TD
+  PMount(["First consumer mounts (Content Studio, Calendar or Performance)"]) --> PSeed["postStore: posts=null (loading) → apiClient.posts.list() → PublishedPost[]"]
+  PSeed --> PServe(["usePosts() serves the same array to every subscriber"])
+  PServe -->|M3-5 calls publish(draft)| PAppend["append one PublishedPost per selected platform\nstatus='published', date=today, metrics zeroed"]
+  PAppend --> PNotify(["all subscribers re-render — no refetch, no reload"])
+
+  CMount(["First consumer mounts (Content Studio or Settings)"]) --> CSeed["connectionsStore: connections=null (loading) → apiClient.connections.list() → PlatformConnection[]"]
+  CSeed --> CServe(["useConnections() serves connected/handle per PlatformId"])
+  CServe -->|M3-9 calls connect(p)| CConnect["apiClient.connections.connect(p) → mark connected"]
+  CServe -->|M3-9 calls disconnect(p)| CDisconnect["apiClient.connections.disconnect(p) → mark disconnected"]
+  CDisconnect --> CEmit["emit disconnect event for p"]
+  CEmit --> CPrune(["M3-F1's shell drops p from its in-progress publish selection"])

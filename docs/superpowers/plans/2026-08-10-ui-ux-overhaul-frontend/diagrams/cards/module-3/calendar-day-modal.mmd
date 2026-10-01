@@ -1,0 +1,6 @@
+flowchart TD
+  Mount(["DayPostsModal mounted with date + non-empty posts"]) --> Rows["one row per post"]
+  Rows --> Status{"post.status"}
+  Status -->|published| Metrics(["caption + reach / likes / engagementRate"])
+  Status -->|draft| Chip(["caption + Draft chip, no metrics"])
+  Mount -->|scrim / Esc / close button| Close(["onClose() — shell clears modalDate"])

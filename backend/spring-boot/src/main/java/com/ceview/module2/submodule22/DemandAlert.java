@@ -8,7 +8,8 @@ import java.util.UUID;
 
 @Data
 @Entity
-@Table(name = "tbl_demand_alert")
+@Table(name = "tbl_demand_alert",
+       indexes = @Index(name = "idx_demand_alert_profile_date", columnList = "business_profile_id, alert_date DESC"))
 public class DemandAlert {
 
     @Id
@@ -17,6 +18,14 @@ public class DemandAlert {
 
     @Column(name = "market_score_id")
     private UUID marketScoreId;
+
+    /** Owning profile, denormalized for tenant-scoped alert reads. */
+    @Column(name = "business_profile_id")
+    private UUID businessProfileId;
+
+    /** Forecast category copied onto the alert at creation time. */
+    @Column(name = "category", length = 100)
+    private String category;
 
     @Column(name = "alert_level")
     private String alertLevel;
@@ -37,6 +46,10 @@ public class DemandAlert {
     /** Whether the operator has read/dismissed this notification in the HomeView . */
     @Column(name = "is_read")
     private Boolean isRead;
+
+    /** Measured demand uplift above the rolling baseline; null for legacy rows. */
+    @Column(name = "uplift_pct")
+    private Double upliftPct;
 
     @PrePersist
     void onCreate() {

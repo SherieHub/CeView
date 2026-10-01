@@ -1,0 +1,907 @@
+[     503ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[     654ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[     655ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[     653ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788005358353:35:11)
+[  254937ms] [ERROR] React has detected a change in the order of Hooks called by %s. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://react.dev/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+%s   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ DashboardView 1. useContext                 useContext
+2. useRef                     useRef
+3. useRef                     useRef
+4. useContext                 useContext
+5. useContext                 useContext
+6. useMemo                    useMemo
+7. useContext                 useContext
+8. useContext                 useContext
+9. useContext                 useContext
+10. useRef                    useRef
+11. useContext                useContext
+12. useLayoutEffect           useLayoutEffect
+13. useCallback               useCallback
+14. useCallback               useCallback
+15. useContext                useContext
+16. useContext                useContext
+17. useContext                useContext
+18. useRef                    useRef
+19. useContext                useContext
+20. useLayoutEffect           useLayoutEffect
+21. useCallback               useCallback
+22. useContext                useContext
+23. useState                  useState
+24. useState                  useState
+25. useState                  useState
+26. useState                  useState
+27. useState                  useState
+28. useState                  useState
+29. useState                  useState
+30. useState                  useState
+31. useEffect                 useEffect
+32. useEffect                 useState
+ @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5593
+[  254954ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5892:17)
+    at updateReducer (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5887:16)
+    at Object.useState (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18996:20)
+    at exports.useState (http://localhost:3001/node_modules/.vite/deps/chunk-JHYWF6JX.js?v=0221216b:959:36)
+    at useDashboardState (http://localhost:3001/components/module-2/2.1-dashboard/useDashboardState.ts?t=1788006020543:41:45)
+    at DashboardView (http://localhost:3001/components/module-2/2.1-dashboard/DashboardView.tsx?t=1788006020543:20:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  254959ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5892:17)
+    at updateReducer (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5887:16)
+    at Object.useState (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18996:20)
+    at exports.useState (http://localhost:3001/node_modules/.vite/deps/chunk-JHYWF6JX.js?v=0221216b:959:36)
+    at useDashboardState (http://localhost:3001/components/module-2/2.1-dashboard/useDashboardState.ts?t=1788006020543:41:45)
+    at DashboardView (http://localhost:3001/components/module-2/2.1-dashboard/DashboardView.tsx?t=1788006020543:20:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  254966ms] [ERROR] %o
+
+%s
+
+%s
+ Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5892:17)
+    at updateReducer (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5887:16)
+    at Object.useState (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18996:20)
+    at exports.useState (http://localhost:3001/node_modules/.vite/deps/chunk-JHYWF6JX.js?v=0221216b:959:36)
+    at useDashboardState (http://localhost:3001/components/module-2/2.1-dashboard/useDashboardState.ts?t=1788006020543:41:45)
+    at DashboardView (http://localhost:3001/components/module-2/2.1-dashboard/DashboardView.tsx?t=1788006020543:20:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20) The above error occurred in the <DashboardView> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[  254967ms] [ERROR] React Router caught the following error during render Error: Should have a queue. You are likely calling Hooks conditionally, which is not allowed. (https://react.dev/link/invalid-hook-call)
+    at updateReducerImpl (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5892:17)
+    at updateReducer (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5887:16)
+    at Object.useState (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18996:20)
+    at exports.useState (http://localhost:3001/node_modules/.vite/deps/chunk-JHYWF6JX.js?v=0221216b:959:36)
+    at useDashboardState (http://localhost:3001/components/module-2/2.1-dashboard/useDashboardState.ts?t=1788006020543:41:45)
+    at DashboardView (http://localhost:3001/components/module-2/2.1-dashboard/DashboardView.tsx?t=1788006020543:20:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[  260295ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  260299ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788005358353:35:11)
+[  260350ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  312466ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  312735ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  312736ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  312740ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788005358353:35:11)
+[  743011ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788005358353:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788005358353:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  743016ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788005358353:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788005358353:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  743021ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788005358353:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788005358353:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[  743022ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788005358353:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788005358353:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[  743796ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  744028ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  744029ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  744034ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006508934:35:11)
+[  750514ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006508934:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006508934:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  750520ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006508934:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006508934:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[  750524ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006508934:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006508934:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[  750525ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006508934:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006508934:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[  751061ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  751265ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  751267ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  751275ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006516156:35:11)
+[  812279ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  812491ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  812492ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  812500ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006516156:35:11)
+[  824082ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  824273ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  824274ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  824290ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006516156:35:11)
+[  850809ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[  851045ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[  851045ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[  851050ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006516156:35:11)
+[ 1359465ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 1359683ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 1359684ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 1359688ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788006516156:35:11)
+[ 5352576ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006516156:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006516156:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5352582ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006516156:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006516156:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5352588ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006516156:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006516156:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5352589ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788006516156:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788006516156:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5353383ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5353625ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5353625ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5353633ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011118455:35:11)
+[ 5360817ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011118455:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011118455:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5360821ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011118455:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011118455:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5360826ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011118455:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011118455:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5360827ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011118455:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011118455:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5361316ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5361451ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5361452ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5361455ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011126731:35:11)
+[ 5366396ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5366541ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5366541ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5366546ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011126731:35:11)
+[ 5461921ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5462087ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5462089ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011126731:35:11)
+[ 5462095ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5530872ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5530926ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5530943ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5530947ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5531015ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/v1/business-profile:0
+[ 5531016ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011296106:27:11) @ http://localhost:3001/services/profileContext.tsx?t=1788011296106:46
+[ 5531024ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5531026ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5531030ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5531031ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5531141ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5531144ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5531147ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5531148ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011126731:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011126731:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5531968ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5532108ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/v1/business-profile:0
+[ 5532109ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011296106:27:11) @ http://localhost:3001/services/profileContext.tsx?t=1788011296106:46
+[ 5540323ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540335ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540341ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540343ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5540425ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540427ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540429ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540430ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5540460ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540463ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540465ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540467ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5531968ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5532109ms] [ERROR] businessProfile.load failed Error: Request to /api/v1/business-profile failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011296106:27:11) @ http://localhost:3001/services/profileContext.tsx?t=1788011296106:46
+[ 5540323ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540335ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540341ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540343ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5540425ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540427ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540429ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540430ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5540460ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540463ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540465ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540467ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5532108ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/v1/business-profile:0
+[ 5540928ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540930ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5540931ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5540932ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5541068ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5541071ms] [ERROR] Error handled by React Router default ErrorBoundary: Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6569
+[ 5541074ms] [ERROR] %o
+
+%s
+
+%s
+ Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) The above error occurred in the <AuthGate> component. React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary. @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7000
+[ 5541075ms] [ERROR] React Router caught the following error during render Error: useAuth must be used within an AuthProvider
+    at useAuth (http://localhost:3001/services/auth.tsx?t=1788011296106:63:19)
+    at AuthGate (http://localhost:3001/components/auth/AuthGate.tsx?t=1788011296106:7:31)
+    at Object.react_stack_bottom_frame (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:18509:20)
+    at renderWithHooks (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:5654:24)
+    at updateFunctionComponent (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:7475:21)
+    at beginWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:8525:20)
+    at runWithFiberInDEV (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:997:72)
+    at performUnitOfWork (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12561:98)
+    at workLoopSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12424:43)
+    at renderRootSync (http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:12408:13) @ http://localhost:3001/node_modules/.vite/deps/react-router-dom.js?v=0221216b:6608
+[ 5541545ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5541968ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5541969ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5542000ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011305786:35:11)
+[ 5680664ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=0221216b:20102
+[ 5680947ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/connections:0
+[ 5680947ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/api/posts:0
+[ 5680969ms] ApiError: GET /api/connections failed with 404
+    at request (http://localhost:3001/services/apiClient.ts?t=1788011305786:35:11)

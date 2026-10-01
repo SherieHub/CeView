@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "id": "act_333333333", "name": "Second Page Account", "currency": "PHP", "account_status": 2 }
+  ],
+  "paging": {
+    "cursors": { "before": "NjQZD", "after": "NzQZD" }
+  }
+}

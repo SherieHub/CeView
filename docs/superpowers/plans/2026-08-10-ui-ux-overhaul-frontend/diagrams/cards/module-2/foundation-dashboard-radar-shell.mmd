@@ -1,0 +1,10 @@
+flowchart TD
+  DMount(["/dashboard mounted"]) --> DHook["useDashboardState():\nnotifications=null (loading) → list() → notifications | aiDown=true"]
+  DHook --> DRender(["Render layout grid:\nAlertFeed slot | MarketsRevealPanel slot | AiStatusBanner slot | RefreshForecastButton slot"])
+  DRender -->|each slot is a stub until its owning card lands| DPlaceholder(["Slot renders its stub placeholder text"])
+
+  RMount(["?market=<id> present on /dashboard"]) --> RLookup["MarketRadarDrawer: market = MOCK_MARKETS.find(id)"]
+  RLookup -->|no match| RNull(["render null"])
+  RLookup -->|match| ROpen["Drawer(open=true), reset timeframe='4WK', activeTab='economy'"]
+  ROpen --> RRender(["Render header (owned here) +\nDrawerChartPanel slot + InsightsTabs slot"])
+  RRender -->|scrim/Esc/back| RClose["clear ?market= param"]

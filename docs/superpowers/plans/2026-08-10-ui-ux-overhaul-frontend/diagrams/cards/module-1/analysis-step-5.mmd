@@ -1,0 +1,16 @@
+flowchart TD
+  Enter(["Enter Step 5"]) --> Analyzing["phase = 'analyzing':\nskeleton + banner,\nclassify(description+uvp+services)"]
+  Analyzing --> Categories["phase = 'categories':\ntop-2-confidence pre-selected"]
+  Categories -->|toggle a category| CheckOnly{"target selected AND\nonly one selected?"}
+  CheckOnly -->|yes| Block["Toast: block message,\nselection unchanged"]
+  CheckOnly -->|no| Toggle["Flip selected flag"]
+  Toggle --> StaleCheck{"scores already\ncomputed?"}
+  StaleCheck -->|yes| Discard["phase reverts to\n'categories', scores discarded"]
+  StaleCheck -->|no| Categories
+  Categories -->|"Compute uniqueness" click| Computing["phase = 'computing':\nuniqueness(selection)"]
+  Computing --> Scored["phase = 'scored':\nstore overall/semantics/category scores"]
+  Scored --> ScoreBand{"overallScore >= 70?"}
+  ScoreBand -->|yes| Pass["Pass banner"]
+  ScoreBand -->|no| Warn["Warn banner +\n'Strengthen my UVP' link\n→ back to Step 3"]
+  Pass -->|Finish click| Finish(["setProfile(...) →\nnavigate /dashboard"])
+  Warn -->|Finish click| Finish

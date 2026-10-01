@@ -21,12 +21,15 @@ services:
     container_name: ceview-fastapi
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Groq decommissions models periodically; override without a rebuild.
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # The compliance audit needs an image-capable model (omcs_agent/node.py).
+      OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
-      KERAS_MODEL_PATH: /app/models/complete_classifier_head.keras
+      HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
       DATABASE_URL: postgresql://ceview:ceview@postgres:5432/ceview
     volumes:
-      - ./fastapi-sbert/models:/app/models:ro
       # Persist the HuggingFace cache so the ~1.1GB E5 encoder is downloaded
       # once and reused across rebuilds/recreates instead of every startup.
       - ceview-hf-cache:/root/.cache/huggingface
@@ -50,6 +53,21 @@ services:
     container_name: ceview-fastapi-transformer
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Groq decommissions models periodically; override without a rebuild.
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # SerpApi's Google Trends engine — trend_service.py raises
+      # DependencyUnavailable (503) when this is unset. Without this line the
+      # key sits in backend/.env for compose variable substitution only and
+      # never actually reaches the container's process environment.
+      SERPAPI_KEY: ${SERPAPI_KEY:-}
+      # forecast_engine.py resolves this once at process startup and defaults
+      # to "stub" (the naive placeholder) when unset. Without this line here
+      # the value sitting in backend/.env never reaches the container, same
+      # issue as SERPAPI_KEY above.
+      FORECAST_ENGINE: ${FORECAST_ENGINE:-stub}
+      # Only read by the bilstm engine (Hugging Face Space client) — harmless
+      # while FORECAST_ENGINE=stub.
+      HF_TOKEN: ${HF_TOKEN:-}
     ports:
       - "8001:8001"
 
@@ -64,8 +82,33 @@ services:
       FASTAPI_BASE_URL: http://fastapi:8000
       FASTAPI_SBERT_BASE_URL: http://fastapi:8000
       FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-32chars-min}
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://192.168.1.194:3000,http://192.168.1.194:5173
+      # Both required, no default: this stack runs the Postgres profile, which
+      # refuses to start without real values (issue #51). Set them in backend/.env.
+      JWT_SECRET: ${JWT_SECRET:-}
+      CEVIEW_ATTRIBUTION_IP_HASH_SALT: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:-}
+      # :3012 is the dedicated port e2e/playwright.config.ts's webServer boots
+      # the frontend on, specifically so an e2e run never shares a developer's
+      # fixture-mode Vite server on :3001 — without it here every e2e request
+      # fails CORS preflight (403 "Invalid CORS request") before reaching the
+      # app, e.g. registration in onboarding-uniqueness.spec.ts.
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173
+      FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      # Ad-platform (Meta Ads / TikTok Ads) connections — see AD_PLATFORM_SETUP.md.
+      # All optional: absent, the /api/ad-connections endpoints just report
+      # "not configured on this server" rather than failing to start.
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
+      TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+      # Public HTTPS origin the platforms redirect back to. In local dev this
+      # is a native `cloudflared tunnel --url http://localhost:8080` (or
+      # ngrok) run in its own terminal, NOT a container — see
+      # AD_PLATFORM_SETUP.md §4. It mints a new URL every time you restart
+      # it, so update this + the redirect URI registered with Meta/TikTok
+      # (§5) each session.
+      OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3001}
     depends_on:
       postgres:
         condition: service_healthy

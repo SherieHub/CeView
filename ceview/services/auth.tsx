@@ -9,13 +9,14 @@
  */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ApiError, setUnauthorizedHandler } from './apiClient';
-import { TOKEN_KEY, OPERATOR_ID_KEY } from './authStorage';
+import { TOKEN_KEY, OPERATOR_ID_KEY, PROFILE_COMPLETED_KEY } from './authStorage';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 interface AuthResponse {
   operatorId: string;
   token: string;
+  profileCompleted: boolean;
 }
 
 async function authReq(path: string, body: unknown): Promise<AuthResponse> {
@@ -49,7 +50,12 @@ async function authReq(path: string, body: unknown): Promise<AuthResponse> {
     });
   }
 
-  if (!parsed || typeof parsed.token !== 'string' || typeof parsed.operatorId !== 'string') {
+  if (
+    !parsed ||
+    typeof parsed.token !== 'string' ||
+    typeof parsed.operatorId !== 'string' ||
+    typeof parsed.profileCompleted !== 'boolean'
+  ) {
     throw new ApiError({
       code: 'CLIENT_BAD_RESPONSE',
       traceId: res.headers.get('X-Trace-Id'),
@@ -65,6 +71,7 @@ interface AuthContextValue {
   token: string | null;
   operatorId: string | null;
   isAuthenticated: boolean;
+  profileCompleted: boolean | null;
   login: (email: string, password: string) => Promise<void>;
   register: (
     firstName: string,
@@ -73,6 +80,8 @@ interface AuthContextValue {
     password: string,
     contactNumber?: string,
   ) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  markProfileCompleted: () => void;
   logout: () => void;
 }
 
@@ -81,6 +90,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
   const [operatorId, setOperatorId] = useState<string | null>(() => localStorage.getItem(OPERATOR_ID_KEY));
+  const [profileCompleted, setProfileCompleted] = useState<boolean | null>(
+    () => localStorage.getItem(PROFILE_COMPLETED_KEY) === 'true',
+  );
 
   // Hydrate is done synchronously in useState initializers above; this effect
   // is a no-op safety net in case either key is present without the other.
@@ -88,8 +100,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!token || !operatorId) {
       setToken(null);
       setOperatorId(null);
+      setProfileCompleted(null);
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(OPERATOR_ID_KEY);
+      localStorage.removeItem(PROFILE_COMPLETED_KEY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -97,8 +111,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const applySession = useCallback((session: AuthResponse) => {
     localStorage.setItem(TOKEN_KEY, session.token);
     localStorage.setItem(OPERATOR_ID_KEY, session.operatorId);
+    localStorage.setItem(PROFILE_COMPLETED_KEY, String(session.profileCompleted));
     setToken(session.token);
     setOperatorId(session.operatorId);
+    setProfileCompleted(session.profileCompleted);
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -120,11 +136,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     applySession(session);
   }, [applySession]);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const session = await authReq('/api/v1/auth/google', { idToken });
+    applySession(session);
+  }, [applySession]);
+
+  /**
+   * Called after the "complete your profile" form (see CompleteProfilePage)
+   * succeeds against PATCH /api/v1/auth/profile — flips the flag locally
+   * without a full re-login, since the backend call that got us here already
+   * confirmed the update.
+   */
+  const markProfileCompleted = useCallback(() => {
+    localStorage.setItem(PROFILE_COMPLETED_KEY, 'true');
+    setProfileCompleted(true);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(OPERATOR_ID_KEY);
+    localStorage.removeItem(PROFILE_COMPLETED_KEY);
     setToken(null);
     setOperatorId(null);
+    setProfileCompleted(null);
   }, []);
 
   // Register once so apiClient.ts can trigger a logout when any authenticated
@@ -138,8 +172,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     token,
     operatorId,
     isAuthenticated: !!token,
+    profileCompleted,
     login,
     register,
+    loginWithGoogle,
+    markProfileCompleted,
     logout,
   };
 

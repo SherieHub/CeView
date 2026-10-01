@@ -97,28 +97,50 @@ SPIKE_SIGMA_MULTIPLIER: float = 2.0   # §3.3: mean + k·σ  (k = 2)
 
 # ─── public interface ─────────────────────────────────────────────────────────
 
-def compute(weekly_series: list[float]) -> dict:
+def compute(weekly_series: list[float], imputed_flags: list[bool] | None = None) -> dict:
     """Run the full seasonal shift detection pipeline on a weekly trend series.
 
     Args:
         weekly_series: Chronological list of weekly normalised trend indices
                        (0–100 scale).  Any length ≥ 0 is accepted.
+        imputed_flags: Contract §2 / Step 4 gap policy — parallel to
+                       weekly_series; True marks a week MarketDataIngestionService
+                       (WeeklySeriesGapFiller) linearly interpolated because the
+                       real observation was missing, rather than measured. When
+                       provided and the CURRENT (last) week is imputed,
+                       spike_indicator is forced False: a surge must be confirmed
+                       by a real measurement, never by an interpolated guess — a
+                       false spike from fabricated data is worse than none (the
+                       same principle MarketDataIngestionService already applies
+                       when the seasonality service itself is unreachable).
+                       Rolling means/std/YoY still include imputed points in
+                       their arithmetic — omitting them would understate the
+                       window's real calendar span even more than a linear
+                       estimate does. None or empty is treated as "every point
+                       is real", matching behaviour before this parameter existed.
 
     Returns:
         {
-          rolling_7d_avg    : float            — 7-period rolling mean
-          rolling_30d_avg   : float            — 30-period rolling mean
-          rolling_7d_std    : float            — 7-period population std-dev
-          spike_indicator   : bool             — TRUE iff current > μ + 2σ
-          yoy_ratio         : float | None     — None when < 59 weeks of history
-          seasonality_score : float (0–1)      — composite per §5
-          computed_at       : str (ISO-8601)
+          rolling_7d_avg      : float            — 7-period rolling mean
+          rolling_30d_avg     : float            — 30-period rolling mean
+          rolling_7d_std      : float            — 7-period population std-dev
+          spike_indicator     : bool             — TRUE iff current > μ + 2σ AND current is real
+          yoy_ratio           : float | None     — None when < 59 weeks of history
+          seasonality_score   : float (0–1)      — composite per §5
+          stats_window_weeks  : int              — len(weekly_series): how many weeks of
+                                                    history actually backed this point's
+                                                    rolling figures. Lets a caller tell a
+                                                    truncated early-series window (< 7 or
+                                                    < 30) from a full one — see §2.2's
+                                                    min(window, len(series)) truncation.
+          computed_at         : str (ISO-8601)
         }
     """
     if not weekly_series:
         return _neutral()
 
     current = weekly_series[-1]
+    current_is_imputed = bool(imputed_flags) and imputed_flags[-1]
 
     # ── Step 1: Parallel rolling averages (§2) ────────────────────────────────
     rolling_7d_avg  = _rolling_mean(weekly_series, WINDOW_7D)
@@ -127,7 +149,8 @@ def compute(weekly_series: list[float]) -> dict:
     # ── Step 2: Rolling std-dev + spike indicator (§3) ────────────────────────
     rolling_7d_std  = _rolling_std(weekly_series, WINDOW_7D)
     spike_indicator = bool(
-        current > rolling_7d_avg + SPIKE_SIGMA_MULTIPLIER * rolling_7d_std
+        not current_is_imputed
+        and current > rolling_7d_avg + SPIKE_SIGMA_MULTIPLIER * rolling_7d_std
     )
 
     # ── Step 3: Year-over-Year ratio (§4) ─────────────────────────────────────
@@ -149,13 +172,14 @@ def compute(weekly_series: list[float]) -> dict:
     )
 
     return {
-        "rolling_7d_avg":    round(rolling_7d_avg,    4),
-        "rolling_30d_avg":   round(rolling_30d_avg,   4),
-        "rolling_7d_std":    round(rolling_7d_std,    4),
-        "spike_indicator":   spike_indicator,
-        "yoy_ratio":         round(yoy_ratio, 4) if yoy_ratio is not None else None,
-        "seasonality_score": round(seasonality_score, 4),
-        "computed_at":       datetime.now(timezone.utc).isoformat(),
+        "rolling_7d_avg":      round(rolling_7d_avg,    4),
+        "rolling_30d_avg":     round(rolling_30d_avg,   4),
+        "rolling_7d_std":      round(rolling_7d_std,    4),
+        "spike_indicator":     spike_indicator,
+        "yoy_ratio":           round(yoy_ratio, 4) if yoy_ratio is not None else None,
+        "seasonality_score":   round(seasonality_score, 4),
+        "stats_window_weeks":  len(weekly_series),
+        "computed_at":         datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -266,11 +290,51 @@ def _neutral() -> dict:
     # Empty input: return zeros so "no data" is unambiguous to callers, rather
     # than synthetic 50.0 averages / 0.40 score that look like a real signal.
     return {
-        "rolling_7d_avg":    0.0,
-        "rolling_30d_avg":   0.0,
-        "rolling_7d_std":    0.0,
-        "spike_indicator":   False,
-        "yoy_ratio":         None,
-        "seasonality_score": 0.0,
-        "computed_at":       datetime.now(timezone.utc).isoformat(),
+        "rolling_7d_avg":      0.0,
+        "rolling_30d_avg":     0.0,
+        "rolling_7d_std":      0.0,
+        "spike_indicator":     False,
+        "yoy_ratio":           None,
+        "seasonality_score":   0.0,
+        "stats_window_weeks":  0,
+        "computed_at":         datetime.now(timezone.utc).isoformat(),
     }
+
+
+# ─── per-week series (Step 5 — real backfill statistics, C-04) ───────────────
+
+def compute_series(weekly_series: list[float], imputed_flags: list[bool] | None = None) -> list[dict]:
+    """Per-week statistics for a FULL historical series — e.g. a 12-week PyTrends
+    backfill — so every backfilled MarketSignalRecord gets REAL rolling/spike/
+    seasonality figures instead of the placeholder 0.5 / False / 0.0 triple
+    (C-04, H-33).
+
+    Reuses compute() at every chronological prefix, so point i's statistics see
+    ONLY weekly_series[0..i] — never the weeks after it (no look-ahead) — and
+    each point's rolling windows are genuinely truncated exactly as compute()
+    already truncates a short series (§2.2's min(window, len(series))), which
+    is also why each point carries its own stats_window_weeks: an early point
+    in a 12-week backfill has a truncated (< 7, or < 30) window, and a caller
+    must be able to tell that apart from a full one rather than assume 12 real
+    weeks of context always exist.
+
+    Args:
+        weekly_series: chronological (oldest first), any length ≥ 0.
+        imputed_flags: optional, parallel to weekly_series — forwarded to
+                       compute() at each prefix so an interpolated point never
+                       confirms a spike as the "current" week of its own prefix.
+
+    Returns:
+        One dict per input week, in the same order, each shaped exactly like
+        compute()'s return value (including stats_window_weeks), minus
+        computed_at (the series is computed once, not per point in wall-clock
+        time, so a single timestamp per point would be misleading).
+    """
+    points: list[dict] = []
+    for i in range(len(weekly_series)):
+        prefix = weekly_series[: i + 1]
+        prefix_flags = imputed_flags[: i + 1] if imputed_flags else None
+        point = compute(prefix, prefix_flags)
+        point.pop("computed_at", None)
+        points.append(point)
+    return points

@@ -17,7 +17,7 @@ participant "FastAPI\n(fastapi-sbert)" as FP
 
 == 1. Load Profile ==
 
-O -> BPC: GET /api/v1/business-profile?operatorId={UUID}
+O -> BPC: GET /api/business-profile?operatorId={UUID}
 BPC -> Repo: findFirstByUserId(operatorId)
 alt profile exists
   Repo --> BPC: BusinessProfile entity
@@ -34,7 +34,7 @@ Form -> Form: validateInputs()\n[name required, services ≥1,\ndesc ≥50 words
 alt validation fails
   Form --> O: ValidationBanner with error list
 else valid
-  Form -> CAC: POST /api/v1/classification/analyze\n{businessName, coreServices, description, uvp}
+  Form -> CAC: POST /api/classification/analyze\n{businessName, coreServices, description, uvp}
   CAC -> AI: classifyCategories(payload)
   AI -> FP: POST /internal/classification/analyze
   note right of FP
@@ -52,7 +52,7 @@ end
 == 3. Confirm & Persist Profile ==
 
 O -> Form: Adjust category sliders,\nclick "Confirm & Register"
-Form -> BPC: PUT /api/v1/business-profile?operatorId={UUID}\n(BusinessProfileDto with selected categories)
+Form -> BPC: PUT /api/business-profile?operatorId={UUID}\n(BusinessProfileDto with selected categories)
 BPC -> BPC: setCategoriesList()\nsetCoreServicesList()
 BPC -> Repo: save(BusinessProfile entity)
 Repo --> BPC: saved entity
@@ -71,7 +71,7 @@ BPC --> Form: BusinessProfileDto (persisted)
 
 == 4. Generate SEO Keywords ==
 
-O -> BPC: POST /api/v1/business-profile/keywords\n{businessName, description, category}
+O -> BPC: POST /api/business-profile/keywords\n{businessName, description, category}
 BPC -> AI: generateKeywords(payload)
 AI -> FP: POST /internal/classification/keywords
 FP --> AI: List<String> (SEO keywords)
@@ -80,7 +80,7 @@ BPC --> O: keyword list
 
 == 5. Edit Identity (Profile Dashboard) ==
 
-O -> BPC: PUT /api/v1/business-profile?operatorId={UUID}\n(updated name / image / categories)
+O -> BPC: PUT /api/business-profile?operatorId={UUID}\n(updated name / image / categories)
 BPC -> Repo: save(updated entity)
 Repo --> BPC: saved entity
 BPC --> O: updated BusinessProfileDto

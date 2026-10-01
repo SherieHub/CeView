@@ -1,0 +1,42 @@
+- generic [ref=f22e3]:
+  - generic [ref=f22e4]:
+    - generic [ref=f22e5]: CeView
+    - generic [ref=f22e6]:
+      - heading "Know the surge before it lands." [level=1] [ref=f22e7]
+      - paragraph [ref=f22e8]: Demand forecasting and market-localized content for Cebu's tourism businesses.
+    - generic [ref=f22e9]:
+      - generic [ref=f22e10]:
+        - generic [ref=f22e11]: "21"
+        - generic [ref=f22e12]: category × market signals
+      - generic [ref=f22e13]:
+        - generic [ref=f22e14]: "3"
+        - generic [ref=f22e15]: tracked source markets
+      - generic [ref=f22e16]:
+        - generic [ref=f22e17]: 24/7
+        - generic [ref=f22e18]: surge monitoring
+  - generic [ref=f22e20]:
+    - tablist [ref=f22e21]:
+      - tab "Sign in" [ref=f22e22] [cursor=pointer]
+      - tab "Create account" [active] [selected] [ref=f22e23] [cursor=pointer]
+    - heading "Create Account" [level=2] [ref=f22e34]
+    - generic [ref=f22e25]:
+      - generic [ref=f22e36]:
+        - generic [ref=f22e37]:
+          - generic [ref=f22e38]: First name
+          - textbox "First name" [ref=f22e39]
+        - generic [ref=f22e40]:
+          - generic [ref=f22e41]: Last name
+          - textbox "Last name" [ref=f22e42]
+        - generic [ref=f22e43]:
+          - generic [ref=f22e44]: Contact number
+          - textbox "Contact number" [ref=f22e45]
+      - generic [ref=f22e26]:
+        - generic [ref=f22e27]: Email
+        - textbox "Email" [ref=f22e28]:
+          - /placeholder: you@example.com
+      - generic [ref=f22e29]:
+        - generic [ref=f22e30]: Password
+        - textbox "Password" [ref=f22e31]:
+          - /placeholder: ••••••••
+      - button "Create account" [ref=f22e46] [cursor=pointer]
+    - button "Continue with Google" [ref=f22e33] [cursor=pointer]

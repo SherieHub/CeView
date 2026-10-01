@@ -11,6 +11,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Standalone unit coverage for {@link CurrentOperator} since it's shared infrastructure
@@ -19,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class CurrentOperatorTest {
 
-    private final CurrentOperator currentOperator = new CurrentOperator();
+    private final MsmeOperatorRepository repo = mock(MsmeOperatorRepository.class);
+    private final CurrentOperator currentOperator = new CurrentOperator(repo);
 
     @AfterEach
     void clearContext() {
@@ -29,10 +32,27 @@ class CurrentOperatorTest {
     @Test
     void resolveReturnsTheAuthenticatedOperatorId() {
         UUID operatorId = UUID.randomUUID();
+        when(repo.existsById(operatorId)).thenReturn(true);
         SecurityContextHolder.getContext().setAuthentication(
             new UsernamePasswordAuthenticationToken(operatorId.toString(), null, List.of()));
 
         assertEquals(operatorId, currentOperator.resolve());
+    }
+
+    @Test
+    void resolveThrows401WhenTheOperatorNoLongerExists() {
+        // A JWT can outlive the row it names — the account it was issued for is later
+        // deleted, or the token was minted against a different database entirely (a
+        // stale session surviving a local dev reset). Letting that reach a controller
+        // that writes with this id as a foreign key produces a raw, unhandled 500 from
+        // the database instead of a clean "please sign in again".
+        UUID operatorId = UUID.randomUUID();
+        when(repo.existsById(operatorId)).thenReturn(false);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(operatorId.toString(), null, List.of()));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, currentOperator::resolve);
+        assertEquals(401, ex.getStatusCode().value());
     }
 
     @Test

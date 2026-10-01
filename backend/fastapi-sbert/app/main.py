@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
 load_dotenv()  # must run before any app module reads os.environ
 
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.logging_config import configure as configure_logging
 from app.middleware.trace import TraceIdMiddleware
+from app.unavailable import register_unavailable_handler
 from app.routers import (
     classification,
     content,
@@ -15,24 +15,13 @@ from app.routers import (
     pes_analysis,
     pes_compute,
     omcs_analysis,
+    demand_forecast,
 )
 
 configure_logging()
-async def lifespan(app: FastAPI):
-    """Eagerly load the E5 encoder + Keras classifier on startup.
-
-    This runs before /healthz can return 200, so the Docker health check
-    gates Spring Boot until the models are actually ready. Without this,
-    the first incoming classify request would trigger a cold HuggingFace
-    download while Spring Boot is already sending traffic — causing 503s.
-    """
-    from app.core.BertModel import _BertModel
-    _BertModel.get()
-    yield
-
-
-app = FastAPI(title="CeView SBERT Microservice", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="CeView SBERT Microservice", version="0.1.0")
 app.add_middleware(TraceIdMiddleware)
+register_unavailable_handler(app)
 
 
 @app.get("/healthz")
@@ -48,3 +37,4 @@ app.include_router(caption_generation.router, prefix="/internal/generation",   t
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
 app.include_router(pes_compute.router,        prefix="/internal/pes-compute",   tags=["pes-compute"])
 app.include_router(omcs_analysis.router,      prefix="/internal/omcs",          tags=["omcs"])
+app.include_router(demand_forecast.router,    prefix="/internal/forecasting",   tags=["forecasting"])

@@ -1,0 +1,96 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e49]:
+    - complementary [ref=f1e50]:
+      - generic [ref=f1e51]:
+        - generic [ref=f1e52]: Ce
+        - generic [ref=f1e53]:
+          - generic [ref=f1e54]: CeView
+          - text: Market Intelligence
+      - navigation [ref=f1e55]:
+        - generic [ref=f1e209]: Intelligence
+        - button "Dashboard 2" [ref=f1e210] [cursor=pointer]:
+          - generic [ref=f1e216]: Dashboard
+          - generic [ref=f1e217]: "2"
+        - generic [ref=f1e218]: Create
+        - button "Content Studio" [ref=f1e219] [cursor=pointer]
+        - button "Content Studio (2)" [ref=f1e223] [cursor=pointer]
+        - button "Calendar" [ref=f1e229] [cursor=pointer]
+        - generic [ref=f1e233]: Measure
+        - button "Performance" [ref=f1e234] [cursor=pointer]
+        - generic [ref=f1e239]: Account
+        - button "Settings" [ref=f1e240] [cursor=pointer]
+      - generic [ref=f1e95]:
+        - generic [ref=f1e96]: SC
+        - generic [ref=f1e97]:
+          - generic [ref=f1e98]: Sunset Cove Beach Resort
+          - text: Moalboal, Cebu
+    - generic [ref=f1e99]:
+      - banner [ref=f1e100]:
+        - generic [ref=f1e101]:
+          - generic [ref=f1e102]: Content Studio
+          - text: Draft, audit and publish
+        - generic [ref=f1e103]:
+          - button "Notifications" [ref=f1e104] [cursor=pointer]
+          - button "Search" [ref=f1e109] [cursor=pointer]
+      - generic [ref=f1e253]:
+        - generic [ref=f1e356]:
+          - generic [ref=f1e357]:
+            - heading "Content Studio" [level=2] [ref=f1e358]
+            - paragraph [ref=f1e359]: Step 2 of 2 — pick a target market for Coastal & Island.
+          - button "Back to alerts" [ref=f1e360] [cursor=pointer]
+        - generic [ref=f1e364]:
+          - button "1 United States Los Angeles · 11,027 km to Cebu 86 Potential Market potential 86/100 Via Manila · 16h+ (via MNL) 3x / week" [ref=f1e365] [cursor=pointer]:
+            - generic [ref=f1e366]:
+              - generic [ref=f1e367]: "1"
+              - generic [ref=f1e368]:
+                - heading "United States" [level=4] [ref=f1e369]
+                - paragraph [ref=f1e370]: Los Angeles · 11,027 km to Cebu
+              - generic [ref=f1e371]:
+                - generic [ref=f1e372]: "86"
+                - text: Potential
+            - generic [ref=f1e374]:
+              - generic [ref=f1e375]: Market potential
+              - generic [ref=f1e376]: 86/100
+            - generic [ref=f1e379]:
+              - generic [ref=f1e380]:
+                - generic [ref=f1e383]: Via Manila
+                - text: · 16h+ (via MNL)
+              - generic [ref=f1e384]: 3x / week
+          - button "2 Japan Osaka · 2,186 km to Cebu 83 Potential Market potential 83/100 Direct · 2h 50m 8x / week" [ref=f1e389] [cursor=pointer]:
+            - generic [ref=f1e390]:
+              - generic [ref=f1e391]: "2"
+              - generic [ref=f1e392]:
+                - heading "Japan" [level=4] [ref=f1e393]
+                - paragraph [ref=f1e394]: Osaka · 2,186 km to Cebu
+              - generic [ref=f1e395]:
+                - generic [ref=f1e396]: "83"
+                - text: Potential
+            - generic [ref=f1e398]:
+              - generic [ref=f1e399]: Market potential
+              - generic [ref=f1e400]: 83/100
+            - generic [ref=f1e403]:
+              - generic [ref=f1e404]:
+                - generic [ref=f1e407]: Direct
+                - text: · 2h 50m
+              - generic [ref=f1e408]: 8x / week
+          - button "3 South Korea Seoul · 2,640 km to Cebu 71 Potential Market potential 71/100 Direct · 3h 45m 14x / week Surge active" [ref=f1e413] [cursor=pointer]:
+            - generic [ref=f1e414]:
+              - generic [ref=f1e415]: "3"
+              - generic [ref=f1e416]:
+                - heading "South Korea" [level=4] [ref=f1e417]
+                - paragraph [ref=f1e418]: Seoul · 2,640 km to Cebu
+              - generic [ref=f1e419]:
+                - generic [ref=f1e420]: "71"
+                - text: Potential
+            - generic [ref=f1e422]:
+              - generic [ref=f1e423]: Market potential
+              - generic [ref=f1e424]: 71/100
+            - generic [ref=f1e427]:
+              - generic [ref=f1e428]:
+                - generic [ref=f1e431]: Direct
+                - text: · 3h 45m
+              - generic [ref=f1e432]: 14x / week
+              - generic [ref=f1e437]: Surge active
+  - complementary [ref=f1e44]
+  - dialog
+  - button "Prototype" [ref=f1e46] [cursor=pointer]
