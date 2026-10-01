@@ -39,6 +39,8 @@ ceview:
     secret: ${JWT_SECRET:}
     expiry-hours: 24
   attribution:
+    # Public origin the redirect is served from. This string is embedded in live ads.
+    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:http://localhost:8080}
     # Salt for hashing traveller IPs. Same rule as the JWT secret above.
     ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:}
   firebase:
@@ -47,11 +49,6 @@ ceview:
     # environments that don't need Google sign-in; the Firebase beans are conditional on
     # this being set, so the app still starts without it (see FirebaseConfig).
     credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
-  attribution:
-    # Public origin the redirect is served from. This string is embedded in live ads.
-    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:http://localhost:8080}
-    # Salt for hashing traveller IPs before storage/debounce. Defaults only for local dev.
-    ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:dev-attribution-ip-hash-salt}
   security:
     # Base64-encoded 256-bit key encrypting third-party ad-platform OAuth tokens
     # at rest (see common/crypto/TokenCipher). Blank in environments that don't

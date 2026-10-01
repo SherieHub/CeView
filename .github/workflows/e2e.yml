@@ -26,6 +26,11 @@ jobs:
   # contents here instead avoids referencing `matrix` outside step context.
   changes:
     runs-on: ubuntu-latest
+    # paths-filter lists the PR's files via the API, which needs
+    # pull-requests: read on a private repo.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       screens: ${{ steps.screens.outputs.screens }}
     steps:
