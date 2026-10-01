@@ -64,7 +64,7 @@ test.describe('End-to-end authenticated journey', () => {
 
     // The seeded demand alert for Ramon (Coastal & Island) — real data from
     // GET /api/notifications, not a fixture.
-    await expect(feed.getByRole('heading', { name: 'Demand Surge Detected — South Korea' })).toBeVisible();
+    await expect(feed.getByRole('heading', { name: 'Demand window alert — South Korea — Coastal & Island' })).toBeVisible();
     await expect(feed).toContainText('South Korea');
     await expect(feed).toContainText('Coastal & Island');
     await expect(feed).not.toContainText('undefined');
@@ -83,7 +83,7 @@ test.describe('End-to-end authenticated journey', () => {
     await loginAsSeedOperator(page);
     await page.goto('/dashboard');
 
-    const alertHeading = page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' });
+    const alertHeading = page.getByRole('heading', { name: 'Demand window alert — South Korea — Coastal & Island' });
     await expect(alertHeading).toBeVisible();
     await alertHeading.click();
 
@@ -135,7 +135,23 @@ test.describe('End-to-end authenticated journey', () => {
     await page.goto('/performance');
 
     // Gated behind the 7-field ingestion form until a campaign is submitted.
-    await expect(page.getByRole('heading', { name: 'No campaign data found' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Log campaign performance' })).toBeVisible();
+
+    // Every field starts blank and is `required` (IngestionForm.tsx header), so
+    // fill all seven before submitting. Same labels and values as the unit
+    // test's fillDefaultCampaignValues() (DEFAULT_CAMPAIGN_INPUT).
+    const campaignInput: Array<[RegExp, number]> = [
+      [/impressions/i, 95000],
+      [/^clicks/i, 2800],
+      [/ad spend/i, 4000],
+      [/revenue/i, 35000],
+      [/conversions/i, 185],
+      [/bookings/i, 112],
+      [/new customers/i, 34],
+    ];
+    for (const [label, value] of campaignInput) {
+      await page.getByLabel(label).fill(String(value));
+    }
 
     const [ingestResponse] = await Promise.all([
       page.waitForResponse(
@@ -183,7 +199,7 @@ test.describe('End-to-end authenticated journey', () => {
     // South Korea / Coastal & Island demand alert from the dashboard tests
     // above, then its top-ranked market.
     await expect(page.getByText('Step 1 of 2')).toBeVisible();
-    await page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' }).click();
+    await page.getByRole('heading', { name: 'Demand window alert — South Korea — Coastal & Island' }).click();
     await expect(page.getByText('Step 2 of 2')).toBeVisible();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 

@@ -388,9 +388,9 @@ test.describe('Platforms — ad accounts', () => {
 
     await expect(page.getByText('Ad accounts')).toBeVisible();
     await expect(page.getByText('Meta Ads')).toBeVisible();
-    await expect(page.getByText('TikTok Ads')).toBeVisible();
+    await expect(page.getByText('TikTok Ads', { exact: true })).toBeVisible();
     // The publishing rows must still be there — this section is additive.
-    await expect(page.getByText('Instagram')).toBeVisible();
+    await expect(page.getByText('Instagram', { exact: true })).toBeVisible();
   });
 
   test('an unconfigured provider says so and cannot be connected', async ({ page }) => {

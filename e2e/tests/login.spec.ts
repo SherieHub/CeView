@@ -165,7 +165,7 @@ test.describe('Shell & Routing — router + overlay stack', () => {
     const scrim = page.locator('#scrim');
     await expect(scrim).not.toHaveClass(/on/);
 
-    await page.getByRole('heading', { name: 'Demand Surge Detected — South Korea' }).click();
+    await page.getByRole('heading', { name: 'Demand window alert — South Korea — Coastal & Island' }).click();
     await page.locator('section.dash-markets').getByRole('heading', { name: 'South Korea' }).click();
 
     await expect(page.locator('.drawer.on')).toBeVisible();
