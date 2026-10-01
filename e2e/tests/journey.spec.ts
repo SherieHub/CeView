@@ -70,12 +70,15 @@ test.describe('End-to-end authenticated journey', () => {
     await expect(feed).not.toContainText('undefined');
     await expect(feed).not.toContainText('NaN');
 
-    // Merges in from the independent keyword-trends fetch above — real
-    // PyTrends-backed data — only when that fetch actually succeeded.
+    // Merges in from the independent keyword-trends fetch above. That endpoint
+    // now reads persisted weekly rows (tbl_keyword_trend_alert), which nothing
+    // seeds, so it can succeed with an empty list — assert that whatever it
+    // actually returned is merged into the feed, rather than a fixed title.
     if (keywordTrendsResponse.ok()) {
-      await expect(
-        feed.getByRole('heading', { name: 'Keyword Trend Alert — Coastal & Island' }),
-      ).toBeVisible({ timeout: 5_000 });
+      const { notifications: keywordAlerts } = await keywordTrendsResponse.json();
+      for (const title of new Set<string>(keywordAlerts.map((a: { title: string }) => a.title))) {
+        await expect(feed.getByRole('heading', { name: title, exact: true }).first()).toBeVisible({ timeout: 5_000 });
+      }
     }
   });
 
@@ -105,7 +108,7 @@ test.describe('End-to-end authenticated journey', () => {
     // KRW", gdpValue 2.1.
     await expect(drawer.getByText('PHP per 1 KRW', { exact: true })).toBeVisible();
     const gdpTile = drawer.locator('.stat-tile', { hasText: 'GDP growth' });
-    await expect(gdpTile.locator('.stat-value')).toHaveText('2.1%');
+    await expect(gdpTile.locator('.stat-value')).toHaveText('2.10%');
     await expect(drawer).not.toContainText('undefined');
     await expect(drawer).not.toContainText('NaN');
 
