@@ -1,0 +1,10 @@
+[Unit]
+Description=CeView pull-based release rollout (deploy/aws/scripts/deploy.sh)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=HOME=/root
+ExecStart=/opt/ceview/current/scripts/deploy.sh

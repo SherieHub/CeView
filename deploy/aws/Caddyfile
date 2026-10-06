@@ -1,0 +1,12 @@
+# TLS termination for the API. Caddy obtains and renews the Let's Encrypt
+# certificate for api.<DOMAIN> on its own; that needs the Route 53 A record
+# from docs/DEPLOY_AWS.md B11 step 6 and ports 80/443 open.
+#
+# reverse_proxy has no response timeout by default, which the 90-second AI
+# calls rely on, and it sets X-Forwarded-For/-Proto for Spring.
+
+api.{$DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	encode zstd gzip
+	reverse_proxy spring-boot:8080
+}

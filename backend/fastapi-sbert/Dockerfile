@@ -4,6 +4,11 @@ WORKDIR /app
 
 # GROQ_API_KEY — set at runtime via docker-compose env.
 # When absent the service runs without LLM (caption agent and feedback unavailable).
+# CPU-only torch first: the default Linux wheel that sentence-transformers would
+# pull in bundles CUDA libraries, adding several GB to an image that only ever
+# runs on CPU.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 # Install dependencies first (layer-cached separately from app code)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

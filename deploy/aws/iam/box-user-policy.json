@@ -1,0 +1,94 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrAuth",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrPull",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchCheckLayerAvailability"
+      ],
+      "Resource": [
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/spring-boot",
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/fastapi-sbert",
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/fastapi-transformer"
+      ]
+    },
+    {
+      "Sid": "ReadProdParameters",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath"
+      ],
+      "Resource": [
+        "arn:aws:ssm:ap-southeast-1:410133709862:parameter/ceview/prod",
+        "arn:aws:ssm:ap-southeast-1:410133709862:parameter/ceview/prod/*"
+      ]
+    },
+    {
+      "Sid": "ListOpsBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::ceview-prod-ops-410133709862",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["releases/*", "bootstrap/*", "backups/*"]
+        }
+      }
+    },
+    {
+      "Sid": "ReadReleasesBootstrapBackups",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": [
+        "arn:aws:s3:::ceview-prod-ops-410133709862/releases/*",
+        "arn:aws:s3:::ceview-prod-ops-410133709862/bootstrap/*",
+        "arn:aws:s3:::ceview-prod-ops-410133709862/backups/*"
+      ]
+    },
+    {
+      "Sid": "WriteBackups",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:AbortMultipartUpload"],
+      "Resource": "arn:aws:s3:::ceview-prod-ops-410133709862/backups/*"
+    },
+    {
+      "Sid": "WriteLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ],
+      "Resource": [
+        "arn:aws:logs:ap-southeast-1:410133709862:log-group:/ceview/prod",
+        "arn:aws:logs:ap-southeast-1:410133709862:log-group:/ceview/prod:*"
+      ]
+    },
+    {
+      "Sid": "DescribeLogGroups",
+      "Effect": "Allow",
+      "Action": "logs:DescribeLogGroups",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PublishAgentMetrics",
+      "Effect": "Allow",
+      "Action": "cloudwatch:PutMetricData",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "cloudwatch:namespace": "CWAgent" }
+      }
+    }
+  ]
+}

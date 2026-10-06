@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# `docker compose` for the live release, with the three env files the prod
+# compose file interpolates from. Installed to /usr/local/bin by bootstrap.sh.
+#   sudo ceview-compose ps
+#   sudo ceview-compose logs -f --tail=200 spring-boot
+set -euo pipefail
+
+release_dir="$(readlink -f /opt/ceview/current)" || {
+  echo "no release deployed yet (/opt/ceview/current is missing)" >&2
+  exit 1
+}
+
+cd "$release_dir"
+exec docker compose \
+  --project-name ceview \
+  --file docker-compose.prod.yml \
+  --env-file deploy.env \
+  --env-file release.env \
+  --env-file /opt/ceview/.env \
+  "$@"

@@ -1,0 +1,38 @@
+{
+  "agent": {
+    "region": "__AWS_REGION__",
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "metrics_collected": {
+      "mem": {
+        "measurement": ["mem_used_percent"]
+      },
+      "disk": {
+        "measurement": ["used_percent"],
+        "resources": ["/", "/data"],
+        "drop_device": true
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/ceview/deploy.log",
+            "log_group_name": "/ceview/prod",
+            "log_stream_name": "deploy"
+          },
+          {
+            "file_path": "/var/log/ceview/backup.log",
+            "log_group_name": "/ceview/prod",
+            "log_stream_name": "backup"
+          }
+        ]
+      }
+    }
+  }
+}
