@@ -1,0 +1,71 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrAuth",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcrPush",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage"
+      ],
+      "Resource": [
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/spring-boot",
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/fastapi-sbert",
+        "arn:aws:ecr:ap-southeast-1:410133709862:repository/ceview/fastapi-transformer"
+      ]
+    },
+    {
+      "Sid": "SiteBucketList",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::ceview-prod-site-410133709862"
+    },
+    {
+      "Sid": "SiteBucketWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::ceview-prod-site-410133709862/*"
+    },
+    {
+      "Sid": "OpsBucketListReleases",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::ceview-prod-ops-410133709862",
+      "Condition": {
+        "StringLike": { "s3:prefix": ["releases/*", "bootstrap/*"] }
+      }
+    },
+    {
+      "Sid": "OpsBucketWriteReleases",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": [
+        "arn:aws:s3:::ceview-prod-ops-410133709862/releases/*",
+        "arn:aws:s3:::ceview-prod-ops-410133709862/bootstrap/*"
+      ]
+    },
+    {
+      "Sid": "InvalidateFrontend",
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
+      "Resource": "arn:aws:cloudfront::410133709862:distribution/FILL_ME_DISTRIBUTION_ID"
+    },
+    {
+      "Sid": "PublishReleaseSha",
+      "Effect": "Allow",
+      "Action": "ssm:PutParameter",
+      "Resource": "arn:aws:ssm:ap-southeast-1:410133709862:parameter/ceview/prod/release-sha"
+    }
+  ]
+}
