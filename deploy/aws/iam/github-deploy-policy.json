@@ -59,7 +59,7 @@
       "Sid": "InvalidateFrontend",
       "Effect": "Allow",
       "Action": ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
-      "Resource": "arn:aws:cloudfront::410133709862:distribution/FILL_ME_DISTRIBUTION_ID"
+      "Resource": "arn:aws:cloudfront::410133709862:distribution/E2MGMAODXCEDZG"
     },
     {
       "Sid": "PublishReleaseSha",
