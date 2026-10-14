@@ -38,7 +38,7 @@ from typing import Any, NoReturn
 
 import httpx
 
-from app.config.keyword_mapping import MACRO_TREND_MAPPING, MARKET_CONFIG
+from app.config.keyword_mapping import CATEGORY_KEYWORDS, MACRO_TREND_MAPPING, MARKET_CONFIG
 from app.services.seasonal_shift_detector import compute as seasonal_compute
 from app.unavailable import DependencyUnavailable
 
@@ -56,6 +56,7 @@ else:
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 TIMEFRAME:       str   = "today 5-y"   # ~260 weekly points; satisfies 52w YoY requirement
+KEYWORDS_PER_REQUEST: int = 5          # SerpApi/Google Trends max terms per request
 REQUEST_TIMEOUT: httpx.Timeout = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
 
 
@@ -85,7 +86,7 @@ def _serpapi_timeline(
 
     params = {
         "engine": "google_trends",
-        "q": ",".join(keywords[:5]),   # SerpApi/Google Trends max: 5 terms per request
+        "q": ",".join(keywords[:KEYWORDS_PER_REQUEST]),
         "geo": geo,
         "hl": hl,
         "tz": str(tz),
@@ -175,30 +176,17 @@ def fetch_and_process(market: str, category: str) -> dict:
     Raises:
         ValueError: if market is not in MARKET_CONFIG
     """
-    market_key = market.strip().lower()
-    config     = MARKET_CONFIG.get(market_key)
-    if config is None:
-        raise ValueError(
-            f"Unknown market '{market}'. Valid values: {list(MARKET_CONFIG.keys())}"
-        )
+    market_key, config = _resolve_market(market)
 
     geo_code   = config["geo"]    # "KR" | "JP" | "US"
     hl         = config["hl"]
     tz_offset  = config["tz"]
 
     # ── 1. Resolve localized keywords ─────────────────────────────────────────
-    cat_map  = MACRO_TREND_MAPPING.get(category, {})
-    keywords = cat_map.get(geo_code, [])
-
-    if not keywords:
-        logger.info(
-            "No keyword mapping for category='%s' geo='%s' — using generic query terms",
-            category, geo_code,
-        )
-        keywords = _generic_keywords(market_key)
+    keywords = _resolve_localized_keywords(market_key, geo_code, [category])
 
     # ── 2. Fetch from SerpApi (Google Trends) ─────────────────────────────────
-    timeline = _serpapi_timeline(keywords[:5], geo_code, hl, tz_offset, TIMEFRAME)
+    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, hl, tz_offset, TIMEFRAME)
 
     primary_kw = keywords[0]
     series = _extract_series(timeline, primary_kw)
@@ -228,7 +216,7 @@ def fetch_and_process(market: str, category: str) -> dict:
     return {
         "market":            market_key,
         "category":          category,
-        "keywords_used":     list(keywords[:5]),
+        "keywords_used":     list(keywords[:KEYWORDS_PER_REQUEST]),
         "trend_index":       round(max(0.0, min(100.0, trend_index)), 2),
         "rolling_7d_avg":    shift["rolling_7d_avg"],
         "rolling_30d_avg":   shift["rolling_30d_avg"],
@@ -266,14 +254,14 @@ def fetch_current_index(market: str, categories: list[str]) -> dict:
     geo_code = config["geo"]
     keywords = _resolve_localized_keywords(market_key, geo_code, categories)
 
-    timeline = _serpapi_timeline(keywords[:5], geo_code, config["hl"], config["tz"], "today 3-m")
+    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], "today 3-m")
     series = _extract_series(timeline, keywords[0])
     trend_index = sum(series[-4:]) / len(series[-4:]) if series else 0.0
 
     return {
         "market":        market_key,
         "trend_index":   round(max(0.0, min(100.0, trend_index)), 2),
-        "keywords_used": list(keywords[:5]),
+        "keywords_used": list(keywords[:KEYWORDS_PER_REQUEST]),
         "fetched_at":    datetime.now(timezone.utc).isoformat(),
         "source":        "serpapi",
     }
@@ -308,7 +296,7 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
     # a preset long enough to guarantee weekly points, then keep only the
     # trailing `weeks` of them, rather than requesting a short custom range.
     preset = "today 12-m" if weeks <= 52 else TIMEFRAME
-    timeline = _serpapi_timeline(keywords[:5], geo_code, config["hl"], config["tz"], preset)
+    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], preset)
 
     primary_kw = keywords[0]
     idx = 0
@@ -352,7 +340,7 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
     return {
         "market":        market_key,
         "weekly_series": series,
-        "keywords_used": list(keywords[:5]),
+        "keywords_used": list(keywords[:KEYWORDS_PER_REQUEST]),
         "fetched_at":    datetime.now(timezone.utc).isoformat(),
         "source":        "serpapi",
     }
@@ -429,8 +417,6 @@ def fetch_category_volume(category: str, market: str) -> dict:
         {market, category, total_volume, keyword_volumes, top_keyword,
          top_volume, source, fetched_at}
     """
-    from app.config.keyword_mapping import CATEGORY_KEYWORDS
-
     market_key = market.strip().lower()
     config = MARKET_CONFIG.get(market_key)
     if config is None:
@@ -449,7 +435,10 @@ def fetch_category_volume(category: str, market: str) -> dict:
     tz_offset = config["tz"]
 
     keyword_volumes: dict[str, float] = {}
-    batches = [keywords[i: i + 5] for i in range(0, len(keywords), 5)]
+    batches = [
+        keywords[i: i + KEYWORDS_PER_REQUEST]
+        for i in range(0, len(keywords), KEYWORDS_PER_REQUEST)
+    ]
 
     for batch in batches:
         timeline = _serpapi_timeline(batch, geo_code, hl, tz_offset, TIMEFRAME)
@@ -506,8 +495,6 @@ def rank_markets_by_category(category: str) -> dict:
     ``top_market_keywords`` is the full {keyword: volume} dict for the winning
     market — used by Spring Boot to populate ``keywordData`` in notifications.
     """
-    from app.config.keyword_mapping import CATEGORY_KEYWORDS
-
     if category not in CATEGORY_KEYWORDS:
         raise ValueError(
             f"Unknown category '{category}'. Check CATEGORY_KEYWORDS in keyword_mapping.py."

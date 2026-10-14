@@ -13,7 +13,6 @@ import logging
 from dotenv import load_dotenv
 
 log = logging.getLogger("module1.classifier")
-# logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
 E5_MODEL_ID = "intfloat/multilingual-e5-base"

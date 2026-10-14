@@ -438,11 +438,13 @@ export interface PlatformCaptions {
 }
 
 /**
- * Where generated content came from. "fallback" means fastapi-sbert served a
- * deterministic mock because GROQ_API_KEY is unset — the content looks real but
- * is not. Screens MUST surface this (see 05-module-3.md Task 25).
+ * Where generated content came from. There is exactly one legal value: the model
+ * produced it. The backend no longer serves mock or template captions — Spring's
+ * ContentSource enum and FastAPI's response model both admit only "groq", and an
+ * unavailable model is an error (ApiErrorPanel), never a "source". Kept in step with
+ * the backend by tests/integration/contentSourceContract.test.ts.
  */
-export type ContentSource = 'groq' | 'gemini' | 'fallback' | 'template';
+export type ContentSource = 'groq';
 
 export interface ContentResponse {
   market: { country: string; city: string; flag: string };

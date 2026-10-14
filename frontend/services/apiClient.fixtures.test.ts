@@ -40,7 +40,7 @@ describe('apiClient (fixture mode)', () => {
     const { apiClient } = await import('./apiClient');
     const { MOCK_OMCS } = await import('./fixtures/omcs');
     await expect(
-      apiClient.compliance.omcsAnalyze({ caption: 'caption', imageUrl: 'https://example.invalid/x.jpg' }),
+      apiClient.compliance.omcsAnalyze({ caption: 'caption', imageUrl: 'https://example.invalid/x.jpg', recommendations: { visual_guide: ['x'] } }),
     ).resolves.toEqual(MOCK_OMCS);
   });
 

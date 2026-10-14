@@ -100,7 +100,11 @@ def test_insufficient_cohort_returns_explicit_state_not_a_silent_100(client):
         body = _post(client).json()
 
     assert body["sufficientCohort"] is False
-    assert body["overallScore"] != 100
+    # No number is meaningful below the floor, so none is invented: every score is 0
+    # (a fabricated 99 would have passed the old `!= 100` check).
+    assert body["overallScore"] == 0
+    assert body["semanticPercentile"] == 0
+    assert body["semanticsScore"] == 0
     assert body["cohortSize"] == 2
 
 

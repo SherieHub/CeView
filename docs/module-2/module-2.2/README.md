@@ -37,13 +37,12 @@ Submodule 2.2 is the **on-demand** half of Module 2. It is triggered by user act
 | **Entity**     | `MarketEconomicTrend`       | `com/ceview/module2/submodule21/MarketEconomicTrend.java`      | `tbl_market_economic_trend` — GDP 5-year + forex 12-month JSON snapshots consumed by `EconomicInsightsBoard` mini-charts                                                  |
 | **DTO**        | `MarketDtos`                | `com/ceview/module2/dto/MarketDtos.java`                       | `MarketsResponse`, `MarketDto`, `ChartDataPointDto`, `AirlineDto`, `GdpTrendPointDto`, `ForexTrendPointDto`                                                               |
 
-### FastAPI SBERT (`backend/fastapi-sbert/`)
+### Hugging Face Space client
 
-| Layer             | Component                  | File                                                                                                               | Responsibility                                                                                                                                                                                                                                                 |
-| ----------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Router**        | `demand_forecast`          | `app/routers/demand_forecast.py`                                                                                   | Exposes `/internal/forecasting/forecast/series`, `/internal/forecasting/forecast`, and `/internal/forecasting/status`; asynchronous Weights & Biases telemetry                                                                                                 |
-| **Service**       | `demand_forecast_service`  | `app/services/demand_forecast_service.py`                                                                          | Direct integration with Hugging Face Space `JamJamzz/ceview-demand-prediction-model`; auto-detects current calendar week; encodes 52-week sinusoidal tensor `[trend_scaled, week_sin, week_cos]`                                                               |
-| **Model / DTO**   | `DemandForecastInputClass` | `app/model/DemandForecastInputClass.py`                                                                            | Pydantic schemas for forecasting request & response structures (`DemandForecastInputClass`, `DemandForecastOutputClass`)                                                                                                                                       |
+The live client for this Space is `backend/fastapi-transformer/app/services/bilstm_forecaster.py`, selected with `FORECAST_ENGINE=bilstm` and called through `/internal/forecasting/inference-batch`. An earlier, uncalled copy of the client in `fastapi-sbert` (`/internal/forecasting/{status,forecast,forecast/series}`) has been removed.
+
+| Layer | Component | File | Responsibility |
+| --- | --- | --- | --- |
 | **Model Service** | `Hugging Face Spaces`      | [`JamJamzz/ceview-demand-prediction-model`](https://huggingface.co/spaces/JamJamzz/ceview-demand-prediction-model) | Transformer-based weekly demand forecasting endpoint (`/forecast` via `gradio_client`); consumes 52-week history, market, and category; yields 12-week forecast trajectory (see [`../TRANSFORMER_MODEL_INTEGRATION.md`](../TRANSFORMER_MODEL_INTEGRATION.md)). |
 
 ---

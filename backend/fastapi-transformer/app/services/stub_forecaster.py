@@ -10,10 +10,10 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from app.services.forecast_contract import MASK_FEATURES, WINDOW_LENGTH, batch_key
 from app.services.forecast_validator import MAPE_THRESHOLD
 
-WINDOW_LENGTH = 12
-FEATURE_COUNT = 6
+FEATURE_COUNT = len(MASK_FEATURES)
 
 
 def forecast(request: dict[str, Any]) -> dict[str, Any]:
@@ -67,7 +67,7 @@ def forecast_batch(requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     back up (ForecastingService's `CategorySequence.key()`) — keep the two in sync.
     """
     return {
-        f"{request['market']}::{request.get('category') or ''}": forecast(request)
+        batch_key(request): forecast(request)
         for request in requests
     }
 

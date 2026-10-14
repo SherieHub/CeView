@@ -49,6 +49,11 @@ _SCORE_WEIGHTS: dict[str, float] = {
 }
 
 
+def is_loaded() -> bool:
+    """True when the trained model file was found; otherwise the linear fallback scores."""
+    return _model is not None
+
+
 def _load() -> None:
     global _model
     if not os.path.exists(_MODEL_PATH):

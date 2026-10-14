@@ -3,7 +3,7 @@
 Graph:  generate_report → evaluate_report → [conditional] → finalize_response → END
         Retries up to 3× when the evaluator score is below 85.
 
-LLM backend: Gemini via AgentLLMModel (see nodes.py).
+LLM backend: Groq (ChatGroq) via AgentLLMModel (see nodes.py).
 No OpenAI / langchain_openai dependency.
 """
 from __future__ import annotations

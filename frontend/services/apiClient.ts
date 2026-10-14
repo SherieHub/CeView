@@ -284,11 +284,16 @@ export const apiClient = {
   compliance: {
     /**
      * OMCS = 0.35·profile_semantic + 0.45·recommendations_picture + 0.20·pubmat_consistency,
-     * Pass/Fail at 70. Both arguments are required — the backend returns 400
-     * (MOD3_COMPLIANCE_VALIDATION) if either is blank, so callers must gate the
-     * call until the operator has both a caption and an image.
+     * Pass/Fail at 70. Caption and image are required — the backend returns 400
+     * (MOD3_COMPLIANCE_VALIDATION) if either is blank. `recommendations` is the visual
+     * guidance the image is judged against; without it the audit returns 424
+     * (MOD33_RECOMMENDATIONS_MISSING), so callers gate the call on all three.
      */
-    omcsAnalyze: (input: { caption: string; imageUrl: string }) =>
+    omcsAnalyze: (input: {
+      caption: string;
+      imageUrl: string;
+      recommendations: Record<string, unknown>;
+    }) =>
       USE_FIXTURES
         ? delay(MOCK_OMCS)
         : request<OmcsAuditResult>('/api/compliance/omcs-analyze', {

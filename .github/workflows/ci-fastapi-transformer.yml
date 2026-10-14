@@ -18,10 +18,9 @@ jobs:
     defaults:
       run:
         working-directory: backend/fastapi-transformer
-    # gemini_forecaster.py raises RuntimeError at import time if GROQ_API_KEY
-    # is unset (no stub mode — see RUNNING.md). tests/conftest.py also sets a
-    # placeholder as a safety net, but setting it here covers any other entry
-    # point that imports the app. This is never used to make a real API call.
+    # Placeholder only — never used for a real API call. The Groq client in
+    # gemini_forecaster.py is built lazily on first use, and tests/conftest.py
+    # removes GROQ_API_KEY and forces FORECAST_ENGINE=stub for the suite.
     env:
       GROQ_API_KEY: test-placeholder-key-not-real
     steps:

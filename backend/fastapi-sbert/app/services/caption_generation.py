@@ -30,13 +30,7 @@ async def caption_generation_service(input: CaptionInputClass) -> dict:
                 errors.MOD31_CAPTION_AGENT_FAILED,
             )
             raise RuntimeError(errors.MOD31_CAPTION_AGENT_FAILED)
-        # "source" is set by the node: "fallback" when LLM is unavailable, "groq" otherwise
         source = result.get("source", "groq")
-        if source == "fallback":
-            logger.warning(
-                "[%s] caption_agent used fallback mock captions — LLM was unavailable.",
-                errors.MOD31_LLM_UNAVAILABLE,
-            )
         return {"final_captions": captions, "source": source}
     except RuntimeError:
         raise

@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { useToast } from '../shared/Toast';
 import { apiClient } from '../../services/apiClient';
+import { isNotAvailable } from '../../services/apiError';
 import TutorialModal from '../shared/TutorialModal';
 import type { WorkspaceMemberFixture } from '../../types';
 
@@ -45,19 +46,29 @@ function initialsFor(name: string): string {
 export default function WorkspaceSettings() {
   const { showToast } = useToast();
   const [members, setMembers] = useState<WorkspaceMemberFixture[] | null>(null);
+  // False when the backend has no workspace feature yet (404). Members and invites
+  // are then shown as unavailable instead of an endless skeleton or a fake success.
+  const [available, setAvailable] = useState(true);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('Editor');
   const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    apiClient.workspace.members().then((list) => { if (!cancelled) setMembers(list); });
+    apiClient.workspace.members()
+      .then((list) => { if (!cancelled) setMembers(list); })
+      .catch((error) => {
+        if (cancelled) return;
+        setMembers([]);
+        if (isNotAvailable(error)) setAvailable(false);
+        else showToast('Could not load workspace members.');
+      });
     return () => { cancelled = true; };
   }, []);
 
-  function sendInvite() {
+  async function sendInvite() {
     const trimmed = email.trim();
-    if (!trimmed) return;
+    if (!trimmed || !available) return;
 
     const name = nameFromEmail(trimmed);
     const pendingMember: WorkspaceMemberFixture = {
@@ -67,13 +78,16 @@ export default function WorkspaceSettings() {
       initials: initialsFor(name),
       status: 'pending',
     };
-    // Optimistic per the screen doc — the row appears immediately, before the
-    // request resolves. No invite acceptance/expiry/revocation is modeled, so
-    // there is nothing to reconcile the row against later; a failed request
-    // is not surfaced (same fire-and-forget posture as other optimistic
-    // writes in this codebase, e.g. useDashboardState's markRead).
+    // The row and the "Invite sent" toast appear only once the server accepted the
+    // invite — a failed request must not look like a sent one.
+    try {
+      await apiClient.workspace.invite(trimmed, role);
+    } catch (error) {
+      if (isNotAvailable(error)) setAvailable(false);
+      showToast(`Could not send the invite to ${trimmed}.`);
+      return;
+    }
     setMembers((current) => [...(current ?? []), pendingMember]);
-    void apiClient.workspace.invite(trimmed, role).catch(() => {});
     showToast(`Invite sent to ${trimmed}`);
     setEmail('');
   }
@@ -89,6 +103,12 @@ export default function WorkspaceSettings() {
           Replay tour
         </button>
       </div>
+
+      {!available && (
+        <p className="body-sm mb-5 rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-4" role="status">
+          Team members and invites aren't available yet.
+        </p>
+      )}
 
       {members == null ? (
         <div className="flex flex-col gap-3" aria-hidden="true">
@@ -142,7 +162,7 @@ export default function WorkspaceSettings() {
             <option value="Viewer">Viewer</option>
           </select>
         </label>
-        <button type="submit" className="btn-primary">
+        <button type="submit" className="btn-primary" disabled={!available}>
           <UserPlus size={16} aria-hidden="true" /> Send invite
         </button>
       </form>

@@ -6,7 +6,7 @@ Two distinct dictionaries serve two distinct consumers:
 MACRO_TREND_MAPPING
     Nested dict: { CATEGORY_LABEL: { GEO_CODE: [kw1, kw2, ...] } }
 
-    Purpose — pytrends query terms.  2–4 high-volume colloquial "umbrella"
+    Purpose — Google Trends (SerpApi) query terms.  2–4 high-volume colloquial "umbrella"
     phrases per (category, market) pair.  Designed to:
       • Return non-zero Google Trends search-interest volume.
       • Represent broad market demand intent for an entire category, not just
@@ -40,7 +40,7 @@ EXHAUSTIVE_DIMENSION_MAPPING
 
 ────────────────────────────────────────────────────────────────────────────────
 MARKET_CONFIG
-    { market_key: { geo, hl, tz } } — passed directly to pytrends TrendReq.
+    { market_key: { geo, hl, tz } } — passed to the SerpApi Google Trends engine (geo, hl, tz params).
 """
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ MARKET_CONFIG: dict[str, dict] = {
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MACRO_TREND_MAPPING
-# 2–4 high-volume umbrella phrases per (category, geo) for pytrends queries.
+# 2–4 high-volume umbrella phrases per (category, geo) for Google Trends (SerpApi) queries.
 # ─────────────────────────────────────────────────────────────────────────────
 
 MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {

@@ -92,7 +92,7 @@ approved per-platform independently, matching [content-studio.md](screens/conten
 4. **Audit execution**: The operator clicks "Run Audit". `runOmcsAudit()` in `ContentStudioView` fires → `api.analyzeOmcs({ caption, imageUrl: imageDataUrl, businessProfile, recommendations })` → `POST /api/compliance/omcs-analyze`. A 6-step `auditProgress` animation plays while the request is in-flight.
 5. **Score display**: On response, `SmartOptimizationBoard` renders:
    - `ComplianceGauge` — SVG circular gauge coloured green (score ≥80), gold (≥60), or red (<60).
-   - Three component scores: Profile Semantic Score (weight 0.35), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
+   - Three component scores: Profile Semantic Score (weight 0.35; embedding similarity of the operator's saved profile vs the caption — the server loads the profile, any `businessProfile` in the request is ignored), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
    - Rubric breakdown table — 7 evaluation criteria with individual scores.
    - Pass/Fail badge and a diagnostic `feedback` string when the audit fails.
 6. **No persistence**: The audit result is held in `omcs` state only. No rows are written to the database (compliance tables were dropped in V16 — the audit is fully stateless).
@@ -112,7 +112,7 @@ Module 3 has **two sequential transactions** — each builds on the previous. Su
 1. `ContentController.generate()` delegates to `ContentGenerationService.generate()`.
 2. **DB enrichment (FR3.1)**: When `profileId != null`, loads `BusinessProfile` from `tbl_business_profile`. DB values **override** the HTTP request body — ensuring the AI prompt uses the verified, persisted identity rather than user-supplied fields from the frontend.
 3. **Forecast context (FR3.4)**: `buildForecastContext(profileId, market)` queries the latest `ForecastResult` (4-week horizon) + `MarketScore` from Module 2 tables. Extracts: `predictedDemand`, `marketScore`, `spikeIndicator`, `seasonalityScore`. This context is formatted into the FastAPI prompt.
-4. Builds an enriched snake_case payload → `ai.generateCaption(payload)` → `POST /internal/generation/caption` to fastapi-sbert (30 s timeout). *(`AIInferenceGatewayService.generateContent()` → `/internal/content/generate` exists as an alternate but is not used by this path.)*
+4. Builds an enriched snake_case payload → `ai.generateCaption(payload)` → `POST /internal/generation/caption` to fastapi-sbert (30 s timeout). FastAPI fills the blank `research_context` with cultural research for the market (FR3.3) before the agent runs. *(The former alternate route `/internal/content/generate` was removed as an unused duplicate.)*
 5. FastAPI runs the **LangGraph caption generation pipeline** (see Engine section) → returns the `ContentResponseDto` shape.
 6. **Persistence (FR3.10)**: For each platform in `dto.captions()`, creates one `LocalizedPromotionalContent` row in `tbl_localized_promotional_content` (per-platform: caption text, content direction, framework, source). Writes a `ContentGenerationLog` audit entry.
 7. Returns `ContentResponseDto` as `200 OK`.

@@ -30,6 +30,7 @@ import math
 import os
 from typing import Any
 
+from app.services.forecast_contract import batch_key
 from app.unavailable import DependencyUnavailable
 
 logger = logging.getLogger(__name__)
@@ -281,6 +282,6 @@ def forecast_batch(requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     key Spring rebuilds in ForecastingService's CategorySequence.
     """
     return {
-        f"{request['market']}::{request.get('category') or ''}": forecast(request)
+        batch_key(request): forecast(request)
         for request in requests
     }

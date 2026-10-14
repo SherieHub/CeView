@@ -1,5 +1,7 @@
 # Module 2 — Transformer Demand Prediction Model Integration & API Reference
 
+> **Superseded integration path.** The `fastapi-sbert` router, service, and DTO files described below were never called and have been removed. The live client is `backend/fastapi-transformer/app/services/bilstm_forecaster.py` (`FORECAST_ENGINE=bilstm`). The Space's model contract described here (52-week input, 12-week output) is unchanged.
+
 This document provides complete technical documentation for the CeView Tourism Demand Forecasting system powered by the Transformer model hosted on **Hugging Face Spaces**, integrated into the `fastapi-sbert` microservice.
 
 ---

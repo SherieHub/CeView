@@ -2,10 +2,10 @@ import json
 import logging
 import os
 import re
-from typing import TypedDict, Dict, Any
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.agents.omcs_agent.state import CeviewValidationState
+from app.services.profile_alignment import profile_alignment_score
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 _VISION_MODEL = os.environ.get("OMCS_VISION_MODEL", "qwen/qwen3.8-27b")
 
 _llm = None
+
+# OMCS = weighted sum of the three node scores (each on a 0-100 scale).
+OMCS_WEIGHTS = {"profile": 0.35, "rubric": 0.45, "consistency": 0.20}
+OMCS_PASS_THRESHOLD = 70
 
 
 def get_llm():
@@ -92,9 +96,21 @@ def _clean_image_url(url: str) -> str:
     return url.strip()
 
 
+def _multimodal(text: str, image_url: str) -> HumanMessage:
+    """A human turn carrying ``text`` plus the (cleaned) pubmat image."""
+    return HumanMessage(content=[
+        {"type": "text", "text": text},
+        {"type": "image_url", "image_url": {"url": _clean_image_url(image_url)}}
+    ])
+
+
 # 2. Define the Nodes
 def node_profile_diff(state: CeviewValidationState) -> dict:
-    return {"profile_semantic_score": 85.5}
+    return {
+        "profile_semantic_score": profile_alignment_score(
+            state.get("business_profile") or {}, state["caption"]
+        )
+    }
 
 def node_evaluate_rubric(state: CeviewValidationState) -> dict:
     system_prompt = SystemMessage(content="""
@@ -116,11 +132,7 @@ Required Schema:
 """)
     recs_str = json.dumps(state['recommendations'], indent=2)
     human_text = f"Recommendations Context:\n{recs_str}\n\nEvaluate the image."
-    
-    message = HumanMessage(content=[
-        {"type": "text", "text": human_text},
-        {"type": "image_url", "image_url": {"url": _clean_image_url(state["image_url"])}}
-    ])
+    message = _multimodal(human_text, state["image_url"])
 
     response = get_llm().invoke([system_prompt, message])
     logger.debug("node_evaluate_rubric raw response: %s", response.content[:400])
@@ -147,11 +159,7 @@ Schema:
 }
 """)
     human_text = f"Caption: \"{state['caption']}\"\nAnalyze consistency."
-    
-    message = HumanMessage(content=[
-        {"type": "text", "text": human_text},
-        {"type": "image_url", "image_url": {"url": _clean_image_url(state["image_url"])}}
-    ])
+    message = _multimodal(human_text, state["image_url"])
     response = get_llm().invoke([system_prompt, message])
     logger.debug("node_check_consistency raw response: %s", response.content[:400])
 
@@ -175,10 +183,14 @@ def node_calculate_omcs(state: CeviewValidationState) -> dict:
     r_score = state.get('recommendations_picture_score', 0) * 100
     c_score = state.get('pubmat_consistency_score', 0)
     
-    OMCS = (0.35 * p_score) + (0.45 * r_score) + (0.20 * c_score)
-    
+    OMCS = (
+        (OMCS_WEIGHTS["profile"] * p_score)
+        + (OMCS_WEIGHTS["rubric"] * r_score)
+        + (OMCS_WEIGHTS["consistency"] * c_score)
+    )
+
     # Set the status immediately so it's available even if we skip the feedback node
-    status = "Pass" if OMCS >= 70 else "Fail"
+    status = "Pass" if OMCS >= OMCS_PASS_THRESHOLD else "Fail"
     
     # If it passes, pre-fill feedback so it isn't completely empty
     feedback = "Asset approved." if status == "Pass" else ""
@@ -211,7 +223,7 @@ Generate the failure diagnostic report.
 # Conditional Routing Logic
 def route_omcs_outcome(state: CeviewValidationState) -> str:
     """Evaluates the OMCS score to decide the next step."""
-    if state.get("omcs_score", 0) >= 70:
+    if state.get("omcs_score", 0) >= OMCS_PASS_THRESHOLD:
         return "PASS"  # Immediately terminate on Pass
     else:
         return "FAIL"  # Route to feedback on Fail

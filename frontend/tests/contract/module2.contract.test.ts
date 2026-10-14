@@ -14,7 +14,10 @@ describeIfBackend(up, 'module 2 endpoints', () => {
     const body = await res.json();
     expect(body).toHaveProperty('notifications');
     expect(Array.isArray(body.notifications)).toBe(true);
-    if (body.notifications.length > 0) {
+    // V40 seeds alerts for the seed operator (the next test requires them), so an
+    // empty list is a failure rather than a reason to skip the shape check.
+    expect(body.notifications.length).toBeGreaterThan(0);
+    {
       expect(body.notifications[0]).toMatchObject({
         id: expect.any(String),
         alertLevel: expect.stringMatching(/^(INFO|WARNING|CRITICAL)$/),
@@ -53,12 +56,15 @@ describeIfBackend(up, 'module 2 endpoints', () => {
     expect(typeof body.available).toBe('boolean');
   });
 
-  it('GET /api/forecasting/markets returns fully-populated markets', async () => {
+  it('GET /api/forecasting/markets returns fully-populated markets', async (ctx) => {
     const res = await api('/api/forecasting/markets');
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.markets)).toBe(true);
-    if (body.markets.length > 0) {
+    // V23 purges seeded forecasts, so a fresh stack can genuinely have none yet.
+    // Report that as SKIPPED — it used to report PASSED having checked nothing.
+    if (body.markets.length === 0) ctx.skip();
+    {
       // Every field the radar drawer reads — a regression here renders undefined/NaN.
       expect(body.markets[0]).toMatchObject({
         id: expect.any(String),

@@ -2,9 +2,12 @@
  * CARD — Content Studio must not open without an explicit surge + target
  * market pick. Covers: the gate itself (no target -> picker, never an
  * inferred market), the generate request built once a target IS picked, the
- * known-500 error surface, the stubbed-content banner (source: 'fallback' —
- * the single most misleading state in the app if it silently renders as real
- * content), and "Change target market" clearing the pick.
+ * known-500 error surface, and "Change target market" clearing the pick.
+ *
+ * A 'fallback' content source is no longer a state the backend can send (Spring's
+ * ContentSource enum and FastAPI's response model both admit only "groq"), so the
+ * test that fed the screen a fabricated 'fallback' response was removed; the
+ * cross-stack check lives in tests/integration/contentSourceContract.test.ts.
  */
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -90,6 +93,7 @@ vi.mock('../../../services/apiClient', () => ({
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
     compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
+    posts: { list: () => Promise.resolve([]) },
     attributionLinks: {
       list: (...args: unknown[]) => attributionLinksListMock(...args),
     },
@@ -261,25 +265,6 @@ describe('ContentStudioView — generate request', () => {
     renderStudio();
 
     await waitFor(() => expect(screen.getByText('fastapi-sbert is unavailable')).toBeInTheDocument(), SLOW);
-  });
-
-  it('shows the stubbed-content banner when source is "fallback"', async () => {
-    mockTarget = { alert: ALERT, market: MARKET };
-    generateMock.mockResolvedValue(buildContentResponse('fallback'));
-
-    renderStudio();
-
-    await waitFor(() => expect(screen.getByText(/showing stubbed content/i)).toBeInTheDocument(), SLOW);
-  });
-
-  it('does not show the stubbed-content banner for real ("groq") content', async () => {
-    mockTarget = { alert: ALERT, market: MARKET };
-    generateMock.mockResolvedValue(buildContentResponse('groq'));
-
-    renderStudio();
-
-    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
-    expect(screen.queryByText(/showing stubbed content/i)).not.toBeInTheDocument();
   });
 
   // The Draft -> Attach handoff: choosing an option in the grid is what fills

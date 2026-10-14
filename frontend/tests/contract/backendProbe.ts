@@ -6,7 +6,7 @@
  * Seeded operator credentials:
  *   backend/spring-boot/src/main/resources/db/migration/SEED_CREDENTIALS.md
  */
-import { describe } from 'vitest';
+import { describe, expect } from 'vitest';
 
 // `||` (not `??`) deliberately: the repo's .env ships `VITE_API_BASE_URL=` (blank),
 // which reads back as `''`, not undefined/null — same fallback rule as apiClient.ts.
@@ -71,6 +71,27 @@ export async function api(
       ...(init.headers ?? {}),
     },
   });
+}
+
+/**
+ * The contract every AI-backed route owes the frontend: either a 200 whose body
+ * passes `assertBody`, or the structured unavailability error (424 when an input is
+ * missing, 503 when a dependency is down) carrying `code` and `dependency`, which
+ * ApiErrorPanel renders. Anything else fails: a 500 crash, an unstructured error,
+ * or a 200 whose body is empty — a blank 200 cannot trigger an error panel.
+ */
+export async function expectPopulatedOrUnavailable(
+  res: Response,
+  assertBody: (body: Record<string, unknown>) => void,
+): Promise<void> {
+  const body = (await res.json().catch(() => undefined)) as Record<string, unknown> | undefined;
+  if (res.status === 200) {
+    expect(body, 'a 200 must carry a body').toBeDefined();
+    assertBody(body as Record<string, unknown>);
+    return;
+  }
+  expect([424, 503], `unexpected status ${res.status}: ${JSON.stringify(body)}`).toContain(res.status);
+  expect(body).toMatchObject({ code: expect.any(String), dependency: expect.any(String) });
 }
 
 /**

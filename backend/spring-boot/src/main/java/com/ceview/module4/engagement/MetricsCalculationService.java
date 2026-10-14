@@ -35,7 +35,8 @@ public class MetricsCalculationService {
         int bookings     = nz(in.bookings());
         int newCustomers = nz(in.newCustomers());
 
-        double ctr      = clicks == 0       ? 0 : (double) clicks / impressions * 100.0;
+        // Each ratio guards its own denominator (ARCHITECTURE_SPEC.md §4.1).
+        double ctr      = impressions == 0  ? 0 : (double) clicks / impressions * 100.0;
         double cpc      = clicks == 0       ? 0 : adSpend / clicks;
         double convRate = clicks == 0       ? 0 : (double) bookings / clicks * 100.0;
         double roas     = adSpend == 0      ? 0 : revenue / adSpend;
@@ -95,6 +96,12 @@ public class MetricsCalculationService {
      * @param businessProfileId the authenticated operator's business profile id
      * @param weeks Analysis window — 4 (default) or 8.
      */
+    /** True when the operator has saved at least one campaign record to report on. */
+    public boolean hasCampaignRecords(UUID businessProfileId) {
+        return !campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(
+                businessProfileId, PageRequest.of(0, 1)).isEmpty();
+    }
+
     public MetricsResponse defaultMetrics(UUID businessProfileId, int weeks) {
         int limit = (weeks == 8) ? 8 : 4;
         List<CampaignRecord> records = campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(

@@ -1,6 +1,7 @@
 package com.ceview.module4.report;
 
 import com.ceview.ai.AIInferenceGatewayService;
+import com.ceview.ai.AiDependencyException;
 import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.engagement.MetricsCalculationService;
@@ -57,7 +58,19 @@ public class PrescriptiveReportController {
         var payload = new HashMap<String, Object>(body == null ? Map.of() : body);
         int weeks   = extractWeeks(payload);
 
-        MetricsResponse mr = metricsSvc.defaultMetrics(currentBusinessProfile.resolveProfileId(), weeks);
+        UUID profileId = currentBusinessProfile.resolveProfileId();
+        if (!metricsSvc.hasCampaignRecords(profileId)) {
+            // An empty funnel would reach the model as four zeros and come back as
+            // "diagnostics" of a campaign that never ran. Ask for the input instead.
+            throw AiDependencyException.fromBody(424, Map.of(
+                    "code", "MOD4_REPORT_NO_CAMPAIGN_DATA",
+                    "message", "There is no campaign data to report on yet.",
+                    "dependency", "campaign_records",
+                    "cause", "no campaign records saved — submit a campaign period before requesting a report",
+                    "stage", "spring/analytics.report"), "analytics/report");
+        }
+
+        MetricsResponse mr = metricsSvc.defaultMetrics(profileId, weeks);
         payload.putIfAbsent("metrics", mr);
         payload.put("funnelTransitions", metricsSvc.computeFunnelTransitions(mr.funnel()));
         payload.put("weeks", weeks);

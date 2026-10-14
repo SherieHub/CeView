@@ -11,25 +11,26 @@ import type { ComplianceSlotProps } from './contentStudioTypes';
 
 const STEPS = ['Read caption and platform constraints', 'Analyse publication media', 'Match business profile signals', 'Score visual direction consistency', 'Evaluate audience and cultural fit', 'Create compliance recommendation'];
 
-export default function CompliancePanel({ draft, audit, onAuditChange }: ComplianceSlotProps) {
+export default function CompliancePanel({ draft, audit, onAuditChange, recommendations }: ComplianceSlotProps) {
   // Caption + media only. The audit scores caption-to-media consistency; it has
   // no opinion on which platforms the post is bound for, and authorisation is
   // about publishing rather than about running a check. Both of those moved to
   // the publish modal — requiring them here deadlocked the screen, because the
-  // modal is only reachable through the audit this gate blocks.
-  const ready = Boolean(draft.caption.trim() && draft.mediaDataUrl);
+  // modal is only reachable through the audit this gate blocks. The image is also
+  // judged against the generated captions' visual guidance, so that must exist too.
+  const ready = Boolean(draft.caption.trim() && draft.mediaDataUrl && recommendations);
   useEffect(() => {
     if (audit.status !== 'running') return;
     if (audit.step >= STEPS.length) {
       apiClient.compliance
-        .omcsAnalyze({ caption: draft.caption, imageUrl: draft.mediaDataUrl ?? '' })
+        .omcsAnalyze({ caption: draft.caption, imageUrl: draft.mediaDataUrl ?? '', recommendations: recommendations ?? {} })
         .then((result) => onAuditChange({ status: 'complete', step: STEPS.length, result }))
         .catch((e) => onAuditChange({ status: 'error', step: 0, result: null, error: e }));
       return;
     }
     const timer = window.setTimeout(() => onAuditChange({ ...audit, step: audit.step + 1 }), 420);
     return () => window.clearTimeout(timer);
-  }, [audit, onAuditChange, draft.caption, draft.mediaDataUrl]);
+  }, [audit, onAuditChange, draft.caption, draft.mediaDataUrl, recommendations]);
 
   const result = audit.result;
   const passed = result?.status === 'Pass';
@@ -47,7 +48,8 @@ export default function CompliancePanel({ draft, audit, onAuditChange }: Complia
       {audit.status === 'idle' && (
         <>
           <p className="studio-note">
-            Add a caption, media, and a publish destination, then confirm authorisation to begin the six-step audit.
+            Add a caption and media, then run the six-step audit.
+            {!recommendations && ' Generate captions first — the audit checks the image against their visual guidance.'}
           </p>
           {/* Right-aligned and sized down to match the caption grid's Select:
               both are the forward action of their block, so they should look

@@ -1,15 +1,16 @@
-"""
-Server-side AI wrapper (Groq). Mirrors the five prompts currently in the
-frontend's `ceview/services/geminiService.ts` so swapping the frontend over
-later changes only the transport, not the behavior.
+"""Groq JSON client for the Module 3 content and creative-direction prompts.
 
-When GROQ_API_KEY is missing, every function returns a deterministic
-fallback. Module-3 functions tag the returned dict with a `source` field
-("groq" | "fallback") so the UI can label demo data.
+Despite the module name, this calls **Groq**, not Google Gemini. The name is
+historical; it also appears in error ``stage`` strings and log output that
+callers already read, so it is kept rather than renamed.
 
 Uses the OpenAI-compatible Groq API:
-  openai.OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
+  openai.OpenAI(api_key=GROQ_API_KEY, base_url=GROQ_BASE_URL)
   → client.chat.completions.create(response_format={"type": "json_object"})
+
+When GROQ_API_KEY is missing, ``_enabled()`` is False: the Module 3 functions
+raise ``DependencyUnavailable`` and ``_generate_json`` returns ``{}``.
+The Module 4 report prompts live in ``report_llm.py`` and reuse ``_generate_json``.
 """
 
 from __future__ import annotations
@@ -19,12 +20,20 @@ import logging
 import os
 
 from app import errors
+from app.config.llm import DEFAULT_GROQ_MODEL, GROQ_BASE_URL
+from app.config.markets import (
+    CONTENT_FRAMEWORK,
+    DEMOGRAPHIC_OPTION_NAMES,
+    MARKET_DISPLAY_NAMES,
+    market_header,
+)
+from app.config.platform_guides import PLATFORM_GUIDES
 from app.unavailable import DependencyUnavailable
 
 _log = logging.getLogger("gemini_client")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL   = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_MODEL   = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL)
 
 _groq_client = None
 if GROQ_API_KEY:
@@ -32,7 +41,7 @@ if GROQ_API_KEY:
         from openai import OpenAI  # type: ignore[import]
         _groq_client = OpenAI(
             api_key=GROQ_API_KEY,
-            base_url="https://api.groq.com/openai/v1",
+            base_url=GROQ_BASE_URL,
         )
         _log.info("Groq API initialised — model=%s", GROQ_MODEL)
     except Exception as _init_exc:
@@ -71,27 +80,11 @@ def _generate_json(prompt: str) -> dict:
 
 
 
-def uniqueness(business_name: str, categories: list[str], core_services: list[str],
-               description: str, uvp: str) -> dict:
-    if not _enabled():
-        return {}
-    return _generate_json(
-        f"""You are CeView's Uniqueness Analyst for Philippine tourism businesses.
-
-Business: {business_name}
-Categories: {', '.join(categories)}
-Core Services: {', '.join(core_services)}
-Description: {description}
-UVP: {uvp}
-
-Return JSON: descriptionScore (0-100), categoryScore (0-100), descriptionReasoning (string), categoryReasoning (string).""",
-)
-
 
 # ── Module 3 ────────────────────────────────────────────────────────────────
 
 _content_log = logging.getLogger("module3.content.gemini")
-_compliance_log = logging.getLogger("module3.compliance.gemini")
+_creative_log = logging.getLogger("module3.creative.gemini")
 
 
 def generate_content(
@@ -118,12 +111,8 @@ def generate_content(
     model is disabled, errors, or returns nothing usable.
     """
     base = {
-        "market": {
-            "korea": {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"},
-            "japan": {"country": "Japan", "flag": "🇯🇵", "city": "Osaka"},
-            "usa":   {"country": "USA",   "flag": "🇺🇸", "city": "Los Angeles"},
-        }.get(market, {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"}),
-        "framework": "SOR — Stimulus-Organism-Response",
+        "market": dict(market_header(market)),
+        "framework": CONTENT_FRAMEWORK,
         "captions": _caption_schema_example(),  # prompt shape only; never returned
     }
 
@@ -163,11 +152,7 @@ Market forecast context (Module 2 outputs):
 - Uniqueness score: {uniqueness_score} / 100
 """
 
-    market_label = {
-        "korea": "South Korea",
-        "japan": "Japan",
-        "usa":   "USA",
-    }.get(market, market.title())
+    market_label = MARKET_DISPLAY_NAMES.get(market, market.title())
 
     prompt = f"""You are CeView's Marketing Agent — an expert social-media copywriter for
 Cebu, Philippines tourism businesses, specialising in the {market_label} market.
@@ -267,13 +252,6 @@ The optionNames field is a list parallel to options:
     }
 
 
-_DEMOGRAPHIC_OPTION_NAMES = [
-    "Witty, Trend-Conscious & High-Energy",
-    "Formal, Educational & Value-Driven",
-    "Storytelling, Immersive & Emotional",
-]
-
-
 def _caption_schema_example() -> dict:
     """The JSON shape the caption prompt asks the model to fill.
 
@@ -284,7 +262,7 @@ def _caption_schema_example() -> dict:
     """
     per_platform = {
         "options": ["<string>", "<string>", "<string>"],
-        "optionNames": _DEMOGRAPHIC_OPTION_NAMES,
+        "optionNames": DEMOGRAPHIC_OPTION_NAMES,
         "guide": ["<string>", "<string>", "<string>", "<string>", "<string>"],
     }
     return {
@@ -298,82 +276,13 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
     """Return curated visual direction guides per platform for a given market.
 
     Used by content.py when routing caption generation through the LangGraph agent
-    so that visual guides remain available without a second Gemini call.
+    so that visual guides remain available without a second LLM call.
 
     Returns: { "instagram": [...], "tiktok": [...], "facebook": [...] }
     """
-    _guides: dict[str, dict[str, list[str]]] = {
-        "korea": {
-            "instagram": [
-                "Aesthetic mood shot — open balcony doors, morning sunlight on tropical fruits beside a plunge pool.",
-                "Apply warm, low-contrast golden filters (LUT: 'Mango Sunrise').",
-                "Recommended ratio: 4:5 portrait — maximizes feed real-estate on Korean Instagram feeds.",
-                "Soft vignette, no text overlay. Let the image breathe.",
-                "Cultural nuance: avoid showing other guests — solo 'me-space' framing resonates with Korean healing-travel archetype.",
-            ],
-            "tiktok": [
-                "Slow-motion first-person POV tracking shot — start tight on a local delicacy.",
-                "Pan smoothly upward to reveal a crisp ocean panorama — the 'reveal' moment is the hook.",
-                "Keep ambient sound prominent; sync video rhythm to chill lo-fi acoustic track.",
-                "Duration target: 18–27 seconds — optimal for Korean TikTok algorithm retention window.",
-                "Add Korean subtitle overlay at bottom third. Font: rounded sans, white with soft shadow.",
-            ],
-            "facebook": [
-                "Wide establishing shot of coastline at golden hour — captures the 'breath of relief' emotional entry point.",
-                "Include a human element (silhouette, hands holding coffee) to trigger empathy and projection.",
-                "Facebook favors horizontal 16:9 frame for organic reach; include destination tag overlay.",
-                "Use warm, slightly desaturated tones — not oversaturated tropical clichés.",
-                "CTA text: 'Plan your escape →' — drives link-click micro-conversion on Facebook.",
-            ],
-        },
-        "japan": {
-            "instagram": [
-                "Minimalist composition — single subject (a bowl of tropical fruit, a zen garden corner) with ocean behind.",
-                "Cool-to-neutral colour grading; avoid oversaturation. Japanese Instagram prefers 'wabi-sabi' aesthetics.",
-                "Aspect ratio: 1:1 square for Japanese feed preference.",
-                "Add subtle texture overlay (paper grain) to evoke premium editorial feel.",
-                "Include one culturally relevant prop — a Japanese straw hat, folded fan, or travel journal.",
-            ],
-            "tiktok": [
-                "Slow, deliberate camera movement — Japanese TikTok users respond to calm, cinematic pacing.",
-                "Natural ambient sound (waves, birds, breeze) — no loud electronic music.",
-                "Duration: 30–45 seconds — longer than Korean TikTok; Japanese audiences prefer narrative depth.",
-                "Subtitle overlay in Japanese katakana/kanji. Clean, minimal font.",
-                "End with a peaceful still frame of the ocean — 'ichi-go ichi-e' (once-in-a-lifetime moment) framing.",
-            ],
-            "facebook": [
-                "Clean 16:9 horizontal hero image — resorts, nature paths, cultural sites.",
-                "Japanese Facebook users are older; prioritize information density over emotion.",
-                "Include pricing anchor or package summary as image overlay text.",
-                "Use cool, authoritative colour palette — blues and greens over warm gold.",
-                "CTA: 'View full itinerary →' — Japanese audiences want complete information before deciding.",
-            ],
-        },
-        "usa": {
-            "instagram": [
-                "High-saturation lifestyle shot — vibrant turquoise water, colourful tropical flowers.",
-                "Human-in-frame required — US Instagram audiences respond to people, not just scenery.",
-                "Stories-first vertical 9:16 format — US Instagram Stories outperform feed for US audiences.",
-                "Text overlay with key benefit ('₱ Stronger Than You Think') increases swipe-up engagement.",
-                "Use bright, travel-magazine colour grading — bold and aspirational.",
-            ],
-            "tiktok": [
-                "Fast-cut editing — 3–5 clips in the first 3 seconds to capture the US TikTok scroll reflex.",
-                "Trending audio from the US Billboard chart or viral sound — check TikTok Creative Center weekly.",
-                "Add trending text template ('POV:', 'Tell me you're in Cebu') in the caption and on-screen.",
-                "Duration: 15–30 seconds — US TikTok has the shortest average attention window.",
-                "End with a strong CTA card: 'Link in bio for the full package deal 🌊'.",
-            ],
-            "facebook": [
-                "Facebook Ad-style creative — bold headline overlay, single value statement, strong CTA button.",
-                "US Facebook audiences skew 35+; use 'adventure + comfort' framing (bucket list + luxury).",
-                "Horizontal 1.91:1 ratio for Feed; 1:1 for Marketplace.",
-                "Use social proof element: '500+ American travellers visited this month'.",
-                "CTA: 'Book Now' or 'Get the Deal' — US audiences respond to direct, benefit-led language.",
-            ],
-        },
-    }
-    return _guides.get(market, _guides["korea"])
+    guides = PLATFORM_GUIDES.get(market, PLATFORM_GUIDES["korea"])
+    # Copies, so a caller that edits its lists cannot change the shared table.
+    return {platform: list(tips) for platform, tips in guides.items()}
 
 
 def generate_creative_direction(
@@ -470,158 +379,3 @@ Generate destination-specific creative direction. Return JSON with exactly:
         "platformRecommendations": out["platformRecommendations"],
         "source": "groq",
     }
-
-
-_creative_log = logging.getLogger("module3.creative.gemini")
-
-
-def pes_compute_insights(
-    base_metrics: dict,
-    pes_score: float,
-    pes_label: str,
-    breakdown: list[dict],
-    flagged_metrics: list[str],
-) -> dict:
-    """Generate AI prescriptive insights for UC-4.3 (pes_compute endpoint).
-
-    Returns: { weakest_funnel_stage, recommendations, executive_summary, source }
-    Falls back to rule-based output if Groq is unavailable.
-    """
-    if not _enabled():
-        return {}
-
-    breakdown_text = "\n".join(
-        f"  - {b['metric']}: weight {b['weight']}, contribution {b['contribution']:.4f}"
-        for b in breakdown
-    )
-    flag_text = (
-        f"Excluded metrics (missing data): {', '.join(flagged_metrics)}"
-        if flagged_metrics else "No metrics were excluded."
-    )
-
-    prompt = f"""You are CeView's Senior Campaign Analyst for Cebu MSME tourism businesses — resorts, tour operators, dive shops, and cultural experience providers in Cebu, Philippines targeting Korean, Japanese, and US tourists.
-
-Campaign PES Analysis:
-- PES Score: {pes_score:.4f} / 1.00 ({pes_label})
-- Base Metrics: {json.dumps(base_metrics, indent=2)}
-- Metric Contributions (normalized × weight):
-{breakdown_text}
-- {flag_text}
-
-Context on what each metric means for a Cebu tourism operator:
-- CTR: % of tourists who saw the ad and clicked — measures ad creative relevance for Cebu's target tourist markets
-- CPC: ₱ cost per click on platforms like Facebook, Naver Blog, or Instagram — measures ad spend efficiency per tourist reached
-- ROAS: ₱ revenue from Cebu resort packages or tours per ₱1 of ad spend — measures overall campaign profitability
-- CR: % of clicks that became booking enquiries or form submissions on the Cebu operator's landing page — measures offer and landing page effectiveness
-- CAC: total ₱ cost to acquire one confirmed booking customer for the Cebu tourism business — measures total acquisition efficiency
-
-Identify the weakest funnel stage and provide 3 specific, actionable recommendations to improve the campaign's PES score.
-Each recommendation must:
-  - Reference Cebu's tourism context specifically (e.g. Cebu resort packages, island-hopping tours, dive packages in Moalboal, cultural experiences)
-  - Name the specific platform to act on (e.g. Naver Blog for Korean tourists, Instagram Reels for US tourists, Facebook for Japanese tourists)
-  - State the expected business outcome for the Cebu operator (e.g. lower CAC, more booking enquiries, higher ROAS)
-
-Return JSON with exactly:
-- weakest_funnel_stage: string (e.g. "Clicks → Bookings", "Impressions → Clicks", etc.)
-- recommendations: array of exactly 3 strings — each a concrete, Cebu-specific action with platform and expected outcome
-- executive_summary: string — 3-4 sentences: state the PES score and what it means for this Cebu tourism business, explain which metric is the biggest drag on performance and why it matters for booking revenue, and name the single most impactful action the operator should take immediately
-"""
-
-    out = _generate_json(prompt)
-    if not out or "recommendations" not in out:
-        return {}
-
-    return {
-        "weakest_funnel_stage": out.get("weakest_funnel_stage", "Clicks → Bookings"),
-        "recommendations":      list(out.get("recommendations", []))[:3],
-        "executive_summary":    out.get("executive_summary", ""),
-        "source":               "groq",
-    }
-
-
-def performance_report(
-    metrics: dict,
-    transitions: list[dict] | None = None,
-    weeks: int = 4,
-    market: str = "korea",
-) -> dict:
-    """
-    Generate a prescriptive performance report using the new exhaustive funnel
-    diagnostics schema (Phase 5 / Module 4).
-
-    Args:
-        metrics:     Raw KPI values (impressions, clicks, adSpend, …)
-        transitions: Pre-ranked funnel transitions from Spring Boot
-                     (business-impact order: Clk→Conv, Conv→Book, Imp→Clk)
-        weeks:       Analysis window in weeks (4 or 8)
-        market:      Target market key (e.g. "korea", "japan", "usa")
-
-    Returns:
-        New schema dict:
-          executiveSummary, funnelDiagnostics[], recommendations[], recommendedPlatform
-    """
-    _platform_map = {
-        "korea": "Naver Blog", "kr": "Naver Blog",
-        "japan": "Facebook + Instagram", "jp": "Facebook + Instagram",
-        "usa": "Instagram Reels", "us": "Instagram Reels",
-        "australia": "Instagram Reels",
-        "global": "Instagram Reels",
-    }
-    recommended_platform = _platform_map.get(market.lower(), "Naver Blog")
-
-    # Fallback handled in report.py router — this function only runs when Gemini is enabled
-    if transitions is None:
-        transitions = [
-            {"stage": "Clicks → Conversions",  "dropRate": "88.1%"},
-            {"stage": "Conversions → Bookings", "dropRate": "78.8%"},
-            {"stage": "Impressions → Clicks",   "dropRate": "95.2%"},
-        ]
-
-    # Build the ordered rank/urgency context for Gemini
-    rank_context = "\n".join(
-        f"  {i+1}. \"{t['stage']}\" — {t['dropRate']} absolute drop"
-        for i, t in enumerate(transitions[:3])
-    )
-
-    prompt = f"""You are CeView's Senior Marketing Analyst specialising in Philippine tourism MSMEs.
-
-CAMPAIGN DATA ({weeks}-week window, market: {market.upper()}):
-{json.dumps(metrics, indent=2)}
-
-PRE-RANKED FUNNEL TRANSITIONS (business-impact priority order — do NOT re-order):
-{rank_context}
-
-Rank 1 = "Weakest" | Rank 2 = "Moderate" | Rank 3 = "Alright"
-Urgency 1 = "Most Urgent" | Urgency 2 = "Urgent" | Urgency 3 = "Not Very Urgent"
-
-RULES:
-1. Evaluate ALL THREE transitions. Do not skip any stage.
-2. Preserve the pre-ranked order exactly (index 0 = Weakest, index 1 = Moderate, index 2 = Alright).
-3. Each funnelDiagnostics entry MUST have exactly one matching recommendations entry (same "stage" value).
-4. Urgency is strictly derived from the rank — do not deviate.
-5. recommendedPlatform MUST be "{recommended_platform}".
-6. Return ONLY valid JSON — no markdown, no explanation text.
-
-Return this exact JSON structure:
-{{
-  "executiveSummary": "<4–6 sentence overall campaign assessment that: (1) opens with a plain-language explanation of what each of the 5 KPIs means for this Cebu tourism business — CTR is the percentage of tourists who saw the ad and clicked (measures ad creative relevance), CPC is the ₱ cost per click on platforms like Facebook and Naver Blog (measures ad spend efficiency), ROAS is the ₱ revenue earned per ₱1 of ad spend (measures overall campaign profitability for the resort or tour package), CR is the percentage of clicks that turned into a booking enquiry or form submission (measures how well the landing page converts tourist interest into action), and CAC is the total ₱ cost to secure one confirmed booking customer (measures total acquisition efficiency and directly impacts profit margin); (2) summarises the current overall campaign health in the context of this Cebu tourism MSME; (3) identifies the single top-priority improvement for the operator>",
-  "funnelDiagnostics": [
-    {{
-      "stage": "<transition label>",
-      "rank": "<Weakest|Moderate|Alright>",
-      "dropRate": "<formatted percentage>",
-      "insight": "<one-sentence root-cause diagnosis specific to this stage>"
-    }}
-  ],
-  "recommendations": [
-    {{
-      "stage": "<must match the corresponding funnelDiagnostics stage>",
-      "urgency": "<Most Urgent|Urgent|Not Very Urgent>",
-      "title": "<≤8-word action title>",
-      "action": "<one concrete implementation step — specific and actionable>"
-    }}
-  ],
-  "recommendedPlatform": "{recommended_platform}"
-}}"""
-
-    return _generate_json(prompt)

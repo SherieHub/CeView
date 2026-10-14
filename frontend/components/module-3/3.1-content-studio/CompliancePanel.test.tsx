@@ -9,6 +9,8 @@ vi.mock('../../../services/apiClient', () => ({
   apiClient: { compliance: { omcsAnalyze: vi.fn(() => Promise.resolve({})) } },
 }));
 
+const RECS = { visual_guide: ['Use warm light'] };
+
 const READY: PublishDraftState = {
   caption: 'A caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
   visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: true,
@@ -22,6 +24,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'idle', step: 0, result: null }}
         onAuditChange={onAuditChange}
+        recommendations={RECS}
       />,
     );
     expect(onAuditChange).not.toHaveBeenCalled();
@@ -34,6 +37,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'idle', step: 0, result: null }}
         onAuditChange={onAuditChange}
+        recommendations={RECS}
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/ }));
@@ -49,6 +53,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'idle', step: 0, result: null }}
         onAuditChange={vi.fn()}
+        recommendations={RECS}
       />,
     );
     const run = screen.getByRole('button', { name: /Run Compliance Audit/ });
@@ -66,9 +71,41 @@ describe('CompliancePanel', () => {
         draft={{ ...READY, mediaDataUrl: null }}
         audit={{ status: 'idle', step: 0, result: null }}
         onAuditChange={vi.fn()}
+        recommendations={RECS}
       />,
     );
     expect(screen.getByRole('button', { name: /Run Compliance Audit/ })).toBeDisabled();
+  });
+
+  it('disables the button and says why when no captions have been generated', () => {
+    render(
+      <CompliancePanel
+        draft={READY}
+        audit={{ status: 'idle', step: 0, result: null }}
+        onAuditChange={vi.fn()}
+        recommendations={null}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Run Compliance Audit/ })).toBeDisabled();
+    expect(screen.getByText(/Generate captions first/)).toBeInTheDocument();
+  });
+
+  it('sends the recommendations with the caption and image', async () => {
+    const { apiClient } = await import('../../../services/apiClient');
+    const analyze = vi.mocked(apiClient.compliance.omcsAnalyze);
+    analyze.mockClear();
+    render(
+      <CompliancePanel
+        draft={READY}
+        audit={{ status: 'running', step: 6, result: null }}
+        onAuditChange={vi.fn()}
+        recommendations={RECS}
+      />,
+    );
+    await vi.waitFor(() => expect(analyze).toHaveBeenCalledTimes(1));
+    expect(analyze).toHaveBeenCalledWith({
+      caption: 'A caption', imageUrl: 'data:image/png;base64,x', recommendations: RECS,
+    });
   });
 
   // Verdict on the left, the detail it summarises on the right — the dial is
@@ -79,6 +116,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'complete', step: 6, result: MOCK_OMCS }}
         onAuditChange={vi.fn()}
+        recommendations={RECS}
       />,
     );
 
@@ -107,6 +145,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'complete', step: 6, result: MOCK_OMCS }}
         onAuditChange={vi.fn()}
+        recommendations={RECS}
       />,
     );
     expect(container.querySelectorAll('.audit-insight')).toHaveLength(0);
@@ -121,6 +160,7 @@ describe('CompliancePanel', () => {
         draft={READY}
         audit={{ status: 'complete', step: 6, result: MOCK_OMCS }}
         onAuditChange={vi.fn()}
+        recommendations={RECS}
       />,
     );
     const metrics = container.querySelectorAll('.omcs-rubric > div');

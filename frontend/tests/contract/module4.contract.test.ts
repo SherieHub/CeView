@@ -7,7 +7,7 @@
  * existed on any backend.
  */
 import { expect, it } from 'vitest';
-import { api, isBackendUp, describeIfBackend } from './backendProbe';
+import { api, isBackendUp, describeIfBackend, expectPopulatedOrUnavailable } from './backendProbe';
 
 const up = await isBackendUp();
 
@@ -17,7 +17,10 @@ describeIfBackend(up, 'module 4 endpoints', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.snapshots)).toBe(true);
-    if (body.snapshots.length > 0) {
+    // The seed operator has campaign records (V15), so an empty list is a failure,
+    // not a reason to skip the shape check.
+    expect(body.snapshots.length).toBeGreaterThan(0);
+    {
       // Field-for-field match with the frontend type — no mapping layer exists,
       // so a rename on either side breaks the trend charts silently.
       expect(body.snapshots[0]).toMatchObject({
@@ -45,40 +48,25 @@ describeIfBackend(up, 'module 4 endpoints', () => {
   });
 
   /**
-   * KNOWN GAP — see Task 15.
-   *
-   * This endpoint currently answers 200 with a literal empty object `{}` (2
-   * bytes), even with fastapi-sbert healthy and GROQ_API_KEY set. Verified by
-   * calling FastAPI's /internal/report/generate directly from inside the spring
-   * container: it too returns `{}` at 200.
-   *
-   * Because FastAPI reports success, Spring's FR4.26 rule-based fallback in
-   * PrescriptiveReportController never fires — confirmed by capturing the log
-   * lines produced by a single request (there are none).
-   *
-   * So this test asserts what is genuinely true today (the route answers 200)
-   * and validates the report's shape only when a body actually arrives. It is
-   * deliberately NOT written to require `executiveSummary`, because that would
-   * fail on a known-open defect rather than guard a contract. Task 15 must
-   * treat an empty report as a degraded state rather than rendering a blank
-   * panel — a 200 carrying no data cannot trigger ApiErrorPanel.
+   * Formerly "KNOWN GAP — see Task 15": this test accepted a 200 carrying `{}` and
+   * checked the shape only when a body happened to arrive, so a blank report passed.
+   * A report is now either populated or a structured unavailability error. The
+   * empty-200 case FAILS — it is the defect (fastapi-sbert's report route returns
+   * the {} that _generate_json produces on a model error), not an acceptable state.
    */
-  it('POST /api/analytics/report responds, and is well-formed when populated', async () => {
+  it('POST /api/analytics/report returns a populated report or a structured unavailability error', async () => {
     const res = await api('/api/analytics/report', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    expect(res.status).toBe(200);
-    const body = await res.json();
-
-    if (Object.keys(body).length > 0) {
+    await expectPopulatedOrUnavailable(res, (body) => {
       expect(body).toMatchObject({
         executiveSummary: expect.any(String),
         recommendedPlatform: expect.any(String),
       });
       expect(Array.isArray(body.funnelDiagnostics)).toBe(true);
       expect(Array.isArray(body.recommendations)).toBe(true);
-    }
+    });
   },
   // The report round-trips to FastAPI; a slow or failing hop can exceed
   // vitest's 5000ms default.

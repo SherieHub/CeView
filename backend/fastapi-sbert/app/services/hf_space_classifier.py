@@ -67,6 +67,17 @@ def category_score(
     )
 
 
+def _invalid_response(cause: str) -> DependencyUnavailable:
+    """The 503 raised when the Space answers with a payload we cannot allocate from."""
+    return DependencyUnavailable(
+        code="MOD1_HF_SPACE_INVALID_RESPONSE",
+        message="Business classification returned an invalid response.",
+        dependency="huggingface_space",
+        cause=cause,
+        stage="fastapi-sbert/classification",
+    )
+
+
 def _to_allocations(categories: object, confidences: object) -> list[dict[str, int]]:
     named_scores = _parse_named_scores(confidences)
     if named_scores:
@@ -75,13 +86,7 @@ def _to_allocations(categories: object, confidences: object) -> list[dict[str, i
     names = _parse_names(categories)
     scores = _parse_scores(confidences)
     if not names or len(names) != len(scores):
-        raise DependencyUnavailable(
-            code="MOD1_HF_SPACE_INVALID_RESPONSE",
-            message="Business classification returned an invalid response.",
-            dependency="huggingface_space",
-            cause=f"received {len(names)} categories and {len(scores)} confidence scores",
-            stage="fastapi-sbert/classification",
-        )
+        raise _invalid_response(f"received {len(names)} categories and {len(scores)} confidence scores")
 
     return _allocate(names, scores)
 
@@ -97,13 +102,7 @@ def _select_named_allocations(named_scores: dict[str, float]) -> list[dict[str, 
     ]
     total = sum(score for _, score in in_scope_scores)
     if total <= 0:
-        raise DependencyUnavailable(
-            code="MOD1_HF_SPACE_INVALID_RESPONSE",
-            message="Business classification returned an invalid response.",
-            dependency="huggingface_space",
-            cause="confidence scores did not contain a positive in-scope value",
-            stage="fastapi-sbert/classification",
-        )
+        raise _invalid_response("confidence scores did not contain a positive in-scope value")
 
     selected = [
         (name, score)
@@ -124,13 +123,7 @@ def _select_named_allocations(named_scores: dict[str, float]) -> list[dict[str, 
 def _allocate(names: list[str], scores: list[float]) -> list[dict[str, int]]:
     total = sum(scores)
     if total <= 0:
-        raise DependencyUnavailable(
-            code="MOD1_HF_SPACE_INVALID_RESPONSE",
-            message="Business classification returned an invalid response.",
-            dependency="huggingface_space",
-            cause="confidence scores did not contain a positive value",
-            stage="fastapi-sbert/classification",
-        )
+        raise _invalid_response("confidence scores did not contain a positive value")
 
     allocations: list[dict[str, int]] = []
     remaining = 100

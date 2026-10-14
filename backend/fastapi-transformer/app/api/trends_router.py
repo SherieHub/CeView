@@ -10,8 +10,8 @@ Usage in Postman:
     Body  (raw JSON):
         { "market": "korea", "category": "Coastal & Island" }
 
-    Expected response time: 4–12 s when pytrends is live (jitter sleep).
-    Instant when source="stub" (pytrends offline / package missing).
+    Data comes from SerpApi's Google Trends engine (SERPAPI_KEY required).
+    When SerpApi is unconfigured or fails, the call returns 503 — there is no stub.
 
 Valid market values:   "korea" | "japan" | "usa"
 Valid category values: must match one of the 7 CATEGORY_LABELS in ml_classifier.py
@@ -30,7 +30,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.services.trend_service import fetch_and_process
+from app.services.trend_service import fetch_and_process, rank_markets_by_category
 from app.unavailable import DependencyUnavailable
 
 router = APIRouter()
@@ -81,7 +81,7 @@ class TrendsFetchResponse(BaseModel):
     seasonality_score: float      = Field(ge=0.0,  le=1.0,   description="Composite seasonality score 0–1  (§5)")
     data_points:       int        = Field(ge=0,               description="Weekly data points in the fetched series")
     fetched_at:        str        = Field(description="ISO-8601 UTC timestamp of the fetch")
-    source:            str        = Field(description="'pytrends' when live; 'stub' when pytrends offline")
+    source:            str        = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
 
 
 # ── Endpoint ──────────────────────────────────────────────────────────────────
@@ -99,20 +99,16 @@ def fetch_trends(req: TrendsFetchRequest) -> TrendsFetchResponse:
     for Asian markets (Hangul for KR, Kanji/Kana for JP).  English proxies are
     NOT used for KR/JP — they return near-zero volume and produce biased signals.
 
-    **Rate limiting:**
-    A randomised jitter sleep (4–12 s) is applied after every single pytrends
-    request inside ``trend_service.fetch_and_process``.  When pytrends is live,
-    this endpoint will naturally take 4–12 s to respond.  This is intentional
-    behaviour — do not lower the timeout in Postman below 20 s.
+    **Upstream:**
+    One SerpApi Google Trends request per call (``trend_service.fetch_and_process``).
 
     **SeasonalShift math (``CeView_SeasonalShift_Detection.md``):**
     The response includes all §2–§5 metrics: rolling averages, std-dev, spike
     indicator, YoY ratio, and the composite seasonality score.
 
-    **Fallback:**
-    If pytrends is not installed or the Google request fails, a deterministic
-    stub result is returned (``source="stub"``) so the endpoint always responds
-    with a 200 rather than a 500.
+    **Unavailability:**
+    If SERPAPI_KEY is unset or the SerpApi request fails, the service raises
+    ``DependencyUnavailable`` (503). No synthetic stub result is returned.
     """
     log.info("trends.fetch received market=%s category=%s", req.market, req.category)
 
@@ -186,7 +182,7 @@ class RankMarketsResponse(BaseModel):
         description="Full {keyword: volume} map for the top market — used for notification keywordData"
     )
     fetched_at:          str
-    source:              str = Field(description="'pytrends' when live; 'stub' otherwise")
+    source:              str = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
 
 
 @router.post(
@@ -199,8 +195,8 @@ def rank_markets(req: RankMarketsRequest) -> RankMarketsResponse:
     category across all 3 markets (KR / JP / US).
 
     **Workflow:**
-    1. For each market, fetch pytrends data for the 10 ``CATEGORY_KEYWORDS``
-       in two batches of 5 (pytrends limit).
+    1. For each market, fetch Google Trends data (SerpApi) for the 10
+       ``CATEGORY_KEYWORDS`` in two batches of 5 (per-request keyword limit).
     2. Average the last 4 weekly values per keyword → 10 per-keyword means.
     3. Sum the 10 means → ``total_volume`` for that market.
     4. Repeat for all 3 markets; sort descending by ``total_volume``.
@@ -210,13 +206,12 @@ def rank_markets(req: RankMarketsRequest) -> RankMarketsResponse:
     their tagged category (e.g. "South Korea generates the highest search
     volume for 'Coastal & Island'").
 
-    **Latency:** ~25–75 s when pytrends is live (6 batches × 4–12 s jitter).
-    Instant when pytrends is offline (stub mode).
+    **Latency:** 6 SerpApi requests (2 keyword batches × 3 markets).
+    Returns 503 when SerpApi is unavailable — there is no stub mode.
     """
     log.info("trends.rank-markets received category=%s", req.category)
 
     try:
-        from app.services.trend_service import rank_markets_by_category
         result = rank_markets_by_category(category=req.category)
 
         log.info(

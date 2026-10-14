@@ -8,13 +8,13 @@ Run with: pytest tests/unit/test_no_naver.py -v
 """
 import inspect
 
-from app.routers import content
+from app.services import caption_formatting
 from app.services import gemini_client
 
 
 def test_hardcoded_naver_captions_are_gone():
-    assert not hasattr(content, "_NAVER_OPTIONS")
-    assert not hasattr(content, "_NAVER_OPTION_NAMES")
+    assert not hasattr(caption_formatting, "_NAVER_OPTIONS")
+    assert not hasattr(caption_formatting, "_NAVER_OPTION_NAMES")
 
 
 def test_platform_guides_no_longer_offer_naver():

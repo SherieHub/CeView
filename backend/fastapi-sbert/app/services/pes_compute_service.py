@@ -55,15 +55,6 @@ DISPLAY_NAMES: dict[str, str] = {
     "CPC":  "CPC (Inv)",
 }
 
-WEIGHT_LABELS: dict[str, str] = {
-    "ROAS": "35%",
-    "CR":   "30%",
-    "CAC":  "15%",
-    "CTR":  "15%",
-    "CPC":  "5%",
-}
-
-
 # ─── Structured return types ──────────────────────────────────────────────────
 
 class PesResult(NamedTuple):
@@ -132,6 +123,11 @@ def compute_base_metrics(
     return metrics, flagged
 
 
+def flagged_metric_names(flagged: list[str]) -> set[str]:
+    """Metric keys from flag strings like "CTR (impressions = 0)" → {"CTR"}."""
+    return {s.split(" ")[0] for s in flagged}
+
+
 # ─── Steps 2 & 3 — Normalization + Inversion ─────────────────────────────────
 
 def normalize_and_invert(
@@ -148,8 +144,7 @@ def normalize_and_invert(
         normalized        — { metric_name: 0.0–1.0 (inverted for CPC/CAC) }
         effective_weights — recalibrated weight map that sums to 1.0 for active metrics
     """
-    # Extract just the metric names from flagged strings like "CTR (impressions = 0)"
-    flagged_names: set[str] = {s.split(" ")[0] for s in flagged}
+    flagged_names = flagged_metric_names(flagged)
 
     normalized: dict[str, float] = {}
     for name, raw_val in metrics.items():
@@ -201,8 +196,8 @@ def compute_pes(
     breakdown: list[dict] = []
     total: float = 0.0
 
-    # Canonical order: highest weight first
-    for name in ("ROAS", "CR", "CAC", "CTR", "CPC"):
+    # Canonical order: highest weight first (BASE_WEIGHTS is declared in that order)
+    for name in BASE_WEIGHTS:
         eff_weight = effective_weights.get(name, 0.0)
         # Skip metrics that were flagged (excluded from effective_weights)
         if eff_weight == 0.0:
@@ -231,3 +226,89 @@ def compute_pes(
         label = "Poor Performance"
 
     return PesResult(score=score, label=label, breakdown=breakdown)
+
+
+# ─── Funnel-stage mapping (weakest metric → bottleneck stage) ─────────────────
+
+METRIC_TO_STAGE: dict[str, str] = {
+    "ROAS":       "Impressions → Revenue (Ad Spend Efficiency)",
+    "Conv. Rate": "Clicks → Bookings",
+    "CAC (Inv)":  "Impressions → New Customers",
+    "CTR":        "Impressions → Clicks",
+    "CPC (Inv)":  "Impressions → Clicks (Cost Efficiency)",
+}
+
+
+# ─── Rule-based AI report fallback (FR4.26) ───────────────────────────────────
+
+def rule_based_ai_report(
+    base_metrics: dict[str, float],
+    pes_score:    float,
+    pes_label:    str,
+    breakdown:    list[dict],
+    flagged:      list[str],
+) -> dict:
+    """
+    Deterministic, rule-based AI report returned when the Groq
+    service is offline or fails (FR4.26 Fallback Mechanism).
+
+    Logic:
+      - Identifies the lowest-scoring (smallest contribution) active metric.
+      - Maps it to the most impacted funnel stage.
+      - Returns three hardcoded-but-contextual recommendations.
+      - Generates a plain-language executive summary from the computed values.
+    """
+    active_items = [b for b in breakdown if b["contribution"] > 0]
+    if active_items:
+        weakest_item  = min(active_items, key=lambda x: x["contribution"])
+        weakest_name  = weakest_item["metric"]
+        weakest_stage = METRIC_TO_STAGE.get(weakest_name, "Clicks → Bookings")
+    else:
+        weakest_name  = "Conversion Rate"
+        weakest_stage = "Clicks → Bookings"
+
+    # Identify the highest-weight metric that IS performing (for positive framing)
+    top_item = max(active_items, key=lambda x: x["contribution"]) if active_items else None
+    top_name = top_item["metric"] if top_item else "ROAS"
+
+    recommendations = [
+        (
+            f"Your '{weakest_stage}' funnel stage is the weakest link — the {weakest_name} metric "
+            "is contributing the least to your PES score for this Cebu tourism campaign. "
+            "Audit this specific conversion step before increasing ad spend: for Cebu resorts and tour operators, "
+            "this typically means aligning your ad creative with your Cebu landing page offer and simplifying the booking enquiry form."
+        ),
+        (
+            "Launch a retargeting campaign on Facebook targeting Cebu tourists who clicked your ad but did not complete a booking enquiry. "
+            "Use carousel ads showcasing your specific Cebu experience (e.g. island-hopping packages, Moalboal dive tours, or Oslob whale shark encounters) "
+            "with a limited-time discount — this typically recovers 15–25% of lost mid-funnel leads within two campaign cycles."
+        ),
+        (
+            "Add Cebu-specific social proof directly above your booking CTA: verified guest reviews mentioning Cebu attractions, "
+            "a live booking counter showing recent reservations, and a guaranteed response-time badge. "
+            "For Korean tourists, include Naver Blog or KakaoTalk review snippets; for US tourists, Google Reviews work best. "
+            "This reduces commitment hesitation and improves your Clicks → Bookings conversion rate."
+        ),
+    ]
+
+    flag_note = (
+        f" Note: {len(flagged)} metric(s) were excluded from PES due to missing data: "
+        + ", ".join(flagged) + "."
+        if flagged else ""
+    )
+
+    executive_summary = (
+        f"Your Cebu tourism campaign's Promotional Effectiveness Score is {pes_score:.2f} / 1.00 ({pes_label}). "
+        f"The strongest contributor to your score is {top_name}, which is currently working well for your campaign. "
+        f"However, the primary bottleneck is the '{weakest_stage}' transition — this is the stage where the most potential booking revenue is being lost, "
+        f"either through poor ad-to-landing-page alignment, weak conversion copy, or insufficient trust signals for international tourists visiting Cebu. "
+        f"Prioritising improvements to this stage will have the highest direct impact on your bookings and revenue per peso of ad spend."
+        f"{flag_note}"
+    )
+
+    return {
+        "weakest_funnel_stage": weakest_stage,
+        "recommendations":      recommendations,
+        "executive_summary":    executive_summary,
+        "source":               "fallback",
+    }

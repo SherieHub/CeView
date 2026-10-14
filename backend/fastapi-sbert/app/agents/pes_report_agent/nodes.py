@@ -1,9 +1,9 @@
 """PES Report Agent — node definitions.
 
-generate_report  → builds structured ReportOutput via Gemini
-evaluate_report  → scores and validates the report via Gemini
+generate_report  → builds structured ReportOutput via the Groq LLM
+evaluate_report  → scores and validates the report via the Groq LLM
 finalize_response → packages final_ui_payload and metadata
-route_action     → conditional edge: pass (score ≥ 85) or retry (up to 3×)
+route_action     → conditional edge: pass (score ≥ PASS_SCORE) or retry (up to MAX_RETRIES)
 """
 from __future__ import annotations
 
@@ -11,17 +11,30 @@ import json
 from typing import Any
 
 from app import errors
-from app.agents.pes_report_agent.state import (
-    AgentState,
-    ReportOutput,
-    EvaluationResult,
-    CrossMetricLogic,
-    MetricCondition,
-    RankedWeakness,
-)
+from app.agents.pes_report_agent.state import AgentState, EvaluationResult, ReportOutput
 from app.core.AgentLLMModel import AgentLLMModel
 from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
 from app.unavailable import DependencyUnavailable
+
+
+# Evaluator score a report needs to pass, and how many generate/evaluate rounds
+# run before the report is released with a needs-human-review flag.
+PASS_SCORE  = 85
+MAX_RETRIES = 3
+
+
+def _require_llm(message: str, cause: str, stage: str):
+    """Return the shared LLM, or raise the agent's 503 if it is unavailable."""
+    llm = AgentLLMModel().get_model()
+    if llm is None:
+        raise DependencyUnavailable(
+            code=errors.MOD4_PES_AGENT_FAILED,
+            message=message,
+            dependency="gemini",
+            cause=cause,
+            stage=stage,
+        )
+    return llm
 
 
 # ==========================================
@@ -45,17 +58,11 @@ def generate_report(state: AgentState) -> dict[str, Any]:
             + json.dumps(state["evaluation"], indent=2)
         )
 
-    _base_llm = AgentLLMModel().get_model()
-
-    if _base_llm is None:
-        raise DependencyUnavailable(
-            code=errors.MOD4_PES_AGENT_FAILED,
-            message="PES report generation is unavailable.",
-            dependency="gemini",
-            cause="the report node produced no structured output",
-            stage="fastapi-sbert/pes_report_agent.generate",
-        )
-
+    _base_llm = _require_llm(
+        message="PES report generation is unavailable.",
+        cause="the report node produced no structured output",
+        stage="fastapi-sbert/pes_report_agent.generate",
+    )
     generator_llm = _base_llm.with_structured_output(ReportOutput)
     messages = generation_prompt.format_messages(
         metrics_data=metrics_data,
@@ -71,17 +78,11 @@ def evaluate_report(state: AgentState) -> dict[str, Any]:
     report           = state["report"]
     formatted_report = json.dumps(report, indent=2)
 
-    _base_llm = AgentLLMModel().get_model()
-
-    if _base_llm is None:
-        raise DependencyUnavailable(
-            code=errors.MOD4_PES_AGENT_FAILED,
-            message="PES report evaluation is unavailable.",
-            dependency="gemini",
-            cause="the evaluate node produced no structured output",
-            stage="fastapi-sbert/pes_report_agent.evaluate",
-        )
-
+    _base_llm = _require_llm(
+        message="PES report evaluation is unavailable.",
+        cause="the evaluate node produced no structured output",
+        stage="fastapi-sbert/pes_report_agent.evaluate",
+    )
     evaluator_llm = _base_llm.with_structured_output(EvaluationResult)
     messages = evaluation_prompt.format_messages(
         metrics_data=metrics_data,
@@ -97,9 +98,8 @@ def finalize_response(state: AgentState) -> dict[str, Any]:
     evaluation  = state.get("evaluation", {})
     score       = evaluation.get("score", 0)
     iterations  = state.get("iterations", 0)
-    MAX_RETRIES = 3
 
-    needs_review = bool(iterations >= MAX_RETRIES and score < 85)
+    needs_review = bool(iterations >= MAX_RETRIES and score < PASS_SCORE)
 
     final_metadata = {
         "final_score":        score,
@@ -135,9 +135,8 @@ def route_action(state: AgentState) -> str:
     score       = evaluation.get("score", 0)
     passed      = evaluation.get("pass", False)
     iterations  = state.get("iterations", 0)
-    MAX_RETRIES = 3
 
-    if score >= 85 and passed:
+    if score >= PASS_SCORE and passed:
         return "finalize_response"
     if iterations >= MAX_RETRIES:
         return "finalize_response"

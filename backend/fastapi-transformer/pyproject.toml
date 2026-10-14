@@ -8,14 +8,13 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.7.0",
     "httpx>=0.27.0",
-    # Module 2 — signal processing, market scoring
-    "numpy>=1.26.0,<2.0",
-    "scipy>=1.13.0",
-    "pandas>=2.2.0",
-    "pytrends>=4.9.2",
+    # Module 2 — market scoring
     "xgboost>=2.0.0",
-    # Groq API (OpenAI-compatible) — replaces BiLSTM+Transformer for demand forecasting (Phase 2)
+    "numpy>=1.26.0,<2.0",
+    # Groq API (OpenAI-compatible) — demand forecasting (FORECAST_ENGINE=groq)
     "openai>=1.0.0",
+    # BiLSTM + Transformer demand model hosted on Hugging Face Spaces (FORECAST_ENGINE=bilstm)
+    "gradio_client>=2.0.0",
 ]
 
 [tool.uv]

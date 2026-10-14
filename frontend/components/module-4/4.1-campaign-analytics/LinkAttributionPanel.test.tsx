@@ -93,14 +93,20 @@ describe('LinkAttributionPanel', () => {
     (apiClient.attributionLinks.performance as any).mockResolvedValue(mockLinkPerformance(links[1].linkId));
 
     render(<LinkAttributionPanel />);
-    
+
+    // Wait for the panel to settle on its automatic first selection. Changing the
+    // select before that effect has run raced it under load: the late auto-select
+    // could overwrite the user's choice, so the test failed in the full suite and
+    // passed alone.
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveValue(links[0].linkId);
+      expect(apiClient.attributionLinks.performance).toHaveBeenCalledWith(links[0].linkId);
     });
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: links[1].linkId } });
-    
+
     await waitFor(() => {
+      expect(screen.getByRole('combobox')).toHaveValue(links[1].linkId);
       expect(apiClient.attributionLinks.performance).toHaveBeenCalledWith(links[1].linkId);
     });
   });

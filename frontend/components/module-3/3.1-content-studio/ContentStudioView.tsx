@@ -14,7 +14,7 @@
  * owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Image as ImageIcon, PenLine } from 'lucide-react';
+import { Image as ImageIcon, PenLine } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
@@ -25,6 +25,7 @@ import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
 import PublishModal from './PublishModal';
+import { auditRecommendations } from './auditRecommendations';
 import StudioStepRail from './StudioStepRail';
 import { STUDIO_STEPS } from './studioSteps';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
@@ -32,8 +33,8 @@ import type { AuditState, PublishDraftState, StudioPlatformId } from './contentS
 import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
 // (see docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md
-// §Non-goals). This board stays fixture-backed until that lands.
-import { MOCK_POSTS } from '../../../services/fixtures/posts';
+// §Non-goals). The board therefore starts empty and only shows fixture posts when
+// the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
 import { useConnections } from '../../../services/connectionsStore';
 import { useProfile } from '../../../services/profileContext';
@@ -64,7 +65,18 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const [activePlatform, setActivePlatform] = useState<StudioPlatformId>('instagram');
   const [draft, setDraft] = useState<PublishDraftState>(initialDraft ?? EMPTY_DRAFT);
   const [audit, setAudit] = useState<AuditState>(IDLE_AUDIT);
-  const [posts, setPosts] = useState<PublishedPost[]>(initialPosts ?? MOCK_POSTS);
+  const [posts, setPosts] = useState<PublishedPost[]>(initialPosts ?? []);
+
+  useEffect(() => {
+    if (initialPosts) return;
+    let cancelled = false;
+    apiClient.posts
+      .list()
+      .then((list) => { if (!cancelled) setPosts((current) => (current.length ? current : (list as PublishedPost[]))); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Content Studio has no market selector of its own — Module 2 owns "which
   // surge / which market" — so this view never infers one on the operator's
@@ -270,7 +282,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     setPublishOpen(false);
   };
 
-  const stubbed = content?.source === 'fallback' || content?.source === 'template';
 
   // No surge + market picked yet — gate everything below behind the picker.
   // No entry point (sidebar nav, a stale/empty store) may skip this by
@@ -322,16 +333,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
 
       {marketsError != null && <div className="mb-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
 
-      {stubbed && (
-        <div className="banner banner--warn mb-4" role="status">
-          <AlertTriangle aria-hidden="true" />
-          <div>
-            <b>Showing stubbed content.</b> The AI service returned placeholder captions instead of
-            a real generation — nothing below reflects an actual model output.
-          </div>
-        </div>
-      )}
-
       {contentError != null && <div className="mb-4"><ApiErrorPanel error={contentError} label="Content Studio" /></div>}
 
       <div className="studio-flow">
@@ -377,7 +378,12 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         </section>
 
         <section id={STEP_VALIDATE.sectionId} className="studio-section">
-          <CompliancePanel draft={draft} audit={audit} onAuditChange={setAudit} />
+          <CompliancePanel
+            draft={draft}
+            audit={audit}
+            onAuditChange={setAudit}
+            recommendations={auditRecommendations(content, activePlatform, selectedOption)}
+          />
         </section>
 
         <div className="studio-board">

@@ -34,7 +34,7 @@ router = APIRouter()
 log = logging.getLogger("module4.pes_analysis")
 
 # Check LLM availability once at startup — avoids running 3 wasted graph iterations
-# when GOOGLE_API_KEY is absent. The singleton is already initialised by this point.
+# when GROQ_API_KEY is absent. The singleton is already initialised by this point.
 _LLM_AVAILABLE: bool = AgentLLMModel().get_model() is not None
 
 

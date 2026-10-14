@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { api, isBackendUp, describeIfBackend } from './backendProbe';
+import { api, isBackendUp, describeIfBackend, expectPopulatedOrUnavailable } from './backendProbe';
 
 const up = await isBackendUp();
 
@@ -13,22 +13,18 @@ const GENERATE_BODY = {
 
 describeIfBackend(up, 'module 3 endpoints', () => {
   /**
-   * KNOWN OPEN DEFECT — the caption agent rejects the model's output with
-   * "missing platform 'tiktok'" (MOD31_CAPTION_AGENT_FAILED), reproduced across
-   * two Groq models, so it is prompt strictness inside fastapi-sbert. This test
-   * asserts the route EXISTS and validates its response only when it succeeds,
-   * rather than encoding a failure as expected or pretending success.
+   * Previously asserted only `status !== 404`, so a 500 crash passed. The route
+   * must answer with captions or a structured unavailability error (e.g. the
+   * caption agent's MOD31_* codes) — never an unstructured failure.
    */
-  it('POST /api/content/generate routes, and is well-formed when it succeeds', async () => {
+  it('POST /api/content/generate returns captions or a structured unavailability error', async () => {
     const res = await api('/api/content/generate', {
       method: 'POST', body: JSON.stringify(GENERATE_BODY),
     });
-    expect(res.status).not.toBe(404);
-    if (res.status === 200) {
-      const body = await res.json();
+    await expectPopulatedOrUnavailable(res, (body) => {
       expect(body).toHaveProperty('captions');
       expect(body.market).toMatchObject({ country: expect.any(String) });
-    }
+    });
   }, 240000);
 
   it('POST /api/compliance/omcs-analyze rejects a blank caption with 4xx, not 500', async () => {
@@ -48,12 +44,10 @@ describeIfBackend(up, 'module 3 endpoints', () => {
    */
   it('POST /api/creative-direction/generate works with only a JWT', async () => {
     const res = await api('/api/creative-direction/generate', { method: 'POST' });
-    expect(res.status).not.toBe(404);
-    if (res.status === 200) {
-      const body = await res.json();
+    await expectPopulatedOrUnavailable(res, (body) => {
       expect(Array.isArray(body.visualGuide)).toBe(true);
       expect(Array.isArray(body.shots)).toBe(true);
       expect(body.moodboard).toMatchObject({ palette: expect.any(String) });
-    }
+    });
   }, 120000);
 });

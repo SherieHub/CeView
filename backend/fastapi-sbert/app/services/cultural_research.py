@@ -1,6 +1,6 @@
 """SerpAPI cultural and tourism trend research for Module 3.1 (FR3.3).
 
-Follows the same singleton + fallback pattern as pytrends_client.py:
+Singleton + fallback pattern:
   - attempt to import serpapi at module load
   - if unavailable or SERPAPI_KEY missing, all calls return curated static templates
   - templates are market-specific and cover all UC-3.1 step 6 data points:

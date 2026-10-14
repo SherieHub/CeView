@@ -8,14 +8,12 @@ from app.middleware.trace import TraceIdMiddleware
 from app.unavailable import register_unavailable_handler
 from app.routers import (
     classification,
-    content,
     creative,
     report,
     caption_generation,
     pes_analysis,
     pes_compute,
     omcs_analysis,
-    demand_forecast,
 )
 
 configure_logging()
@@ -30,11 +28,9 @@ def healthz() -> dict:
 
 
 app.include_router(classification.router, prefix="/internal/classification", tags=["classification"])
-app.include_router(content.router,        prefix="/internal/content",        tags=["content"])
 app.include_router(creative.router,       prefix="/internal/creative",       tags=["creative"])
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
 app.include_router(pes_compute.router,        prefix="/internal/pes-compute",   tags=["pes-compute"])
 app.include_router(omcs_analysis.router,      prefix="/internal/omcs",          tags=["omcs"])
-app.include_router(demand_forecast.router,    prefix="/internal/forecasting",   tags=["forecasting"])

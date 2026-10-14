@@ -59,7 +59,7 @@ const AD_CONNECT_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function PlatformsSettings() {
-  const { connections, isConnected, connect, disconnect } = useConnections();
+  const { connections, available, isConnected, connect, disconnect } = useConnections();
   const { showToast } = useToast();
 
   const [connectingPlatform, setConnectingPlatform] = useState<PlatformId | null>(null);
@@ -144,6 +144,12 @@ export default function PlatformsSettings() {
         Connection state here gates which platforms Content Studio can publish to.
       </p>
 
+      {!available && (
+        <p className="body-sm mb-5 rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-4" role="status">
+          Connecting social platforms isn't available yet, so nothing can be connected from here.
+        </p>
+      )}
+
       <div className="flex flex-col gap-3">
         {(Object.keys(PLATFORM_LABELS) as PlatformId[]).map((platform) => {
           const connected = isConnected(platform);
@@ -179,7 +185,7 @@ export default function PlatformsSettings() {
                   </button>
                 </div>
               ) : (
-                <button type="button" className="btn-primary" onClick={() => startConnect(platform)}>
+                <button type="button" className="btn-primary" disabled={!available} onClick={() => startConnect(platform)}>
                   Connect
                 </button>
               )}

@@ -8,7 +8,7 @@ badly as it used to collapse USD under the pre-canonical unit. These tests
 prove the log-scale replacement gives all three a sane, non-degenerate
 purchasing-power component.
 """
-from app.services.xgboost_scorer import _feature_vector, _forex_norm, score
+from app.services.xgboost_scorer import _feature_vector, _forex_norm, is_loaded, score
 
 BASE_FEATURES = {
     "predicted_demand": 60.0,
@@ -59,7 +59,8 @@ def test_market_score_is_finite_and_bounded_for_every_currency():
 
 def test_score_identifies_the_scorer_that_actually_ran():
     result = score({**BASE_FEATURES, "gdp_growth": 2.0, "forex_vs_php": USD_FOREX})
-    assert result["scorer"] in {"xgboost", "linear"}
+    # Not just "one of the two": the label must name the scorer that actually ran.
+    assert result["scorer"] == ("xgboost" if is_loaded() else "linear")
 
 
 def test_zero_or_negative_forex_is_never_inverted_into_a_fabricated_score():

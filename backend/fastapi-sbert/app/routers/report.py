@@ -22,7 +22,6 @@ New schema (Phase 5 / Module 4):
 from __future__ import annotations
 
 import io
-import json
 import logging
 
 from fastapi import APIRouter
@@ -30,8 +29,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app import errors
-from app.services import gemini_client
-from app.unavailable import DependencyUnavailable
+from app.services import gemini_client, report_llm
+from app.unavailable import MISSING_INPUT, DependencyUnavailable
 
 router = APIRouter()
 log = logging.getLogger("module4.report")
@@ -72,17 +71,8 @@ class ReportRequest(BaseModel):
     market:             str                 = Field(default="korea")
 
 
-# Platform recommendation per market (channel analysis, not fabricated output — spec D6)
-_PLATFORM_MAP = {
-    "korea":     "Naver Blog",
-    "kr":        "Naver Blog",
-    "japan":     "Facebook + Instagram",
-    "jp":        "Facebook + Instagram",
-    "usa":       "Instagram Reels",
-    "us":        "Instagram Reels",
-    "australia": "Instagram Reels",
-    "global":    "Instagram Reels",
-}
+# Fields the frontend's action plan renders; a report without them is no report.
+_REQUIRED_REPORT_FIELDS = ("executiveSummary", "funnelDiagnostics", "recommendations", "recommendedPlatform")
 
 
 # ─── /generate ────────────────────────────────────────────────────────────────
@@ -112,15 +102,20 @@ def generate(req: ReportRequest) -> dict:
         [t.stage for t in req.funnelTransitions],
     )
 
-    # Ensure we have exactly 3 transitions (pad with defaults if needed)
+    # The report ranks exactly three measured funnel transitions. A shorter list
+    # is a missing input: filling the gap with invented drop rates would hand the
+    # operator "diagnostics" of a campaign that never produced those numbers.
     transitions = req.funnelTransitions[:3]
     if len(transitions) < 3:
-        defaults = [
-            FunnelTransition(stage="Clicks → Conversions",  dropRate="88.1%"),
-            FunnelTransition(stage="Conversions → Bookings", dropRate="78.8%"),
-            FunnelTransition(stage="Impressions → Clicks",   dropRate="95.2%"),
-        ]
-        transitions = (transitions + defaults)[:3]
+        raise DependencyUnavailable(
+            code=errors.MOD4_REPORT_NO_FUNNEL,
+            message="The prescriptive report needs all three funnel transitions.",
+            dependency="campaign_records",
+            cause=f"received {len(transitions)} of 3 funnel transitions — "
+                  "ingest campaign data before requesting a report",
+            stage="fastapi-sbert/report.generate",
+            status_code=MISSING_INPUT,
+        )
 
     if not gemini_client._enabled():
         raise DependencyUnavailable(
@@ -131,13 +126,32 @@ def generate(req: ReportRequest) -> dict:
             stage="fastapi-sbert/report.generate",
         )
 
-    result = gemini_client.performance_report(
+    result = report_llm.performance_report(
         metrics=req.metrics.model_dump(),
         transitions=[{"stage": t.stage, "dropRate": t.dropRate} for t in transitions],
         weeks=req.weeks,
         market=req.market,
     )
-    log.info("report.generate ok source=gemini")
+
+    # _generate_json returns {} on any model error, and the model can also answer
+    # with JSON that lacks the report's structure. Either way there is no report:
+    # returning it with 200 rendered a blank action plan with no error to show.
+    missing = [key for key in _REQUIRED_REPORT_FIELDS if not (result or {}).get(key)]
+    if missing:
+        log.warning("report.generate unusable model output missing=%s", missing)
+        raise DependencyUnavailable(
+            code=errors.MOD4_REPORT_UNAVAILABLE,
+            message="The prescriptive report is unavailable.",
+            dependency="gemini",
+            cause=(
+                "the report model returned no output"
+                if not result else
+                f"the report model's answer was missing {', '.join(missing)}"
+            ),
+            stage="fastapi-sbert/report.generate",
+        )
+
+    log.info("report.generate ok source=groq")
     return result
 
 
