@@ -78,7 +78,7 @@ OMCS = (0.35 × CAS) + (0.45 × VAS) + (0.20 × HCS)
 
 | Score | Full Name | Weight | Source |
 |-------|-----------|--------|--------|
-| **CAS** | Content Alignment Score | 0.35 | `profileSemanticScore` — business-profile semantic alignment against caption |
+| **CAS** | Content Alignment Score | 0.35 | `profileSemanticScore` — E5 embedding similarity between the operator's saved business profile (services, UVP, description; read server-side) and the caption, rescaled to 0–100. Calibration and measured numbers: `app/services/profile_alignment.py`. Returns 503 `MOD33_PROFILE_MISSING` / `MOD33_PROFILE_ENCODER_UNAVAILABLE` if it cannot be computed. |
 | **VAS** | Visual Alignment Score | 0.45 | `recommendationsPictureScore` — image evaluated against 3.2 visual-guide recommendations (7-criterion rubric) |
 | **HCS** | Heuristic Consistency Score | 0.20 | `pubmatConsistencyScore` — caption ↔ image semantic consistency |
 

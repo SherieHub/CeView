@@ -8,7 +8,7 @@ AGENT WIRING (Phase 5 integration):
   Caption generation is now routed through the LangGraph caption_generation_agent
   (analyze_services → generate_platform_captions nodes in graph.py).
   Visual guides come from gemini_client.get_platform_guides()
-  so no second Gemini call is needed for supplementary assets.
+  so no second LLM call is needed for supplementary assets.
 
 FR3.3 — real-time cultural research via cultural_research.py (before the agent)
 FR3.4 — forecast context injected into agent's CaptionInputClass
@@ -23,32 +23,14 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app import errors as err_codes
+from app.config.markets import CONTENT_FRAMEWORK, MARKET_DISPLAY_NAMES, market_header
 from app.services import cultural_research, gemini_client
+from app.services.caption_formatting import transform_captions
 from app.services.caption_generation import caption_generation_service
 from app.model.CaptionInputClass import CaptionInputClass
 
 router = APIRouter()
 log = logging.getLogger("module3.content")
-
-# ── Demographic archetype option names (parallel to the 3 variations) ─────────
-_OPTION_NAMES = [
-    "Witty, Trend-Conscious & High-Energy",   # Archetype 1 — Gen Z / Younger
-    "Formal, Educational & Value-Driven",      # Archetype 2 — Mature Planners / Family
-    "Storytelling, Immersive & Emotional",     # Archetype 3 — Aspirational / Experiential
-]
-
-# ── Market header lookup ───────────────────────────────────────────────────────
-_MARKET_HEADERS: dict[str, dict] = {
-    "korea": {"country": "South Korea", "flag": "🇰🇷", "city": "Seoul"},
-    "japan": {"country": "Japan",       "flag": "🇯🇵", "city": "Osaka"},
-    "usa":   {"country": "USA",         "flag": "🇺🇸", "city": "Los Angeles"},
-}
-_MARKET_DISPLAY: dict[str, str] = {
-    "korea": "South Korea",
-    "japan": "Japan",
-    "usa":   "USA",
-}
-
 
 # ─── Pydantic schema ──────────────────────────────────────────────────────────
 
@@ -118,54 +100,6 @@ def _format_research_context(rc: dict) -> str:
     )
 
 
-def _transform_captions(
-    final_captions: dict,
-    guides: dict[str, list[str]],
-) -> dict:
-    """Transform the agent's final_captions (6-field schema) into the
-    ContentResponseDto captions shape expected by Spring Boot.
-
-    For instagram / tiktok / facebook: extract options, optionNames, optionMetadata
-    from the agent's 3-variation list.
-
-    Args:
-        final_captions: { "facebook": [...], "instagram": [...], "tiktok": [...] }
-        guides:         { "instagram": [...], "tiktok": [...], "facebook": [...] }
-
-    Returns:
-        { "instagram": {...}, "tiktok": {...}, "facebook": {...} }
-    """
-    captions: dict = {}
-
-    for platform in ("instagram", "tiktok", "facebook"):
-        variations: list[dict] = final_captions.get(platform, [])
-        options: list[str] = []
-        option_names: list[str] = []
-        option_metadata: list[dict] = []
-
-        for i, v in enumerate(variations):
-            if not isinstance(v, dict):
-                continue
-            options.append(v.get("caption", ""))
-            option_names.append(_OPTION_NAMES[i] if i < len(_OPTION_NAMES) else f"Option {i + 1}")
-            option_metadata.append({
-                "core_business_context":             v.get("core_business_context", ""),
-                "market_cultural_localization":      v.get("market_cultural_localization", ""),
-                "psychological_elements":            v.get("psychological_elements", ""),
-                "creative_tone_atmosphere":          v.get("creative_tone_atmosphere", ""),
-                "algorithmic_platform_architecture": v.get("algorithmic_platform_architecture", ""),
-            })
-
-        captions[platform] = {
-            "options":        options,
-            "optionNames":    option_names,
-            "optionMetadata": option_metadata,
-            "guide":          guides.get(platform, []),
-        }
-
-    return captions
-
-
 # ─── /generate ────────────────────────────────────────────────────────────────
 
 @router.post("/generate", response_model=ContentResponse)
@@ -205,7 +139,7 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
     spike = bool(forecast_context.get("spikeIndicator", False))
     forecast_str  = _format_forecast_context(forecast_context, uniqueness_score, spike)
     research_str  = _format_research_context(research)
-    target_market = _MARKET_DISPLAY.get(market, market.title())
+    target_market = MARKET_DISPLAY_NAMES.get(market, market.title())
     market_category = categories[0] if categories else (trend or "Coastal & Island")
 
     # FR3.5 — invoke the LangGraph caption generation agent
@@ -240,11 +174,11 @@ async def generate(req: ContentGenerateRequest) -> ContentResponse:
     guides = gemini_client.get_platform_guides(market)
 
     # Build the response
-    captions = _transform_captions(final_captions, guides)
+    captions = transform_captions(final_captions, guides)
 
     return ContentResponse(
-        market    = _MARKET_HEADERS.get(market, _MARKET_HEADERS["korea"]),
-        framework = "SOR — Stimulus-Organism-Response",
+        market    = market_header(market),
+        framework = CONTENT_FRAMEWORK,
         captions  = captions,
         source    = source,
     )

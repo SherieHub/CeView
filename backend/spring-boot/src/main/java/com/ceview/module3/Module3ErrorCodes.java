@@ -35,4 +35,6 @@ public final class Module3ErrorCodes {
     public static final String MOD3_COMPLIANCE_VALIDATION       = "MOD3_COMPLIANCE_VALIDATION";
     public static final String MOD3_COMPLIANCE_STORED           = "MOD3_COMPLIANCE_STORED";
     public static final String MOD33_OMCS_AGENT_FAILED          = "MOD33_OMCS_AGENT_FAILED";
+    public static final String MOD33_PROFILE_MISSING            = "MOD33_PROFILE_MISSING";
+    public static final String MOD33_PROFILE_ENCODER_UNAVAILABLE = "MOD33_PROFILE_ENCODER_UNAVAILABLE";
 }

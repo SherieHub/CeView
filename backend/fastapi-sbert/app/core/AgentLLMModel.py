@@ -4,6 +4,8 @@ import threading
 
 from dotenv import load_dotenv
 
+from app.config.llm import DEFAULT_GROQ_MODEL
+
 # This forces Python to find and load the .env file
 load_dotenv()
 
@@ -49,7 +51,7 @@ class AgentLLMModel:
         # which surfaces as MOD31_CAPTION_AGENT_FAILED rather than an
         # auth error. Set GROQ_MODEL in backend/.env to a model your key
         # can access.
-        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+        groq_model = os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL)
 
         try:
             from langchain_groq import ChatGroq  # type: ignore[import]

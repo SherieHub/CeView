@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.services import xgboost_scorer
+from app.services.forecast_contract import MASK_FEATURES
 from app.services.forecast_engine import ACTIVE_ENGINE, WINDOW_LENGTH
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,25 @@ class WeeklyFeatureRow(BaseModel):
         return self
 
 
+# Top-level request fields renamed to the camelCase keys every engine reads.
+_ENGINE_PAYLOAD_KEYS: dict[str, str] = {
+    "profile_id": "profileId",
+    "data_as_of": "dataAsOf",
+    "data_stale": "dataStale",
+    "imputed_mask": "imputedMask",
+    "trend_series": "trendSeries",
+    "rolling_7d_avg": "rolling7dAvg",
+    "rolling_30d_avg": "rolling30dAvg",
+    "rolling_std_7d": "rollingStd7d",
+    "spike_indicator": "spikeIndicator",
+    "yoy_ratio": "yoyRatio",
+    "seasonality_score": "seasonalityScore",
+    "forex_rate": "forexRate",
+    "gdp_growth": "gdpGrowth",
+    "trend_history": "trendHistory",
+}
+
+
 class SequenceForecastRequest(BaseModel):
     """Module 2 fixed 12-week forecasting request (C-02/T-09/T-10)."""
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -136,7 +156,7 @@ class SequenceForecastRequest(BaseModel):
         starts = [row.week_start_date for row in self.sequence]
         if any(right <= left for left, right in zip(starts, starts[1:])):
             raise ValueError("sequence must be strictly increasing by ISO week")
-        required = {"trendIndex", "forexRate", "gdpGrowth", "seasonalityScore", "spikeIndicator", "holidayFlag"}
+        required = MASK_FEATURES
         for index, mask in enumerate(self.imputed_mask):
             if set(mask) != required:
                 raise ValueError(f"imputedMask[{index}] must contain exactly {sorted(required)}")
@@ -144,20 +164,8 @@ class SequenceForecastRequest(BaseModel):
 
     def engine_payload(self) -> dict:
         payload = self.model_dump()
-        payload["profileId"] = payload.pop("profile_id")
-        payload["dataAsOf"] = payload.pop("data_as_of")
-        payload["dataStale"] = payload.pop("data_stale")
-        payload["imputedMask"] = payload.pop("imputed_mask")
-        payload["trendSeries"] = payload.pop("trend_series")
-        payload["rolling7dAvg"] = payload.pop("rolling_7d_avg")
-        payload["rolling30dAvg"] = payload.pop("rolling_30d_avg")
-        payload["rollingStd7d"] = payload.pop("rolling_std_7d")
-        payload["spikeIndicator"] = payload.pop("spike_indicator")
-        payload["yoyRatio"] = payload.pop("yoy_ratio")
-        payload["seasonalityScore"] = payload.pop("seasonality_score")
-        payload["forexRate"] = payload.pop("forex_rate")
-        payload["gdpGrowth"] = payload.pop("gdp_growth")
-        payload["trendHistory"] = payload.pop("trend_history")
+        for snake, camel in _ENGINE_PAYLOAD_KEYS.items():
+            payload[camel] = payload.pop(snake)
         payload["sequence"] = [{
             "isoYear": row["iso_year"], "isoWeek": row["iso_week"], "weekStartDate": row["week_start_date"].isoformat(),
             "trendIndex": row["trend_index"], "forexRate": row["forex_rate"], "gdpGrowth": row["gdp_growth"],
@@ -231,6 +239,29 @@ def _engine_payload(body: ForecastRequest) -> dict:
 
 # ─── Submodule 2.2: batch inference (one call for all markets) ───────────────
 
+def _classify_engine_error(error_msg: str) -> tuple[str, str]:
+    """Map an engine RuntimeError message to (error code, operator-facing reason)."""
+    lowered = error_msg.lower()
+    if "429" in error_msg or "quota" in lowered or "rate_limit" in lowered:
+        return "MOD22_AI_QUOTA_EXCEEDED", (
+            "AI model daily token limit reached. "
+            "Wait until the quota resets (rolling 24-hour window) or upgrade the API plan."
+        )
+    if "api key" in lowered or "api_key" in lowered:
+        return "MOD22_AI_AUTH_FAILED", (
+            "AI model API key is invalid or missing. "
+            "Check that the API key environment variable is set correctly."
+        )
+    if "timeout" in lowered or "deadline" in lowered:
+        return "MOD22_AI_TIMEOUT", (
+            "AI model request timed out after 3 attempts. "
+            "The service may be experiencing high load — retry in a few minutes."
+        )
+    if "missing forecast for market" in error_msg:
+        return "MOD22_AI_INCOMPLETE_RESPONSE", f"AI model returned an incomplete batch response: {error_msg}"
+    return "MOD22_AI_UNAVAILABLE", f"AI model failed after 3 attempts: {error_msg}"
+
+
 @router.post("/inference-batch", response_model=GeminiBatchForecastResponse)
 def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecastResponse:
     """One engine call for all markets; this is the only forecasting entry point."""
@@ -251,31 +282,7 @@ def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecast
             },
         )
     except RuntimeError as exc:
-        error_msg = str(exc)
-        if "429" in error_msg or "quota" in error_msg.lower() or "rate_limit" in error_msg.lower():
-            code = "MOD22_AI_QUOTA_EXCEEDED"
-            human_reason = (
-                "AI model daily token limit reached. "
-                "Wait until the quota resets (rolling 24-hour window) or upgrade the API plan."
-            )
-        elif "api key" in error_msg.lower() or "api_key" in error_msg.lower():
-            code = "MOD22_AI_AUTH_FAILED"
-            human_reason = (
-                "AI model API key is invalid or missing. "
-                "Check that the API key environment variable is set correctly."
-            )
-        elif "timeout" in error_msg.lower() or "deadline" in error_msg.lower():
-            code = "MOD22_AI_TIMEOUT"
-            human_reason = (
-                "AI model request timed out after 3 attempts. "
-                "The service may be experiencing high load — retry in a few minutes."
-            )
-        elif "missing forecast for market" in error_msg:
-            code = "MOD22_AI_INCOMPLETE_RESPONSE"
-            human_reason = f"AI model returned an incomplete batch response: {error_msg}"
-        else:
-            code = "MOD22_AI_UNAVAILABLE"
-            human_reason = f"AI model failed after 3 attempts: {error_msg}"
+        code, human_reason = _classify_engine_error(str(exc))
         logger.error("[%s] AI batch forecast failed: %s", code, exc)
         raise HTTPException(
             status_code=503,

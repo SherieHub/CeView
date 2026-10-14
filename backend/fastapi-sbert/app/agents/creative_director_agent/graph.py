@@ -12,7 +12,7 @@ workflow.add_node("generate_platform_captions", generate_platform_captions)
 
 # Linear flow: analyse → generate → end
 workflow.set_entry_point("analyze_services")
-workflow.add_edge("analyze_services",          "generate_platform_captions")  # was commented-out — fixed
+workflow.add_edge("analyze_services",          "generate_platform_captions")
 workflow.add_edge("generate_platform_captions", END)
 
 # Compile the agent

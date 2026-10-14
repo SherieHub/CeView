@@ -3,8 +3,9 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from app.model.CaptionInputClass import CaptionInputClass
+from app.config.markets import CONTENT_FRAMEWORK, market_header
+from app.services.caption_formatting import transform_captions
 from app.services.caption_generation import caption_generation_service
-from app.routers.content import _transform_captions, _MARKET_HEADERS
 from app.services.gemini_client import get_platform_guides
 
 router = APIRouter()
@@ -26,11 +27,11 @@ async def caption_generation(request: CaptionInputClass):
 
         market_key = _MARKET_KEY_MAP.get(request.target_market.strip().lower(), "korea")
         guides = get_platform_guides(market_key)
-        captions = _transform_captions(final_captions, guides)
+        captions = transform_captions(final_captions, guides)
 
         return {
-            "market":    _MARKET_HEADERS.get(market_key, _MARKET_HEADERS["korea"]),
-            "framework": "SOR — Stimulus-Organism-Response",
+            "market":    market_header(market_key),
+            "framework": CONTENT_FRAMEWORK,
             "captions":  captions,
             "source":    source,
         }

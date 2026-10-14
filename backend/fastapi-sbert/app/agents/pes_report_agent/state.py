@@ -1,6 +1,6 @@
 """PES Report Agent — shared state TypedDict and Pydantic output schemas.
 
-All LLM initialisation has been moved to nodes.py (uses AgentLLMModel / Gemini).
+All LLM initialisation has been moved to nodes.py (uses AgentLLMModel / Groq).
 This file is import-safe: no network calls, no API-key checks at module load time.
 """
 from __future__ import annotations

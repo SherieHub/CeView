@@ -55,7 +55,7 @@ group Primary Path (FastAPI available)
            0.60 Good  | >=0.80 Excellent
   end note
 
-  FPS -> Groq: gemini_client.pes_compute_insights(breakdown)
+  FPS -> Groq: report_llm.pes_compute_insights(breakdown)
   Groq --> FPS: weakestStage + recommendations (source="groq")
 
   FPS --> AIS: PesAnalysisResult

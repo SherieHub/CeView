@@ -1,0 +1,55 @@
+"""Shapes the caption agent's output into the ContentResponseDto ``captions`` field.
+
+Shared by ``routers/content.py`` and ``routers/caption_generation.py``.
+"""
+from __future__ import annotations
+
+from app.config.markets import DEMOGRAPHIC_OPTION_NAMES
+
+
+def transform_captions(
+    final_captions: dict,
+    guides: dict[str, list[str]],
+) -> dict:
+    """Transform the agent's final_captions (6-field schema) into the
+    ContentResponseDto captions shape expected by Spring Boot.
+
+    For instagram / tiktok / facebook: extract options, optionNames, optionMetadata
+    from the agent's 3-variation list.
+
+    Args:
+        final_captions: { "facebook": [...], "instagram": [...], "tiktok": [...] }
+        guides:         { "instagram": [...], "tiktok": [...], "facebook": [...] }
+
+    Returns:
+        { "instagram": {...}, "tiktok": {...}, "facebook": {...} }
+    """
+    captions: dict = {}
+
+    for platform in ("instagram", "tiktok", "facebook"):
+        variations: list[dict] = final_captions.get(platform, [])
+        options: list[str] = []
+        option_names: list[str] = []
+        option_metadata: list[dict] = []
+
+        for i, v in enumerate(variations):
+            if not isinstance(v, dict):
+                continue
+            options.append(v.get("caption", ""))
+            option_names.append(DEMOGRAPHIC_OPTION_NAMES[i] if i < len(DEMOGRAPHIC_OPTION_NAMES) else f"Option {i + 1}")
+            option_metadata.append({
+                "core_business_context":             v.get("core_business_context", ""),
+                "market_cultural_localization":      v.get("market_cultural_localization", ""),
+                "psychological_elements":            v.get("psychological_elements", ""),
+                "creative_tone_atmosphere":          v.get("creative_tone_atmosphere", ""),
+                "algorithmic_platform_architecture": v.get("algorithmic_platform_architecture", ""),
+            })
+
+        captions[platform] = {
+            "options":        options,
+            "optionNames":    option_names,
+            "optionMetadata": option_metadata,
+            "guide":          guides.get(platform, []),
+        }
+
+    return captions

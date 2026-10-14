@@ -27,7 +27,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: backend/fastapi-sbert/requirements*.txt
 
-      # tensorflow-cpu + sentence-transformers make this the slowest install in
+      # sentence-transformers (and its torch dependency) make this the slowest install in
       # the pipeline (several minutes) — acceptable since Actions minutes are
       # free on this public repo. The integration test mocks model loading
       # (see tests/integration/test_healthz.py) so it doesn't also download

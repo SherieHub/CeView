@@ -22,7 +22,6 @@ New schema (Phase 5 / Module 4):
 from __future__ import annotations
 
 import io
-import json
 import logging
 
 from fastapi import APIRouter
@@ -30,7 +29,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app import errors
-from app.services import gemini_client
+from app.config.markets import DEFAULT_FUNNEL_TRANSITIONS
+from app.services import gemini_client, report_llm
 from app.unavailable import DependencyUnavailable
 
 router = APIRouter()
@@ -72,19 +72,6 @@ class ReportRequest(BaseModel):
     market:             str                 = Field(default="korea")
 
 
-# Platform recommendation per market (channel analysis, not fabricated output — spec D6)
-_PLATFORM_MAP = {
-    "korea":     "Naver Blog",
-    "kr":        "Naver Blog",
-    "japan":     "Facebook + Instagram",
-    "jp":        "Facebook + Instagram",
-    "usa":       "Instagram Reels",
-    "us":        "Instagram Reels",
-    "australia": "Instagram Reels",
-    "global":    "Instagram Reels",
-}
-
-
 # ─── /generate ────────────────────────────────────────────────────────────────
 
 @router.post("/generate")
@@ -115,11 +102,7 @@ def generate(req: ReportRequest) -> dict:
     # Ensure we have exactly 3 transitions (pad with defaults if needed)
     transitions = req.funnelTransitions[:3]
     if len(transitions) < 3:
-        defaults = [
-            FunnelTransition(stage="Clicks → Conversions",  dropRate="88.1%"),
-            FunnelTransition(stage="Conversions → Bookings", dropRate="78.8%"),
-            FunnelTransition(stage="Impressions → Clicks",   dropRate="95.2%"),
-        ]
+        defaults = [FunnelTransition(**t) for t in DEFAULT_FUNNEL_TRANSITIONS]
         transitions = (transitions + defaults)[:3]
 
     if not gemini_client._enabled():
@@ -131,7 +114,7 @@ def generate(req: ReportRequest) -> dict:
             stage="fastapi-sbert/report.generate",
         )
 
-    result = gemini_client.performance_report(
+    result = report_llm.performance_report(
         metrics=req.metrics.model_dump(),
         transitions=[{"stage": t.stage, "dropRate": t.dropRate} for t in transitions],
         weeks=req.weeks,

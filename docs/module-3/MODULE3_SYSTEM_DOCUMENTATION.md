@@ -92,7 +92,7 @@ approved per-platform independently, matching [content-studio.md](screens/conten
 4. **Audit execution**: The operator clicks "Run Audit". `runOmcsAudit()` in `ContentStudioView` fires → `api.analyzeOmcs({ caption, imageUrl: imageDataUrl, businessProfile, recommendations })` → `POST /api/compliance/omcs-analyze`. A 6-step `auditProgress` animation plays while the request is in-flight.
 5. **Score display**: On response, `SmartOptimizationBoard` renders:
    - `ComplianceGauge` — SVG circular gauge coloured green (score ≥80), gold (≥60), or red (<60).
-   - Three component scores: Profile Semantic Score (weight 0.35), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
+   - Three component scores: Profile Semantic Score (weight 0.35; embedding similarity of the operator's saved profile vs the caption — the server loads the profile, any `businessProfile` in the request is ignored), Recommendations×Picture Score (weight 0.45), Pubmat Consistency Score (weight 0.20).
    - Rubric breakdown table — 7 evaluation criteria with individual scores.
    - Pass/Fail badge and a diagnostic `feedback` string when the audit fails.
 6. **No persistence**: The audit result is held in `omcs` state only. No rows are written to the database (compliance tables were dropped in V16 — the audit is fully stateless).

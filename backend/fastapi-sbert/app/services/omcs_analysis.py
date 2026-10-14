@@ -23,6 +23,7 @@ import logging
 from app import errors
 from app.agents.omcs_agent.graph import app as omcs_graph
 from app.model.ComplianceScoreInputClass import ComplianceInputClass
+from app.unavailable import DependencyUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +35,18 @@ async def omcs_calculation(input: ComplianceInputClass) -> dict:
     profile_semantic_score, rubric_evaluation_data, recommendations_picture_score,
     consistency_explanation, pubmat_consistency_score, omcs_score, status, feedback.
 
-    Raises RuntimeError(MOD33_OMCS_AGENT_FAILED) when the graph cannot complete
+    Raises DependencyUnavailable unchanged when a node reports one, and
+    RuntimeError(MOD33_OMCS_AGENT_FAILED) when the graph otherwise cannot complete
     (e.g. the multimodal LLM is unavailable) so the caller can surface a clean
     error code rather than a raw stack trace.
     """
     try:
         result = await omcs_graph.ainvoke(input.model_dump())
+    except DependencyUnavailable:
+        # A node reported a specific, already-coded 503 (e.g. no profile to
+        # compare against). Let it reach the registered handler intact rather
+        # than flattening it into MOD33_OMCS_AGENT_FAILED.
+        raise
     except Exception as exc:
         logger.error(
             "[%s] omcs_agent.ainvoke failed: %s",

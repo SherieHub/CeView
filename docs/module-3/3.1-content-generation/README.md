@@ -56,7 +56,7 @@ Generates a **3-platform × 3-archetype** matrix of market-localized social medi
 
 | Component Name | Description & Purpose | Type / Format |
 |----------------|-----------------------|---------------|
-| Caption Router | **`POST /internal/generation/caption`** — the live path called by Spring Boot. Accepts `CaptionInputClass`, runs `caption_generation_service`, then `_transform_captions()` + `get_platform_guides()`. (`app/routers/caption_generation.py`) | FastAPI Router |
+| Caption Router | **`POST /internal/generation/caption`** — the live path called by Spring Boot. Accepts `CaptionInputClass`, runs `caption_generation_service`, then `transform_captions()` (`app/services/caption_formatting.py`) + `get_platform_guides()`. (`app/routers/caption_generation.py`) | FastAPI Router |
 | Content Router (alternate) | `POST /internal/content/generate` — equivalent endpoint accepting `ContentGenerateRequest`; performs cultural research + forecast formatting itself. Not used by the current Spring path. (`app/routers/content.py`) | FastAPI Router |
 | `caption_generation_service` | Invokes the LangGraph agent; raises `MOD31_CAPTION_AGENT_FAILED` on failure (no silent fallback at this layer). | Python Service |
 | Caption Generation Agent | LangGraph `StateGraph(SocialAgentState)`: **Node 1** `analyze_services` → **Node 2** `generate_platform_captions` (3 archetypes × 3 platforms, 6-field schema) → `END`. (`app/agents/creative_director_agent/`) | LangGraph Agent |

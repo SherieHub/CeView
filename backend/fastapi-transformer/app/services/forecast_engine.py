@@ -4,9 +4,7 @@ from __future__ import annotations
 import os
 from typing import Any, Protocol
 
-from app.unavailable import DependencyUnavailable
-
-WINDOW_LENGTH = 12
+from app.services.forecast_contract import WINDOW_LENGTH  # noqa: F401 — re-exported for the router
 ALLOWED_ENGINES = frozenset({"stub", "groq", "bilstm"})
 
 
@@ -83,7 +81,7 @@ def model_health() -> dict[str, str]:
     return {
         "stub": "ok",
         "groq": "loaded" if gemini_forecaster.is_loaded() else "missing",
-        "xgboost": "loaded" if xgboost_scorer._model is not None else "missing",
+        "xgboost": "loaded" if xgboost_scorer.is_loaded() else "missing",
         # "configured" (not "loaded"): the checkpoint lives in a hosted Space, so
         # reachability is only knowable by calling it — which costs GPU quota and
         # must not happen on a health probe.

@@ -136,7 +136,7 @@ The central pipeline of Module 4. All computation, persistence, and AI enrichmen
 1. `PrescriptiveReportController.report()` loads default metrics via `metricsSvc.defaultMetrics(weeks)` (scaled demo defaults).
 2. `metricsSvc.computeFunnelTransitions(mr.funnel())` — derives three absolute drop rates and **ranks them by business impact** (see Engine section).
 3. Enriches payload: adds `funnelTransitions` and `weeks` to the request body.
-4. `ai.generateReport(payload)` → `POST /internal/report/generate` to fastapi-sbert → `gemini_client.performance_report()` which calls Groq.
+4. `ai.generateReport(payload)` → `POST /internal/report/generate` to fastapi-sbert → `report_llm.performance_report()` which calls Groq.
 5. **FR4.26 Fallback**: `buildRuleBasedReport(mr, transitions)` — identifies the lowest PES contribution metric as the primary bottleneck; returns three hardcoded contextual diagnostics and recommendations.
 6. Returns the prescriptive report map `{ executiveSummary, funnelDiagnostics[], recommendations[], recommendedPlatform }`.
 
@@ -859,8 +859,8 @@ Update 2:  pes_score, pes_label, updated_at               ← after FastAPI pes-
 | **Spring Boot pipeline** | `MetricsCalculationService` → `CampaignRecord.from()` → `enrichWithKpis()` → `campaignRepo.save()` → `ai.computePesFromRaw()` → `enrichWithPes()` → `campaignRepo.save()` | Two-write lifecycle: raw data persisted before AI call (prevents data loss on timeout); PES enriched after FastAPI response |
 | **FR4.26 fallback** | Spring Boot `PESComputationService` + `buildRuleBasedReport()` | Identical formula to FastAPI; campaign record always saved with a valid PES score; prescriptive report always returns contextual diagnostics |
 | **PES computation** | FastAPI `pes_compute_service.py` — pure Python, no ML model | Deterministic weighted-sum formula; Min-Max normalization with Cebu MSME-calibrated bounds; proportional weight recalibration for missing metrics |
-| **AI insights (PES compute)** | Groq API (`llama-3.3-70b-versatile`) via `gemini_client.pes_compute_insights()` | Single LLM call to identify weakest funnel stage and generate 3 ranked recommendations from the PES breakdown |
-| **AI prescriptive report** | Groq API via `gemini_client.performance_report()` with business-impact-ranked funnel transitions | Pre-ranked transitions injected into Groq prompt (`Rank 1 = Weakest, do NOT re-order`); `recommendedPlatform` derived from market key before LLM call |
+| **AI insights (PES compute)** | Groq API (`llama-3.3-70b-versatile`) via `report_llm.pes_compute_insights()` | Single LLM call to identify weakest funnel stage and generate 3 ranked recommendations from the PES breakdown |
+| **AI prescriptive report** | Groq API via `report_llm.performance_report()` with business-impact-ranked funnel transitions | Pre-ranked transitions injected into Groq prompt (`Rank 1 = Weakest, do NOT re-order`); `recommendedPlatform` derived from market key before LLM call |
 | **PES deep-analysis agent** | LangGraph `pes_report_agent` — 3-node quality-gated workflow | `generate_report → evaluate_report → [conditional] → finalize_response`; retries up to 3× when evaluator score < 85; evaluator feedback injected into generator prompt on retry |
 | **Agent LLM** | `AgentLLMModel` singleton (`ChatGroq`, `llama-3.3-70b-versatile`) | Shared singleton with Module 3 caption agent; `with_structured_output(ReportOutput)` and `with_structured_output(EvaluationResult)` enforce Pydantic schemas on Groq JSON responses |
 | **Synthetic time series** | `MetricsCalculationService.buildTimeSeries()` — linear interpolation | Generates reverse-chronological `weeks`-length series from aggregate period metrics; positive metrics baseline at 75% of current; cost metrics baseline at 130% of current |

@@ -54,8 +54,6 @@ from langchain_core.prompts import (
 
 # ── Node 1: Relevant-service filter ──────────────────────────────────────────
 
-from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
-
 service_analysis_prompt = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(
         """You are an analytical brand strategist for a Cebu, Philippines tourism business.

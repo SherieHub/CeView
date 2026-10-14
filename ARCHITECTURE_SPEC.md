@@ -206,7 +206,7 @@ forex, or GDP onto forecast points. The UI labels the observed history count.
 A **stateless** LangGraph DAG using a Groq **vision** model (`qwen/qwen3.8-27b`, overridable via `OMCS_VISION_MODEL`; it replaced `meta-llama/llama-4-scout-17b-16e-instruct`, which Groq retired). Statelessness: each invocation is self-contained, no session store; nodes return only their computed contributions; routing is deterministic.
 
 ```
-node_profile_diff      → profile_semantic_score (stub 85.5)
+node_profile_diff      → profile_semantic_score (0–100: E5 cosine similarity of saved profile vs caption, calibrated)
 node_evaluate_rubric   → 7-dimension vision rubric → recommendations_picture_score (rubric "total")
 node_check_consistency → caption↔image consistency_score (0–100)
 node_calculate_omcs    → OMCS, status = Pass if OMCS >= 70 else Fail
@@ -380,7 +380,7 @@ status = Pass if OMCS >= 70 else Fail
 ### 5.5 Stateless LangGraph compliance audit
 
 - **Why:** A stateless DAG (no session store, nodes return only their own contributions, deterministic routing) is trivially reproducible and horizontally scalable — any worker can serve any audit, and identical inputs yield identical control flow. Routing terminates immediately on Pass and only spends a feedback-LLM call on Fail.
-- **Trade-off:** Statelessness means inputs are re-echoed/recomputed each call rather than cached across a session — a modest compute cost accepted for reproducibility and scaling simplicity. The current `profile_semantic_score` is a node stub (85.5), an explicit MVP placeholder pending the full semantic comparator.
+- **Trade-off:** Statelessness means inputs are re-echoed/recomputed each call rather than cached across a session — a modest compute cost accepted for reproducibility and scaling simplicity. `profile_semantic_score` is an E5 embedding similarity between the operator's saved profile (read server-side from the database, never from the request body) and the caption, rescaled over a measured range (`app/services/profile_alignment.py`). The signal is real but coarse: on same-domain text E5 similarities sit in a narrow band, so it separates on-brand from off-brand copy rather than two similar businesses. With no profile text or no encoder the audit returns 503 (`MOD33_PROFILE_MISSING` / `MOD33_PROFILE_ENCODER_UNAVAILABLE`) instead of a made-up score.
 
 ### 5.6 Deterministic Spring fallbacks for every AI call
 

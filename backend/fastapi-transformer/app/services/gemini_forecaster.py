@@ -1,8 +1,12 @@
-"""Groq-powered demand forecasting for CeView Module 2.2.
+"""Groq-powered demand forecasting for CeView Module 2.2 (FORECAST_ENGINE=groq).
 
-Replaces the BiLSTM + Transformer model entirely per Phase 2 architectural
-directive.  Constructs a structured analytical prompt combining:
-  - Chronological weekly trend-index series (0–100, PyTrends normalized)
+Despite the module name, this calls **Groq**, not Google Gemini; the name is
+historical. It is one of three engines registered in ``forecast_engine.py``
+(stub | groq | bilstm), so it no longer replaces the BiLSTM model — the
+deployment picks one with FORECAST_ENGINE.
+
+Constructs a structured analytical prompt combining:
+  - Chronological weekly trend-index series (0–100, Google Trends via SerpApi)
   - Rolling statistics (7-period avg, 30-period avg, 7-period std)
   - Spike detection flag (2σ breakout)
   - Year-over-Year ratio (52-week lookback)
@@ -14,7 +18,7 @@ Groq returns 4 individual weekly forecasts (Wk+1 to Wk+4) plus a
 a flat repeated value.
 
 Environment variables:
-    GROQ_API_KEY  — Groq API key (required)
+    GROQ_API_KEY  — Groq API key (required when this engine is active)
     GROQ_MODEL    — model name (default: "openai/gpt-oss-120b")
 """
 from __future__ import annotations
@@ -25,6 +29,7 @@ import os
 import re
 import time
 
+from app.services.forecast_contract import batch_key
 from app.services.forecast_validator import validate
 
 logger = logging.getLogger(__name__)
@@ -147,7 +152,7 @@ def forecast_batch_requests(requests: list[dict]) -> dict[str, dict]:
     the clean `request["market"]` value untouched — only the outer dict's key changes.
     """
     return {
-        f"{request['market']}::{request.get('category') or ''}": forecast_request(request)
+        batch_key(request): forecast_request(request)
         for request in requests
     }
 
@@ -351,168 +356,3 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
         "rmse":       round(mape * 0.85, 2),
         "confidence": round(max(0.70, 1.0 - mape / 100.0), 3),
     }
-
-
-# ─── Batch forecasting (1 Groq call for all markets) ─────────────────────────
-
-def forecast_batch(markets_data: list[dict]) -> dict[str, dict]:
-    """Single Groq call producing forecasts for all markets simultaneously.
-
-    Reduces per-analyze RPM consumption from N calls (one per market) to 1 call,
-    avoiding rate-limit 503s when the free-tier quota is tight.
-
-    Args:
-        markets_data: list of dicts, each with the same keys as forecast() kwargs
-                      plus a "market" key (lowercase, e.g. "korea").
-                      Expected: [{"market": "korea", "trend_series": [...], ...}, ...]
-
-    Returns:
-        Dict keyed by market name (lowercase).  Each value has the same shape as
-        the dict returned by forecast(): predicted_demand_4w, predicted_demand_12w,
-        weekly_forecasts, mape, mae, rmse, confidence, passed,
-        low_confidence_disclaimer, message, source.
-
-    Raises:
-        ValueError: if markets_data is empty or any entry has an empty trend_series.
-        RuntimeError: if the Groq API fails after 3 retries.
-    """
-    if not markets_data:
-        raise ValueError("markets_data must not be empty")
-    for m in markets_data:
-        if not m.get("trend_series"):
-            raise ValueError(
-                f"trend_series is required for market '{m.get('market', '?')}' — "
-                "run ingestion to populate signal records before forecasting."
-            )
-
-    prompt = _build_batch_prompt(markets_data)
-    raw    = _gemini_call(prompt, max_output_tokens=800,
-                          context=f"batch({','.join(m['market'] for m in markets_data)})")
-    results = _parse_batch_response(raw, markets_data)
-
-    # Attach source + validation to each market result (mirrors what forecast() does)
-    from app.services.forecast_validator import validate  # local import to avoid circularity
-    for market_result in results.values():
-        market_result["source"] = "groq"
-        validation = validate(market_result["mape"], market_result["mae"], market_result["rmse"])
-        market_result.update(validation)
-
-    return results
-
-
-def _build_batch_prompt(markets_data: list[dict]) -> str:
-    """Constructs a single prompt containing all markets' data, rules, and output schema."""
-    market_keys = [m["market"].lower() for m in markets_data]
-
-    parts: list[str] = [
-        "You are a precision tourism demand forecasting engine for CeView, a business intelligence "
-        "platform for Cebu, Philippines tourism operators.\n\n"
-        f"TASK: Forecast Google Trends search interest demand for {len(markets_data)} source markets "
-        f"({', '.join(k.upper() for k in market_keys)}) searching for Cebu travel. "
-        "For EACH market, produce 12 DISTINCT weekly predictions (Wk+1 through Wk+12) "
-        "that show a realistic multi-week trajectory.\n\n"
-    ]
-
-    for i, m in enumerate(markets_data, 1):
-        market        = m["market"].upper()
-        trend_series  = m["trend_series"]
-        display       = trend_series[-12:] if len(trend_series) > 12 else trend_series
-        series_str    = ", ".join(f"{v:.1f}" for v in display)
-        current       = trend_series[-1] if trend_series else 50.0
-        rolling_7d    = m["rolling_7d"]
-        rolling_30d   = m["rolling_30d"]
-        rolling_std   = m["rolling_std_7d"]
-        spike         = m["spike_indicator"]
-        yoy_ratio     = m["yoy_ratio"]
-        seasonality   = m["seasonality_score"]
-        forex_rate    = m["forex_rate"]
-        gdp_growth    = m["gdp_growth"]
-        gdp_dir       = m.get("gdp_trend_direction")
-        gdp_delta     = m.get("gdp_trend_delta")
-
-        yoy_str     = f"{yoy_ratio:.3f}" if yoy_ratio is not None else "N/A (< 59 weeks of history)"
-        momentum    = "accelerating" if rolling_7d > rolling_30d else "decelerating"
-        spike_str   = "YES — current trend exceeds μ + 2σ" if spike else "NO"
-
-        if gdp_dir is not None and gdp_delta is not None:
-            sign = "+" if gdp_delta >= 0 else ""
-            gdp_trend_str = (
-                f"  GDP multi-year trend (5yr)  : {gdp_dir.upper()} "
-                f"({sign}{gdp_delta:.2f}pp change from oldest to latest)\n"
-            )
-        else:
-            gdp_trend_str = ""
-
-        parts.append(
-            f"=== MARKET {i}: {market} ===\n"
-            "SIGNAL DATA (weekly normalised trend index 0–100, chronological, last 12 weeks):\n"
-            f"[{series_str}]\n"
-            f"Most recent observation: {current:.1f}\n\n"
-            "COMPUTED SIGNAL STATISTICS:\n"
-            f"  7-period rolling average  : {rolling_7d:.2f}\n"
-            f"  30-period rolling average : {rolling_30d:.2f}\n"
-            f"  7-period rolling std dev  : {rolling_std:.2f}\n"
-            f"  Trend momentum            : {momentum} (7d avg vs 30d avg)\n"
-            f"  Demand spike (2σ test)    : {spike_str}\n"
-            f"  Year-over-Year ratio      : {yoy_str}\n"
-            f"  Seasonality score         : {seasonality:.3f} (0=flat, 1=highly seasonal)\n\n"
-            "ECONOMIC CONTEXT:\n"
-            f"  Forex rate (PHP per 1 foreign unit) : {forex_rate:.4f}\n"
-            f"  GDP growth (annual %, latest)       : {gdp_growth:.2f}\n"
-            f"{gdp_trend_str}\n"
-        )
-
-    # Output format example — one line per market
-    output_lines = "{\n"
-    for k in market_keys:
-        output_lines += (
-            f'  "{k}": {{"week_1": <float>, "week_2": <float>, "week_3": <float>, '
-            '"week_4": <float>, "week_5": <float>, "week_6": <float>, '
-            '"week_7": <float>, "week_8": <float>, "week_9": <float>, '
-            '"week_10": <float>, "week_11": <float>, "week_12": <float>},\n'
-        )
-    output_lines = output_lines.rstrip(",\n") + "\n}"
-
-    parts.append(
-        "FORECASTING RULES (apply to each market INDEPENDENTLY, in order):\n"
-        "  1. ALL 12 values per market MUST be distinct — no two consecutive weeks identical.\n"
-        "  2. Continue each market's momentum direction, dampening progressively toward its 7d rolling average.\n"
-        "  3. HARD ceiling: if a market's current observation > 65, no week for that market may exceed 92. "
-        "Google Trends indices always mean-revert within weeks after a surge.\n"
-        "  4. Apply mean-reversion pressure continuously: weeks 5–12 should trend toward the "
-        "7-period rolling average unless YoY or seasonality justifies sustained elevation.\n"
-        "  5. If a market's YoY > 1.2, apply proportional seasonal uplift across its full 12-week window.\n"
-        "  6. If a market's spike=YES, begin reverting toward the 7-period mean from week 2 onward.\n"
-        "  7. GDP growth > 3% and high seasonality are mild positive modifiers (~+3%).\n"
-        "  8. If a market's GDP multi-year trend is DECLINING, apply a -2% dampener across weeks 5–12.\n\n"
-        f"OUTPUT FORMAT: Respond with ONLY valid JSON — exactly {len(markets_data)} top-level keys "
-        f"({', '.join(f'\"{k}\"' for k in market_keys)}). "
-        "Each key maps to an object with exactly 12 float values (week_1 through week_12). "
-        "No markdown, no explanation.\n"
-        f"{output_lines}"
-    )
-
-    return "".join(parts)
-
-
-def _parse_batch_response(raw: str, markets_data: list[dict]) -> dict[str, dict]:
-    """Parse Groq's multi-market JSON into per-market forecast dicts."""
-    cleaned = re.sub(r"```(?:json)?|```", "", raw).strip()
-    data = json.loads(cleaned)
-
-    results: dict[str, dict] = {}
-    for m in markets_data:
-        market_key   = m["market"].lower()
-        trend_series = m["trend_series"]
-
-        if market_key not in data:
-            raise RuntimeError(
-                f"Groq batch response is missing forecast for market '{market_key}'. "
-                f"Response keys: {list(data.keys())}"
-            )
-
-        # Re-use existing single-market parser by passing the inner dict as a JSON string
-        market_raw = json.dumps(data[market_key])
-        results[market_key] = _parse_response(market_raw, trend_series)
-
-    return results

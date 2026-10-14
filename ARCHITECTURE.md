@@ -311,7 +311,7 @@ sequenceDiagram
     participant MC as MetricsCalculationService<br/>[com.ceview.module4]
     participant GW as AIInferenceGatewayService
     participant FR as FastAPI router<br/>[app/routers/report.py]
-    participant GC as gemini_client.performance_report()
+    participant GC as report_llm.performance_report()
     participant G as Gemini API
 
     U->>R: click "Generate AI Report"

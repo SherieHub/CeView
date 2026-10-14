@@ -19,8 +19,11 @@ public class ComplianceDtos {
      * OMCS agent audit request (Submodule 3.3) — sent by the React studio.
      *
      * The frontend supplies the chosen caption, the chosen image (as a data: URL
-     * or public http(s) URL), the business profile context, and the Submodule 3.2
-     * visual-guide recommendations the caption is expected to follow.
+     * or public http(s) URL) and the Submodule 3.2 visual-guide recommendations
+     * the caption is expected to follow.
+     *
+     * <p>{@code businessProfile} is accepted for wire compatibility but IGNORED: the
+     * controller scores against the authenticated operator's saved profile.
      */
     public record OmcsAuditRequest(
         String caption,

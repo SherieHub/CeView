@@ -97,6 +97,30 @@ def upsert_embedding(business_profile_id: str, vector: List[float]) -> None:
         )
 
 
+# FROM/JOIN shared by the two cohort queries. Kept with `_cohort_where` so
+# `fetch_cohort_stats` always counts exactly the rows `fetch_others` returns.
+_COHORT_FROM = """
+            FROM   tbl_business_embedding be
+            JOIN   tbl_business_profile bp
+                   ON bp.business_profile_id = be.business_profile_id"""
+
+
+def _cohort_where(
+    categories: list[str] | None,
+    exclude_profile_id: str,
+) -> tuple[str, list]:
+    """WHERE clause (without the keyword) and its params for a cohort query."""
+    conditions = ["be.embedding_vector IS NOT NULL"]
+    params: list = []
+    if categories:
+        conditions.append("string_to_array(bp.categories, ',') && %s::text[]")
+        params.append(categories)
+    if exclude_profile_id:
+        conditions.append("be.business_profile_id != %s::uuid")
+        params.append(exclude_profile_id)
+    return " AND ".join(conditions), params
+
+
 def fetch_others(
     exclude_profile_id: str = "",
     categories: list[str] | None = None,
@@ -140,24 +164,11 @@ def fetch_others(
         conn = _connect()
         cur = conn.cursor()
 
-        conditions = ["be.embedding_vector IS NOT NULL"]
-        params: list = []
-
-        if categories:
-            conditions.append("string_to_array(bp.categories, ',') && %s::text[]")
-            params.append(categories)
-
-        if exclude_profile_id:
-            conditions.append("be.business_profile_id != %s::uuid")
-            params.append(exclude_profile_id)
-
+        where, params = _cohort_where(categories, exclude_profile_id)
         cur.execute(
             f"""
-            SELECT be.embedding_vector::text
-            FROM   tbl_business_embedding be
-            JOIN   tbl_business_profile bp
-                   ON bp.business_profile_id = be.business_profile_id
-            WHERE  {' AND '.join(conditions)}
+            SELECT be.embedding_vector::text{_COHORT_FROM}
+            WHERE  {where}
             """,
             params,
         )
@@ -247,22 +258,11 @@ def fetch_cohort_stats(
         conn = _connect()
         cur = conn.cursor()
 
-        conditions = ["be.embedding_vector IS NOT NULL"]
-        params: list = []
-        if categories:
-            conditions.append("string_to_array(bp.categories, ',') && %s::text[]")
-            params.append(categories)
-        if exclude_profile_id:
-            conditions.append("be.business_profile_id != %s::uuid")
-            params.append(exclude_profile_id)
-
+        where, params = _cohort_where(categories, exclude_profile_id)
         cur.execute(
             f"""
-            SELECT COUNT(*)
-            FROM   tbl_business_embedding be
-            JOIN   tbl_business_profile bp
-                   ON bp.business_profile_id = be.business_profile_id
-            WHERE  {' AND '.join(conditions)}
+            SELECT COUNT(*){_COHORT_FROM}
+            WHERE  {where}
             """,
             params,
         )
