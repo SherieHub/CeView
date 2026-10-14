@@ -90,6 +90,7 @@ vi.mock('../../../services/apiClient', () => ({
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
     compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
+    posts: { list: () => Promise.resolve([]) },
     attributionLinks: {
       list: (...args: unknown[]) => attributionLinksListMock(...args),
     },

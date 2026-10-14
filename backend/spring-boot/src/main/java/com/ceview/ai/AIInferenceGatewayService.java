@@ -160,10 +160,6 @@ public class AIInferenceGatewayService {
 
     // ─── Module 3 — Content / Creative / Compliance (fastapi-sbert) ──────────
 
-    public Map<String, Object> generateContent(Map<String, Object> payload) {
-        return postSbert("/internal/content/generate", payload);
-    }
-
     /** Generate captions via the LangGraph agent with full business context (FR3.5/FR3.6). */
     public Map<String, Object> generateCaption(Map<String, Object> payload) {
         return postSbert("/internal/generation/caption", payload);

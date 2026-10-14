@@ -25,6 +25,7 @@ import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
 import PublishModal from './PublishModal';
+import { auditRecommendations } from './auditRecommendations';
 import StudioStepRail from './StudioStepRail';
 import { STUDIO_STEPS } from './studioSteps';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
@@ -32,8 +33,8 @@ import type { AuditState, PublishDraftState, StudioPlatformId } from './contentS
 import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
 // (see docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md
-// §Non-goals). This board stays fixture-backed until that lands.
-import { MOCK_POSTS } from '../../../services/fixtures/posts';
+// §Non-goals). The board therefore starts empty and only shows fixture posts when
+// the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
 import { useConnections } from '../../../services/connectionsStore';
 import { useProfile } from '../../../services/profileContext';
@@ -64,7 +65,18 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const [activePlatform, setActivePlatform] = useState<StudioPlatformId>('instagram');
   const [draft, setDraft] = useState<PublishDraftState>(initialDraft ?? EMPTY_DRAFT);
   const [audit, setAudit] = useState<AuditState>(IDLE_AUDIT);
-  const [posts, setPosts] = useState<PublishedPost[]>(initialPosts ?? MOCK_POSTS);
+  const [posts, setPosts] = useState<PublishedPost[]>(initialPosts ?? []);
+
+  useEffect(() => {
+    if (initialPosts) return;
+    let cancelled = false;
+    apiClient.posts
+      .list()
+      .then((list) => { if (!cancelled) setPosts((current) => (current.length ? current : (list as PublishedPost[]))); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Content Studio has no market selector of its own — Module 2 owns "which
   // surge / which market" — so this view never infers one on the operator's
@@ -377,7 +389,12 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         </section>
 
         <section id={STEP_VALIDATE.sectionId} className="studio-section">
-          <CompliancePanel draft={draft} audit={audit} onAuditChange={setAudit} />
+          <CompliancePanel
+            draft={draft}
+            audit={audit}
+            onAuditChange={setAudit}
+            recommendations={auditRecommendations(content, activePlatform, selectedOption)}
+          />
         </section>
 
         <div className="studio-board">

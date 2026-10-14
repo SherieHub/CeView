@@ -23,7 +23,7 @@ import logging
 from app import errors
 from app.agents.omcs_agent.graph import app as omcs_graph
 from app.model.ComplianceScoreInputClass import ComplianceInputClass
-from app.unavailable import DependencyUnavailable
+from app.unavailable import MISSING_INPUT, DependencyUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,18 @@ async def omcs_calculation(input: ComplianceInputClass) -> dict:
     (e.g. the multimodal LLM is unavailable) so the caller can surface a clean
     error code rather than a raw stack trace.
     """
+    # The rubric judges the image against the visual-guide recommendations. With
+    # none, the model would score against nothing — report the missing input.
+    if not input.recommendations:
+        raise DependencyUnavailable(
+            code=errors.MOD33_RECOMMENDATIONS_MISSING,
+            message="The compliance audit needs the generated caption guidance.",
+            dependency="content_generation",
+            cause="no recommendations were supplied — generate captions for this market first",
+            stage="fastapi-sbert/omcs_analysis",
+            status_code=MISSING_INPUT,
+        )
+
     try:
         result = await omcs_graph.ainvoke(input.model_dump())
     except DependencyUnavailable:

@@ -56,6 +56,15 @@ export function isMissingDependency(err: unknown): boolean {
   return err instanceof ApiError && typeof err.dependency === 'string' && err.dependency.length > 0;
 }
 
+/**
+ * The backend has no route for this feature yet (404), as opposed to a route that
+ * failed. Screens for features that are not built use it to say so plainly rather
+ * than showing a spinner forever or pretending the action worked.
+ */
+export function isNotAvailable(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 404;
+}
+
 /** 409 from CurrentBusinessProfile — onboarding incomplete, not a failure. */
 export function isProfileNotReady(err: unknown): boolean {
   return err instanceof ApiError

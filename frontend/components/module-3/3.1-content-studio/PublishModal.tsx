@@ -45,7 +45,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
   // 2026-08-10-ui-ux-overhaul-frontend/04-module-3.md, "Publish Composer
   // (connection-gated)"). Read here rather than in PublishComposer: that panel
   // no longer owns destination choice, this modal does.
-  const { isConnected } = useConnections();
+  const { isConnected, available } = useConnections();
 
   /**
    * Scale the device frame down until it fits the canvas whole.
@@ -121,6 +121,11 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
         <div className="pub-controls">
           <fieldset className="pub-group">
             <legend>Publish to</legend>
+            {!available && (
+              <p className="text-meta" role="status">
+                Social platform connections aren't available yet, so publishing is turned off.
+              </p>
+            )}
             <div className="pub-plats">
               {STUDIO_PLATFORMS.map(({ id, label }) => {
                 const connected = isConnected(id);

@@ -60,6 +60,8 @@ export interface ComplianceSlotProps {
   draft: PublishDraftState;
   audit: AuditState;
   onAuditChange: (audit: AuditState) => void;
+  /** What the image is audited against — null until captions have been generated. */
+  recommendations: Record<string, unknown> | null;
 }
 export interface BoardSlotProps {
   draft: PublishDraftState;

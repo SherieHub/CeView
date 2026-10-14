@@ -19,9 +19,12 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { ReactNode } from 'react';
 import type { PlatformConnection, PlatformId } from '../types';
 import { apiClient } from './apiClient';
+import { isNotAvailable } from './apiError';
 
 export interface ConnectionsStore {
   connections: PlatformConnection[] | null;
+  /** False when the backend has no platform-connections feature yet (404). */
+  available: boolean;
   isConnected(platform: PlatformId): boolean;
   connect(platform: PlatformId, handle: string): Promise<void>;
   disconnect(platform: PlatformId): Promise<void>;
@@ -36,13 +39,15 @@ const ConnectionsStoreContext = createContext<ConnectionsStore | null>(null);
 
 export function ConnectionsStoreProvider({ children }: { children: ReactNode }) {
   const [connections, setConnections] = useState<PlatformConnection[] | null>(null);
+  const [available, setAvailable] = useState(true);
   const listeners = useRef(new Set<(platform: PlatformId) => void>());
 
   useEffect(() => {
     apiClient.connections
       .list()
       .then((list) => setConnections(list as PlatformConnection[]))
-      .catch(() => {
+      .catch((error) => {
+        setAvailable(!isNotAvailable(error));
         // A failed initial fetch (expired session, dropped connection, 500)
         // must not leave every screen that reads `connections` — Settings,
         // Content Studio's publish picker — stuck on its loading skeleton
@@ -82,9 +87,9 @@ export function ConnectionsStoreProvider({ children }: { children: ReactNode }) 
   }
 
   const value = useMemo<ConnectionsStore>(
-    () => ({ connections, isConnected, connect, disconnect, onDisconnect }),
+    () => ({ connections, available, isConnected, connect, disconnect, onDisconnect }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [connections]
+    [connections, available]
   );
 
   return <ConnectionsStoreContext.Provider value={value}>{children}</ConnectionsStoreContext.Provider>;

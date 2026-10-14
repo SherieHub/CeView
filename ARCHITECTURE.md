@@ -1,6 +1,12 @@
 # CeView — Frontend ↔ Backend Sequence Diagrams
 
-Status as of the current integration pass. Six React→Spring Boot→FastAPI flows are wired end-to-end; the remaining views still render local mock data. Every diagram below traces a real code path — file references in brackets.
+How a request travels through CeView today, one diagram per user-facing flow. Every participant
+names the real source file, so you can jump straight to it. Paths are relative to `frontend/`,
+`backend/spring-boot/src/main/java/com/ceview/`, `backend/fastapi-sbert/` or
+`backend/fastapi-transformer/`.
+
+Scoring formulas live in [`ARCHITECTURE_SPEC.md`](ARCHITECTURE_SPEC.md); the REST contract in
+[`backend/CONTRACT.md`](backend/CONTRACT.md).
 
 ---
 
@@ -8,440 +14,327 @@ Status as of the current integration pass. Six React→Spring Boot→FastAPI flo
 
 ```mermaid
 flowchart LR
-    subgraph Browser["Browser (localhost:3000)"]
-        UI[React 19 SPA<br/>Vite dev server]
+    subgraph Browser["Browser"]
+        UI["React 19 SPA (frontend/)<br/>Vite dev server :3001"]
     end
 
     subgraph SpringBoot["Spring Boot 3.3 — :8080"]
-        Ctrl[Controllers<br/>module1/2/3/4]
-        Svc[Domain services<br/>MetricsCalc, PES…]
-        AIGW[AIInferenceGatewayService<br/>WebClient]
-        JPA[(JPA Repositories)]
+        Filters["JwtAuthenticationFilter →<br/>ProfileCompletionFilter"]
+        Ctrl["Controllers<br/>module1…module4, auth"]
+        Svc["Domain services<br/>Forecasting, MetricsCalculation…"]
+        AIGW["AIInferenceGatewayService<br/>(sole bridge to Python)"]
+        Jobs["Scheduled jobs<br/>00:00 / 00:15 UTC"]
+        JPA[("JPA repositories")]
     end
 
-    subgraph FastAPI["FastAPI — :8000"]
-        Router[Routers<br/>/internal/*]
-        Gemini[gemini_client.py]
-        Stubs[ml_stubs.py<br/>deterministic mocks]
+    subgraph Sbert["fastapi-sbert — :8000"]
+        SR["/internal/* routers<br/>classification, generation, creative,<br/>omcs, report, pes-compute, pes-analysis"]
+        E5["E5 encoder<br/>(multilingual-e5-base)"]
+        Agents["LangGraph agents<br/>caption, OMCS, PES report"]
     end
 
-    subgraph PG["Postgres + pgvector — :5432"]
-        Tables[(22 tables<br/>tbl_business_profile,<br/>campaign_data, …)]
+    subgraph Trans["fastapi-transformer — :8001"]
+        TR["/internal/forecasting, /internal/market-data,<br/>/api/trends routers"]
+        Eng["Forecast engine: stub | groq | bilstm<br/>(FORECAST_ENGINE)"]
+        XGB["XGBoost / linear scorer"]
     end
 
-    External[("Gemini API<br/>(optional,<br/>ENABLE_GEMINI=true)")]
+    PG[("Postgres 16 + pgvector<br/>:5433 on host")]
 
-    UI -- "fetch /api/*<br/>CORS http://localhost:3000" --> Ctrl
-    Ctrl --> Svc
-    Ctrl --> AIGW
-    Ctrl <--> JPA
-    JPA <--> Tables
-    AIGW -- "POST /internal/*<br/>WebClient, 30s timeout" --> Router
-    Router --> Gemini
-    Router --> Stubs
-    Gemini -. "if enabled" .-> External
+    Groq[("Groq API<br/>gpt-oss-120b, qwen vision")]
+    HF[("Hugging Face Spaces<br/>classifier, BiLSTM model")]
+    Serp[("SerpApi<br/>Google Trends")]
+    Macro[("World Bank GDP,<br/>currency-api forex")]
+    Ads[("Meta / TikTok<br/>ads APIs")]
+
+    UI -- "fetch /api/* + Bearer JWT" --> Filters --> Ctrl
+    Ctrl --> Svc --> AIGW
+    Ctrl <--> JPA <--> PG
+    Jobs --> Svc
+    AIGW -- "POST /internal/*" --> SR
+    AIGW -- "POST /internal/* , /api/trends" --> TR
+    SR --> E5
+    SR --> Agents --> Groq
+    SR -- "embedding corpus" --> PG
+    SR --> HF
+    TR --> Eng --> Groq
+    Eng --> HF
+    TR --> XGB
+    TR --> Serp
+    Svc --> Macro
+    Ctrl --> Ads
 ```
+
+Ground rules that every flow below follows:
+
+- **Every `/api/*` route is JWT-gated** (`config/SecurityConfig.java`, `anyRequest().authenticated()`);
+  only `/api/auth/**`, `/actuator/**`, the ad-platform OAuth callbacks and public attribution
+  redirects are open. `ProfileCompletionFilter` additionally blocks operators who haven't finished
+  their profile.
+- **Tenant scoping comes from the token, never the body.** Controllers call
+  `auth/CurrentBusinessProfile.resolveProfileId()` (409 if the operator has no profile yet).
+- **No synthetic fallbacks.** An AI dependency that can't answer raises `DependencyUnavailable`
+  (`fastapi-*/app/unavailable.py`): 503 when a dependency is down, 424 when a required input is
+  missing. Spring re-emits the body verbatim (§8).
 
 ---
 
-## 2. Page load: Home → notifications
-
-User clicks the **Home** sidebar tab. `HomeView` mounts and pulls the alert list.
+## 2. Sign-in
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as MSME Operator
-    participant H as HomeView<br/>[ceview/components/views/module-2/HomeView.tsx]
-    participant API as apiClient.ts<br/>[ceview/services/apiClient.ts]
-    participant SC as NotificationController<br/>[com.ceview.module2]
-    participant GW as AIInferenceGatewayService<br/>[com.ceview.ai]
-    participant FR as FastAPI router<br/>[app/routers/forecasting.py]
-    participant MS as ml_stubs.notifications()<br/>[app/services/ml_stubs.py]
+    participant A as auth provider<br/>[services/auth.tsx]
+    participant API as apiClient.auth<br/>[services/apiClient.ts]
+    participant AC as AuthController<br/>[auth/AuthController.java]
+    participant JWT as JwtService<br/>[auth/JwtService.java]
 
-    U->>H: click "Home"
-    activate H
-    Note over H: useEffect on mount
-    H->>API: api.listNotifications()
-    activate API
-    API->>SC: GET /api/notifications<br/>Origin: http://localhost:3000
-    activate SC
-    Note over SC: CORS preflight passes<br/>(SecurityConfig permitAll /api/**)
-    SC->>GW: ai.listNotifications()
-    activate GW
-    GW->>FR: POST http://fastapi:8000/internal/forecasting/notifications<br/>body: {}
-    activate FR
-    FR->>MS: notifications()
-    activate MS
-    MS-->>FR: [{ id, title, market, trend, details, … }]
-    deactivate MS
-    FR-->>GW: 200 { "notifications": [...] }
-    deactivate FR
-    GW-->>SC: Map { notifications: [...] }
-    deactivate GW
-    SC-->>API: 200 { notifications: [...] }
-    deactivate SC
-    API-->>H: { notifications: Notification[] }
-    deactivate API
-    Note over H: if length > 0 → setNotifications(…)<br/>else keep MOCK_NOTIFICATIONS fallback
-    H-->>U: TrendAlertCard list renders
-    deactivate H
-```
-
----
-
-## 3. Page load: Market Radar → forecast
-
-User clicks **Market Radar**. The view hydrates three market cards (Korea/Japan/USA) plus a demand chart.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as MSME Operator
-    participant M as MarketRadarView<br/>[ceview/components/views/module-2/MarketRadarView.tsx]
-    participant API as apiClient.ts
-    participant SC as ForecastingController<br/>[com.ceview.module2]
-    participant GW as AIInferenceGatewayService
-    participant FR as FastAPI router<br/>[app/routers/forecasting.py]
-    participant MS as ml_stubs.forecast_markets()<br/>[app/services/ml_stubs.py]
-
-    U->>M: click "Market Radar"
-    activate M
-    Note over M: initial state = MOCK_MARKETS (instant render)
-    Note over M: useEffect on mount
-    M->>API: api.listMarkets()
-    activate API
-    API->>SC: GET /api/forecasting/markets
-    activate SC
-    SC->>GW: ai.forecastMarkets({ profileId: "" })
-    activate GW
-    GW->>FR: POST /internal/forecasting/analyze<br/>body: { profileId: "" }
-    activate FR
-    FR->>MS: forecast_markets()
-    activate MS
-    MS-->>FR: 3 Market objects with chartData<br/>(history + forecast points)
-    deactivate MS
-    FR-->>GW: 200 { "markets": [...] }
-    deactivate FR
-    GW-->>SC: Map
-    deactivate GW
-    SC-->>API: 200 { markets: Market[] }
-    deactivate SC
-    API-->>M: { markets: Market[] }
-    deactivate API
-    Note over M: setMarkets(r.markets)<br/>→ React re-renders MarketRankCard + DemandForecastChart
-    M-->>U: Ranked market cards + chart
-    deactivate M
-```
-
----
-
-## 4. Uniqueness Score → "Analyze Business Profile" button
-
-User fills the form and clicks **Analyze**. Categories get auto-allocated by the backend stub.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as MSME Operator
-    participant V as UniquenessCalibrationView<br/>[ceview/components/views/module-1/UniquenessCalibrationView.tsx]
-    participant API as apiClient.ts
-    participant SC as ClassificationController<br/>[com.ceview.module1]
-    participant GW as AIInferenceGatewayService
-    participant FR as FastAPI router<br/>[app/routers/classification.py]
-    participant MS as ml_stubs.classify_categories()<br/>[app/services/ml_stubs.py]
-
-    U->>V: fill 5 fields →<br/>click "Analyze Business Profile"
-    activate V
-    V->>V: setIsAnalyzing(true)
-    V->>API: api.classifyAnalyze({<br/>  businessName, coreServices,<br/>  description, uvp<br/>})
-    activate API
-    API->>SC: POST /api/classification/analyze<br/>Content-Type: application/json
-    activate SC
-    SC->>GW: ai.classifyCategories(payload)
-    activate GW
-    GW->>FR: POST /internal/classification/analyze<br/>body: AnalyzeRequest
-    activate FR
-    FR->>MS: classify_categories(description, coreServices)
-    activate MS
-    Note over MS: hash(input) → deterministic<br/>percentage split across 7 buckets
-    MS-->>FR: [{ name, percentage }, …]
-    deactivate MS
-    FR-->>GW: 200 { "categories": [...] }
-    deactivate FR
-    GW-->>SC: Map
-    deactivate GW
-    SC-->>API: 200 AnalyzeResponse
-    deactivate SC
-    API-->>V: { categories: CategoryAllocation[] }
-    deactivate API
-    Note over V: merge with BASE_CATEGORIES<br/>(preserve order, fill 0 for missing)<br/>setCategories(…)<br/>setHasAnalyzed(true)
-    V-->>U: InferredCategoryBoard renders bars
-    deactivate V
-```
-
----
-
-## 5. Uniqueness Score → "Compute Uniqueness" button
-
-After analyzing, user clicks **Compute Uniqueness**. This is the only flow that combines a Gemini call with an ML stub.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as MSME Operator
-    participant V as UniquenessCalibrationView
-    participant API as apiClient.ts
-    participant SC as ClassificationController
-    participant GW as AIInferenceGatewayService
-    participant FR as FastAPI router<br/>[app/routers/classification.py]
-    participant GC as gemini_client.uniqueness()<br/>[app/services/gemini_client.py]
-    participant MS as ml_stubs.cosine_uniqueness()<br/>[app/services/ml_stubs.py]
-    participant G as Gemini API
-    Note right of G: only if ENABLE_GEMINI=true
-
-    U->>V: click "Compute Uniqueness"
-    activate V
-    V->>V: setIsComputing(true)
-    V->>API: api.classifyUniqueness({<br/>  businessName, categories,<br/>  coreServices, description, uvp<br/>})
-    activate API
-    API->>SC: POST /api/classification/uniqueness
-    activate SC
-    SC->>GW: ai.computeUniqueness(payload)
-    activate GW
-    GW->>FR: POST /internal/classification/uniqueness
-    activate FR
-
-    par Gemini qualitative
-        FR->>GC: uniqueness(name, cats, services, desc, uvp)
-        activate GC
-        alt ENABLE_GEMINI=true
-            GC->>G: generate_content(<br/>  model=gemini-2.5-flash,<br/>  JSON schema<br/>)
-            G-->>GC: { descriptionScore, categoryScore,<br/>  descriptionReasoning, categoryReasoning }
-        else disabled (default)
-            Note over GC: return hard-coded reasoning strings
-        end
-        GC-->>FR: Gemini result map
-        deactivate GC
-    and ML cosine numeric
-        FR->>MS: cosine_uniqueness(description, categories)
-        activate MS
-        Note over MS: hash → reproducible<br/>desc + category 0-100
-        MS-->>FR: { descriptionScore, categoryScore, overallScore }
-        deactivate MS
+    U->>A: email + password (or Google via Firebase)
+    A->>API: auth.login(email, password)<br/>(or auth.google(idToken, intent))
+    API->>AC: POST /api/auth/login (or /google)
+    AC->>JWT: issue(operatorId, email)
+    AC-->>API: 200 { token, operatorId, profileCompleted }
+    API-->>A: session (token stored via authStorage)
+    Note over A: Every later request carries<br/>Authorization: Bearer {token}
+    alt profileCompleted = false
+        A-->>U: complete-profile screen<br/>(PATCH /api/auth/profile)
+    else
+        A-->>U: app shell
     end
-
-    Note over FR: merge: prefer Gemini text,<br/>cosine numbers as fallback
-    FR-->>GW: 200 { overallScore, semanticsScore,<br/>  categoryScore, descriptionFeedback,<br/>  categoryFeedback }
-    deactivate FR
-    GW-->>SC: Map
-    deactivate GW
-    SC-->>API: 200 UniquenessResponse
-    deactivate SC
-    API-->>V: DetailedCalibrationResultDTO
-    deactivate API
-    Note over V: setCalibrationResult(result)
-    V-->>U: ScoreGauge + ActionableScoreCard render
-    deactivate V
 ```
 
 ---
 
-## 6. Business Profile → "Recalibrate" keywords
+## 3. Module 1 — Onboarding: classify, score uniqueness, save
+
+The onboarding wizard's analysis step calls two endpoints; saving the profile also refreshes the
+operator's embedding in the uniqueness corpus.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as MSME Operator
-    participant BP as BusinessProfile<br/>[ceview/components/views/module-1/BusinessProfile.tsx]
-    participant API as apiClient.ts
-    participant SC as BusinessProfileController<br/>[com.ceview.module1]
-    participant GW as AIInferenceGatewayService
-    participant FR as FastAPI router<br/>[app/routers/classification.py]
-    participant GC as gemini_client.keywords()
-    participant G as Gemini API
+    participant S as AnalysisStep<br/>[components/module-1/onboarding/steps/AnalysisStep.tsx]
+    participant W as OnboardingWizard<br/>[components/module-1/onboarding/OnboardingWizard.tsx]
+    participant SB as Spring<br/>[module1/businessinput, module1/uniquenessscoring]
+    participant FS as sbert classification router<br/>[app/routers/classification.py]
+    participant HF as HF Space classifier<br/>[app/services/hf_space_classifier.py]
+    participant E5 as E5 encoder<br/>[app/services/ml_classifier.py]
+    participant VS as pgvector corpus<br/>[app/services/embedding_store.py]
 
-    U->>BP: click "Recalibrate"<br/>(SEO Keywords card)
-    activate BP
-    BP->>BP: setIsLoading(true)
-    BP->>API: api.generateKeywords({<br/>  businessName, description,<br/>  category: categories.join(", ")<br/>})
-    activate API
-    API->>SC: POST /api/business-profile/keywords
-    activate SC
-    SC->>GW: ai.generateKeywords(payload)
-    activate GW
-    GW->>FR: POST /internal/classification/keywords
-    activate FR
-    FR->>GC: keywords(businessName, description, category)
-    activate GC
-    alt ENABLE_GEMINI=true
-        GC->>G: generate_content with JSON schema
-        G-->>GC: { "keywords": [...] }
-    else disabled
-        Note over GC: returns 5 hand-crafted seed keywords
+    U->>S: reach "Analysis" step
+    S->>SB: POST /api/classification/analyze<br/>(ClassificationAnalyzeController)
+    SB->>FS: POST /internal/classification/analyze
+    FS->>HF: predict_categories(description, uvp, services)
+    HF-->>FS: category confidences
+    FS-->>S: { categories: [{ name, percentage }] }
+
+    S->>SB: POST /api/classification/uniqueness<br/>(UniquenessScoringController)
+    SB->>FS: POST /internal/classification/uniqueness
+    FS->>E5: embed_business(services, description, uvp)
+    FS->>VS: fetch_others(cohort sharing a category)
+    FS->>E5: compute_semantic_uniqueness(candidate, cohort)<br/>(percentile rank vs cohort)
+    FS->>VS: fetch_cohort_stats(...)
+    FS-->>S: { overallScore, cohortSize, categoryDensity, … }
+    S-->>U: category split + uniqueness score
+
+    U->>W: finish wizard
+    W->>SB: PUT /api/business-profile (BusinessProfileController)
+    SB->>SB: save tbl_business_profile
+    SB->>FS: POST /internal/classification/embed
+    FS->>VS: upsert_embedding(profileId, vector)
+    SB-->>W: 200 BusinessProfileDto
+```
+
+---
+
+## 4. Module 2 — Dashboard: fresh forecast, ranked markets, alerts
+
+`useDashboardState` makes sure the operator has a recent forecast, then reads ranked markets and
+alerts from the database. Inference runs only when the stored forecast is stale.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as MSME Operator
+    participant D as useDashboardState<br/>[components/module-2/2.1-dashboard/useDashboardState.ts]
+    participant FC as ForecastingController<br/>[module2/ForecastingController.java]
+    participant FSv as ForecastingService<br/>[module2/submodule22/ForecastingService.java]
+    participant ESB as EnrichedSequenceBuilder<br/>[module2/submodule22/EnrichedSequenceBuilder.java]
+    participant FT as transformer forecasting router<br/>[app/routers/forecasting.py]
+    participant NC as NotificationController<br/>[module2/NotificationController.java]
+
+    U->>D: open Dashboard
+    D->>FC: POST /api/forecasting/ensure?maxAgeHours=12
+    FC->>FSv: ensureFreshForecast(profileId)
+    alt stored forecast younger than maxAgeHours
+        FSv-->>FC: cached rows (no inference)
+    else stale or missing
+        FSv->>ESB: 12-week sequences per (market, category)<br/>from tbl_market_signal_record
+        FSv->>FT: POST /internal/forecasting/inference-batch
+        Note over FT: ACTIVE_ENGINE = stub | groq | bilstm<br/>(app/services/forecast_engine.py)
+        FT-->>FSv: { "market::category": forecast }
+        FSv->>FT: POST /internal/forecasting/score (XGBoost or linear)
+        FT-->>FSv: economic viability + market score
+        FSv->>FSv: persist ForecastResult, MarketScore,<br/>DemandAlert (+ attribution link)
     end
-    GC-->>FR: list[str]
-    deactivate GC
-    FR-->>GW: 200 { "keywords": [...] }
-    deactivate FR
-    GW-->>SC: List<String> (extracted from envelope)
-    deactivate GW
-    SC-->>API: 200 String[]
-    deactivate SC
-    API-->>BP: string[]
-    deactivate API
-    Note over BP: setKeywords(generated)<br/>setIsLoading(false)
-    BP-->>U: keyword chips render
-    deactivate BP
+    FC-->>D: 200
+    D->>FC: GET /api/forecasting/markets?category=…
+    FC-->>D: ranked markets + chartData (DB read)
+    D->>NC: GET /api/notifications
+    NC-->>D: demand alerts (DB read)
+    D-->>U: ranked market cards, chart, alert feed
+    Note over D: "Refresh forecast" button →<br/>POST /api/forecasting/analyze (forces a rerun)
+```
+
+### 4.1 Daily background jobs (no user action)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant J as MarketDataIngestionJob<br/>[module2/submodule21/MarketDataIngestionJob.java]
+    participant IS as MarketDataIngestionService
+    participant EX as ExternalMarketDataClient<br/>[module2/submodule21/ExternalMarketDataClient.java]
+    participant TM as transformer market-data router<br/>[app/routers/market_data.py]
+    participant FSv as ForecastingService
+    participant K as KeywordTrendAlertScheduler<br/>[module2/submodule22/KeywordTrendAlertScheduler.java]
+    participant TT as transformer trends router<br/>[app/api/trends_router.py]
+
+    Note over J: 00:00 UTC, every non-reference profile
+    J->>IS: ingestForProfile(profile)
+    IS->>TM: POST /internal/market-data/trends (+ /trends/history on first run)
+    Note over TM: SerpApi Google Trends<br/>(app/services/trend_service.py)
+    IS->>EX: GDP (World Bank) + forex (currency-api),<br/>last-known-good fallback, else fail
+    IS->>TM: POST /internal/market-data/seasonality
+    IS->>IS: upsert weekly tbl_market_signal_record
+    J->>FSv: refresh forecasts for ingested profiles (bounded concurrency)
+    Note over K: 00:15 UTC
+    K->>TT: POST /api/trends/rank-markets (missing weekly alerts only)
 ```
 
 ---
 
-## 7. Campaign Analytics → "Generate AI Report"
-
-End-to-end with the heaviest payload. Spring computes metrics locally and only delegates the *narrative* to FastAPI.
+## 5. Module 3 — Content Studio: captions, creative direction, compliance audit
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as MSME Operator
-    participant R as AIActionPlanReport<br/>[ceview/components/modules/module-4/AIActionPlanReport.tsx]
-    participant API as apiClient.ts
-    participant AC as AnalyticsController<br/>[com.ceview.module4]
-    participant MC as MetricsCalculationService<br/>[com.ceview.module4]
-    participant GW as AIInferenceGatewayService
-    participant FR as FastAPI router<br/>[app/routers/report.py]
-    participant GC as report_llm.performance_report()
-    participant G as Gemini API
+    participant CS as ContentStudioView<br/>[components/module-3/3.1-content-studio/ContentStudioView.tsx]
+    participant CP as CompliancePanel<br/>[components/module-3/3.1-content-studio/CompliancePanel.tsx]
+    participant SB as Spring module3<br/>[ContentController → submodule31/ContentGenerationService,<br/>CreativeDirectionController, ComplianceController]
+    participant CAP as caption agent<br/>[app/routers/caption_generation.py,<br/>app/agents/creative_director_agent/]
+    participant CR as creative router<br/>[app/routers/creative.py → app/services/gemini_client.py]
+    participant OM as OMCS agent<br/>[app/routers/omcs_analysis.py,<br/>app/agents/omcs_agent/]
 
-    U->>R: click "Generate AI Report"
-    activate R
-    R->>R: setIsGenerating(true)
-    R->>API: api.prescriptiveReport()
-    activate API
-    API->>AC: POST /api/analytics/report<br/>body: {}
-    activate AC
-    Note over AC: payload empty → fill with defaults
-    AC->>MC: metrics(null, null)
-    activate MC
-    Note over MC: compute CTR, CPC, ROAS,<br/>convRate, CAC from default<br/>impressions/clicks/spend
-    MC-->>AC: MetricsResponse { metrics, funnel }
-    deactivate MC
-    AC->>GW: ai.generateReport({ metrics, … })
-    activate GW
-    GW->>FR: POST /internal/report/generate
-    activate FR
-    FR->>GC: performance_report(metrics)
-    activate GC
-    alt ENABLE_GEMINI=true
-        GC->>G: generate_content with structured schema
-        G-->>GC: { executiveSummary, lowestMetric,<br/>  lowestMetricMeaning, recommendations,<br/>  otherAreasImprove, weakestStage,<br/>  secondaryLeaks }
-    else disabled
-        Note over GC: return hand-crafted SDD-§4.3 shape
+    U->>CS: pick target market
+    CS->>SB: POST /api/content/generate
+    Note over SB: profile, uniqueness and Module 2<br/>forecast context loaded from DB
+    SB->>CAP: POST /internal/generation/caption
+    Note over CAP: cultural research for the market (SerpApi,<br/>curated templates if unconfigured), then<br/>LangGraph: analyze_services →<br/>generate_platform_captions (Groq)
+    CAP-->>SB: 3 platforms × 3 archetype captions + visual guides
+    SB-->>CS: ContentResponse
+
+    CS->>SB: POST /api/creative-direction/generate?market=…
+    SB->>CR: POST /internal/creative/generate (Groq JSON)
+    CR-->>CS: visualGuide, shots, moodboard, platformRecommendations
+
+    U->>CP: upload image, run audit
+    Note over CP: needs generated captions — sends the staged option's<br/>metadata + the platform visual guide as recommendations
+    CP->>SB: POST /api/compliance/omcs-analyze<br/>{ caption, imageUrl, recommendations }
+    Note over SB: business_profile built from the<br/>operator's saved profile (never the body)
+    SB->>OM: POST /internal/omcs/analyze
+    Note over OM: profile_alignment (E5 cosine, calibrated) →<br/>rubric (vision LLM) → consistency (vision LLM) →<br/>OMCS = 0.35·profile + 0.45·rubric + 0.20·consistency<br/>→ feedback node only on Fail (< 70)
+    Note over OM: no recommendations → 424 MOD33_RECOMMENDATIONS_MISSING
+    OM-->>CP: scores, status, feedback
+    CP-->>U: gauge, sub-scores, rubric table
+```
+
+---
+
+## 6. Module 4 — Campaign analytics: ingest a period, then report
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as MSME Operator
+    participant IF as IngestionForm<br/>[components/module-4/4.1-campaign-analytics/IngestionForm.tsx]
+    participant CA as CampaignAnalyticsView<br/>[components/module-4/4.1-campaign-analytics/CampaignAnalyticsView.tsx]
+    participant AD as AdConnectionController<br/>[module4/adconnections/AdConnectionController.java]
+    participant EM as EngagementMetricsController<br/>[module4/engagement/EngagementMetricsController.java]
+    participant PR as PrescriptiveReportController<br/>[module4/report/PrescriptiveReportController.java]
+    participant PC as pes-compute router<br/>[app/routers/pes_compute.py]
+    participant RP as report router<br/>[app/routers/report.py → app/services/report_llm.py]
+
+    opt ad accounts connected
+        IF->>AD: GET /api/ad-connections/insights?periodStart…&providers=…
+        Note over AD: Meta Graph / TikTok Business APIs
+        AD-->>IF: synced impressions, clicks, spend…
     end
-    GC-->>FR: dict matching frontend shape
-    deactivate GC
-    FR-->>GW: 200 PrescriptiveReport
-    deactivate FR
-    GW-->>AC: Map
-    deactivate GW
-    AC-->>API: 200 JSON
-    deactivate AC
-    API-->>R: { executiveSummary, recommendations, weakestStage, … }
-    deactivate API
-    Note over R: split recommendation strings by "—" or ":"<br/>into { title, explanation } shape<br/>setReportData(…)
-    R-->>U: ExecutiveSummaryCard +<br/>RankedRecommendationsList +<br/>PriorityFixCard render
-    deactivate R
+    U->>IF: submit period
+    IF->>EM: POST /api/analytics/manual
+    EM->>EM: save CampaignRecord
+    EM->>PC: POST /internal/pes-compute/analyze
+    Note over PC: base metrics → normalise → PES<br/>+ Groq insights (rule-based if Groq offline)
+    PC-->>EM: PES score, breakdown, ai_report
+    EM-->>IF: metrics + PES (record enriched)
+
+    CA->>EM: GET /api/analytics/history?weeks=4|8
+    CA->>PR: POST /api/analytics/report
+    Note over PR: no saved CampaignRecords → 424 MOD4_REPORT_NO_CAMPAIGN_DATA<br/>(no AI call). Otherwise metrics aggregate from the records<br/>and 3 ranked funnel transitions are sent
+    PR->>RP: POST /internal/report/generate
+    Note over RP: < 3 transitions → 424 MOD4_REPORT_NO_FUNNEL<br/>Groq offline → 503 MOD4_REPORT_UNAVAILABLE
+    RP-->>CA: executiveSummary, funnelDiagnostics,<br/>recommendations, recommendedPlatform
 ```
 
 ---
 
-## 8. Error path — backend unavailable
-
-What happens when Docker is stopped or the request fails.
+## 7. Error path — an AI dependency can't answer
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor U as MSME Operator
-    participant H as HomeView
-    participant API as apiClient.ts
-    participant SC as Spring Boot
+    participant UI as Component<br/>(e.g. AnalysisStep, Dashboard)
+    participant API as apiClient.request<br/>[services/apiClient.ts]
+    participant GW as AIInferenceGatewayService<br/>[ai/AIInferenceGatewayService.java]
+    participant H as AiDependencyExceptionHandler<br/>[ai/AiDependencyExceptionHandler.java]
+    participant PY as FastAPI service
 
-    U->>H: click "Home"
-    activate H
-    Note over H: initial state already MOCK_NOTIFICATIONS<br/>(view renders immediately)
-    H-->>U: alert cards render from mocks
-    H->>API: api.listNotifications()  (in useEffect)
-    activate API
-    API->>SC: GET /api/notifications
-    Note over SC: container down /<br/>connection refused
-    API-->>H: throw Error
-    deactivate API
-    Note over H: catch → console.warn(<br/>  'listNotifications failed, using mock')<br/>setNotifications NOT called
-    Note over H: mock data stays visible
-    deactivate H
+    UI->>API: call
+    API->>GW: (via controller)
+    GW->>PY: POST /internal/...
+    PY-->>GW: 503 / 424 { code, message, dependency, cause, stage }
+    Note over PY: raised as DependencyUnavailable<br/>[app/unavailable.py]
+    GW->>H: AiDependencyException (body preserved)
+    H-->>API: same status, same body
+    API-->>UI: throw ApiError { status, body }
+    UI-->>UI: ApiErrorPanel shows code + cause<br/>[components/shared/ApiErrorPanel.tsx]
 ```
 
-The same fallback applies to `MarketRadarView`. Form-driven flows (Uniqueness, Keywords, Report) do *not* have silent fallback — failures log to console and the UI stays in its loading-cleared state.
+There is no silent mock fallback in the running app. Fixture data is used only when the frontend is
+built with `VITE_USE_FIXTURES=true`, and a production build with that flag fails on load.
 
 ---
 
-## 9. Persistence — Business Profile save (currently invokable only via direct API call)
+## 8. Features with no backend yet
 
-The frontend's `BusinessProfile` view exposes a Save modal but doesn't yet PUT to the backend. The endpoint exists and persists end-to-end:
+These screens exist but have no server routes. Spring answers 404 (pinned by
+`UnbuiltFeatureRoutesTest`), and the frontend turns that into a plain "isn't available yet" state
+(`isNotAvailable` in `services/apiError.ts`) instead of faking success. In fixture mode
+(`VITE_USE_FIXTURES=true`) they still run on sample data.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Any HTTP client
-    participant BPC as BusinessProfileController<br/>[com.ceview.module1]
-    participant Repo as BusinessProfileRepository<br/>[Spring Data JPA]
-    participant PG as Postgres<br/>tbl_business_profile
-
-    Client->>BPC: PUT /api/business-profile<br/>?operatorId={uuid}<br/>body: BusinessProfileDto
-    activate BPC
-    BPC->>Repo: findById(profileId) OR new BusinessProfile()
-    activate Repo
-    Repo->>PG: SELECT … FROM tbl_business_profile<br/>WHERE business_profile_id = $1
-    PG-->>Repo: row or empty
-    Repo-->>BPC: Optional<BusinessProfile>
-    deactivate Repo
-    Note over BPC: setBusinessName, setBusinessDescription,<br/>setUvp, setCoreServicesList(…),<br/>setImageUrl, setFinalizedCategory
-    BPC->>Repo: save(p)
-    activate Repo
-    Repo->>PG: INSERT … ON CONFLICT DO UPDATE<br/>(@PrePersist sets UUID + created_at,<br/>@PreUpdate touches updated_at)
-    PG-->>Repo: persisted row
-    Repo-->>BPC: BusinessProfile
-    deactivate Repo
-    BPC-->>Client: 200 BusinessProfileDto<br/>(reflects coreServicesList(),<br/>finalizedCategory, uniquenessScore)
-    deactivate BPC
-```
-
-To wire this to the React Save button: add `api.saveProfile(...)` to `apiClient.ts` and call it from `BusinessProfile.handleSaveProfile()`.
-
----
-
-## 10. What is NOT yet wired
-
-These flows still render from frontend mocks. The endpoints exist and have been verified with curl — they're waiting for a follow-up wiring pass.
-
-| Frontend view | Endpoint sitting unused |
-|---|---|
-| `ContentStudioView` (Module 3) | `POST /api/content/generate` |
-| `CreativeDirectionBoard` | `POST /api/creative-direction/generate/{profileId}` |
-| `SmartOptimizationBoard` | `POST /api/compliance/evaluate-json` |
-| `EngagementMetricsBoard` (funnel cards) | `GET /api/analytics/metrics` |
-| `PESComputationBoard` (gauge + breakdown) | `GET /api/analytics/pes/{campaignId}` |
-| PDF download button | `GET /api/analytics/report/{id}/pdf` |
-| Auth screen (doesn't exist yet) | `POST /api/auth/{register,login}` |
+| Feature | Frontend | Behaviour without a backend |
+|---|---|---|
+| Workspace members and invites | `components/settings/WorkspaceSettings.tsx` | notice shown, invite disabled; "Invite sent" only after the server accepts |
+| Social platform connections | `services/connectionsStore.tsx`, `PlatformsSettings.tsx` | notice shown, Connect disabled; Publish modal explains publishing is off |
+| Published posts | `ContentStudioView.tsx` | board starts empty (no fixture posts outside fixture mode) |
 
 ---
 
 ## Quick legend
 
-- **Solid arrow** = synchronous HTTP call awaited
-- **Dashed arrow** = response
-- **Dotted line to Gemini** = optional, only when `ENABLE_GEMINI=true`
-- **`par … and …`** block (diagram §5) = parallel composition inside the same FastAPI request handler
-- File paths in `[brackets]` reference the actual source so you can jump to any participant
+- **Solid arrow** — synchronous HTTP call awaited by the caller
+- **Dashed arrow** — response
+- **`alt` / `opt`** — conditional branches
+- File paths in `[brackets]` point at the real source for each participant

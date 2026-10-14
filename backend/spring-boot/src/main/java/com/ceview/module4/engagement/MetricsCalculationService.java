@@ -95,6 +95,12 @@ public class MetricsCalculationService {
      * @param businessProfileId the authenticated operator's business profile id
      * @param weeks Analysis window — 4 (default) or 8.
      */
+    /** True when the operator has saved at least one campaign record to report on. */
+    public boolean hasCampaignRecords(UUID businessProfileId) {
+        return !campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(
+                businessProfileId, PageRequest.of(0, 1)).isEmpty();
+    }
+
     public MetricsResponse defaultMetrics(UUID businessProfileId, int weeks) {
         int limit = (weeks == 8) ? 8 : 4;
         List<CampaignRecord> records = campaignRepo.findByBusinessProfileIdOrderByCreatedAtDesc(

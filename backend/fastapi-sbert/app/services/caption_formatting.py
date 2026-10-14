@@ -1,10 +1,24 @@
 """Shapes the caption agent's output into the ContentResponseDto ``captions`` field.
 
-Shared by ``routers/content.py`` and ``routers/caption_generation.py``.
+Used by ``routers/caption_generation.py``.
 """
 from __future__ import annotations
 
 from app.config.markets import DEMOGRAPHIC_OPTION_NAMES
+
+
+def format_research_context(rc: dict) -> str:
+    """Format a cultural_research result dict into the pre-formatted string the
+    LangGraph prompt template expects as {research_context}."""
+    if not rc:
+        return ""
+    return (
+        f"Cultural research context (source: {rc.get('source', 'template')}):\n"
+        f"- Traveler behavior: {rc.get('traveler_behavior', '')}\n"
+        f"- Tourism preferences: {rc.get('tourism_preferences', '')}\n"
+        f"- Platform styles: {rc.get('platform_styles', '')}\n"
+        f"- Language nuances: {rc.get('language_nuances', '')}\n"
+    )
 
 
 def transform_captions(

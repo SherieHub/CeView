@@ -21,10 +21,12 @@ const CONNECTIONS: PlatformConnection[] = [
 const connectMock = vi.fn();
 const disconnectMock = vi.fn();
 let connections: PlatformConnection[] | null = CONNECTIONS;
+let available = true;
 
 vi.mock('../../services/connectionsStore', () => ({
   useConnections: () => ({
     connections,
+    available,
     isConnected: (platform: string) => connections?.find((c) => c.platform === platform)?.connected ?? false,
     connect: (...args: unknown[]) => connectMock(...args),
     disconnect: (...args: unknown[]) => disconnectMock(...args),
@@ -74,6 +76,21 @@ describe('PlatformsSettings', () => {
     const { container } = renderSettings();
 
     expect(container.querySelector('.skel')).toBeInTheDocument();
+  });
+
+  describe('when the backend has no platform connections', () => {
+    it('says so and disables every Connect button', () => {
+      available = false;
+      try {
+        renderSettings();
+        expect(screen.getByRole('status')).toHaveTextContent(/isn't available yet/i);
+        for (const button of screen.getAllByRole('button', { name: 'Connect' })) {
+          expect(button).toBeDisabled();
+        }
+      } finally {
+        available = true;
+      }
+    });
   });
 
   describe('connect flow', () => {

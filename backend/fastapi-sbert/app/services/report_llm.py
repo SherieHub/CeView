@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 
-from app.config.markets import DEFAULT_FUNNEL_TRANSITIONS, REPORT_PLATFORM_BY_MARKET
+from app.config.markets import REPORT_PLATFORM_BY_MARKET
 from app.services import gemini_client
 
 
@@ -77,7 +77,7 @@ Return JSON with exactly:
 
 def performance_report(
     metrics: dict,
-    transitions: list[dict] | None = None,
+    transitions: list[dict],
     weeks: int = 4,
     market: str = "korea",
 ) -> dict:
@@ -87,8 +87,10 @@ def performance_report(
 
     Args:
         metrics:     Raw KPI values (impressions, clicks, adSpend, …)
-        transitions: Pre-ranked funnel transitions from Spring Boot
-                     (business-impact order: Clk→Conv, Conv→Book, Imp→Clk)
+        transitions: Pre-ranked, measured funnel transitions from Spring Boot
+                     (business-impact order: Clk→Conv, Conv→Book, Imp→Clk).
+                     Required: the router rejects a short list with 424 rather
+                     than inventing drop rates.
         weeks:       Analysis window in weeks (4 or 8)
         market:      Target market key (e.g. "korea", "japan", "usa")
 
@@ -98,11 +100,7 @@ def performance_report(
     """
     recommended_platform = REPORT_PLATFORM_BY_MARKET.get(market.lower(), "Naver Blog")
 
-    # Fallback handled in report.py router — this function only runs when Gemini is enabled
-    if transitions is None:
-        transitions = [dict(t) for t in DEFAULT_FUNNEL_TRANSITIONS]
-
-    # Build the ordered rank/urgency context for Gemini
+    # Build the ordered rank/urgency context for the model
     rank_context = "\n".join(
         f"  {i+1}. \"{t['stage']}\" — {t['dropRate']} absolute drop"
         for i, t in enumerate(transitions[:3])

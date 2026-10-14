@@ -8,7 +8,7 @@ Run with: pytest tests/unit/test_source_is_closed.py -v
 import pytest
 from pydantic import ValidationError
 
-from app.routers.content import ContentResponse
+from app.routers.caption_generation import ContentResponse
 from app.routers.creative import CreativeDirectionResponse
 
 

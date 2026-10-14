@@ -2,11 +2,13 @@
  * CARD — Settings: Workspace (M3-10)
  *
  * Covers: the member list (including the "Invite pending" chip), and the
- * invite-submit -> optimistic-row behavior the screen doc calls out
- * explicitly (docs/shared/workspace.md).
+ * invite-submit behavior (the row and toast appear only once the server
+ * accepted the invite), and the screen's honest state when the backend has no
+ * workspace feature.
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '../../services/apiError';
 import WorkspaceSettings from './WorkspaceSettings';
 import { ToastProvider } from '../shared/Toast';
 import { OverlayStackProvider } from '../shared/useOverlayStack';
@@ -55,7 +57,7 @@ describe('WorkspaceSettings', () => {
     expect(screen.queryByText('Invite pending')).not.toBeInTheDocument();
   });
 
-  it('submitting the invite form appends an optimistic pending row with a derived display name', async () => {
+  it('submitting the invite form appends a pending row with a derived display name once the invite is accepted', async () => {
     renderSettings();
     await screen.findByText('Maria Lopez');
 
@@ -65,8 +67,7 @@ describe('WorkspaceSettings', () => {
     fireEvent.change(screen.getByLabelText(/role/i), { target: { value: 'Viewer' } });
     fireEvent.click(screen.getByRole('button', { name: /send invite/i }));
 
-    // Appears immediately — optimistic, not waiting on inviteMock to resolve.
-    expect(screen.getByText('Hana Kim')).toBeInTheDocument();
+    expect(await screen.findByText('Hana Kim')).toBeInTheDocument();
     expect(screen.getByText('hana.kim@sunsetcove.ph')).toBeInTheDocument();
     expect(screen.getByText('Invite pending')).toBeInTheDocument();
     expect(screen.getByText('Viewer', { selector: '.badge' })).toBeInTheDocument();
@@ -76,6 +77,27 @@ describe('WorkspaceSettings', () => {
 
     // The form clears so a second invite doesn't repeat the first email.
     expect(screen.getByLabelText(/invite by email/i)).toHaveValue('');
+  });
+
+  it('a rejected invite adds no row and never claims it was sent', async () => {
+    inviteMock.mockRejectedValue(new ApiError({ status: 500, method: 'POST', path: '/api/workspace/invite', body: {} }));
+    renderSettings();
+    await screen.findByText('Maria Lopez');
+
+    fireEvent.change(screen.getByLabelText(/invite by email/i), { target: { value: 'hana.kim@sunsetcove.ph' } });
+    fireEvent.click(screen.getByRole('button', { name: /send invite/i }));
+
+    await waitFor(() => expect(screen.getByText(/could not send the invite/i)).toBeInTheDocument());
+    expect(screen.queryByText('Hana Kim')).not.toBeInTheDocument();
+    expect(screen.queryByText(/invite sent to/i)).not.toBeInTheDocument();
+  });
+
+  it('with no workspace backend (404) it says so, stops loading and disables invites', async () => {
+    membersMock.mockRejectedValue(new ApiError({ status: 404, method: 'GET', path: '/api/workspace/members', body: undefined }));
+    renderSettings();
+
+    expect(await screen.findByText(/aren't available yet/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send invite/i })).toBeDisabled();
   });
 
   it('does nothing for a blank email', async () => {

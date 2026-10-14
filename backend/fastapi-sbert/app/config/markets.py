@@ -41,13 +41,6 @@ REPORT_PLATFORM_BY_MARKET: dict[str, str] = {
     "global":    "Instagram Reels",
 }
 
-# Funnel transitions used to pad a report request that arrives with fewer than three.
-DEFAULT_FUNNEL_TRANSITIONS: list[dict[str, str]] = [
-    {"stage": "Clicks → Conversions",   "dropRate": "88.1%"},
-    {"stage": "Conversions → Bookings", "dropRate": "78.8%"},
-    {"stage": "Impressions → Clicks",   "dropRate": "95.2%"},
-]
-
 
 def market_header(market: str) -> dict[str, str]:
     """Header for ``market``, defaulting to the Korea header for unknown keys."""

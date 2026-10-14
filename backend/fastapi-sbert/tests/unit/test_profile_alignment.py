@@ -25,6 +25,9 @@ PROFILE = {
 }
 
 
+_RECS = {"visual_guide": ["Use warm light"]}
+
+
 class _FakeEncoder:
     """Returns two unit vectors whose cosine is exactly ``cosine``."""
 
@@ -127,7 +130,7 @@ def test_omcs_calculation_keeps_the_specific_503_code(monkeypatch):
     from app.model.ComplianceScoreInputClass import ComplianceInputClass
 
     with pytest.raises(DependencyUnavailable) as excinfo:
-        asyncio.run(omcs_analysis.omcs_calculation(ComplianceInputClass(caption="c", image_url="u")))
+        asyncio.run(omcs_analysis.omcs_calculation(ComplianceInputClass(caption="c", image_url="u", recommendations=_RECS)))
     assert excinfo.value.code == errors.MOD33_PROFILE_MISSING
 
 
@@ -137,7 +140,7 @@ def test_endpoint_returns_503_with_the_profile_code_when_no_profile_is_sent():
 
     response = TestClient(app).post(
         "/internal/omcs/analyze",
-        json={"caption": "c", "image_url": "https://example.invalid/x.jpg"},
+        json={"caption": "c", "image_url": "https://example.invalid/x.jpg", "recommendations": _RECS},
     )
     assert response.status_code == 503
     assert response.json()["code"] == errors.MOD33_PROFILE_MISSING
