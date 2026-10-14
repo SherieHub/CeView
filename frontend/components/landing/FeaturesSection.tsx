@@ -1,5 +1,5 @@
 /**
- * Features (#features): a 12-column bento of the eight capabilities. Every
+ * Features (#features): a compact six-card grid covering the eight capabilities. Every
  * mini-visual is live HTML/SVG on the landing tokens and carries a "Sample" or
  * "Illustrative" label; the information in each is also in its text, so
  * purely graphic parts are hidden from assistive tech (the forecast chart
@@ -12,12 +12,9 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import {
-  ArrowRight,
   BellRing,
   ChartLine,
-  Languages,
   ListOrdered,
-  PenLine,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -200,7 +197,7 @@ function FeatureCard({
 function Title({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <h3 className="cv-feat-title">
-      <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+      <span className="cv-feat-icon"><Icon size={20} strokeWidth={1.75} aria-hidden="true" /></span>
       {children}
     </h3>
   );
@@ -233,8 +230,7 @@ export default function FeaturesSection() {
             </div>
             <div className="cv-feat-copy">
               <Title icon={TrendingUp}>{f.forecasts.title}</Title>
-              <p className="cv-feat-body">{f.forecasts.body}</p>
-              <p className="cv-feat-note">{f.forecasts.note}</p>
+              <p className="cv-feat-body">Forecast search interest for the next 12 weeks, for every market and tourism theme you match.</p>
             </div>
           </FeatureCard>
 
@@ -257,7 +253,7 @@ export default function FeaturesSection() {
             </div>
             <div className="cv-feat-copy">
               <Title icon={ListOrdered}>{f.ranking.title}</Title>
-              <p className="cv-feat-body">{f.ranking.body}</p>
+              <p className="cv-feat-body">Find your strongest markets using forecast demand, seasonality, exchange rates, economic conditions and flight access.</p>
             </div>
           </FeatureCard>
 
@@ -280,58 +276,31 @@ export default function FeaturesSection() {
             </div>
           </FeatureCard>
 
-          {/* D — business profile & themes */}
-          <FeatureCard area="d" tone="dark" delay={1}>
-            <div className="cv-feat-visual cv-feat-profile">
-              <ul className="cv-feat-themes">
-                {FACTS.themes.map((t) => {
-                  const match = f.profile.matched.find((m) => m.theme === t);
-                  return (
-                    <li key={t} data-on={match ? true : undefined}>
-                      {t}
-                      {match && <span className="cv-feat-conf">{match.confidence}</span>}
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="cv-feat-unique">
-                <span className="cv-feat-unique-ring">
-                  <Ring
-                    value={f.profile.uniqueness.value / f.profile.uniqueness.max}
-                    size={84}
-                    className="cv-feat-ring--coral"
-                  />
-                  <span className="cv-feat-unique-value">{f.profile.uniqueness.value}</span>
-                </span>
-                <span className="cv-feat-unique-label">
-                  {f.profile.uniqueness.label} {f.profile.uniqueness.value}/{f.profile.uniqueness.max}
-                </span>
-              </div>
-              <Kicker>{f.profile.kicker}</Kicker>
-            </div>
+          {/* D — profile and content direction */}
+          <FeatureCard area="d" delay={0}>
             <div className="cv-feat-copy">
               <Title icon={Sparkles}>{f.profile.title}</Title>
-              <p className="cv-feat-body">{f.profile.body}</p>
+              <p className="cv-feat-body">Describe your business to find relevant tourism themes and get content directions shaped for your target market.</p>
             </div>
-          </FeatureCard>
-
-          {/* E — content direction */}
-          <FeatureCard area="e" delay={0}>
-            <div className="cv-feat-visual">
-              <ul className="cv-feat-options">
-                {f.direction.options.map((o, i) => (
-                  <li key={o} data-picked={i === 2 || undefined}>
-                    <span className="cv-feat-option-pill">Option {i + 1}</span>
-                    {o}
+            <div className="cv-feat-visual cv-feat-profile">
+              <ul className="cv-feat-matches">
+                {f.profile.matched.map((match) => (
+                  <li key={match.theme}>
+                    <span>{match.theme}</span>
+                    <Bar value={Number(match.confidence) * 100} />
+                    <strong>{match.confidence}</strong>
                   </li>
                 ))}
               </ul>
-              <Kicker>{f.direction.kicker}</Kicker>
+              <Kicker>{f.profile.kicker}</Kicker>
             </div>
-            <div className="cv-feat-copy">
-              <Title icon={PenLine}>{f.direction.title}</Title>
-              <p className="cv-feat-body">{f.direction.body}</p>
-            </div>
+            <details className="cv-feat-details">
+              <summary>Content direction &amp; all tourism themes</summary>
+              <p>{f.direction.body}</p>
+              <ul className="cv-feat-themes">
+                {FACTS.themes.map((theme) => <li key={theme}>{theme}</li>)}
+              </ul>
+            </details>
           </FeatureCard>
 
           {/* F — content review */}
@@ -364,61 +333,33 @@ export default function FeaturesSection() {
             </div>
             <div className="cv-feat-copy">
               <Title icon={ShieldCheck}>{f.review.title}</Title>
-              <p className="cv-feat-body">{f.review.body}</p>
+              <p className="cv-feat-body">Get clear feedback on each draft, with a review score and practical suggestions. You decide what to use.</p>
             </div>
           </FeatureCard>
 
-          {/* G — performance guidance */}
-          <FeatureCard area="g" delay={0}>
-            <div className="cv-feat-visual">
-              <div className="cv-feat-flow">
-                <ul className="cv-feat-kpis">
-                  {f.performance.metrics.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-                <ArrowRight className="cv-feat-flow-arrow" size={18} strokeWidth={1.75} aria-hidden="true" />
-                <span className="cv-feat-flow-chip" data-tone="coral">
-                  {f.performance.score}
-                </span>
-                <ArrowRight className="cv-feat-flow-arrow" size={18} strokeWidth={1.75} aria-hidden="true" />
-                <span className="cv-feat-flow-chip">{f.performance.report}</span>
-              </div>
-              <p className="cv-feat-sources">
-                {f.performance.sources.map((s) => (
-                  <span key={s} className="cv-feat-source">
-                    {s}
-                  </span>
-                ))}
-                <span>{f.performance.manual}</span>
-              </p>
-              <SampleBadge kind="illustrative" className="cv-feat-badge" />
-            </div>
+          {/* G — performance and local-language keywords */}
+          <FeatureCard area="g" delay={2}>
             <div className="cv-feat-copy">
               <Title icon={ChartLine}>{f.performance.title}</Title>
-              <p className="cv-feat-body">{f.performance.body}</p>
+              <p className="cv-feat-body">Bring in Meta and TikTok results for an effectiveness score, next steps, and local-language keywords to try.</p>
             </div>
-          </FeatureCard>
-
-          {/* H — local-language keywords */}
-          <FeatureCard area="h" delay={1}>
             <div className="cv-feat-visual">
+              <div className="cv-feat-sources">
+                {f.performance.sources.map((source) => <span key={source} className="cv-feat-source">{source}</span>)}
+                <span className="cv-feat-score">Effectiveness score <strong>82</strong></span>
+              </div>
+              <p className="cv-feat-keywords-title">{f.keywords.title}</p>
               <ul className="cv-feat-keywords">
-                {f.keywords.rows.map((k) => (
-                  <li key={k.lang}>
-                    <abbr className="cv-feat-lang" title={k.langName}>
-                      {k.lang}
-                    </abbr>
-                    <span lang={k.htmlLang}>{k.term}</span>
-                  </li>
+                {f.keywords.rows.map((keyword) => (
+                  <li key={keyword.lang} lang={keyword.htmlLang}>{keyword.term}</li>
                 ))}
               </ul>
-              <Kicker>{f.keywords.kicker}</Kicker>
+              <SampleBadge kind="illustrative" className="cv-feat-badge" />
             </div>
-            <div className="cv-feat-copy">
-              <Title icon={Languages}>{f.keywords.title}</Title>
-              <p className="cv-feat-body">{f.keywords.body}</p>
-            </div>
+            <details className="cv-feat-details">
+              <summary>How performance guidance works</summary>
+              <p>{f.performance.body}</p>
+            </details>
           </FeatureCard>
         </div>
       </div>

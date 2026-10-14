@@ -3,17 +3,60 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CeView - AI Demand Stabilization</title>
+    <title>CeView: Tourism demand intelligence for Cebu businesses</title>
+    <meta
+      name="description"
+      content="CeView forecasts traveler search interest up to 12 weeks ahead in the Philippines, South Korea, Japan and the US, so Cebu tourism businesses plan earlier."
+    />
+    <meta name="theme-color" content="#0b3f3c" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph / social preview (1200×630, built from the hero photo, CC BY-SA 3.0). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CeView" />
+    <meta property="og:title" content="CeView: Tourism demand intelligence for Cebu businesses" />
+    <meta
+      property="og:description"
+      content="CeView forecasts traveler search interest up to 12 weeks ahead in the Philippines, South Korea, Japan and the US, so Cebu tourism businesses plan earlier."
+    />
+    <meta property="og:image" content="/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CeView: See traveler demand before the opportunity passes." />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- The landing hero photo is the page's largest paint: start it early. -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/avif"
+      fetchpriority="high"
+      imagesrcset="/images/landing/hero-cebu-coast-1280.avif 1280w, /images/landing/hero-cebu-coast-1920.avif 1920w, /images/landing/hero-cebu-coast-2400.avif 2400w"
+      imagesizes="(max-width: 767px) 192vw, max(100vw, calc(min(88vh, 820px) * 3.4))"
+    />
+
+    <!-- Fonts load without blocking the first paint; metric-matched fallbacks
+         (styles/landing-foundation.css) keep the swap from shifting layout. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
-  <script>if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(function(r){for(let i=0;i<r.length;i++)r[i].unregister()})};localStorage.clear();</script>  <script type="module" crossorigin src="/assets/index-CYX3gAE4.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-Dv9i7DVy.css">
-</head>
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
+    <script type="module" crossorigin src="/assets/index-ZwbF7JBc.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-LKU41Hg7.css">
+  </head>
   <body class="antialiased">
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>

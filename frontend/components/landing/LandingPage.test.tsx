@@ -68,10 +68,12 @@ describe('LandingPage', () => {
     expect(first).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('shows all eight features, the seven themes exactly, and Meta/TikTok as text only', () => {
+  it('groups eight capabilities into six cards, preserves all themes, and shows Meta/TikTok as text', () => {
     renderPage();
     const features = document.getElementById('features') as HTMLElement;
-    expect(features.querySelectorAll('article.cv-feat')).toHaveLength(8);
+    expect(features.querySelectorAll('article.cv-feat')).toHaveLength(6);
+    expect(within(features).getByText('Content direction & all tourism themes')).toBeInTheDocument();
+    expect(within(features).getByText('Local-language keyword sets')).toBeInTheDocument();
     const themes = [...features.querySelectorAll('.cv-feat-themes li')].map((li) => li.firstChild?.textContent);
     expect(themes).toEqual([
       'Coastal & Island',

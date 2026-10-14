@@ -39,8 +39,8 @@ const ICONS: Record<CardKey, LucideIcon> = {
   souvenir: Gift,
 };
 
-/** Card photo width: a quarter of the page on desktop, half on tablet, 85% on phones. */
-const CARD_SIZES = '(min-width: 1024px) 24vw, (min-width: 768px) 46vw, 85vw';
+/** Narrow portrait images within compact horizontal cards. */
+const CARD_SIZES = '(min-width: 1200px) 8vw, (min-width: 768px) 16vw, 30vw';
 
 /** Two business types meeting one theme; decorative, the sentence beside it carries the meaning. */
 function ThemeDiagram() {
@@ -118,8 +118,11 @@ export default function WhoSection() {
 
   return (
     <section className="cv-section cv-who" id="who" aria-labelledby="cv-who-title">
-      <div className="cv-container">
-        <div className="cv-grid cv-who-head">
+      <div className="cv-who-hero">
+        <div className="cv-who-hero-photo" aria-hidden="true">
+          <LandingImage slot="how-lagoon" fill decorative sizes="(min-width: 768px) 65vw, 100vw" />
+        </div>
+        <div className="cv-container cv-who-head">
           <div className="cv-who-heading">
             <Eyebrow>{WHO.eyebrow}</Eyebrow>
             <h2 id="cv-who-title" className="cv-display-lg">
@@ -131,12 +134,24 @@ export default function WhoSection() {
           <p className="cv-body-lg cv-who-intro">{WHO.intro}</p>
         </div>
 
+      </div>
+      <div className="cv-container">
         <div className="cv-who-explainer">
           <IconTile icon={Shapes} />
-          <p className="cv-who-explainer-text">{WHO.explainer.text}</p>
+          <div className="cv-who-explainer-text">
+            <h3>Matches your business to what travelers are searching for.</h3>
+            <p>{WHO.explainer.text}</p>
+          </div>
           <ThemeDiagram />
         </div>
 
+        <div className="cv-who-directory-head">
+          <div>
+            <Eyebrow>Explore business opportunities by tourism theme</Eyebrow>
+            <h3>Find insights for your kind of business.</h3>
+          </div>
+          <p>Explore demand, seasonal trends, and traveler interests across Cebu’s key tourism themes.</p>
+        </div>
         <ul
           ref={listRef}
           className="cv-who-grid"
@@ -181,7 +196,7 @@ export default function WhoSection() {
             <Eyebrow>{WHO.partner.eyebrow}</Eyebrow>
             <h3 className="cv-who-partner-title">{WHO.partner.title}</h3>
             <p className="cv-who-partner-body">{WHO.partner.body}</p>
-            <Button href={WHO.partner.ctaHref} variant="ghost-on-dark" arrow>
+            <Button href={WHO.partner.ctaHref} variant="primary" arrow>
               {WHO.partner.cta}
             </Button>
           </div>
