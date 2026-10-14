@@ -252,60 +252,54 @@ export const PRODUCT = {
 export type TourId = 'radar' | 'studio' | 'review' | 'performance';
 
 /**
- * Product section part B: the real screens, one tab each. `pins` puts up to
- * two numbered markers on the screenshot (in % of its width and height) with
- * a short label to the `side` of each (desktop only).
+ * Product section part B: the real screens. A dark stage shows the selected
+ * screenshot in a browser frame; four cards below act as the tabs. `status`
+ * is the pill over each screen and describes what that screenshot shows.
  */
 export const SCREENS = {
-  eyebrow: 'See the actual screens',
-  title: 'Four tools, one workflow.',
+  eyebrow: 'See CeView in action',
+  /** Rendered as: {titleLead}<Accent>{titleAccent}</Accent>{titleTail} */
+  titleLead: 'Four tools, one ',
+  titleAccent: 'workflow',
+  titleTail: '.',
+  intro: 'Demand signals, market priorities, content guidance and performance context, inside one workflow.',
+  realBadge: 'Real CeView screen · sample data',
+  shownLabel: 'Showing now',
   caption: 'Real CeView screens, shown with a sample business and sample data.',
   ctaLead: 'Want to see the complete workflow?',
   ctaLink: 'Request a demo',
   tabs: [
     {
       id: 'radar',
-      label: 'Market radar',
-      body: 'Weekly forecasts, ranked markets and surge alerts for your themes.',
-      bullets: ['Surge alerts when interest climbs above baseline', 'Markets ranked for your tourism category', 'Flight access from each market'],
+      label: 'Demand Intelligence',
+      tone: 'teal',
+      body: 'See when interest may be rising, and which market deserves attention.',
+      status: 'Surge alert · South Korea · +24% vs baseline',
       alt: 'CeView dashboard showing a surge alert for South Korea and the markets ranked by potential for that alert’s category.',
-      pins: [
-        { x: 64, y: 52, label: 'Surge alert with timing', side: 'left' },
-        { x: 95.5, y: 52.5, label: 'Markets ranked for you', side: 'right' },
-      ],
     },
     {
       id: 'studio',
-      label: 'Content studio',
-      body: 'Turn the opportunity into captions and visual direction written for the market you’re targeting.',
-      bullets: ['Three tone options per draft', 'Hashtags and visual guidance', 'Market’s cultural context built in'],
+      label: 'Content Studio',
+      tone: 'coral',
+      body: 'Turn the opportunity into posts written for the market you’re targeting.',
+      status: 'Three caption options · written for South Korea',
       alt: 'CeView Content Studio showing three caption options for Instagram written for travelers from South Korea.',
-      pins: [
-        { x: 45.4, y: 31.5, label: 'Three tone options', side: 'left' },
-        { x: 81.8, y: 70.2, label: 'Visual guidance', side: 'left' },
-      ],
     },
     {
       id: 'review',
-      label: 'Content review',
-      body: 'Check a draft against the campaign direction before it goes anywhere.',
-      bullets: ['Rubric score with a pass mark', 'Plain-language suggestions', 'You approve the final version'],
+      label: 'Content Review',
+      tone: 'teal',
+      body: 'Check a caption and image against your campaign direction first.',
+      status: 'Review score 84 · passes the mark of 70',
       alt: 'CeView content review showing an overall score of 84, a pass result, sub-scores and a written explanation.',
-      pins: [
-        { x: 33, y: 56, label: 'Score and pass mark', side: 'left' },
-        { x: 38.3, y: 79.5, label: 'Plain-language suggestions', side: 'right' },
-      ],
     },
     {
       id: 'performance',
       label: 'Performance',
-      body: 'Bring Meta and TikTok results back into the workflow.',
-      bullets: ['ROAS, conversion rate, cost per customer, CTR, CPC', 'One effectiveness score', 'Weekly report with next actions'],
+      tone: 'coral',
+      body: 'Bring results back into the workflow, so the next decision has context.',
+      status: 'Effectiveness score 0.63 · good performance',
       alt: 'CeView performance screen showing an overall performance score and the ad metrics that drove it.',
-      pins: [
-        { x: 51.6, y: 31.8, label: 'One effectiveness score', side: 'right' },
-        { x: 96.6, y: 31.8, label: 'The metrics behind it', side: 'right' },
-      ],
     },
   ] as const,
 };
@@ -313,45 +307,51 @@ export const SCREENS = {
 /** How it works (#how-it-works): the one place the workflow is explained. */
 export const HOW = {
   eyebrow: 'How CeView works',
-  title: 'One connected path from understanding your business to improving your next campaign.',
+  /** Rendered as: {titleLead}<Accent>{titleAccent}</Accent>{titleTail} */
+  titleLead: 'One connected path from your business to your next ',
+  titleAccent: 'campaign',
+  titleTail: '.',
   intro:
-    'Five phases, one workspace. Your business context carries through every step, so you never re-explain yourself to a new tool.',
+    'Five phases in one workspace. Each step builds on the last, so you never re-explain your business to a new tool.',
   phases: [
     {
       title: 'Understand',
-      does: 'Reads your own description of what you offer and assigns up to three of seven tourism themes, each with a confidence score, then measures how distinct you are from similar local businesses.',
-      youGet: 'A clear profile of your positioning',
+      does: 'Reads your own description of what you offer, assigns up to three of seven tourism themes, and measures how distinct you are locally.',
+      youGet: 'A clear profile',
     },
     {
       title: 'Predict & prioritize',
-      does: 'Forecasts 12 weeks of search interest for your themes in each market, then ranks the markets for you and raises an alert when interest climbs above its recent baseline.',
+      does: 'Forecasts 12 weeks of search interest for your themes in each market, ranks the markets, and alerts you when interest climbs.',
       youGet: 'Where and when to focus',
     },
     {
       title: 'Create',
-      does: 'Drafts social media captions and visual direction using your profile, the forecast and the market’s cultural context.',
-      youGet: 'Content written for that market',
+      does: 'Drafts social captions and visual direction from your profile, the forecast and the market’s cultural context.',
+      youGet: 'Content for that market',
     },
     {
       title: 'Check & improve',
-      does: 'A second AI scores each draft against a fixed quality rubric and explains what to improve. You approve the final version.',
-      youGet: 'Content aligned with the strategy',
+      does: 'A second AI scores each draft against a fixed rubric and explains what to improve. You approve the final version.',
+      youGet: 'Strategy-aligned content',
     },
     {
       title: 'Learn & optimize',
-      does: 'Turns Meta and TikTok results (or numbers you enter) into one effectiveness score and a plain-language report with next actions.',
-      youGet: 'A better plan for next time',
+      does: 'Turns Meta and TikTok results, or numbers you enter, into one effectiveness score and a plain-language report.',
+      youGet: 'A better next plan',
     },
   ],
-  youGetLabel: 'You get:',
+  youGetLabel: 'You get',
+  /** Marks phase 04: nothing is published without your approval. */
+  approve: 'You approve here',
+  approveLabel: 'You approve each draft here. CeView never posts on your behalf.',
   /** The loop from phase 05 back to phase 02. */
-  loop: 'each campaign sharpens the next',
-  loopMobile: 'Each campaign sharpens the next',
-  gate: 'Operator approval before anything is published. CeView never posts on your behalf.',
+  loop: 'each campaign sharpens the next forecast',
+  /** Handwritten note over the photo. */
+  note: ['Spot it early.', 'Plan it well.', 'Grow Cebu together.'],
   resultLead: 'The result:',
-  result: 'fewer disconnected decisions, and a clear path from ‘there may be an opportunity’ to ‘here’s what we’ll do about it.’',
+  result: 'fewer disconnected decisions, and a clear path from “there may be an opportunity” to “here’s what we’ll do about it.”',
   primaryCta: 'Request a Demo',
-  secondaryCta: 'Take the Product Tour',
+  secondaryCta: 'Product Tour',
   finePrint:
     'Forecasts describe online search interest, an early indicator of traveler attention, not bookings or arrivals.',
 } as const;

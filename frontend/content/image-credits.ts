@@ -149,6 +149,22 @@ export const IMAGE_CREDITS = [
     attribution: 'Photo: Bounty Beach, Malapascua, by Vyacheslav Argenberg, CC BY 4.0, via Wikimedia Commons',
   },
   {
+    // "How CeView works": decorative, faded in from the section's top right.
+    slot: 'how-lagoon',
+    file: 'how-lagoon-1600.webp',
+    responsive: { base: 'how-lagoon', widths: [1000, 1600], avif: true },
+    width: 1600,
+    height: 1067,
+    alt: 'Limestone cliffs around a turquoise lagoon, with outrigger boats moored along a boardwalk.',
+    caption: 'Kayangan Lake viewpoint, Coron',
+    photographer: 'Mmlibranda',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:The_viewpoint_on_the_hike_to_Kayangan_Lake.jpg',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    verifiedLocation: 'Coron, Palawan, Philippines',
+    attribution: 'Photo: Kayangan Lake viewpoint, Coron, by Mmlibranda, CC BY-SA 4.0, via Wikimedia Commons',
+  },
+  {
     // Final CTA band: a 3:2 crop shown full-bleed under a dark teal overlay.
     slot: 'cta-aerial-ocean',
     file: 'cta-aerial-ocean-2400.webp',

@@ -62,7 +62,7 @@
   .cv-hero-title {
     margin-top: 16px;
     font-family: var(--ff-display);
-    font-size: clamp(2.5rem, 4vw, 4.25rem);
+    font-size: clamp(2.25rem, 3.5vw, 3.75rem);
     font-weight: 560;
     line-height: 1.08;
     letter-spacing: -0.02em;
@@ -521,7 +521,7 @@
       padding-top: 8px;
     }
     .cv-hero-title {
-      font-size: 2.125rem;
+      font-size: 2rem;
     }
     /* Lines are too long for a phone: let them wrap naturally. */
     .cv-hero-title-line {

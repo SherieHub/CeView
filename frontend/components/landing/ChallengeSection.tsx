@@ -16,13 +16,13 @@ const ICONS = [Radar, Layers];
 
 const photo = IMAGE_CREDITS.find((c) => c.slot === 'challenge-aerial-boats')!;
 
-/** Photo half of the panel: ~500px on desktop, full width when stacked. */
-const PHOTO_SIZES = '(min-width: 1024px) 520px, 100vw';
+/** Photo column of the panel: about 5/12 of the container on desktop, full width when stacked. */
+const PHOTO_SIZES = '(min-width: 1024px) 38vw, 100vw';
 
 export default function ChallengeSection() {
   return (
     <section className="cv-section cv-challenge" id="challenge" aria-labelledby="cv-challenge-title">
-      <div className="cv-container cv-challenge-inner">
+      <div className="cv-container">
         <header className="cv-challenge-head">
           <Eyebrow>{CHALLENGE.eyebrow}</Eyebrow>
           <h2 id="cv-challenge-title" className="cv-display-lg cv-challenge-title">

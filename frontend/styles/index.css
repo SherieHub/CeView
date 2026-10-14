@@ -5761,6 +5761,20 @@
   html:has(.lp) {
     scroll-behavior: smooth;
   }
+  /* Sections below the hero aren't laid out or painted until they near the
+     viewport: the page's first paint only pays for the hero. `auto` makes the
+     browser remember each section's real size once it has rendered. */
+  .lp main > section:not(:first-child),
+  .lp > footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1000px;
+  }
+  /* Set by LandingPage once someone follows an in-page link: real sizes, so
+     anchors land where they should. */
+  html[data-lp-full] .lp main > section,
+  html[data-lp-full] .lp > footer {
+    content-visibility: visible;
+  }
   .lp-skip {
     position: absolute;
     left: 16px;

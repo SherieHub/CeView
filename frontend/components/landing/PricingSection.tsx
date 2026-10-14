@@ -28,9 +28,20 @@ export default function PricingSection() {
     const list = listRef.current;
     if (!list) return;
     const offsetOf = (i: number) => (list.children[i] as HTMLElement).offsetLeft - list.offsetLeft;
-    if (window.matchMedia?.('(max-width: 767px)').matches) {
-      list.scrollLeft = offsetOf(growthIndex);
-      setCurrent(growthIndex);
+    // Measuring at load would force a layout of the whole page, so wait
+    // until the carousel is about to come into view.
+    let opener: IntersectionObserver | undefined;
+    if (window.matchMedia?.('(max-width: 767px)').matches && typeof IntersectionObserver !== 'undefined') {
+      opener = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          opener?.disconnect();
+          list.scrollLeft = offsetOf(growthIndex);
+          setCurrent(growthIndex);
+        },
+        { rootMargin: '400px 0px' },
+      );
+      opener.observe(list);
     }
     let frame = 0;
     const onScroll = () => {
@@ -44,6 +55,7 @@ export default function PricingSection() {
     };
     list.addEventListener('scroll', onScroll, { passive: true });
     return () => {
+      opener?.disconnect();
       list.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(frame);
     };

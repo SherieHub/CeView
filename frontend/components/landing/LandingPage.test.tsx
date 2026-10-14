@@ -44,11 +44,11 @@ describe('LandingPage', () => {
 
   it('switches the screen tabs with the arrow keys and exposes one panel at a time', () => {
     renderPage();
-    const first = screen.getByRole('tab', { name: /Market radar/ });
+    const first = screen.getByRole('tab', { name: /Demand Intelligence/ });
     expect(first).toHaveAttribute('aria-selected', 'true');
     first.focus();
     fireEvent.keyDown(first, { key: 'ArrowDown' });
-    const second = screen.getByRole('tab', { name: /Content studio/ });
+    const second = screen.getByRole('tab', { name: /Content Studio/ });
     expect(second).toHaveAttribute('aria-selected', 'true');
     expect(second).toHaveFocus();
     const exposed = document.querySelectorAll('[role="tabpanel"]:not([aria-hidden="true"])');
@@ -58,7 +58,7 @@ describe('LandingPage', () => {
 
   it('wraps the screen tabs with Home/End and the arrow keys', () => {
     renderPage();
-    const first = screen.getByRole('tab', { name: /Market radar/ });
+    const first = screen.getByRole('tab', { name: /Demand Intelligence/ });
     first.focus();
     fireEvent.keyDown(first, { key: 'ArrowLeft' });
     const last = screen.getByRole('tab', { name: /Performance/ });
@@ -154,28 +154,13 @@ describe('LandingPage', () => {
     ]);
   });
 
-  it('moves the active workflow phase with the arrow keys, Home/End and a tap', () => {
+  it('shows the five workflow phases with the approval marker on phase 04 and the loop', () => {
     renderPage();
-    const rail = screen.getByRole('list', { name: 'The five phases' });
-    const phases = within(rail).getAllByRole('listitem');
+    const list = screen.getByRole('list', { name: 'The five phases' });
+    const phases = within(list).getAllByRole('listitem');
     expect(phases).toHaveLength(5);
-    const current = () => phases.filter((p) => p.getAttribute('aria-current') === 'step');
-    expect(current()).toEqual([phases[0]]);
-
-    phases[0].focus();
-    fireEvent.keyDown(phases[0], { key: 'ArrowRight' });
-    expect(current()).toEqual([phases[1]]);
-    expect(phases[1]).toHaveFocus();
-    expect(phases[1]).toHaveAttribute('tabindex', '0');
-    expect(phases[0]).toHaveAttribute('tabindex', '-1');
-
-    fireEvent.keyDown(phases[1], { key: 'End' });
-    expect(current()).toEqual([phases[4]]);
-    fireEvent.keyDown(phases[4], { key: 'ArrowRight' });
-    expect(current()).toEqual([phases[0]]);
-
-    fireEvent.click(phases[3]);
-    expect(current()).toEqual([phases[3]]);
+    expect(within(phases[3]).getByText(/CeView never posts on your behalf/)).toBeInTheDocument();
+    expect(screen.getByText('each campaign sharpens the next forecast')).toBeInTheDocument();
   });
 
   it('keeps one FAQ answer open at a time', () => {
@@ -189,34 +174,44 @@ describe('LandingPage', () => {
   });
 
   describe('demo form', () => {
-    const form = () => screen.getByRole('form', { name: 'Request your demo' });
+    // Found by section, not by role: role queries walk the accessibility tree
+    // of the whole (large) page and made these tests slow enough to time out.
+    // LeadForm.test.tsx covers the form on its own in more depth.
+    const form = () => {
+      const f = document.querySelector('#demo form') as HTMLElement;
+      expect(f).toHaveAttribute('aria-labelledby', 'lp-form-title');
+      return within(f);
+    };
 
     it('flags each missing required field and focuses the first one', () => {
       renderPage();
-      fireEvent.click(within(form()).getByRole('button', { name: /Request My Demo/ }));
-      expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.getByLabelText('Full name')).toHaveFocus();
-      expect(screen.getByText('Please enter your work email.')).toBeInTheDocument();
-      expect(screen.getByText('Please enter your business name.')).toBeInTheDocument();
-      expect(screen.getByText('Please choose the closest type of business.')).toBeInTheDocument();
+      const f = form();
+      fireEvent.click(f.getByRole('button', { name: /Request My Demo/ }));
+      expect(f.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
+      expect(f.getByLabelText('Full name')).toHaveFocus();
+      expect(f.getByText('Please enter your work email.')).toBeInTheDocument();
+      expect(f.getByText('Please enter your business name.')).toBeInTheDocument();
+      expect(f.getByText('Please choose the closest type of business.')).toBeInTheDocument();
     });
 
     it('rejects a malformed email', () => {
       renderPage();
-      fireEvent.change(screen.getByLabelText('Work email'), { target: { value: 'not-an-email' } });
-      fireEvent.click(within(form()).getByRole('button', { name: /Request My Demo/ }));
-      expect(screen.getByText(/valid email address/)).toBeInTheDocument();
+      const f = form();
+      fireEvent.change(f.getByLabelText('Work email'), { target: { value: 'not-an-email' } });
+      fireEvent.click(f.getByRole('button', { name: /Request My Demo/ }));
+      expect(f.getByText(/valid email address/)).toBeInTheDocument();
     });
 
     it('never claims a request was sent when no destination is configured', () => {
       renderPage();
-      fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Ana Cruz' } });
-      fireEvent.change(screen.getByLabelText('Work email'), { target: { value: 'ana@resort.ph' } });
-      fireEvent.change(screen.getByLabelText('Business name'), { target: { value: 'Sunset Cove' } });
-      fireEvent.change(screen.getByLabelText('Type of tourism business'), { target: { value: 'Resort, hotel or homestay' } });
-      fireEvent.click(within(form()).getByRole('button', { name: /Request My Demo/ }));
-      expect(screen.getByText(/aren’t open just yet, so nothing was sent/)).toBeInTheDocument();
-      expect(screen.queryByText(/your request is in/)).not.toBeInTheDocument();
+      const f = form();
+      fireEvent.change(f.getByLabelText('Full name'), { target: { value: 'Ana Cruz' } });
+      fireEvent.change(f.getByLabelText('Work email'), { target: { value: 'ana@resort.ph' } });
+      fireEvent.change(f.getByLabelText('Business name'), { target: { value: 'Sunset Cove' } });
+      fireEvent.change(f.getByLabelText('Type of tourism business'), { target: { value: 'Resort, hotel or homestay' } });
+      fireEvent.click(f.getByRole('button', { name: /Request My Demo/ }));
+      expect(f.getByText(/aren’t open just yet, so nothing was sent/)).toBeInTheDocument();
+      expect(screen.queryByText(/we’ll be in touch soon/)).not.toBeInTheDocument();
     });
   });
 });

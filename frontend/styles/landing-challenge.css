@@ -83,8 +83,8 @@
       text-align: center;
     }
   }
-  /* < 768px: the markets wrap into two columns; the US spans both. */
-  @media (max-width: 767px) {
+  /* < 900px: the markets wrap into two columns; the US spans both. */
+  @media (max-width: 899px) {
     .cv-strip-list {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -103,10 +103,7 @@
   }
 
   /* ---------- the challenge ---------- */
-  /* Narrower than the page container: the panel reads as one object. */
-  .cv-challenge-inner {
-    max-width: calc(1200px + 2 * 72px);
-  }
+  /* Uses the full page container, so its margins match every other section. */
   .cv-challenge-head {
     display: grid;
     justify-items: center;
@@ -227,12 +224,14 @@
     color: rgba(255, 255, 255, 0.62);
   }
 
-  /* The two problems, side by side. */
+  /* The two problems, side by side: compact supporting cards under the panel. */
   .cv-challenge-problems {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px;
-    margin: 28px 0 0;
+    gap: 20px;
+    /* Narrower than the panel and centred under it. */
+    max-width: 1040px;
+    margin: 20px auto 0;
     padding: 0;
     list-style: none;
   }
@@ -242,29 +241,38 @@
   .cv-challenge-problem {
     display: flex;
     align-items: flex-start;
-    gap: 22px;
+    gap: 16px;
     width: 100%;
+    padding: 20px 22px;
     box-shadow: none;
   }
   @media (min-width: 1024px) {
     .cv-challenge-problem {
-      padding: 36px;
+      padding: 22px 26px;
     }
   }
+  .cv-challenge-problem .cv-icon-tile {
+    width: 40px;
+    height: 40px;
+  }
+  .cv-challenge-problem .cv-icon-tile svg {
+    width: 18px;
+    height: 18px;
+  }
   .cv-challenge-problem-title {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     font-family: var(--ff-display);
     font-optical-sizing: auto;
-    font-size: 1.375rem;
+    font-size: 1.125rem;
     font-weight: 500;
-    line-height: 1.25;
+    line-height: 1.3;
     letter-spacing: -0.01em;
     color: var(--ink-900);
   }
   .cv-challenge-problem-body {
     font-family: var(--ff-ui);
-    font-size: 0.9375rem;
-    line-height: 1.7;
+    font-size: 0.875rem;
+    line-height: 1.6;
     color: var(--ink-500);
   }
 

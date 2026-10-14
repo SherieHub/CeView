@@ -1,9 +1,10 @@
 /**
  * Product section (#product).
  *
- * Part A, the split: copy on the left; the Market Explorer card (sample data)
- * overlapping the left edge of a photo collage — a traveler over turquoise
- * water, an inset sea turtle, and a handwritten note with a coral swash.
+ * Part A, the split: copy with the Market Explorer card (sample data) under it
+ * on the left; on the right a handwritten note with a coral swash above a
+ * photo of a traveler over turquoise water, with a sea turtle inset hanging
+ * off its bottom-right corner.
  * Part B (ScreenTabs): the real CeView screens, one tab each.
  *
  * Styles: styles/landing-product.css (.cv-product-*, .cv-mx-*, .cv-screens-*).
@@ -14,15 +15,11 @@ import useInView from './ui/useInView';
 import MarketExplorer from './MarketExplorer';
 import ScreenTabs from './ScreenTabs';
 
-/**
- * The handwritten note. Rendered twice: beside the photo on desktop, and after
- * the Market Explorer card below 1024px (where the card overlaps the photo's
- * foot). CSS shows one; the hidden copy is display:none, so AT reads it once.
- */
-function HandNote({ placement }: { placement: 'desktop' | 'mobile' }) {
+/** The handwritten note above the photo. */
+function HandNote() {
   const [ref, shown] = useInView<HTMLParagraphElement>(0.6);
   return (
-    <p ref={ref} className="cv-product-note" data-placement={placement} data-shown={shown || undefined}>
+    <p ref={ref} className="cv-product-note" data-shown={shown || undefined}>
       {PRODUCT.note.map((line) => (
         <span key={line}>{line}</span>
       ))}
@@ -51,18 +48,19 @@ export default function ProductSection() {
             </Button>
           </div>
 
-          <div className="cv-product-collage">
-            <div className="cv-product-photo">
-              <LandingImage slot="product-traveler-lagoon" fill sizes="(min-width: 1024px) 50vw, 100vw" />
-            </div>
-            <div className="cv-product-inset">
-              <LandingImage slot="product-sea-turtle" fill sizes="(min-width: 1024px) 20vw, 40vw" />
-            </div>
-            <HandNote placement="desktop" />
-          </div>
-
           <MarketExplorer className="cv-product-card" />
-          <HandNote placement="mobile" />
+
+          <div className="cv-product-collage">
+            <HandNote />
+            <div className="cv-product-media">
+              <div className="cv-product-photo">
+                <LandingImage slot="product-traveler-lagoon" fill sizes="(min-width: 1024px) 50vw, 100vw" />
+              </div>
+              <div className="cv-product-inset">
+                <LandingImage slot="product-sea-turtle" fill sizes="(min-width: 1024px) 18vw, 40vw" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <ScreenTabs />

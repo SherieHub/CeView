@@ -20,8 +20,6 @@
   /* Card-styled table; the CeView column is tinted like a featured plan. */
   .cv-cmp-table {
     --cmp-cols: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.5fr);
-    max-width: 1120px;
-    margin-inline: auto;
     border: 1px solid var(--line);
     border-radius: var(--r-card);
     background: var(--white);

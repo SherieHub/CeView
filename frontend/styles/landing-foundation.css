@@ -92,7 +92,7 @@
   --coral-100: #fce6dd;
 
   /* ---- Sand & neutrals ---- */
-  --sand-50: #fbf7f1;
+  --sand-50: #f4fffe;
   --sand-100: #f3ece2;
   --white: #ffffff;
   /* The spec names this --line; index.css already defines a legacy
@@ -112,8 +112,9 @@
   --r-image: 28px;
 
   /* ---- Layout ---- */
-  /* Wide content area: page margins stay small, so content stretches. */
-  --cv-max: 1600px;
+  /* Max content width; the page margin is the container padding plus whatever
+     is left either side of this on wide screens. */
+  --cv-max: 1320px;
   --cv-header-h: 72px;
   --cv-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -258,8 +259,8 @@
   }
   @media (min-width: 768px) {
     .cv-container {
-      max-width: calc(var(--cv-max) + 64px);
-      padding-inline: 32px;
+      max-width: calc(var(--cv-max) + 96px);
+      padding-inline: 48px;
     }
     .cv-section {
       padding-block: 104px;
@@ -267,8 +268,8 @@
   }
   @media (min-width: 1024px) {
     .cv-container {
-      max-width: calc(var(--cv-max) + 88px);
-      padding-inline: 44px;
+      max-width: calc(var(--cv-max) + 160px);
+      padding-inline: 80px;
     }
     .cv-section {
       padding-block: 128px;
@@ -277,10 +278,22 @@
       column-gap: 24px;
     }
   }
+  /* 1024–1199px: the header's six links and two actions need the room. */
+  @media (min-width: 1024px) and (max-width: 1199px) {
+    .cv-container {
+      padding-inline: 44px;
+    }
+  }
   @media (min-width: 1280px) {
     .cv-container {
-      max-width: calc(var(--cv-max) + 144px);
-      padding-inline: 72px;
+      max-width: calc(var(--cv-max) + 192px);
+      padding-inline: 96px;
+    }
+  }
+  @media (min-width: 1440px) {
+    .cv-container {
+      max-width: calc(var(--cv-max) + 256px);
+      padding-inline: 128px;
     }
   }
 
@@ -677,7 +690,7 @@
       gap: 0;
     }
     .cv-header-link {
-      padding-inline: 8px;
+      padding-inline: 6px;
     }
   }
 
