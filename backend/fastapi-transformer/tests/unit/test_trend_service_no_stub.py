@@ -15,7 +15,7 @@ def test_raises_when_serpapi_key_is_not_set(monkeypatch):
     monkeypatch.setattr(trend_service, "_SERPAPI_KEY", None)
 
     with pytest.raises(DependencyUnavailable) as excinfo:
-        trend_service.fetch_current_index("korea", "Coastal & Island")
+        trend_service.fetch_current_index("korea", ["Coastal & Island"])
 
     assert excinfo.value.dependency == "serpapi"
     assert "SERPAPI_KEY" in excinfo.value.cause
@@ -31,7 +31,7 @@ def test_raises_with_the_upstream_reason_on_a_fetch_failure(monkeypatch):
     monkeypatch.setattr(trend_service.httpx, "get", _boom)
 
     with pytest.raises(DependencyUnavailable) as excinfo:
-        trend_service.fetch_current_index("korea", "Coastal & Island")
+        trend_service.fetch_current_index("korea", ["Coastal & Island"])
 
     assert "429" in excinfo.value.cause
 
@@ -47,7 +47,7 @@ def test_fetch_trend_history_raises_when_serpapi_key_missing(monkeypatch):
     monkeypatch.setattr(trend_service, "_SERPAPI_KEY", None)
 
     with pytest.raises(DependencyUnavailable):
-        trend_service.fetch_trend_history("japan", "Coastal & Island", 12)
+        trend_service.fetch_trend_history("japan", ["Coastal & Island"], 12)
 
 
 def test_no_stub_symbols_survive():

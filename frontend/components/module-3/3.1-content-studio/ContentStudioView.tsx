@@ -14,7 +14,7 @@
  * owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Image as ImageIcon, PenLine } from 'lucide-react';
+import { Image as ImageIcon, PenLine } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
@@ -282,7 +282,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     setPublishOpen(false);
   };
 
-  const stubbed = content?.source === 'fallback' || content?.source === 'template';
 
   // No surge + market picked yet — gate everything below behind the picker.
   // No entry point (sidebar nav, a stale/empty store) may skip this by
@@ -333,16 +332,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       />
 
       {marketsError != null && <div className="mb-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
-
-      {stubbed && (
-        <div className="banner banner--warn mb-4" role="status">
-          <AlertTriangle aria-hidden="true" />
-          <div>
-            <b>Showing stubbed content.</b> The AI service returned placeholder captions instead of
-            a real generation — nothing below reflects an actual model output.
-          </div>
-        </div>
-      )}
 
       {contentError != null && <div className="mb-4"><ApiErrorPanel error={contentError} label="Content Studio" /></div>}
 

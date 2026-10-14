@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Single bridge between Spring Boot orchestrator and the two FastAPI AI microservices.
@@ -86,13 +87,9 @@ public class AIInferenceGatewayService {
     public Map<String, Object> rankMarketsForCategory(String category) {
         var payload = new HashMap<String, Object>();
         payload.put("category", category);
-        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
-        return transformerClient.post().uri("/api/trends/rank-markets")
-                .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(MAP_TYPE)
-                .block(rankMarketsTimeout);
+        // Same translating path as every other JSON call, so a market-ranking outage
+        // produces the unavailability contract instead of a raw transport exception.
+        return post(transformerClient, "/api/trends/rank-markets", payload, rankMarketsTimeout);
     }
 
     // ─── Module 2.1 — Market data ingestion (fastapi-transformer) ────────────
@@ -279,8 +276,13 @@ public class AIInferenceGatewayService {
     }
 
     private Map<String, Object> post(WebClient client, String path, Map<String, Object> payload) {
+        return post(client, path, payload, timeout);
+    }
+
+    private Map<String, Object> post(WebClient client, String path, Map<String, Object> payload,
+                                     Duration bound) {
         try {
-            return doPost(client, path, payload);
+            return doPost(client, path, payload, bound);
         } catch (WebClientRequestException noResponse) {
             // Connection refused / DNS / socket reset — FastAPI never answered, so there
             // is no body to pass through. Translated here rather than in the shared
@@ -288,10 +290,25 @@ public class AIInferenceGatewayService {
             // "fastapi"; ExternalMarketDataClient raises the same exception type for
             // World Bank and forex, which must not be mislabelled as an AI outage.
             throw AiDependencyException.unreachable(springPath(path), noResponse);
+        } catch (RuntimeException failure) {
+            // The service accepted the connection and then said nothing within the
+            // bound. Reactor surfaces .timeout() through block() as a RuntimeException
+            // whose cause is the TimeoutException. The TimeoutException stays chained so
+            // callers that tag timeouts (ComplianceController, CreativeDirectionService)
+            // still recognise one.
+            if (failure.getCause() instanceof TimeoutException timedOut) {
+                AiDependencyException unavailable = AiDependencyException.unreachableAfterTimeout(
+                        springPath(path),
+                        "no response from " + path + " within " + bound.toSeconds() + " s");
+                unavailable.initCause(timedOut);
+                throw unavailable;
+            }
+            throw failure;
         }
     }
 
-    private Map<String, Object> doPost(WebClient client, String path, Map<String, Object> payload) {
+    private Map<String, Object> doPost(WebClient client, String path, Map<String, Object> payload,
+                                       Duration bound) {
         String traceId = MDC.get(TraceIdFilter.MDC_KEY);
         return client.post().uri(path)
                 .headers(h -> { if (traceId != null) h.set(TraceIdFilter.HEADER, traceId); })
@@ -310,7 +327,11 @@ public class AIInferenceGatewayService {
                                 springPath(path)))
                 )
                 .bodyToMono(MAP_TYPE)
-                .block(timeout);
+                // .timeout() rather than block(bound): block's own bound throws a bare
+                // IllegalStateException that cannot be told apart from a bug, while
+                // .timeout() signals a TimeoutException that post() translates.
+                .timeout(bound)
+                .block();
     }
 
     /**

@@ -182,7 +182,8 @@ describe('OnboardingWizard', () => {
     expect(railRow('Analysis')).toHaveAttribute('data-state', 'pending');
   });
 
-  it('blocks Finish on the terminal step until the analysis card lands', () => {
+  it('keeps Finish disabled on the terminal step while the analysis is still running', () => {
+    // analyzeMock never resolves by default (beforeEach), so the analysis is in flight.
     renderWizard(DEMO_OB_DRAFT);
 
     for (let i = 0; i < 4; i++) {
@@ -190,6 +191,7 @@ describe('OnboardingWizard', () => {
     }
 
     expect(screen.getByText('Step 5 of 5')).toBeInTheDocument();
+    expect(analyzeMock).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /Finish/ })).toBeDisabled();
   });
 

@@ -7,12 +7,35 @@ import { requireBackend, SEED_OPERATOR } from './support/stack';
 //
 // The connect/disconnect endpoints have no backend implementation yet
 // (docs/module-3/backend/PlatformConnectionController.md — specified, not
-// implemented), so this stubs just /api/connections and drives everything
-// else — login, routing, Content Studio's real gating — against the real
-// stack, same as login.spec.ts's "Platforms connect modal" test. Swap the
-// route stub for a real assertion once that controller lands.
+// implemented). The first describe asserts what an operator actually sees on the
+// real stack. The second drives the connect/publish wiring against an explicitly
+// SIMULATED /api/connections backend — those tests prove UI wiring, not that
+// connecting works, and must not be read as the latter. Replace the simulation
+// with real assertions once that controller lands.
 
-test.describe('Platforms', () => {
+test.describe('Platforms — real stack (no connections backend)', () => {
+  test.beforeEach(async () => {
+    await requireBackend();
+  });
+
+  test('says platform connections are not available yet and disables every Connect', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByPlaceholder('you@example.com').fill(SEED_OPERATOR.email);
+    await page.getByPlaceholder('••••••••').fill(SEED_OPERATOR.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.goto('/settings/platforms');
+
+    await expect(page.getByText(/connecting social platforms isn't available yet/i)).toBeVisible();
+    const connects = page.getByRole('button', { name: 'Connect', exact: true });
+    await expect(connects.first()).toBeVisible();
+    for (const button of await connects.all()) {
+      await expect(button).toBeDisabled();
+    }
+  });
+});
+
+test.describe('Platforms — SIMULATED /api/connections backend', () => {
   test.beforeEach(async () => {
     await requireBackend();
   });

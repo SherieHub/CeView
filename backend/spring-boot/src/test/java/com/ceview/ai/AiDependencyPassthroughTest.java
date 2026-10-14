@@ -239,19 +239,17 @@ class AiDependencyPassthroughTest {
      * encoder. Reactor raises the bare IllegalStateException here for real, not as
      * a hand-built stand-in.
      *
-     * <p><b>This path does NOT produce the unavailability contract.</b>
-     * {@code post(...)} catches only {@link WebClientRequestException}, and Reactor
-     * signals a blocking-read timeout as a plain {@link IllegalStateException} with
-     * no distinct type. It therefore propagates untranslated: the browser gets a
-     * generic error with no {@code dependency}, {@code cause} or {@code stage}, so
-     * a cold start is indistinguishable from a bug.
-     *
-     * <p>Pinned as-is deliberately. The test asserts what the gateway actually does
-     * rather than what the unavailability contract asks for, so the gap is visible
-     * in the suite instead of being discovered from a support ticket.
+     * <p>A silent server is an AI outage like any other, so it must produce the
+     * unavailability contract ({@code AiDependencyException}: 503,
+     * {@code AI_SERVICE_UNREACHABLE}, {@code dependency = "fastapi"}) — the factory
+     * {@link AiDependencyException#unreachableAfterTimeout} exists for exactly this.
+     * This test used to pin the raw Reactor {@code IllegalStateException} "as-is",
+     * which kept the suite green while the browser received a generic error with no
+     * dependency, cause or stage. It now asserts the contract and FAILS until the
+     * gateway translates the timeout.
      */
     @Test
-    void aServerThatNeverAnswersPropagatesReactorsRawTimeout() throws Exception {
+    void aServerThatNeverAnswersProducesTheUnavailabilityContract() throws Exception {
         // The accepted peer socket MUST stay strongly reachable. Discarding it (the
         // obvious `silent.accept();`) leaves it unreferenced, so a GC inside the 1 s
         // window finalizes it, resets the connection, and the call fails as a
@@ -272,9 +270,15 @@ class AiDependencyPassthroughTest {
             AIInferenceGatewayService gateway = gatewayPointedAt(silent.getLocalPort());
 
             assertThatThrownBy(() -> gateway.classifyCategories(Map.of("description", "dive shop")))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("Timeout on blocking read")
-                    .isNotInstanceOf(AiDependencyException.class);
+                    .isInstanceOfSatisfying(AiDependencyException.class, ex -> {
+                        assertThat(ex.getStatus()).isEqualTo(503);
+                        assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
+                        assertThat(ex.getDependency()).isEqualTo("fastapi");
+                        assertThat(ex.getCause2()).contains("within 1 s");
+                        // Kept chained: ComplianceController and CreativeDirectionService
+                        // tag timeouts by checking for exactly this cause.
+                        assertThat(ex.getCause()).isInstanceOf(java.util.concurrent.TimeoutException.class);
+                    });
         } finally {
             synchronized (held) {
                 for (Socket peer : held) {
@@ -289,18 +293,15 @@ class AiDependencyPassthroughTest {
      * {@code post(...)}, so unlike every other JSON call it never translates a
      * transport failure.
      *
-     * <p><b>This path does NOT produce the unavailability contract.</b> A refused
-     * connection surfaces as {@link WebClientRequestException} and lands in the
-     * legacy {@code ApiExceptionHandler}, where {@code cause} is discarded — so
-     * Module 2 market-ranking outages read differently from every other AI outage
-     * in the system.
-     *
-     * <p>Pinned as-is deliberately: the asymmetry between this call and the rest of
-     * the gateway is intentional in the current code, and asserting it keeps the
-     * difference explicit rather than incidental.
+     * <p>A refused connection here is a Module 2 AI outage and must read like every
+     * other one: {@code AiDependencyException} (503, {@code AI_SERVICE_UNREACHABLE},
+     * {@code dependency = "fastapi"}). This test used to pin the raw
+     * {@link WebClientRequestException} "as-is", which lands in the legacy
+     * {@code ApiExceptionHandler} and discards {@code cause}. It now asserts the
+     * contract and FAILS until rank-markets goes through the translating path.
      */
     @Test
-    void rankMarketsForCategoryPropagatesTheRawTransportFailure() throws Exception {
+    void rankMarketsForCategoryProducesTheUnavailabilityContract() throws Exception {
         int closedPort;
         try (ServerSocket probe = loopbackServerSocket()) {
             closedPort = probe.getLocalPort();
@@ -309,8 +310,11 @@ class AiDependencyPassthroughTest {
         AIInferenceGatewayService gateway = gatewayPointedAt(closedPort);
 
         assertThatThrownBy(() -> gateway.rankMarketsForCategory("diving"))
-                .isInstanceOf(WebClientRequestException.class)
-                .isNotInstanceOf(AiDependencyException.class);
+                .isInstanceOfSatisfying(AiDependencyException.class, ex -> {
+                    assertThat(ex.getStatus()).isEqualTo(503);
+                    assertThat(ex.getCode()).isEqualTo("AI_SERVICE_UNREACHABLE");
+                    assertThat(ex.getDependency()).isEqualTo("fastapi");
+                });
     }
 
     /**

@@ -30,7 +30,11 @@ def client(monkeypatch):
 @pytest.fixture
 def report_calls(monkeypatch):
     calls = []
-    monkeypatch.setattr(report_llm, "performance_report", lambda **kw: calls.append(kw) or {"ok": True})
+    # A complete report, so the router's output check (which rejects {} and partial
+    # answers) passes and the test isolates the funnel-input behaviour.
+    full_report = {"executiveSummary": "s", "funnelDiagnostics": [{}], "recommendations": [{}],
+                   "recommendedPlatform": "Naver Blog"}
+    monkeypatch.setattr(report_llm, "performance_report", lambda **kw: calls.append(kw) or dict(full_report))
     return calls
 
 

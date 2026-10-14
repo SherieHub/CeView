@@ -71,6 +71,10 @@ class ReportRequest(BaseModel):
     market:             str                 = Field(default="korea")
 
 
+# Fields the frontend's action plan renders; a report without them is no report.
+_REQUIRED_REPORT_FIELDS = ("executiveSummary", "funnelDiagnostics", "recommendations", "recommendedPlatform")
+
+
 # ─── /generate ────────────────────────────────────────────────────────────────
 
 @router.post("/generate")
@@ -128,6 +132,25 @@ def generate(req: ReportRequest) -> dict:
         weeks=req.weeks,
         market=req.market,
     )
+
+    # _generate_json returns {} on any model error, and the model can also answer
+    # with JSON that lacks the report's structure. Either way there is no report:
+    # returning it with 200 rendered a blank action plan with no error to show.
+    missing = [key for key in _REQUIRED_REPORT_FIELDS if not (result or {}).get(key)]
+    if missing:
+        log.warning("report.generate unusable model output missing=%s", missing)
+        raise DependencyUnavailable(
+            code=errors.MOD4_REPORT_UNAVAILABLE,
+            message="The prescriptive report is unavailable.",
+            dependency="gemini",
+            cause=(
+                "the report model returned no output"
+                if not result else
+                f"the report model's answer was missing {', '.join(missing)}"
+            ),
+            stage="fastapi-sbert/report.generate",
+        )
+
     log.info("report.generate ok source=groq")
     return result
 

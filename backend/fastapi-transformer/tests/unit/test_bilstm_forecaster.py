@@ -166,11 +166,17 @@ def test_validated_status_reports_normal_confidence(monkeypatch):
 
 
 def test_weekly_forecasts_are_ordered_by_week_ahead(monkeypatch):
+    # Values deliberately NOT monotonic in week_ahead, so ordering by value and
+    # ordering by week_ahead give different answers - only the latter is right.
+    values = {1: 50.0, 2: 41.0, 3: 63.0, 4: 47.0, 5: 58.0, 6: 44.0,
+              7: 61.0, 8: 39.0, 9: 55.0, 10: 52.0, 11: 49.0, 12: 60.0}
     shuffled = model_response()
-    shuffled["weekly_forecasts"] = list(reversed(shuffled["weekly_forecasts"]))
+    shuffled["weekly_forecasts"] = [
+        {"week_ahead": week, "google_trends": values[week]} for week in (7, 2, 12, 1, 9, 4, 11, 3, 6, 10, 5, 8)
+    ]
     use_client(monkeypatch, FakeClient(shuffled))
     result = bf.forecast({"market": "korea", "category": "Coastal & Island", "trendHistory": history()})
-    assert result["weekly_forecasts"] == sorted(result["weekly_forecasts"])
+    assert result["weekly_forecasts"] == [values[week] for week in range(1, 13)]
 
 
 def test_sends_normalized_market_and_category_to_the_space(monkeypatch):
