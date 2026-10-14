@@ -1,43 +1,53 @@
 /**
- * Demo request — the page's main conversion point. Split layout: what the
- * walkthrough covers (plus honest access/pricing status) beside the form.
+ * Request a demo (#demo) — the page's main conversion point. Left: what the
+ * walkthrough covers and the Cebu pilot (no "spots left" counter or other
+ * scarcity), with a photo on desktop. Right: the form card (LeadForm).
+ * The background splits sand / white on desktop.
+ *
+ * Styles: styles/landing-pricing.css (.cv-demo-*, .cv-form-*).
  */
 import { CircleCheck, KeyRound } from 'lucide-react';
-import { DEMO } from './landingContent';
-import { SectionHead } from './landingParts';
+import { DEMO } from '../../content/landing';
+import { Eyebrow, IconTile, LandingImage } from './ui';
 import LeadForm from './LeadForm';
 
 export default function DemoSection() {
   return (
-    <section className="lp-section lp-demo" id="request-demo" aria-labelledby="lp-demo-title">
-      <div className="lp-demo-bg" aria-hidden="true">
-        <span className="lp-orb lp-orb--cyan" />
-      </div>
-      <div className="lp-wrap lp-demo-grid">
-        <div className="lp-demo-copy">
-          <SectionHead id="lp-demo-title" eyebrow={DEMO.eyebrow} title={DEMO.title} lede={DEMO.lede} />
-          <div className="lp-demo-see">
-            <h3 className="lp-h3">{DEMO.seeTitle}</h3>
-            <ul>
-              {DEMO.see.map((s) => (
-                <li key={s}>
-                  <CircleCheck size={20} aria-hidden="true" />
-                  {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="lp-demo-access">
-            <span className="lp-demo-access-icon" aria-hidden="true">
-              <KeyRound size={18} />
-            </span>
+    <section className="cv-section cv-demo" id="demo" aria-labelledby="cv-demo-title">
+      <div className="cv-container cv-demo-grid">
+        <div className="cv-demo-copy">
+          <Eyebrow>{DEMO.eyebrow}</Eyebrow>
+          <h2 id="cv-demo-title" className="cv-display-lg cv-demo-title">
+            {DEMO.title}
+          </h2>
+          <p className="cv-body-lg">{DEMO.lede}</p>
+
+          <h3 className="cv-demo-see-title">{DEMO.seeTitle}</h3>
+          <ul className="cv-demo-see">
+            {DEMO.see.map((s) => (
+              <li key={s}>
+                <CircleCheck size={20} strokeWidth={1.75} aria-hidden="true" />
+                {s}
+              </li>
+            ))}
+          </ul>
+
+          <div className="cv-demo-pilot">
+            <IconTile icon={KeyRound} />
             <div>
-              <p className="lp-demo-access-title">{DEMO.accessTitle}</p>
-              <p className="lp-body">{DEMO.access}</p>
+              <Eyebrow>{DEMO.pilot.eyebrow}</Eyebrow>
+              <p className="cv-demo-pilot-body">{DEMO.pilot.body}</p>
             </div>
           </div>
+
+          <div className="cv-demo-photo">
+            <LandingImage slot="demo-side" fill sizes="(min-width: 1024px) 40vw, 100vw" />
+          </div>
         </div>
-        <LeadForm />
+
+        <div className="cv-demo-form">
+          <LeadForm />
+        </div>
       </div>
     </section>
   );

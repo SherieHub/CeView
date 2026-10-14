@@ -1,0 +1,697 @@
+/* ============================================================
+   LANDING — pricing (PricingSection.tsx, #pricing) and request a
+   demo (DemoSection.tsx + LeadForm.tsx, #demo).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ================= pricing ================= */
+  .cv-price-head {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .cv-price-title {
+    max-width: 20ch;
+  }
+  .cv-price-intro {
+    max-width: 36rem;
+  }
+
+  /* Billing toggle: native radios styled as a segmented pill. */
+  .cv-price-toggle {
+    display: flex;
+    width: fit-content;
+    margin: 32px auto 0;
+    padding: 5px;
+    gap: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--sand-50);
+  }
+  .cv-price-toggle-option {
+    position: relative;
+  }
+  .cv-price-toggle-option input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .cv-price-toggle-option span {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ink-700);
+    transition: background-color 200ms var(--cv-ease), color 200ms var(--cv-ease);
+  }
+  .cv-price-toggle-option input:checked + span {
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-price-toggle-option input:focus-visible + span {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 2px;
+  }
+
+  /* Plan cards. */
+  .cv-price-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin: 40px 0 0;
+    padding: 16px 0 0;
+    list-style: none;
+  }
+  .cv-price-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 24px 24px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: var(--white);
+    box-shadow: var(--shadow-card);
+  }
+  .cv-price-card[data-featured] {
+    border-color: var(--teal-900);
+    background: var(--teal-900);
+    box-shadow: var(--shadow-float);
+    color: var(--white);
+  }
+  .cv-price-ribbon {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: var(--coral-btn);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .cv-price-name {
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal-700);
+  }
+  .cv-price-card[data-featured] .cv-price-name {
+    color: var(--teal-100);
+  }
+  /* Every card reserves the "From" line, so prices and "Best for" align. */
+  .cv-price-amount {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 6px;
+    margin-top: 32px;
+  }
+  .cv-price-from {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-500);
+  }
+  .cv-price-value {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 2.75rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-900);
+  }
+  .cv-price-period {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    color: var(--ink-500);
+  }
+  .cv-price-note {
+    min-height: 1.5em;
+    margin-top: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .cv-price-best {
+    padding-bottom: 18px;
+    margin-top: 10px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ink-700);
+  }
+  .cv-price-best span {
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .cv-price-list {
+    display: grid;
+    gap: 10px;
+    margin: 18px 0 24px;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-price-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--ink-700);
+  }
+  .cv-price-list svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--teal-700);
+  }
+  /* CTA pinned to the card's foot. */
+  .cv-price-cta {
+    margin-top: auto;
+  }
+  .cv-price-card[data-featured] :is(.cv-price-from, .cv-price-period, .cv-price-note) {
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .cv-price-card[data-featured] :is(.cv-price-value, .cv-price-best span) {
+    color: var(--white);
+  }
+  .cv-price-card[data-featured] :is(.cv-price-best, .cv-price-list li) {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .cv-price-card[data-featured] .cv-price-best {
+    border-bottom-color: rgba(255, 255, 255, 0.16);
+  }
+  .cv-price-card[data-featured] .cv-price-list svg {
+    color: var(--teal-100);
+  }
+  .cv-price-dots {
+    display: none;
+  }
+
+  /* Add-ons bar. */
+  .cv-price-addons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 16px;
+    margin-top: 32px;
+    padding: 14px 20px;
+    border-radius: 16px;
+    background: var(--sand-50);
+  }
+  .cv-price-addons-label {
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-500);
+  }
+  .cv-price-addons ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-price-addons li {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-700);
+  }
+
+  /* Partner Plan band. */
+  .cv-price-partner {
+    display: grid;
+    gap: 24px;
+    align-items: center;
+    margin-top: 32px;
+    padding: 32px;
+    border-radius: 24px;
+    background: linear-gradient(120deg, var(--coral-100) 0%, var(--sand-50) 100%);
+  }
+  .cv-price-partner-copy {
+    display: grid;
+    gap: 12px;
+  }
+  .cv-price-partner-copy .cv-eyebrow {
+    color: var(--coral-800);
+  }
+  .cv-price-partner-title {
+    max-width: 30ch;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.5rem;
+    font-weight: 550;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .cv-price-partner-body {
+    max-width: 42rem;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-700);
+  }
+  .cv-price-partner-offer {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+  .cv-price-partner-offer .cv-price-amount {
+    margin-top: 0;
+  }
+  .cv-price-partner-offer .cv-price-period {
+    color: var(--ink-700);
+  }
+  .cv-price-partner-terms {
+    margin-bottom: 8px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--ink-700);
+  }
+  .cv-price-fine {
+    margin-top: 24px;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .cv-price-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-price-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+    }
+    .cv-price-card[data-featured] {
+      transform: scale(1.03);
+      z-index: 1;
+    }
+    .cv-price-partner {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      gap: 40px;
+      padding: 36px 40px;
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-price-card {
+      padding-inline: 20px;
+    }
+    .cv-price-value {
+      font-size: 2.375rem;
+    }
+    /* Narrow cards: the period goes under every price, so rows still align. */
+    .cv-price-period {
+      flex-basis: 100%;
+    }
+  }
+
+  /* < 768px: swipeable carousel that opens on Growth. */
+  @media (max-width: 767px) {
+    .cv-price-grid {
+      display: flex;
+      gap: 14px;
+      margin-inline: -20px;
+      padding: 18px 20px 8px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 20px;
+      scrollbar-width: none;
+    }
+    .cv-price-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .cv-price-card {
+      flex: 0 0 85%;
+      scroll-snap-align: start;
+    }
+    .cv-price-dots {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .cv-price-dots button {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+    .cv-price-dots button::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--ink-300);
+      transition: width 200ms var(--cv-ease), background-color 200ms var(--cv-ease);
+    }
+    .cv-price-dots button[aria-current='true']::before {
+      width: 20px;
+      background: var(--teal-700);
+    }
+    .cv-price-toggle-option span {
+      padding: 0 12px;
+      font-size: 0.875rem;
+    }
+    .cv-price-partner {
+      padding: 24px;
+    }
+    .cv-price-addons {
+      justify-content: flex-start;
+    }
+    .cv-price-addons ul {
+      justify-content: flex-start;
+    }
+  }
+
+  /* ================= request a demo ================= */
+  .cv-demo {
+    background: var(--sand-50);
+  }
+  .cv-demo-grid {
+    display: grid;
+    gap: 40px;
+  }
+  .cv-demo-copy {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+  }
+  .cv-demo-title {
+    max-width: 18ch;
+  }
+  .cv-demo-see-title {
+    margin-top: 12px;
+    font-family: var(--ff-ui);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .cv-demo-see {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-demo-see li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--ink-700);
+  }
+  .cv-demo-see svg {
+    flex: none;
+    margin-top: 1px;
+    color: var(--teal-700);
+  }
+  .cv-demo-pilot {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-top: 12px;
+    padding: 20px;
+    border: 1.5px dashed var(--teal-500);
+    border-radius: var(--r-card);
+    background: var(--white);
+  }
+  .cv-demo-pilot-body {
+    margin-top: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-700);
+  }
+  .cv-demo-photo {
+    display: none;
+    position: relative;
+    aspect-ratio: 16 / 10;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--sand-100);
+  }
+
+  /* Form card. */
+  .cv-form {
+    padding: 28px 22px;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: var(--white);
+    box-shadow: var(--shadow-float);
+  }
+  .cv-form-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.625rem;
+    font-weight: 550;
+    line-height: 1.2;
+    color: var(--ink-900);
+  }
+  .cv-form-sub {
+    margin-top: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cv-form-plan {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--teal-50);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--teal-700);
+  }
+  .cv-sr-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .cv-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px 16px;
+    margin-top: 24px;
+  }
+  .cv-field {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+  .cv-label {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-900);
+  }
+  .cv-optional {
+    font-weight: 400;
+    color: var(--ink-500);
+  }
+  .cv-input {
+    width: 100%;
+    height: 52px;
+    padding: 0 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    color: var(--ink-900);
+    transition: border-color 150ms var(--cv-ease), box-shadow 150ms var(--cv-ease);
+  }
+  .cv-input:hover {
+    border-color: var(--ink-300);
+  }
+  .cv-input:focus,
+  .cv-input:focus-visible {
+    outline: none;
+    border-color: var(--teal-500);
+    box-shadow: 0 0 0 3px var(--teal-100);
+  }
+  .cv-input[aria-invalid='true'] {
+    border-color: var(--coral-700);
+  }
+  .cv-select {
+    appearance: none;
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a6e7c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  /* coral-800, not coral-600: coral-600 is ~3.7:1 on white, below AA here. */
+  .cv-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--coral-800);
+  }
+  .cv-field-error svg {
+    flex: none;
+    margin-top: 1px;
+  }
+  .cv-form-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--teal-50);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-700);
+  }
+  .cv-form-notice[data-tone='error'] {
+    background: var(--coral-100);
+    color: var(--ink-900);
+  }
+  .cv-form-notice svg {
+    flex: none;
+    margin-top: 1px;
+  }
+  .cv-form-notice a {
+    color: var(--teal-700);
+    font-weight: 600;
+  }
+  .cv-dev-note {
+    color: var(--ink-500);
+  }
+  .cv-form-submit {
+    margin-top: 24px;
+  }
+  .cv-spin {
+    animation: cv-spin 900ms linear infinite;
+  }
+  @keyframes cv-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .cv-form-consent {
+    margin-top: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--ink-500);
+  }
+  .cv-form--done {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding-block: 56px;
+    text-align: center;
+  }
+  .cv-form-done-icon {
+    display: grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-form-done-link {
+    margin-top: 10px;
+    font-family: var(--ff-ui);
+    font-weight: 600;
+    color: var(--teal-700);
+  }
+
+  @media (min-width: 640px) {
+    .cv-form {
+      padding: 40px;
+    }
+    .cv-form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cv-field--wide {
+      grid-column: 1 / -1;
+    }
+  }
+  /* Desktop: sand on the left, white behind the form. */
+  @media (min-width: 1024px) {
+    .cv-demo {
+      background: linear-gradient(90deg, var(--sand-50) 0 50%, var(--white) 50% 100%);
+    }
+    .cv-demo-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+    .cv-demo-copy {
+      grid-column: 1 / span 5;
+    }
+    .cv-demo-form {
+      grid-column: 7 / -1;
+      align-self: start;
+    }
+    .cv-demo-photo {
+      display: block;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-spin {
+      animation: none;
+    }
+    .cv-price-toggle-option span,
+    .cv-price-dots button::before,
+    .cv-input {
+      transition: none;
+    }
+  }
+}

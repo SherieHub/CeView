@@ -1,75 +1,78 @@
 /**
- * Product philosophy + responsible use, in one calm band:
- *   1. three principles, set as an editorial row (no cards)
- *   2. four structured trust statements — only things the product actually
- *      does; no certifications or security claims that aren't confirmed
- *   3. social proof, rendered only when SOCIAL_PROOF has real, attributable
- *      entries. Until then it renders nothing — never a placeholder quote.
+ * Trust & transparency (#trust): only things the product actually does — no
+ * certifications or security claims that aren't confirmed. A sticky intro on
+ * the left (desktop), six statements on the right, then the Cebu pilot's
+ * targets, labelled as targets rather than results.
+ *
+ * Styles: styles/landing-compare.css (.cv-trust-*).
  */
-import { Building2, Gauge, Hand, Lock, ShieldCheck } from 'lucide-react';
-import { PRINCIPLES, SOCIAL_PROOF, TRUST } from './landingContent';
-import { SectionHead } from './landingParts';
+import { BadgeCheck, Database, Gauge, Hand, Lock, MessageSquareText, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { TRUST } from '../../content/landing';
+import { Eyebrow, IconTile } from './ui';
 
-const TRUST_ICONS = { review: Hand, data: Building2, private: Lock, forecast: Gauge } as const;
-
-function SocialProof() {
-  if (SOCIAL_PROOF.length === 0) return null;
-  return (
-    <ul className="lp-proof" aria-label="What tourism businesses say">
-      {SOCIAL_PROOF.map((p) => (
-        <li key={p.name} className="lp-proof-card">
-          <blockquote>“{p.quote}”</blockquote>
-          <p className="lp-proof-who">
-            <strong>{p.name}</strong> · {p.role}
-          </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
+const ICONS: Record<(typeof TRUST.items)[number]['icon'], LucideIcon> = {
+  hand: Hand,
+  gauge: Gauge,
+  badge: BadgeCheck,
+  database: Database,
+  lock: Lock,
+  message: MessageSquareText,
+};
 
 export default function TrustSection() {
+  const t = TRUST;
   return (
-    <section className="lp-section lp-section--wash lp-trust" aria-labelledby="lp-principles-title">
-      <div className="lp-wrap">
-        <SectionHead id="lp-principles-title" eyebrow={PRINCIPLES.eyebrow} title={PRINCIPLES.title} />
-        <ol className="lp-principles">
-          {PRINCIPLES.items.map((p, i) => (
-            <li key={p.title} className="lp-reveal">
-              <span className="lp-principle-num" aria-hidden="true">
-                0{i + 1}
-              </span>
-              <h3 className="lp-h3">{p.title}</h3>
-              <p className="lp-body">{p.body}</p>
-            </li>
-          ))}
-        </ol>
-
-        <div className="lp-trust-block">
-          <div className="lp-trust-intro">
-            <span className="lp-trust-badge" aria-hidden="true">
-              <ShieldCheck size={26} />
-            </span>
-            <p className="lp-eyebrow">{TRUST.eyebrow}</p>
-            <h2 className="lp-h2 lp-h2--sm">{TRUST.title}</h2>
+    <section className="cv-section cv-trust" data-bg="teal" id="trust" aria-labelledby="cv-trust-title">
+      <div className="cv-container cv-trust-grid">
+        {/* Intro and cards share a box, so the sticky intro stops at the last card. */}
+        <div className="cv-trust-main">
+          <div className="cv-trust-intro">
+            <IconTile icon={ShieldCheck} className="cv-trust-badge" />
+            <Eyebrow>{t.eyebrow}</Eyebrow>
+            <h2 id="cv-trust-title" className="cv-display-lg cv-trust-title">
+              {t.title}
+            </h2>
+            <p className="cv-body-lg">{t.intro}</p>
           </div>
-          <ul className="lp-trust-grid">
-            {TRUST.items.map((t) => {
-              const Icon = TRUST_ICONS[t.icon];
+
+          <ul className="cv-trust-cards">
+            {t.items.map((item) => {
+              const Icon = ICONS[item.icon];
               return (
-                <li key={t.title} className="lp-trust-card lp-reveal">
-                  <span className="lp-trust-icon" aria-hidden="true">
-                    <Icon size={20} />
-                  </span>
-                  <h3 className="lp-h3">{t.title}</h3>
-                  <p className="lp-body">{t.body}</p>
+                <li key={item.title} className="cv-trust-card">
+                  <IconTile icon={Icon} />
+                  <h3 className="cv-trust-card-title">{item.title}</h3>
+                  <p className="cv-trust-card-body">{item.body}</p>
+                  {'statuses' in item && (
+                    <p className="cv-trust-statuses">
+                      {item.statuses.map((s, i) => (
+                        <span key={s} className="cv-trust-status" data-status={i === 0 ? 'provisional' : 'validated'}>
+                          {s}
+                        </span>
+                      ))}
+                    </p>
+                  )}
                 </li>
               );
             })}
           </ul>
         </div>
 
-        <SocialProof />
+        <div className="cv-trust-pilot">
+          <div className="cv-trust-pilot-head">
+            <Eyebrow>{t.pilot.eyebrow}</Eyebrow>
+            <span className="cv-trust-pilot-pill">{t.pilot.pill}</span>
+          </div>
+          <dl className="cv-trust-targets">
+            {t.pilot.targets.map((p) => (
+              <div key={p.value}>
+                <dt>{p.label}</dt>
+                <dd>{p.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="cv-caption cv-trust-pilot-caption">{t.pilot.caption}</p>
+        </div>
       </div>
     </section>
   );

@@ -1,0 +1,327 @@
+/* ============================================================
+   LANDING — who it's for (WhoSection.tsx, #who).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ---------- header ---------- */
+  .cv-who-head {
+    row-gap: 20px;
+    margin-bottom: 40px;
+  }
+  .cv-who-heading,
+  .cv-who-intro {
+    grid-column: 1 / -1;
+  }
+  .cv-who-heading {
+    display: grid;
+    gap: 16px;
+  }
+  .cv-who-intro {
+    max-width: 40rem;
+  }
+  @media (min-width: 1024px) {
+    .cv-who-head {
+      align-items: end;
+      margin-bottom: 48px;
+    }
+    .cv-who-heading {
+      grid-column: 1 / span 7;
+    }
+    .cv-who-intro {
+      grid-column: 8 / -1;
+    }
+  }
+
+  /* ---------- theme explainer strip ---------- */
+  .cv-who-explainer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 28px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    background: var(--white);
+  }
+  .cv-who-explainer-text {
+    flex: 1 1 auto;
+    max-width: 44rem;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-700);
+  }
+  .cv-who-diagram {
+    flex: none;
+    width: 300px;
+    height: auto;
+    margin-left: auto;
+  }
+  .cv-who-diagram-from rect {
+    fill: var(--sand-50);
+    stroke: var(--hairline);
+  }
+  .cv-who-diagram text {
+    font-family: var(--ff-ui);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .cv-who-diagram-from text {
+    fill: var(--ink-700);
+  }
+  .cv-who-diagram-link {
+    fill: none;
+    stroke: var(--teal-500);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+  }
+  .cv-who-diagram-to rect {
+    fill: var(--teal-700);
+  }
+  .cv-who-diagram-to text {
+    fill: var(--white);
+  }
+
+  /* ---------- cards ---------- */
+  .cv-who-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-who-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    background: var(--white);
+    box-shadow: var(--shadow-card);
+  }
+  .cv-who-photo {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 20px 20px 0 0;
+    background: var(--sand-100);
+  }
+  .cv-who-photo .cv-img {
+    transition: transform 600ms var(--cv-ease);
+  }
+  @media (hover: hover) {
+    .cv-who-card:hover .cv-who-photo .cv-img {
+      transform: scale(1.04);
+    }
+  }
+  .cv-who-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    gap: 10px;
+    padding: 0 22px 22px;
+  }
+  /* Floats over the photo's bottom-left corner. */
+  .cv-who-icon {
+    position: relative;
+    margin-top: -24px;
+    margin-bottom: 4px;
+    box-shadow: 0 0 0 4px var(--white);
+  }
+  .cv-who-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.25rem;
+    font-weight: 550;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .cv-who-text {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-500);
+  }
+  .cv-who-themes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: auto 0 0;
+    padding: 6px 0 0;
+    list-style: none;
+  }
+  .cv-who-themes li {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--teal-700);
+  }
+  .cv-who-dots {
+    display: none;
+  }
+
+  /* ---------- partner band ---------- */
+  .cv-who-partner {
+    display: grid;
+    gap: 28px;
+    align-items: center;
+    margin-top: 32px;
+    padding: 36px;
+    border-radius: 24px;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-who-partner-copy {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+  }
+  .cv-who-partner-copy .cv-eyebrow {
+    color: var(--teal-100);
+  }
+  .cv-who-partner-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.75rem;
+    font-weight: 550;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--white);
+  }
+  .cv-who-partner-body {
+    max-width: 34rem;
+    margin-bottom: 6px;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .cv-who-partner-photo {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: var(--r-card);
+    background: var(--teal-700);
+  }
+  .cv-who-footnote {
+    margin-top: 28px;
+    text-align: center;
+  }
+
+  @media (min-width: 1024px) {
+    .cv-who-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cv-who-partner {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 48px;
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-who-body {
+      padding: 0 18px 18px;
+    }
+    .cv-who-title {
+      font-size: 1.125rem;
+    }
+  }
+  @media (max-width: 1023px) {
+    .cv-who-explainer {
+      flex-wrap: wrap;
+    }
+    .cv-who-explainer-text {
+      flex-basis: calc(100% - 68px);
+    }
+    .cv-who-diagram {
+      margin: 4px auto 0;
+    }
+  }
+
+  /* ---------- < 768px: swipeable carousel ---------- */
+  @media (max-width: 767px) {
+    .cv-who-explainer {
+      padding: 20px;
+    }
+    .cv-who-diagram {
+      width: min(300px, 100%);
+    }
+    .cv-who-grid {
+      display: flex;
+      gap: 14px;
+      margin-inline: -20px;
+      padding: 4px 20px 8px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 20px;
+      scrollbar-width: none;
+    }
+    .cv-who-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .cv-who-grid:focus-visible {
+      outline: 2px solid var(--teal-500);
+      outline-offset: 2px;
+      border-radius: 12px;
+    }
+    .cv-who-card {
+      flex: 0 0 85%;
+      scroll-snap-align: start;
+    }
+    .cv-who-dots {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 12px;
+    }
+    /* 24px tap target around a small dot. */
+    .cv-who-dots button {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+    .cv-who-dots button::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--ink-300);
+      transition: width 200ms var(--cv-ease), background-color 200ms var(--cv-ease);
+    }
+    .cv-who-dots button[aria-current='true']::before {
+      width: 20px;
+      background: var(--teal-700);
+    }
+    .cv-who-dots button:focus-visible {
+      outline: 2px solid var(--teal-500);
+      outline-offset: -2px;
+      border-radius: 999px;
+    }
+    .cv-who-partner {
+      padding: 24px;
+    }
+    .cv-who-partner-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-who-photo .cv-img,
+    .cv-who-dots button::before {
+      transition: none;
+    }
+    .cv-who-card:hover .cv-who-photo .cv-img {
+      transform: none;
+    }
+  }
+}

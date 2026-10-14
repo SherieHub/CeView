@@ -1,0 +1,429 @@
+/* ============================================================
+   LANDING — why CeView / comparison (CompareSection.tsx, #compare)
+   and trust & transparency (TrustSection.tsx, #trust).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ================= comparison ================= */
+  .cv-cmp-head {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    margin-bottom: 48px;
+    text-align: center;
+  }
+  .cv-cmp-title {
+    max-width: 22ch;
+  }
+
+  /* Card-styled table; the CeView column is tinted like a featured plan. */
+  .cv-cmp-table {
+    --cmp-cols: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.5fr);
+    max-width: 1120px;
+    margin-inline: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    background: var(--white);
+    box-shadow: var(--shadow-card);
+  }
+  .cv-cmp-cols,
+  .cv-cmp-row {
+    display: grid;
+    grid-template-columns: var(--cmp-cols);
+  }
+  .cv-cmp-cols span {
+    padding: 18px 24px 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-500);
+  }
+  .cv-cmp-cols span[data-highlight] {
+    margin-top: -1px;
+    border-top: 3px solid var(--teal-500);
+    border-radius: var(--r-card) var(--r-card) 0 0;
+    background: var(--teal-50);
+    color: var(--teal-700);
+  }
+  .cv-cmp-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-cmp-row > * {
+    padding: 18px 24px;
+    border-top: 1px solid var(--line);
+  }
+  .cv-cmp-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink-900);
+  }
+  .cv-cmp-icon {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--sand-100);
+    color: var(--ink-700);
+  }
+  .cv-cmp-usually,
+  .cv-cmp-adds {
+    display: flex;
+    align-items: center;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-500);
+  }
+  .cv-cmp-adds {
+    border-top-color: var(--teal-100);
+    background: var(--teal-50);
+    font-weight: 500;
+    color: var(--ink-900);
+  }
+  .cv-cmp-row:last-child .cv-cmp-adds {
+    border-radius: 0 0 var(--r-card) 0;
+  }
+  /* Per-cell labels: for screen readers on desktop, visible on phones. */
+  .cv-cmp-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Positioning statement with a highlighter behind the second sentence. */
+  .cv-cmp-statement {
+    max-width: 32ch;
+    margin: 56px auto 0;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    text-align: center;
+    color: var(--ink-900);
+    text-wrap: balance;
+  }
+  .cv-cmp-statement mark {
+    padding: 0 2px;
+    background: linear-gradient(180deg, transparent 52%, var(--teal-100) 52%, var(--teal-100) 92%, transparent 92%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    color: inherit;
+  }
+
+  /* Connected-workflow ribbon. */
+  .cv-cmp-flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 12px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 36px auto 0;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    list-style: none;
+  }
+  .cv-cmp-flow-step {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--teal-50);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--teal-700);
+  }
+  .cv-cmp-flow-arrow {
+    display: inline-flex;
+    color: var(--ink-500);
+  }
+
+  @media (max-width: 1023px) {
+    .cv-cmp-table {
+      --cmp-cols: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1.3fr);
+    }
+    .cv-cmp-row > *,
+    .cv-cmp-cols span {
+      padding-inline: 16px;
+    }
+    .cv-cmp-statement {
+      font-size: 1.5rem;
+    }
+    .cv-cmp-flow {
+      border-radius: 20px;
+    }
+  }
+
+  /* < 768px: each row becomes a stacked card. */
+  @media (max-width: 767px) {
+    .cv-cmp-table {
+      border: 0;
+      background: none;
+      box-shadow: none;
+    }
+    .cv-cmp-cols {
+      display: none;
+    }
+    .cv-cmp-rows {
+      display: grid;
+      gap: 12px;
+    }
+    .cv-cmp-row {
+      display: block;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: var(--shadow-sm);
+    }
+    .cv-cmp-row > * {
+      padding: 12px 16px;
+      border-top: 0;
+    }
+    .cv-cmp-usually,
+    .cv-cmp-adds {
+      display: block;
+    }
+    .cv-cmp-option {
+      padding-top: 16px;
+    }
+    .cv-cmp-usually {
+      padding-top: 0;
+    }
+    .cv-cmp-adds {
+      border-top: 1px solid var(--teal-100);
+      border-radius: 0;
+      padding-bottom: 14px;
+    }
+    .cv-cmp-row:last-child .cv-cmp-adds {
+      border-radius: 0;
+    }
+    .cv-cmp-label {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      font-weight: 700;
+    }
+    .cv-cmp-usually .cv-cmp-label {
+      color: var(--ink-700);
+    }
+    .cv-cmp-adds .cv-cmp-label {
+      color: var(--teal-700);
+    }
+    .cv-cmp-statement {
+      margin-top: 40px;
+      font-size: 1.375rem;
+    }
+    /* Two lines on a phone: smaller chips, tighter arrows. */
+    .cv-cmp-flow {
+      gap: 8px 5px;
+      padding: 10px;
+    }
+    .cv-cmp-flow-step {
+      font-size: 0.6875rem;
+      padding: 4px 8px;
+    }
+    .cv-cmp-flow-arrow svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  /* ================= trust ================= */
+  .cv-trust-grid {
+    display: grid;
+    gap: 32px;
+  }
+  .cv-trust-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px 24px;
+  }
+  .cv-trust-intro {
+    display: grid;
+    justify-items: start;
+    gap: 16px;
+    align-self: start;
+  }
+  .cv-trust-badge {
+    margin-bottom: 4px;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+  .cv-trust-title {
+    max-width: 16ch;
+  }
+  .cv-trust-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-trust-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    border: 1px solid var(--teal-100);
+    border-radius: var(--r-card);
+    background: var(--white);
+  }
+  .cv-trust-card .cv-icon-tile {
+    margin-bottom: 4px;
+  }
+  .cv-trust-card-title {
+    font-family: var(--ff-ui);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink-900);
+  }
+  .cv-trust-card-body {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  .cv-trust-statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 4px;
+  }
+  /* coral-800 text, not coral-600: coral-600 on coral-100 is ~3.2:1. */
+  .cv-trust-status {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .cv-trust-status[data-status='provisional'] {
+    background: var(--coral-100);
+    color: var(--coral-800);
+  }
+  .cv-trust-status[data-status='validated'] {
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+
+  /* Pilot targets. */
+  .cv-trust-pilot {
+    padding: 28px;
+    border: 1px solid var(--teal-100);
+    border-radius: var(--r-card);
+    background: var(--white);
+  }
+  .cv-trust-pilot-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .cv-trust-pilot-pill {
+    padding: 3px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--sand-50);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-700);
+  }
+  .cv-trust-targets {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin: 24px 0 0;
+  }
+  .cv-trust-targets > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  /* Number first visually; the label stays first for screen readers. */
+  .cv-trust-targets dd {
+    order: -1;
+    margin: 0;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    color: var(--teal-700);
+  }
+  .cv-trust-targets dt {
+    max-width: 30ch;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cv-trust-pilot-caption {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (min-width: 640px) {
+    .cv-trust-targets {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-trust-main {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+    .cv-trust-intro {
+      grid-column: 1 / span 4;
+      position: sticky;
+      top: 120px;
+    }
+    .cv-trust-cards {
+      grid-column: 5 / -1;
+    }
+    .cv-trust-targets {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 24px;
+    }
+    .cv-trust-targets > div + div {
+      padding-left: 24px;
+      border-left: 1px solid var(--line);
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-trust-cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cv-trust-pilot {
+      padding: 22px;
+    }
+  }
+}

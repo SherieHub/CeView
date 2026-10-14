@@ -1,0 +1,496 @@
+/* ============================================================
+   LANDING — value pillars (ValuePillars.tsx, #why) and how it works
+   (WorkflowSection.tsx, #how-it-works).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ---------- value pillars ---------- */
+  .cv-why-head {
+    row-gap: 20px;
+    margin-bottom: 48px;
+  }
+  .cv-why-heading,
+  .cv-why-intro {
+    grid-column: 1 / -1;
+  }
+  .cv-why-heading {
+    display: grid;
+    gap: 16px;
+  }
+  .cv-why-intro {
+    max-width: 40rem;
+  }
+  .cv-why-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-why-grid > li {
+    display: flex;
+  }
+  .cv-why-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    transition:
+      transform 200ms var(--cv-ease),
+      box-shadow 200ms var(--cv-ease);
+  }
+  .cv-why-card .cv-icon-tile {
+    margin-bottom: 6px;
+    transition: background-color 200ms var(--cv-ease);
+  }
+  .cv-why-body {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  /* Outcome label, pinned to the card's foot behind a short rule. */
+  .cv-why-outcome {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 10px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--teal-700);
+  }
+  .cv-why-outcome::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 1.5px;
+    margin-top: 0.65em;
+    background: currentColor;
+  }
+  @media (hover: hover) {
+    .cv-why-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-float);
+    }
+    .cv-why-card:hover .cv-icon-tile {
+      background: color-mix(in srgb, var(--teal-100) 78%, var(--teal-500));
+    }
+    .cv-why-card:hover .cv-icon-tile[data-tone='coral'] {
+      background: color-mix(in srgb, var(--coral-100) 78%, var(--coral-500));
+    }
+  }
+  @media (min-width: 640px) {
+    .cv-why-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-why-head {
+      align-items: end;
+      margin-bottom: 56px;
+    }
+    .cv-why-heading {
+      grid-column: 1 / span 7;
+    }
+    .cv-why-intro {
+      grid-column: 8 / -1;
+    }
+  }
+  /* Four across from 1200px; below that the cards get too narrow. */
+  @media (min-width: 1200px) {
+    .cv-why-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cv-why-card {
+      padding: 28px 24px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .cv-why-card {
+      padding: 32px 28px;
+    }
+  }
+
+  /* ---------- how it works (dark band) ---------- */
+  .cv-how {
+    --how-gap: 32px;
+    --how-node: 64px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 104px;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-how-media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  /* The reef only adds texture: luminosity over the teal, at 14%. */
+  .cv-how-photo {
+    opacity: 0.14;
+    mix-blend-mode: luminosity;
+  }
+  .cv-how-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(11, 63, 60, 0) 0%, rgba(11, 63, 60, 0.55) 70%, rgba(11, 63, 60, 0.9) 100%);
+  }
+
+  .cv-how-head {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    margin-bottom: 72px;
+    text-align: center;
+  }
+  .cv-how-head .cv-eyebrow {
+    color: var(--teal-100);
+  }
+  .cv-how-title {
+    max-width: 22ch;
+    color: var(--white);
+  }
+  .cv-how-intro {
+    max-width: 40rem;
+    font-family: var(--ff-ui);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  /* Rail: the loop row, then the five phases on one grid. */
+  .cv-how-rail {
+    position: relative;
+  }
+  .cv-how-phases {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--how-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Dashed line through the node centres, first to last. */
+  .cv-how-phases::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--how-node) / 2);
+    left: calc(var(--how-node) / 2);
+    right: calc((100% - 4 * var(--how-gap)) / 5 - var(--how-node) / 2);
+    border-top: 1.5px dashed rgba(28, 154, 142, 0.6);
+  }
+  .cv-how-phase {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 22px;
+    border-radius: 16px;
+    cursor: default;
+    outline: none;
+  }
+  .cv-how-phase:focus-visible .cv-how-node {
+    outline: 2px solid var(--white);
+    outline-offset: 4px;
+  }
+  .cv-how-node {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--how-node);
+    height: var(--how-node);
+    border: 1.5px solid var(--teal-500);
+    border-radius: 999px;
+    background: var(--teal-900);
+    color: var(--teal-100);
+    transition:
+      border-color 300ms var(--cv-ease),
+      box-shadow 300ms var(--cv-ease),
+      color 300ms var(--cv-ease);
+  }
+  .cv-how-phase[data-active] .cv-how-node {
+    border-color: var(--coral-500);
+    color: var(--coral-100);
+    /* The glow stops short of the phase number below (22px gap), so the
+       number keeps its contrast. */
+    box-shadow:
+      0 0 0 6px rgba(232, 112, 79, 0.18),
+      0 0 16px 2px rgba(232, 112, 79, 0.45);
+  }
+  .cv-how-text {
+    display: grid;
+    gap: 10px;
+  }
+  .cv-how-num {
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    /* coral-300: coral-500 is ~3.4:1 here, below AA at 13px. */
+    color: var(--coral-300);
+  }
+  .cv-how-phase-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.375rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--white);
+  }
+  .cv-how-does {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .cv-how-get {
+    justify-self: start;
+    margin-top: 6px;
+    padding: 8px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--teal-100);
+    transition:
+      background-color 300ms var(--cv-ease),
+      color 300ms var(--cv-ease);
+  }
+  .cv-how-get strong {
+    font-weight: 600;
+  }
+  /* coral-800, not coral-600: coral-600 on coral-100 is ~3.2:1, below AA. */
+  .cv-how-phase[data-active] .cv-how-get {
+    background: var(--coral-100);
+    color: var(--coral-800);
+  }
+
+  /* Loop from phase 05 back to phase 02, drawn above the rail. It spans
+     node 2's centre to node 5's centre. */
+  .cv-how-loop {
+    position: relative;
+    height: 64px;
+    margin-bottom: 14px;
+    margin-left: calc((100% - 4 * var(--how-gap)) / 5 + var(--how-gap) + var(--how-node) / 2);
+    margin-right: calc((100% - 4 * var(--how-gap)) / 5 - var(--how-node) / 2);
+  }
+  .cv-how-loop svg {
+    position: absolute;
+    inset: 22px 0 0;
+    width: 100%;
+    height: calc(100% - 22px);
+    overflow: visible;
+  }
+  .cv-how-loop path {
+    fill: none;
+    stroke: rgba(28, 154, 142, 0.75);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
+  }
+  /* Arrowhead at phase 02's end, pointing down into the node. */
+  .cv-how-loop-head {
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 9px solid rgba(28, 154, 142, 0.9);
+    transform: translateX(-50%);
+  }
+  .cv-how-loop-label {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding-inline: 12px;
+    font-family: var(--ff-script);
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--teal-100);
+  }
+  .cv-how-loop-mobile {
+    display: none;
+  }
+
+  /* Approval gate. */
+  .cv-how-gate {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 64px auto 0;
+    padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--white);
+  }
+  .cv-how-gate svg {
+    flex: none;
+    color: var(--teal-100);
+  }
+
+  /* Result, CTAs, fine print. */
+  .cv-how-result {
+    display: grid;
+    justify-items: center;
+    gap: 28px;
+    margin-top: 72px;
+    padding-top: 56px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    text-align: center;
+  }
+  .cv-how-result-text {
+    max-width: 46rem;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--white);
+    text-wrap: balance;
+  }
+  .cv-how-result-text strong {
+    font-family: var(--ff-ui);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--teal-100);
+  }
+  .cv-how-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .cv-how-fine {
+    max-width: 40rem;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    /* 62%, not 55%: 55% drops to ~4.3:1 where the reef texture lightens. */
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  @media (min-width: 1024px) {
+    .cv-how {
+      padding-block: 128px;
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-how {
+      --how-gap: 20px;
+    }
+    .cv-how-phase-title {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* ---------- < 1024px: vertical timeline ---------- */
+  @media (max-width: 1023px) {
+    .cv-how {
+      --how-node: 48px;
+    }
+    .cv-how-head {
+      margin-bottom: 48px;
+    }
+    .cv-how-loop {
+      display: none;
+    }
+    .cv-how-phases {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 36px;
+      max-width: 40rem;
+      margin-inline: auto;
+    }
+    /* One segment per gap, node to node, so the line stops at phase 05. */
+    .cv-how-phases::before {
+      content: none;
+    }
+    .cv-how-phase:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: var(--how-node);
+      bottom: -36px;
+      left: calc(var(--how-node) / 2);
+      border-left: 1.5px dashed rgba(28, 154, 142, 0.6);
+    }
+    .cv-how-phase {
+      grid-template-columns: var(--how-node) minmax(0, 1fr);
+      column-gap: 20px;
+    }
+    .cv-how-node svg {
+      width: 22px;
+      height: 22px;
+    }
+    .cv-how-text {
+      padding-top: 2px;
+    }
+    .cv-how-loop-mobile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 40rem;
+      margin: 28px auto 0;
+      padding-left: calc(var(--how-node) + 20px);
+      font-family: var(--ff-script);
+      font-weight: 600;
+      font-size: 1.25rem;
+      line-height: 1.2;
+      color: var(--teal-100);
+    }
+    .cv-how-gate {
+      border-radius: 18px;
+      margin-top: 48px;
+      text-align: left;
+    }
+    .cv-how-result {
+      margin-top: 56px;
+      padding-top: 44px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-how {
+      padding-block: 80px;
+    }
+    .cv-how-result-text {
+      font-size: 1.25rem;
+    }
+    .cv-how-ctas {
+      flex-direction: column;
+      width: 100%;
+    }
+    .cv-how-ctas .cv-btn {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-why-card,
+    .cv-why-card .cv-icon-tile,
+    .cv-how-node,
+    .cv-how-get {
+      transition: none;
+    }
+    .cv-why-card:hover {
+      transform: none;
+    }
+  }
+}

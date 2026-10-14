@@ -1,0 +1,461 @@
+/* ============================================================
+   LANDING — FAQ (FaqSection.tsx, #faq), the closing band and the
+   footer (LandingFooter.tsx, #cta).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ================= FAQ ================= */
+  .cv-faq-grid {
+    display: grid;
+    gap: 40px;
+  }
+  .cv-faq-side {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 16px;
+  }
+  .cv-faq-title {
+    max-width: 14ch;
+  }
+  .cv-faq-side a {
+    color: var(--teal-700);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cv-faq-card {
+    width: 100%;
+    max-width: 360px;
+    margin: 12px 0 0;
+  }
+  .cv-faq-photo {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--r-card);
+    background: var(--sand-100);
+  }
+  .cv-faq-card figcaption {
+    margin-top: 10px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cv-faq-list {
+    border-top: 1px solid var(--line);
+  }
+  .cv-faq-item {
+    border-bottom: 1px solid var(--line);
+  }
+  .cv-faq-q button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: 100%;
+    padding: 22px 0;
+    border: 0;
+    background: none;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .cv-faq-q button:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+  /* Plus that turns 45° into a close mark when open. */
+  .cv-faq-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--teal-50);
+    color: var(--teal-700);
+    transition: transform 220ms var(--cv-ease), background-color 220ms var(--cv-ease);
+  }
+  .cv-faq-item[data-open] .cv-faq-icon {
+    transform: rotate(45deg);
+    background: var(--teal-100);
+  }
+  /* Height animation: the row track grows from 0fr to 1fr. */
+  .cv-faq-a {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms var(--cv-ease);
+  }
+  .cv-faq-item[data-open] .cv-faq-a {
+    grid-template-rows: 1fr;
+  }
+  .cv-faq-a > div {
+    overflow: hidden;
+  }
+  .cv-faq-a p {
+    max-width: 62ch;
+    padding: 0 52px 24px 0;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--ink-500);
+  }
+  .cv-faq-a a {
+    color: var(--teal-700);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (min-width: 1024px) {
+    .cv-faq-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+    .cv-faq-side {
+      grid-column: 1 / span 4;
+      position: sticky;
+      top: 120px;
+      align-self: start;
+    }
+    .cv-faq-list {
+      grid-column: 6 / -1;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-faq-q button {
+      font-size: 1.125rem;
+      padding: 18px 0;
+    }
+    .cv-faq-a p {
+      padding-right: 0;
+    }
+  }
+
+  /* ================= closing band ================= */
+  .cv-cta {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-cta-media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .cv-cta-photo {
+    object-position: 60% 62%;
+  }
+  .cv-cta-overlay {
+    position: absolute;
+    inset: 0;
+    /* Stays dark under the copy (it can reach ~55% of the width at 1024px),
+       then opens up toward the photo on the right. */
+    background: linear-gradient(90deg, rgba(11, 63, 60, 0.9) 0%, rgba(11, 63, 60, 0.84) 52%, rgba(11, 63, 60, 0.5) 72%, rgba(11, 63, 60, 0.32) 100%);
+  }
+  .cv-cta-inner {
+    display: grid;
+    min-height: 480px;
+    align-items: center;
+    padding-block: 88px 120px;
+  }
+  .cv-cta-copy {
+    display: grid;
+    justify-items: start;
+    gap: 18px;
+    max-width: 40rem;
+  }
+  .cv-cta-copy .cv-eyebrow {
+    color: var(--teal-100);
+  }
+  .cv-cta-title {
+    color: var(--white);
+  }
+  /* coral-300 on the dark overlay: coral-500/600 fall near or under 3:1 here. */
+  .cv-cta-title em.accent {
+    color: var(--coral-300);
+  }
+  .cv-cta-lede {
+    max-width: 34rem;
+    font-family: var(--ff-ui);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .cv-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  /* White panel anchored to the bottom-right corner, curved top-left. */
+  .cv-cta-panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding: 24px 28px;
+    list-style: none;
+    background: var(--white);
+    color: var(--ink-900);
+  }
+  .cv-cta-panel li {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    padding-inline: 18px;
+  }
+  .cv-cta-panel li + li {
+    border-left: 1px solid var(--line);
+  }
+  .cv-cta-panel li:first-child {
+    padding-left: 0;
+  }
+  .cv-cta-panel svg {
+    color: var(--teal-700);
+  }
+  .cv-cta-panel span {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1rem;
+    font-weight: 550;
+    line-height: 1.3;
+  }
+  @media (min-width: 1024px) {
+    .cv-cta-panel {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: min(600px, 42vw);
+      padding: 28px 40px 32px 44px;
+      border-top-left-radius: 48px;
+    }
+    .cv-cta-copy {
+      max-width: min(40rem, 54vw);
+    }
+  }
+  @media (max-width: 1023px) {
+    .cv-cta-media {
+      position: relative;
+      height: 280px;
+      z-index: 0;
+    }
+    .cv-cta-overlay {
+      background: linear-gradient(180deg, rgba(11, 63, 60, 0) 40%, rgba(11, 63, 60, 0.9) 100%);
+    }
+    .cv-cta-inner {
+      min-height: 0;
+      padding-block: 40px 48px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-cta-panel {
+      padding: 20px;
+    }
+    .cv-cta-panel li {
+      padding-inline: 10px;
+    }
+    .cv-cta-panel span {
+      font-size: 0.9375rem;
+    }
+    .cv-cta-actions {
+      flex-direction: column;
+      width: 100%;
+    }
+    .cv-cta-actions .cv-btn {
+      width: 100%;
+    }
+  }
+
+  /* ================= footer ================= */
+  /* A 1px teal seam keeps the closing band and the footer from merging. */
+  .cv-footer {
+    padding-block: 64px 32px;
+    border-top: 1px solid var(--teal-700);
+    background: var(--ink-900);
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .cv-footer-grid {
+    display: grid;
+    gap: 36px 24px;
+  }
+  .cv-footer-brand {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    max-width: 22rem;
+  }
+  /* Explicit: the app's base styles colour every <p>, which would win over
+     inheritance here (2.7:1 on ink-900). */
+  .cv-footer p {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .cv-footer-brand p,
+  .cv-footer-sdgs li {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  .cv-footer-col {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 10px;
+  }
+  .cv-footer-head {
+    margin-bottom: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--white);
+  }
+  .cv-footer-col a,
+  .cv-footer-credits-btn {
+    border-radius: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.78);
+    text-decoration: none;
+  }
+  .cv-footer-col a:hover,
+  .cv-footer-credits-btn:hover {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cv-footer-col a:focus-visible,
+  .cv-footer-credits-btn:focus-visible {
+    outline: 2px solid var(--teal-100);
+    outline-offset: 3px;
+  }
+  .cv-footer-sdgs {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+  }
+  .cv-footer-credits-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  @media (min-width: 640px) {
+    .cv-footer-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-footer-grid {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+      gap: 40px;
+    }
+  }
+
+  /* Photo credits dialog. */
+  .cv-credits {
+    width: min(680px, calc(100vw - 32px));
+    max-height: min(80vh, 760px);
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-card);
+    background: var(--white);
+    box-shadow: var(--shadow-float);
+    color: var(--ink-700);
+  }
+  .cv-credits::backdrop {
+    background: rgba(14, 42, 59, 0.55);
+  }
+  .cv-credits-inner {
+    padding: 28px;
+  }
+  .cv-credits-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cv-credits-head h2 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.5rem;
+    font-weight: 550;
+    color: var(--ink-900);
+  }
+  .cv-credits-close {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .cv-credits-close:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 2px;
+  }
+  .cv-credits-intro {
+    margin-top: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .cv-credits-list {
+    display: grid;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-credits-list li {
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .cv-credits-what {
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .cv-credits-list a {
+    color: var(--teal-700);
+    font-weight: 600;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-faq-a,
+    .cv-faq-icon {
+      transition: none;
+    }
+  }
+}
