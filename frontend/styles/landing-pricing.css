@@ -13,7 +13,8 @@
     padding-block: 64px 48px;
     background: #fdfaf6;
   }
-  /* Limestone cliffs fading in at both top corners. */
+  /* Two views of the Cebu Taoist Temple fading in at the top corners:
+     the main hall (left) and the pagoda with its dragon (right). */
   .cv-price-cliff {
     position: absolute;
     top: 0;
@@ -33,10 +34,10 @@
     right: 0;
   }
   .cv-price-cliff[data-side='left'] .cv-img {
-    object-position: 0% 30%;
+    object-position: 0% 35%;
   }
   .cv-price-cliff[data-side='right'] .cv-img {
-    object-position: 100% 30%;
+    object-position: 100% 25%;
   }
 
   .cv-price-head {
@@ -903,7 +904,12 @@
 
   /* ---------- demo: compact sizing, columns levelled on desktop ---------- */
   .cv-section.cv-demo {
-    padding-block: 56px 48px;
+    padding-block: 88px;
+  }
+  @media (max-width: 639px) {
+    .cv-section.cv-demo {
+      padding-block: 56px;
+    }
   }
   .cv-demo-copy {
     gap: 12px;

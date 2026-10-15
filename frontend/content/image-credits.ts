@@ -181,6 +181,38 @@ export const IMAGE_CREDITS = [
     attribution: 'Photo: Sumilon Island sandbar, by Warrendering, CC BY-SA 4.0, via Wikimedia Commons',
   },
   {
+    // Plans: decorative, faded in at the top-left corner. Square crop around the hall and its dragons.
+    slot: 'price-taoist-hall',
+    file: 'price-taoist-hall-1000.webp',
+    responsive: { base: 'price-taoist-hall', widths: [600, 1000], avif: true },
+    width: 1000,
+    height: 1000,
+    alt: 'The red-pillared main hall of the Cebu Taoist Temple, with dragon ornaments on its green-tiled roof against a blue sky.',
+    caption: 'Cebu Taoist Temple main hall, Cebu City',
+    photographer: 'Martin Michlmayr',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Cebu_Taoist_Temple_2022_09_008.jpg',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    verifiedLocation: 'Cebu Taoist Temple, Cebu City, Philippines (GPS 10.3340, 123.8881)',
+    attribution: 'Photo: Cebu Taoist Temple, by Martin Michlmayr, CC BY-SA 4.0, via Wikimedia Commons',
+  },
+  {
+    // Plans: decorative, faded in at the top-right corner. Square crop from the right edge.
+    slot: 'price-taoist-temple',
+    file: 'price-taoist-temple-1000.webp',
+    responsive: { base: 'price-taoist-temple', widths: [600, 1000], avif: true },
+    width: 1000,
+    height: 1000,
+    alt: 'The pagoda of the Cebu Taoist Temple above a landscaped hillside with a long dragon sculpture.',
+    caption: 'Cebu Taoist Temple, Cebu City',
+    photographer: 'Neigo Genetiano',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Taoist_Temple,_Cebu.jpg',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    verifiedLocation: 'Cebu Taoist Temple, Beverly Hills, Cebu City, Philippines',
+    attribution: 'Photo: Cebu Taoist Temple, by Neigo Genetiano, CC BY-SA 4.0, via Wikimedia Commons',
+  },
+  {
     // Final CTA band: a 3:2 crop shown full-bleed under a dark teal overlay.
     slot: 'cta-aerial-ocean',
     file: 'cta-aerial-ocean-2400.webp',

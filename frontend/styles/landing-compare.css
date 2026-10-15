@@ -291,7 +291,7 @@
   }
 
   /* ================= trust ================= */
-  .cv-section.cv-trust { padding-block: 24px; background: #fbfefd; }
+  .cv-section.cv-trust { padding-block: 72px; background: #fbfefd; }
   .cv-trust-grid { display: grid; gap: 10px; }
   .cv-trust-main { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); overflow: hidden; border-radius: 24px; background: #f0f9f7; }
   .cv-trust-intro { position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 18px 20px 72px; background: #eaf7f4; border-radius: 24px 70px 70px 24px; }
@@ -333,7 +333,7 @@
     .cv-trust-targets > div:nth-child(3) { border-left: 0; padding-left: 0; }
   }
   @media (max-width: 639px) {
-    .cv-section.cv-trust { padding-block: 32px; }
+    .cv-section.cv-trust { padding-block: 48px; }
     .cv-trust-intro { padding: 18px 16px 78px; }
     .cv-trust-cards { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 10px; }
     .cv-trust-card { padding: 14px; }

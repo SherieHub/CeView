@@ -1,8 +1,9 @@
 /**
  * Pricing (#pricing). Proposed launch plans, labelled as proposed throughout.
  *
- * A warm band with limestone cliffs fading in at both top corners; four plan
- * cards (Growth raised, dark, with a "Recommended" tab); an add-ons bar; and
+ * A warm band with two views of the Cebu Taoist Temple fading in at the top
+ * corners; four plan cards (Growth raised, dark, with a "Recommended" tab); an
+ * add-ons bar; and
  * the Partner Plan band, whose offer panel fades into an aerial island photo.
  *
  * The billing toggle is a pair of native radio buttons styled as a segmented
@@ -87,10 +88,10 @@ export default function PricingSection() {
   return (
     <section className="cv-section cv-price" id="pricing" aria-labelledby="cv-price-title">
       <div className="cv-price-cliff" data-side="left" aria-hidden="true">
-        <LandingImage slot="how-lagoon" fill decorative sizes="30vw" />
+        <LandingImage slot="price-taoist-hall" fill decorative sizes="30vw" />
       </div>
       <div className="cv-price-cliff" data-side="right" aria-hidden="true">
-        <LandingImage slot="how-lagoon" fill decorative sizes="30vw" />
+        <LandingImage slot="price-taoist-temple" fill decorative sizes="30vw" />
       </div>
 
       <div className="cv-container cv-price-inner">
