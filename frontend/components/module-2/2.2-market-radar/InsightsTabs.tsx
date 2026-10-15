@@ -10,6 +10,7 @@
  * unmounted — remounting would reset each panel's own scroll position and
  * throw away the charts' render every time you toggle.
  */
+import { Lightbulb } from 'lucide-react';
 import PurchasingPowerTab from './PurchasingPowerTab';
 import SeasonalPatternsTab from './SeasonalPatternsTab';
 import type { DrawerInsightsSlotProps, InsightsTab } from './radarTypes';
@@ -21,8 +22,12 @@ const TABS: { id: InsightsTab; label: string }[] = [
 
 export default function InsightsTabs({ market, activeTab, onTabChange }: DrawerInsightsSlotProps) {
   return (
-    <section className="radar-section" aria-label="Market insights">
-      <div className="seg mb-4" role="tablist" aria-label="Market insights">
+    <section className="radar-section radar-block" aria-label="Market insights">
+      <div className="radar-block-head">
+        <p className="radar-block-title">
+          <Lightbulb size={18} strokeWidth={1.75} aria-hidden="true" /> Market insights
+        </p>
+      <div className="seg" role="tablist" aria-label="Market insights">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -37,6 +42,7 @@ export default function InsightsTabs({ market, activeTab, onTabChange }: DrawerI
             {t.label}
           </button>
         ))}
+      </div>
       </div>
 
       <div

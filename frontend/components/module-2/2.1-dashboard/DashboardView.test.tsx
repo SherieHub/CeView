@@ -1,6 +1,6 @@
 /**
  * CARD — Foundation: Dashboard & Radar Shell
- * DoD (Step 18, C-21/C-22/C-23): "Top market now" must actually open a
+ * DoD (Step 18, C-21/C-22/C-23): "Top market for International" must actually open a
  * populated drawer from a cold dashboard (no alert ever selected) — the
  * regression this guards is the drawer looking marketId up in an empty
  * rankedMarkets list and silently staying closed.
@@ -62,7 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ensureMock.mockResolvedValue(undefined);
   // Cold dashboard: alerts exist (so mode isn't 'empty'), but nothing has ever
-  // been selected — the exact precondition the "Top market now" bug needs.
+  // been selected — the exact precondition the "Top market for International" bug needs.
   listMock.mockResolvedValue(MOCK_NOTIFICATIONS.map((a) => ({ ...a })));
   statusMock.mockResolvedValue({ available: true });
   keywordTrendsMock.mockResolvedValue([]);
@@ -71,13 +71,13 @@ beforeEach(() => {
   );
 });
 
-describe('DashboardView — Top market now (cold dashboard)', () => {
+describe('DashboardView — Top market for International (cold dashboard)', () => {
   it('opens a populated drawer without ever selecting an alert first', async () => {
     const user = userEvent.setup();
     renderDashboard();
 
     // Precondition: cold dashboard, drawer closed, no alert ever selected.
-    const topMarketTile = await screen.findByRole('button', { name: /Top market now/i });
+    const topMarketTile = await screen.findByRole('button', { name: /Top market for International/i });
     expect(drawer()).toHaveAttribute('data-open', 'false');
 
     await user.click(topMarketTile);
@@ -115,14 +115,14 @@ describe('DashboardView — stale banner (Step 18, C-21/C-22/C-23; H-11)', () =>
 
     renderDashboard();
 
-    await screen.findByRole('button', { name: /Top market now/i });
+    await screen.findByRole('button', { name: /Top market for International/i });
     expect(await screen.findByText(/Latest attempt failed/)).toBeInTheDocument();
     expect(screen.getByText(/connection refused/)).toBeInTheDocument();
   });
 
   it('shows no stale banner when nothing loaded is actually stale', async () => {
     renderDashboard();
-    await screen.findByRole('button', { name: /Top market now/i });
+    await screen.findByRole('button', { name: /Top market for International/i });
 
     expect(screen.queryByText(/Latest attempt failed/)).not.toBeInTheDocument();
     expect(screen.queryByText(/days old/)).not.toBeInTheDocument();

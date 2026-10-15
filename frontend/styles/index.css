@@ -2423,25 +2423,25 @@
      on a full-width column and keep their size, while this one is a prompt in
      a 420px side panel, where the shared 24px heading and 52px glyph made an
      idle placeholder the loudest thing on the screen. */
-  .dash-markets .card {
+  .dash-markets .card, .dash-regions .card {
     padding: var(--space-sm);
   }
-  .dash-markets .empty {
+  .dash-markets .empty, .dash-regions .empty {
     padding: var(--space-md) var(--space-xs);
   }
-  .dash-markets .empty-glyph {
+  .dash-markets .empty-glyph, .dash-regions .empty-glyph {
     width: 40px;
     height: 40px;
     margin-bottom: var(--space-xs);
   }
-  .dash-markets .empty-glyph svg {
+  .dash-markets .empty-glyph svg, .dash-regions .empty-glyph svg {
     width: 18px;
     height: 18px;
   }
-  .dash-markets .empty h3 {
+  .dash-markets .empty h3, .dash-regions .empty h3 {
     font-size: 1.125rem;
   }
-  .dash-markets .empty p {
+  .dash-markets .empty p, .dash-regions .empty p {
     font-size: 0.875rem;
     max-width: 34ch;
   }
@@ -5745,4 +5745,25 @@
       transition-duration: 0.01ms !important;
     }
   }
+}
+
+/* Compact dashboard market summaries and separate regional ranking panel. */
+@layer components {
+  .dash-market-panels { display: grid; align-content: start; gap: 14px; min-width: 0; }
+  .dash-market-panels .dash-markets { position: static; }
+  .dash-regions { padding: 18px; border-radius: 16px; background: white; box-shadow: var(--shadow-card); }
+  .dash-regions .feed-head { flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .dash-regions .heading-md { font-size: 1.125rem; }
+  .region-sample { padding: 3px 7px; border-radius: 99px; background: #e7f5f1; color: #12675e; font-size: .625rem; }
+  .region-list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+  .region-list li { min-width: 0; }
+  .region-rank { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #def5ee; color: #087d74; }
+  .region-bar { height: 6px; overflow: hidden; border-radius: 99px; background: #e5ecef; }
+  .region-bar i { display: block; height: 100%; border-radius: inherit; background: #07998b; }
+  .region-note { margin-top: 12px; font-size: .625rem; color: #63757c; }
+  .stat-row--markets .stat-tile { padding: 18px; }
+  .stat-row--markets .stat-value { font-size: 1.25rem; }
+  .stat-row--markets .stat-icon { width: 40px; height: 40px; }
+  .stat-row--markets .stat-label, .stat-row--markets .stat-foot { font-size: .75rem; }
+  @media (min-width: 1100px) { .stat-row.stat-row--markets { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 }

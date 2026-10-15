@@ -153,10 +153,6 @@ export default function PurchasingPowerTab({ market }: { market: Market }) {
         ))}
       </div>
 
-      <p className="text-meta mt-2">
-        Fare reference: {market.fareSource} · Effective: {market.fareAsOf ?? 'unknown'}
-      </p>
-
       <div className="info-card" data-tone="accent">
         <span className="info-tab">What this means</span>
         <div className="info-body">

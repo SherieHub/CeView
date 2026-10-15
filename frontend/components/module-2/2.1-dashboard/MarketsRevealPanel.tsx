@@ -22,10 +22,10 @@ export default function MarketsRevealPanel({
   onOpenMarket,
 }: MarketsRevealSlotProps) {
   return (
-    <section className="dash-markets" id="dash-markets-panel" aria-label="Top Target Markets">
+    <section className="dash-markets" id="dash-markets-panel" aria-label="Top International Market">
       <div className="feed-head">
         <h2 className="heading-md">
-          Top Target Markets
+          Top International Market
           <Info size={16} strokeWidth={1.75} aria-hidden="true" />
         </h2>
         <span className="markets-note">

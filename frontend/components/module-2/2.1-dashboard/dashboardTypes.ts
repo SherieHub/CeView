@@ -52,6 +52,8 @@ export interface RefreshForecastSlotProps {
 
 export interface SignalSummarySlotProps {
   loading: boolean;
+  /** Opens the top Philippine region's details (the fourth tile). */
+  onOpenRegion?: (name: string) => void;
   /** Renders the "cached" qualifier when the forecast service is unreachable. */
   degraded: boolean;
   unreadCount: number;

@@ -14,6 +14,7 @@
  * between a one- and two-column layout on selection, which resized every card
  * and moved the one just clicked out from under the cursor.
  */
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Info } from 'lucide-react';
 import '@fontsource-variable/fraunces/opsz.css';
@@ -32,6 +33,7 @@ import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
 import SignalSummary from './SignalSummary';
+import PhilippineRegionsPanel from './PhilippineRegionsPanel';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
 import { useJustOnboardedTutorial } from './useJustOnboardedTutorial';
 import TutorialModal from '../../shared/TutorialModal';
@@ -50,6 +52,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
   const { setTarget } = useTargetSelection();
   const tutorial = useJustOnboardedTutorial();
   const cover = useCoverPhoto(profile.businessProfileId);
+  // Shared by the Philippine summary tile and the regions panel's rows.
+  const [activeRegion, setActiveRegion] = useState<string | null>(null);
 
   // The radar drawer reads ?market=<id>, so it is linkable and the browser back
   // button closes it. See 03-module-2.md's M2-F card.
@@ -145,6 +149,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         surgeCount={state.surgeCount}
         surgeMarkets={state.surgeMarkets}
         topMarket={state.topMarket}
+        onOpenRegion={setActiveRegion}
         onOpenMarket={(marketId) => {
           // Step 18 (C-21/C-22/C-23): pin the category BEFORE navigating so
           // rankedMarkets loads it — otherwise the drawer looks marketId up in
@@ -192,6 +197,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           surgeCount={state.surgeCount}
         />
 
+        <div className="dash-market-panels">
         {/* Hidden in the states where there is nothing to rank against. */}
         {state.mode !== 'loading' && state.mode !== 'empty' && state.myAlerts.length > 0 && (
           <MarketsRevealPanel
@@ -200,6 +206,13 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
             onOpenMarket={openMarket}
           />
         )}
+        <PhilippineRegionsPanel
+          selectedAlert={state.selectedAlert}
+          fallbackCategory={state.topMarket?.category ?? null}
+          activeRegionName={activeRegion}
+          onActiveRegionChange={setActiveRegion}
+        />
+        </div>
       </div>
 
       {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}

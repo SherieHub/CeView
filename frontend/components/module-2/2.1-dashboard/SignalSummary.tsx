@@ -1,24 +1,6 @@
-/**
- * CARD — Dashboard: Alert Feed & Category Filtering (added element)
- *
- * Three tiles answering "is anything urgent right now" above the fold.
- *
- * NOT in ui-ux-prototype.html. The dashboard is the post-login landing screen
- * and calls itself a command center, but the prototype answered nothing at a
- * glance — you had to read a feed of eight cards to learn that two of them
- * mattered. Its subtitle tried to be the summary and ended up as one status
- * string doing four unrelated jobs across four states.
- *
- * Every value is derived from data already loaded: no new endpoint, no new
- * fixture. The third tile also gives "Refresh forecast" a visible consequence.
- *
- * Layout: the glyph sits in a gradient block overlapping the card's top-left
- * corner, with the label and figure right-aligned opposite it and the
- * supporting line below a rule. The three gradients run blue -> cyan -> green
- * across the row, all drawn from the brand ramp rather than the semantic
- * state colours — these are identities for the metrics, not severities.
- */
-import { Bell, ChevronRight, MapPin, TrendingUp } from 'lucide-react';
+/** Four summary tiles; the Philippine-region one opens that region's details. */
+import { Bell, ChevronRight, Globe, MapPin, TrendingUp } from 'lucide-react';
+import { SAMPLE_REGIONS } from './regionSamples';
 import type { SignalSummarySlotProps } from './dashboardTypes';
 
 export default function SignalSummary({
@@ -29,11 +11,13 @@ export default function SignalSummary({
   surgeMarkets,
   topMarket,
   onOpenMarket,
+  onOpenRegion,
 }: SignalSummarySlotProps) {
+  const topRegion = SAMPLE_REGIONS[0];
   if (loading) {
     return (
-      <div className="stat-row" aria-busy="true">
-        {[0, 1, 2].map((i) => (
+      <div className="stat-row stat-row--markets" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
           <div key={i} className="skel" style={{ height: 132 }} />
         ))}
       </div>
@@ -41,7 +25,7 @@ export default function SignalSummary({
   }
 
   return (
-    <div className="stat-row">
+    <div className="stat-row stat-row--markets">
       <div className="stat-tile">
         <span className="stat-icon">
           <Bell size={24} strokeWidth={1.75} aria-hidden="true" />
@@ -77,11 +61,11 @@ export default function SignalSummary({
         disabled={!topMarket}
       >
         <span className="stat-icon">
-          <MapPin size={24} strokeWidth={1.75} aria-hidden="true" />
+          <Globe size={24} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div className="stat-head">
           <span className="stat-label">
-            Top market now
+            Top market for International
             {degraded && <span className="chip ml-2">cached</span>}
           </span>
           <b className="stat-value">{topMarket?.name ?? '—'}</b>
@@ -94,6 +78,28 @@ export default function SignalSummary({
               that gets an affordance. Same arrow the alert cards use for
               "View target markets", so the gesture reads the same way. */}
           {topMarket && <ChevronRight size={18} className="stat-go" aria-hidden="true" />}
+        </div>
+      </button>
+      {/* Same clickable tile as the international one: opens the region's
+          details. The figures are a design preview — see PhilippineRegionsPanel. */}
+      <button
+        type="button"
+        className="stat-tile stat-tile--action stat-tile--region"
+        onClick={() => onOpenRegion?.(topRegion.name)}
+        disabled={!onOpenRegion}
+      >
+        <span className="stat-icon">
+          <MapPin size={24} strokeWidth={1.75} aria-hidden="true" />
+        </span>
+        <div className="stat-head">
+          <span className="stat-label">Top market for Philippines</span>
+          <b className="stat-value">{topRegion.name}</b>
+        </div>
+        <div className="stat-foot">
+          <span>
+            {topRegion.score}/100{topMarket ? ` · ${topMarket.category}` : ''}
+          </span>
+          {onOpenRegion && <ChevronRight size={18} className="stat-go" aria-hidden="true" />}
         </div>
       </button>
     </div>

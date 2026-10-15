@@ -172,7 +172,8 @@ describe('SignalSummary', () => {
 
   it('skeletons the whole strip while loading, not just the feed', () => {
     const { container } = render(<SignalSummary {...base} loading />);
-    expect(container.querySelectorAll('.skel')).toHaveLength(3);
+    // One per tile: unread, surges, international and Philippine top markets.
+    expect(container.querySelectorAll('.skel')).toHaveLength(4);
   });
 
   it('opens the radar from the top-market tile', async () => {
@@ -194,11 +195,35 @@ describe('SignalSummary', () => {
     render(<SignalSummary {...base} topMarket={null} />);
 
     expect(screen.getByText('No markets ranked yet')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Top market for International/ })).toBeDisabled();
   });
 
   it('reassures rather than showing a bare zero when everything is read', () => {
     render(<SignalSummary {...base} unreadCount={0} />);
     expect(screen.getByText('You are all caught up')).toBeInTheDocument();
+  });
+});
+
+describe('SignalSummary — Top market for Philippines', () => {
+  const props = {
+    loading: false,
+    degraded: false,
+    unreadCount: 1,
+    surgeCount: 0,
+    surgeMarkets: [],
+    topMarket: null,
+    onOpenMarket: () => {},
+  };
+
+  it('opens the top region and labels it with the category, not "Sample data"', async () => {
+    const user = userEvent.setup();
+    const onOpenRegion = vi.fn();
+    render(<SignalSummary {...props} onOpenRegion={onOpenRegion} />);
+
+    const tile = screen.getByRole('button', { name: /Top market for Philippines/ });
+    expect(tile).toHaveTextContent('CALABARZON');
+    expect(screen.queryByText(/Sample data/)).not.toBeInTheDocument();
+    await user.click(tile);
+    expect(onOpenRegion).toHaveBeenCalledWith('CALABARZON');
   });
 });
