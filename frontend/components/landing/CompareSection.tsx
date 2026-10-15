@@ -11,7 +11,7 @@
  * Styles: styles/landing-compare.css (.cv-cmp-*).
  */
 import { Fragment } from 'react';
-import { ArrowRight, Briefcase, CalendarDays, Globe, Search, UserRound, type LucideIcon } from 'lucide-react';
+import { ArrowRight, BarChart3, Check, FileText, MapPin, Settings, Sparkles, Target, Briefcase, CalendarDays, Globe, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { COMPARE } from '../../content/landing';
 import { Accent, Eyebrow } from './ui';
 
@@ -23,10 +23,14 @@ const ICONS: Record<(typeof COMPARE.rows)[number]['icon'], LucideIcon> = {
   user: UserRound,
 };
 
+const ADD_ICONS = [BarChart3, Settings, Target, BarChart3, Sparkles];
+const FLOW_ICONS = [BarChart3, MapPin, FileText, Check, BarChart3];
+
 export default function CompareSection() {
   const c = COMPARE;
   return (
-    <section className="cv-section cv-cmp" data-bg="white" id="compare" aria-labelledby="cv-cmp-title">
+    <section className="cv-section cv-cmp" id="compare" aria-labelledby="cv-cmp-title">
+      <div className="cv-cmp-ring" aria-hidden="true" />
       <div className="cv-container">
         <header className="cv-cmp-head">
           <Eyebrow>{c.eyebrow}</Eyebrow>
@@ -44,8 +48,9 @@ export default function CompareSection() {
             <span data-highlight>{c.headers.adds}</span>
           </div>
           <ul className="cv-cmp-rows">
-            {c.rows.map((r) => {
+            {c.rows.map((r, i) => {
               const Icon = ICONS[r.icon];
+              const AddIcon = ADD_ICONS[i];
               return (
                 <li key={r.option} className="cv-cmp-row">
                   <h3 className="cv-cmp-option">
@@ -59,8 +64,8 @@ export default function CompareSection() {
                     {r.usually}
                   </p>
                   <p className="cv-cmp-adds">
-                    <span className="cv-cmp-label">{c.addsLabel} </span>
-                    {r.adds}
+                    <span className="cv-cmp-add-icon" aria-hidden="true"><AddIcon size={18} strokeWidth={1.75} /></span>
+                    <span><span className="cv-cmp-label">{c.addsLabel} </span>{r.adds}</span>
                   </p>
                 </li>
               );
@@ -73,16 +78,19 @@ export default function CompareSection() {
         </p>
 
         <ol className="cv-cmp-flow" aria-label={c.workflowLabel}>
-          {c.workflow.map((step, i) => (
+          {c.workflow.map((step, i) => {
+            const FlowIcon = FLOW_ICONS[i];
+            return (
             <Fragment key={step}>
               {i > 0 && (
                 <li className="cv-cmp-flow-arrow" aria-hidden="true">
                   <ArrowRight size={16} strokeWidth={1.75} />
                 </li>
               )}
-              <li className="cv-cmp-flow-step">{step}</li>
+              <li className="cv-cmp-flow-step"><span className="cv-cmp-flow-icon" aria-hidden="true"><FlowIcon size={16} strokeWidth={1.75} /></span>{step}</li>
             </Fragment>
-          ))}
+          );
+          })}
         </ol>
       </div>
     </section>

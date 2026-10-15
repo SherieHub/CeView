@@ -127,6 +127,24 @@
       zoom: 0.88;
     }
   }
+  /* Frosted-glass frame: a translucent white border the photo shows through. */
+  .cv-hero-visual .cv-dash {
+    border: 12px solid rgba(255, 255, 255, 0.55);
+    border-radius: calc(var(--r-card) + 12px);
+    background-clip: padding-box;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+      0 30px 60px -18px rgba(11, 63, 60, 0.35);
+  }
+  /* Desktop: the card turns slightly away on its left side, as if standing in the scene. */
+  @media (min-width: 1024px) {
+    .cv-hero-visual {
+      transform: perspective(1600px) rotateY(-12deg) rotateX(4deg) rotateZ(2deg);
+      transform-origin: 60% 50%;
+    }
+  }
   .cv-dash {
     display: grid;
     grid-template-columns: 140px minmax(0, 1fr);

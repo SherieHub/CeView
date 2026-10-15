@@ -105,7 +105,8 @@ describe('LandingPage', () => {
     const compare = document.getElementById('compare') as HTMLElement;
     expect(compare.querySelectorAll('.cv-cmp-row')).toHaveLength(5);
     const trust = document.getElementById('trust') as HTMLElement;
-    expect(trust.querySelectorAll('.cv-trust-card')).toHaveLength(6);
+    expect(trust.querySelectorAll('.cv-trust-card')).toHaveLength(4);
+    expect(trust.querySelectorAll('.cv-trust-assurances > li')).toHaveLength(2);
     expect(within(trust).getByText('Targets, not results yet')).toBeInTheDocument();
     expect(trust.querySelectorAll('.cv-trust-targets > div')).toHaveLength(4);
   });

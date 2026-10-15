@@ -54,7 +54,7 @@ export default function ProductSection() {
             <HandNote />
             <div className="cv-product-media">
               <div className="cv-product-photo">
-                <LandingImage slot="product-traveler-lagoon" fill sizes="(min-width: 1024px) 50vw, 100vw" />
+                <LandingImage slot="product-malapascua-beach" fill sizes="(min-width: 1024px) 50vw, 100vw" />
               </div>
               <div className="cv-product-inset">
                 <LandingImage slot="product-sea-turtle" fill sizes="(min-width: 1024px) 18vw, 40vw" />

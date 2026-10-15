@@ -788,8 +788,8 @@ export const DEMO = {
  */
 export const FAQ = {
   eyebrow: 'FAQ',
-  /** Rendered as: {titleLead}<Accent>{titleAccent}</Accent>{titleTail} */
-  titleLead: 'Questions before you explore ',
+  /** One line each on wider screens; the last ends with <Accent>{titleAccent}</Accent>{titleTail}. */
+  titleLines: ['Questions', 'before you', 'explore '],
   titleAccent: 'CeView',
   titleTail: '?',
   introLead: 'Something else on your mind? ',
@@ -852,7 +852,7 @@ export const FAQ = {
 
 export const FINAL_CTA = {
   eyebrow: 'Be part of a stronger Cebu tourism industry',
-  /** Rendered as: {titleLead}<Accent>{titleAccent}</Accent>{titleTail} */
+  /** Rendered as: {titleLead}<Accent>{titleAccent}{titleTail}</Accent> */
   titleLead: 'Your next tourism opportunity may start before the bookings ',
   titleAccent: 'do',
   titleTail: '.',

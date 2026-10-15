@@ -99,20 +99,20 @@ export const IMAGE_CREDITS = [
     attribution: 'Texture photo: Coral Reef from Above, by Paul Harrison, CC BY-SA 4.0, via Wikimedia Commons',
   },
   {
-    // 4:3 crop of the full-resolution original. Retouched: the resort name
-    // painted on the heart-shaped swing sign was removed (no third-party
-    // branding); the Unsplash License allows modification.
-    slot: 'product-traveler-lagoon',
-    file: 'product-traveler-lagoon-1600.webp',
-    responsive: { base: 'product-traveler-lagoon', widths: [960, 1600], avif: true },
+    // Product split: a 4:3 crop of the original, keeping the palm-lined shore on the right.
+    slot: 'product-malapascua-beach',
+    file: 'product-malapascua-beach-1600.webp',
+    responsive: { base: 'product-malapascua-beach', widths: [960, 1600], avif: true },
     width: 1600,
     height: 1200,
-    alt: 'A traveler on a beach swing, back to the camera, looking out over turquoise water toward green islands.',
-    caption: 'Coron, Palawan',
-    photographer: 'Bernd Dittrich (@hdbernd)',
-    sourceUrl: 'https://unsplash.com/photos/1cnC2y57t-o',
-    license: 'Unsplash License',
-    verifiedLocation: 'Bulalacao, Coron, Palawan, Philippines',
+    alt: 'Clear turquoise water lapping a white-sand beach lined with palm trees on Malapascua Island.',
+    caption: 'Malapascua Island',
+    photographer: 'Vyacheslav Argenberg',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Malapascua_(island),_Tropical_beach,_Philippines.jpg',
+    license: 'CC BY 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    verifiedLocation: 'Malapascua Island, Central Visayas, Philippines',
+    attribution: 'Photo: Malapascua Island, by Vyacheslav Argenberg, CC BY 4.0, via Wikimedia Commons',
   },
   {
     // 4:3 crop of the original; the source title names Moalboal.
@@ -163,6 +163,22 @@ export const IMAGE_CREDITS = [
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
     verifiedLocation: 'Coron, Palawan, Philippines',
     attribution: 'Photo: Kayangan Lake viewpoint, Coron, by Mmlibranda, CC BY-SA 4.0, via Wikimedia Commons',
+  },
+  {
+    // "Who it's for" banner: decorative, shown on the right under the section's teal fade.
+    slot: 'who-sumilon-sandbar',
+    file: 'who-sumilon-sandbar-1600.webp',
+    responsive: { base: 'who-sumilon-sandbar', widths: [1000, 1600], avif: true },
+    width: 1600,
+    height: 900,
+    alt: 'The white sandbar of Sumilon Island reaching into turquoise water, with an outrigger boat and the Cebu mainland behind.',
+    caption: 'Sumilon Island sandbar, Oslob',
+    photographer: 'Warrendering',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Sumilon_Island_sandbar.jpg',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    verifiedLocation: 'Sumilon Island, Oslob, Cebu, Philippines (GPS 9.4329, 123.3861)',
+    attribution: 'Photo: Sumilon Island sandbar, by Warrendering, CC BY-SA 4.0, via Wikimedia Commons',
   },
   {
     // Final CTA band: a 3:2 crop shown full-bleed under a dark teal overlay.

@@ -120,7 +120,7 @@ export default function WhoSection() {
     <section className="cv-section cv-who" id="who" aria-labelledby="cv-who-title">
       <div className="cv-who-hero">
         <div className="cv-who-hero-photo" aria-hidden="true">
-          <LandingImage slot="how-lagoon" fill decorative sizes="(min-width: 768px) 65vw, 100vw" />
+          <LandingImage slot="who-sumilon-sandbar" fill decorative sizes="(min-width: 768px) 65vw, 100vw" />
         </div>
         <div className="cv-container cv-who-head">
           <div className="cv-who-heading">

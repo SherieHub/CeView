@@ -1,6 +1,10 @@
 /**
  * Pricing (#pricing). Proposed launch plans, labelled as proposed throughout.
  *
+ * A warm band with limestone cliffs fading in at both top corners; four plan
+ * cards (Growth raised, dark, with a "Recommended" tab); an add-ons bar; and
+ * the Partner Plan band, whose offer panel fades into an aerial island photo.
+ *
  * The billing toggle is a pair of native radio buttons styled as a segmented
  * control, so arrow keys and screen readers work as for any radio group.
  * Every CTA goes to the demo form as `#demo?plan=<id>`; LeadForm reads it.
@@ -9,11 +13,24 @@
  * Styles: styles/landing-pricing.css (.cv-price-*).
  */
 import { useEffect, useRef, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Layers } from 'lucide-react';
 import { PRICING } from '../../content/landing';
-import { Accent, Button, Eyebrow } from './ui';
+import { Accent, Button, Eyebrow, LandingImage } from './ui';
 
 type Billing = 'monthly' | 'annual';
+
+/** "Additional branch: ₱699/month" → the peso amount in bold. */
+function AddOn({ text }: { text: string }) {
+  const m = text.match(/^(.*?)(₱[\d,]+)(.*)$/);
+  if (!m) return <>{text}</>;
+  return (
+    <>
+      {m[1]}
+      <strong>{m[2]}</strong>
+      {m[3]}
+    </>
+  );
+}
 
 export default function PricingSection() {
   const p = PRICING;
@@ -68,16 +85,23 @@ export default function PricingSection() {
   };
 
   return (
-    <section className="cv-section cv-price" data-bg="white" id="pricing" aria-labelledby="cv-price-title">
-      <div className="cv-container">
+    <section className="cv-section cv-price" id="pricing" aria-labelledby="cv-price-title">
+      <div className="cv-price-cliff" data-side="left" aria-hidden="true">
+        <LandingImage slot="how-lagoon" fill decorative sizes="30vw" />
+      </div>
+      <div className="cv-price-cliff" data-side="right" aria-hidden="true">
+        <LandingImage slot="how-lagoon" fill decorative sizes="30vw" />
+      </div>
+
+      <div className="cv-container cv-price-inner">
         <header className="cv-price-head">
-          <Eyebrow>{p.eyebrow}</Eyebrow>
+          <Eyebrow className="cv-price-eyebrow">{p.eyebrow}</Eyebrow>
           <h2 id="cv-price-title" className="cv-display-lg cv-price-title">
             {p.titleLead}
             <Accent>{p.titleAccent}</Accent>
             {p.titleTail}
           </h2>
-          <p className="cv-body-lg cv-price-intro">{p.intro}</p>
+          <p className="cv-price-intro">{p.intro}</p>
         </header>
 
         <fieldset className="cv-price-toggle">
@@ -103,14 +127,16 @@ export default function PricingSection() {
                   <span className="cv-price-value">{price.price.replace(/^From /, '')}</span>
                   <span className="cv-price-period">{price.period}</span>
                 </p>
-                <p className="cv-price-note">{'note' in price ? price.note : ' '}</p>
+                <p className="cv-price-note">{'note' in price ? price.note : ' '}</p>
                 <p className="cv-price-best">
                   <span>{p.bestForLabel}</span> {plan.bestFor}
                 </p>
                 <ul className="cv-price-list">
                   {plan.includes.map((item) => (
                     <li key={item}>
-                      <Check size={16} strokeWidth={2.25} aria-hidden="true" />
+                      <span className="cv-price-check" aria-hidden="true">
+                        <Check size={12} strokeWidth={3} />
+                      </span>
                       {item}
                     </li>
                   ))}
@@ -118,6 +144,7 @@ export default function PricingSection() {
                 <Button
                   href={`#demo?plan=${plan.id}`}
                   variant={featured ? 'primary' : 'secondary'}
+                  arrow
                   block
                   className="cv-price-cta"
                   aria-label={`${plan.cta}: ${plan.name} plan`}
@@ -141,33 +168,41 @@ export default function PricingSection() {
         </div>
 
         <div className="cv-price-addons">
-          <span className="cv-price-addons-label">{p.addOnsLabel}</span>
+          <span className="cv-price-addons-label">
+            <Layers size={22} strokeWidth={1.5} aria-hidden="true" />
+            {p.addOnsLabel}
+          </span>
           <ul>
             {p.addOns.map((a) => (
-              <li key={a}>{a}</li>
+              <li key={a}>
+                <AddOn text={a} />
+              </li>
             ))}
           </ul>
         </div>
 
         <div className="cv-price-partner">
           <div className="cv-price-partner-copy">
-            <Eyebrow>{p.partner.eyebrow}</Eyebrow>
+            <Eyebrow className="cv-price-partner-eyebrow">{p.partner.eyebrow}</Eyebrow>
             <h3 className="cv-price-partner-title">{p.partner.title}</h3>
             <p className="cv-price-partner-body">{p.partner.body}</p>
           </div>
           <div className="cv-price-partner-offer">
+            <div className="cv-price-partner-photo" aria-hidden="true">
+              <LandingImage slot="cta-aerial-ocean" fill decorative sizes="(min-width: 1024px) 45vw, 100vw" />
+            </div>
             <p className="cv-price-amount">
               <span className="cv-price-value">{p.partner.price}</span>
               <span className="cv-price-period">{p.partner.period}</span>
             </p>
             <p className="cv-price-partner-terms">{p.partner.terms}</p>
-            <Button href="#demo?plan=partner" size="lg">
+            <Button href="#demo?plan=partner" arrow>
               {p.partner.cta}
             </Button>
           </div>
         </div>
 
-        <p className="cv-caption cv-price-fine">{p.finePrint}</p>
+        <p className="cv-price-fine">{p.finePrint}</p>
       </div>
     </section>
   );

@@ -6,29 +6,79 @@
 
 @layer components {
   /* ================= pricing ================= */
+  .cv-section.cv-price {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 64px 48px;
+    background: #fdfaf6;
+  }
+  /* Limestone cliffs fading in at both top corners. */
+  .cv-price-cliff {
+    position: absolute;
+    top: 0;
+    z-index: -1;
+    width: 24%;
+    height: 340px;
+    opacity: 0.95;
+    -webkit-mask-image: radial-gradient(ellipse 110% 105% at var(--cliff-x) 0%, #000 50%, transparent 88%);
+    mask-image: radial-gradient(ellipse 110% 105% at var(--cliff-x) 0%, #000 50%, transparent 88%);
+  }
+  .cv-price-cliff[data-side='left'] {
+    --cliff-x: 0%;
+    left: 0;
+  }
+  .cv-price-cliff[data-side='right'] {
+    --cliff-x: 100%;
+    right: 0;
+  }
+  .cv-price-cliff[data-side='left'] .cv-img {
+    object-position: 0% 30%;
+  }
+  .cv-price-cliff[data-side='right'] .cv-img {
+    object-position: 100% 30%;
+  }
+
   .cv-price-head {
     display: grid;
     justify-items: center;
-    gap: 16px;
+    gap: 10px;
     text-align: center;
+  }
+  /* "PLANS" between two short rules. */
+  .cv-price-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .cv-price-eyebrow::before,
+  .cv-price-eyebrow::after {
+    content: '';
+    width: 48px;
+    height: 1px;
+    background: var(--hairline);
   }
   .cv-price-title {
     max-width: 20ch;
   }
   .cv-price-intro {
-    max-width: 36rem;
+    max-width: 32rem;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-500);
   }
 
   /* Billing toggle: native radios styled as a segmented pill. */
   .cv-price-toggle {
     display: flex;
     width: fit-content;
-    margin: 32px auto 0;
-    padding: 5px;
+    margin: 20px auto 0;
+    padding: 4px;
     gap: 4px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: var(--sand-50);
+    background: var(--white);
   }
   .cv-price-toggle-option {
     position: relative;
@@ -43,11 +93,11 @@
   .cv-price-toggle-option span {
     display: inline-flex;
     align-items: center;
-    height: 40px;
-    padding: 0 18px;
+    height: 36px;
+    padding: 0 20px;
     border-radius: 999px;
     font-family: var(--ff-ui);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 600;
     white-space: nowrap;
     color: var(--ink-700);
@@ -62,28 +112,28 @@
     outline-offset: 2px;
   }
 
-  /* Plan cards. */
+  /* ---------- plan cards ---------- */
   .cv-price-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-    margin: 40px 0 0;
-    padding: 16px 0 0;
+    gap: 16px;
+    margin: 28px 0 0;
+    padding: 14px 0 0;
     list-style: none;
   }
   .cv-price-card {
     position: relative;
     display: flex;
     flex-direction: column;
-    padding: 28px 24px 24px;
+    padding: 20px 20px 18px;
     border: 1px solid var(--line);
-    border-radius: 24px;
+    border-radius: 18px;
     background: var(--white);
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 18px 36px -28px rgba(14, 42, 59, 0.35);
   }
   .cv-price-card[data-featured] {
     border-color: var(--teal-900);
-    background: var(--teal-900);
+    background: radial-gradient(ellipse 80% 60% at 80% 0%, #0f5450 0%, var(--teal-900) 70%);
     box-shadow: var(--shadow-float);
     color: var(--white);
   }
@@ -91,23 +141,23 @@
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 5px 14px;
-    border-radius: 999px;
+    transform: translate(-50%, -55%);
+    padding: 4px 14px;
+    border-radius: 8px;
     background: var(--coral-btn);
     font-family: var(--ff-ui);
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     white-space: nowrap;
     color: var(--ink-900);
   }
   .cv-price-name {
     font-family: var(--ff-ui);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--teal-700);
   }
@@ -121,22 +171,21 @@
     flex-wrap: wrap;
     align-items: baseline;
     column-gap: 6px;
-    margin-top: 32px;
+    margin-top: 26px;
   }
   .cv-price-from {
     position: absolute;
     left: 0;
     bottom: 100%;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     font-family: var(--ff-ui);
     font-size: 0.8125rem;
-    font-weight: 600;
     color: var(--ink-500);
   }
   .cv-price-value {
     font-family: var(--ff-display);
     font-optical-sizing: auto;
-    font-size: 2.75rem;
+    font-size: 2.375rem;
     font-weight: 600;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -145,92 +194,111 @@
   }
   .cv-price-period {
     font-family: var(--ff-ui);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--ink-500);
   }
   .cv-price-note {
-    min-height: 1.5em;
-    margin-top: 6px;
+    min-height: 1.4em;
+    margin-top: 4px;
     font-family: var(--ff-ui);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--ink-500);
   }
+  /* "Best for" between two rules, in the display face. */
   .cv-price-best {
-    padding-bottom: 18px;
-    margin-top: 10px;
-    border-bottom: 1px solid var(--line);
-    font-family: var(--ff-ui);
+    margin-top: 6px;
+    padding-block: 10px;
+    border-block: 1px solid var(--line);
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
     font-size: 0.9375rem;
-    line-height: 1.5;
+    line-height: 1.4;
     color: var(--ink-700);
   }
   .cv-price-best span {
-    font-weight: 600;
+    font-weight: 650;
     color: var(--ink-900);
   }
   .cv-price-list {
     display: grid;
-    gap: 10px;
-    margin: 18px 0 24px;
+    gap: 7px;
+    margin: 12px 0 18px;
     padding: 0;
     list-style: none;
   }
   .cv-price-list li {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 9px;
     font-family: var(--ff-ui);
-    font-size: 0.9375rem;
-    line-height: 1.45;
+    font-size: 0.8125rem;
+    line-height: 1.4;
     color: var(--ink-700);
   }
-  .cv-price-list svg {
+  .cv-price-check {
+    display: grid;
+    place-items: center;
     flex: none;
-    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    border-radius: 999px;
+    background: var(--teal-100);
     color: var(--teal-700);
   }
-  /* CTA pinned to the card's foot. */
   .cv-price-cta {
     margin-top: auto;
+    height: 42px;
+    font-size: 0.875rem;
   }
   .cv-price-card[data-featured] :is(.cv-price-from, .cv-price-period, .cv-price-note) {
-    color: rgba(255, 255, 255, 0.72);
+    color: rgba(255, 255, 255, 0.75);
   }
   .cv-price-card[data-featured] :is(.cv-price-value, .cv-price-best span) {
     color: var(--white);
   }
   .cv-price-card[data-featured] :is(.cv-price-best, .cv-price-list li) {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.88);
   }
   .cv-price-card[data-featured] .cv-price-best {
-    border-bottom-color: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.16);
   }
-  .cv-price-card[data-featured] .cv-price-list svg {
-    color: var(--teal-100);
+  .cv-price-card[data-featured] .cv-price-check {
+    background: var(--white);
+    color: var(--teal-900);
   }
   .cv-price-dots {
     display: none;
   }
 
-  /* Add-ons bar. */
+  /* ---------- add-ons bar ---------- */
   .cv-price-addons {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 10px 16px;
-    margin-top: 32px;
-    padding: 14px 20px;
+    gap: 10px 18px;
+    margin-top: 16px;
+    padding: 10px 18px;
+    border: 1px solid #d6eeea;
     border-radius: 16px;
-    background: var(--sand-50);
+    background: #eef8f6;
   }
   .cv-price-addons-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 18px;
+    border-right: 1px solid #cfe5e1;
     font-family: var(--ff-ui);
     font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--ink-500);
+    color: var(--teal-900);
+  }
+  .cv-price-addons-label svg {
+    color: var(--teal-900);
   }
   .cv-price-addons ul {
     display: flex;
@@ -242,70 +310,110 @@
     list-style: none;
   }
   .cv-price-addons li {
-    padding: 6px 12px;
+    padding: 6px 16px;
     border: 1px solid var(--line);
     border-radius: 999px;
     background: var(--white);
     font-family: var(--ff-ui);
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.8125rem;
     color: var(--ink-700);
   }
+  .cv-price-addons strong {
+    font-weight: 700;
+    color: var(--ink-900);
+  }
 
-  /* Partner Plan band. */
+  /* ---------- Partner Plan band ---------- */
   .cv-price-partner {
     display: grid;
-    gap: 24px;
-    align-items: center;
-    margin-top: 32px;
-    padding: 32px;
-    border-radius: 24px;
-    background: linear-gradient(120deg, var(--coral-100) 0%, var(--sand-50) 100%);
+    margin-top: 14px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: linear-gradient(110deg, #fce6dd 0%, #fbeee6 45%, #fdf6f1 100%);
   }
   .cv-price-partner-copy {
     display: grid;
-    gap: 12px;
+    align-content: center;
+    gap: 8px;
+    padding: 22px 28px;
   }
-  .cv-price-partner-copy .cv-eyebrow {
+  .cv-price-partner-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     color: var(--coral-800);
   }
+  .cv-price-partner-eyebrow::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--coral-800);
+  }
   .cv-price-partner-title {
-    max-width: 30ch;
+    max-width: 26ch;
     font-family: var(--ff-display);
     font-optical-sizing: auto;
-    font-size: 1.5rem;
-    font-weight: 550;
-    line-height: 1.25;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.2;
     letter-spacing: -0.01em;
     color: var(--ink-900);
   }
   .cv-price-partner-body {
-    max-width: 42rem;
+    max-width: 40rem;
     font-family: var(--ff-ui);
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 0.875rem;
+    line-height: 1.55;
     color: var(--ink-700);
   }
+  /* Dark offer panel with a diagonal edge, fading into the island photo. */
   .cv-price-partner-offer {
+    position: relative;
+    isolation: isolate;
     display: grid;
+    align-content: center;
     justify-items: start;
     gap: 8px;
+    padding: 22px 28px;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-price-partner-photo {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .cv-price-partner-photo .cv-img {
+    object-position: 70% 50%;
+  }
+  .cv-price-partner-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--teal-900) 0%, var(--teal-900) 52%, rgba(11, 63, 60, 0.55) 72%, rgba(11, 63, 60, 0) 100%);
   }
   .cv-price-partner-offer .cv-price-amount {
     margin-top: 0;
   }
+  .cv-price-partner-offer .cv-price-value {
+    font-size: 2.5rem;
+    color: var(--white);
+  }
   .cv-price-partner-offer .cv-price-period {
-    color: var(--ink-700);
+    color: rgba(255, 255, 255, 0.85);
   }
   .cv-price-partner-terms {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     font-family: var(--ff-ui);
-    font-size: 0.875rem;
-    color: var(--ink-700);
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.85);
   }
   .cv-price-fine {
-    margin-top: 24px;
+    margin-top: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
     text-align: center;
+    color: var(--ink-500);
   }
 
   @media (min-width: 768px) {
@@ -318,24 +426,32 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       align-items: stretch;
     }
+    /* Growth stands slightly taller than its neighbours. */
     .cv-price-card[data-featured] {
-      transform: scale(1.03);
+      margin-block: -10px;
+      padding-block: 30px 28px;
       z-index: 1;
     }
     .cv-price-partner {
-      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-      gap: 40px;
-      padding: 36px 40px;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    }
+    /* Keep the copy clear of the offer panel's diagonal edge. */
+    .cv-price-partner-copy {
+      padding-right: 72px;
+    }
+    .cv-price-partner-offer {
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+      margin-left: -48px;
+      padding-left: calc(28px + 9%);
     }
   }
   @media (min-width: 1024px) and (max-width: 1279px) {
     .cv-price-card {
-      padding-inline: 20px;
+      padding-inline: 16px;
     }
     .cv-price-value {
-      font-size: 2.375rem;
+      font-size: 2rem;
     }
-    /* Narrow cards: the period goes under every price, so rows still align. */
     .cv-price-period {
       flex-basis: 100%;
     }
@@ -343,6 +459,10 @@
 
   /* < 768px: swipeable carousel that opens on Growth. */
   @media (max-width: 767px) {
+    .cv-price-cliff {
+      width: 45%;
+      height: 220px;
+    }
     .cv-price-grid {
       display: flex;
       gap: 14px;
@@ -390,103 +510,190 @@
     }
     .cv-price-toggle-option span {
       padding: 0 12px;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
     }
-    .cv-price-partner {
-      padding: 24px;
-    }
-    .cv-price-addons {
-      justify-content: flex-start;
-    }
+    .cv-price-addons,
     .cv-price-addons ul {
       justify-content: flex-start;
+    }
+    .cv-price-addons-label {
+      padding-right: 0;
+      border-right: 0;
+    }
+    .cv-price-partner-copy,
+    .cv-price-partner-offer {
+      padding: 20px;
     }
   }
 
   /* ================= request a demo ================= */
-  .cv-demo {
-    background: var(--sand-50);
+  .cv-section.cv-demo {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 72px 56px;
+    background:
+      radial-gradient(ellipse 45% 55% at 8% 18%, rgba(28, 154, 142, 0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 50% at 45% 0%, rgba(28, 154, 142, 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 35% 45% at 0% 85%, rgba(28, 154, 142, 0.08) 0%, transparent 70%),
+      #f2fbf9;
   }
   .cv-demo-grid {
     display: grid;
-    gap: 40px;
+    gap: 32px;
   }
   .cv-demo-copy {
     display: grid;
     align-content: start;
-    gap: 16px;
+    gap: 14px;
   }
   .cv-demo-title {
-    max-width: 18ch;
+    max-width: 16ch;
   }
-  .cv-demo-see-title {
-    margin-top: 12px;
+  .cv-demo-lede {
+    max-width: 36rem;
     font-family: var(--ff-ui);
     font-size: 1.0625rem;
-    font-weight: 600;
-    color: var(--ink-900);
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  .cv-demo-details {
+    display: grid;
+    gap: 18px;
+    align-items: start;
+    margin-top: 10px;
   }
   .cv-demo-see {
     display: grid;
-    gap: 10px;
+    gap: 14px;
     margin: 0;
     padding: 0;
     list-style: none;
   }
   .cv-demo-see li {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    gap: 14px;
     font-family: var(--ff-ui);
-    font-size: 1rem;
-    line-height: 1.5;
+    font-size: 0.9375rem;
+    line-height: 1.45;
     color: var(--ink-700);
   }
-  .cv-demo-see svg {
+  .cv-demo-see-icon {
+    display: grid;
+    place-items: center;
     flex: none;
-    margin-top: 1px;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: #dff2ee;
     color: var(--teal-700);
   }
   .cv-demo-pilot {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-top: 12px;
+    position: relative;
+    display: grid;
+    gap: 12px;
     padding: 20px;
-    border: 1.5px dashed var(--teal-500);
-    border-radius: var(--r-card);
-    background: var(--white);
+    border: 1px solid #ddefeb;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 36px -28px rgba(14, 42, 59, 0.35);
+  }
+  .cv-demo-pilot-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
   }
   .cv-demo-pilot-body {
-    margin-top: 6px;
     font-family: var(--ff-ui);
-    font-size: 0.9375rem;
-    line-height: 1.6;
-    color: var(--ink-700);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--ink-500);
   }
-  .cv-demo-photo {
-    display: none;
+  /* Three small strokes over the card's top-right corner. */
+  .cv-demo-spark {
+    position: absolute;
+    top: -22px;
+    right: 16px;
+    width: 40px;
+    height: 30px;
+  }
+  .cv-demo-spark i {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--teal-700);
+  }
+  .cv-demo-spark i:nth-child(1) {
+    left: 4px;
+    top: 6px;
+    transform: rotate(-12deg);
+  }
+  .cv-demo-spark i:nth-child(2) {
+    left: 18px;
+    top: 4px;
+    transform: rotate(35deg);
+  }
+  .cv-demo-spark i:nth-child(3) {
+    left: 30px;
+    top: 16px;
+    transform: rotate(70deg);
+  }
+
+  /* Wide beach banner closing the section. */
+  .cv-demo-banner {
     position: relative;
-    aspect-ratio: 16 / 10;
-    margin-top: 12px;
+    height: clamp(180px, 22vw, 300px);
+    margin-top: 32px;
     overflow: hidden;
     border-radius: 24px;
     background: var(--sand-100);
+    box-shadow: 0 24px 48px -32px rgba(14, 42, 59, 0.45);
+  }
+  .cv-demo-banner .cv-img {
+    object-position: 50% 42%;
+  }
+  .cv-demo-banner-word {
+    position: absolute;
+    right: 40px;
+    bottom: 26px;
+    display: grid;
+    justify-items: end;
+    font-family: var(--ff-script);
+    font-size: clamp(2.5rem, 4.5vw, 4rem);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--white);
+    text-shadow: 0 2px 12px rgba(14, 42, 59, 0.35);
+  }
+  .cv-demo-banner-word svg {
+    width: 70%;
+    height: 14px;
+    margin-top: 2px;
+    overflow: visible;
+  }
+  .cv-demo-banner-word path {
+    fill: none;
+    stroke: var(--white);
+    stroke-width: 2.5;
+    stroke-linecap: round;
   }
 
   /* Form card. */
   .cv-form {
-    padding: 28px 22px;
-    border: 1px solid var(--line);
+    padding: 26px 22px;
+    border: 1px solid #ece6dc;
     border-radius: 24px;
-    background: var(--white);
-    box-shadow: var(--shadow-float);
+    background: #fdfaf5;
+    box-shadow: 0 30px 60px -36px rgba(14, 42, 59, 0.35);
   }
   .cv-form-title {
     font-family: var(--ff-display);
     font-optical-sizing: auto;
-    font-size: 1.625rem;
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
     font-weight: 550;
+    letter-spacing: -0.02em;
     line-height: 1.2;
     color: var(--ink-900);
   }
@@ -654,7 +861,7 @@
 
   @media (min-width: 640px) {
     .cv-form {
-      padding: 40px;
+      padding: 32px;
     }
     .cv-form-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -663,24 +870,144 @@
       grid-column: 1 / -1;
     }
   }
-  /* Desktop: sand on the left, white behind the form. */
-  @media (min-width: 1024px) {
-    .cv-demo {
-      background: linear-gradient(90deg, var(--sand-50) 0 50%, var(--white) 50% 100%);
+  @media (min-width: 640px) {
+    .cv-demo-details {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
+  }
+  @media (min-width: 1024px) {
     .cv-demo-grid {
       grid-template-columns: repeat(12, minmax(0, 1fr));
       column-gap: 24px;
     }
     .cv-demo-copy {
-      grid-column: 1 / span 5;
+      grid-column: 1 / span 6;
     }
     .cv-demo-form {
       grid-column: 7 / -1;
       align-self: start;
     }
-    .cv-demo-photo {
-      display: block;
+  }
+  @media (min-width: 1280px) {
+    .cv-demo-copy {
+      grid-column: 1 / span 6;
+      padding-right: 16px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-demo-banner-word {
+      right: 20px;
+      bottom: 16px;
+    }
+  }
+
+  /* ---------- demo: compact sizing, columns levelled on desktop ---------- */
+  .cv-section.cv-demo {
+    padding-block: 56px 48px;
+  }
+  .cv-demo-copy {
+    gap: 12px;
+  }
+  .cv-demo-lede {
+    font-size: 1rem;
+  }
+  .cv-demo-details {
+    gap: 16px;
+    margin-top: 6px;
+  }
+  .cv-demo-see {
+    gap: 10px;
+  }
+  .cv-demo-see li {
+    gap: 12px;
+    font-size: 0.8125rem;
+  }
+  .cv-demo-see-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .cv-demo-see-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .cv-demo-pilot {
+    gap: 10px;
+    padding: 16px;
+  }
+  .cv-demo-pilot-body {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+  .cv-demo-banner {
+    height: clamp(150px, 17vw, 240px);
+    margin-top: 28px;
+  }
+  .cv-demo-banner-word {
+    font-size: clamp(2.25rem, 3.6vw, 3.25rem);
+  }
+
+  .cv-demo .cv-form {
+    padding: 18px 22px;
+  }
+  .cv-demo .cv-form-title {
+    font-size: clamp(1.5rem, 2vw, 1.875rem);
+  }
+  .cv-demo .cv-form-sub {
+    margin-top: 4px;
+    font-size: 0.8125rem;
+  }
+  .cv-demo .cv-form-grid {
+    gap: 8px 12px;
+    margin-top: 12px;
+  }
+  .cv-demo .cv-field {
+    gap: 4px;
+  }
+  .cv-demo .cv-label {
+    font-size: 0.8125rem;
+  }
+  .cv-demo .cv-input {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+  }
+  .cv-demo .cv-form-submit {
+    height: 42px;
+    margin-top: 12px;
+  }
+  .cv-demo .cv-form-consent {
+    margin-top: 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Desktop: both columns share one height; the left column's details sit at
+     its foot, so the pilot card and the form end on the same line. */
+  @media (min-width: 1024px) {
+    .cv-demo-grid {
+      align-items: stretch;
+    }
+    .cv-demo-copy {
+      display: flex;
+      flex-direction: column;
+    }
+    .cv-demo-details {
+      margin-top: auto;
+      padding-top: 6px;
+    }
+    .cv-demo-form {
+      align-self: stretch;
+      display: flex;
+    }
+    .cv-demo-form > .cv-form {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .cv-demo-form .cv-form-submit {
+      margin-top: auto;
+    }
+    .cv-demo-form .cv-form-grid {
+      margin-bottom: 12px;
     }
   }
 

@@ -8,7 +8,7 @@
  */
 import { BadgeCheck, Database, Gauge, Hand, Lock, MessageSquareText, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { TRUST } from '../../content/landing';
-import { Eyebrow, IconTile } from './ui';
+import { Eyebrow, IconTile, LandingImage } from './ui';
 
 const ICONS: Record<(typeof TRUST.items)[number]['icon'], LucideIcon> = {
   hand: Hand,
@@ -24,23 +24,37 @@ export default function TrustSection() {
   return (
     <section className="cv-section cv-trust" data-bg="teal" id="trust" aria-labelledby="cv-trust-title">
       <div className="cv-container cv-trust-grid">
-        {/* Intro and cards share a box, so the sticky intro stops at the last card. */}
+        {/* Approval and data transparency sit beside the four reassurance cards. */}
         <div className="cv-trust-main">
           <div className="cv-trust-intro">
+            <div className="cv-trust-photo" aria-hidden="true">
+              <LandingImage slot="hero-cebu-coast" fill decorative sizes="(min-width: 1024px) 40vw, 100vw" />
+            </div>
             <IconTile icon={ShieldCheck} className="cv-trust-badge" />
             <Eyebrow>{t.eyebrow}</Eyebrow>
             <h2 id="cv-trust-title" className="cv-display-lg cv-trust-title">
               {t.title}
             </h2>
             <p className="cv-body-lg">{t.intro}</p>
+            <ul className="cv-trust-assurances">
+              {t.items.filter((item) => item.icon === 'hand' || item.icon === 'database').map((item) => {
+                const Icon = ICONS[item.icon];
+                return (
+                  <li key={item.title}>
+                    <IconTile icon={Icon} />
+                    <div><h3>{item.title}</h3><p>{item.body}</p></div>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           <ul className="cv-trust-cards">
-            {t.items.map((item) => {
+            {t.items.filter((item) => item.icon !== 'hand' && item.icon !== 'database').map((item) => {
               const Icon = ICONS[item.icon];
               return (
                 <li key={item.title} className="cv-trust-card">
-                  <IconTile icon={Icon} />
+                  <IconTile icon={Icon} tone={item.icon === 'message' ? 'coral' : 'teal'} />
                   <h3 className="cv-trust-card-title">{item.title}</h3>
                   <p className="cv-trust-card-body">{item.body}</p>
                   {'statuses' in item && (

@@ -7,6 +7,8 @@
   .cv-section.cv-who { padding: 0 0 40px; background: #f3fbfa; }
   .cv-who-hero { position: relative; isolation: isolate; overflow: hidden; background: #073c39; }
   .cv-who-hero-photo { position: absolute; z-index: -1; inset: 0 0 0 auto; width: 65%; }
+  /* Aim the crop low so the turquoise shallows around the sandbar fill the band. */
+  .cv-who-hero-photo .cv-img { object-position: 60% 82%; filter: saturate(1.15); }
   .cv-who-hero-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #073c39 0%, rgba(7,60,57,.85) 18%, transparent 65%); }
   .cv-who-head { display: grid; gap: 12px; padding-block: 40px 60px; }
   .cv-who-heading { display: grid; gap: 12px; max-width: 34rem; }

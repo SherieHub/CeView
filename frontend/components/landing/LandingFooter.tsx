@@ -1,9 +1,11 @@
 /**
  * The closing band (#cta) and the footer.
  *
- * FinalCta: a full-bleed aerial ocean photo under a teal overlay, the closing
- * promise and CTAs, and a white panel anchored bottom-right with three short
- * pillars. On phones the photo is a band above the copy.
+ * FinalCta: a full-bleed aerial island photo, darkened by a teal gradient on
+ * the left only (behind the copy) so the photo stays vivid on the right; the
+ * closing promise and CTAs, and a white panel anchored bottom-right with three
+ * short pillars in mint icon circles. On phones the photo is a band above the
+ * copy.
  *
  * Footer: links are real or absent. Contact, Privacy and Terms appear only
  * once their URLs are configured (SITE) — no invented email, phone or
@@ -34,8 +36,10 @@ export function FinalCta() {
           <Eyebrow>{FINAL_CTA.eyebrow}</Eyebrow>
           <h2 id="cv-cta-title" className="cv-display-lg cv-cta-title">
             {FINAL_CTA.titleLead}
-            <Accent>{FINAL_CTA.titleAccent}</Accent>
-            {FINAL_CTA.titleTail}
+            <Accent>
+              {FINAL_CTA.titleAccent}
+              {FINAL_CTA.titleTail}
+            </Accent>
           </h2>
           <p className="cv-cta-lede">{FINAL_CTA.lede}</p>
           <div className="cv-cta-actions">
@@ -53,7 +57,9 @@ export function FinalCta() {
           const Icon = PILLAR_ICONS[i];
           return (
             <li key={p}>
-              <Icon size={24} strokeWidth={1.5} aria-hidden="true" />
+              <span className="cv-cta-panel-icon" aria-hidden="true">
+                <Icon size={22} strokeWidth={1.75} />
+              </span>
               <span>{p}</span>
             </li>
           );
