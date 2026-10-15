@@ -141,7 +141,7 @@
     flex: 1 1 auto;
     max-height: 860px;
     overflow: hidden;
-    border-radius: 24px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0.97);
     box-shadow: 0 40px 80px -30px rgba(0, 20, 20, 0.6);
   }
@@ -348,7 +348,7 @@
     padding: 11px 16px;
     font-size: 0.9375rem;
     border: 1px solid #e3ebe9;
-    border-radius: 14px;
+    border-radius: 10px;
     box-shadow: 0 6px 18px -12px rgba(11, 63, 60, 0.25);
   }
   /* Step 2's group labels and vibe chips (utility-classed in the step) take
@@ -378,7 +378,7 @@
   .ob-wrap .ob-panel .textarea {
     padding: 12px 16px;
     border: 1px solid #e3ebe9;
-    border-radius: 14px;
+    border-radius: 10px;
     font-size: 0.9375rem;
     line-height: 1.6;
   }
@@ -396,7 +396,7 @@
   }
   .ob-wrap .ob-panel .field-row {
     border: 1px solid #e3ebe9;
-    border-radius: 14px;
+    border-radius: 10px;
     box-shadow: 0 6px 18px -12px rgba(11, 63, 60, 0.25);
   }
   .ob-wrap .ob-panel .input:hover:not(:disabled) {
@@ -608,7 +608,7 @@
       padding: 18px 18px 0;
     }
     .ob-wrap .ob-card {
-      border-radius: 18px;
+      border-radius: 14px;
     }
     .ob-wrap .ob-card .ob-foot {
       margin: 16px 18px 0;
