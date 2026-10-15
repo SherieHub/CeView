@@ -4,8 +4,8 @@ import MarketsRevealPanel from './MarketsRevealPanel';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 
-describe('MarketsRevealPanel — ranking formula', () => {
-  it('renders the documented formula in a visible footer card when rankings are shown', () => {
+describe('MarketsRevealPanel', () => {
+  it('lists the ranked markets without the ranking-formula footer', () => {
     render(
       <MarketsRevealPanel
         selectedAlert={MOCK_NOTIFICATIONS[0]}
@@ -14,10 +14,10 @@ describe('MarketsRevealPanel — ranking formula', () => {
       />,
     );
 
-    const footer = screen.getByTestId('ranking-formula');
-    expect(footer).toHaveClass('card');
-    expect(footer).toHaveTextContent(
-      'market_score = 0.40·demand₄w + 0.35·seasonality + 0.25·economic_viability',
-    );
+    for (const market of MOCK_MARKETS) {
+      expect(screen.getByRole('heading', { name: market.name })).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('ranking-formula')).not.toBeInTheDocument();
+    expect(screen.queryByText(/market_score/)).not.toBeInTheDocument();
   });
 });

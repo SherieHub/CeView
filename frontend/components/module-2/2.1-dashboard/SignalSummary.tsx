@@ -18,7 +18,7 @@
  * across the row, all drawn from the brand ramp rather than the semantic
  * state colours — these are identities for the metrics, not severities.
  */
-import { ArrowRight, BellDot, Compass, Zap } from 'lucide-react';
+import { Bell, ChevronRight, MapPin, TrendingUp } from 'lucide-react';
 import type { SignalSummarySlotProps } from './dashboardTypes';
 
 export default function SignalSummary({
@@ -44,7 +44,7 @@ export default function SignalSummary({
     <div className="stat-row">
       <div className="stat-tile">
         <span className="stat-icon">
-          <BellDot size={22} strokeWidth={1.75} aria-hidden="true" />
+          <Bell size={24} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div className="stat-head">
           <span className="stat-label">Unread alerts</span>
@@ -55,9 +55,9 @@ export default function SignalSummary({
         </div>
       </div>
 
-      <div className="stat-tile">
+      <div className="stat-tile" data-tone="coral">
         <span className="stat-icon">
-          <Zap size={22} strokeWidth={1.75} aria-hidden="true" />
+          <TrendingUp size={24} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div className="stat-head">
           <span className="stat-label">Active surges</span>
@@ -77,7 +77,7 @@ export default function SignalSummary({
         disabled={!topMarket}
       >
         <span className="stat-icon">
-          <Compass size={22} strokeWidth={1.75} aria-hidden="true" />
+          <MapPin size={24} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div className="stat-head">
           <span className="stat-label">
@@ -93,7 +93,7 @@ export default function SignalSummary({
           {/* The only tile that does anything on click, so it is the only one
               that gets an affordance. Same arrow the alert cards use for
               "View target markets", so the gesture reads the same way. */}
-          {topMarket && <ArrowRight size={15} className="stat-go" aria-hidden="true" />}
+          {topMarket && <ChevronRight size={18} className="stat-go" aria-hidden="true" />}
         </div>
       </button>
     </div>

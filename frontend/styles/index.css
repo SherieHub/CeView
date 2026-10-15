@@ -27,6 +27,7 @@
 @import "./landing-closing.css";
 @import "./auth.css";
 @import "./onboarding.css";
+@import "./dashboard.css";
 
 @theme {
   /* ---- Anchor / Structural ---- */
@@ -3254,70 +3255,10 @@
   }
 }
 
-/* ============================================================
-   DASHBOARD — making room for the radar drawer.
-   The drawer opens over the right of the screen and the markets column lives
-   there, so with the drawer open those rank cards were 100% covered at every
-   desktop width: visible in the DOM, impossible to click, and the obvious
-   thing to reach for when switching market.
-   The screen yields the drawer's width instead. The grid then has room for
-   only one column, so the markets panel drops below the feed — still on the
-   page, still clickable, just no longer underneath the thing covering it.
-   ============================================================ */
+/* The radar overlays the dashboard without changing its width or columns. */
 @layer components {
-  .dash-screen {
-    transition: padding-right 0.26s var(--ease-brand);
-  }
-  @media (min-width: 1024px) {
-    .dash-screen[data-radar-open='true'] {
-      padding-right: min(560px, 45vw);
-    }
-    /* Whatever is left is too narrow for the two-column master/detail. */
-    .dash-screen[data-radar-open='true'] .dash-grid {
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-md);
-    }
-    /* Same for the summary tiles: the drawer takes 560px out of the content
-       column, and three tiles in what remains were 71px wide at 1100. Column
-       count steps back up as the screen gets wide enough to afford it. (Media
-       queries rather than a container query on .dash-screen — that would apply
-       `contain: layout`, and the fixed-position drawer lives inside it.) */
-    .dash-screen[data-radar-open='true'] .stat-row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-  @media (min-width: 1200px) {
-    .dash-screen[data-radar-open='true'] .stat-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-  @media (min-width: 1400px) {
-    .dash-screen[data-radar-open='true'] .stat-row {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  @media (min-width: 1024px) {
-    .dash-screen[data-radar-open='true'] .dash-markets {
-      position: static;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .dash-screen {
-      transition: none;
-    }
-  }
-}
-
-@layer components {
-  /* Wide enough that .dash-screen steps aside for the drawer: with the content
-     fully visible beside it, the scrim would dim a pane that is still live and
-     block every click on it. Narrow screens keep it — there the drawer really
-     does cover the page. */
-  @media (min-width: 1024px) {
-    #scrim[data-panel='true'] {
-      opacity: 0;
-      pointer-events: none;
-    }
+  #scrim[data-panel='true'] {
+    background: rgba(5, 60, 57, 0.48);
   }
 }
 

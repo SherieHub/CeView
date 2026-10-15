@@ -15,7 +15,11 @@
  * and moved the one just clicked out from under the cursor.
  */
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Award, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
+import '@fontsource-variable/fraunces/opsz.css';
+import { LandingImage } from '../../landing/ui';
+import CoverPhotoMenu from './CoverPhotoMenu';
+import { useCoverPhoto } from './useCoverPhoto';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
@@ -45,6 +49,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
   const state = useDashboardState({ forceMode });
   const { setTarget } = useTargetSelection();
   const tutorial = useJustOnboardedTutorial();
+  const cover = useCoverPhoto(profile.businessProfileId);
 
   // The radar drawer reads ?market=<id>, so it is linkable and the browser back
   // button closes it. See 03-module-2.md's M2-F card.
@@ -70,8 +75,27 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
 
   return (
     <div className="dash-screen" data-radar-open={radarOpen}>
+      <div className="dash-hero">
+        <div className="dash-hero-photo" aria-hidden="true">
+          {cover.custom ? (
+            <img className="cv-img cv-img--fill" src={cover.custom} alt="" />
+          ) : (
+            <LandingImage slot="product-malapascua-beach" fill decorative sizes="70vw" />
+          )}
+        </div>
+        <CoverPhotoMenu isCustom={cover.custom != null} onPick={cover.setFromFile} onReset={cover.reset} />
       <PageHead
-        title={`Good morning${profile.businessName ? `, ${profile.businessName}` : ''}`}
+        title={
+          profile.businessName ? (
+            <>
+              Good morning,
+              <br />
+              {profile.businessName}
+            </>
+          ) : (
+            'Good morning'
+          )
+        }
         subtitle={subtitle}
         actions={
           <>
@@ -88,7 +112,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
                 <b className="score-badge-disc num">{Math.round(profile.uniquenessScore * 100)}</b>
                 <span className="score-badge-body">
                   <span className="score-badge-label">Uniqueness</span>
-                  <Award className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
+                  <Info className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
                 </span>
               </span>
             ) : (
@@ -104,6 +128,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           </>
         }
       />
+      </div>
 
       {/* Step 17 (C-19/C-20): Retry re-runs only the initial load — never the
           forecast pipeline. Only the Refresh button above (state.refresh)
@@ -152,8 +177,6 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         />
       )}
 
-      {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
-
       <div className="dash-grid">
         <AlertFeed
           mode={state.mode}
@@ -178,6 +201,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           />
         )}
       </div>
+
+      {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
 
       {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
           ?market= itself, so mounting it unconditionally is correct: with no

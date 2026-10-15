@@ -1,0 +1,792 @@
+/* ============================================================
+   APP SHELL + DASHBOARD — visual layer (layout/Sidebar.tsx,
+   layout/Topbar.tsx, components/module-2/2.1-dashboard/*).
+   A flat dark-teal rail, a white top bar, and a dashboard that opens
+   on a photo banner with the summary tiles overlapping its foot, then
+   the alert feed and the ranked markets in white panels.
+   Rules are prefixed (.app-wrap / .dash-screen) so they win over the
+   base rules in index.css, which this file is imported ahead of.
+   Tokens: landing-foundation.css (--teal-*, --ink-*, --coral-*, --ff-*).
+   ============================================================ */
+
+@layer components {
+  /* ================= sidebar ================= */
+  .app-wrap .sb-rail {
+    padding: 0 16px 20px;
+    border-radius: 0;
+    background: linear-gradient(180deg, #0d4a48 0%, #0b4140 55%, #093a39 100%);
+    background-size: auto;
+    box-shadow: none;
+  }
+  .app-wrap .sb-head {
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-inline: 8px 0;
+  }
+  .app-wrap .sb-brand .lp-brand-logo {
+    height: 30px;
+  }
+  .app-wrap .sb-toggle {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .app-wrap .sb-rail .sb-sec {
+    margin: 18px 0 6px;
+    padding-inline: 12px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .app-wrap .sb-rail .sb-sec:first-child {
+    margin-top: 4px;
+  }
+  .app-wrap .sb-rail .sb-nav {
+    gap: 4px;
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item,
+  .app-wrap .sb-rail .sb-nav .sb-item:hover,
+  .app-wrap .sb-rail .sb-nav .sb-item[aria-current='page'] {
+    width: 100%;
+    gap: 12px;
+    padding: 9px 12px;
+    border-left: 0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item::before,
+  .app-wrap .sb-rail .sb-nav .sb-item::after {
+    display: none;
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--white);
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item[aria-current='page'] {
+    background: rgba(94, 214, 190, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(110, 231, 210, 0.16);
+    font-weight: 600;
+    color: var(--white);
+  }
+  .app-wrap .sb-rail .sb-item svg {
+    width: 18px;
+    height: 18px;
+  }
+  .app-wrap .sb-foot {
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .app-wrap .sb-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding-inline: 4px;
+  }
+  .app-wrap .sb-avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .app-wrap .sb-foot b {
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .app-wrap .sb-rail .sb-signout {
+    gap: 10px;
+    margin-top: 0;
+    padding: 9px 14px;
+    border-color: rgba(255, 255, 255, 0.28);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-brand,
+    .app-wrap[data-collapsed='true'] .sb-who {
+      display: none;
+    }
+    .app-wrap[data-collapsed='true'] .sb-rail .sb-nav .sb-item {
+      justify-content: center;
+      padding-inline: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-rail .sb-signout {
+      width: 40px;
+      padding: 10px;
+    }
+  }
+
+  /* ================= top bar ================= */
+  .app-wrap .app-topbar {
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid #e6eeec;
+  }
+  .app-wrap .app-topbar .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--ink-700);
+  }
+  .app-wrap .topbar-avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: #d9f3ec;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--teal-700);
+  }
+
+  /* On the dashboard the bar has no surface of its own: the cover photo runs
+     up behind it and the controls float on white discs. */
+  .app-wrap .app-col:has(.dash-screen) .app-topbar {
+    background: transparent;
+    border-bottom: 0;
+    pointer-events: none;
+  }
+  .app-wrap .app-col:has(.dash-screen) .app-topbar > * {
+    pointer-events: auto;
+  }
+  .app-wrap .app-col:has(.dash-screen) .app-topbar .icon-btn,
+  .app-wrap .app-col:has(.dash-screen) .topbar-avatar {
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 6px 18px -6px rgba(9, 52, 51, 0.35);
+    opacity: 1;
+  }
+  .app-wrap .app-col:has(.dash-screen) .topbar-avatar {
+    background: #d9f3ec;
+    box-shadow: 0 0 0 2px var(--white), 0 6px 18px -6px rgba(9, 52, 51, 0.35);
+  }
+
+  /* ---------- shared popup menu (account, cover photo) ---------- */
+  .topbar-menu,
+  .cover-edit-menu {
+    position: absolute;
+    z-index: 40;
+    display: grid;
+    min-width: 220px;
+    padding: 6px;
+    border: 1px solid #e3ebe9;
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 18px 40px -16px rgba(9, 52, 51, 0.35);
+    font-family: var(--ff-ui);
+  }
+  .topbar-menu [role='menuitem'],
+  .cover-edit-menu [role='menuitem'] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .topbar-menu [role='menuitem']:hover,
+  .cover-edit-menu [role='menuitem']:hover {
+    background: #eef7f5;
+  }
+  .topbar-menu [role='menuitem']:focus-visible,
+  .cover-edit-menu [role='menuitem']:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: -2px;
+  }
+  .topbar-menu [role='menuitem'] svg,
+  .cover-edit-menu [role='menuitem'] svg {
+    color: var(--teal-700);
+  }
+
+  /* Account menu, under the profile circle. */
+  .app-wrap .topbar-account {
+    position: relative;
+  }
+  .app-wrap .topbar-avatar {
+    position: relative;
+    border: 0;
+    cursor: pointer;
+  }
+  /* Small dropdown badge on the circle's corner: says "this opens a menu". */
+  .app-wrap .topbar-avatar-caret {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(9, 52, 51, 0.3);
+    color: var(--teal-700);
+    transition: transform 0.18s ease;
+  }
+  .app-wrap .topbar-avatar[aria-expanded='true'] .topbar-avatar-caret {
+    transform: rotate(180deg);
+  }
+  .app-wrap .topbar-avatar:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 3px;
+  }
+  .topbar-menu {
+    top: calc(100% + 10px);
+    right: 0;
+  }
+  .topbar-menu-who {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 4px;
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid #edf2f1;
+  }
+  .topbar-menu-who b {
+    font-size: 0.875rem;
+    color: var(--ink-900);
+  }
+  .topbar-menu-who span {
+    overflow: hidden;
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-500);
+  }
+
+  /* "Edit cover photo", bottom-right of the banner photo. */
+  .dash-screen .cover-edit {
+    position: absolute;
+    right: calc(var(--dash-pad, 24px) + 4px);
+    bottom: 82px;
+    z-index: 2;
+  }
+  .dash-screen .cover-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(9, 52, 51, 0.78);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+  }
+  .dash-screen .cover-edit-btn:hover {
+    background: rgba(9, 52, 51, 0.92);
+  }
+  .dash-screen .cover-edit-btn:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 2px;
+  }
+  .cover-edit-menu {
+    right: 0;
+    bottom: calc(100% + 8px);
+  }
+  .cover-edit-credit {
+    margin-top: 4px;
+    padding: 8px 12px 6px;
+    border-top: 1px solid #edf2f1;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cover-edit-credit a {
+    color: var(--teal-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ================= dashboard ================= */
+  /* The dashboard's main column: a little less side padding, and a plain
+     canvas the banner photo can fade into. */
+  .app-wrap .app-main:has(.dash-screen) {
+    --dash-pad: 24px;
+    padding: 0 var(--dash-pad) 32px;
+  }
+  @media (min-width: 1024px) {
+    .app-wrap .app-main:has(.dash-screen) {
+      --dash-pad: 36px;
+    }
+  }
+
+  /* Banner: greeting and actions over a beach photo that fades into the
+     canvas on the left and at the foot. It bleeds to the column's edges. */
+  .dash-screen .dash-hero {
+    position: relative;
+    isolation: isolate;
+    margin: calc(var(--topbar-h) * -1) calc(var(--dash-pad, 24px) * -1) 0;
+    padding: calc(var(--topbar-h) + 18px) var(--dash-pad, 24px) 96px;
+  }
+  .dash-screen .dash-hero-photo {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: -1;
+    width: 74%;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 30%, #000 55%),
+      linear-gradient(180deg, #000 60%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 30%, #000 55%),
+      linear-gradient(180deg, #000 60%, transparent 100%);
+    mask-composite: intersect;
+  }
+  .dash-screen .dash-hero-photo .cv-img {
+    object-position: 60% 62%;
+  }
+  .dash-screen .page-head {
+    align-items: flex-start;
+    margin-bottom: 0;
+  }
+  .dash-screen .page-head h1 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.75rem, 2.5vw, 2.375rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    color: var(--ink-900);
+  }
+  .dash-screen .page-head .body-sm {
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .page-head-actions {
+    gap: 10px;
+  }
+
+  /* Uniqueness: a coral-ringed disc on a soft coral capsule. */
+  .dash-screen .score-badge-disc {
+    border: 2.5px solid #f08a6a;
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(240, 138, 106, 0.18);
+    font-size: 0.9375rem;
+    color: #c24a2e;
+  }
+  .dash-screen .score-badge {
+    --score-disc: 36px;
+  }
+  .dash-screen .score-badge-body {
+    height: 36px;
+    border-color: #f6c3b2;
+    background: #fde9e1;
+  }
+  .dash-screen .score-badge-label,
+  .dash-screen .score-badge-glyph {
+    color: #c24a2e;
+  }
+  .dash-screen .score-badge-label {
+    font-size: 0.6875rem;
+  }
+  .dash-screen .page-head-actions .btn-outline {
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid #d5e0de;
+    background: var(--white);
+    font-size: 0.8125rem;
+    color: var(--ink-900);
+    box-shadow: 0 6px 16px -10px rgba(11, 63, 60, 0.35);
+  }
+
+  /* Summary tiles: overlap the banner's foot. Round tinted icon beside the
+     label and figure; a rule; the supporting line. */
+  .dash-screen .stat-row {
+    position: relative;
+    gap: 16px;
+    margin: -72px 0 20px;
+    padding-top: 0;
+  }
+  .dash-screen .stat-tile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+    padding: 16px 20px 0;
+    border: 1px solid #e6eeec;
+    border-radius: 16px;
+    box-shadow: 0 14px 34px -22px rgba(11, 63, 60, 0.35);
+  }
+  .dash-screen .stat-icon {
+    position: static;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: #ddf3ee;
+    color: var(--teal-700);
+    box-shadow: none;
+  }
+  .dash-screen .stat-tile[data-tone='coral'] .stat-icon {
+    background: #fde3d8;
+    color: #c24a2e;
+  }
+  .dash-screen .stat-head {
+    align-items: flex-start;
+    gap: 4px;
+    padding: 0;
+  }
+  .dash-screen .stat-label {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .stat-value {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--ink-900);
+  }
+  .dash-screen .stat-foot {
+    grid-column: 1 / -1;
+    margin-top: 14px;
+    padding: 10px 2px 12px;
+    border-top: 1px solid #e8eeed;
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .stat-go {
+    color: var(--teal-700);
+  }
+  @container (max-width: 300px) {
+    .dash-screen .stat-icon {
+      width: 40px;
+      height: 40px;
+    }
+    .dash-screen .stat-value {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* "Top market now" — the one clickable tile — is the dark-teal one. */
+  .dash-screen .stat-tile--action {
+    border-color: transparent;
+    background: linear-gradient(160deg, #0f504d 0%, #0b4140 100%);
+    box-shadow: 0 16px 34px -18px rgba(9, 52, 51, 0.6);
+  }
+  .dash-screen .stat-tile--action .stat-icon {
+    background: rgba(255, 255, 255, 0.14);
+    color: #7ee6d3;
+  }
+  .dash-screen .stat-tile--action .stat-label {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .dash-screen .stat-tile--action .stat-value {
+    color: var(--white);
+  }
+  .dash-screen .stat-tile--action .stat-foot {
+    border-top-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .dash-screen .stat-tile--action .stat-go {
+    color: var(--white);
+  }
+  .dash-screen .stat-tile--action:hover:not(:disabled) {
+    box-shadow: 0 20px 38px -16px rgba(9, 52, 51, 0.7);
+  }
+  .dash-screen .stat-tile--action:focus-visible {
+    outline: 2px solid #2bc9b0;
+    outline-offset: 3px;
+  }
+  .dash-screen .stat-tile--action .chip {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+  }
+
+  /* Feed and markets: two white panels. */
+  .dash-screen .dash-grid {
+    gap: 20px;
+  }
+  @media (min-width: 1280px) {
+    .dash-screen .dash-grid {
+      grid-template-columns: minmax(0, 1.4fr) minmax(380px, 1fr);
+    }
+  }
+  .dash-screen .dash-feed,
+  .dash-screen .dash-markets {
+    padding: 20px 22px 22px;
+    border: 1px solid #e6eeec;
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 14px 34px -24px rgba(11, 63, 60, 0.35);
+  }
+  .dash-screen .feed-head {
+    min-height: 0;
+    margin-bottom: 16px;
+  }
+  .dash-screen .feed-head h2,
+  .dash-screen .dash-feed > h2 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink-900);
+  }
+
+  /* All / Unread / Surges */
+  .dash-screen .seg {
+    padding: 4px;
+    border: 1px solid #e3ebe9;
+    border-radius: 999px;
+    background: var(--white);
+  }
+  .dash-screen .seg button {
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    color: var(--ink-700);
+  }
+  .dash-screen .seg button[aria-pressed='true'] {
+    border-color: #9fdccf;
+    background: #d8f3ec;
+    color: var(--teal-900);
+  }
+
+  /* One alert. */
+  .dash-screen .alert-card {
+    padding: 16px 20px;
+    border: 1px solid #e6eeec;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .dash-screen .alert-card:hover {
+    border-color: #bfe3dc;
+    box-shadow: 0 10px 24px -18px rgba(11, 63, 60, 0.4);
+  }
+  .dash-screen .alert-card[data-selected='true'] {
+    border-color: #2bc9b0;
+    box-shadow: 0 0 0 3px rgba(43, 201, 176, 0.14);
+  }
+  .dash-screen .alert-top .text-meta {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .alert-dot {
+    width: 10px;
+    height: 10px;
+    background: #f0845f;
+  }
+  .dash-screen .alert-card .heading-sm {
+    margin-top: 2px;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .dash-screen .alert-card .body-sm {
+    margin-top: 6px;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .alert-card .chip-row {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .dash-screen .alert-card .chip:not(.chip--critical) {
+    gap: 6px;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #e4f6f1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-700);
+  }
+  .dash-screen .alert-card .chip:not(.chip--critical) svg {
+    color: var(--teal-700);
+  }
+  .dash-screen .alert-cta {
+    margin-top: 12px;
+    font-size: 0.875rem;
+    color: var(--teal-700);
+  }
+
+  /* Ranked markets: compact rows. */
+  .dash-screen .dash-markets .feed-head {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e8eeed;
+  }
+  .dash-screen .dash-markets .feed-head h2 {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 0;
+    border-bottom: 0;
+    white-space: nowrap;
+  }
+  .dash-screen .dash-markets .feed-head h2 svg {
+    flex: none;
+    color: var(--ink-500);
+  }
+  .dash-screen .markets-note {
+    margin-left: auto;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    text-align: right;
+    color: var(--ink-500);
+  }
+  .dash-screen .rank-list {
+    display: grid;
+  }
+  .dash-screen .rank-card {
+    display: grid;
+    grid-template-columns: 26px 28px minmax(104px, 1fr) minmax(48px, 30%) 26px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #eef3f2;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .dash-screen .rank-card:hover {
+    background: #f5faf9;
+    box-shadow: none;
+    transform: none;
+  }
+  .dash-screen .rank-no {
+    width: 26px;
+    height: 26px;
+    background: #eef4f3;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-700);
+  }
+  .dash-screen .rank-no[data-lead='true'] {
+    background: #d6f3ec;
+    color: var(--teal-900);
+  }
+  .dash-screen .mkt-flag {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 22px;
+    color: var(--ink-500);
+  }
+  .dash-screen .mkt-flag img {
+    width: 28px;
+    height: 21px;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(14, 42, 59, 0.08);
+  }
+  .dash-screen .rank-name {
+    display: grid;
+    min-width: 0;
+  }
+  .dash-screen .rank-card .heading-sm {
+    overflow: hidden;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .dash-screen .rank-surge {
+    display: inline-flex;
+    white-space: nowrap;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #c24a2e;
+  }
+  .dash-screen .rank-surge svg {
+    width: 11px;
+    height: 11px;
+  }
+  .dash-screen .rank-card .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e8eeed;
+  }
+  .dash-screen .rank-card .bar > i {
+    border-radius: inherit;
+    background: #2bb59b;
+  }
+  .dash-screen .rank-pts {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink-700);
+  }
+
+  .dash-screen .dash-feed .card,
+  .dash-screen .dash-markets .card {
+    border: 1px solid #e6eeec;
+    box-shadow: none;
+  }
+  .dash-screen .dash-feed .empty {
+    padding-block: 28px;
+  }
+  .dash-screen .dash-feed .empty h3,
+  .dash-screen .dash-markets .empty h3 {
+    font-size: 1rem;
+  }
+  .dash-screen .dash-feed .empty p,
+  .dash-screen .dash-markets .empty p {
+    font-size: 0.8125rem;
+  }
+  .dash-screen .empty-glyph {
+    width: 44px;
+    height: 44px;
+  }
+
+  @media (max-width: 767px) {
+    .dash-screen .dash-hero {
+      padding-bottom: 96px;
+    }
+    .dash-screen .dash-hero-photo {
+      width: 100%;
+      opacity: 0.45;
+    }
+    .dash-screen .cover-edit {
+      bottom: 70px;
+    }
+    .dash-screen .markets-note {
+      flex-basis: 100%;
+      margin-left: 0;
+      text-align: left;
+    }
+    .dash-screen .dash-feed,
+    .dash-screen .dash-markets {
+      padding: 20px 18px;
+    }
+    .dash-screen .rank-card {
+      grid-template-columns: 26px 28px minmax(0, 1fr) 60px 26px;
+      gap: 10px;
+    }
+  }
+}
