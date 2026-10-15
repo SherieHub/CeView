@@ -34,7 +34,14 @@ export default function PublishComposer({
   platform,
   stageToken,
   onOpenBrief,
-}: ComposerSlotProps) {
+  part = 'both',
+}: ComposerSlotProps & {
+  /**
+   * Which half to render. Quick Post shows the caption in its Draft stage and
+   * the media in its Attach stage; 'both' is the original side-by-side layout.
+   */
+  part?: 'caption' | 'media' | 'both';
+}) {
   const limit = PLATFORM_CHAR_LIMITS[platform];
   const reason = blockReason(draft);
   const overLimit = draft.caption.length > limit;
@@ -74,9 +81,10 @@ export default function PublishComposer({
 
   return (
     <>
-      <div className="composer-grid">
+      <div className={part === 'both' ? 'composer-grid' : 'composer-single'} data-part={part}>
+        {part !== 'media' && (
         <div>
-          <label className="field-label" htmlFor="staged-caption">Staged caption</label>
+          <label className="field-label" htmlFor="staged-caption">Your caption</label>
           {/* The changing `key` remounts the element, which is what restarts a
               one-shot CSS animation — without it the flash plays once and never
               again on subsequent selections. */}
@@ -94,7 +102,9 @@ export default function PublishComposer({
             {draft.caption.length.toLocaleString()} / {limit.toLocaleString()} characters
           </p>
         </div>
+        )}
 
+        {part !== 'caption' && (
         <div>
           <div className="media-head">
             <span className="field-label">Publication media</span>
@@ -140,6 +150,7 @@ export default function PublishComposer({
           )}
           {reason && <p className="text-meta mt-3" role="status">{reason}</p>}
         </div>
+        )}
       </div>
 
       {/* Uncropped, so what the column's crop hides is checkable before the

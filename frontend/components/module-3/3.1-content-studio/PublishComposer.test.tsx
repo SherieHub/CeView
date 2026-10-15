@@ -37,7 +37,7 @@ function renderComposer(caption: string) {
 describe('PublishComposer — caption sizing', () => {
   it('does not leave the caption field scrollable', () => {
     renderComposer('a\nb\nc\nd\ne\nf\ng\nh');
-    const ta = screen.getByLabelText('Staged caption') as HTMLTextAreaElement;
+    const ta = screen.getByLabelText('Your caption') as HTMLTextAreaElement;
     // The height is set inline from the measured content; CSS hides the
     // scrollbar. Both together are what "no scrolling" means here.
     expect(ta.style.height).not.toBe('');
@@ -46,7 +46,7 @@ describe('PublishComposer — caption sizing', () => {
 
   it('re-measures when the caption changes without a keystroke', () => {
     const { rerender } = renderComposer('short');
-    const ta = screen.getByLabelText('Staged caption') as HTMLTextAreaElement;
+    const ta = screen.getByLabelText('Your caption') as HTMLTextAreaElement;
 
     // Record what the effect wrote, then stand in for a real layout engine by
     // reporting a taller content box on the next pass.
@@ -75,7 +75,7 @@ describe('PublishComposer — caption sizing', () => {
   // ORDER of writes to style.height, so that is what this asserts.
   it('resets the height before measuring, so the field can shrink', () => {
     const { rerender } = renderComposer('short');
-    const ta = screen.getByLabelText('Staged caption') as HTMLTextAreaElement;
+    const ta = screen.getByLabelText('Your caption') as HTMLTextAreaElement;
 
     const writes: string[] = [];
     const proto = Object.getPrototypeOf(ta.style) as CSSStyleDeclaration;

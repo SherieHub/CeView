@@ -75,6 +75,9 @@ describe('Content Studio journey', () => {
 
     await waitFor(() => expect(container.querySelectorAll('.cap-card').length).toBe(1), { timeout: 6000 });
 
+    // Quick Post shows one stage at a time; the audit is in Validate.
+    await user.click(screen.getByRole('button', { name: 'Validate' }));
+
     // The audit gate needs caption + media only — both seeded — so it is live.
     const run = screen.getByRole('button', { name: /Run Compliance Audit/ });
     expect(run).not.toBeDisabled();
@@ -94,7 +97,8 @@ describe('Content Studio journey', () => {
     expect(confirm).not.toBeDisabled();
     await user.click(confirm);
 
-    // The modal closes and the board gains the published records.
+    // The modal closes and the Content Library gains the published records
+    // (it stays mounted while hidden, so its list is in the DOM).
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Publish' })).toBeNull());
     await waitFor(() => expect(container.querySelectorAll('.post-grid .post-card').length).toBe(2));
   }, 40000);

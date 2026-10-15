@@ -206,9 +206,8 @@ test.describe('End-to-end authenticated journey', () => {
     await expect(page.getByText('Step 2 of 2')).toBeVisible();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Create content that fits the market' }),
-    ).toBeVisible();
+    // Quick Post's Draft stage — rendered only once a target is picked.
+    await expect(page.getByRole('heading', { name: 'Choose your caption' })).toBeVisible();
 
     // The shot list lives in the "Visual Guide" drawer now — the inline
     // VisualDirectionBoard (section[aria-labelledby="visual-direction-title"])

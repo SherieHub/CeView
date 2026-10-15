@@ -28,6 +28,7 @@
 @import "./auth.css";
 @import "./onboarding.css";
 @import "./dashboard.css";
+@import "./studio.css";
 
 @theme {
   /* ---- Anchor / Structural ---- */

@@ -201,6 +201,9 @@ describe('ContentStudioView — generate request', () => {
     ]);
 
     renderStudio();
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    // Quick Post shows one stage at a time; the Ad URL block is in Validate.
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
 
     expect(await screen.findByRole('heading', { name: 'Ad URL' }, SLOW)).toBeInTheDocument();
     expect(screen.getByText(ATTRIBUTION_LINK.urls.metaAdUrl)).toBeInTheDocument();
@@ -278,7 +281,7 @@ describe('ContentStudioView — generate request', () => {
     const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
     await userEvent.click(select[0]);
 
-    expect((screen.getByLabelText('Staged caption') as HTMLTextAreaElement).value)
+    expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value)
       .toBe('Instagram caption text');
   });
 
@@ -299,6 +302,8 @@ describe('ContentStudioView — generate request', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
 
+    // The media control, and the link beside it, live in the Attach stage.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
     await userEvent.click(screen.getByRole('button', { name: 'Review Visual Guide' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
@@ -368,7 +373,7 @@ describe('ContentStudioView — generate request', () => {
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
     expect(container.querySelector('.page-head .eyebrow')).toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: /Create content that fits the market/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Content Studio' })).toBeTruthy();
     // The market selector still lives in the head's actions slot.
     expect(container.querySelector('.page-head-actions .studio-select')).not.toBeNull();
   });
@@ -431,6 +436,7 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
     );
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
     await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/i }));
     // Six 420ms stepper ticks stand between the click and the verdict.
     const publish = await screen.findByRole('button', { name: /^Publish/ }, SLOW);

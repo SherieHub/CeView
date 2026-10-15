@@ -1,38 +1,59 @@
-import { CheckCircle2, LayoutList, Send } from 'lucide-react';
+/**
+ * Content Library — every draft and published post, as a compact list.
+ *
+ * Same data and actions as the former Content board: the All / Draft /
+ * Published filter, and the Publish disclosure (hidden until a passing audit,
+ * then opening the publish modal). Each row shows the platform, a clamped
+ * caption, status, date and — for published posts — the metrics the record
+ * carries. Nothing here is computed; it renders the PublishedPost records.
+ */
+import { CheckCircle2, Facebook, Inbox, Instagram, Send } from 'lucide-react';
 import { useState } from 'react';
-import PanelHead from './PanelHead';
+import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import type { PublishedPost } from '@/types';
 import type { BoardSlotProps } from './contentStudioTypes';
 
 type Filter = 'all' | 'draft' | 'published';
 const FILTERS: Filter[] = ['all', 'draft', 'published'];
 
-/**
- * One record on the board. .post-card is .rank-card's object minus the button
- * affordances — these are records, not controls — with the caption sitting
- * under the same hairline .alert-card puts above its description.
- */
+const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+
+export function PlatformIcon({ platform }: { platform: string }) {
+  const Icon = platform === 'instagram' ? Instagram : platform === 'facebook' ? Facebook : null;
+  return (
+    <span className="lib-plat" data-platform={platform} aria-hidden="true">
+      {Icon ? <Icon size={16} strokeWidth={1.75} /> : <TikTokGlyph size={15} />}
+    </span>
+  );
+}
+
 function PostCard({ post }: { post: PublishedPost }) {
   const published = post.status === 'published';
   return (
     <article className="post-card">
-      <div className="post-head">
-        <span className="post-plat">{post.platform}</span>
-        {/* Colour-coded status pill: soft green for published, neutral grey
-            for draft. A plain .chip is mint-pale, which paired the two as two
-            shades of the same verdict rather than as opposites. */}
-        <span className={`chip ${published ? 'chip--success' : 'chip--muted'}`}>{post.status}</span>
+      <PlatformIcon platform={post.platform} />
+      <div className="post-main">
+        <div className="post-head">
+          <span className="post-plat">{PLATFORM_NAMES[post.platform] ?? post.platform}</span>
+          <span className="post-date num">{post.date}</span>
+        </div>
+        <p className="post-cap">{post.caption}</p>
       </div>
-      <p className="post-cap">{post.caption}</p>
       <div className="post-facts">
-        <span>{post.date}</span>
-        {published && (
+        {published ? (
           <>
-            <span className="num">Reach {post.reach.toLocaleString()}</span>
-            <span className="num">Likes {post.likes.toLocaleString()}</span>
+            <span className="num">
+              <b>{post.reach.toLocaleString()}</b> reach
+            </span>
+            <span className="num">
+              <b>{post.likes.toLocaleString()}</b> likes
+            </span>
           </>
+        ) : (
+          <span className="post-facts-none">No results yet</span>
         )}
       </div>
+      <span className={`chip ${published ? 'chip--success' : 'chip--muted'}`}>{post.status}</span>
     </article>
   );
 }
@@ -40,20 +61,16 @@ function PostCard({ post }: { post: PublishedPost }) {
 export default function ContentBoard({ draft, posts, canPublish, onPublished }: BoardSlotProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const visible = filter === 'all' ? posts : posts.filter((post) => post.status === filter);
+  const count = (f: Filter) => (f === 'all' ? posts.length : posts.filter((p) => p.status === f).length);
 
   return (
-    <section className="card" aria-labelledby="content-board-title">
-      {/* The Publish control rides the panel head rather than sitting above
-          the filters as a separate row — .studio-head-act is the same
-          trailing-control slot PageHead's actions use one level up. */}
+    <section className="lib" aria-labelledby="content-board-title">
       <div className="studio-head">
         <div className="studio-head-text">
-          <h2 id="content-board-title" className="heading-md">Content board</h2>
-          <p className="body-sm">Review drafts and published content in one place.</p>
+          <h2 id="content-board-title" className="heading-md">Content Library</h2>
+          <p className="body-sm">All your drafts, published content, and campaign materials in one place.</p>
         </div>
-        {/* Progressive disclosure: hidden, not disabled. A greyed-out Publish
-            invited the operator to hunt for what unlocks it; absent, the audit
-            above is unambiguously the next thing to do. */}
+        {/* Progressive disclosure: hidden, not disabled, until a passing audit. */}
         {canPublish && (
           <button
             type="button"
@@ -77,7 +94,7 @@ export default function ContentBoard({ draft, posts, canPublish, onPublished }: 
             onClick={() => setFilter(item)}
             className="capitalize"
           >
-            {item}
+            {item} <span className="seg-count num">{count(item)}</span>
           </button>
         ))}
       </div>
@@ -89,9 +106,27 @@ export default function ContentBoard({ draft, posts, canPublish, onPublished }: 
         </p>
       )}
 
-      <div className="post-grid mt-4">
-        {visible.map((post) => <PostCard key={post.id} post={post} />)}
-      </div>
+      {visible.length === 0 ? (
+        <div className="lib-empty">
+          <span className="lib-empty-glyph" aria-hidden="true">
+            <Inbox size={20} strokeWidth={1.75} />
+          </span>
+          <p className="lib-empty-title">
+            {posts.length === 0 ? 'Nothing in your library yet' : `No ${filter} posts`}
+          </p>
+          <p className="lib-empty-sub">
+            {posts.length === 0
+              ? 'Posts you publish from Quick Post appear here.'
+              : 'Switch the filter to see the rest of your content.'}
+          </p>
+        </div>
+      ) : (
+        <div className="post-grid mt-4">
+          {visible.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -1,20 +1,24 @@
 /**
  * Route: /content — Module 3.1, Content Studio.
  *
- * ARRANGEMENT: one column enforcing a linear journey — Draft (pick a caption)
- * -> Attach (media) -> Validate (run the audit) -> publish. A numbered step
- * rail runs as a single horizontal row above the first card and tracks scroll
- * position through those three sections.
+ * Three views under one header (StudioNavigation):
+ *  - Quick Post: the original single-post journey — Draft (pick and edit a
+ *    caption) -> Attach (media) -> Validate (six-step audit, then publish) —
+ *    shown one stage at a time by QuickPostWorkspace.
+ *  - Campaigns: frontend-only campaign planning (campaigns/), kept for the
+ *    session; its posts open in the Quick Post composer.
+ *  - Content Library: the former Content board.
+ *
+ * Every piece of state — draft, audit, generated content, selection — still
+ * lives here, and all three panels stay mounted (just hidden), so switching
+ * tabs or stages never resets work or re-runs a request.
  *
  * The shooting reference — visual direction and shot list — lives in a
- * slide-out drawer rather than in the column, so the column stays a sequence
- * of actions rather than a mixture of actions and reading.
- *
- * This screen renders a labelled <section>, not a <main>: AppShell already
- * owns the page's single main landmark.
+ * slide-out drawer. This screen renders a labelled <section>, not a <main>:
+ * AppShell already owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, PenLine } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Send, X } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
@@ -26,8 +30,14 @@ import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
 import PublishModal from './PublishModal';
 import { auditRecommendations } from './auditRecommendations';
-import StudioStepRail from './StudioStepRail';
-import { STUDIO_STEPS } from './studioSteps';
+import QuickPostWorkspace from './QuickPostWorkspace';
+import StudioNavigation from './StudioNavigation';
+import type { StudioView } from './StudioNavigation';
+import type { StudioStepId } from './studioSteps';
+import CampaignsView from './campaigns/CampaignsView';
+import type { CampaignMode } from './campaigns/CampaignsView';
+import { formatDate, useCampaignDrafts } from './campaigns/campaignTypes';
+import { STUDIO_PLATFORMS } from './contentStudioTypes';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
 import type { AuditState, PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
@@ -46,8 +56,6 @@ const EMPTY_DRAFT: PublishDraftState = {
   commentsEnabled: true, paidPartnership: false, agreementChecked: false,
 };
 const IDLE_AUDIT: AuditState = { status: 'idle', step: 0, result: null };
-
-const [STEP_DRAFT, STEP_ATTACH, STEP_VALIDATE] = STUDIO_STEPS;
 
 interface ContentStudioViewProps {
   /**
@@ -121,6 +129,17 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // irreversible action here, and the destinations and authorisation it needs
   // are decisions worth making beside a live preview of the result.
   const [publishOpen, setPublishOpen] = useState(false);
+
+  // Navigation only — which view and Quick Post stage are showing. Changing
+  // either never touches the draft, audit or generated content above.
+  const [view, setView] = useState<StudioView>('quick');
+  const [qpStep, setQpStep] = useState<StudioStepId>('draft');
+
+  // Campaigns (frontend-only, this session — see campaigns/campaignTypes.ts).
+  const campaignStore = useCampaignDrafts();
+  const [campaignMode, setCampaignMode] = useState<CampaignMode>({ kind: 'list' });
+  // Set when a campaign's planned post is opened in the Quick Post composer.
+  const [campaignContext, setCampaignContext] = useState<{ campaignId: string; postId: string } | null>(null);
 
   useEffect(() => {
     return onDisconnect((platform) => {
@@ -283,76 +302,84 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   };
 
 
-  // No surge + market picked yet — gate everything below behind the picker.
-  // No entry point (sidebar nav, a stale/empty store) may skip this by
-  // inferring a market on the operator's behalf.
-  if (!target) {
-    return (
-      <main className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6" aria-label="Content Studio">
-        <header>
-          <p className="eyebrow">Content Studio</p>
-          <h1 className="heading-xl">Create content that fits the market</h1>
-        </header>
-        <ContentTargetPicker onPicked={setTarget} />
-      </main>
-    );
-  }
+  const contextCampaign = campaignContext
+    ? campaignStore.campaigns.find((c) => c.id === campaignContext.campaignId) ?? null
+    : null;
+  const contextPost = contextCampaign?.posts.find((p) => p.id === campaignContext?.postId) ?? null;
 
-  return (
-    <section className="studio-screen" aria-label="Content Studio">
-      {/* No eyebrow: the sidebar's active row already says Content Studio, and
-          repeating it above the title pushed the market selector up level with
-          a label rather than with the heading it scopes. */}
-      <PageHead
-        title="Create content that fits the market"
-        subtitle="Choose an AI direction, stage your media, then validate it before publishing."
-        actions={
-          markets.length > 0 ? (
-            <label className="studio-market">
-              <span className="studio-market-label">Target market</span>
-              {/* Writes back into the shared target store rather than into
-                  local state: content generation reads `target.market.id`, so
-                  a select bound to a private value would look right and change
-                  nothing. */}
-              <select
-                className="studio-select"
-                value={target.market.id}
-                onChange={(event) => {
-                  const next = markets.find((m) => m.id === event.target.value);
-                  if (next) setTarget(target.alert, next);
-                }}
-              >
-                {markets.map((market) => (
-                  <option key={market.id} value={market.id}>{market.name}</option>
-                ))}
-              </select>
-            </label>
-          ) : undefined
-        }
-      />
+  const backToCampaign = () => {
+    if (campaignContext) setCampaignMode({ kind: 'workspace', id: campaignContext.campaignId });
+    setView('campaigns');
+  };
 
+  const marketSelect =
+    target && markets.length > 0 ? (
+      <label className="studio-market">
+        <span className="studio-market-label">Target market</span>
+        {/* Writes back into the shared target store rather than into local
+            state: content generation reads `target.market.id`, so a select
+            bound to a private value would look right and change nothing. */}
+        <select
+          className="studio-select"
+          value={target.market.id}
+          onChange={(event) => {
+            const next = markets.find((m) => m.id === event.target.value);
+            if (next) setTarget(target.alert, next);
+          }}
+        >
+          {markets.map((market) => (
+            <option key={market.id} value={market.id}>{market.name}</option>
+          ))}
+        </select>
+      </label>
+    ) : undefined;
+
+  const campaignBanner = contextCampaign && contextPost && (
+    <div className="qp-context" role="note">
+      <div>
+        <p className="qp-context-eyebrow">Campaign post</p>
+        <p className="qp-context-title">
+          {contextCampaign.name} · {contextPost.topic || 'Untitled post'}
+        </p>
+        <p className="qp-context-meta">
+          {STUDIO_PLATFORMS.find((p) => p.id === contextPost.platform)?.label} · planned for {formatDate(contextPost.date)}
+          {target && <> · captions are generated for {target.market.name}</>}
+        </p>
+      </div>
+      <div className="qp-context-acts">
+        <button type="button" className="btn-outline btn-outline--sm" onClick={backToCampaign}>
+          <ArrowLeft size={14} aria-hidden="true" /> Back to campaign
+        </button>
+        <button type="button" className="icon-btn" aria-label="Stop drafting for this campaign" onClick={() => setCampaignContext(null)}>
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const quickPost = !target ? (
+    // No surge + market picked yet — gate the composer behind the picker. No
+    // entry point may skip this by inferring a market on the operator's behalf.
+    <>
+      {campaignBanner}
+      <ContentTargetPicker onPicked={setTarget} />
+    </>
+  ) : (
+    <>
       {marketsError != null && <div className="mb-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
-
       {contentError != null && <div className="mb-4"><ApiErrorPanel error={contentError} label="Content Studio" /></div>}
 
-      <div className="studio-flow">
-        <StudioStepRail />
-
-        {/* Steps 1 and 2 share ONE card. Choosing the copy and attaching the
-            media it publishes with are one piece of work, and two stacked cards
-            put a border and 48px of canvas through the middle of it. The rail
-            still tracks both: the card is step 1's anchor and the media block
-            inside it is step 2's, so each remains a real place to scroll to. */}
-        <section id={STEP_DRAFT.sectionId} className="studio-section">
-          <div className="card" role="group" aria-labelledby="post-composer-title">
-            <div className="studio-head">
-              <span className="conn-ico" aria-hidden="true"><PenLine /></span>
-              <div className="studio-head-text">
-                <h2 id="post-composer-title" className="heading-md">Post composer</h2>
-                <p className="body-sm">Choose a localised caption, then stage the media it publishes with.</p>
-              </div>
-            </div>
-
+      <QuickPostWorkspace
+        step={qpStep}
+        onStepChange={setQpStep}
+        complete={{
+          draft: Boolean(draft.caption.trim()),
+          attach: Boolean(draft.mediaDataUrl),
+          validate: audit.result?.status === 'Pass',
+        }}
+        context={campaignBanner}
+        draftStage={
+          <>
             <AIContentMatrixPanel
               activePlatform={activePlatform}
               onPlatformChange={setActivePlatform}
@@ -361,10 +388,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
               content={content}
               loading={contentLoading}
             />
-
-            <AdUrlBlock link={attributionLink} onLinkChange={setAttributionLink} />
-
-            <div id={STEP_ATTACH.sectionId} className="studio-section studio-attach">
+            <div className="qp-editor">
               <PublishComposer
                 draft={draft}
                 onDraftChange={patchDraft}
@@ -372,72 +396,146 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
                 platform={activePlatform}
                 stageToken={stageToken}
                 onOpenBrief={brief.openDrawer}
+                part="caption"
               />
             </div>
-          </div>
-        </section>
-
-        <section id={STEP_VALIDATE.sectionId} className="studio-section">
-          <CompliancePanel
+          </>
+        }
+        attachStage={
+          <PublishComposer
             draft={draft}
+            onDraftChange={patchDraft}
             audit={audit}
-            onAuditChange={setAudit}
-            recommendations={auditRecommendations(content, activePlatform, selectedOption)}
+            platform={activePlatform}
+            stageToken={stageToken}
+            onOpenBrief={brief.openDrawer}
+            part="media"
           />
-        </section>
+        }
+        validateStage={
+          <>
+            <div className="qp-summary" aria-label="Post summary">
+              {draft.mediaDataUrl ? (
+                <img className="qp-summary-media" src={draft.mediaDataUrl} alt="Attached media" />
+              ) : (
+                <span className="qp-summary-media qp-summary-media--empty">No media yet</span>
+              )}
+              <div className="qp-summary-text">
+                <p className="qp-summary-label">Your caption</p>
+                <p className="qp-summary-caption">{draft.caption.trim() || 'No caption yet — choose one in Draft.'}</p>
+                <div className="qp-summary-acts">
+                  <button type="button" className="link-inline" onClick={() => setQpStep('draft')}>Edit caption</button>
+                  <button type="button" className="link-inline" onClick={() => setQpStep('attach')}>Change media</button>
+                </div>
+              </div>
+            </div>
 
-        <div className="studio-board">
-          {/* Publish opens the modal; the modal's own Confirm is what actually
-              publishes, once destinations and authorisation are set there. */}
-          <ContentBoard
-            draft={draft}
-            posts={posts}
-            canPublish={canPublish}
-            onPublished={() => setPublishOpen(true)}
-          />
-        </div>
+            <CompliancePanel
+              draft={draft}
+              audit={audit}
+              onAuditChange={setAudit}
+              recommendations={auditRecommendations(content, activePlatform, selectedOption)}
+            />
+
+            {/* Publish appears only after a passing audit (same rule as before);
+                it opens the modal, whose Confirm is what actually publishes. */}
+            {canPublish && (
+              <div className="qp-publish">
+                <p className="studio-note">Your post passed the review. Choose where to publish it.</p>
+                <button type="button" className="btn-cta" onClick={() => setPublishOpen(true)}>
+                  <Send size={16} aria-hidden="true" />
+                  Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
+                </button>
+              </div>
+            )}
+
+            <AdUrlBlock link={attributionLink} onLinkChange={setAttributionLink} />
+          </>
+        }
+      />
+    </>
+  );
+
+  return (
+    <section className="studio-screen" aria-label="Content Studio">
+      <PageHead
+        title="Content Studio"
+        subtitle="Create, plan, and review content for your target markets."
+        actions={view === 'quick' ? marketSelect : undefined}
+      />
+
+      <StudioNavigation view={view} onChange={setView} counts={{ library: posts.length }} />
+
+      <div id="studio-panel-quick" role="tabpanel" aria-labelledby="studio-tab-quick" hidden={view !== 'quick'} className="studio-panel">
+        {quickPost}
       </div>
 
-      {/* A SIBLING of .studio-flow, never a descendant — the flow carries a
-          margin offset above 1280px, and nesting a fixed element inside a
-          container that may one day be transformed is how "fixed" silently
-          stops meaning fixed. */}
-      {/* Icon only. With its label the tab was wide enough to sit over the
-          content it floats above; the icon alone stays clear of it, and the
-          name lives in aria-label so it is still announced and still findable
-          by voice. An image glyph rather than a camera: it opens guidance
-          about the media, and the media is what the operator is looking for. */}
-      <button
-        type="button"
-        className="brief-trigger"
-        aria-label="Visual Guide"
-        data-hidden={brief.open}
-        data-pulse={brief.showTooltip}
-        onClick={brief.openDrawer}
-      >
-        <ImageIcon size={18} aria-hidden="true" />
-        {brief.showTooltip && <span className="brief-tip">Your shot list and visual direction live here</span>}
-      </button>
+      <div id="studio-panel-campaigns" role="tabpanel" aria-labelledby="studio-tab-campaigns" hidden={view !== 'campaigns'} className="studio-panel">
+        <CampaignsView
+          campaigns={campaignStore.campaigns}
+          mode={campaignMode}
+          onModeChange={setCampaignMode}
+          categories={profile.categories}
+          onSave={campaignStore.upsert}
+          onDelete={campaignStore.remove}
+          onPostStatus={campaignStore.setPostStatus}
+          onOpenPost={(campaign, postId) => {
+            const post = campaign.posts.find((p) => p.id === postId);
+            setCampaignContext({ campaignId: campaign.id, postId });
+            if (post) setActivePlatform(post.platform);
+            setQpStep('draft');
+            setView('quick');
+          }}
+        />
+      </div>
 
-      <CampaignBriefDrawer
-        open={brief.open}
-        onClose={brief.closeDrawer}
-        showWelcome={brief.showWelcome}
-        direction={direction}
-        status={guideStatus}
-        error={guideError}
-        marketName={target.market.name}
-        captionChosen={Boolean(draft.caption.trim())}
-        onApprove={approveAndGenerateGuide}
-      />
+      <div id="studio-panel-library" role="tabpanel" aria-labelledby="studio-tab-library" hidden={view !== 'library'} className="studio-panel">
+        {/* Publishing moved into Quick Post's Validate stage, next to the
+            review it depends on, so the library only lists content. */}
+        <ContentBoard draft={draft} posts={posts} canPublish={false} onPublished={() => setPublishOpen(true)} />
+      </div>
 
-      <PublishModal
-        open={publishOpen}
-        draft={draft}
-        onDraftChange={patchDraft}
-        onClose={() => setPublishOpen(false)}
-        onConfirm={confirmPublish}
-      />
+      {target && view === 'quick' && (
+        // Icon only; the name lives in aria-label so it is announced and
+        // findable by voice.
+        <button
+          type="button"
+          className="brief-trigger"
+          aria-label="Visual Guide"
+          data-hidden={brief.open}
+          data-pulse={brief.showTooltip}
+          onClick={brief.openDrawer}
+        >
+          <ImageIcon size={18} aria-hidden="true" />
+          {brief.showTooltip && <span className="brief-tip">Your shot list and visual direction live here</span>}
+        </button>
+      )}
+
+      {target && (
+        <CampaignBriefDrawer
+          open={brief.open}
+          onClose={brief.closeDrawer}
+          showWelcome={brief.showWelcome}
+          direction={direction}
+          status={guideStatus}
+          error={guideError}
+          marketName={target.market.name}
+          captionChosen={Boolean(draft.caption.trim())}
+          onApprove={approveAndGenerateGuide}
+        />
+      )}
+
+      {/* Only with a target, as before: the picker-only screen has nothing to
+          publish, and the modal joins the overlay stack. */}
+      {target && (
+        <PublishModal
+          open={publishOpen}
+          draft={draft}
+          onDraftChange={patchDraft}
+          onClose={() => setPublishOpen(false)}
+          onConfirm={confirmPublish}
+        />
+      )}
     </section>
   );
 }
