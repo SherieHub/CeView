@@ -20,7 +20,14 @@ import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
-const css = readFileSync(resolve(root, 'styles/index.css'), 'utf8');
+/** styles/index.css plus the local stylesheets it @imports (the landing-*.css files). */
+const indexCss = readFileSync(resolve(root, 'styles/index.css'), 'utf8');
+const css = [
+  indexCss,
+  ...[...indexCss.matchAll(/@import\s+["']\.\/([^"']+\.css)["']/g)].map((m) =>
+    readFileSync(resolve(root, 'styles', m[1]), 'utf8'),
+  ),
+].join('\n');
 
 /** Screen source only — tests and fixtures name no classes. */
 const sources = globSync(['components/**/*.tsx', 'layout/**/*.tsx'], { cwd: root })

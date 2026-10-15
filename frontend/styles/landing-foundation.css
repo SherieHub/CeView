@@ -1,0 +1,792 @@
+/* ============================================================
+   LANDING FOUNDATION — design tokens, type, layout and shared UI
+   primitives for the public marketing page (components/landing/*).
+
+   Direction: warm, editorial, photographic. Fraunces display with one
+   coral italic accent word per heading, sand and white bands, deep
+   teal/navy structure, coral for primary actions.
+
+   This deliberately departs from the app brand (Poppins + mint, in
+   index.css @theme). The app screens behind login keep that brand; these
+   tokens only drive the landing page. Primitives use the .cv-* prefix so
+   they never collide with the app or the older .lp-* section styles.
+
+   CONTRAST (WCAG AA, checked):
+     - Body copy: --ink-500 (5.3:1 on white, 5.0:1 on sand-50).
+     - --ink-300 fails as text (2.4:1). Use it for icons, dots and
+       hairlines only; captions use --ink-500.
+     - Primary buttons use --coral-btn (#E37151), the client's choice.
+       White text on it is 3.1:1, which does NOT meet AA for button text;
+       --coral-700 (4.9:1) is the nearest shade that does.
+     - Small coral text uses --coral-800 (≥ 4.6:1 on white, sand and
+       coral-100). --coral-600 is for large/italic display text only.
+   ============================================================ */
+
+/* Metric-matched fallbacks, so the page doesn't reflow when the web fonts
+   arrive (layout shift). Widths were measured against Fraunces and Inter in
+   Chromium: Georgia is ~2% wider than Fraunces at regular weight and ~15%
+   wider in bold; Arial needs scaling up ~7% to match Inter. */
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia');
+  font-weight: 100 500;
+  font-style: normal;
+  size-adjust: 98%;
+}
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia Bold'), local('Georgia-Bold');
+  font-weight: 501 900;
+  font-style: normal;
+  size-adjust: 85.5%;
+}
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia Italic'), local('Georgia-Italic');
+  font-weight: 100 500;
+  font-style: italic;
+  size-adjust: 98%;
+}
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia Bold Italic'), local('Georgia-BoldItalic');
+  font-weight: 501 900;
+  font-style: italic;
+  size-adjust: 85.5%;
+}
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial');
+  size-adjust: 107.4%;
+  ascent-override: 90.2%;
+  descent-override: 22.5%;
+  line-gap-override: 0%;
+}
+
+:root {
+  /* ---- Ink ---- */
+  --ink-900: #0e2a3b;
+  --ink-700: #2d4657;
+  --ink-500: #5a6e7c;
+  --ink-300: #9aa9b3;
+
+  /* ---- Teal ---- */
+  --teal-900: #0b3f3c;
+  --teal-700: #0f6e66;
+  --teal-500: #1c9a8e;
+  --teal-100: #dcf0ec;
+  --teal-50: #eef7f5;
+
+  /* ---- Coral ---- */
+  --coral-800: #b5432a; /* AA: small coral text */
+  --coral-700: #c24a2e;
+  /* Primary button fill, chosen by the client. White text on it is 3.1:1,
+     below WCAG AA (4.5:1) for button-size text. */
+  --coral-btn: #e37151;
+  --coral-btn-hover: #d9603f;
+  --coral-600: #d9573a; /* large display accent */
+  --coral-500: #e8704f; /* fills, dots, decorative accents */
+  /* Small coral text on dark teal: ≥ 4.5:1 even where the reef texture in
+     "How CeView works" lightens the band (measured ~4.8:1 worst case). */
+  --coral-300: #f9bba6;
+  --coral-100: #fce6dd;
+
+  /* ---- Sand & neutrals ---- */
+  --sand-50: #f4fffe;
+  --sand-100: #f3ece2;
+  --white: #ffffff;
+  /* The spec names this --line; index.css already defines a legacy
+     --color-line for the app, so the landing hairline lives in its own name
+     and is aliased as --line inside .lp. */
+  --hairline: #e7e1d7;
+
+  /* ---- Type ---- */
+  --ff-display: 'Fraunces Variable', 'Fraunces Fallback', Georgia, 'Times New Roman', serif;
+  --ff-ui: 'Inter', 'Inter Fallback', 'Open Sans', system-ui, sans-serif;
+  --ff-script: 'Caveat', 'Segoe Script', cursive;
+
+  /* ---- Radius ---- */
+  --r-btn: 999px;
+  --r-chip: 10px;
+  --r-card: 20px;
+  --r-image: 28px;
+
+  /* ---- Layout ---- */
+  /* Max content width; the page margin is the container padding plus whatever
+     is left either side of this on wide screens. */
+  --cv-max: 1320px;
+  --cv-header-h: 72px;
+  --cv-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Tailwind utilities for the same tokens: bg-sand-50, text-ink-900,
+   font-display, rounded-card-lg, shadow-float … */
+@theme inline {
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-500: var(--ink-500);
+  --color-ink-300: var(--ink-300);
+  --color-teal-900: var(--teal-900);
+  --color-teal-700: var(--teal-700);
+  --color-teal-500: var(--teal-500);
+  --color-teal-100: var(--teal-100);
+  --color-teal-50: var(--teal-50);
+  --color-coral-800: var(--coral-800);
+  --color-coral-700: var(--coral-700);
+  --color-coral-600: var(--coral-600);
+  --color-coral-500: var(--coral-500);
+  --color-coral-100: var(--coral-100);
+  --color-sand-50: var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-hairline: var(--hairline);
+  --font-display: var(--ff-display);
+  --font-script: var(--ff-script);
+  --radius-btn: var(--r-btn);
+  --radius-chip: var(--r-chip);
+  --radius-card-lg: var(--r-card);
+  --radius-image: var(--r-image);
+  --shadow-float: 0 30px 60px -20px rgba(14, 42, 59, 0.35);
+}
+
+@layer components {
+  /* ---------- landing scope ----------
+     Shadows and the hairline are redefined here rather than on :root because
+     --shadow-sm and --shadow-card already mean something to the app. */
+  .lp {
+    --line: var(--hairline);
+    --shadow-sm: 0 1px 2px rgba(14, 42, 59, 0.06);
+    --shadow-card: 0 1px 2px rgba(14, 42, 59, 0.05), 0 18px 40px -18px rgba(14, 42, 59, 0.22);
+    --shadow-float: 0 30px 60px -20px rgba(14, 42, 59, 0.35);
+    /* Headings on the landing page use the display face, not Poppins. */
+    --font-heading: var(--ff-display);
+    --font-body: var(--ff-ui);
+  }
+
+  /* Anchors land below the sticky header, with the heading fully visible. */
+  .lp :where([id]) {
+    scroll-margin-top: 88px;
+  }
+
+  /* ---------- typography ---------- */
+  .cv-display-xl,
+  .cv-display-lg,
+  .cv-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    color: var(--ink-900);
+    text-wrap: balance;
+  }
+  .cv-display-xl {
+    font-size: clamp(2.75rem, 5.2vw, 4.5rem);
+    line-height: 1.03;
+    font-weight: 560;
+    letter-spacing: -0.02em;
+  }
+  .cv-display-lg {
+    font-size: clamp(2rem, 3.6vw, 3.1rem);
+    line-height: 1.08;
+    font-weight: 550;
+    letter-spacing: -0.02em;
+  }
+  .cv-title {
+    font-size: clamp(1.25rem, 1.15rem + 0.3vw, 1.4rem);
+    line-height: 1.25;
+    font-weight: 500;
+  }
+  .cv-body-lg {
+    font-family: var(--ff-ui);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  .cv-body {
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  .cv-caption {
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  /* The one accent word per heading. */
+  .lp em.accent {
+    font-family: var(--ff-display);
+    font-style: italic;
+    font-weight: inherit;
+    color: var(--coral-600);
+  }
+  /* Handwritten annotation — at most twice on the page. */
+  .cv-script {
+    font-family: var(--ff-script);
+    font-weight: 600;
+    font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.9rem);
+    line-height: 1.15;
+    color: var(--ink-900);
+  }
+
+  /* ---------- layout ---------- */
+  .cv-container {
+    width: 100%;
+    max-width: calc(var(--cv-max) + 40px);
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+  .cv-section {
+    position: relative;
+    padding-block: 72px;
+    background: var(--sand-50);
+  }
+  .cv-section[data-bg='white'] {
+    background: var(--white);
+  }
+  .cv-section[data-bg='sand-100'] {
+    background: var(--sand-100);
+  }
+  .cv-section[data-bg='teal'] {
+    background: var(--teal-50);
+  }
+  .cv-section[data-bg='dark'] {
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  @media (min-width: 768px) {
+    .cv-container {
+      max-width: calc(var(--cv-max) + 96px);
+      padding-inline: 48px;
+    }
+    .cv-section {
+      padding-block: 104px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-container {
+      max-width: calc(var(--cv-max) + 160px);
+      padding-inline: 80px;
+    }
+    .cv-section {
+      padding-block: 128px;
+    }
+    .cv-grid {
+      column-gap: 24px;
+    }
+  }
+  /* 1024–1199px: the header's six links and two actions need the room. */
+  @media (min-width: 1024px) and (max-width: 1199px) {
+    .cv-container {
+      padding-inline: 44px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .cv-container {
+      max-width: calc(var(--cv-max) + 192px);
+      padding-inline: 96px;
+    }
+  }
+  @media (min-width: 1440px) {
+    .cv-container {
+      max-width: calc(var(--cv-max) + 256px);
+      padding-inline: 128px;
+    }
+  }
+
+  /* ---------- eyebrow ---------- */
+  .cv-eyebrow {
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal-700);
+  }
+
+  /* ---------- buttons ---------- */
+  .cv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 44px;
+    padding-inline: 22px;
+    border: 1.5px solid transparent;
+    border-radius: var(--r-btn);
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .cv-btn[data-size='lg'] {
+    height: 52px;
+    padding-inline: 28px;
+    font-size: 1rem;
+  }
+  .cv-btn:focus-visible {
+    outline: 3px solid var(--teal-500);
+    outline-offset: 2px;
+  }
+  .cv-btn-arrow {
+    transition: transform 0.18s var(--cv-ease);
+  }
+  .cv-btn:hover .cv-btn-arrow {
+    transform: translateX(3px);
+  }
+  .cv-btn--primary {
+    background: var(--coral-btn);
+    color: var(--white);
+    box-shadow: 0 8px 20px -10px rgba(227, 113, 81, 0.6);
+  }
+  .cv-btn--primary:hover {
+    background: var(--coral-btn-hover);
+    color: var(--white);
+  }
+  .cv-btn--secondary {
+    background: var(--white);
+    border-color: var(--ink-900);
+    color: var(--ink-900);
+  }
+  .cv-btn--secondary:hover {
+    background: var(--sand-50);
+    color: var(--ink-900);
+  }
+  .cv-btn--ghost-on-dark {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--white);
+  }
+  .cv-btn--ghost-on-dark:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.55);
+    color: var(--white);
+  }
+  .cv-btn--link {
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    color: var(--teal-700);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1.5px;
+  }
+  .cv-btn--link:hover {
+    color: var(--teal-900);
+  }
+  .cv-btn[data-block] {
+    width: 100%;
+  }
+
+  /* ---------- card ---------- */
+  .cv-card {
+    background: var(--white);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-card);
+    padding: 28px;
+  }
+  @media (min-width: 1024px) {
+    .cv-card {
+      padding: 32px;
+    }
+  }
+
+  /* ---------- icon tile ---------- */
+  .cv-icon-tile {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-icon-tile[data-tone='coral'] {
+    background: var(--coral-100);
+    color: var(--coral-800);
+  }
+
+  /* ---------- chips ---------- */
+  .cv-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 26px;
+    padding: 3px 10px;
+    border-radius: var(--r-chip);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+    background: var(--sand-100);
+    color: var(--ink-700);
+  }
+  .cv-chip[data-pill] {
+    border-radius: 999px;
+  }
+  .cv-chip[data-variant='teal'] {
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-chip[data-variant='coral'] {
+    background: var(--coral-100);
+    color: var(--coral-800);
+  }
+  .cv-chip[data-variant='dark'] {
+    background: var(--ink-900);
+    color: var(--white);
+  }
+  .cv-sample {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-500);
+    white-space: nowrap;
+  }
+
+  /* ---------- market flag ---------- */
+  .cv-market {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ff-ui);
+    color: var(--ink-900);
+  }
+  .cv-market-flag {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 24px;
+    height: 18px;
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(14, 42, 59, 0.12);
+  }
+  .cv-market[data-size='lg'] .cv-market-flag {
+    width: 28px;
+    height: 21px;
+  }
+  .cv-market-flag img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .cv-market-flag[data-kind='icon'] {
+    box-shadow: none;
+    color: var(--teal-700);
+  }
+  .cv-market-text {
+    display: grid;
+    line-height: 1.25;
+  }
+  .cv-market-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+  .cv-market-detail {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+
+  /* ---------- image ---------- */
+  .cv-img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* LandingImage fill: covers the nearest positioned ancestor. */
+  .cv-img--fill,
+  .cv-picture--fill {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .cv-img--fill {
+    object-fit: cover;
+  }
+
+  /* ---------- brand mark (header + footer) ---------- */
+  .lp-brand {
+    display: inline-flex;
+    align-items: center;
+  }
+  /* Full logo lockup (sail + wordmark), 440×112 source at ~3× for sharpness. */
+  .lp-brand-logo {
+    display: block;
+    width: auto;
+    height: 36px;
+  }
+
+  /* ---------- header ---------- */
+  .cv-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: var(--cv-header-h);
+    background: var(--white);
+    border-bottom: 1px solid transparent;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .cv-header[data-scrolled] {
+    background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom-color: var(--line);
+  }
+  .cv-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 100%;
+  }
+  .cv-header-home {
+    display: inline-flex;
+    flex: none;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+  .cv-header-home:focus-visible,
+  .cv-header-link:focus-visible,
+  .cv-header-signin:focus-visible,
+  .cv-header-toggle:focus-visible,
+  .cv-sheet-link:focus-visible,
+  .cv-sheet-close:focus-visible {
+    outline: 3px solid var(--teal-500);
+    outline-offset: 2px;
+  }
+  .cv-header-nav {
+    display: none;
+    flex: 1;
+    justify-content: center;
+  }
+  .cv-header-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-header-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding-inline: 12px;
+    border-radius: 8px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--ink-700);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+  }
+  .cv-header-link:hover {
+    color: var(--ink-900);
+  }
+  .cv-header-link[aria-current='location'] {
+    color: var(--teal-700);
+  }
+  .cv-header-link[aria-current='location']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: 999px;
+    background: var(--coral-500);
+  }
+  .cv-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+  }
+  .cv-header-signin {
+    display: none;
+    padding: 6px 4px;
+    white-space: nowrap;
+    border-radius: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--ink-900);
+    text-decoration: none;
+  }
+  .cv-header-signin:hover {
+    color: var(--teal-700);
+  }
+  .cv-header-cta {
+    display: none;
+  }
+  .cv-header-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .cv-header-toggle:hover {
+    background: var(--sand-50);
+  }
+  @media (min-width: 640px) {
+    .cv-header-cta {
+      display: inline-flex;
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-header-nav {
+      display: flex;
+    }
+    .cv-header-signin {
+      display: inline-flex;
+    }
+    .cv-header-actions {
+      margin-left: 0;
+    }
+    .cv-header-toggle {
+      display: none;
+    }
+  }
+  /* 1024–1199px: six links, the logo and both actions only just fit. */
+  @media (min-width: 1024px) and (max-width: 1199px) {
+    .cv-header-inner {
+      gap: 16px;
+    }
+    .cv-header-links {
+      gap: 0;
+    }
+    .cv-header-link {
+      padding-inline: 6px;
+    }
+  }
+
+  /* ---------- mobile sheet ---------- */
+  .cv-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow-y: auto;
+    background: var(--white);
+    animation: cv-sheet-in 0.22s var(--cv-ease);
+  }
+  .cv-sheet-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--cv-header-h);
+    flex: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .cv-sheet-close {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .cv-sheet-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 24px;
+    padding-block: 16px 32px;
+  }
+  .cv-sheet-links {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-sheet-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--ff-display);
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--ink-900);
+    text-decoration: none;
+  }
+  .cv-sheet-link svg {
+    color: var(--teal-700);
+  }
+  .cv-sheet-link[aria-current='location'] {
+    color: var(--teal-700);
+  }
+  .cv-sheet-actions {
+    display: grid;
+    gap: 12px;
+    margin-top: auto;
+  }
+  .cv-sheet-signin {
+    justify-self: center;
+  }
+  @keyframes cv-sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-btn,
+    .cv-btn-arrow,
+    .cv-header,
+    .cv-header-link {
+      transition: none;
+    }
+    .cv-btn:hover .cv-btn-arrow {
+      transform: none;
+    }
+    .cv-sheet {
+      animation: none;
+    }
+  }
+}

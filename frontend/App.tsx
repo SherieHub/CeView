@@ -1,30 +1,39 @@
+import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom';
 import AuthGate, { RedirectIfAuthenticated } from './components/auth/AuthGate';
-import LoginPage from './components/auth/LoginPage';
-import CompleteProfilePage from './components/auth/CompleteProfilePage';
 import ProfileCompletionGate from './components/auth/ProfileCompletionGate';
-import OnboardingWizard from './components/module-1/onboarding/OnboardingWizard';
 import AppShell from './layout/AppShell';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
 import { OverlayStackProvider } from './components/shared/useOverlayStack';
 import { ToastProvider } from './components/shared/Toast';
 import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding/obDraft';
-import AssetsLinksStep from './components/module-1/onboarding/steps/AssetsLinksStep';
-import CampaignAnalyticsView from './components/module-4/4.1-campaign-analytics/CampaignAnalyticsView';
-import EnquiryPage from './components/module-4/enquiries/EnquiryPage';
 import { PostStoreProvider } from './services/postStore';
 import { ConnectionsStoreProvider } from './services/connectionsStore';
 import { TargetSelectionProvider } from './services/targetSelectionStore';
-import DashboardView from './components/module-2/2.1-dashboard/DashboardView';
 import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
-import ContentStudioView from './components/module-3/3.1-content-studio/ContentStudioView';
-import CalendarView from './components/module-3/3.2-calendar/CalendarView';
-import BusinessProfileSettings from './components/settings/BusinessProfileSettings';
-import PlatformsSettings from './components/settings/PlatformsSettings';
-import WorkspaceSettings from './components/settings/WorkspaceSettings';
 import { DEMO_DRAFT, DEMO_BOARD_POSTS, DEMO_TARGET } from './components/module-3/3.1-content-studio/previewFixtures';
 import LandingPage from './components/LandingPage';
+
+/**
+ * Screens behind the landing page load on demand, so a visitor to "/" only
+ * downloads the landing page. Each is wrapped in its own Suspense boundary
+ * (`page`), so loading one never blanks the shell around it.
+ */
+const LoginPage = lazy(() => import('./components/auth/LoginPage'));
+const CompleteProfilePage = lazy(() => import('./components/auth/CompleteProfilePage'));
+const OnboardingWizard = lazy(() => import('./components/module-1/onboarding/OnboardingWizard'));
+const AssetsLinksStep = lazy(() => import('./components/module-1/onboarding/steps/AssetsLinksStep'));
+const CampaignAnalyticsView = lazy(() => import('./components/module-4/4.1-campaign-analytics/CampaignAnalyticsView'));
+const EnquiryPage = lazy(() => import('./components/module-4/enquiries/EnquiryPage'));
+const DashboardView = lazy(() => import('./components/module-2/2.1-dashboard/DashboardView'));
+const ContentStudioView = lazy(() => import('./components/module-3/3.1-content-studio/ContentStudioView'));
+const CalendarView = lazy(() => import('./components/module-3/3.2-calendar/CalendarView'));
+const BusinessProfileSettings = lazy(() => import('./components/settings/BusinessProfileSettings'));
+const PlatformsSettings = lazy(() => import('./components/settings/PlatformsSettings'));
+const WorkspaceSettings = lazy(() => import('./components/settings/WorkspaceSettings'));
+
+const page = (element: ReactNode) => <Suspense fallback={null}>{element}</Suspense>;
 
 /**
  * DEV-ONLY preview routes.
@@ -47,7 +56,7 @@ const devPreviewRoutes = import.meta.env.DEV
         path: '/preview/onboarding',
         element: (
           <ObDraftProvider initial={DEMO_OB_DRAFT}>
-            <OnboardingWizard />
+            {page(<OnboardingWizard />)}
           </ObDraftProvider>
         ),
       },
@@ -59,7 +68,7 @@ const devPreviewRoutes = import.meta.env.DEV
         element: (
           <ObDraftProvider>
             <div className="mx-auto max-w-[640px] p-6 md:p-10">
-              <AssetsLinksStep />
+              {page(<AssetsLinksStep />)}
             </div>
           </ObDraftProvider>
         ),
@@ -99,8 +108,8 @@ const devPreviewRoutes = import.meta.env.DEV
         ),
         children: [
           { path: 'content', element: <ContentPreviewScreen /> },
-          { path: 'calendar', element: <CalendarView /> },
-          { path: 'performance', element: <CampaignAnalyticsView /> },
+          { path: 'calendar', element: page(<CalendarView />) },
+          { path: 'performance', element: page(<CampaignAnalyticsView />) },
         ],
       },
     ]
@@ -135,7 +144,7 @@ function DashboardPreviewShell() {
  * empty businessName.
  */
 function ContentPreviewScreen() {
-  return <ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={DEMO_BOARD_POSTS} />;
+  return page(<ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={DEMO_BOARD_POSTS} />);
 }
 
 /** DEV-ONLY. Maps the :mode segment onto the dashboard's state machine. */
@@ -144,7 +153,7 @@ const FORCEABLE_MODES: DashMode[] = ['loading', 'empty', 'ai-down'];
 function DashboardPreviewScreen() {
   const { mode } = useParams();
   const forceMode = FORCEABLE_MODES.find((m) => m === mode);
-  return <DashboardView forceMode={forceMode} />;
+  return page(<DashboardView forceMode={forceMode} />);
 }
 
 /**
@@ -172,15 +181,15 @@ function DashboardPreviewScreen() {
 const router = createBrowserRouter([
   ...devPreviewRoutes,
   { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
-  { path: '/enquiry', element: <EnquiryPage /> },
-  { path: '/login', element: <RedirectIfAuthenticated><LoginPage /></RedirectIfAuthenticated> },
+  { path: '/enquiry', element: page(<EnquiryPage />) },
+  { path: '/login', element: <RedirectIfAuthenticated>{page(<LoginPage />)}</RedirectIfAuthenticated> },
   {
     element: <AuthGate />,
     children: [
       {
         element: <ProfileCompletionGate />,
         children: [
-          { path: 'complete-profile', element: <CompleteProfilePage /> },
+          { path: 'complete-profile', element: page(<CompleteProfilePage />) },
           {
             element: <ProfileGate />,
             children: [
@@ -188,7 +197,7 @@ const router = createBrowserRouter([
                 path: 'onboarding',
                 element: (
                   <ObDraftProvider>
-                    <OnboardingWizard />
+                    {page(<OnboardingWizard />)}
                   </ObDraftProvider>
                 ),
               },
@@ -213,14 +222,14 @@ const router = createBrowserRouter([
                 // RedirectIfAuthenticated on the "/" route already sends a
                 // logged-in visitor to /dashboard, so nothing here needs to.
                 children: [
-                  { path: 'performance', element: <CampaignAnalyticsView /> },
-                  { path: 'dashboard', element: <DashboardView /> },
-                  { path: 'content', element: <ContentStudioView /> },
-                  { path: 'calendar', element: <CalendarView /> },
+                  { path: 'performance', element: page(<CampaignAnalyticsView />) },
+                  { path: 'dashboard', element: page(<DashboardView />) },
+                  { path: 'content', element: page(<ContentStudioView />) },
+                  { path: 'calendar', element: page(<CalendarView />) },
                   { path: 'settings', element: <Navigate to="/settings/profile" replace /> },
-                  { path: 'settings/profile', element: <BusinessProfileSettings /> },
-                  { path: 'settings/platforms', element: <PlatformsSettings /> },
-                  { path: 'settings/workspace', element: <WorkspaceSettings /> },
+                  { path: 'settings/profile', element: page(<BusinessProfileSettings />) },
+                  { path: 'settings/platforms', element: page(<PlatformsSettings />) },
+                  { path: 'settings/workspace', element: page(<WorkspaceSettings />) },
                   // An unrecognized settings/:tab falls back to Profile rather
                   // than a dead end — the three explicit routes above always
                   // win first since react-router matches static segments

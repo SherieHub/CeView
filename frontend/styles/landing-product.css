@@ -1,0 +1,789 @@
+/* ============================================================
+   LANDING — product section (#product): the split with the Market
+   Explorer card and photo collage (ProductSection.tsx,
+   MarketExplorer.tsx), then the real-screens tabs (ScreenTabs.tsx).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  .cv-product {
+    background: var(--sand-50);
+  }
+
+  /* ================= part A: split ================= */
+  .cv-product-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cv-product-copy {
+    display: grid;
+    justify-items: start;
+    gap: 18px;
+  }
+  .cv-product-body {
+    max-width: 34rem;
+    margin-bottom: 8px;
+  }
+  /* Outlined teal pill. */
+  .cv-product-cta {
+    border-color: var(--teal-700);
+    color: var(--teal-700);
+  }
+  .cv-product-cta:hover {
+    border-color: var(--teal-900);
+    background: var(--teal-50);
+    color: var(--teal-900);
+  }
+
+  /* ---------- collage: note, then photo with the inset overhanging ---------- */
+  .cv-product-collage {
+    display: grid;
+  }
+  /* Room for the inset to hang past the photo's right and bottom edges. */
+  .cv-product-media {
+    position: relative;
+    padding: 0 24px 24px 0;
+  }
+  .cv-product-photo,
+  .cv-product-inset {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--sand-100);
+  }
+  .cv-product-photo {
+    border-radius: var(--r-image);
+  }
+  .cv-product-inset {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    width: calc((100% - 24px) * 0.36);
+    border: 6px solid var(--white);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-float);
+  }
+  /* Handwritten note + coral swash that draws in on view. */
+  .cv-product-note {
+    position: relative;
+    display: grid;
+    justify-self: end;
+    width: max-content;
+    margin: 0 4px 28px 0;
+    font-family: var(--ff-script);
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.12;
+    color: var(--ink-900);
+    transform: rotate(-6deg);
+    transform-origin: right bottom;
+  }
+  .cv-product-swash {
+    display: block;
+    width: 100%;
+    height: 18px;
+    margin-top: 2px;
+    overflow: visible;
+  }
+  .cv-product-swash path {
+    fill: none;
+    stroke: var(--coral-500);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 900ms var(--cv-ease) 200ms;
+  }
+  .cv-product-note[data-shown] .cv-product-swash path {
+    stroke-dashoffset: 0;
+  }
+
+  /* ---------- Market Explorer card ---------- */
+  .cv-mx {
+    position: relative;
+    z-index: 2;
+    padding: 24px;
+    border-radius: var(--r-card);
+    background: var(--white);
+    box-shadow: var(--shadow-float);
+  }
+  .cv-mx-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .cv-mx-title {
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .cv-mx-sub {
+    margin-top: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--ink-500);
+  }
+  .cv-mx-rows {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-mx-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 2.25rem;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding-block: 6px;
+    border-top: 1px solid var(--line);
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 400ms var(--cv-ease),
+      transform 400ms var(--cv-ease);
+    transition-delay: calc(var(--i) * 60ms);
+  }
+  .cv-mx-row:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .cv-mx[data-shown] .cv-mx-row {
+    opacity: 1;
+    transform: none;
+  }
+  .cv-mx-market {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+  }
+  .cv-mx .cv-market {
+    gap: 8px;
+    min-width: 0;
+  }
+  /* Name and its Local/Domestic note on one line. */
+  .cv-mx .cv-market-text {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+  }
+  .cv-mx .cv-market-name {
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  .cv-mx .cv-market-detail {
+    font-size: 0.6875rem;
+    white-space: nowrap;
+  }
+  .cv-mx-bar {
+    display: block;
+    height: 4px;
+    margin-left: 32px;
+    border-radius: 999px;
+    background: var(--teal-50);
+    overflow: hidden;
+  }
+  .cv-mx-bar > span {
+    display: block;
+    width: var(--score);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--teal-500);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 700ms var(--cv-ease);
+    transition-delay: calc(var(--i) * 60ms + 150ms);
+  }
+  .cv-mx[data-shown] .cv-mx-bar > span {
+    transform: none;
+  }
+  .cv-mx-chip {
+    font-size: 0.6875rem;
+    min-height: 22px;
+    padding: 2px 9px;
+    white-space: nowrap;
+  }
+  .cv-mx-score {
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink-900);
+  }
+  .cv-mx-flight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--ink-500);
+  }
+  .cv-mx-flight svg {
+    flex: none;
+    color: var(--teal-700);
+  }
+  .cv-mx-factors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-mx-factors li {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--sand-100);
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--ink-700);
+  }
+
+  /* ---------- ≥ 1024px: copy + card left, collage right ----------
+     Sized to fit one screen below the header (about 620px tall on a
+     1536×696 window): a two-line heading, a compact card, and a photo
+     whose height is capped by the viewport. */
+  @media (min-width: 1024px) {
+    .cv-product-split {
+      --split-h: calc(100svh - var(--cv-header-h) - 56px);
+      /* Band above the photo that the (rotated) note sits in. */
+      --note-h: 120px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-template-rows: auto 1fr;
+      column-gap: 24px;
+    }
+    /* Seven columns: room for the full-size heading (same as every other
+       section heading) on two lines. */
+    .cv-product-copy {
+      grid-column: 1 / span 7;
+      grid-row: 1;
+      align-self: start;
+      gap: 14px;
+    }
+    .cv-product-body {
+      max-width: 36rem;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+    .cv-product-card {
+      grid-column: 1 / span 6;
+      grid-row: 2;
+      align-self: start;
+      justify-self: start;
+      width: min(100%, 480px);
+      margin-top: 22px;
+      padding: 16px 20px;
+    }
+    .cv-product-card .cv-mx-rows {
+      margin-top: 10px;
+    }
+    .cv-product-card .cv-mx-row {
+      min-height: 38px;
+      padding-block: 3px;
+    }
+    .cv-product-card .cv-mx-market {
+      gap: 4px;
+    }
+    .cv-product-card .cv-mx-flight {
+      margin-top: 10px;
+    }
+    .cv-product-card .cv-mx-factors {
+      flex-wrap: nowrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .cv-product-card .cv-mx-factors li {
+      padding: 1px 7px;
+      white-space: nowrap;
+    }
+    /* The note overlaps the band above the photo instead of reserving it. */
+    .cv-product-collage {
+      position: relative;
+      grid-column: 8 / -1;
+      grid-row: 1 / span 2;
+      align-self: start;
+      padding-top: var(--note-h);
+    }
+    .cv-product-note {
+      position: absolute;
+      top: 0;
+      right: 12px;
+      z-index: 2;
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .cv-product-media {
+      justify-self: end;
+      /* Photo height ≤ what is left of the screen: width = height × 4/3. */
+      width: min(100%, calc((var(--split-h) - var(--note-h) - 24px) * 4 / 3 + 30px));
+      padding: 0 30px 24px 0;
+    }
+    .cv-product-inset {
+      width: calc((100% - 30px) * 0.35);
+    }
+  }
+  @media (min-width: 1440px) {
+    .cv-product-split {
+      --note-h: 136px;
+    }
+    .cv-product-note {
+      font-size: 1.75rem;
+    }
+  }
+  /* Short windows (laptops, zoomed browsers): tighten so the split still
+     fits between the header and the bottom of the screen. */
+  @media (min-width: 1024px) and (max-height: 720px) {
+    .cv-product-copy {
+      gap: 10px;
+    }
+    .cv-product-card {
+      margin-top: 16px;
+      padding-block: 14px;
+    }
+    .cv-product-card .cv-mx-row {
+      min-height: 34px;
+      padding-block: 2px;
+    }
+    .cv-product-card .cv-mx-flight {
+      margin-top: 8px;
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1439px) and (max-height: 720px) {
+    .cv-product-note {
+      font-size: 1.3125rem;
+    }
+  }
+
+  /* ---------- < 1024px: copy → card → collage ---------- */
+  @media (max-width: 1023px) {
+    .cv-product-card {
+      margin-top: 32px;
+      max-width: 560px;
+    }
+    .cv-product-collage {
+      margin-top: 48px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-product-media {
+      padding: 0 16px 18px 0;
+    }
+    .cv-product-inset {
+      width: calc((100% - 16px) * 0.4);
+      border-width: 4px;
+    }
+    .cv-product-card {
+      padding: 18px;
+    }
+    /* Tight row: keep the status chip, drop the Local/Domestic note. */
+    .cv-mx .cv-market-detail {
+      display: none;
+    }
+    .cv-mx-row {
+      gap: 8px;
+    }
+    .cv-mx-chip {
+      padding-inline: 7px;
+    }
+    .cv-product-note {
+      font-size: 1.5rem;
+      margin-bottom: 30px;
+    }
+  }
+
+  /* ================= part B: real screens ================= */
+  .cv-screens {
+    margin-top: 80px;
+  }
+  .cv-screens-head {
+    display: grid;
+    gap: 16px;
+  }
+  .cv-screens-heading {
+    display: grid;
+    gap: 14px;
+  }
+  .cv-screens-intro {
+    max-width: 34rem;
+  }
+
+  /* ---------- stage + tab cards ----------
+     Desktop: the stage (left, ~7/12) shows the whole screenshot; the four
+     tab cards (right, ~5/12) stack to the stage height. The screenshot width
+     comes from the viewport height, so stage + caption fit one screen. */
+  .cv-screens-layout {
+    display: grid;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .cv-screens-stage {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    padding: 18px 20px 20px;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--teal-900);
+  }
+  .cv-screens-stage-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .cv-screens-stage-bg .cv-img {
+    opacity: 0.16;
+    mix-blend-mode: luminosity;
+  }
+  .cv-screens-stage-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 50% 100%, rgba(11, 63, 60, 0) 0%, rgba(11, 63, 60, 0.6) 100%);
+  }
+  /* Panels share one grid cell and crossfade. */
+  .cv-screens-panel {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 200ms var(--cv-ease),
+      visibility 0s linear 200ms;
+  }
+  .cv-screens-panel[data-active] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 200ms var(--cv-ease);
+  }
+  /* Glassy pills: what this screen shows, and "real screen, sample data". */
+  .cv-screens-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .cv-screens-status,
+  .cv-screens-real {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--white);
+  }
+  .cv-screens-status-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--coral-500);
+    box-shadow: 0 0 0 3px rgba(232, 112, 79, 0.3);
+  }
+  /* Browser frame showing the whole screenshot. */
+  .cv-screens-frame {
+    align-self: center;
+    width: min(100%, 640px);
+    margin: 0;
+    padding: 0 10px 10px;
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+  }
+  .cv-screens-frame-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding-inline: 6px;
+  }
+  .cv-screens-frame-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .cv-screens-frame-dots i {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--coral-100);
+  }
+  .cv-screens-frame-dots i:first-child {
+    background: var(--coral-500);
+    opacity: 0.75;
+  }
+  .cv-screens-frame-url {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(260px, 50%);
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: var(--sand-50);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--ink-500);
+  }
+  .cv-screens-frame-view {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .cv-screens-frame-view img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Tab cards: icon, then name (+ "Shown above") and one line of copy. */
+  .cv-screens-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .cv-screens-tab {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    background: var(--white);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 200ms var(--cv-ease),
+      border-color 200ms var(--cv-ease);
+  }
+  .cv-screens-tab:hover {
+    border-color: var(--teal-100);
+  }
+  .cv-screens-tab[aria-selected='true'] {
+    border-color: var(--teal-500);
+    background: var(--teal-50);
+  }
+  .cv-screens-tab:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 3px;
+  }
+  .cv-screens-tab .cv-icon-tile {
+    align-self: start;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .cv-screens-tab .cv-icon-tile svg {
+    width: 20px;
+    height: 20px;
+  }
+  .cv-screens-tab-text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .cv-screens-tab-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 8px;
+  }
+  .cv-screens-shown {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--teal-700);
+  }
+  .cv-screens-tab-name {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.125rem;
+    font-weight: 550;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .cv-screens-tab-body {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+
+  /* ---------- foot ---------- */
+  .cv-screens-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 24px;
+    margin-top: 20px;
+  }
+  .cv-screens-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cv-screens-caption::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--teal-500);
+  }
+  .cv-screens-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+  }
+  .cv-screens-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 4px;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--teal-700);
+    text-decoration: none;
+  }
+  .cv-screens-link:hover {
+    color: var(--teal-900);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  @media (min-width: 1024px) {
+    .cv-screens-head {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      align-items: end;
+      column-gap: 24px;
+    }
+    .cv-screens-intro {
+      justify-self: end;
+    }
+    .cv-screens-layout {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+      gap: 20px;
+    }
+    /* Whole screenshot, sized so this whole part (heading, stage and
+       caption) fits between the header and the bottom of the screen. */
+    .cv-screens-frame {
+      width: min(100%, calc((100svh - var(--cv-header-h) - 300px) / 0.625 + 20px));
+    }
+    .cv-screens-tabs {
+      display: flex;
+      flex-direction: column;
+    }
+    .cv-screens-tab {
+      flex: 1 1 0;
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-screens-tab {
+      padding: 12px 14px;
+      gap: 12px;
+    }
+  }
+  /* Below 1440px both pills will not fit on one line; the caption under the
+     stage already says these are real screens with sample data. */
+  @media (max-width: 1439px) {
+    .cv-screens-real {
+      display: none;
+    }
+  }
+  /* < 640px: the cards scroll sideways; the stage keeps one pill. */
+  @media (max-width: 639px) {
+    .cv-screens {
+      margin-top: 72px;
+    }
+    .cv-screens-layout {
+      margin-top: 28px;
+    }
+    .cv-screens-stage {
+      padding: 14px;
+      border-radius: 22px;
+    }
+    .cv-screens-panel {
+      gap: 14px;
+    }
+    .cv-screens-status {
+      padding: 5px 11px;
+      font-size: 0.75rem;
+    }
+    .cv-screens-frame {
+      padding: 0 6px 6px;
+      border-radius: 12px;
+    }
+    .cv-screens-frame-bar {
+      height: 26px;
+    }
+    .cv-screens-frame-url {
+      font-size: 0.625rem;
+      padding: 2px 8px;
+    }
+    .cv-screens-tabs {
+      display: flex;
+      gap: 12px;
+      margin-inline: -20px;
+      padding: 2px 20px 6px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 20px;
+      scrollbar-width: none;
+    }
+    .cv-screens-tabs::-webkit-scrollbar {
+      display: none;
+    }
+    .cv-screens-tab {
+      flex: 0 0 78%;
+      scroll-snap-align: start;
+    }
+    .cv-screens-foot {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-mx-row,
+    .cv-mx-bar > span,
+    .cv-product-swash path,
+    .cv-screens-panel,
+    .cv-screens-panel[data-active],
+    .cv-screens-tab {
+      transition: none;
+    }
+  }
+}
