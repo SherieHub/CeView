@@ -25,6 +25,7 @@
 @import "./landing-compare.css";
 @import "./landing-pricing.css";
 @import "./landing-closing.css";
+@import "./auth.css";
 
 @theme {
   /* ---- Anchor / Structural ---- */
