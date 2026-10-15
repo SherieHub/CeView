@@ -614,32 +614,16 @@
   /* Three small strokes over the card's top-right corner. */
   .cv-demo-spark {
     position: absolute;
-    top: -22px;
-    right: 16px;
-    width: 40px;
-    height: 30px;
-  }
-  .cv-demo-spark i {
-    position: absolute;
-    width: 2px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--teal-700);
-  }
-  .cv-demo-spark i:nth-child(1) {
-    left: 4px;
-    top: 6px;
-    transform: rotate(-12deg);
-  }
-  .cv-demo-spark i:nth-child(2) {
-    left: 18px;
-    top: 4px;
-    transform: rotate(35deg);
-  }
-  .cv-demo-spark i:nth-child(3) {
-    left: 30px;
-    top: 16px;
-    transform: rotate(70deg);
+    top: -34px;
+    right: 14px;
+    width: 44px;
+    height: 33px;
+    overflow: visible;
+    fill: none;
+    stroke: url(#cv-demo-spark-fill);
+    stroke-width: 5.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   /* Wide beach banner closing the section. */

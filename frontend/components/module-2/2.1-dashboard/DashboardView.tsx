@@ -29,6 +29,7 @@ import { StaleDataBanner } from '../../shared/StaleDataBanner';
 import { useDashboardState } from './useDashboardState';
 import type { DashMode } from './useDashboardState';
 import AlertFeed from './AlertFeed';
+import TrendingBusinessTypes from './TrendingBusinessTypes';
 import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
@@ -200,13 +201,14 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
       <div className="dash-grid" ref={gridRef}>
         <AlertFeed
           mode={state.mode}
-          alerts={state.visibleAlerts}
+          alerts={state.myAlerts}
+          hideFilters
           totalForProfile={state.myAlerts.length}
           categories={profile.categories}
           selectedAlertId={state.selectedAlertId}
           isRead={state.isRead}
           onSelect={state.selectAlert}
-          filter={state.feedFilter}
+          filter="all"
           onFilterChange={state.setFeedFilter}
           unreadCount={state.unreadCount}
           surgeCount={state.surgeCount}
@@ -231,6 +233,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
       </div>
 
       {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
+
+      <TrendingBusinessTypes />
 
       {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
           ?market= itself, so mounting it unconditionally is correct: with no

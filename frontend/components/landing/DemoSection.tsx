@@ -44,11 +44,17 @@ export default function DemoSection() {
               </div>
 
               <div className="cv-demo-pilot">
-                <span className="cv-demo-spark" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                </span>
+                {/* A small rising trend line: what the pilot is about. Decorative. */}
+                <svg className="cv-demo-spark" viewBox="0 0 48 36" aria-hidden="true" focusable="false">
+                  <defs>
+                    <linearGradient id="cv-demo-spark-fill" x1="0" y1="1" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#0b4f49" />
+                      <stop offset="100%" stopColor="#2bb59b" />
+                    </linearGradient>
+                  </defs>
+                  <polyline points="5,31 17,18 26,26 43,8" />
+                  <polyline points="31,8 43,8 43,20" />
+                </svg>
                 <div className="cv-demo-pilot-head">
                   <span className="cv-demo-see-icon" aria-hidden="true">
                     <Sprout size={20} strokeWidth={1.75} />

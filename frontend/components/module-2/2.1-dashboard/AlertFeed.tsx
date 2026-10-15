@@ -30,7 +30,8 @@ export default function AlertFeed({
   onFilterChange,
   unreadCount,
   surgeCount,
-}: AlertFeedSlotProps) {
+  hideFilters = false,
+}: AlertFeedSlotProps & { hideFilters?: boolean }) {
   if (mode === 'loading') {
     return (
       <section className="dash-feed" aria-busy="true" aria-label="Surge Alerts">
@@ -93,12 +94,12 @@ export default function AlertFeed({
     <section className="dash-feed" aria-label="Surge Alerts">
       <div className="feed-head">
         <h2 className="heading-md">Surge Alerts</h2>
-        <FeedFilter
+        {!hideFilters && <FeedFilter
           value={filter}
           onChange={onFilterChange}
           unreadCount={unreadCount}
           surgeCount={surgeCount}
-        />
+        />}
       </div>
 
       <div className="dash-feed-scroll" role="region" aria-label="Surge alert list" tabIndex={0}>

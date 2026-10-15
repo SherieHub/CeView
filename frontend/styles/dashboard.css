@@ -1540,10 +1540,10 @@
 @layer components {
   .dash-screen .dash-feed-scroll {
     padding: 14px;
-    border: 1px solid #d5e8e2;
+    border: 1px solid transparent;
     border-radius: 14px;
-    background: #eaf4f1;
-    box-shadow: inset 0 2px 7px rgba(11, 63, 60, 0.06);
+    background: transparent;
+    box-shadow: none;
   }
   .dash-screen .dash-feed-scroll .alert-card {
     background: #fff;
@@ -1561,4 +1561,25 @@
     }
     .dash-screen .dash-market-panels { align-content: start; align-self: start; }
   }
+}
+
+@layer components {
+  .dash-business-trends { margin-top: 20px; padding: 20px; border: 1px solid #e2eeea; border-radius: 16px; background: white; box-shadow: 0 12px 30px -24px #0b3f3c55; min-width: 0; }
+  .dash-business-trends > .body-sm { margin-top: 6px; color: #63757c; }
+  .business-trends-scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #75bdb2 transparent; margin-top: 14px; padding-bottom: 8px; }
+  .business-trends-scroll:focus-visible { outline: 2px solid #168c7d; outline-offset: 3px; border-radius: 8px; }
+  .business-trends-scroll ol { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0; }
+  .business-trends-scroll li { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid #e0eae8; border-radius: 10px; background: linear-gradient(115deg, #fff, #fbfefd); min-width: 0; }
+  .business-trend-rank { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: #eaf1f2; font-size: .6875rem; font-weight: 700; color: #193d50; }
+  .business-trend-copy { min-width: 0; flex: 1; }
+  .business-trends-scroll h3 { font-size: .8125rem; line-height: 1.2; color: #152b48; font-weight: 600; margin-bottom: 4px; }
+  .business-trend-category { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 99px; font-size: .5rem; line-height: 1.2; white-space: nowrap; background: #e0f5f0; color: #086762; }
+  .business-trend-category svg { flex: none; }
+  .business-trend-category[data-tone='purple'] { background: #eee8ff; color: #6744ae; }
+  .business-trend-category[data-tone='coral'] { background: #ffebe1; color: #b84425; }
+  .business-trend-category[data-tone='blue'] { background: #e5f0ff; color: #2462a7; }
+  .business-trend-category[data-tone='gold'] { background: #fff1da; color: #99620b; }
+  .business-trend-spark { flex: 0 0 36px; width: 36px; height: 24px; color: #13b29c; }
+  .business-trend-score { display: grid; place-items: center; flex: none; min-width: 32px; height: 26px; padding: 0 5px; border-radius: 99px; background: #dcf4ee; color: #096663; font-size: .75rem; font-weight: 600; }
+  .business-trend-score[data-muted] { background: #eaf1f3; color: #526d7b; }
 }
