@@ -14,7 +14,7 @@
  * between a one- and two-column layout on selection, which resized every card
  * and moved the one just clicked out from under the cursor.
  */
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Info } from 'lucide-react';
 import '@fontsource-variable/fraunces/opsz.css';
@@ -45,6 +45,21 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ forceMode }: DashboardViewProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const marketPanelsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    const panels = marketPanelsRef.current;
+    if (!grid || !panels || typeof ResizeObserver === 'undefined') return;
+    const updateHeight = () => {
+      const height = panels.getBoundingClientRect().height;
+      if (height > 0) grid.style.setProperty('--alert-panel-max-height', `${height}px`);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(panels);
+    return () => observer.disconnect();
+  }, []);
   const { profile } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -182,7 +197,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         />
       )}
 
-      <div className="dash-grid">
+      <div className="dash-grid" ref={gridRef}>
         <AlertFeed
           mode={state.mode}
           alerts={state.visibleAlerts}
@@ -197,7 +212,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           surgeCount={state.surgeCount}
         />
 
-        <div className="dash-market-panels">
+        <div className="dash-market-panels" ref={marketPanelsRef}>
         {/* Hidden in the states where there is nothing to rank against. */}
         {state.mode !== 'loading' && state.mode !== 'empty' && state.myAlerts.length > 0 && (
           <MarketsRevealPanel

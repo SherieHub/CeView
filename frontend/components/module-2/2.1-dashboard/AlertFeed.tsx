@@ -101,6 +101,7 @@ export default function AlertFeed({
         />
       </div>
 
+      <div className="dash-feed-scroll" role="region" aria-label="Surge alert list" tabIndex={0}>
       {alerts.length === 0 ? (
         // The filter hid everything — recoverable in one click, so this is a
         // lighter treatment than the two empties above.
@@ -133,6 +134,7 @@ export default function AlertFeed({
           ))}
         </div>
       )}
+      </div>
     </section>
   );
 }

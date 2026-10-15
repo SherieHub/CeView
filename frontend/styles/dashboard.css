@@ -1502,3 +1502,63 @@
     }
   }
 }
+
+/* Keep additional alerts inside the panel instead of lengthening the page. */
+@layer components {
+  .dash-screen .dash-feed {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: clamp(480px, 68vh, 760px);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .dash-screen .dash-feed > .feed-head,
+  .dash-screen .dash-feed > h2 { flex: none; }
+  .dash-screen .dash-feed-scroll,
+  .dash-screen .dash-feed > .grid,
+  .dash-screen .dash-feed > .card {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #75bdb2 transparent;
+  }
+  .dash-screen .dash-feed-scroll { flex: 0 1 auto; padding: 4px; }
+  .dash-screen .dash-feed-scroll:focus-visible {
+    outline: 2px solid #168c7d;
+    outline-offset: -2px;
+    border-radius: 12px;
+  }
+  @media (max-width: 767px) {
+    .dash-screen .dash-feed { max-height: clamp(420px, 70svh, 620px); }
+  }
+}
+
+/* Recessed alert surface, capped by the independently sized markets column. */
+@layer components {
+  .dash-screen .dash-feed-scroll {
+    padding: 14px;
+    border: 1px solid #d5e8e2;
+    border-radius: 14px;
+    background: #eaf4f1;
+    box-shadow: inset 0 2px 7px rgba(11, 63, 60, 0.06);
+  }
+  .dash-screen .dash-feed-scroll .alert-card {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(11, 63, 60, 0.09), 0 12px 24px -16px rgba(11, 63, 60, 0.2);
+  }
+  .dash-screen .dash-feed-scroll .alert-card[data-selected='true'] {
+    box-shadow: 0 0 0 2px #b8eee1, 0 6px 16px rgba(11, 63, 60, 0.12);
+  }
+  @media (min-width: 1024px) {
+    .dash-screen .dash-grid { align-items: start; }
+    .dash-screen .dash-feed {
+      height: auto;
+      max-height: var(--alert-panel-max-height, 68vh);
+      min-height: 0;
+    }
+    .dash-screen .dash-market-panels { align-content: start; align-self: start; }
+  }
+}
