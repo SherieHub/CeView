@@ -37,12 +37,12 @@ describe('PhilippineRegionsPanel', () => {
     expect(screen.getByText('Select a surge alert')).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
-  it('labels the regional preview as sample data and shows all five regions', () => {
+  it('labels the regional preview as sample data and shows all 17 regions', () => {
     render(<PhilippineRegionsPanel selectedAlert={MOCK_NOTIFICATIONS[0]} />);
     expect(screen.queryByText('Sample data')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_NOTIFICATIONS[0].category!)).toBeInTheDocument();
     expect(screen.getByText(/live regional forecasts are not available/)).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+    expect(screen.getAllByRole('listitem')).toHaveLength(17);
     expect(screen.getByText('CALABARZON')).toBeInTheDocument();
   });
 });
@@ -53,4 +53,19 @@ it('opens region details from a row and closes them', () => {
   expect(screen.getByRole('dialog', { name: 'CALABARZON region details' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+describe('Region preview data', () => {
+  it('has full drawer details and a map shape for every listed region', async () => {
+    const { SAMPLE_REGIONS } = await import('./regionSamples');
+    const { REGION_MARKETS } = await import('./regionPreview');
+    const { REGION_SHAPES } = await import('./regionShapes');
+    expect(SAMPLE_REGIONS).toHaveLength(17);
+    expect(REGION_MARKETS).toHaveLength(17);
+    for (const m of REGION_MARKETS) {
+      expect(m.directive, m.name).toBeTruthy();
+      expect(m.airlines.length, m.name).toBeGreaterThan(0);
+      expect(REGION_SHAPES[m.name], m.name).toBeTruthy();
+    }
+  });
 });

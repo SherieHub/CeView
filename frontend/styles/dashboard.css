@@ -1447,8 +1447,20 @@
     color: var(--ink-500);
     cursor: help;
   }
+  /* All 17 regions, about five rows visible; the list scrolls in place. */
   .dash-screen .region-list {
+    /* The scroll box must also be the containing block: each row's
+       screen-reader label (.sr-only) is absolutely positioned, and without
+       this the labels of rows scrolled out of view escaped the clip and
+       stretched the page below the app — the sidebar then slid up with it. */
+    position: relative;
     gap: 0;
+    max-height: 290px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #c3d2cf transparent;
   }
   .region-map svg {
     width: 26px;
