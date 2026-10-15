@@ -11,6 +11,7 @@
  * since those primitives aren't defined in styles/index.css yet and this
  * card's file list doesn't include that file.
  */
+import { Info, Sparkles } from 'lucide-react';
 import { useObDraft } from '../obDraft';
 import type { ObDraft } from '../obDraft';
 
@@ -50,34 +51,40 @@ export default function BasicInfoStep() {
       </p>
 
       <div className="flex flex-col">
-        <label className="field">
-          <span className="field-label">Business name</span>
-          <input
-            type="text"
-            className="input"
-            placeholder="e.g. Sunset Cove Beach Resort"
-            value={draft.businessName}
-            onChange={(e) => setDraft({ ...draft, businessName: e.target.value })}
-          />
-        </label>
-
-        <label className="field">
-          <span className="field-label">
-            Industry <span className="opt">— Primary tourism category</span>
-          </span>
-          <select
-            className="input"
-            value={draft.industry}
-            onChange={(e) => setDraft({ ...draft, industry: e.target.value })}
-          >
-            <option value="">Select your primary category…</option>
-            {BUSINESS_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="ob-field-grid ob-field-grid--2 field">
+          <label className="field">
+            <span className="field-label">Business name</span>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g. Sunset Cove Beach Resort"
+              value={draft.businessName}
+              onChange={(e) => setDraft({ ...draft, businessName: e.target.value })}
+            />
+          </label>
+  
+          <label className="field">
+            <span className="field-label ob-label-hint">
+              <span>
+                Industry
+                <Info size={16} strokeWidth={1.75} aria-hidden="true" />
+                <span className="opt">Primary tourism category</span>
+              </span>
+            </span>
+            <select
+              className="input"
+              value={draft.industry}
+              onChange={(e) => setDraft({ ...draft, industry: e.target.value })}
+            >
+              <option value="">Select your primary category…</option>
+              {BUSINESS_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         <label className="field">
           <span className="field-label">
@@ -101,9 +108,10 @@ export default function BasicInfoStep() {
         {import.meta.env.DEV && (
           <button
             type="button"
-            className="body-sm w-fit rounded-full border border-[var(--color-gray-light)] px-3 py-1.5"
+            className="ob-demo-btn"
             onClick={() => setDraft({ ...draft, ...DEMO_BUSINESS })}
           >
+            <Sparkles size={16} strokeWidth={1.75} aria-hidden="true" />
             Fill with demo business
           </button>
         )}

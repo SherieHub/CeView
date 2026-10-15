@@ -80,31 +80,33 @@ export default function StructuredInputsStep() {
         </p>
       </div>
 
-      <div className="field">
-        <span className="field-label">
-          Full description <span className="opt">Minimum {MIN_WORDS.description} words</span>
-        </span>
-        <textarea
-          className="textarea"
-          style={{ minHeight: 170 }}
-          placeholder="What is the property, where exactly is it, what does a guest actually experience?"
-          value={draft.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-        />
-        <WordCountHint field="description" count={descCount} />
-      </div>
+      <div className="ob-field-grid ob-field-grid--2">
+        <div className="field">
+          <span className="field-label">
+            Full description <span className="opt">Minimum {MIN_WORDS.description} words</span>
+          </span>
+          <textarea
+            className="textarea"
+            style={{ minHeight: 170 }}
+            placeholder="What is the property, where exactly is it, what does a guest actually experience?"
+            value={draft.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+          />
+          <WordCountHint field="description" count={descCount} />
+        </div>
 
-      <div className="field">
-        <span className="field-label">
-          Unique value proposition <span className="opt">Minimum {MIN_WORDS.uvp} words</span>
-        </span>
-        <textarea
-          className="textarea"
-          placeholder="What can a guest get here that they genuinely cannot get from the business next door?"
-          value={draft.uvp}
-          onChange={(e) => handleChange('uvp', e.target.value)}
-        />
-        <WordCountHint field="uvp" count={uvpCount} />
+        <div className="field">
+          <span className="field-label">
+            Unique value proposition <span className="opt">Minimum {MIN_WORDS.uvp} words</span>
+          </span>
+          <textarea
+            className="textarea"
+            placeholder="What can a guest get here that they genuinely cannot get from the business next door?"
+            value={draft.uvp}
+            onChange={(e) => handleChange('uvp', e.target.value)}
+          />
+          <WordCountHint field="uvp" count={uvpCount} />
+        </div>
       </div>
     </div>
   );
