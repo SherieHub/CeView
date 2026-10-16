@@ -42,6 +42,7 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
             <article key={index} className="cap-card" data-selected={isSelected}>
               <div className="cap-head">
                 <span className="badge badge--teal">Option {index + 1}</span>
+                <span className="cap-length">{text.length} characters</span>
                 <div className="cap-head-act">
                   {isSelected && (
                     <span className="chip chip--success">
@@ -71,6 +72,8 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
                 <button
                   type="button"
                   className="btn-cta btn-cta--sm"
+                  aria-label={isSelected ? 'Selected' : 'Select'}
+                  aria-pressed={isSelected}
                   onClick={() => onSelect(index, text)}
                 >
                   <Check size={15} aria-hidden="true" />

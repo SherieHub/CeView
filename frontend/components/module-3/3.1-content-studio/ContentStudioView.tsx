@@ -397,6 +397,8 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
                 stageToken={stageToken}
                 onOpenBrief={brief.openDrawer}
                 part="caption"
+                marketName={target.market.name}
+                selectedOption={selectedOption}
               />
             </div>
           </>

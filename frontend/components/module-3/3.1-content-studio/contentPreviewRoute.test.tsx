@@ -84,7 +84,7 @@ describe('/preview/content provider stack', () => {
     renderPreviewRoute();
 
     // The Draft stage's heading — rendered only once a target is seeded.
-    expect(await screen.findByRole('heading', { name: 'Choose your caption' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Caption Choices' })).toBeTruthy();
     // The picker's step 1 heading — present only when the seed is missing.
     expect(screen.queryByText(/pick a surge alert/i)).toBeNull();
   });

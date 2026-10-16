@@ -11,7 +11,8 @@
  * the irreversible action they govern.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ImagePlus, Maximize2, Trash2 } from 'lucide-react';
+import { AlignJustify, Bold, Facebook, FileText, ImagePlus, Instagram, Italic, Link2, List, ListOrdered, Maximize2, PenLine, Redo2, Smile, Target, Trash2, Underline, Undo2, UserRound } from 'lucide-react';
+import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import Modal from '../../shared/Modal';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
@@ -35,12 +36,16 @@ export default function PublishComposer({
   stageToken,
   onOpenBrief,
   part = 'both',
+  marketName,
+  selectedOption,
 }: ComposerSlotProps & {
   /**
    * Which half to render. Quick Post shows the caption in its Draft stage and
    * the media in its Attach stage; 'both' is the original side-by-side layout.
    */
   part?: 'caption' | 'media' | 'both';
+  marketName?: string;
+  selectedOption?: number | null;
 }) {
   const limit = PLATFORM_CHAR_LIMITS[platform];
   const reason = blockReason(draft);
@@ -84,12 +89,25 @@ export default function PublishComposer({
       <div className={part === 'both' ? 'composer-grid' : 'composer-single'} data-part={part}>
         {part !== 'media' && (
         <div>
-          <label className="field-label" htmlFor="staged-caption">Your caption</label>
+          {part === 'caption' ? <>
+            <div className="draft-editor-head">
+              <span className="draft-heading-icon" aria-hidden="true"><UserRound size={26} /></span>
+              <div><label className="field-label" htmlFor="staged-caption">Edit your caption</label>
+                <p>Make it your own. Adjust the tone, add details, or combine ideas.</p></div>
+              <label className="draft-write-own" htmlFor="staged-caption"><PenLine size={15} aria-hidden="true" /> Write your own</label>
+            </div>
+            <dl className="draft-facts">
+              <div><span className={`draft-fact-icon draft-fact-icon--${platform}`} aria-hidden="true">{platform === 'instagram' ? <Instagram size={29} /> : platform === 'facebook' ? <Facebook size={29} /> : <TikTokGlyph size={29} />}</span><div><dt>Platform</dt><dd>{platform === 'instagram' ? 'Instagram' : platform === 'facebook' ? 'Facebook' : 'TikTok'}</dd></div></div>
+              <div><span className="draft-fact-icon draft-fact-icon--market" aria-hidden="true"><Target size={28} /></span><div><dt>Target market</dt><dd>{marketName ?? '—'}</dd></div></div>
+              <div><span className="draft-fact-icon" aria-hidden="true"><FileText size={27} /></span><div><dt>Selected option</dt><dd>{selectedOption == null ? 'Custom caption' : `Option ${selectedOption + 1}`}</dd></div></div>
+            </dl>
+          </> : <label className="field-label" htmlFor="staged-caption">Your caption</label>}
           {/* The changing `key` remounts the element, which is what restarts a
               one-shot CSS animation — without it the flash plays once and never
               again on subsequent selections. */}
           <textarea
             id="staged-caption"
+            aria-label="Your caption"
             ref={captionRef}
             className={`textarea textarea--caption ${overLimit ? 'is-invalid' : ''}`}
             data-flash={stageToken != null && stageToken > 0}
@@ -98,9 +116,46 @@ export default function PublishComposer({
             onChange={(event) => onDraftChange({ caption: event.target.value, agreementChecked: false })}
             placeholder="Approve a matrix option or write your own caption."
           />
-          <p className="cap-count num" data-over={overLimit}>
-            {draft.caption.length.toLocaleString()} / {limit.toLocaleString()} characters
-          </p>
+          <div className="cap-count caption-toolbar-bar" data-over={overLimit}>
+            <div className="caption-toolbar-tools" role="toolbar" aria-label="Caption formatting">
+              <button type="button" className="caption-tbtn" aria-label="Undo" title="Undo">
+                <Undo2 size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Redo" title="Redo">
+                <Redo2 size={14} aria-hidden="true" />
+              </button>
+              <span className="caption-tsep" aria-hidden="true" />
+              <button type="button" className="caption-tbtn" aria-label="Bold" title="Bold">
+                <Bold size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Italic" title="Italic">
+                <Italic size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Underline" title="Underline">
+                <Underline size={14} aria-hidden="true" />
+              </button>
+              <span className="caption-tsep" aria-hidden="true" />
+              <button type="button" className="caption-tbtn" aria-label="Bullet list" title="Bullet list">
+                <List size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Numbered list" title="Numbered list">
+                <ListOrdered size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Align" title="Align">
+                <AlignJustify size={14} aria-hidden="true" />
+              </button>
+              <span className="caption-tsep" aria-hidden="true" />
+              <button type="button" className="caption-tbtn" aria-label="Insert link" title="Insert link">
+                <Link2 size={14} aria-hidden="true" />
+              </button>
+              <button type="button" className="caption-tbtn" aria-label="Insert emoji" title="Insert emoji">
+                <Smile size={14} aria-hidden="true" />
+              </button>
+            </div>
+            <span className="num">
+              Characters: {draft.caption.length.toLocaleString()} / {limit.toLocaleString()}
+            </span>
+          </div>
         </div>
         )}
 

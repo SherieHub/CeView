@@ -43,7 +43,7 @@ export default function StudioStepRail({ active, onSelect, complete }: StudioSte
           const content = (
             <>
               <span className="step-rail-no" aria-hidden="true">{step.number}</span>
-              <span className="step-rail-label">{step.label}</span>
+              <span className="step-rail-copy"><span className="step-rail-label">{step.label}</span><span className="step-rail-description">{step.id === 'draft' ? 'Choose and edit your caption' : step.id === 'attach' ? 'Add media, links and details' : 'Review and prepare to publish'}</span></span>
             </>
           );
           return (
@@ -51,6 +51,7 @@ export default function StudioStepRail({ active, onSelect, complete }: StudioSte
               {controlled ? (
                 <button
                   type="button"
+                  aria-label={step.label}
                   data-state={state}
                   aria-current={state === 'current' ? 'step' : undefined}
                   onClick={() => onSelect(step.id)}

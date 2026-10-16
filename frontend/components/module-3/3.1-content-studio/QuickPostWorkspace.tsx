@@ -8,7 +8,7 @@
  * resets anything. Stages that are not current stay mounted, just hidden.
  */
 import type { ReactNode } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import StudioStepRail from './StudioStepRail';
 import { STUDIO_STEPS } from './studioSteps';
 import type { StudioStepId } from './studioSteps';
@@ -25,7 +25,7 @@ interface QuickPostWorkspaceProps {
 }
 
 const STAGE_COPY: Record<StudioStepId, { title: string; sub: string }> = {
-  draft: { title: 'Choose your caption', sub: 'Pick a generated option for each platform, then edit it as you like.' },
+  draft: { title: 'Caption Choices', sub: 'Pick a generated option for each platform, then edit it as you like.' },
   attach: { title: 'Add your media', sub: 'Attach the image this post publishes with.' },
   validate: { title: 'Review and publish', sub: 'Check your post against the review criteria before it goes live.' },
 };
@@ -45,7 +45,7 @@ export default function QuickPostWorkspace({
   const stages: Record<StudioStepId, ReactNode> = { draft: draftStage, attach: attachStage, validate: validateStage };
 
   return (
-    <div className="qp">
+    <div className="qp" data-step={step}>
       <div className="qp-intro">
         <div>
           <h2 className="qp-title">Quick Post</h2>
@@ -65,7 +65,7 @@ export default function QuickPostWorkspace({
           hidden={s.id !== step}
         >
           <header className="qp-stage-head">
-            <span className="qp-stage-no" aria-hidden="true">{s.number}</span>
+            <span className="qp-stage-no" aria-hidden="true">{s.id === 'draft' ? <Sparkles size={25} /> : s.number}</span>
             <div>
               <h3 id={`${s.sectionId}-title`} className="qp-stage-title">{STAGE_COPY[s.id].title}</h3>
               <p className="qp-stage-sub">{STAGE_COPY[s.id].sub}</p>
