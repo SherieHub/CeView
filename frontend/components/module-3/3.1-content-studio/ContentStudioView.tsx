@@ -18,7 +18,8 @@
  * AppShell already owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Image as ImageIcon, Send, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Image as ImageIcon, Send, X } from 'lucide-react';
+import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
@@ -319,18 +320,24 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         {/* Writes back into the shared target store rather than into local
             state: content generation reads `target.market.id`, so a select
             bound to a private value would look right and change nothing. */}
-        <select
-          className="studio-select"
-          value={target.market.id}
-          onChange={(event) => {
-            const next = markets.find((m) => m.id === event.target.value);
-            if (next) setTarget(target.alert, next);
-          }}
-        >
-          {markets.map((market) => (
-            <option key={market.id} value={market.id}>{market.name}</option>
-          ))}
-        </select>
+        {/* The same green pill as the market switcher elsewhere: the current
+            market's flag sits inside it, over a native select. */}
+        <span className="studio-select-wrap">
+          <MarketFlagIcon name={target.market.name} />
+          <select
+            className="studio-select"
+            value={target.market.id}
+            onChange={(event) => {
+              const next = markets.find((m) => m.id === event.target.value);
+              if (next) setTarget(target.alert, next);
+            }}
+          >
+            {markets.map((market) => (
+              <option key={market.id} value={market.id}>{market.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="studio-select-caret" size={18} strokeWidth={2} aria-hidden="true" />
+        </span>
       </label>
     ) : undefined;
 

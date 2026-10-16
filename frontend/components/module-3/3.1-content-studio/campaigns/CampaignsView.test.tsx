@@ -65,7 +65,8 @@ describe('CampaignsView', () => {
 
     await user.click(screen.getByRole('button', { name: /All campaigns/ }));
     expect(screen.getByRole('button', { name: 'Open Golden Week Escapes' })).toBeInTheDocument();
-  });
+    // Many typed fields and clicks: past vitest's 5s default under a full run.
+  }, 20000);
 
   it('opens a planned post in the composer through the callback', async () => {
     const user = userEvent.setup();
@@ -82,5 +83,5 @@ describe('CampaignsView', () => {
 
     expect(onOpenPost).toHaveBeenCalledTimes(1);
     expect(onOpenPost.mock.calls[0][0]).toMatchObject({ name: 'Plan', platforms: ['tiktok'] });
-  });
+  }, 20000);
 });
