@@ -4,6 +4,7 @@ Boots the real FastAPI app and hits POST /internal/market-data/seasonality/serie
 through TestClient, proving the endpoint is actually wired end to end (request
 schema -> compute_series -> response schema), not just the underlying function.
 """
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -38,7 +39,7 @@ def test_series_endpoint_accepts_imputed_flags():
 
     assert response.status_code == 200
     points = response.json()["points"]
-    assert points[1]["spike_indicator"] is False   # the imputed week can't self-confirm a spike
+    assert points[1]["spike_indicator"] is False  # the imputed week can't self-confirm a spike
 
 
 def test_empty_series_returns_no_points_not_an_error():

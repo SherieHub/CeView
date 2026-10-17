@@ -3,6 +3,7 @@
 Static copy shown next to generated captions, so no second LLM call is needed
 for supplementary assets. Read it through ``gemini_client.get_platform_guides``.
 """
+
 from __future__ import annotations
 
 PLATFORM_GUIDES: dict[str, dict[str, list[str]]] = {

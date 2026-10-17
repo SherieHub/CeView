@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 import { PostStoreProvider, usePosts } from './postStore';
 import { MOCK_POSTS } from './fixtures/posts';
 import type { PostStore } from './postStore';

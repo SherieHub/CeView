@@ -77,6 +77,7 @@ STEP 4 — SEASONALITY SCORE  (§5)
       YoY=1.12  →  score 0.93
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
+
 from __future__ import annotations
 
 import math
@@ -84,18 +85,19 @@ from datetime import datetime, timezone
 
 # ─── window constants (§2.2) ─────────────────────────────────────────────────
 
-WINDOW_7D:  int = 7    # 7 weekly samples  — 7-day  rolling average
-WINDOW_30D: int = 30   # 30 weekly samples — 30-day rolling average
-                       # MUST be larger than WINDOW_7D so the crossover
-                       # 7d > 30d is a meaningful acceleration signal (§2.4)
+WINDOW_7D: int = 7  # 7 weekly samples  — 7-day  rolling average
+WINDOW_30D: int = 30  # 30 weekly samples — 30-day rolling average
+# MUST be larger than WINDOW_7D so the crossover
+# 7d > 30d is a meaningful acceleration signal (§2.4)
 
-YOY_LOOKBACK: int = 52          # weeks to look back for YoY denominator
-MIN_HISTORY_FOR_YOY: int = YOY_LOOKBACK + WINDOW_7D   # = 59 data points
+YOY_LOOKBACK: int = 52  # weeks to look back for YoY denominator
+MIN_HISTORY_FOR_YOY: int = YOY_LOOKBACK + WINDOW_7D  # = 59 data points
 
-SPIKE_SIGMA_MULTIPLIER: float = 2.0   # §3.3: mean + k·σ  (k = 2)
+SPIKE_SIGMA_MULTIPLIER: float = 2.0  # §3.3: mean + k·σ  (k = 2)
 
 
 # ─── public interface ─────────────────────────────────────────────────────────
+
 
 def compute(weekly_series: list[float], imputed_flags: list[bool] | None = None) -> dict:
     """Run the full seasonal shift detection pipeline on a weekly trend series.
@@ -143,11 +145,11 @@ def compute(weekly_series: list[float], imputed_flags: list[bool] | None = None)
     current_is_imputed = bool(imputed_flags) and imputed_flags[-1]
 
     # ── Step 1: Parallel rolling averages (§2) ────────────────────────────────
-    rolling_7d_avg  = _rolling_mean(weekly_series, WINDOW_7D)
+    rolling_7d_avg = _rolling_mean(weekly_series, WINDOW_7D)
     rolling_30d_avg = _rolling_mean(weekly_series, WINDOW_30D)
 
     # ── Step 2: Rolling std-dev + spike indicator (§3) ────────────────────────
-    rolling_7d_std  = _rolling_std(weekly_series, WINDOW_7D)
+    rolling_7d_std = _rolling_std(weekly_series, WINDOW_7D)
     spike_indicator = bool(
         not current_is_imputed
         and current > rolling_7d_avg + SPIKE_SIGMA_MULTIPLIER * rolling_7d_std
@@ -159,10 +161,10 @@ def compute(weekly_series: list[float], imputed_flags: list[bool] | None = None)
         # Slice the 7 values that ended exactly 52 periods ago
         # e.g. for a 65-element series: series[-59:-52] gives elements at
         # positions 59 before the end → 52 before the end  (7 values)
-        prior_start  = -(YOY_LOOKBACK + WINDOW_7D)   # = -59
-        prior_end    = -YOY_LOOKBACK                  # = -52
+        prior_start = -(YOY_LOOKBACK + WINDOW_7D)  # = -59
+        prior_end = -YOY_LOOKBACK  # = -52
         prior_window = weekly_series[prior_start:prior_end]
-        prior_avg    = _rolling_mean(prior_window, WINDOW_7D)
+        prior_avg = _rolling_mean(prior_window, WINDOW_7D)
         if prior_avg > 0:
             yoy_ratio = rolling_7d_avg / prior_avg
 
@@ -172,18 +174,19 @@ def compute(weekly_series: list[float], imputed_flags: list[bool] | None = None)
     )
 
     return {
-        "rolling_7d_avg":      round(rolling_7d_avg,    4),
-        "rolling_30d_avg":     round(rolling_30d_avg,   4),
-        "rolling_7d_std":      round(rolling_7d_std,    4),
-        "spike_indicator":     spike_indicator,
-        "yoy_ratio":           round(yoy_ratio, 4) if yoy_ratio is not None else None,
-        "seasonality_score":   round(seasonality_score, 4),
-        "stats_window_weeks":  len(weekly_series),
-        "computed_at":         datetime.now(timezone.utc).isoformat(),
+        "rolling_7d_avg": round(rolling_7d_avg, 4),
+        "rolling_30d_avg": round(rolling_30d_avg, 4),
+        "rolling_7d_std": round(rolling_7d_std, 4),
+        "spike_indicator": spike_indicator,
+        "yoy_ratio": round(yoy_ratio, 4) if yoy_ratio is not None else None,
+        "seasonality_score": round(seasonality_score, 4),
+        "stats_window_weeks": len(weekly_series),
+        "computed_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
 # ─── Step 4: seasonality score assembly (§5) ─────────────────────────────────
+
 
 def _seasonality_score(
     rolling_7d_avg: float,
@@ -234,15 +237,15 @@ def _seasonality_score(
             # CV>0.5                      →  score_base → 0.25 (floor)
             score_base = max(0.25, min(0.65, 0.65 - cv * 0.50))
         else:
-            score_base = 0.40   # no data — neutral conservative estimate
+            score_base = 0.40  # no data — neutral conservative estimate
 
     # ── Spike disambiguation (§4.5) ────────────────────────────────────────────
     if spike_indicator:
-        yoy_confirmed = (yoy_ratio is not None and yoy_ratio >= 1.0)
+        yoy_confirmed = yoy_ratio is not None and yoy_ratio >= 1.0
         if yoy_confirmed:
             # Seasonal inflection point — spike is the leading edge of seasonal
             # acceleration confirmed by YoY pattern.  Score stays HIGH (§4.5, §6.2).
-            score = score_base   # no penalty; urgency captured in spike_indicator itself
+            score = score_base  # no penalty; urgency captured in spike_indicator itself
         else:
             # Isolated anomaly (viral post, news event) — not a seasonal signal.
             # Pull score toward 0 (§4.5 "Spike filtered from forecasting input").
@@ -256,6 +259,7 @@ def _seasonality_score(
 
 # ─── math helpers (exact formulas from §2.2 and §3.1) ────────────────────────
 
+
 def _rolling_mean(series: list[float], window: int) -> float:
     """Sliding-window mean: ( x[t] + x[t-1] + … + x[t-W+1] ) / W  (§2.2).
 
@@ -263,7 +267,7 @@ def _rolling_mean(series: list[float], window: int) -> float:
     matching the sample table in §6.3 where early-stage records show both the
     7-period and 30-period averages equal (bounded by available history).
     """
-    window_data = series[-window:]      # most recent W values (or fewer)
+    window_data = series[-window:]  # most recent W values (or fewer)
     if not window_data:
         return 0.0
     return sum(window_data) / len(window_data)
@@ -282,7 +286,7 @@ def _rolling_std(series: list[float], window: int) -> float:
     if n < 2:
         return 0.0
     mean = sum(window_data) / n
-    variance = sum((x - mean) ** 2 for x in window_data) / n   # population variance
+    variance = sum((x - mean) ** 2 for x in window_data) / n  # population variance
     return math.sqrt(variance)
 
 
@@ -290,20 +294,23 @@ def _neutral() -> dict:
     # Empty input: return zeros so "no data" is unambiguous to callers, rather
     # than synthetic 50.0 averages / 0.40 score that look like a real signal.
     return {
-        "rolling_7d_avg":      0.0,
-        "rolling_30d_avg":     0.0,
-        "rolling_7d_std":      0.0,
-        "spike_indicator":     False,
-        "yoy_ratio":           None,
-        "seasonality_score":   0.0,
-        "stats_window_weeks":  0,
-        "computed_at":         datetime.now(timezone.utc).isoformat(),
+        "rolling_7d_avg": 0.0,
+        "rolling_30d_avg": 0.0,
+        "rolling_7d_std": 0.0,
+        "spike_indicator": False,
+        "yoy_ratio": None,
+        "seasonality_score": 0.0,
+        "stats_window_weeks": 0,
+        "computed_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
 # ─── per-week series (Step 5 — real backfill statistics, C-04) ───────────────
 
-def compute_series(weekly_series: list[float], imputed_flags: list[bool] | None = None) -> list[dict]:
+
+def compute_series(
+    weekly_series: list[float], imputed_flags: list[bool] | None = None
+) -> list[dict]:
     """Per-week statistics for a FULL historical series — e.g. a 12-week PyTrends
     backfill — so every backfilled MarketSignalRecord gets REAL rolling/spike/
     seasonality figures instead of the placeholder 0.5 / False / 0.0 triple

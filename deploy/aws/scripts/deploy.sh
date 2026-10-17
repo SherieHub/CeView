@@ -49,7 +49,9 @@ aws s3 sync --region "$AWS_REGION" --only-show-errors --delete \
 chmod +x "$release_dir"/scripts/*.sh "$release_dir/scripts/ceview-compose" "$release_dir"/postgres-init/*.sh
 install -m 755 "$release_dir/scripts/ceview-compose" /usr/local/bin/ceview-compose
 
-previous_dir="$(readlink -f "$CEVIEW_ROOT/current" 2>/dev/null || true)"
+# -e, not -f: -f prints the path even when current doesn't exist yet (first
+# deploy), which made the rollback point current at itself.
+previous_dir="$(readlink -e "$CEVIEW_ROOT/current" 2>/dev/null || true)"
 
 switch_to() {
   ln -sfn "$1" "$CEVIEW_ROOT/current.new"

@@ -5,6 +5,7 @@ trend-index values and a small seasonality-score offset. It exists solely to
 exercise the exact BiLSTM request/response seam until the trained artifact and
 its scaler are integrated.
 """
+
 from __future__ import annotations
 
 import math
@@ -39,8 +40,8 @@ def forecast(request: dict[str, Any]) -> dict[str, Any]:
     low_confidence = not passed
     message = (
         "Stub v1 deterministic naive forecast — not a trained model."
-        if low_confidence else
-        "Stub v1 deterministic naive forecast — not a trained model; holdout error passed the 15% gate."
+        if low_confidence
+        else "Stub v1 deterministic naive forecast — not a trained model; holdout error passed the 15% gate."
     )
     return {
         "predicted_demand_4w": predicted_4w,
@@ -66,25 +67,26 @@ def forecast_batch(requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     one processed for that market. Spring builds the identical key to look a result
     back up (ForecastingService's `CategorySequence.key()`) — keep the two in sync.
     """
-    return {
-        batch_key(request): forecast(request)
-        for request in requests
-    }
+    return {batch_key(request): forecast(request) for request in requests}
 
 
 def _project(history: list[float], seasonality_score: float, horizon: int) -> list[float]:
     """Damped last-window slope plus a bounded seasonal offset; no RNG or clock."""
     if not history:
         raise ValueError("history must not be empty")
-    recent = history[-min(4, len(history)):]
+    recent = history[-min(4, len(history)) :]
     slope = 0.0 if len(recent) < 2 else (recent[-1] - recent[0]) / (len(recent) - 1)
     seasonal_offset = (max(0.0, min(1.0, seasonality_score)) - 0.5) * 2.0
     last = history[-1]
-    return [round(max(0.0, min(100.0, last + slope * (0.80 ** step) + seasonal_offset)), 4)
-            for step in range(1, horizon + 1)]
+    return [
+        round(max(0.0, min(100.0, last + slope * (0.80**step) + seasonal_offset)), 4)
+        for step in range(1, horizon + 1)
+    ]
 
 
-def _backtest(trends: list[float], seasonality_score: float) -> tuple[float | None, float | None, float | None]:
+def _backtest(
+    trends: list[float], seasonality_score: float
+) -> tuple[float | None, float | None, float | None]:
     """Hold out the final four observed weeks and score the same naive method."""
     if len(trends) <= 4:
         return None, None, None
@@ -96,14 +98,18 @@ def _backtest(trends: list[float], seasonality_score: float) -> tuple[float | No
     # Percentage error is undefined at zero; do not invent a denominator.
     if any(observed == 0.0 for observed in actual):
         return None, mae, rmse
-    mape = sum(abs(error / observed) * 100.0 for error, observed in zip(errors, actual)) / len(actual)
+    mape = sum(abs(error / observed) * 100.0 for error, observed in zip(errors, actual)) / len(
+        actual
+    )
     return mape, mae, rmse
 
 
 def _imputed_cell_ratio(mask: Any, row_count: int) -> float:
     if not isinstance(mask, list) or not mask or row_count <= 0:
         return 0.0
-    imputed = sum(sum(bool(value) for value in row.values()) for row in mask if isinstance(row, dict))
+    imputed = sum(
+        sum(bool(value) for value in row.values()) for row in mask if isinstance(row, dict)
+    )
     return min(1.0, imputed / (row_count * FEATURE_COUNT))
 
 

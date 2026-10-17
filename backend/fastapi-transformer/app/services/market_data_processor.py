@@ -1,4 +1,5 @@
 """Trend-index helpers for Module 2.1."""
+
 from __future__ import annotations
 
 

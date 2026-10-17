@@ -43,6 +43,7 @@ TIKTOK
   • Strictly 3–5 highly targeted / trending hashtags.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
+
 from __future__ import annotations
 
 from langchain_core.prompts import (
@@ -51,12 +52,12 @@ from langchain_core.prompts import (
     SystemMessagePromptTemplate,
 )
 
-
 # ── Node 1: Relevant-service filter ──────────────────────────────────────────
 
-service_analysis_prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(
-        """You are an analytical brand strategist for a Cebu, Philippines tourism business.
+service_analysis_prompt = ChatPromptTemplate.from_messages(
+    [
+        SystemMessagePromptTemplate.from_template(
+            """You are an analytical brand strategist for a Cebu, Philippines tourism business.
 
 Task: Analyze the provided list of business services and sort them into two distinct categories based on the stated market category.
 
@@ -74,24 +75,26 @@ Example Output:
   "unique_differentiators": ["on-site organic farming workshop", "crypto-payment setup"]
 }}
 """
-    ),
-    HumanMessagePromptTemplate.from_template(
-        """Market Category: {market_category}
+        ),
+        HumanMessagePromptTemplate.from_template(
+            """Market Category: {market_category}
 
 All Business Services:
 {business_services}
 
 Return ONLY the categorized JSON object.
 """
-    ),
-])
+        ),
+    ]
+)
 
 
 # ── Node 2: Platform-aware 3×3 demographic caption matrix ────────────────────
 
-caption_generation_prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(
-        """You are CeView's Marketing Agent — an expert social-media copywriter and visual content strategist for
+caption_generation_prompt = ChatPromptTemplate.from_messages(
+    [
+        SystemMessagePromptTemplate.from_template(
+            """You are CeView's Marketing Agent — an expert social-media copywriter and visual content strategist for
 Cebu, Philippines tourism businesses, specialising in the *{target_market}* market.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -261,9 +264,9 @@ Required JSON schema (3 objects per platform — one per archetype, in order):
   ]
 }}
 """
-),
-    HumanMessagePromptTemplate.from_template(
-        """Generate the 3-platform × 3-demographic-archetype caption matrix for {business_name} now.
+        ),
+        HumanMessagePromptTemplate.from_template(
+            """Generate the 3-platform × 3-demographic-archetype caption matrix for {business_name} now.
 
 Return all 6 fields per caption object:
   core_business_context, market_cultural_localization, psychological_elements,
@@ -272,5 +275,6 @@ Return all 6 fields per caption object:
 Strictly enforce every platform rule and archetype tone specification listed above.
 Synthesise all 4 Caption Factors in every single caption.
 """
-    ),
-])
+        ),
+    ]
+)

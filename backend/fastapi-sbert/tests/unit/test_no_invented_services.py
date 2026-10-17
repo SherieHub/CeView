@@ -5,6 +5,7 @@ operator's name.
 
 Run with: pytest tests/unit/test_no_invented_services.py -v
 """
+
 import pytest
 
 from app.agents.creative_director_agent import node

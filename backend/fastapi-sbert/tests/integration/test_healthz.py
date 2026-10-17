@@ -11,6 +11,7 @@ needs nothing beyond that one stubbed call: no download, no network.
 
 Run with: pytest tests/integration -v
 """
+
 import subprocess
 import sys
 from pathlib import Path
@@ -30,11 +31,16 @@ _SCRIPT = (
 
 def test_healthz_returns_ok_with_the_encoder_load_stubbed():
     completed = subprocess.run(
-        [sys.executable, "-c", _SCRIPT], cwd=SERVICE_ROOT,
-        capture_output=True, text=True, timeout=240,
+        [sys.executable, "-c", _SCRIPT],
+        cwd=SERVICE_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=240,
     )
     assert completed.returncode == 0, completed.stderr[-2000:]
-    result = [line for line in completed.stdout.splitlines() if line.startswith("RESULT ")][-1].split()
+    result = [line for line in completed.stdout.splitlines() if line.startswith("RESULT ")][
+        -1
+    ].split()
     _, status, body_ok, calls = result
     assert status == "200"
     assert body_ok == "True"

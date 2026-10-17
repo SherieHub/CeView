@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Any, Dict
+
+from pydantic import BaseModel, Field
 
 
 class ComplianceInputClass(BaseModel):
@@ -14,6 +15,7 @@ class ComplianceInputClass(BaseModel):
                           psychological_elements, creative_tone_atmosphere,
                           algorithmic_platform_architecture)
     """
+
     caption: str = Field(..., min_length=1)
     image_url: str = Field(..., min_length=1)
     business_profile: Dict[str, Any] = Field(default_factory=dict)

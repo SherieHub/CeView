@@ -2,6 +2,7 @@
 
 Used by ``routers/caption_generation.py``.
 """
+
 from __future__ import annotations
 
 from app.config.markets import DEMOGRAPHIC_OPTION_NAMES
@@ -50,20 +51,28 @@ def transform_captions(
             if not isinstance(v, dict):
                 continue
             options.append(v.get("caption", ""))
-            option_names.append(DEMOGRAPHIC_OPTION_NAMES[i] if i < len(DEMOGRAPHIC_OPTION_NAMES) else f"Option {i + 1}")
-            option_metadata.append({
-                "core_business_context":             v.get("core_business_context", ""),
-                "market_cultural_localization":      v.get("market_cultural_localization", ""),
-                "psychological_elements":            v.get("psychological_elements", ""),
-                "creative_tone_atmosphere":          v.get("creative_tone_atmosphere", ""),
-                "algorithmic_platform_architecture": v.get("algorithmic_platform_architecture", ""),
-            })
+            option_names.append(
+                DEMOGRAPHIC_OPTION_NAMES[i]
+                if i < len(DEMOGRAPHIC_OPTION_NAMES)
+                else f"Option {i + 1}"
+            )
+            option_metadata.append(
+                {
+                    "core_business_context": v.get("core_business_context", ""),
+                    "market_cultural_localization": v.get("market_cultural_localization", ""),
+                    "psychological_elements": v.get("psychological_elements", ""),
+                    "creative_tone_atmosphere": v.get("creative_tone_atmosphere", ""),
+                    "algorithmic_platform_architecture": v.get(
+                        "algorithmic_platform_architecture", ""
+                    ),
+                }
+            )
 
         captions[platform] = {
-            "options":        options,
-            "optionNames":    option_names,
+            "options": options,
+            "optionNames": option_names,
             "optionMetadata": option_metadata,
-            "guide":          guides.get(platform, []),
+            "guide": guides.get(platform, []),
         }
 
     return captions

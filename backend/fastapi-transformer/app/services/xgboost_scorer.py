@@ -21,6 +21,7 @@ The final market_score is assembled OUTSIDE this module as:
 Requires a trained XGBoost model at XGBOOST_MODEL_PATH.
 Falls back to a weighted linear approximation when the model file is absent.
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,18 +35,18 @@ _model = None
 
 # ─── economic feature weights (sum to 1.0; used by linear fallback + model reference) ──
 _ECONOMIC_WEIGHTS: dict[str, float] = {
-    "gdp_growth_norm":       0.30,   # higher GDP growth → higher overseas spending
-    "forex_norm":            0.30,   # stronger foreign currency → Cebu more affordable
-    "direct_flight":         0.20,   # direct flights dramatically lower travel barrier
-    "distance_norm":         0.10,   # proximity reduces cost and time barrier
-    "flight_frequency_norm": 0.10,   # more schedule options → better accessibility
+    "gdp_growth_norm": 0.30,  # higher GDP growth → higher overseas spending
+    "forex_norm": 0.30,  # stronger foreign currency → Cebu more affordable
+    "direct_flight": 0.20,  # direct flights dramatically lower travel barrier
+    "distance_norm": 0.10,  # proximity reduces cost and time barrier
+    "flight_frequency_norm": 0.10,  # more schedule options → better accessibility
 }
 
 # ─── market-score composition weights ─────────────────────────────────────────
 _SCORE_WEIGHTS: dict[str, float] = {
-    "demand":      0.40,   # Gemini-predicted demand (0–1 normalised)
-    "seasonality": 0.35,   # YoY-based seasonality score (0–1)
-    "economic":    0.25,   # XGBoost economic viability (0–1)
+    "demand": 0.40,  # Gemini-predicted demand (0–1 normalised)
+    "seasonality": 0.35,  # YoY-based seasonality score (0–1)
+    "economic": 0.25,  # XGBoost economic viability (0–1)
 }
 
 
@@ -61,6 +62,7 @@ def _load() -> None:
         return
     try:
         import xgboost as xgb  # type: ignore[import]
+
         m = xgb.Booster()
         m.load_model(_MODEL_PATH)
         _model = m
@@ -98,29 +100,30 @@ def score(features: dict) -> dict:
     """
     econ = _xgb_economic(features) if _model is not None else _linear_economic(features)
 
-    demand_component      = features.get("predicted_demand", 50.0) / 100.0
+    demand_component = features.get("predicted_demand", 50.0) / 100.0
     seasonality_component = features.get("seasonality_score", 0.5)
 
     market_score = (
-        _SCORE_WEIGHTS["demand"]      * demand_component
+        _SCORE_WEIGHTS["demand"] * demand_component
         + _SCORE_WEIGHTS["seasonality"] * seasonality_component
-        + _SCORE_WEIGHTS["economic"]    * econ
+        + _SCORE_WEIGHTS["economic"] * econ
     )
 
     return {
-        "market_score":             round(float(min(max(market_score, 0.0), 1.0)), 4),
+        "market_score": round(float(min(max(market_score, 0.0), 1.0)), 4),
         "economic_viability_score": round(float(econ), 4),
         # Persisted by Spring so UI text cannot credit an unavailable artifact.
-        "scorer":                   "xgboost" if _model is not None else "linear",
+        "scorer": "xgboost" if _model is not None else "linear",
         "components": {
-            "demand_component":      round(demand_component,      4),
+            "demand_component": round(demand_component, 4),
             "seasonality_component": round(seasonality_component, 4),
-            "economic_component":    round(float(econ),           4),
+            "economic_component": round(float(econ), 4),
         },
     }
 
 
 # ─── Linear fallback (used when XGBoost model file is absent) ────────────────
+
 
 def _linear_economic(features: dict) -> float:
     """Weighted linear approximation of the XGBoost economic score."""
@@ -131,9 +134,10 @@ def _linear_economic(features: dict) -> float:
 
 # ─── XGBoost economic inference ───────────────────────────────────────────────
 
+
 def _xgb_economic(features: dict) -> float:
-    import xgboost as xgb  # type: ignore[import]
     import numpy as np
+    import xgboost as xgb  # type: ignore[import]
 
     X = np.array([_feature_vector(features)], dtype=np.float32)
     raw = float(_model.predict(xgb.DMatrix(X))[0])
@@ -143,8 +147,8 @@ def _xgb_economic(features: dict) -> float:
 # ─── feature engineering ──────────────────────────────────────────────────────
 
 # ─── forex normalisation bounds (log scale — see _forex_norm docstring) ──────
-_FOREX_LOG_MIN = -2.0   # log10(0.01): a very low PHP-per-foreign-unit currency
-_FOREX_LOG_MAX = 2.0    # log10(100):  a very high PHP-per-foreign-unit currency
+_FOREX_LOG_MIN = -2.0  # log10(0.01): a very low PHP-per-foreign-unit currency
+_FOREX_LOG_MAX = 2.0  # log10(100):  a very high PHP-per-foreign-unit currency
 
 
 def _forex_norm(forex_vs_php: float) -> float:
@@ -179,16 +183,16 @@ def _feature_vector(features: dict) -> list[float]:
         distance_norm       : 0 km → 1.0 (best); ≥15,000 km → 0.0 (worst)
         flight_frequency    : 0 flights/week → 0.0; ≥20 flights/week → 1.0
     """
-    gdp    = features.get("gdp_growth",     2.0)
-    forex  = features.get("forex_vs_php",   1.0)
-    direct = features.get("direct_flight",  False)
-    dist   = features.get("distance_km",    5000)
-    freq   = features.get("flight_frequency", 3)
+    gdp = features.get("gdp_growth", 2.0)
+    forex = features.get("forex_vs_php", 1.0)
+    direct = features.get("direct_flight", False)
+    dist = features.get("distance_km", 5000)
+    freq = features.get("flight_frequency", 3)
 
     return [
-        min(max(gdp / 5.0, 0.0), 1.0),                   # gdp_growth_norm
-        _forex_norm(forex),                               # forex_norm
-        1.0 if direct else 0.0,                           # direct_flight
-        max(0.0, 1.0 - min(1.0, dist / 15_000.0)),        # distance_norm
-        min(max(freq / 20.0, 0.0), 1.0),                  # flight_frequency_norm
+        min(max(gdp / 5.0, 0.0), 1.0),  # gdp_growth_norm
+        _forex_norm(forex),  # forex_norm
+        1.0 if direct else 0.0,  # direct_flight
+        max(0.0, 1.0 - min(1.0, dist / 15_000.0)),  # distance_norm
+        min(max(freq / 20.0, 0.0), 1.0),  # flight_frequency_norm
     ]

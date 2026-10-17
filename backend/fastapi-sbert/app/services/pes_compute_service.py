@@ -16,6 +16,7 @@ Edge Case Handling (FR4.26 spec):
     The remaining active weights are proportionally recalibrated to still sum to 1.0, ensuring
     the PES score correctly occupies the full 0–1 range based on the available data.
 """
+
 from __future__ import annotations
 
 from typing import NamedTuple
@@ -27,20 +28,20 @@ from typing import NamedTuple
 # Calibrated for Philippine Peso (₱) and Cebu hospitality vertical.
 #
 METRIC_BOUNDS: dict[str, tuple[float, float]] = {
-    "CTR":  (0.0,     10.0),    # 0 % – 10 % click-through rate
-    "CPC":  (0.01,   500.0),    # ₱0.01 – ₱500 cost per click
-    "CR":   (0.0,     15.0),    # 0 % – 15 % booking conversion rate
-    "ROAS": (0.0,      8.0),    # 0 × – 8 × return on ad spend
-    "CAC":  (1.0,  5_000.0),    # ₱1 – ₱5,000 customer acquisition cost
+    "CTR": (0.0, 10.0),  # 0 % – 10 % click-through rate
+    "CPC": (0.01, 500.0),  # ₱0.01 – ₱500 cost per click
+    "CR": (0.0, 15.0),  # 0 % – 15 % booking conversion rate
+    "ROAS": (0.0, 8.0),  # 0 × – 8 × return on ad spend
+    "CAC": (1.0, 5_000.0),  # ₱1 – ₱5,000 customer acquisition cost
 }
 
 # ── Canonical weights (SDD §4.2) ─────────────────────────────────────────────
 BASE_WEIGHTS: dict[str, float] = {
     "ROAS": 0.35,
-    "CR":   0.30,
-    "CAC":  0.15,
-    "CTR":  0.15,
-    "CPC":  0.05,
+    "CR": 0.30,
+    "CAC": 0.15,
+    "CTR": 0.15,
+    "CPC": 0.05,
 }
 
 # ── Cost metrics inverted (lower cost → higher PES contribution) ──────────────
@@ -49,29 +50,31 @@ COST_METRICS: frozenset[str] = frozenset({"CPC", "CAC"})
 # ── Human-readable display names for breakdown output ────────────────────────
 DISPLAY_NAMES: dict[str, str] = {
     "ROAS": "ROAS",
-    "CR":   "Conv. Rate",
-    "CAC":  "CAC (Inv)",
-    "CTR":  "CTR",
-    "CPC":  "CPC (Inv)",
+    "CR": "Conv. Rate",
+    "CAC": "CAC (Inv)",
+    "CTR": "CTR",
+    "CPC": "CPC (Inv)",
 }
 
 # ─── Structured return types ──────────────────────────────────────────────────
 
+
 class PesResult(NamedTuple):
-    score:     float       # 0.0 – 1.0
-    label:     str         # "Poor" | "Fair" | "Good" | "Excellent Performance"
+    score: float  # 0.0 – 1.0
+    label: str  # "Poor" | "Fair" | "Good" | "Excellent Performance"
     breakdown: list[dict]  # per-metric contribution table
 
 
 # ─── Step 1 — Base Metric Computation ────────────────────────────────────────
 
+
 def compute_base_metrics(
-    impressions:   int,
-    clicks:        int,
-    ad_spend:      float,
-    revenue:       float,
-    conversions:   int,
-    bookings:      int,
+    impressions: int,
+    clicks: int,
+    ad_spend: float,
+    revenue: float,
+    conversions: int,
+    bookings: int,
     new_customers: int,
 ) -> tuple[dict[str, float], list[str]]:
     """
@@ -130,6 +133,7 @@ def flagged_metric_names(flagged: list[str]) -> set[str]:
 
 # ─── Steps 2 & 3 — Normalization + Inversion ─────────────────────────────────
 
+
 def normalize_and_invert(
     metrics: dict[str, float],
     flagged: list[str],
@@ -165,16 +169,18 @@ def normalize_and_invert(
 
     # Proportional weight recalibration — only include active (non-flagged) metrics
     active_weights = {k: v for k, v in BASE_WEIGHTS.items() if k not in flagged_names}
-    total_active   = sum(active_weights.values())
+    total_active = sum(active_weights.values())
     effective_weights: dict[str, float] = (
         {k: round(v / total_active, 6) for k, v in active_weights.items()}
-        if total_active > 0 else {}
+        if total_active > 0
+        else {}
     )
 
     return normalized, effective_weights
 
 
 # ─── Step 4 — PES Formula ─────────────────────────────────────────────────────
+
 
 def compute_pes(
     normalized: dict[str, float],
@@ -203,15 +209,17 @@ def compute_pes(
         if eff_weight == 0.0:
             continue
 
-        norm_val     = normalized.get(name, 0.0)
+        norm_val = normalized.get(name, 0.0)
         contribution = round(norm_val * eff_weight, 4)
-        total       += contribution
+        total += contribution
 
-        breakdown.append({
-            "metric":       DISPLAY_NAMES[name],
-            "weight":       f"{round(eff_weight * 100, 1)}%",   # actual recalibrated weight
-            "contribution": contribution,
-        })
+        breakdown.append(
+            {
+                "metric": DISPLAY_NAMES[name],
+                "weight": f"{round(eff_weight * 100, 1)}%",  # actual recalibrated weight
+                "contribution": contribution,
+            }
+        )
 
     score = round(min(1.0, max(0.0, total)), 4)
 
@@ -231,22 +239,23 @@ def compute_pes(
 # ─── Funnel-stage mapping (weakest metric → bottleneck stage) ─────────────────
 
 METRIC_TO_STAGE: dict[str, str] = {
-    "ROAS":       "Impressions → Revenue (Ad Spend Efficiency)",
+    "ROAS": "Impressions → Revenue (Ad Spend Efficiency)",
     "Conv. Rate": "Clicks → Bookings",
-    "CAC (Inv)":  "Impressions → New Customers",
-    "CTR":        "Impressions → Clicks",
-    "CPC (Inv)":  "Impressions → Clicks (Cost Efficiency)",
+    "CAC (Inv)": "Impressions → New Customers",
+    "CTR": "Impressions → Clicks",
+    "CPC (Inv)": "Impressions → Clicks (Cost Efficiency)",
 }
 
 
 # ─── Rule-based AI report fallback (FR4.26) ───────────────────────────────────
 
+
 def rule_based_ai_report(
     base_metrics: dict[str, float],
-    pes_score:    float,
-    pes_label:    str,
-    breakdown:    list[dict],
-    flagged:      list[str],
+    pes_score: float,
+    pes_label: str,
+    breakdown: list[dict],
+    flagged: list[str],
 ) -> dict:
     """
     Deterministic, rule-based AI report returned when the Groq
@@ -260,11 +269,11 @@ def rule_based_ai_report(
     """
     active_items = [b for b in breakdown if b["contribution"] > 0]
     if active_items:
-        weakest_item  = min(active_items, key=lambda x: x["contribution"])
-        weakest_name  = weakest_item["metric"]
+        weakest_item = min(active_items, key=lambda x: x["contribution"])
+        weakest_name = weakest_item["metric"]
         weakest_stage = METRIC_TO_STAGE.get(weakest_name, "Clicks → Bookings")
     else:
-        weakest_name  = "Conversion Rate"
+        weakest_name = "Conversion Rate"
         weakest_stage = "Clicks → Bookings"
 
     # Identify the highest-weight metric that IS performing (for positive framing)
@@ -293,8 +302,10 @@ def rule_based_ai_report(
 
     flag_note = (
         f" Note: {len(flagged)} metric(s) were excluded from PES due to missing data: "
-        + ", ".join(flagged) + "."
-        if flagged else ""
+        + ", ".join(flagged)
+        + "."
+        if flagged
+        else ""
     )
 
     executive_summary = (
@@ -308,7 +319,7 @@ def rule_based_ai_report(
 
     return {
         "weakest_funnel_stage": weakest_stage,
-        "recommendations":      recommendations,
-        "executive_summary":    executive_summary,
-        "source":               "fallback",
+        "recommendations": recommendations,
+        "executive_summary": executive_summary,
+        "source": "fallback",
     }

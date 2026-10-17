@@ -2,6 +2,7 @@
 
 Run with: pytest tests/unit/test_unavailable.py -v
 """
+
 import logging
 
 import pytest

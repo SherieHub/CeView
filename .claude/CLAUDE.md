@@ -23,6 +23,7 @@ territory.
   - `backend/fastapi-transformer/` — XGBoost + Groq/Gemini demand forecasting
 - **Data:** PostgreSQL 16 + pgvector, Flyway migrations
 - **Testing:** Vitest (frontend), JUnit (Spring Boot), pytest (both FastAPI services), Playwright (e2e, `e2e/`)
+- **Quality gates:** Lefthook git hooks (`lefthook.yml`) run lint, format, tests on commit/push; ESLint (frontend), ruff (FastAPI), Spotless (Spring Boot)
 - **Deploy:** Render (`render.yaml`, `docs/DEPLOY_RENDER.md`)
 
 ## Architecture at a Glance
@@ -69,6 +70,7 @@ before debugging local environment issues rather than guessing.
 - Don't add new work to `ceview/` (including `ceview/old-components/`) — it's a frozen, earlier frontend build superseded by `frontend/`. See Repo Layout above.
 
 **Do:**
+- **Every new feature or fix must ship with a test case** (Vitest / JUnit / pytest / Playwright, whichever stack it touches) that fails without the change — follow `skills/test-driven-development`. **Update the relevant docs in the same change** (`docs/module-N/`, `backend/CONTRACT.md`, `ARCHITECTURE_SPEC.md`, `RUNNING.md`). The commit-msg hook rejects source changes without tests/docs; see `RUNNING.md` §8a.
 - Follow the module boundaries above when placing new code — a Module 3 change belongs in `components/module-3`, `docs/module-3`, etc., not scattered.
 - Check `docs/module-N/README.md` and the relevant `*_SYSTEM_DOCUMENTATION.md` before modifying a module's logic — the scoring/forecasting formulas are specified in `ARCHITECTURE_SPEC.md` and shouldn't be reverse-engineered from code alone.
 - Keep multi-tenant isolation in mind for any backend change touching data access — every query path is expected to be scoped to the authenticated business operator.

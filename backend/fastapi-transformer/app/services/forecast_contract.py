@@ -3,6 +3,7 @@
 Dependency-free on purpose: importing ``forecast_engine`` resolves
 FORECAST_ENGINE at import time, so the engines take these from here instead.
 """
+
 from __future__ import annotations
 
 from typing import Any

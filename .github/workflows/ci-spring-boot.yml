@@ -27,6 +27,11 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Format check (Spotless)
+        run: |
+          chmod +x mvnw
+          ./mvnw -B spotless:check
+
       - name: Unit + integration tests (H2, no Postgres needed)
         run: |
           chmod +x mvnw

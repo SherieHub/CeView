@@ -11,10 +11,7 @@ import sys
 
 from app.middleware.trace import get_trace_id
 
-LOG_FORMAT = (
-    "%(asctime)s [%(levelname)s] %(name)s "
-    "trace=%(trace_id)s code=%(code)s :: %(message)s"
-)
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s trace=%(trace_id)s code=%(code)s :: %(message)s"
 
 
 class _ContextFilter(logging.Filter):

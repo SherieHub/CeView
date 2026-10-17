@@ -6,7 +6,8 @@ fast with just the base requirements installed.
 
 Run with: pytest tests/unit -v
 """
-from app.services.pes_compute_service import compute_base_metrics, normalize_and_invert, compute_pes
+
+from app.services.pes_compute_service import compute_base_metrics, compute_pes, normalize_and_invert
 
 
 def test_compute_pes_returns_excellent_for_strong_metrics():

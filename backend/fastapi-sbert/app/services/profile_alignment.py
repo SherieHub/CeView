@@ -29,6 +29,7 @@ Unavailability: with no encoder, or a profile that has no text to compare, this
 raises ``DependencyUnavailable`` (503). A made-up score would be
 indistinguishable from a measured one once it is folded into the OMCS total.
 """
+
 from __future__ import annotations
 
 import logging
@@ -92,9 +93,7 @@ def profile_alignment_score(business_profile: dict, caption: str) -> float:
             stage=_STAGE,
         )
 
-    vectors = bert.encoder.encode(
-        [text, f"{E5_QUERY_PREFIX}{caption}"], normalize_embeddings=True
-    )
+    vectors = bert.encoder.encode([text, f"{E5_QUERY_PREFIX}{caption}"], normalize_embeddings=True)
     cosine = float(sum(float(a) * float(b) for a, b in zip(vectors[0], vectors[1])))
     score = rescale(cosine)
     log.info("omcs.profile_alignment cosine=%.4f score=%.1f", cosine, score)

@@ -1,4 +1,5 @@
 """Groq connection settings shared by every LLM caller in this service."""
+
 from __future__ import annotations
 
 # Groq's OpenAI-compatible endpoint (used with the `openai` SDK).

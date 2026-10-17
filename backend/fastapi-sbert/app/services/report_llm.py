@@ -3,6 +3,7 @@
 Both go through ``gemini_client._generate_json`` (the shared Groq JSON call),
 referenced via the module so tests that patch it also cover these functions.
 """
+
 from __future__ import annotations
 
 import json
@@ -32,7 +33,8 @@ def pes_compute_insights(
     )
     flag_text = (
         f"Excluded metrics (missing data): {', '.join(flagged_metrics)}"
-        if flagged_metrics else "No metrics were excluded."
+        if flagged_metrics
+        else "No metrics were excluded."
     )
 
     prompt = f"""You are CeView's Senior Campaign Analyst for Cebu MSME tourism businesses — resorts, tour operators, dive shops, and cultural experience providers in Cebu, Philippines targeting Korean, Japanese, and US tourists.
@@ -69,9 +71,9 @@ Return JSON with exactly:
 
     return {
         "weakest_funnel_stage": out.get("weakest_funnel_stage", "Clicks → Bookings"),
-        "recommendations":      list(out.get("recommendations", []))[:3],
-        "executive_summary":    out.get("executive_summary", ""),
-        "source":               "groq",
+        "recommendations": list(out.get("recommendations", []))[:3],
+        "executive_summary": out.get("executive_summary", ""),
+        "source": "groq",
     }
 
 
@@ -102,7 +104,7 @@ def performance_report(
 
     # Build the ordered rank/urgency context for the model
     rank_context = "\n".join(
-        f"  {i+1}. \"{t['stage']}\" — {t['dropRate']} absolute drop"
+        f'  {i + 1}. "{t["stage"]}" — {t["dropRate"]} absolute drop'
         for i, t in enumerate(transitions[:3])
     )
 

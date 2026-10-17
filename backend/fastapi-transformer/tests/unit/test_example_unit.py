@@ -6,7 +6,8 @@ requirements installed.
 
 Run with: pytest tests/unit -v
 """
-from app.services.forecast_validator import validate, MAPE_THRESHOLD
+
+from app.services.forecast_validator import MAPE_THRESHOLD, validate
 
 
 def test_validate_passes_below_threshold():

@@ -11,6 +11,7 @@ Called by Spring Boot during the weekly ingestion job (FR2.1–FR2.8).
                               PyTrends backfill real per-week statistics instead
                               of a placeholder constant.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ router = APIRouter()
 
 
 # ─── Pydantic schemas ─────────────────────────────────────────────────────────
+
 
 class TrendsRequest(BaseModel):
     market: str
@@ -83,16 +85,16 @@ class SeasonalityResponse(BaseModel):
     # Spring Boot multiplies seasonality_score by 100 only in ChartDataPointDto
     # for the frontend DemandForecastChart Y-axis [0, 100].
     seasonality_score: float = Field(ge=0.0, le=1.0)
-    rolling_7d_avg:    float
-    rolling_30d_avg:   float
-    rolling_7d_std:    float
-    spike_indicator:   bool
-    yoy_ratio:         float | None
+    rolling_7d_avg: float
+    rolling_30d_avg: float
+    rolling_7d_std: float
+    spike_indicator: bool
+    yoy_ratio: float | None
     # Step 5 (C-04): how many weeks of history backed this point's rolling
     # figures — lets Spring tell a truncated early-series window from a full
     # one. Additive field; existing callers that ignore it are unaffected.
     stats_window_weeks: int = Field(default=0, ge=0)
-    computed_at:       str
+    computed_at: str
 
 
 class SeasonalitySeriesRequest(BaseModel):
@@ -105,13 +107,13 @@ class SeasonalitySeriesRequest(BaseModel):
 
 
 class SeasonalityPoint(BaseModel):
-    seasonality_score:  float = Field(ge=0.0, le=1.0)
-    rolling_7d_avg:      float
-    rolling_30d_avg:     float
-    rolling_7d_std:      float
-    spike_indicator:     bool
-    yoy_ratio:           float | None
-    stats_window_weeks:  int = Field(ge=0)
+    seasonality_score: float = Field(ge=0.0, le=1.0)
+    rolling_7d_avg: float
+    rolling_30d_avg: float
+    rolling_7d_std: float
+    spike_indicator: bool
+    yoy_ratio: float | None
+    stats_window_weeks: int = Field(ge=0)
 
 
 class SeasonalitySeriesResponse(BaseModel):
@@ -121,6 +123,7 @@ class SeasonalitySeriesResponse(BaseModel):
 
 
 # ─── Google Trends index (FR2.2) ──────────────────────────────────────────────
+
 
 @router.post("/trends", response_model=TrendsResponse)
 def fetch_trends(body: TrendsRequest) -> TrendsResponse:
@@ -136,19 +139,18 @@ def fetch_trends(body: TrendsRequest) -> TrendsResponse:
     except ValueError as exc:
         # Unknown market — return 422 Unprocessable Entity
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    trend_index = market_data_processor.normalize_trend_index(
-        float(raw.get("trend_index", 50.0))
-    )
+    trend_index = market_data_processor.normalize_trend_index(float(raw.get("trend_index", 50.0)))
     return TrendsResponse(
-        market        = raw["market"],
-        trend_index   = trend_index,
-        keywords_used = raw.get("keywords_used", []),
-        fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
-        source        = raw.get("source", "stub"),
+        market=raw["market"],
+        trend_index=trend_index,
+        keywords_used=raw.get("keywords_used", []),
+        fetched_at=raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
+        source=raw.get("source", "stub"),
     )
 
 
 # ─── Weekly trend history — used on first ingestion to backfill signal records ──
+
 
 @router.post("/trends/history", response_model=TrendHistoryResponse)
 def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
@@ -171,15 +173,16 @@ def fetch_trend_history(body: TrendHistoryRequest) -> TrendHistoryResponse:
         for point in raw.get("weekly_series", [])
     ]
     return TrendHistoryResponse(
-        market        = raw["market"],
-        weekly_series = series,
-        keywords_used = raw.get("keywords_used", []),
-        fetched_at    = raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
-        source        = raw.get("source", "stub"),
+        market=raw["market"],
+        weekly_series=series,
+        keywords_used=raw.get("keywords_used", []),
+        fetched_at=raw.get("fetched_at", datetime.now(timezone.utc).isoformat()),
+        source=raw.get("source", "stub"),
     )
 
 
 # ─── Seasonal Shift Detection (FR2.7) ─────────────────────────────────────────
+
 
 @router.post("/seasonality", response_model=SeasonalityResponse)
 def compute_seasonality(body: SeasonalityRequest) -> SeasonalityResponse:
@@ -200,19 +203,20 @@ def compute_seasonality(body: SeasonalityRequest) -> SeasonalityResponse:
     """
     result = seasonal_shift_detector.compute(body.weekly_history, body.imputed_flags or None)
     return SeasonalityResponse(
-        market             = body.market,
-        seasonality_score  = result["seasonality_score"],
-        rolling_7d_avg     = result["rolling_7d_avg"],
-        rolling_30d_avg    = result["rolling_30d_avg"],
-        rolling_7d_std     = result["rolling_7d_std"],
-        spike_indicator    = result["spike_indicator"],
-        yoy_ratio          = result["yoy_ratio"],
-        stats_window_weeks = result["stats_window_weeks"],
-        computed_at        = result["computed_at"],
+        market=body.market,
+        seasonality_score=result["seasonality_score"],
+        rolling_7d_avg=result["rolling_7d_avg"],
+        rolling_30d_avg=result["rolling_30d_avg"],
+        rolling_7d_std=result["rolling_7d_std"],
+        spike_indicator=result["spike_indicator"],
+        yoy_ratio=result["yoy_ratio"],
+        stats_window_weeks=result["stats_window_weeks"],
+        computed_at=result["computed_at"],
     )
 
 
 # ─── Per-week seasonal statistics for a full series (Step 5, C-04) ───────────
+
 
 @router.post("/seasonality/series", response_model=SeasonalitySeriesResponse)
 def compute_seasonality_series(body: SeasonalitySeriesRequest) -> SeasonalitySeriesResponse:

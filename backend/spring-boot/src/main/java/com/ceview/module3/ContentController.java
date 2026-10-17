@@ -4,94 +4,90 @@ import com.ceview.auth.CurrentBusinessProfile;
 import com.ceview.module3.dto.ContentDtos.ContentResponseDto;
 import com.ceview.module3.submodule31.ContentApprovalService;
 import com.ceview.module3.submodule31.ContentGenerationService;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * Submodule 3.1 — Content Studio API (FR3.1-FR3.10).
  *
- * POST /generate — generates market-localised captions and supplementary outputs,
- *                  retrieves business profile + Module 2 forecast context from DB (FR3.1, FR3.4),
- *                  persists all generated content rows (FR3.10).
- * POST /approve  — marks generated content as operator-approved (FR3.10 / UC-3.1 step 14).
+ * <p>POST /generate — generates market-localised captions and supplementary outputs, retrieves
+ * business profile + Module 2 forecast context from DB (FR3.1, FR3.4), persists all generated
+ * content rows (FR3.10). POST /approve — marks generated content as operator-approved (FR3.10 /
+ * UC-3.1 step 14).
  *
- * Ownership: profileId — optional on both /generate and /approve — is derived
- * from or validated against {@link CurrentBusinessProfile}, which resolves the
- * caller's own profile from the JWT. See Task 8 (mirrors Task 7 for Module 2).
+ * <p>Ownership: profileId — optional on both /generate and /approve — is derived from or validated
+ * against {@link CurrentBusinessProfile}, which resolves the caller's own profile from the JWT. See
+ * Task 8 (mirrors Task 7 for Module 2).
  */
 @RestController
 @RequestMapping("/api/content")
 public class ContentController {
 
-    private static final Logger log = LoggerFactory.getLogger(ContentController.class);
+  private static final Logger log = LoggerFactory.getLogger(ContentController.class);
 
-    private final ContentGenerationService generationService;
-    private final ContentApprovalService approvalService;
-    private final CurrentBusinessProfile currentBusinessProfile;
+  private final ContentGenerationService generationService;
+  private final ContentApprovalService approvalService;
+  private final CurrentBusinessProfile currentBusinessProfile;
 
-    public ContentController(ContentGenerationService generationService,
-                             ContentApprovalService approvalService,
-                             CurrentBusinessProfile currentBusinessProfile) {
-        this.generationService = generationService;
-        this.approvalService   = approvalService;
-        this.currentBusinessProfile = currentBusinessProfile;
+  public ContentController(
+      ContentGenerationService generationService,
+      ContentApprovalService approvalService,
+      CurrentBusinessProfile currentBusinessProfile) {
+    this.generationService = generationService;
+    this.approvalService = approvalService;
+    this.currentBusinessProfile = currentBusinessProfile;
+  }
+
+  public record GenerateRequest(
+      String market,
+      String businessName,
+      String description,
+      List<String> categories,
+      String trend) {}
+
+  /**
+   * FR3.2 — market selection, FR3.3-FR3.6 — generation pipeline. Accepts an optional profileId
+   * query param for DB enrichment (FR3.1, FR3.4).
+   */
+  @PostMapping("/generate")
+  public ContentResponseDto generate(
+      @RequestBody GenerateRequest req, @RequestParam(required = false) UUID profileId) {
+    UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
+    log.info("content.generate received market={} profileId={}", req.market(), resolvedProfileId);
+    return generationService.generate(
+        resolvedProfileId,
+        req.market(),
+        req.businessName(),
+        req.description(),
+        req.categories(),
+        req.trend());
+  }
+
+  /**
+   * FR3.10 / UC-3.1 step 14 — operator approves generated content for a market. Body: { "market":
+   * "korea" } Returns: { "approvedIds": [...] }
+   */
+  @PostMapping("/approve")
+  public ResponseEntity<Map<String, Object>> approve(
+      @RequestParam(required = false) UUID profileId, @RequestBody Map<String, String> body) {
+    UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
+    String market = body.getOrDefault("market", "korea");
+    log.info("content.approve received profileId={} market={}", resolvedProfileId, market);
+
+    List<UUID> ids = approvalService.approveForMarket(resolvedProfileId, market);
+
+    if (ids.isEmpty()) {
+      return ResponseEntity.notFound().build();
     }
-
-    public record GenerateRequest(
-        String market,
-        String businessName,
-        String description,
-        List<String> categories,
-        String trend
-    ) {}
-
-    /**
-     * FR3.2 — market selection, FR3.3-FR3.6 — generation pipeline.
-     * Accepts an optional profileId query param for DB enrichment (FR3.1, FR3.4).
-     */
-    @PostMapping("/generate")
-    public ContentResponseDto generate(
-            @RequestBody GenerateRequest req,
-            @RequestParam(required = false) UUID profileId) {
-        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
-        log.info("content.generate received market={} profileId={}", req.market(), resolvedProfileId);
-        return generationService.generate(
-                resolvedProfileId,
-                req.market(),
-                req.businessName(),
-                req.description(),
-                req.categories(),
-                req.trend());
-    }
-
-    /**
-     * FR3.10 / UC-3.1 step 14 — operator approves generated content for a market.
-     * Body: { "market": "korea" }
-     * Returns: { "approvedIds": [...] }
-     */
-    @PostMapping("/approve")
-    public ResponseEntity<Map<String, Object>> approve(
-            @RequestParam(required = false) UUID profileId,
-            @RequestBody Map<String, String> body) {
-        UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(profileId);
-        String market = body.getOrDefault("market", "korea");
-        log.info("content.approve received profileId={} market={}", resolvedProfileId, market);
-
-        List<UUID> ids = approvalService.approveForMarket(resolvedProfileId, market);
-
-        if (ids.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(Map.of(
-                "approvedIds", ids,
-                "market",      market,
-                "count",       ids.size()
-        ));
-    }
+    return ResponseEntity.ok(
+        Map.of(
+            "approvedIds", ids,
+            "market", market,
+            "count", ids.size()));
+  }
 }

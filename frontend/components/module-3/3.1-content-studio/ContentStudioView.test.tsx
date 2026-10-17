@@ -9,7 +9,7 @@
  * test that fed the screen a fabricated 'fallback' response was removed; the
  * cross-stack check lives in tests/integration/contentSourceContract.test.ts.
  */
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ContentStudioView from './ContentStudioView';

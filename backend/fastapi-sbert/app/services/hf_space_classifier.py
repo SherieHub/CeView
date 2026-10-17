@@ -11,7 +11,6 @@ from gradio_client import Client
 
 from app.unavailable import DependencyUnavailable
 
-
 SPACE_ID = os.getenv("HF_SPACE_ID", "JamJamzz/ceview_sbert")
 _NUMBER = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 _OUT_OF_SCOPE = "OUT_OF_SCOPE"
@@ -61,8 +60,7 @@ def category_score(
         for item in predict_categories(description, uvp, core_services)
     }
     return round(
-        sum(scores.get(category, 0) for category in selected_categories)
-        / len(selected_categories),
+        sum(scores.get(category, 0) for category in selected_categories) / len(selected_categories),
         1,
     )
 
@@ -86,7 +84,9 @@ def _to_allocations(categories: object, confidences: object) -> list[dict[str, i
     names = _parse_names(categories)
     scores = _parse_scores(confidences)
     if not names or len(names) != len(scores):
-        raise _invalid_response(f"received {len(names)} categories and {len(scores)} confidence scores")
+        raise _invalid_response(
+            f"received {len(names)} categories and {len(scores)} confidence scores"
+        )
 
     return _allocate(names, scores)
 
@@ -96,9 +96,7 @@ def _select_named_allocations(named_scores: dict[str, float]) -> list[dict[str, 
         return [{"name": _OUT_OF_SCOPE, "percentage": 100}]
 
     in_scope_scores = [
-        (name, score)
-        for name, score in named_scores.items()
-        if name != _OUT_OF_SCOPE and score > 0
+        (name, score) for name, score in named_scores.items() if name != _OUT_OF_SCOPE and score > 0
     ]
     total = sum(score for _, score in in_scope_scores)
     if total <= 0:

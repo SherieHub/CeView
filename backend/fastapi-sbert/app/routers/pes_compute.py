@@ -13,6 +13,7 @@ Data flow
 
 Called by: Spring Boot AIInferenceGatewayService.computePesFromRaw()
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,10 +31,11 @@ from app.services.pes_compute_service import (
 )
 
 router = APIRouter()
-log    = logging.getLogger("module4.pes_compute")
+log = logging.getLogger("module4.pes_compute")
 
 
 # ─── Request schema ───────────────────────────────────────────────────────────
+
 
 class CampaignRawRequest(BaseModel):
     """
@@ -41,16 +43,18 @@ class CampaignRawRequest(BaseModel):
     All fields default to 0 so the endpoint tolerates partial submissions;
     missing metrics are flagged and excluded from the PES formula.
     """
-    impressions:  int   = Field(default=0, ge=0, description="Total ad impressions served")
-    clicks:       int   = Field(default=0, ge=0, description="Total clicks on ads")
-    adSpend:      float = Field(default=0.0, ge=0, description="Total ad spend in PHP (₱)")
-    revenue:      float = Field(default=0.0, ge=0, description="Revenue attributed to campaign in PHP")
-    conversions:  int   = Field(default=0, ge=0, description="Leads / enquiry conversions")
-    bookings:     int   = Field(default=0, ge=0, description="Confirmed bookings (sales)")
-    newCustomers: int   = Field(default=0, ge=0, description="Net-new customers acquired")
+
+    impressions: int = Field(default=0, ge=0, description="Total ad impressions served")
+    clicks: int = Field(default=0, ge=0, description="Total clicks on ads")
+    adSpend: float = Field(default=0.0, ge=0, description="Total ad spend in PHP (₱)")
+    revenue: float = Field(default=0.0, ge=0, description="Revenue attributed to campaign in PHP")
+    conversions: int = Field(default=0, ge=0, description="Leads / enquiry conversions")
+    bookings: int = Field(default=0, ge=0, description="Confirmed bookings (sales)")
+    newCustomers: int = Field(default=0, ge=0, description="Net-new customers acquired")
 
 
 # ─── POST /analyze ────────────────────────────────────────────────────────────
+
 
 @router.post("/analyze")
 def analyze(req: CampaignRawRequest) -> dict:
@@ -89,8 +93,13 @@ def analyze(req: CampaignRawRequest) -> dict:
     log.info(
         "pes_compute.analyze  impressions=%s  clicks=%s  adSpend=%.2f  revenue=%.2f"
         "  conversions=%s  bookings=%s  newCustomers=%s",
-        req.impressions, req.clicks, req.adSpend, req.revenue,
-        req.conversions, req.bookings, req.newCustomers,
+        req.impressions,
+        req.clicks,
+        req.adSpend,
+        req.revenue,
+        req.conversions,
+        req.bookings,
+        req.newCustomers,
     )
 
     # ── 1. Base metrics ──────────────────────────────────────────────────────
@@ -114,15 +123,20 @@ def analyze(req: CampaignRawRequest) -> dict:
 
     log.info(
         "pes_compute.analyze  pes_score=%.4f  label=%s  flagged=%s",
-        pes_result.score, pes_result.label, flagged,
+        pes_result.score,
+        pes_result.label,
+        flagged,
     )
 
     # ── 6. AI prescriptive insights ──────────────────────────────────────────
     if not gemini_client._enabled():
         log.info("pes_compute.analyze: AI client offline — using FR4.26 rule-based fallback")
         ai_report = rule_based_ai_report(
-            base_metrics, pes_result.score, pes_result.label,
-            pes_result.breakdown, flagged,
+            base_metrics,
+            pes_result.score,
+            pes_result.label,
+            pes_result.breakdown,
+            flagged,
         )
     else:
         try:
@@ -136,23 +150,26 @@ def analyze(req: CampaignRawRequest) -> dict:
         except Exception as exc:
             log.warning("pes_compute.analyze: AI call failed (%s) — using fallback", exc)
             ai_report = rule_based_ai_report(
-                base_metrics, pes_result.score, pes_result.label,
-                pes_result.breakdown, flagged,
+                base_metrics,
+                pes_result.score,
+                pes_result.label,
+                pes_result.breakdown,
+                flagged,
             )
 
     # Omit flagged (uncomputable) metrics from the response dicts so the
     # caller sees only metrics that actually produced a value.  The full
     # computation still used the raw values; we only clean up the output.
-    clean_base       = {k: v for k, v in base_metrics.items() if k not in flagged_names}
-    clean_normalized = {k: v for k, v in normalized.items()   if k not in flagged_names}
+    clean_base = {k: v for k, v in base_metrics.items() if k not in flagged_names}
+    clean_normalized = {k: v for k, v in normalized.items() if k not in flagged_names}
 
     return {
-        "base_metrics":       clean_base,
+        "base_metrics": clean_base,
         "normalized_metrics": clean_normalized,
-        "pes_score":          pes_result.score,
-        "pes_label":          pes_result.label,
-        "breakdown":          pes_result.breakdown,
-        "flagged_metrics":    flagged,
-        "effective_weights":  effective_weights,
-        "ai_report":          ai_report,
+        "pes_score": pes_result.score,
+        "pes_label": pes_result.label,
+        "breakdown": pes_result.breakdown,
+        "flagged_metrics": flagged,
+        "effective_weights": effective_weights,
+        "ai_report": ai_report,
     }

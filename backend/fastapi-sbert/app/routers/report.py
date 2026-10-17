@@ -19,6 +19,7 @@ New schema (Phase 5 / Module 4):
     "recommendedPlatform": "Naver Blog"
   }
 """
+
 from __future__ import annotations
 
 import io
@@ -38,14 +39,16 @@ log = logging.getLogger("module4.report")
 
 # ─── Pydantic schema ──────────────────────────────────────────────────────────
 
+
 class MetricsPayload(BaseModel):
     """Computed KPI metrics forwarded from Spring Boot MetricsCalculationService."""
-    impressions:  float = Field(default=0, ge=0)
-    clicks:       float = Field(default=0, ge=0)
-    adSpend:      float = Field(default=0, ge=0)
-    revenue:      float = Field(default=0, ge=0)
-    conversions:  float = Field(default=0, ge=0)
-    bookings:     float = Field(default=0, ge=0)
+
+    impressions: float = Field(default=0, ge=0)
+    clicks: float = Field(default=0, ge=0)
+    adSpend: float = Field(default=0, ge=0)
+    revenue: float = Field(default=0, ge=0)
+    conversions: float = Field(default=0, ge=0)
+    bookings: float = Field(default=0, ge=0)
     newCustomers: float = Field(default=0, ge=0)
 
 
@@ -59,23 +62,31 @@ class FunnelTransition(BaseModel):
       index 1 → Conversions → Bookings (Moderate)
       index 2 → Impressions → Clicks   (Alright)
     """
-    stage:    str
+
+    stage: str
     dropRate: str  # e.g. "88.1%"
 
 
 class ReportRequest(BaseModel):
     """Request body for /generate — enriched by Spring Boot AnalyticsController."""
-    metrics:            MetricsPayload      = Field(default_factory=MetricsPayload)
-    funnelTransitions:  list[FunnelTransition] = Field(default_factory=list)
-    weeks:              int                 = Field(default=4, ge=4, le=8)
-    market:             str                 = Field(default="korea")
+
+    metrics: MetricsPayload = Field(default_factory=MetricsPayload)
+    funnelTransitions: list[FunnelTransition] = Field(default_factory=list)
+    weeks: int = Field(default=4, ge=4, le=8)
+    market: str = Field(default="korea")
 
 
 # Fields the frontend's action plan renders; a report without them is no report.
-_REQUIRED_REPORT_FIELDS = ("executiveSummary", "funnelDiagnostics", "recommendations", "recommendedPlatform")
+_REQUIRED_REPORT_FIELDS = (
+    "executiveSummary",
+    "funnelDiagnostics",
+    "recommendations",
+    "recommendedPlatform",
+)
 
 
 # ─── /generate ────────────────────────────────────────────────────────────────
+
 
 @router.post("/generate")
 def generate(req: ReportRequest) -> dict:
@@ -98,7 +109,8 @@ def generate(req: ReportRequest) -> dict:
     """
     log.info(
         "report.generate received weeks=%s market=%s transitions=%s",
-        req.weeks, req.market,
+        req.weeks,
+        req.market,
         [t.stage for t in req.funnelTransitions],
     )
 
@@ -112,7 +124,7 @@ def generate(req: ReportRequest) -> dict:
             message="The prescriptive report needs all three funnel transitions.",
             dependency="campaign_records",
             cause=f"received {len(transitions)} of 3 funnel transitions — "
-                  "ingest campaign data before requesting a report",
+            "ingest campaign data before requesting a report",
             stage="fastapi-sbert/report.generate",
             status_code=MISSING_INPUT,
         )
@@ -145,8 +157,8 @@ def generate(req: ReportRequest) -> dict:
             dependency="gemini",
             cause=(
                 "the report model returned no output"
-                if not result else
-                f"the report model's answer was missing {', '.join(missing)}"
+                if not result
+                else f"the report model's answer was missing {', '.join(missing)}"
             ),
             stage="fastapi-sbert/report.generate",
         )
@@ -156,6 +168,7 @@ def generate(req: ReportRequest) -> dict:
 
 
 # ─── /pdf ─────────────────────────────────────────────────────────────────────
+
 
 @router.post("/pdf")
 def pdf(req: ReportRequest | None = None) -> Response:

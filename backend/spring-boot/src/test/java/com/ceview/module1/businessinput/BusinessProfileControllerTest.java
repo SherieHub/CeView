@@ -1,9 +1,20 @@
 package com.ceview.module1.businessinput;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.auth.JwtService;
 import com.ceview.module1.businessinput.dto.BusinessProfileDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,184 +24,222 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
- * Verifies BusinessProfileController resolves the operator server-side from the JWT
- * (via {@link com.ceview.auth.CurrentOperator}) rather than trusting a client-supplied
- * operatorId, and that ownership of an existing profile is enforced on save.
+ * Verifies BusinessProfileController resolves the operator server-side from the JWT (via {@link
+ * com.ceview.auth.CurrentOperator}) rather than trusting a client-supplied operatorId, and that
+ * ownership of an existing profile is enforced on save.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 class BusinessProfileControllerTest {
 
-    @Autowired private MockMvc mvc;
-    @Autowired private JwtService jwtService;
-    @Autowired private BusinessProfileRepository profileRepo;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private com.ceview.testsupport.TestOperators testOperators;
+  @Autowired private MockMvc mvc;
+  @Autowired private JwtService jwtService;
+  @Autowired private BusinessProfileRepository profileRepo;
+  @Autowired private ObjectMapper objectMapper;
+  @Autowired private com.ceview.testsupport.TestOperators testOperators;
 
-    // Stub out the AI gateway so save() doesn't attempt a real HTTP call to FastAPI.
-    @MockBean private AIInferenceGatewayService ai;
+  // Stub out the AI gateway so save() doesn't attempt a real HTTP call to FastAPI.
+  @MockBean private AIInferenceGatewayService ai;
 
-    private UUID operatorA;
-    private UUID operatorB;
-    private String tokenA;
-    private String tokenB;
+  private UUID operatorA;
+  private UUID operatorB;
+  private String tokenA;
+  private String tokenB;
 
-    @BeforeEach
-    void setUp() {
-        profileRepo.deleteAll();
-        operatorA = UUID.randomUUID();
-        operatorB = UUID.randomUUID();
-        testOperators.create(operatorA);
-        testOperators.create(operatorB);
-        tokenA = jwtService.issue(operatorA, "a@example.com");
-        tokenB = jwtService.issue(operatorB, "b@example.com");
-    }
+  @BeforeEach
+  void setUp() {
+    profileRepo.deleteAll();
+    operatorA = UUID.randomUUID();
+    operatorB = UUID.randomUUID();
+    testOperators.create(operatorA);
+    testOperators.create(operatorB);
+    tokenA = jwtService.issue(operatorA, "a@example.com");
+    tokenB = jwtService.issue(operatorB, "b@example.com");
+  }
 
-    @Test
-    void getReturnsOnlyTheAuthenticatedOperatorsOwnProfile() throws Exception {
-        BusinessProfile profileA = new BusinessProfile();
-        profileA.setUserId(operatorA);
-        profileA.setBusinessName("Operator A's Business");
-        profileRepo.save(profileA);
+  @Test
+  void getReturnsOnlyTheAuthenticatedOperatorsOwnProfile() throws Exception {
+    BusinessProfile profileA = new BusinessProfile();
+    profileA.setUserId(operatorA);
+    profileA.setBusinessName("Operator A's Business");
+    profileRepo.save(profileA);
 
-        BusinessProfile profileB = new BusinessProfile();
-        profileB.setUserId(operatorB);
-        profileB.setBusinessName("Operator B's Business");
-        profileRepo.save(profileB);
+    BusinessProfile profileB = new BusinessProfile();
+    profileB.setUserId(operatorB);
+    profileB.setBusinessName("Operator B's Business");
+    profileRepo.save(profileB);
 
-        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenA))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.businessName").value("Operator A's Business"));
+    mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenA))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.businessName").value("Operator A's Business"));
 
-        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenB))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.businessName").value("Operator B's Business"));
-    }
+    mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenB))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.businessName").value("Operator B's Business"));
+  }
 
-    @Test
-    void putCreatesProfileOwnedByTheAuthenticatedOperatorNotAClientSuppliedId() throws Exception {
-        var dto = new BusinessProfileDto(null, "New Business", List.of("Retail"),
-            List.of("Service A"), "desc", "uvp", null, null);
+  @Test
+  void putCreatesProfileOwnedByTheAuthenticatedOperatorNotAClientSuppliedId() throws Exception {
+    var dto =
+        new BusinessProfileDto(
+            null,
+            "New Business",
+            List.of("Retail"),
+            List.of("Service A"),
+            "desc",
+            "uvp",
+            null,
+            null);
 
-        mvc.perform(put("/api/business-profile")
+    mvc.perform(
+            put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.businessName").value("New Business"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.businessName").value("New Business"));
 
-        Optional<BusinessProfile> saved = profileRepo.findFirstByUserId(operatorA);
-        assertTrue(saved.isPresent(), "profile should have been created for the authenticated operator");
-        assertEquals(operatorA, saved.get().getUserId());
-    }
+    Optional<BusinessProfile> saved = profileRepo.findFirstByUserId(operatorA);
+    assertTrue(
+        saved.isPresent(), "profile should have been created for the authenticated operator");
+    assertEquals(operatorA, saved.get().getUserId());
+  }
 
-    @Test
-    void putUpdatesTheAuthenticatedOperatorsOwnExistingProfile() throws Exception {
-        BusinessProfile existing = new BusinessProfile();
-        existing.setUserId(operatorA);
-        existing.setBusinessName("Old Name");
-        profileRepo.save(existing);
+  @Test
+  void putUpdatesTheAuthenticatedOperatorsOwnExistingProfile() throws Exception {
+    BusinessProfile existing = new BusinessProfile();
+    existing.setUserId(operatorA);
+    existing.setBusinessName("Old Name");
+    profileRepo.save(existing);
 
-        var dto = new BusinessProfileDto(existing.getBusinessProfileId(), "Updated Name", List.of(),
-            List.of(), "desc", "uvp", null, null);
+    var dto =
+        new BusinessProfileDto(
+            existing.getBusinessProfileId(),
+            "Updated Name",
+            List.of(),
+            List.of(),
+            "desc",
+            "uvp",
+            null,
+            null);
 
-        mvc.perform(put("/api/business-profile")
+    mvc.perform(
+            put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.businessName").value("Updated Name"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.businessName").value("Updated Name"));
 
-        BusinessProfile reloaded = profileRepo.findById(existing.getBusinessProfileId()).orElseThrow();
-        assertEquals("Updated Name", reloaded.getBusinessName());
-        assertEquals(operatorA, reloaded.getUserId());
-    }
+    BusinessProfile reloaded = profileRepo.findById(existing.getBusinessProfileId()).orElseThrow();
+    assertEquals("Updated Name", reloaded.getBusinessName());
+    assertEquals(operatorA, reloaded.getUserId());
+  }
 
-    @Test
-    void putWithAnotherOperatorsBusinessProfileIdIsRejectedNotReassigned() throws Exception {
-        BusinessProfile ownedByB = new BusinessProfile();
-        ownedByB.setUserId(operatorB);
-        ownedByB.setBusinessName("Operator B's Business");
-        profileRepo.save(ownedByB);
+  @Test
+  void putWithAnotherOperatorsBusinessProfileIdIsRejectedNotReassigned() throws Exception {
+    BusinessProfile ownedByB = new BusinessProfile();
+    ownedByB.setUserId(operatorB);
+    ownedByB.setBusinessName("Operator B's Business");
+    profileRepo.save(ownedByB);
 
-        var dto = new BusinessProfileDto(ownedByB.getBusinessProfileId(), "Hijacked Name", List.of(),
-            List.of(), "desc", "uvp", null, null);
+    var dto =
+        new BusinessProfileDto(
+            ownedByB.getBusinessProfileId(),
+            "Hijacked Name",
+            List.of(),
+            List.of(),
+            "desc",
+            "uvp",
+            null,
+            null);
 
-        // Operator A attempts to overwrite operator B's profile by id.
-        mvc.perform(put("/api/business-profile")
+    // Operator A attempts to overwrite operator B's profile by id.
+    mvc.perform(
+            put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isForbidden())
-            .andExpect(jsonPath("$.error").value("forbidden"))
-            .andExpect(jsonPath("$.message").value("business profile belongs to a different operator"));
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.error").value("forbidden"))
+        .andExpect(jsonPath("$.message").value("business profile belongs to a different operator"));
 
-        BusinessProfile stillB = profileRepo.findById(ownedByB.getBusinessProfileId()).orElseThrow();
-        assertEquals("Operator B's Business", stillB.getBusinessName(), "profile must not be mutated");
-        assertEquals(operatorB, stillB.getUserId(), "ownership must not be reassigned");
-    }
+    BusinessProfile stillB = profileRepo.findById(ownedByB.getBusinessProfileId()).orElseThrow();
+    assertEquals("Operator B's Business", stillB.getBusinessName(), "profile must not be mutated");
+    assertEquals(operatorB, stillB.getUserId(), "ownership must not be reassigned");
+  }
 
-    @Test
-    void putWithAReferenceCorpusProfileIdIsRejectedNotAdopted() throws Exception {
-        // A V26 uniqueness-corpus row: no operator, is_reference = TRUE. Its
-        // businessProfileId is in the migration file, so it is not secret — the
-        // controller must refuse to adopt it rather than fall into the
-        // null-userId adoption branch.
-        BusinessProfile reference = new BusinessProfile();
-        reference.setUserId(null);
-        reference.setReference(true);
-        reference.setBusinessName("Reference Corpus Row");
-        profileRepo.save(reference);
+  @Test
+  void putWithAReferenceCorpusProfileIdIsRejectedNotAdopted() throws Exception {
+    // A V26 uniqueness-corpus row: no operator, is_reference = TRUE. Its
+    // businessProfileId is in the migration file, so it is not secret — the
+    // controller must refuse to adopt it rather than fall into the
+    // null-userId adoption branch.
+    BusinessProfile reference = new BusinessProfile();
+    reference.setUserId(null);
+    reference.setReference(true);
+    reference.setBusinessName("Reference Corpus Row");
+    profileRepo.save(reference);
 
-        var dto = new BusinessProfileDto(reference.getBusinessProfileId(), "Hijacked Name", List.of(),
-            List.of(), "desc", "uvp", null, null);
+    var dto =
+        new BusinessProfileDto(
+            reference.getBusinessProfileId(),
+            "Hijacked Name",
+            List.of(),
+            List.of(),
+            "desc",
+            "uvp",
+            null,
+            null);
 
-        mvc.perform(put("/api/business-profile")
+    mvc.perform(
+            put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden());
 
-        BusinessProfile still = profileRepo.findById(reference.getBusinessProfileId()).orElseThrow();
-        assertEquals("Reference Corpus Row", still.getBusinessName(), "reference row must not be mutated");
-        assertNull(still.getUserId(), "reference row must not be adopted by an operator");
-        assertTrue(still.isReference(), "reference flag must survive");
-    }
+    BusinessProfile still = profileRepo.findById(reference.getBusinessProfileId()).orElseThrow();
+    assertEquals(
+        "Reference Corpus Row", still.getBusinessName(), "reference row must not be mutated");
+    assertNull(still.getUserId(), "reference row must not be adopted by an operator");
+    assertTrue(still.isReference(), "reference flag must survive");
+  }
 
-    @Test
-    void putAdoptsAnOwnerlessProfileForTheAuthenticatedOperator() throws Exception {
-        // A null userId is an orphaned/pre-auth row, not another operator's data — by
-        // design it's treated as adoptable by whichever authenticated operator saves
-        // against its (unguessable) businessProfileId. See BusinessProfileController#save.
-        BusinessProfile ownerless = new BusinessProfile();
-        ownerless.setUserId(null);
-        ownerless.setBusinessName("Ownerless Business");
-        profileRepo.save(ownerless);
+  @Test
+  void putAdoptsAnOwnerlessProfileForTheAuthenticatedOperator() throws Exception {
+    // A null userId is an orphaned/pre-auth row, not another operator's data — by
+    // design it's treated as adoptable by whichever authenticated operator saves
+    // against its (unguessable) businessProfileId. See BusinessProfileController#save.
+    BusinessProfile ownerless = new BusinessProfile();
+    ownerless.setUserId(null);
+    ownerless.setBusinessName("Ownerless Business");
+    profileRepo.save(ownerless);
 
-        var dto = new BusinessProfileDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
-            List.of(), "desc", "uvp", null, null);
+    var dto =
+        new BusinessProfileDto(
+            ownerless.getBusinessProfileId(),
+            "Adopted Business",
+            List.of(),
+            List.of(),
+            "desc",
+            "uvp",
+            null,
+            null);
 
-        mvc.perform(put("/api/business-profile")
+    mvc.perform(
+            put("/api/business-profile")
                 .header("Authorization", "Bearer " + tokenA)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.businessName").value("Adopted Business"));
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.businessName").value("Adopted Business"));
 
-        BusinessProfile reloaded = profileRepo.findById(ownerless.getBusinessProfileId()).orElseThrow();
-        assertEquals(operatorA, reloaded.getUserId(), "ownerless profile should now belong to the saving operator");
-    }
+    BusinessProfile reloaded = profileRepo.findById(ownerless.getBusinessProfileId()).orElseThrow();
+    assertEquals(
+        operatorA,
+        reloaded.getUserId(),
+        "ownerless profile should now belong to the saving operator");
+  }
 }

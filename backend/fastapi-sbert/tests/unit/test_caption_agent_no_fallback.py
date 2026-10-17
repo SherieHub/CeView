@@ -4,6 +4,7 @@ Task 3 made AgentLLMModel record its failure reason; this is what consumes it.
 
 Run with: pytest tests/unit/test_caption_agent_no_fallback.py -v
 """
+
 import pytest
 
 from app.agents.creative_director_agent import node
@@ -37,5 +38,6 @@ def test_no_dangling_reference_to_deleted_mock_captions():
     import it — that import used to live inside _fallback_captions() and would
     raise ImportError the moment this branch executed in production."""
     import inspect
+
     source = inspect.getsource(node)
     assert "_mock_captions" not in source

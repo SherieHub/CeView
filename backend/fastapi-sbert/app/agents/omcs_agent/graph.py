@@ -1,6 +1,14 @@
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
+
+from app.agents.omcs_agent.node import (
+    node_calculate_omcs,
+    node_check_consistency,
+    node_evaluate_rubric,
+    node_generate_feedback,
+    node_profile_diff,
+    route_omcs_outcome,
+)
 from app.agents.omcs_agent.state import CeviewValidationState
-from app.agents.omcs_agent.node import node_profile_diff, node_evaluate_rubric, node_check_consistency, node_calculate_omcs, node_generate_feedback, route_omcs_outcome
 
 # 3. Construct the Sequential Graph
 workflow = StateGraph(CeviewValidationState)
@@ -18,11 +26,7 @@ workflow.add_edge("check_consistency", "calculate_omcs")
 
 # Replace the standard edge with a conditional edge
 workflow.add_conditional_edges(
-    "calculate_omcs",
-    route_omcs_outcome, {
-        "PASS": END,
-        "FAIL": "feedback"
-    }
+    "calculate_omcs", route_omcs_outcome, {"PASS": END, "FAIL": "feedback"}
 )
 
 # Standard exit from the feedback node

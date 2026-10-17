@@ -1,6 +1,5 @@
-import { CheckCircle2, LayoutList, Send } from 'lucide-react';
+import { CheckCircle2, Send } from 'lucide-react';
 import { useState } from 'react';
-import PanelHead from './PanelHead';
 import type { PublishedPost } from '@/types';
 import type { BoardSlotProps } from './contentStudioTypes';
 

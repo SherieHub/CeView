@@ -1,9 +1,6 @@
 package com.ceview.module3.submodule31;
 
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.UUID;
-
-public interface ContentGenerationLogRepository
-        extends JpaRepository<ContentGenerationLog, UUID> {
-}
+public interface ContentGenerationLogRepository extends JpaRepository<ContentGenerationLog, UUID> {}

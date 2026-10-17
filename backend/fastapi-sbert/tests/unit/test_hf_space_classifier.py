@@ -22,9 +22,7 @@ def test_predict_categories_calls_the_documented_space_endpoint(monkeypatch):
             ["Scuba diving", "Snorkeling"],
         )
 
-    client_type.assert_called_once_with(
-        "JamJamzz/ceview_sbert", token=None, verbose=False
-    )
+    client_type.assert_called_once_with("JamJamzz/ceview_sbert", token=None, verbose=False)
     client.predict.assert_called_once_with(
         description="A dive shop in Moalboal.",
         uvp="Small groups with local guides.",
@@ -135,6 +133,9 @@ def test_category_score_uses_the_selected_space_categories(monkeypatch):
         ],
     )
 
-    assert hf_space_classifier.category_score(
-        "description", "uvp", ["diving"], ["Coastal & Island", "Adventure & Nature"]
-    ) == 50.0
+    assert (
+        hf_space_classifier.category_score(
+            "description", "uvp", ["diving"], ["Coastal & Island", "Adventure & Nature"]
+        )
+        == 50.0
+    )

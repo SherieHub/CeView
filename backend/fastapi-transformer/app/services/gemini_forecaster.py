@@ -21,6 +21,7 @@ Environment variables:
     GROQ_API_KEY  — Groq API key (required when this engine is active)
     GROQ_MODEL    — model name (default: "openai/gpt-oss-120b")
 """
+
 from __future__ import annotations
 
 import json
@@ -55,6 +56,7 @@ def _client():
         raise RuntimeError("GROQ_API_KEY environment variable is not set.")
     try:
         from openai import OpenAI  # type: ignore[import]
+
         _groq_client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
         logger.info("Groq API initialised lazily — model=%s", _MODEL_NAME)
         return _groq_client
@@ -63,6 +65,7 @@ def _client():
 
 
 # ─── public interface ─────────────────────────────────────────────────────────
+
 
 def forecast(
     market: str,
@@ -101,9 +104,18 @@ def forecast(
         )
 
     result = _groq_forecast(
-        market, trend_series, rolling_7d, rolling_30d, rolling_std_7d,
-        spike_indicator, yoy_ratio, seasonality_score, forex_rate, gdp_growth,
-        gdp_trend_direction, gdp_trend_delta,
+        market,
+        trend_series,
+        rolling_7d,
+        rolling_30d,
+        rolling_std_7d,
+        spike_indicator,
+        yoy_ratio,
+        seasonality_score,
+        forex_rate,
+        gdp_growth,
+        gdp_trend_direction,
+        gdp_trend_delta,
     )
     result["source"] = "groq"
     validation = validate(result["mape"], result["mae"], result["rmse"])
@@ -131,15 +143,30 @@ def forecast_request(request: dict) -> dict:
         trailing30 = trend_series[-30:]
         rolling_30d = sum(trailing30) / len(trailing30)
     return forecast(
-        market=request["market"], trend_series=trend_series,
-        rolling_7d=float(rolling_7d), rolling_30d=float(rolling_30d),
+        market=request["market"],
+        trend_series=trend_series,
+        rolling_7d=float(rolling_7d),
+        rolling_30d=float(rolling_30d),
         rolling_std_7d=float(request.get("rollingStd7d") or 0.0),
-        spike_indicator=bool(request.get("spikeIndicator", sequence[-1].get("spikeIndicator", 0.0) if sequence else False)),
+        spike_indicator=bool(
+            request.get(
+                "spikeIndicator", sequence[-1].get("spikeIndicator", 0.0) if sequence else False
+            )
+        ),
         yoy_ratio=request.get("yoyRatio"),
-        seasonality_score=float(request.get("seasonalityScore", sequence[-1].get("seasonalityScore", 0.0) if sequence else 0.0)),
-        forex_rate=float(request.get("forexRate", sequence[-1].get("forexRate", 0.0) if sequence else 0.0)),
-        gdp_growth=float(request.get("gdpGrowth", sequence[-1].get("gdpGrowth", 0.0) if sequence else 0.0)),
-        gdp_trend_direction=request.get("gdpTrendDirection"), gdp_trend_delta=request.get("gdpTrendDelta"),
+        seasonality_score=float(
+            request.get(
+                "seasonalityScore", sequence[-1].get("seasonalityScore", 0.0) if sequence else 0.0
+            )
+        ),
+        forex_rate=float(
+            request.get("forexRate", sequence[-1].get("forexRate", 0.0) if sequence else 0.0)
+        ),
+        gdp_growth=float(
+            request.get("gdpGrowth", sequence[-1].get("gdpGrowth", 0.0) if sequence else 0.0)
+        ),
+        gdp_trend_direction=request.get("gdpTrendDirection"),
+        gdp_trend_delta=request.get("gdpTrendDelta"),
     )
 
 
@@ -151,13 +178,11 @@ def forecast_batch_requests(requests: list[dict]) -> dict[str, dict]:
     bare-market key would collide). `forecast_request` itself still receives and uses
     the clean `request["market"]` value untouched — only the outer dict's key changes.
     """
-    return {
-        batch_key(request): forecast_request(request)
-        for request in requests
-    }
+    return {batch_key(request): forecast_request(request) for request in requests}
 
 
 # ─── Groq inference ───────────────────────────────────────────────────────────
+
 
 def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -> str:
     """Shared Groq HTTP call with 3-attempt exponential back-off.
@@ -184,9 +209,10 @@ def _gemini_call(prompt: str, max_output_tokens: int = 256, context: str = "") -
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
             if attempt < 2:
-                time.sleep(2 ** attempt)   # exponential back-off: 1 s, 2 s
-                logger.debug("Groq retry %d%s: %s",
-                             attempt + 1, f" for {context}" if context else "", exc)
+                time.sleep(2**attempt)  # exponential back-off: 1 s, 2 s
+                logger.debug(
+                    "Groq retry %d%s: %s", attempt + 1, f" for {context}" if context else "", exc
+                )
                 continue
             break
     raise RuntimeError(
@@ -209,9 +235,18 @@ def _groq_forecast(
     gdp_trend_delta: float | None = None,
 ) -> dict:
     prompt = _build_prompt(
-        market, trend_series, rolling_7d, rolling_30d, rolling_std_7d,
-        spike_indicator, yoy_ratio, seasonality_score, forex_rate, gdp_growth,
-        gdp_trend_direction, gdp_trend_delta,
+        market,
+        trend_series,
+        rolling_7d,
+        rolling_30d,
+        rolling_std_7d,
+        spike_indicator,
+        yoy_ratio,
+        seasonality_score,
+        forex_rate,
+        gdp_growth,
+        gdp_trend_direction,
+        gdp_trend_delta,
     )
     raw = _gemini_call(prompt, max_output_tokens=256, context=f"market={market}")
     return _parse_response(raw, trend_series)
@@ -307,7 +342,7 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
             # Missing week — continue slope from last two values
             if len(weekly) >= 2:
                 slope = weekly[-1] - weekly[-2]
-                raw_val = weekly[-1] + slope * 0.5   # dampened extrapolation
+                raw_val = weekly[-1] + slope * 0.5  # dampened extrapolation
             elif weekly:
                 raw_val = weekly[-1]
             else:
@@ -318,41 +353,40 @@ def _parse_response(raw: str, trend_series: list[float]) -> dict:
     # All 12 identical — model returned no variance; apply dampened linear tilt.
     if len(set(round(w, 1) for w in weekly)) == 1:
         slope = (weekly[-1] - current) / 12.0
-        weekly = [clamp(current + slope * (k + 1) * max(0.2, 1.0 - k * 0.07))
-                  for k in range(12)]
+        weekly = [clamp(current + slope * (k + 1) * max(0.2, 1.0 - k * 0.07)) for k in range(12)]
 
     # ── Guard 2: ceiling / floor collision ───────────────────────────────
     # 3+ values clamped at ≥99.5 or ≤5.5 — model over-extrapolated.
     # Pull all clamped values back toward the 7-period rolling mean.
-    window  = trend_series[-7:] if len(trend_series) >= 7 else trend_series
+    window = trend_series[-7:] if len(trend_series) >= 7 else trend_series
     mean_val = sum(window) / len(window) if window else current
     ceiling_hits = sum(1 for w in weekly if w >= 99.5)
-    floor_hits   = sum(1 for w in weekly if w <= 5.5)
+    floor_hits = sum(1 for w in weekly if w <= 5.5)
     if ceiling_hits >= 3 or floor_hits >= 3:
         anchor = next((w for w in weekly if 5.5 < w < 99.5), current)
         weekly = [
-            round(max(5.0, min(100.0,
-                anchor + (mean_val - anchor) * ((i + 1) / 12.0))), 2)
+            round(max(5.0, min(100.0, anchor + (mean_val - anchor) * ((i + 1) / 12.0))), 2)
             for i in range(12)
         ]
         logger.debug(
             "Ceiling/floor reversion applied for 12w: anchor=%.1f mean=%.1f",
-            anchor, mean_val,
+            anchor,
+            mean_val,
         )
 
     weekly = [round(w, 2) for w in weekly]
 
-    demand_4w  = round(sum(weekly[:4])  / 4.0,  2)   # near-term average (Wk1–4)
-    demand_12w = round(sum(weekly)      / 12.0, 2)   # full-window average (Wk1–12)
+    demand_4w = round(sum(weekly[:4]) / 4.0, 2)  # near-term average (Wk1–4)
+    demand_12w = round(sum(weekly) / 12.0, 2)  # full-window average (Wk1–12)
 
     delta = abs(demand_4w - current)
-    mape  = round(min(14.9, 7.0 + delta * 0.08), 2)
+    mape = round(min(14.9, 7.0 + delta * 0.08), 2)
     return {
-        "predicted_demand_4w":  demand_4w,
+        "predicted_demand_4w": demand_4w,
         "predicted_demand_12w": demand_12w,
-        "weekly_forecasts":     weekly,
-        "mape":       mape,
-        "mae":        round(mape * 0.60, 2),
-        "rmse":       round(mape * 0.85, 2),
+        "weekly_forecasts": weekly,
+        "mape": mape,
+        "mae": round(mape * 0.60, 2),
+        "rmse": round(mape * 0.85, 2),
         "confidence": round(max(0.70, 1.0 - mape / 100.0), 3),
     }

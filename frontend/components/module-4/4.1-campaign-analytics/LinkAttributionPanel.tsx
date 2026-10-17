@@ -3,7 +3,6 @@ import { useAttributionLinks } from '../../../services/useAttributionLinks';
 import { useLinkPerformance } from '../../../services/useLinkPerformance';
 import CreativePerformanceTable from './CreativePerformanceTable';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
-import { AttributionLink } from '../../../types';
 
 export default function LinkAttributionPanel() {
   const { links, error: linksError, refresh: refreshLinks } = useAttributionLinks();
@@ -47,8 +46,6 @@ export default function LinkAttributionPanel() {
       </div>
     );
   }
-
-  const selectedLink = links.find(l => l.linkId === selectedLinkId);
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });

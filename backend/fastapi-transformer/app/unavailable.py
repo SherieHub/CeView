@@ -20,6 +20,7 @@ Status code:
         no core services). Distinct because retrying will not help; the caller
         must supply the input.
 """
+
 from __future__ import annotations
 
 import logging
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 SERVICE = "fastapi-transformer"
 
 DEPENDENCY_DOWN = 503  # retry may help
-MISSING_INPUT = 424    # retry will not help; caller must supply the input
+MISSING_INPUT = 424  # retry will not help; caller must supply the input
 
 
 class DependencyUnavailable(Exception):
@@ -72,7 +73,10 @@ async def dependency_unavailable_handler(
     request: Request, exc: DependencyUnavailable
 ) -> JSONResponse:
     logger.warning(
-        "%s unavailable at %s: %s", exc.dependency, exc.stage, exc.cause,
+        "%s unavailable at %s: %s",
+        exc.dependency,
+        exc.stage,
+        exc.cause,
         extra={"code": exc.code},
     )
     return JSONResponse(status_code=exc.status_code, content=exc.to_body())

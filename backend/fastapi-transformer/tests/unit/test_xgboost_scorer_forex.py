@@ -8,6 +8,7 @@ badly as it used to collapse USD under the pre-canonical unit. These tests
 prove the log-scale replacement gives all three a sane, non-degenerate
 purchasing-power component.
 """
+
 from app.services.xgboost_scorer import _feature_vector, _forex_norm, is_loaded, score
 
 BASE_FEATURES = {

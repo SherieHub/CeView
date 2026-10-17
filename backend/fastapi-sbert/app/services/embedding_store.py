@@ -33,6 +33,7 @@ EMBEDDING_MODEL_VERSION = "intfloat/multilingual-e5-base+e5prefix"
 
 # ── lazy connection helper ─────────────────────────────────────────────────────
 
+
 def _connect():
     """Open a new psycopg2 connection.  Raises RuntimeError when URL is absent."""
     if not _DATABASE_URL:
@@ -41,10 +42,12 @@ def _connect():
             "Add DATABASE_URL to the fastapi-sbert environment in docker-compose."
         )
     import psycopg2  # deferred so the module loads even without the driver installed
+
     return psycopg2.connect(_DATABASE_URL)
 
 
 # ── public API ─────────────────────────────────────────────────────────────────
+
 
 def upsert_embedding(business_profile_id: str, vector: List[float]) -> None:
     """Insert or replace the 768-dim embedding for *business_profile_id*.
