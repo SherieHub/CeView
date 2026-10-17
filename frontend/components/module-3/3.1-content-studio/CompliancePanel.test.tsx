@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import CompliancePanel from './CompliancePanel';
@@ -17,6 +17,17 @@ const READY: PublishDraftState = {
 };
 
 describe('CompliancePanel', () => {
+  it('ignores an in-flight audit after the owner edits the content', async () => {
+    const { apiClient } = await import('../../../services/apiClient');
+    let resolve!: (value: typeof MOCK_OMCS) => void;
+    vi.mocked(apiClient.compliance.omcsAnalyze).mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+    const onAuditChange = vi.fn();
+    const { rerender } = render(<CompliancePanel draft={READY} audit={{ status: 'running', step: 6, result: null }} onAuditChange={onAuditChange} recommendations={RECS} />);
+    rerender(<CompliancePanel draft={{ ...READY, caption: 'New caption' }} audit={{ status: 'idle', step: 0, result: null }} onAuditChange={onAuditChange} recommendations={RECS} />);
+    await act(async () => resolve(MOCK_OMCS));
+    expect(onAuditChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Run Compliance Audit/ })).toBeEnabled();
+  });
   it('does NOT start the audit on its own when the draft becomes ready', () => {
     const onAuditChange = vi.fn();
     render(

@@ -1,5 +1,5 @@
 import { CheckCircle2, LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import type { CSSProperties } from 'react';
 // OMCS_RUBRIC_LABELS is a static display map (rubric key -> human label), not
 // data the backend serves — kept as a direct fixture import deliberately.
@@ -22,25 +22,28 @@ export default function CompliancePanel({ draft, audit, onAuditChange, recommend
   useEffect(() => {
     if (audit.status !== 'running') return;
     if (audit.step >= STEPS.length) {
+      let cancelled = false;
       apiClient.compliance
         .omcsAnalyze({ caption: draft.caption, imageUrl: draft.mediaDataUrl ?? '', recommendations: recommendations ?? {} })
-        .then((result) => onAuditChange({ status: 'complete', step: STEPS.length, result }))
-        .catch((e) => onAuditChange({ status: 'error', step: 0, result: null, error: e }));
-      return;
+        .then((result) => { if (!cancelled) onAuditChange({ status: 'complete', step: STEPS.length, result }); })
+        .catch((e) => { if (!cancelled) onAuditChange({ status: 'error', step: 0, result: null, error: e }); });
+      return () => { cancelled = true; };
     }
     const timer = window.setTimeout(() => onAuditChange({ ...audit, step: audit.step + 1 }), 420);
     return () => window.clearTimeout(timer);
   }, [audit, onAuditChange, draft.caption, draft.mediaDataUrl, recommendations]);
 
+  // Unique per instance: a campaign post's audit can be mounted beside Quick Post's.
+  const titleId = useId();
   const result = audit.result;
   const passed = result?.status === 'Pass';
 
   return (
-    <section className="card" aria-labelledby="compliance-title">
+    <section className="card" aria-labelledby={titleId}>
       <div className="studio-head">
         <span className="conn-ico" aria-hidden="true"><ShieldCheck /></span>
         <div className="studio-head-text">
-          <h2 id="compliance-title" className="heading-md">Compliance audit</h2>
+          <h2 id={titleId} className="heading-md">Compliance audit</h2>
           <p className="body-sm">Checks the caption and selected media before publishing.</p>
         </div>
       </div>

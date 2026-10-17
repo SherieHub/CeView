@@ -207,16 +207,19 @@ test.describe('End-to-end authenticated journey', () => {
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
     // Quick Post's Draft stage — rendered only once a target is picked.
-    await expect(page.getByRole('heading', { name: 'Choose your caption' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Caption Choices' })).toBeVisible();
 
     // The shot list lives in the "Visual Guide" drawer now — the inline
     // VisualDirectionBoard (section[aria-labelledby="visual-direction-title"])
     // was removed in the studio rebuild, which is what this assertion used to
     // reach for. The drawer auto-opens on a first visit (useFirstRunDrawer);
-    // the floating trigger opens it if that FTUE flag has already been set.
+    // the "Review Visual Guide" link opens it if that FTUE flag has already been set.
+    // Neither shows on Draft — the guide is media guidance, so it starts at
+    // the Attach stage.
+    await page.getByRole('button', { name: 'Attach', exact: true }).click();
     const visualGuide = page.getByRole('dialog', { name: 'Visual Guide' });
     if (!(await visualGuide.isVisible())) {
-      await page.getByRole('button', { name: 'Visual Guide' }).click();
+      await page.getByRole('button', { name: 'Review Visual Guide' }).click();
     }
     await expect(visualGuide).toBeVisible();
 
@@ -239,10 +242,10 @@ test.describe('End-to-end authenticated journey', () => {
       await expect(visualGuide).not.toContainText('NaN');
     }
 
-    // Close it before asserting on the caption matrix underneath — the drawer
-    // scrim covers the column the cards are in.
+    // Close it, then return to Draft, where the caption matrix lives.
     await visualGuide.getByRole('button', { name: 'Close' }).click();
     await expect(visualGuide).toBeHidden();
+    await page.getByRole('button', { name: 'Draft', exact: true }).click();
 
     // POST /api/content/generate currently 500s with
     // MOD31_CAPTION_AGENT_FAILED — a known, out-of-scope defect in the

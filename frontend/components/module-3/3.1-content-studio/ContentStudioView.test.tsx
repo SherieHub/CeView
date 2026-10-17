@@ -294,6 +294,9 @@ describe('ContentStudioView — generate request', () => {
     renderStudio();
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
+    // The media control, and the link beside it, live in the Attach stage.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
+
     // Dismiss the first-run auto-open so the assertion below is about the link.
     // The shared Drawer keeps its children mounted when closed — it slides
     // off-canvas so the transition can run — so "is the content in the DOM" is
@@ -302,8 +305,6 @@ describe('ContentStudioView — generate request', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
 
-    // The media control, and the link beside it, live in the Attach stage.
-    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
     await userEvent.click(screen.getByRole('button', { name: 'Review Visual Guide' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
@@ -333,6 +334,8 @@ describe('ContentStudioView — generate request', () => {
     renderStudio();
     const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
     await userEvent.click(select[0]);
+    // The guide is media guidance, so it first auto-opens at Attach.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
     await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
@@ -356,6 +359,8 @@ describe('ContentStudioView — generate request', () => {
     renderStudio();
     const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
     await userEvent.click(select[0]);
+    // The guide is media guidance, so it first auto-opens at Attach.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
     await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
@@ -378,24 +383,24 @@ describe('ContentStudioView — generate request', () => {
     expect(container.querySelector('.page-head-actions .studio-select')).not.toBeNull();
   });
 
-  // The floating trigger is icon-only so it does not sit over the content it
-  // floats above. Its name therefore has to come from aria-label — without it
-  // the control is announced as "button" and is unreachable by voice.
-  it('keeps the visual-guide trigger reachable with no visible label', async () => {
+  // The floating trigger was removed; the guide opens from the link beside
+  // the upload control (tested above). Draft is caption-only, so the
+  // first-run auto-open waits until Attach.
+  it('has no floating visual-guide trigger, and no guide on Draft', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
-    renderStudio();
+    const { container } = renderStudio();
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
-    const trigger = screen.getByRole('button', { name: 'Visual Guide' });
-    expect(trigger.className).toContain('brief-trigger');
-    // Icon only — no text node of its own beyond the first-run tooltip.
-    expect(trigger.textContent).not.toContain('Visual Guide');
+    expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull();
+    expect(container.querySelector('.brief-trigger')).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
+    await userEvent.click(screen.getByRole('tab', { name: 'Campaigns' }));
+    expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull();
+    await userEvent.click(screen.getByRole('tab', { name: 'Quick Post' }));
 
-    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
     expect(await screen.findByRole('dialog', { name: 'Visual Guide' })).toBeTruthy();
+    expect(container.querySelector('.brief-trigger')).toBeNull();
   });
 
   // Progressive disclosure, end to end: nothing on the screen offers Publish

@@ -5,8 +5,9 @@
  *  - Quick Post: the original single-post journey — Draft (pick and edit a
  *    caption) -> Attach (media) -> Validate (six-step audit, then publish) —
  *    shown one stage at a time by QuickPostWorkspace.
- *  - Campaigns: frontend-only campaign planning (campaigns/), kept for the
- *    session; its posts open in the Quick Post composer.
+ *  - Campaigns: CeView's recommended campaigns (campaigns/) — strategy,
+ *    content plan, then preparation with the same upload and audit. Kept for
+ *    the session; nothing is persisted, scheduled or published from there.
  *  - Content Library: the former Content board.
  *
  * Every piece of state — draft, audit, generated content, selection — still
@@ -18,7 +19,7 @@
  * AppShell already owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronDown, Image as ImageIcon, Send, X } from 'lucide-react';
+import { ChevronDown, Send } from 'lucide-react';
 import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
@@ -37,8 +38,7 @@ import type { StudioView } from './StudioNavigation';
 import type { StudioStepId } from './studioSteps';
 import CampaignsView from './campaigns/CampaignsView';
 import type { CampaignMode } from './campaigns/CampaignsView';
-import { formatDate, useCampaignDrafts } from './campaigns/campaignTypes';
-import { STUDIO_PLATFORMS } from './contentStudioTypes';
+import { useCampaignDrafts } from './campaigns/campaignTypes';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
 import type { AuditState, PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
@@ -135,12 +135,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // either never touches the draft, audit or generated content above.
   const [view, setView] = useState<StudioView>('quick');
   const [qpStep, setQpStep] = useState<StudioStepId>('draft');
+  const onDraft = view === 'quick' && qpStep === 'draft';
 
   // Campaigns (frontend-only, this session — see campaigns/campaignTypes.ts).
   const campaignStore = useCampaignDrafts();
   const [campaignMode, setCampaignMode] = useState<CampaignMode>({ kind: 'list' });
-  // Set when a campaign's planned post is opened in the Quick Post composer.
-  const [campaignContext, setCampaignContext] = useState<{ campaignId: string; postId: string } | null>(null);
 
   useEffect(() => {
     return onDisconnect((platform) => {
@@ -303,16 +302,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   };
 
 
-  const contextCampaign = campaignContext
-    ? campaignStore.campaigns.find((c) => c.id === campaignContext.campaignId) ?? null
-    : null;
-  const contextPost = contextCampaign?.posts.find((p) => p.id === campaignContext?.postId) ?? null;
-
-  const backToCampaign = () => {
-    if (campaignContext) setCampaignMode({ kind: 'workspace', id: campaignContext.campaignId });
-    setView('campaigns');
-  };
-
   const marketSelect =
     target && markets.length > 0 ? (
       <label className="studio-market">
@@ -341,36 +330,10 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       </label>
     ) : undefined;
 
-  const campaignBanner = contextCampaign && contextPost && (
-    <div className="qp-context" role="note">
-      <div>
-        <p className="qp-context-eyebrow">Campaign post</p>
-        <p className="qp-context-title">
-          {contextCampaign.name} · {contextPost.topic || 'Untitled post'}
-        </p>
-        <p className="qp-context-meta">
-          {STUDIO_PLATFORMS.find((p) => p.id === contextPost.platform)?.label} · planned for {formatDate(contextPost.date)}
-          {target && <> · captions are generated for {target.market.name}</>}
-        </p>
-      </div>
-      <div className="qp-context-acts">
-        <button type="button" className="btn-outline btn-outline--sm" onClick={backToCampaign}>
-          <ArrowLeft size={14} aria-hidden="true" /> Back to campaign
-        </button>
-        <button type="button" className="icon-btn" aria-label="Stop drafting for this campaign" onClick={() => setCampaignContext(null)}>
-          <X size={16} aria-hidden="true" />
-        </button>
-      </div>
-    </div>
-  );
-
   const quickPost = !target ? (
     // No surge + market picked yet — gate the composer behind the picker. No
     // entry point may skip this by inferring a market on the operator's behalf.
-    <>
-      {campaignBanner}
-      <ContentTargetPicker onPicked={setTarget} />
-    </>
+    <ContentTargetPicker onPicked={setTarget} />
   ) : (
     <>
       {marketsError != null && <div className="mb-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
@@ -384,7 +347,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           attach: Boolean(draft.mediaDataUrl),
           validate: audit.result?.status === 'Pass',
         }}
-        context={campaignBanner}
         draftStage={
           <>
             <AIContentMatrixPanel
@@ -484,17 +446,12 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           campaigns={campaignStore.campaigns}
           mode={campaignMode}
           onModeChange={setCampaignMode}
-          categories={profile.categories}
+          profile={profile}
+          posts={posts}
           onSave={campaignStore.upsert}
           onDelete={campaignStore.remove}
-          onPostStatus={campaignStore.setPostStatus}
-          onOpenPost={(campaign, postId) => {
-            const post = campaign.posts.find((p) => p.id === postId);
-            setCampaignContext({ campaignId: campaign.id, postId });
-            if (post) setActivePlatform(post.platform);
-            setQpStep('draft');
-            setView('quick');
-          }}
+          onPatchPost={campaignStore.patchPost}
+          active={view === 'campaigns'}
         />
       </div>
 
@@ -504,25 +461,13 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         <ContentBoard draft={draft} posts={posts} canPublish={false} onPublished={() => setPublishOpen(true)} />
       </div>
 
-      {target && view === 'quick' && (
-        // Icon only; the name lives in aria-label so it is announced and
-        // findable by voice.
-        <button
-          type="button"
-          className="brief-trigger"
-          aria-label="Visual Guide"
-          data-hidden={brief.open}
-          data-pulse={brief.showTooltip}
-          onClick={brief.openDrawer}
-        >
-          <ImageIcon size={18} aria-hidden="true" />
-          {brief.showTooltip && <span className="brief-tip">Your shot list and visual direction live here</span>}
-        </button>
-      )}
-
+      {/* No floating trigger: the guide opens from the "Review Visual Guide"
+          link beside the upload control. Not on Draft either — choosing a
+          caption is its own job, and the shot list is media guidance, so a
+          first-run auto-open waits until Attach. */}
       {target && (
         <CampaignBriefDrawer
-          open={brief.open}
+          open={view === 'quick' && brief.open && !onDraft}
           onClose={brief.closeDrawer}
           showWelcome={brief.showWelcome}
           direction={direction}

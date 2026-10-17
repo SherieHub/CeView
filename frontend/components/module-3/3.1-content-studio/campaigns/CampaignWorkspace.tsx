@@ -1,23 +1,37 @@
 /**
- * One campaign: header plus Overview | Posts | Calendar | Results.
- * Frontend-only (see campaignTypes.ts). Calendar lists the plan's dates and
- * links to the real Calendar — planned posts are not written to it. Results
- * explains that campaign reporting isn't available rather than showing
- * numbers it does not have.
+ * One campaign after the guided flow: Overview | Posts | Calendar | Results.
+ * Frontend-only (see campaignTypes.ts).
+ *
+ * Every status shown is derived from what the post actually has (prepState),
+ * and the calendar keeps Scheduled and Published visibly separate from the
+ * planned dates — nothing here has reached either, because campaign
+ * scheduling and publishing are not connected. Results shows no numbers it
+ * does not have.
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BarChart3, CalendarDays, PenLine, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BarChart3, Lightbulb, Pencil, Trash2, Undo2 } from 'lucide-react';
+import type { ContentResponse } from '@/types';
+import MarketFlagIcon from '../../../module-2/2.1-dashboard/MarketFlagIcon';
 import { PlatformIcon } from '../ContentBoard';
+import { STUDIO_PLATFORMS } from '../contentStudioTypes';
+import PreparePostDrawer from './PreparePostDrawer';
+import { PREP_ACTION } from './PreparePosts';
+import { EvidenceChip } from './StrategyReview';
 import {
-  POST_STATUSES,
+  CALENDAR_LABELS,
+  PREP_LABELS,
+  activePosts,
+  calendarState,
   dateRange,
+  durationLabel,
   formatDate,
+  formatShortDate,
   objectiveLabel,
-  postStatusLabel,
+  prepState,
   sortedPosts,
 } from './campaignTypes';
-import type { CampaignDraft, PlannedPostStatus } from './campaignTypes';
+import type { CampaignDraft, PlannedPost } from './campaignTypes';
 
 type Tab = 'overview' | 'posts' | 'calendar' | 'results';
 const TABS: { id: Tab; label: string }[] = [
@@ -29,24 +43,33 @@ const TABS: { id: Tab; label: string }[] = [
 
 interface CampaignWorkspaceProps {
   campaign: CampaignDraft;
+  content: ContentResponse | null;
   onBack: () => void;
-  onEdit: () => void;
+  onEditPlan: () => void;
   onDelete: () => void;
-  onOpenPost: (postId: string) => void;
-  onPostStatus: (postId: string, status: PlannedPostStatus) => void;
+  onPatchPost: (postId: string, patch: Partial<PlannedPost>) => void;
 }
 
-export default function CampaignWorkspace({ campaign: c, onBack, onEdit, onDelete, onOpenPost, onPostStatus }: CampaignWorkspaceProps) {
+export default function CampaignWorkspace({ campaign: c, content, onBack, onEditPlan, onDelete, onPatchPost }: CampaignWorkspaceProps) {
   const [tab, setTab] = useState<Tab>('overview');
-  const posts = sortedPosts(c.posts);
-  const total = posts.length;
-  const reviewed = posts.filter((p) => p.status === 'reviewed').length;
-  const today = new Date().toISOString().slice(0, 10);
-  const upcoming = posts.filter((p) => p.date >= today).slice(0, 3);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [shownId, setShownId] = useState<string | null>(null);
 
-  const byMonth = posts.reduce<Record<string, typeof posts>>((acc, p) => {
-    const key = p.date.slice(0, 7);
-    (acc[key] ??= []).push(p);
+  const all = sortedPosts(c.posts);
+  const posts = activePosts(all);
+  const total = posts.length;
+  const approved = posts.filter((p) => p.status === 'approved').length;
+  const nextPost = posts.find((p) => prepState(p) !== 'approved') ?? null;
+  const shown = c.posts.find((p) => p.id === shownId) ?? null;
+  const platforms = c.platforms.map((p) => STUDIO_PLATFORMS.find((s) => s.id === p)?.label ?? p).join(', ');
+
+  const open = (id: string) => {
+    setShownId(id);
+    setOpenId(id);
+  };
+
+  const byMonth = posts.reduce<Record<string, PlannedPost[]>>((acc, p) => {
+    (acc[p.date.slice(0, 7)] ??= []).push(p);
     return acc;
   }, {});
 
@@ -60,17 +83,14 @@ export default function CampaignWorkspace({ campaign: c, onBack, onEdit, onDelet
         <div className="cw-head-main">
           <div className="cw-title-row">
             <h2 className="cw-title">{c.name}</h2>
-            <span className="chip chip--muted">Unsaved draft</span>
+            <span className="chip chip--muted">Session draft</span>
           </div>
           <p className="cw-meta">
             {objectiveLabel(c.objective)} · {c.marketName || 'Any market'} · {dateRange(c)}
           </p>
-          <div className="cw-plats" aria-label={`Platforms: ${c.platforms.join(', ')}`}>
-            {c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)}
-          </div>
         </div>
         <div className="cw-actions">
-          <button type="button" className="btn-outline btn-outline--sm" onClick={onEdit}>
+          <button type="button" className="btn-outline btn-outline--sm" onClick={onEditPlan}>
             <Pencil size={14} aria-hidden="true" /> Edit plan
           </button>
           <button
@@ -106,106 +126,123 @@ export default function CampaignWorkspace({ campaign: c, onBack, onEdit, onDelet
         {tab === 'overview' && (
           <div className="cw-overview">
             <div className="cw-card">
-              <h3 className="cw-card-title">Campaign details</h3>
+              <h3 className="cw-card-title">Campaign</h3>
               <dl className="cb-facts">
                 <div><dt>Objective</dt><dd>{objectiveLabel(c.objective)}</dd></div>
-                <div><dt>Target market</dt><dd>{c.marketName || 'Any market'}</dd></div>
-                <div><dt>Category</dt><dd>{c.category || '—'}</dd></div>
-                <div><dt>Dates</dt><dd>{dateRange(c)}</dd></div>
+                <div><dt>Target market</dt><dd className="cp-market"><MarketFlagIcon name={c.marketName} /> {c.marketName || 'Any market'}</dd></div>
+                <div>
+                  <dt>Platforms</dt>
+                  <dd className="cp-plats">{c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)} <span>{platforms}</span></dd>
+                </div>
+                <div><dt>Duration</dt><dd>{durationLabel(c)} · {dateRange(c)}</dd></div>
               </dl>
               {c.description && <p className="cw-message">{c.description}</p>}
             </div>
+
             <div className="cw-card">
               <h3 className="cw-card-title">Progress</h3>
               <p className="cw-progress-line">
-                <b className="num">{reviewed}</b> of <b className="num">{total}</b> posts reviewed
+                <b className="num">{approved}</b> of <b className="num">{total}</b> posts approved
               </p>
               <span className="bar" aria-hidden="true">
-                <i style={{ width: `${total ? (reviewed / total) * 100 : 0}%` }} />
+                <i style={{ width: `${total ? (approved / total) * 100 : 0}%` }} />
               </span>
-              <div className="cb-tally cb-tally--sm">
-                {POST_STATUSES.map((s) => (
-                  <div key={s.id}>
-                    <b className="num">{posts.filter((p) => p.status === s.id).length}</b>
-                    <span>{s.label}</span>
-                  </div>
-                ))}
+              <div className="cw-next">
+                <p className="cp-box-label">Next action</p>
+                {nextPost ? (
+                  <button type="button" className="cw-next-btn" onClick={() => open(nextPost.id)}>
+                    <span>
+                      <b>{PREP_ACTION[prepState(nextPost)]}</b> — {nextPost.topic || 'Untitled post'}
+                      <em>{formatDate(nextPost.date)}</em>
+                    </span>
+                    <ArrowRight size={16} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <p className="cw-empty-line">{total ? 'Every post is approved.' : 'Add posts with Edit plan.'}</p>
+                )}
               </div>
             </div>
-            <div className="cw-card cw-card--wide">
-              <h3 className="cw-card-title">Coming up</h3>
-              {upcoming.length === 0 ? (
-                <p className="cw-empty-line">No upcoming posts in this plan.</p>
-              ) : (
-                <ul className="cb-review-list">
-                  {upcoming.map((p) => (
-                    <li key={p.id}>
-                      <span className="num">{formatDate(p.date)}</span>
-                      <PlatformIcon platform={p.platform} />
-                      <span className="cb-review-topic">{p.topic || 'Untitled post'}</span>
-                      <span className="chip chip--muted">{postStatusLabel(p.status)}</span>
-                    </li>
-                  ))}
+
+            {c.strategy && (
+              <div className="cw-card cw-card--wide">
+                <h3 className="cw-card-title">
+                  <Lightbulb size={15} aria-hidden="true" /> Why this campaign
+                </h3>
+                <ul className="cw-why">
+                  <li><EvidenceChip kind={c.strategy.market.evidence} /> {c.strategy.market.why}</li>
+                  <li><EvidenceChip kind={c.strategy.platforms.evidence} /> {c.strategy.platforms.why}</li>
+                  <li><EvidenceChip kind={c.strategy.timing.evidence} /> {c.strategy.timing.why}</li>
                 </ul>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
         {tab === 'posts' &&
-          (total === 0 ? (
+          (all.length === 0 ? (
             <div className="cb-empty">
               <p className="cb-empty-title">No posts in this campaign</p>
-              <p className="cb-empty-sub">Use Edit plan to add posts to your content plan.</p>
+              <p className="cb-empty-sub">Use Edit plan to add posts.</p>
             </div>
           ) : (
             <table className="cw-table">
               <thead>
                 <tr>
-                  <th scope="col">Planned date</th>
-                  <th scope="col">Content</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Post</th>
                   <th scope="col">Platform</th>
-                  <th scope="col">Progress</th>
-                  <th scope="col"><span className="sr-only">Action</span></th>
+                  <th scope="col">Preparation</th>
+                  <th scope="col">Review</th>
+                  <th scope="col"><span className="sr-only">Next action</span></th>
                 </tr>
               </thead>
               <tbody>
-                {posts.map((p) => (
-                  <tr key={p.id}>
-                    <td className="num">{formatDate(p.date)}</td>
-                    <td className="cw-topic">{p.topic || 'Untitled post'}</td>
-                    <td><PlatformIcon platform={p.platform} /></td>
-                    <td>
-                      <label>
-                        <span className="sr-only">Progress for {p.topic || 'this post'}</span>
-                        <select
-                          className="input input--sm"
-                          value={p.status}
-                          onChange={(e) => onPostStatus(p.id, e.target.value as PlannedPostStatus)}
-                        >
-                          {POST_STATUSES.map((s) => (
-                            <option key={s.id} value={s.id}>{s.label}</option>
-                          ))}
-                        </select>
-                      </label>
-                    </td>
-                    <td>
-                      <button type="button" className="btn-outline btn-outline--sm" onClick={() => onOpenPost(p.id)}>
-                        <PenLine size={14} aria-hidden="true" /> Open
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {all.map((p) => {
+                  const st = prepState(p);
+                  return (
+                    <tr key={p.id} data-prep={st}>
+                      <td className="num">{formatShortDate(p.date)}</td>
+                      <td className="cw-topic">{p.topic || 'Untitled post'}</td>
+                      <td><PlatformIcon platform={p.platform} /></td>
+                      <td><span className="cp-status" data-prep={st}>{PREP_LABELS[st]}</span></td>
+                      <td className="cw-review">{st === 'approved' ? 'Approved' : st === 'skipped' ? '—' : 'Not approved'}</td>
+                      <td>
+                        {st === 'skipped' ? (
+                          <button type="button" className="btn-outline btn-outline--sm" onClick={() => onPatchPost(p.id, { status: 'accepted' })}>
+                            <Undo2 size={13} aria-hidden="true" /> Restore
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-outline btn-outline--sm"
+                            onClick={() => open(p.id)}
+                            aria-label={`${PREP_ACTION[st]}: ${p.topic || 'post'}`}
+                          >
+                            {PREP_ACTION[st]}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ))}
 
         {tab === 'calendar' && (
           <div className="cw-cal">
+            <ul className="cw-legend" aria-label="Calendar states">
+              {(['planned', 'prepared', 'approved'] as const).map((s) => (
+                <li key={s} data-cal={s}>
+                  <i aria-hidden="true" /> {CALENDAR_LABELS[s]}
+                </li>
+              ))}
+              <li data-cal="off"><i aria-hidden="true" /> Scheduled — not connected yet</li>
+              <li data-cal="off"><i aria-hidden="true" /> Published — not connected yet</li>
+            </ul>
             <p className="cb-note">
-              <CalendarDays size={15} aria-hidden="true" /> Your plan by date. Planned campaign posts aren&rsquo;t added to
-              your publishing Calendar yet.{' '}
-              <Link to="/calendar" className="link-inline">Open Calendar</Link>
+              These are planned dates, not automatic schedules. Campaign posts aren&rsquo;t added to your publishing
+              Calendar yet. <Link to="/calendar" className="link-inline">Open Calendar</Link>
             </p>
             {total === 0 ? (
               <p className="cw-empty-line">No dates planned yet.</p>
@@ -217,11 +254,11 @@ export default function CampaignWorkspace({ campaign: c, onBack, onEdit, onDelet
                   </h3>
                   <ul className="cb-review-list">
                     {list.map((p) => (
-                      <li key={p.id}>
-                        <span className="num">{formatDate(p.date)}</span>
+                      <li key={p.id} data-cal={calendarState(p)}>
+                        <span className="num">{formatShortDate(p.date)}</span>
                         <PlatformIcon platform={p.platform} />
                         <span className="cb-review-topic">{p.topic || 'Untitled post'}</span>
-                        <span className="chip chip--muted">{postStatusLabel(p.status)}</span>
+                        <span className="cp-cal-chip" data-cal={calendarState(p)}>{CALENDAR_LABELS[calendarState(p)]}</span>
                       </li>
                     ))}
                   </ul>
@@ -234,14 +271,23 @@ export default function CampaignWorkspace({ campaign: c, onBack, onEdit, onDelet
         {tab === 'results' && (
           <div className="cb-empty">
             <span className="lib-empty-glyph" aria-hidden="true"><BarChart3 size={20} strokeWidth={1.75} /></span>
-            <p className="cb-empty-title">Campaign reporting isn&rsquo;t available yet</p>
+            <p className="cb-empty-title">No campaign results yet</p>
             <p className="cb-empty-sub">
-              Results for individual published posts and ad campaigns are in Performance.
+              Campaign posts aren&rsquo;t published from here yet, so there&rsquo;s nothing to measure. Results for posts
+              you&rsquo;ve published and your ad campaigns are in Performance.
             </p>
             <Link to="/performance" className="btn-outline btn-outline--sm mt-3">Go to Performance</Link>
           </div>
         )}
       </section>
+
+      <PreparePostDrawer
+        post={shown}
+        open={openId != null}
+        onClose={() => setOpenId(null)}
+        onPatch={(patch) => shown && onPatchPost(shown.id, patch)}
+        content={content}
+      />
     </div>
   );
 }

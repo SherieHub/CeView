@@ -1,35 +1,26 @@
 /**
- * New / edit campaign — four steps: Brief, Content plan, Prepare posts,
- * Review. Frontend-only (see campaignTypes.ts): "Save campaign" keeps the
- * plan for this session; nothing is persisted, scheduled or published.
+ * Manual campaign planning — the fallback to CeView's recommended campaign,
+ * for owners who want to start from scratch (or when recommendations can't be
+ * generated). Three steps: Brief, Content plan, Review. Frontend-only (see
+ * campaignTypes.ts): "Save campaign" keeps the plan for this session; nothing
+ * is persisted, scheduled or published.
  *
- * Reuses existing data only: the business profile's categories and, for the
- * chosen category, the same market list Content Studio already reads
- * (apiClient.markets.forCategory). No AI planning — posts are added by hand.
+ * Posts are prepared afterwards in the campaign workspace, with the same
+ * media upload and Compliance Audit the recommended flow uses.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Info, PenLine, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Info, Plus, Trash2 } from 'lucide-react';
 import { apiClient } from '../../../../services/apiClient';
 import { STUDIO_PLATFORMS } from '../contentStudioTypes';
 import type { StudioPlatformId } from '../contentStudioTypes';
 import { PlatformIcon } from '../ContentBoard';
 import type { Market } from '@/types';
-import {
-  OBJECTIVES,
-  POST_STATUSES,
-  dateRange,
-  formatDate,
-  newId,
-  objectiveLabel,
-  postStatusLabel,
-  sortedPosts,
-} from './campaignTypes';
+import { OBJECTIVES, blankPost, dateRange, formatDate, objectiveLabel, sortedPosts } from './campaignTypes';
 import type { CampaignDraft, CampaignObjective, PlannedPost } from './campaignTypes';
 
 const STEPS = [
   { id: 'brief', label: 'Brief' },
   { id: 'plan', label: 'Content plan' },
-  { id: 'prepare', label: 'Prepare posts' },
   { id: 'review', label: 'Review' },
 ] as const;
 type StepId = (typeof STEPS)[number]['id'];
@@ -42,8 +33,6 @@ interface CampaignBuilderProps {
   onCancel: () => void;
   /** Keep the plan for this session and open its workspace. */
   onSave: (campaign: CampaignDraft) => void;
-  /** Keep the plan, then open one of its posts in the Quick Post composer. */
-  onOpenPost: (campaign: CampaignDraft, postId: string) => void;
 }
 
 function briefProblem(c: CampaignDraft): string | null {
@@ -54,7 +43,7 @@ function briefProblem(c: CampaignDraft): string | null {
   return null;
 }
 
-export default function CampaignBuilder({ initial, categories, editing, onCancel, onSave, onOpenPost }: CampaignBuilderProps) {
+export default function CampaignBuilder({ initial, categories, editing, onCancel, onSave }: CampaignBuilderProps) {
   const [c, setC] = useState<CampaignDraft>(initial);
   const [step, setStep] = useState<StepId>('brief');
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -89,13 +78,7 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
   const togglePlatform = (id: StudioPlatformId) =>
     patch({ platforms: c.platforms.includes(id) ? c.platforms.filter((p) => p !== id) : [...c.platforms, id] });
 
-  const addPost = () =>
-    patch({
-      posts: [
-        ...c.posts,
-        { id: newId('post'), date: c.startDate, platform: c.platforms[0] ?? 'instagram', topic: '', status: 'planned' },
-      ],
-    });
+  const addPost = () => patch({ posts: [...c.posts, blankPost(c)] });
   const updatePost = (id: string, p: Partial<PlannedPost>) =>
     patch({ posts: c.posts.map((post) => (post.id === id ? { ...post, ...p } : post)) });
   const removePost = (id: string) => patch({ posts: c.posts.filter((post) => post.id !== id) });
@@ -253,8 +236,8 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
             <b>{c.name}</b> · {objectiveLabel(c.objective)} · {c.marketName || 'Any market'} · {dateRange(c)}
           </p>
           <p className="cb-note">
-            <Info size={15} aria-hidden="true" /> Add the posts you plan to make. CeView doesn&rsquo;t generate campaign
-            schedules automatically yet.
+            <Info size={15} aria-hidden="true" /> Add the posts you plan to make. Want CeView to plan them for you? Go
+            back and choose Generate My Campaign.
           </p>
 
           {c.posts.length === 0 ? (
@@ -305,49 +288,6 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
         </section>
       )}
 
-      {step === 'prepare' && (
-        <section className="cb-panel" aria-labelledby="cb-prepare-title">
-          <header className="cb-head">
-            <h2 id="cb-prepare-title" className="cb-title">Prepare Your Campaign Posts</h2>
-            <p className="cb-sub">Draft and review each post before it goes live.</p>
-          </header>
-          <p className="cb-note">
-            <Info size={15} aria-hidden="true" /> Each post opens in the Quick Post composer, with its AI captions,
-            media and compliance review. Drafts made there aren&rsquo;t linked back to the campaign yet — mark each
-            post&rsquo;s progress here.
-          </p>
-          {c.posts.length === 0 ? (
-            <div className="cb-empty">
-              <p className="cb-empty-title">No posts to prepare</p>
-              <p className="cb-empty-sub">Go back to the content plan to add posts.</p>
-            </div>
-          ) : (
-            <ul className="cb-prep">
-              {posts.map((post) => (
-                <li key={post.id} className="cb-prep-row">
-                  <PlatformIcon platform={post.platform} />
-                  <div className="cb-prep-main">
-                    <b>{post.topic || 'Untitled post'}</b>
-                    <span>{formatDate(post.date)}</span>
-                  </div>
-                  <label className="cb-field">
-                    <span className="sr-only">Progress for {post.topic || 'this post'}</span>
-                    <select className="input input--sm" value={post.status} onChange={(e) => updatePost(post.id, { status: e.target.value as PlannedPost['status'] })}>
-                      {POST_STATUSES.map((s) => (
-                        <option key={s.id} value={s.id}>{s.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <button type="button" className="btn-outline btn-outline--sm" onClick={() => onOpenPost(c, post.id)}>
-                    <PenLine size={14} aria-hidden="true" /> Open in composer
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
       {step === 'review' && (
         <section className="cb-panel" aria-labelledby="cb-review-title">
           <header className="cb-head">
@@ -364,14 +304,6 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
               <dd className="cb-plats">{c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)}</dd>
             </div>
           </dl>
-          <div className="cb-tally">
-            {POST_STATUSES.map((s) => (
-              <div key={s.id}>
-                <b className="num">{c.posts.filter((p) => p.status === s.id).length}</b>
-                <span>{s.label}</span>
-              </div>
-            ))}
-          </div>
           {posts.length > 0 && (
             <ul className="cb-review-list">
               {posts.map((post) => (
@@ -379,14 +311,14 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
                   <span className="num">{formatDate(post.date)}</span>
                   <PlatformIcon platform={post.platform} />
                   <span className="cb-review-topic">{post.topic || 'Untitled post'}</span>
-                  <span className="chip chip--muted">{postStatusLabel(post.status)}</span>
                 </li>
               ))}
             </ul>
           )}
           <p className="cb-note">
             <Info size={15} aria-hidden="true" /> Nothing here is scheduled or published automatically. Saving keeps
-            this plan for this session only — campaign saving and scheduling aren&rsquo;t available yet.
+            this plan for this session only. You&rsquo;ll add photos, run the audit and approve each post in the
+            campaign workspace.
           </p>
         </section>
       )}
@@ -411,7 +343,12 @@ export default function CampaignBuilder({ initial, categories, editing, onCancel
               Continue <ArrowRight size={15} aria-hidden="true" />
             </button>
           ) : (
-            <button type="button" className="btn-primary btn-primary--sm" disabled={problem != null} onClick={() => onSave(c)}>
+            <button
+              type="button"
+              className="btn-primary btn-primary--sm"
+              disabled={problem != null}
+              onClick={() => onSave({ ...c, stage: 'done', posts: c.posts.map((p) => (p.status === 'suggested' ? { ...p, status: 'accepted' } : p)) })}
+            >
               Save campaign
             </button>
           )}
