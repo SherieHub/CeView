@@ -2048,6 +2048,29 @@
 }
 
 @layer components {
+  /* Inline links and headings that carry an icon keep it on the text's line. */
+  .cp-field-head .link-inline,
+  .cp-manual .link-inline,
+  .cp-error-acts .link-inline,
+  .cp-why-text .link-inline { display: inline-flex; align-items: center; gap: 5px; }
+  .cp-field-head .link-inline:disabled { opacity: .6; cursor: progress; }
+  .cw-card-title svg { display: inline; margin-right: 6px; vertical-align: -2px; color: #12877f; }
+  /* Next action reads as one row: what to do, then when, then the arrow. */
+  .app-wrap .studio-screen .cw-next-btn { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 8px; padding: 12px 14px; border: 1px solid var(--studio-line); border-radius: 10px; background: #fbfdfc; text-decoration: none; font-size: .875rem; cursor: pointer; }
+  .app-wrap .studio-screen .cw-next-btn:hover { border-color: #9fdccf; background: var(--studio-mint); }
+  .cw-next-btn em { display: block; margin-top: 2px; font-size: .75rem; font-style: normal; color: #647887; }
+  .cw-next-btn svg { flex-shrink: 0; color: #12877f; }
+  /* The composer's upload control and the audit, sized for a drawer. */
+  .cp-prep-media .composer-single { --composer-field-min: 220px; }
+  .cp-prep-media .composer-single[data-part='media'] .media-frame,
+  .cp-prep-media .composer-single[data-part='media'] .upload-zone { max-width: none; min-height: 220px; }
+  .cp-prep-media .composer-single .media-head { max-width: none; }
+  .cw-legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .cw-legend i { width: 10px; height: 10px; border-radius: 50%; background: #c7d0d5; }
+  .cw-legend [data-cal='prepared'] i { background: #12877f; }
+  .cw-legend [data-cal='approved'] i { background: #0b4541; }
+  .cw-legend [data-cal='off'] { color: #647887; }
+  .cw-legend [data-cal='off'] i { background: none; border: 1.5px dashed #b4bec4; }
   .cp-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .cp-edit-wide { grid-column: 1 / -1; }
   @media (max-width: 640px) { .cp-edit-grid { grid-template-columns: 1fr; } }
