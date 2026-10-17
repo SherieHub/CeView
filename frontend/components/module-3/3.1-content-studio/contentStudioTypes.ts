@@ -18,6 +18,8 @@ export const STUDIO_PLATFORMS: Array<{ id: StudioPlatformId; label: string }> = 
 
 
 export interface PublishDraftState {
+  /** Set when the post is scheduled rather than published now — local yyyy-mm-ddThh:mm. */
+  scheduledFor?: string | null;
   caption: string;
   mediaDataUrl: string | null;
   platforms: PlatformId[];
@@ -68,4 +70,9 @@ export interface BoardSlotProps {
   posts: PublishedPost[];
   canPublish: boolean;
   onPublished: () => void;
+  /** The post open in the detail view, if any — owned by the parent so it can open one on arrival. */
+  openPostId?: string | null;
+  onOpenPost?: (id: string | null) => void;
+  /** Posts published moments ago, flagged in the list. */
+  justPublished?: string[];
 }

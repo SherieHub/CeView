@@ -55,10 +55,9 @@ describe('CompliancePanel', () => {
     expect(onAuditChange).toHaveBeenCalledWith({ status: 'running', step: 0, result: null });
   });
 
-  // The trigger is the forward action of this block, the same as Select is in
-  // the caption grid, so it carries the same button object rather than a
-  // page-level .btn-primary — and sits at the same end of its row.
-  it('styles the audit trigger like the caption grid Select', () => {
+  // Before the audit runs, the card is one centred action — the same shape as
+  // the Visual guide's "Generate AI shots" on the step before.
+  it('centres one Run Compliance Audit action in the idle card', () => {
     const { container } = render(
       <CompliancePanel
         draft={READY}
@@ -68,12 +67,10 @@ describe('CompliancePanel', () => {
       />,
     );
     const run = screen.getByRole('button', { name: /Run Compliance Audit/ });
+    expect(run.closest('.audit-start')).not.toBeNull();
     expect(run.classList.contains('btn-cta')).toBe(true);
-    expect(run.classList.contains('btn-cta--sm')).toBe(true);
-    expect(run.classList.contains('btn-primary')).toBe(false);
-    // Right-aligned by the same .audit-foot the Re-run control uses.
-    expect(run.closest('.audit-foot')).not.toBeNull();
-    expect(container.querySelectorAll('.audit-foot')).toHaveLength(1);
+    expect(container.querySelectorAll('.audit-start button')).toHaveLength(1);
+    expect(screen.getByText('Check your post before it goes live')).toBeInTheDocument();
   });
 
   it('disables the button until the draft is complete', () => {
@@ -119,34 +116,51 @@ describe('CompliancePanel', () => {
     });
   });
 
-  // Verdict on the left, the detail it summarises on the right — the dial is
-  // read at a glance, the bars only if the verdict surprises you.
-  it('splits the result into a score column and a metrics column', () => {
+  // The verdict first — the dial beside what it means — then the bars behind
+  // it, for when the verdict surprises you. Re-run sits in the card header.
+  it('leads with the score and its meaning, then the rubric, with Re-run in the header', async () => {
+    const onAuditChange = vi.fn();
     const { container } = render(
       <CompliancePanel
         draft={READY}
         audit={{ status: 'complete', step: 6, result: MOCK_OMCS }}
-        onAuditChange={vi.fn()}
+        onAuditChange={onAuditChange}
         recommendations={RECS}
       />,
     );
 
-    const result = container.querySelector('.audit-result') as HTMLElement;
-    const score = result.querySelector(':scope > .audit-score') as HTMLElement;
-    const metrics = result.querySelector(':scope > .audit-metrics') as HTMLElement;
-    expect(score).not.toBeNull();
-    expect(metrics).not.toBeNull();
-
-    // Score column: the dial and its verdict, nothing else.
+    const summary = container.querySelector('.audit-result > .audit-summary') as HTMLElement;
+    expect(summary).not.toBeNull();
+    const score = summary.querySelector('.audit-score') as HTMLElement;
     expect(score.querySelector('.omcs-dial b')?.textContent).toBe('84');
+    expect(within(score).getByText('OMCS score')).toBeInTheDocument();
     expect((score.querySelector('.omcs-dial') as HTMLElement).style.getPropertyValue('--omcs')).toBe('84');
     expect(score.querySelector('.audit-verdict .chip--success')).not.toBeNull();
-    expect(score.querySelector('.omcs-rubric')).toBeNull();
 
-    // Metrics column: the bars, the explanation, and the Re-run control.
-    expect(metrics.querySelector('.omcs-rubric')).not.toBeNull();
-    expect(metrics.querySelector('.audit-foot')).not.toBeNull();
-    expect(within(metrics).getByRole('button', { name: /Re-run audit/ })).toBeTruthy();
+    // What the score means, in the audit's own words.
+    expect(within(summary).getByText('Your post meets the guidelines.')).toBeInTheDocument();
+    expect(within(summary).getByText(MOCK_OMCS.consistencyExplanation)).toBeInTheDocument();
+
+    // The rubric follows the summary rather than sitting inside it.
+    expect(summary.querySelector('.omcs-rubric')).toBeNull();
+    expect(container.querySelector('.audit-result > .omcs-rubric')).not.toBeNull();
+
+    const rerun = within(container.querySelector('.studio-head') as HTMLElement).getByRole('button', { name: /Re-run audit/ });
+    await userEvent.click(rerun);
+    expect(onAuditChange).toHaveBeenCalledWith({ status: 'idle', step: 0, result: null });
+  });
+
+  it('says the post needs changes when it fails', () => {
+    render(
+      <CompliancePanel
+        draft={READY}
+        audit={{ status: 'complete', step: 6, result: { ...MOCK_OMCS, status: 'Fail', omcsScore: 52 } }}
+        onAuditChange={vi.fn()}
+        recommendations={RECS}
+      />,
+    );
+    expect(screen.getByText('Your post needs changes before it can publish.')).toBeInTheDocument();
+    expect(screen.getByText('Fail')).toBeInTheDocument();
   });
 
   // The insight block was removed; its text must not reappear anywhere.

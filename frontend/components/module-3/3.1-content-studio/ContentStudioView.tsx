@@ -18,17 +18,17 @@
  * slide-out drawer. This screen renders a labelled <section>, not a <main>:
  * AppShell already owns the page's single main landmark.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Send } from 'lucide-react';
 import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
 import AttachStage from './AttachStage';
+import ValidateStage from './ValidateStage';
 import { MOCK_GENERATION_MS, slidesFromCaption } from './captionShots';
 import type { ShotsState } from './captionShots';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
-import CompliancePanel from './CompliancePanel';
 import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
@@ -254,29 +254,61 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     shotsTimer.current = window.setTimeout(() => setShotsState('ready'), MOCK_GENERATION_MS);
   };
 
+  // Stable between renders: CompliancePanel's step timer restarts whenever this
+  // changes identity, so a fresh object each render stalled the audit.
+  const recommendations = useMemo(
+    () => auditRecommendations(content, activePlatform, selectedOption),
+    [content, activePlatform, selectedOption],
+  );
+
   // Reveals the Publish button. Platform choice and the authorisation tick are
   // the modal's job now, so they gate "Confirm & Publish" in there rather than
   // the button that opens it.
   const canPublish = Boolean(draft.caption.trim() && draft.mediaDataUrl && audit.result?.status === 'Pass');
 
-  const publish = () => {
-    if (!canPublish) return;
-    const date = new Date().toISOString().slice(0, 10);
-    setPosts((current) => [
-      ...draft.platforms.map((platform, index): PublishedPost => ({
-        id: `published-${Date.now()}-${index}`, date, platform, caption: draft.caption,
-        status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [],
-      })),
-      ...current,
-    ]);
+  // The library's open post, and the ones just published (flagged in its list).
+  const [openPostId, setOpenPostId] = useState<string | null>(null);
+  const [justPublished, setJustPublished] = useState<string[]>([]);
+  // Opened only once the publish modal has gone: both sit on the one overlay
+  // stack, and opening the detail in the same render the publish modal closes
+  // in had its entry popped along with the publish modal's — so it shut at once.
+  const [pendingOpen, setPendingOpen] = useState<string | null>(null);
+  useEffect(() => {
+    if (publishOpen || !pendingOpen) return;
+    setOpenPostId(pendingOpen);
+    setPendingOpen(null);
+  }, [publishOpen, pendingOpen]);
+
+  const publish = (): PublishedPost[] => {
+    if (!canPublish) return [];
+    // A scheduled post is dated for when it goes out, not for today.
+    const scheduledFor = draft.scheduledFor ?? null;
+    const date = scheduledFor ? scheduledFor.slice(0, 10) : new Date().toISOString().slice(0, 10);
+    const created = draft.platforms.map((platform, index): PublishedPost => ({
+      id: `published-${Date.now()}-${index}`, date, platform, caption: draft.caption,
+      status: scheduledFor ? 'scheduled' : 'published',
+      reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [],
+      mediaUrl: draft.mediaDataUrl,
+      scheduledFor,
+    }));
+    setPosts((current) => [...created, ...current]);
     setDraft(EMPTY_DRAFT);
     setAudit(IDLE_AUDIT);
     setSelectedOption(null);
+    return created;
   };
 
+  // Straight to the Content Library, with the new (or newly scheduled) post
+  // open — the post is the result, so that is where the owner lands. Quick Post resets to Draft for
+  // the next one.
   const confirmPublish = () => {
-    publish();
+    const created = publish();
     setPublishOpen(false);
+    if (!created.length) return;
+    setJustPublished(created.map((p) => p.id));
+    setPendingOpen(created[0].id);
+    setQpStep('draft');
+    setView('library');
   };
 
 
@@ -366,44 +398,27 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           />
         }
         validateStage={
-          <>
-            <div className="qp-summary" aria-label="Post summary">
-              {draft.mediaDataUrl ? (
-                <img className="qp-summary-media" src={draft.mediaDataUrl} alt="Attached media" />
-              ) : (
-                <span className="qp-summary-media qp-summary-media--empty">No media yet</span>
-              )}
-              <div className="qp-summary-text">
-                <p className="qp-summary-label">Your caption</p>
-                <p className="qp-summary-caption">{draft.caption.trim() || 'No caption yet — choose one in Draft.'}</p>
-                <div className="qp-summary-acts">
-                  <button type="button" className="link-inline" onClick={() => setQpStep('draft')}>Edit caption</button>
-                  <button type="button" className="link-inline" onClick={() => setQpStep('attach')}>Change media</button>
-                </div>
-              </div>
-            </div>
-
-            <CompliancePanel
-              draft={draft}
-              audit={audit}
-              onAuditChange={setAudit}
-              recommendations={auditRecommendations(content, activePlatform, selectedOption)}
-            />
-
-            {/* Publish appears only after a passing audit (same rule as before);
-                it opens the modal, whose Confirm is what actually publishes. */}
-            {canPublish && (
-              <div className="qp-publish">
-                <p className="studio-note">Your post passed the review. Choose where to publish it.</p>
-                <button type="button" className="btn-cta" onClick={() => setPublishOpen(true)}>
-                  <Send size={16} aria-hidden="true" />
-                  Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
-                </button>
-              </div>
-            )}
-
-            <AdUrlBlock link={attributionLink} onLinkChange={setAttributionLink} />
-          </>
+          <ValidateStage
+            draft={draft}
+            audit={audit}
+            onAuditChange={setAudit}
+            recommendations={recommendations}
+            onEditCaption={() => setQpStep('draft')}
+            onManageMedia={() => setQpStep('attach')}
+            footer={<AdUrlBlock link={attributionLink} onLinkChange={setAttributionLink} />}
+          />
+        }
+        // Publish appears only after a passing audit (same rule as before); it
+        // opens the modal, whose Confirm is what actually publishes.
+        finish={
+          canPublish ? (
+            <button type="button" className="btn-cta qp-publish-btn" onClick={() => setPublishOpen(true)}>
+              <Send size={16} aria-hidden="true" />
+              Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
+            </button>
+          ) : (
+            <p className="qp-finish-hint">Run the audit — Publish unlocks when your post passes.</p>
+          )
         }
       />
     </>
@@ -440,7 +455,15 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       <div id="studio-panel-library" role="tabpanel" aria-labelledby="studio-tab-library" hidden={view !== 'library'} className="studio-panel">
         {/* Publishing moved into Quick Post's Validate stage, next to the
             review it depends on, so the library only lists content. */}
-        <ContentBoard draft={draft} posts={posts} canPublish={false} onPublished={() => setPublishOpen(true)} />
+        <ContentBoard
+          draft={draft}
+          posts={posts}
+          canPublish={false}
+          onPublished={() => setPublishOpen(true)}
+          openPostId={openPostId}
+          onOpenPost={setOpenPostId}
+          justPublished={justPublished}
+        />
       </div>
 
       {/* No floating trigger: the guide opens from the "Review Visual Guide"
@@ -468,6 +491,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           onDraftChange={patchDraft}
           onClose={() => setPublishOpen(false)}
           onConfirm={confirmPublish}
+          accountName={profile.businessName || undefined}
         />
       )}
     </section>

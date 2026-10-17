@@ -8,9 +8,11 @@
  * one, the group says so and keeps CeView's original recommendation one click
  * away, so overriding never loses it.
  */
+import './campaign-strategy.css';
+import '@fontsource/caveat/500.css';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowRight, CalendarRange, Megaphone, Pencil, Send, SlidersHorizontal, Target, Undo2 } from 'lucide-react';
+import { ArrowRight, CalendarRange, ChartNoAxesColumnIncreasing, Layers, Megaphone, Pencil, SlidersHorizontal, Sparkles, Target, Undo2, Users } from 'lucide-react';
 import type { BusinessProfile, Market } from '@/types';
 import MarketFlagIcon from '../../../module-2/2.1-dashboard/MarketFlagIcon';
 import { PlatformIcon } from '../ContentBoard';
@@ -84,8 +86,8 @@ function WhyGroup({
 }) {
   return (
     <section className="cp-why" aria-label={title}>
+      <span className="cp-why-icon" aria-hidden="true">{icon}</span>
       <header className="cp-why-head">
-        <span className="cp-why-icon" aria-hidden="true">{icon}</span>
         <h3 className="cp-why-title">{title}</h3>
         <EvidenceChip kind={overridden ? 'owner' : evidence} />
         <button type="button" className="cp-edit" aria-expanded={editing} onClick={onToggleEdit}>
@@ -138,7 +140,7 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
   const opportunity = pickedMarket ? classifyMarket(pickedMarket, today) : s.market.value.opportunity;
 
   return (
-    <section className="cp-stage" aria-labelledby="cp-strategy-title">
+    <section className="cp-stage cp-strategy" aria-labelledby="cp-strategy-title">
       <header className="cp-stage-head">
         <h2 id="cp-strategy-title" className="cp-stage-title">Your Recommended Campaign</h2>
         <p className="cp-stage-sub">
@@ -147,23 +149,34 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
       </header>
 
       <div className="cp-summary">
+        <div className="cp-summary-intro">
+          <span className="cp-summary-emblem" aria-hidden="true"><Sparkles size={24} /></span>
+          <div className="cp-summary-copy">
+          <span className="cp-summary-eyebrow">Recommended campaign</span>
         <label className="cp-summary-name">
           <span className="sr-only">Campaign name</span>
           <input className="cp-name-input" value={c.name} onChange={(e) => patch({ name: e.target.value })} aria-label="Campaign name" />
           <Pencil size={14} aria-hidden="true" />
         </label>
+          <p className="cp-summary-description">A focused campaign to reach travelers from {c.marketName}{c.focus.length ? ` through ${c.focus.join(' and ')}.` : '.'}</p>
+          </div>
+          <span className="cp-summary-script" aria-hidden="true">Islands<br />in reach</span>
+        </div>
         <dl className="cp-summary-facts">
           <div>
+            <Target className="cp-fact-icon" size={22} aria-hidden="true" />
             <dt>Objective</dt>
             <dd>{objectiveLabel(c.objective)}</dd>
           </div>
           <div>
+            <Users className="cp-fact-icon" size={22} aria-hidden="true" />
             <dt>Target market</dt>
             <dd className="cp-market">
               <MarketFlagIcon name={c.marketName} /> {c.marketName}
             </dd>
           </div>
           <div>
+            <Layers className="cp-fact-icon" size={22} aria-hidden="true" />
             <dt>Platforms</dt>
             <dd className="cp-plats">
               {c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)}
@@ -171,6 +184,7 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
             </dd>
           </div>
           <div>
+            <CalendarRange className="cp-fact-icon" size={22} aria-hidden="true" />
             <dt>Duration</dt>
             <dd>
               {durationLabel(c)} <span className="cp-summary-meta">{dateRange(c)}</span>
@@ -179,10 +193,13 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
         </dl>
       </div>
 
-      <h3 className="cp-section-title">Why CeView recommends this</h3>
+      <div className="cp-reasons-heading">
+        <h3 className="cp-section-title">Why CeView recommends this</h3>
+        <p>Insights based on your market data, traveler demand and content performance.</p>
+      </div>
       <div className="cp-why-grid">
         <WhyGroup
-          icon={<Target size={17} />}
+          icon={<ChartNoAxesColumnIncreasing size={27} />}
           title="Market opportunity"
           headline={
             <>
@@ -217,7 +234,7 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
         </WhyGroup>
 
         <WhyGroup
-          icon={<Send size={16} />}
+          icon={<Megaphone size={27} />}
           title="Platform choice"
           headline={c.platforms.map(label).join(' + ')}
           why={s.platforms.why}
@@ -250,7 +267,7 @@ export default function StrategyReview({ campaign: c, onChange, markets, profile
         </WhyGroup>
 
         <WhyGroup
-          icon={<CalendarRange size={16} />}
+          icon={<CalendarRange size={27} />}
           title="Timing and focus"
           headline={
             <>

@@ -5,14 +5,15 @@
  * accepts every post still suggested in one action — accepting the plan is
  * not approval to publish, which comes after preparation.
  */
+import './campaign-plan.css';
 import { useState } from 'react';
-import { Check, CircleSlash, Plus, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
+import { CalendarDays, Check, CircleSlash, FileText, MapPin, Megaphone, Plus, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
 import Drawer from '../../../shared/Drawer';
 import { PlatformIcon } from '../ContentBoard';
 import { PLATFORM_CHAR_LIMITS } from '../AIContentMatrixPanel';
 import { STUDIO_PLATFORMS } from '../contentStudioTypes';
 import type { StudioPlatformId } from '../contentStudioTypes';
-import { blankPost, dateRange, formatShortDate, sortedPosts } from './campaignTypes';
+import { blankPost, dateRange, durationLabel, formatShortDate, sortedPosts } from './campaignTypes';
 import type { CampaignDraft, PlannedPost } from './campaignTypes';
 
 export const PLAN_STATUS_LABELS: Record<PlannedPost['status'], string> = {
@@ -57,6 +58,9 @@ export default function ContentPlanReview({
   const posts = sortedPosts(c.posts);
   const post = c.posts.find((p) => p.id === shownId) ?? null;
   const live = posts.filter((p) => p.status !== 'skipped');
+  const platforms = [...new Set(live.map((p) => p.platform))];
+  const themes = [...new Set(live.map((p) => p.purpose).filter(Boolean))];
+  const inspiration = ['/images/landing/who-resort-800.webp', '/images/landing/who-dive-800.webp', '/images/landing/how-lagoon-1000.webp'];
   const edited = c.posts.some((p) => p.captionOrigin === 'edited' || p.status !== 'suggested');
 
   const open = (id: string) => {
@@ -92,7 +96,7 @@ export default function ContentPlanReview({
   const limit = post ? PLATFORM_CHAR_LIMITS[post.platform] : 0;
 
   return (
-    <section className="cp-stage" aria-labelledby="cp-plan-title">
+    <section className="cp-stage cp-content-plan" aria-labelledby="cp-plan-title">
       <header className="cp-stage-head cp-stage-head--row">
         <div>
           <h2 id="cp-plan-title" className="cp-stage-title">Your Content Plan</h2>
@@ -118,6 +122,7 @@ export default function ContentPlanReview({
         <b className="num">{live.length}</b> post{live.length === 1 ? '' : 's'} · {dateRange(c)} · {c.marketName || 'Any market'}
       </p>
 
+      <div className="cp-plan-layout">
       {posts.length === 0 ? (
         <div className="cb-empty">
           <p className="cb-empty-title">No posts in this plan yet</p>
@@ -125,9 +130,15 @@ export default function ContentPlanReview({
         </div>
       ) : (
         <ol className="cp-timeline">
-          {posts.map((p) => (
+          {posts.map((p, index) => (
             <li key={p.id} className="cp-row" data-status={p.status}>
-              <span className="cp-row-date num">{formatShortDate(p.date)}</span>
+              <span className="cp-row-number" aria-hidden="true">{index + 1}</span>
+              <time className="cp-row-date num" dateTime={p.date}>{formatShortDate(p.date)}<span>{new Date(`${p.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short' })}</span></time>
+              <div className="cp-post-card">
+              <div className="cp-post-thumbnail">
+                <img src={p.mediaDataUrl || inspiration[index % inspiration.length]} alt={p.mediaDataUrl ? 'Attached post media' : ''} loading="lazy" />
+                {!p.mediaDataUrl && <span>Inspiration</span>}
+              </div>
               <PlatformIcon platform={p.platform} />
               <div className="cp-row-main">
                 <span className="cp-row-title">
@@ -142,10 +153,32 @@ export default function ContentPlanReview({
               <button type="button" className="btn-outline btn-outline--sm" onClick={() => open(p.id)} aria-label={`Review ${p.topic || 'post'}`}>
                 Review
               </button>
+              </div>
             </li>
           ))}
         </ol>
       )}
+
+      <aside className="cp-plan-sidebar" aria-label="Campaign overview">
+        <div className="cp-plan-banner">
+          <span>Campaign</span>
+          <h3>{c.marketName || 'Any market'}</h3>
+          <p><MapPin size={13} aria-hidden="true" /> {live.length} posts · {dateRange(c)}</p>
+        </div>
+        <h3>Campaign overview</h3>
+        <dl className="cp-plan-overview">
+          <div><CalendarDays size={20} aria-hidden="true" /><dt>{live.length} post{live.length === 1 ? '' : 's'}</dt><dd>Across {durationLabel(c)}</dd></div>
+          <div><MapPin size={20} aria-hidden="true" /><dt>{c.marketName || 'Any market'}</dt><dd>Target market</dd></div>
+          <div><Megaphone size={20} aria-hidden="true" /><dt>{platforms.length} platform{platforms.length === 1 ? '' : 's'}</dt><dd>{platforms.map((id) => STUDIO_PLATFORMS.find((p) => p.id === id)?.label ?? id).join(', ') || 'No platforms yet'}</dd></div>
+          <div><FileText size={20} aria-hidden="true" /><dt>{themes.length} content theme{themes.length === 1 ? '' : 's'}</dt><dd>{themes.join(', ') || 'Add a post to start planning'}</dd></div>
+        </dl>
+        <div className="cp-plan-next">
+          <h3>Next step</h3>
+          <div><span className="cp-plan-step">3</span><p><b>Prepare &amp; approve</b><span>Review visuals, run an audit, and sign off on your posts.</span></p></div>
+        </div>
+        <div className="cp-plan-tip"><Sparkles size={19} aria-hidden="true" /><p><b>Looks good?</b><span>When you&rsquo;re happy with this plan, proceed to review and approve.</span></p></div>
+      </aside>
+      </div>
 
       <footer className="cp-foot">
         <p className="cp-foot-note">

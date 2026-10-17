@@ -44,20 +44,63 @@ function setup(over: Partial<PublishDraftState> = {}, onConfirm = vi.fn(), onDra
 }
 
 describe('PublishModal', () => {
-  it('splits decisions from their consequence', () => {
-    const { container } = setup();
-    const controls = container.querySelector('.pub-controls') as HTMLElement;
-    const preview = container.querySelector('.pub-preview') as HTMLElement;
+  // Three steps, left to right: the options, their consequence, the sign-off.
+  it('reads as options, preview, then review and confirm', () => {
+    setup();
+    const options = screen.getByRole('region', { name: 'Publishing options' });
+    const preview = screen.getByRole('region', { name: 'Preview' });
+    const review = screen.getByRole('region', { name: 'Review and confirm' });
 
-    // Everything that changes what gets published is on the left...
-    expect(within(controls).getByRole('checkbox', { name: /Instagram/ })).toBeTruthy();
-    expect(within(controls).getByLabelText('Final caption')).toBeTruthy();
-    expect(within(controls).getByRole('checkbox', { name: /authorised to publish/ })).toBeTruthy();
-    expect(within(controls).getByRole('radiogroup', { name: 'Visibility' })).toBeTruthy();
+    // Where and how it goes out...
+    expect(within(options).getByRole('checkbox', { name: /Instagram/ })).toBeTruthy();
+    expect(within(options).getByRole('radiogroup', { name: 'Visibility' })).toBeTruthy();
+    expect(within(options).getByRole('checkbox', { name: /Run as Paid Ad/ })).toBeTruthy();
 
-    // ...and only the result of it is on the right.
+    // ...only the result of it in the preview...
     expect(preview.querySelector('.device-frame')).not.toBeNull();
     expect(within(preview).queryByRole('checkbox')).toBeNull();
+
+    // ...then the final copy and the plan...
+    expect(within(review).getByLabelText(/Final caption/)).toBeTruthy();
+    expect(within(review).getByText('What will be published')).toBeTruthy();
+
+    // ...and the authorisation closes the options column.
+    expect(within(options).getByRole('checkbox', { name: /authorised to publish/ })).toBeTruthy();
+  });
+
+  it('says what is still missing while Confirm is disabled', () => {
+    setup({ platforms: [] });
+    expect(screen.getByText('Choose where to publish.')).toBeTruthy();
+  });
+
+  it('points to the confirmation once a platform is chosen', () => {
+    setup({ platforms: ['instagram'], agreementChecked: false });
+    expect(screen.getByText('Tick the confirmation under Publishing Options.')).toBeTruthy();
+  });
+
+  it('summarises what will be published where', () => {
+    mockIsConnected = (p) => p !== 'tiktok';
+    const { container } = setup({ platforms: ['instagram'], visibility: 'private', paidPartnership: true });
+    const rows = [...(container.querySelector('.pubx-plan') as HTMLElement).querySelectorAll('li')];
+    const row = (name: string) => rows.find((r) => r.textContent?.includes(name)) as HTMLElement;
+    expect(row('Instagram')).toHaveTextContent('Private');
+    expect(row('TikTok')).toHaveTextContent('Not connected');
+    expect(row('Facebook')).toHaveTextContent('Not selected');
+    const facts = container.querySelector('.pubx-facts') as HTMLElement;
+    expect(facts).toHaveTextContent('Paid ad');
+    expect(facts).toHaveTextContent('Yes');
+  });
+
+  it('steps the preview through each chosen platform', async () => {
+    const { container } = setup({ platforms: ['instagram', 'facebook'] });
+    const aspect = () => (container.querySelector('.device-media') as HTMLElement).style.aspectRatio;
+    expect(aspect()).toBe('4 / 5');
+    expect(screen.getByText('Instagram preview')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Next platform preview' }));
+    expect(aspect()).toBe('1 / 1');
+    expect(screen.getByText('Facebook preview')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Show Instagram preview' }));
+    expect(aspect()).toBe('4 / 5');
   });
 
   // A disconnected platform cannot be added to "Publish to" without first
@@ -282,5 +325,34 @@ describe('PublishModal', () => {
     expect(k).toBeLessThanOrEqual(1);
     expect(fw * k).toBeLessThanOrEqual(cw);
     expect(fh * k).toBeLessThanOrEqual(ch);
+  });
+});
+
+describe('PublishModal — scheduling', () => {
+  it('switches to scheduling with a suggested date and time', async () => {
+    const { onDraftChange } = setup();
+    await userEvent.click(screen.getByRole('radio', { name: /Schedule/ }));
+    const patch = onDraftChange.mock.calls.at(-1)?.[0];
+    expect(patch.scheduledFor).toMatch(/^\d{4}-\d{2}-\d{2}T09:00$/);
+  });
+
+  it('schedules rather than publishes when a future time is set', () => {
+    setup({ scheduledFor: '2099-03-14T10:30', agreementChecked: true });
+    expect(screen.getByLabelText('Date')).toHaveValue('2099-03-14');
+    expect(screen.getByLabelText('Time')).toHaveValue('10:30');
+    expect(screen.getByRole('button', { name: /Confirm & Schedule/ })).toBeEnabled();
+    expect((document.querySelector('.pubx-facts') as HTMLElement).textContent).toMatch(/Scheduled ·/);
+  });
+
+  it('refuses a time in the past', () => {
+    setup({ scheduledFor: '2001-01-01T09:00', agreementChecked: true });
+    expect(screen.getByRole('alert')).toHaveTextContent('Pick a date and time in the future.');
+    expect(screen.getByRole('button', { name: /Confirm & Schedule/ })).toBeDisabled();
+  });
+
+  it('goes back to publishing now', async () => {
+    const { onDraftChange } = setup({ scheduledFor: '2099-03-14T10:30' });
+    await userEvent.click(screen.getByRole('radio', { name: /Publish now/ }));
+    expect(onDraftChange).toHaveBeenCalledWith({ scheduledFor: null });
   });
 });

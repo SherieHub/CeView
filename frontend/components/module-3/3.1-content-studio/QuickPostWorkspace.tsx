@@ -22,6 +22,8 @@ interface QuickPostWorkspaceProps {
   draftStage: ReactNode;
   attachStage: ReactNode;
   validateStage: ReactNode;
+  /** The last stage's forward action (Publish), in place of Continue. */
+  finish?: ReactNode;
 }
 
 const STAGE_COPY: Record<StudioStepId, { title: string; sub: string }> = {
@@ -38,6 +40,7 @@ export default function QuickPostWorkspace({
   draftStage,
   attachStage,
   validateStage,
+  finish,
 }: QuickPostWorkspaceProps) {
   const index = STUDIO_STEPS.findIndex((s) => s.id === step);
   const prev = STUDIO_STEPS[index - 1];
@@ -81,10 +84,12 @@ export default function QuickPostWorkspace({
             <ArrowLeft size={15} aria-hidden="true" /> Back to {prev.label}
           </button>
         ) : <span />}
-        {next && (
+        {next ? (
           <button type="button" className="btn-primary btn-primary--sm qp-next" onClick={() => onStepChange(next.id)}>
             Continue to {next.label} <ArrowRight size={15} aria-hidden="true" />
           </button>
+        ) : (
+          finish
         )}
       </div>
     </div>

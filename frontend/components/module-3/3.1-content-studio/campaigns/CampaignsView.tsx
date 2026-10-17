@@ -10,15 +10,16 @@
  * mounted while hidden, so switching tabs never loses a campaign in progress.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarRange, Info, Plus, Search, Sparkles } from 'lucide-react';
+import { ChevronDown, Info, Plus, Search } from 'lucide-react';
 import type { BusinessProfile, PublishedPost } from '@/types';
-import { PlatformIcon } from '../ContentBoard';
 import CampaignBuilder from './CampaignBuilder';
+import CampaignCard from './CampaignCard';
+import './campaign-list.css';
 import CampaignGenerate from './CampaignGenerate';
 import CampaignPlanner from './CampaignPlanner';
 import CampaignWorkspace from './CampaignWorkspace';
 import { buildStrategy, campaignFromStrategy } from './campaignRecommendations';
-import { EMPTY_PREFERENCES, activePosts, dateRange, emptyCampaign, isoToday, objectiveLabel } from './campaignTypes';
+import { EMPTY_PREFERENCES, emptyCampaign, isoToday } from './campaignTypes';
 import type { CampaignDraft, CampaignPreferences, PlannedPost } from './campaignTypes';
 import { useCaptionPool, useCategoryMarkets } from './useCampaignData';
 
@@ -198,68 +199,44 @@ export default function CampaignsView({
   }
 
   return (
-    <div className="cv">
-      <div className="cv-head">
+    <div className="cv cl">
+      <div className="cl-head">
         <div>
-          <h2 className="heading-md">Your Campaigns</h2>
-          <p className="body-sm">Plan and manage coordinated content around your marketing goals.</p>
+          <h2 className="cl-heading">Your Campaigns</h2>
+          <p className="cl-sub">Plan and manage coordinated content around your marketing goals.</p>
         </div>
-        <button type="button" className="btn-primary btn-primary--sm" onClick={startNew}>
-          <Sparkles size={15} aria-hidden="true" /> New Campaign
+        <button type="button" className="cl-new" onClick={startNew}>
+          <Plus size={16} aria-hidden="true" /> New Campaign
         </button>
       </div>
 
       <PreviewNotice />
 
-      <div className="cv-filters">
-        <label className="cv-search">
-          <Search size={15} aria-hidden="true" />
+      <div className="cl-filters">
+        <label className="cl-search">
+          <Search size={16} aria-hidden="true" />
           <span className="sr-only">Search campaigns</span>
-          <input className="input input--sm" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search campaigns" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search campaigns" />
         </label>
-        <label>
+        <label className="cl-select">
           <span className="sr-only">Filter by market</span>
-          <select className="input input--sm" value={market} onChange={(e) => setMarket(e.target.value)}>
+          <select value={market} onChange={(e) => setMarket(e.target.value)}>
             <option value="">All markets</option>
             {marketOptions.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
+          <ChevronDown size={15} aria-hidden="true" />
         </label>
       </div>
 
       {visible.length === 0 ? (
         <p className="cw-empty-line">No campaigns match those filters.</p>
       ) : (
-        <ul className="cv-list">
-          {visible.map((c) => {
-            const live = activePosts(c.posts);
-            const approved = live.filter((p) => p.status === 'approved').length;
-            const stageLabel =
-              c.stage === 'done' ? 'Planned' : c.stage === 'strategy' ? 'Reviewing strategy' : c.stage === 'plan' ? 'Reviewing content plan' : 'Preparing posts';
-            return (
-              <li key={c.id} className="cv-card">
-                <div className="cv-card-main">
-                  <div className="cw-title-row">
-                    <h3 className="cv-card-title">{c.name}</h3>
-                    <span className="chip chip--muted">{stageLabel}</span>
-                  </div>
-                  <p className="cw-meta">
-                    {objectiveLabel(c.objective)} · {c.marketName || 'Any market'} · {c.category}
-                  </p>
-                  <div className="cv-card-facts">
-                    <span className="cw-plats">{c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)}</span>
-                    <span><CalendarRange size={14} aria-hidden="true" /> {dateRange(c)}</span>
-                    <span className="num">{live.length} post{live.length === 1 ? '' : 's'}</span>
-                    <span className="num">{approved}/{live.length} approved</span>
-                  </div>
-                </div>
-                <button type="button" className="btn-outline btn-outline--sm" onClick={() => open(c)} aria-label={`Open ${c.name}`}>
-                  {c.stage === 'done' ? 'Open' : 'Continue'}
-                </button>
-              </li>
-            );
-          })}
+        <ul className="cl-grid">
+          {visible.map((c) => (
+            <CampaignCard key={c.id} campaign={c} onOpen={() => open(c)} />
+          ))}
         </ul>
       )}
 

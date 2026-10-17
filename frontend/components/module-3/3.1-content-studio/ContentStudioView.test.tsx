@@ -338,7 +338,8 @@ describe('ContentStudioView — generate request', () => {
     expect(screen.getByRole('heading', { name: 'Why this matters' })).toBeTruthy();
     expect(creativeDirectionMock).not.toHaveBeenCalled();
     expect(approveMock).not.toHaveBeenCalled();
-  });
+    // Includes the mock generation delay: past vitest's 5s default under a full run.
+  }, 20000);
 
   // The sidebar's active row already says Content Studio; repeating it above
   // the title pushed the market selector up level with a label rather than
@@ -426,5 +427,34 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
     // Six real 420ms stepper ticks put this past vitest's 5s default before the
     // waitFor budgets above are even reached — it timed out in the full-suite
     // run and passed alone, which is the tell.
+  }, 30000);
+});
+
+describe('ContentStudioView — after publishing', () => {
+  const STAGED: PublishDraftState = {
+    caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+    visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: true,
+  };
+
+  it('lands on the Content Library with the published post open', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    mockIsConnected = () => true;
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={STAGED} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Publish/ }, SLOW));
+    await userEvent.click(screen.getByRole('button', { name: /Confirm & Publish/ }));
+
+    expect(screen.getByRole('tab', { name: /Content Library/ })).toHaveAttribute('aria-selected', 'true');
+    const detail = await screen.findByRole('dialog', { name: 'Published to Instagram' });
+    expect(within(detail).getByText('A staged caption')).toBeTruthy();
+    expect(screen.getByText('Just published')).toBeTruthy();
+    // Six real 420ms audit steps come first.
   }, 30000);
 });

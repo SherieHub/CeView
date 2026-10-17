@@ -10,10 +10,32 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BarChart3, Lightbulb, Pencil, Trash2, Undo2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  ChartNoAxesColumnIncreasing,
+  CheckCircle2,
+  ImageIcon,
+  Layers,
+  Lightbulb,
+  Megaphone,
+  PenLine,
+  Pencil,
+  ShieldCheck,
+  Target,
+  Trash2,
+  Undo2,
+  Users,
+  Zap,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ContentResponse } from '@/types';
 import MarketFlagIcon from '../../../module-2/2.1-dashboard/MarketFlagIcon';
-import { PlatformIcon } from '../ContentBoard';
+import { LandingImage } from '../../../landing/ui';
+import { BrandMark, PlatformIcon } from '../ContentBoard';
+import './campaign-workspace.css';
 import { STUDIO_PLATFORMS } from '../contentStudioTypes';
 import PreparePostDrawer from './PreparePostDrawer';
 import { PREP_ACTION } from './PreparePosts';
@@ -31,7 +53,28 @@ import {
   prepState,
   sortedPosts,
 } from './campaignTypes';
-import type { CampaignDraft, PlannedPost } from './campaignTypes';
+import type { CampaignDraft, PlannedPost, PrepState } from './campaignTypes';
+
+/** The icon that says what the next step involves. */
+const NEXT_ICON: Partial<Record<PrepState, ReactNode>> = {
+  'needs-media': <ImageIcon size={18} />,
+  'needs-caption': <PenLine size={18} />,
+  'needs-audit': <ShieldCheck size={18} />,
+  'audit-failed': <ShieldCheck size={18} />,
+  ready: <CheckCircle2 size={18} />,
+};
+
+function Fact({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+  return (
+    <div className="cw2-fact">
+      <span className="cw2-fact-icon" aria-hidden="true">{icon}</span>
+      <div>
+        <dt>{label}</dt>
+        <dd>{children}</dd>
+      </div>
+    </div>
+  );
+}
 
 type Tab = 'overview' | 'posts' | 'calendar' | 'results';
 const TABS: { id: Tab; label: string }[] = [
@@ -75,27 +118,31 @@ export default function CampaignWorkspace({ campaign: c, content, onBack, onEdit
 
   return (
     <div className="cw">
-      <button type="button" className="link-back" onClick={onBack}>
-        <ArrowLeft size={15} aria-hidden="true" /> All campaigns
-      </button>
-
-      <header className="cw-head">
-        <div className="cw-head-main">
-          <div className="cw-title-row">
-            <h2 className="cw-title">{c.name}</h2>
-            <span className="chip chip--muted">Session draft</span>
+      {/* A banner rather than a plain header: the campaign's name over a
+          photo of the coast it is selling — the screen's anchor. */}
+      <header className="cw2-hero">
+        <div className="cw2-hero-photo" aria-hidden="true">
+          <LandingImage slot="how-lagoon" fill decorative sizes="(max-width: 767px) 100vw, 60vw" />
+        </div>
+        <div className="cw2-hero-body">
+          <button type="button" className="cw2-back" onClick={onBack}>
+            <ArrowLeft size={14} aria-hidden="true" /> All campaigns
+          </button>
+          <div className="cw2-hero-title-row">
+            <h2 className="cw2-hero-title">{c.name}</h2>
+            <span className="cw2-hero-chip">Session draft</span>
           </div>
-          <p className="cw-meta">
+          <p className="cw2-hero-meta">
             {objectiveLabel(c.objective)} · {c.marketName || 'Any market'} · {dateRange(c)}
           </p>
         </div>
-        <div className="cw-actions">
-          <button type="button" className="btn-outline btn-outline--sm" onClick={onEditPlan}>
+        <div className="cw2-hero-actions">
+          <button type="button" className="cw2-hero-btn" onClick={onEditPlan}>
             <Pencil size={14} aria-hidden="true" /> Edit plan
           </button>
           <button
             type="button"
-            className="icon-btn"
+            className="cw2-hero-icon"
             aria-label="Delete campaign"
             onClick={() => {
               if (window.confirm(`Delete “${c.name}”? This can’t be undone.`)) onDelete();
@@ -106,7 +153,7 @@ export default function CampaignWorkspace({ campaign: c, content, onBack, onEdit
         </div>
       </header>
 
-      <div className="studio-subtabs" role="tablist" aria-label="Campaign sections">
+      <div className="studio-subtabs cw2-tabs" role="tablist" aria-label="Campaign sections">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -124,56 +171,82 @@ export default function CampaignWorkspace({ campaign: c, content, onBack, onEdit
 
       <section role="tabpanel" id={`cw-panel-${tab}`} aria-labelledby={`cw-tab-${tab}`} className="cw-panel">
         {tab === 'overview' && (
-          <div className="cw-overview">
-            <div className="cw-card">
-              <h3 className="cw-card-title">Campaign</h3>
-              <dl className="cb-facts">
-                <div><dt>Objective</dt><dd>{objectiveLabel(c.objective)}</dd></div>
-                <div><dt>Target market</dt><dd className="cp-market"><MarketFlagIcon name={c.marketName} /> {c.marketName || 'Any market'}</dd></div>
+          <div className="cw2-overview">
+            <section className="cw2-card" aria-labelledby="cw2-campaign-title">
+              <header className="cw2-card-head">
+                <span className="cw2-card-icon" aria-hidden="true"><Megaphone size={20} /></span>
                 <div>
-                  <dt>Platforms</dt>
-                  <dd className="cp-plats">{c.platforms.map((p) => <PlatformIcon key={p} platform={p} />)} <span>{platforms}</span></dd>
+                  <h3 id="cw2-campaign-title" className="cw2-card-title">Campaign</h3>
+                  <p className="cw2-card-sub">Key details for this campaign at a glance.</p>
                 </div>
-                <div><dt>Duration</dt><dd>{durationLabel(c)} · {dateRange(c)}</dd></div>
+              </header>
+              <dl className="cw2-facts">
+                <Fact icon={<Target size={18} />} label="Objective">{objectiveLabel(c.objective)}</Fact>
+                <Fact icon={<Users size={18} />} label="Target market">
+                  <span className="cw2-inline"><MarketFlagIcon name={c.marketName} /> {c.marketName || 'Any market'}</span>
+                </Fact>
+                <Fact icon={<CalendarDays size={18} />} label="Duration">{durationLabel(c)} · {dateRange(c)}</Fact>
+                <Fact icon={<Layers size={18} />} label="Platforms">
+                  <span className="cw2-inline">
+                    {c.platforms.map((p) => <BrandMark key={p} platform={p} />)}
+                    <span>{platforms}</span>
+                  </span>
+                </Fact>
               </dl>
               {c.description && <p className="cw-message">{c.description}</p>}
-            </div>
+            </section>
 
-            <div className="cw-card">
-              <h3 className="cw-card-title">Progress</h3>
-              <p className="cw-progress-line">
+            <section className="cw2-card" aria-labelledby="cw2-progress-title">
+              <header className="cw2-card-head">
+                <span className="cw2-card-icon" aria-hidden="true"><ChartNoAxesColumnIncreasing size={20} /></span>
+                <div>
+                  <h3 id="cw2-progress-title" className="cw2-card-title">Progress</h3>
+                  <p className="cw2-card-sub">Track your content approvals for this campaign.</p>
+                </div>
+              </header>
+              <p className="cw2-progress-line">
                 <b className="num">{approved}</b> of <b className="num">{total}</b> posts approved
               </p>
-              <span className="bar" aria-hidden="true">
+              <span className="cw2-bar" aria-hidden="true">
                 <i style={{ width: `${total ? (approved / total) * 100 : 0}%` }} />
               </span>
-              <div className="cw-next">
-                <p className="cp-box-label">Next action</p>
+              <div className="cw2-next">
+                <p className="cw2-next-title">
+                  <Zap size={15} aria-hidden="true" /> Next action
+                </p>
                 {nextPost ? (
-                  <button type="button" className="cw-next-btn" onClick={() => open(nextPost.id)}>
-                    <span>
-                      <b>{PREP_ACTION[prepState(nextPost)]}</b> — {nextPost.topic || 'Untitled post'}
+                  <button type="button" className="cw2-next-btn" onClick={() => open(nextPost.id)}>
+                    <span className="cw2-next-icon" aria-hidden="true">{NEXT_ICON[prepState(nextPost)] ?? <PenLine size={18} />}</span>
+                    <span className="cw2-next-text">
+                      <span><b>{PREP_ACTION[prepState(nextPost)]}</b> — {nextPost.topic || 'Untitled post'}</span>
                       <em>{formatDate(nextPost.date)}</em>
                     </span>
-                    <ArrowRight size={16} aria-hidden="true" />
+                    <ArrowRight size={17} aria-hidden="true" />
                   </button>
                 ) : (
                   <p className="cw-empty-line">{total ? 'Every post is approved.' : 'Add posts with Edit plan.'}</p>
                 )}
               </div>
-            </div>
+            </section>
 
             {c.strategy && (
-              <div className="cw-card cw-card--wide">
-                <h3 className="cw-card-title">
-                  <Lightbulb size={15} aria-hidden="true" /> Why this campaign
-                </h3>
-                <ul className="cw-why">
-                  <li><EvidenceChip kind={c.strategy.market.evidence} /> {c.strategy.market.why}</li>
-                  <li><EvidenceChip kind={c.strategy.platforms.evidence} /> {c.strategy.platforms.why}</li>
-                  <li><EvidenceChip kind={c.strategy.timing.evidence} /> {c.strategy.timing.why}</li>
+              <section className="cw2-why" aria-labelledby="cw2-why-title">
+                <header className="cw2-card-head">
+                  <span className="cw2-why-icon" aria-hidden="true"><Lightbulb size={19} /></span>
+                  <div>
+                    <h3 id="cw2-why-title" className="cw2-card-title">Why this campaign</h3>
+                    <p className="cw2-card-sub">Insights based on market demand and your current content.</p>
+                  </div>
+                </header>
+                <ul className="cw2-why-list">
+                  {[c.strategy.market, c.strategy.platforms, c.strategy.timing].map((rec) => (
+                    <li key={rec.why}>
+                      <EvidenceChip kind={rec.evidence} />
+                      <p>{rec.why}</p>
+                    </li>
+                  ))}
                 </ul>
-              </div>
+              </section>
             )}
           </div>
         )}

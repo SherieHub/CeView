@@ -404,3 +404,10 @@ export function imageFor(slot: ImageSlot): ResolvedImage {
     avifSrcSet: r ? (r.avif ? set('avif') : undefined) : credit.avif ? IMAGE_BASE + credit.avif : undefined,
   };
 }
+
+/** The smallest file for a slot — for thumbnails, which never need the full image. */
+export function thumbnailFor(slot: ImageSlot): string {
+  const credit: ImageCredit = IMAGE_CREDITS.find((c) => c.slot === slot)!;
+  const r = credit.responsive;
+  return r ? `${IMAGE_BASE}${r.base}-${Math.min(...r.widths)}.webp` : IMAGE_BASE + credit.file;
+}

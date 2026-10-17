@@ -5,8 +5,10 @@
  * required inputs. When the profile is missing something generation needs,
  * this says exactly what and links to where to add it.
  */
+import './campaign-entry.css';
+import '@fontsource/caveat/500.css';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronDown, CircleAlert, PenLine, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, Check, ChevronDown, CircleAlert, FileText, PenLine, Sparkles, Store, Tag, Waves } from 'lucide-react';
 import type { BusinessProfile, Market } from '@/types';
 import { ApiErrorPanel } from '../../../shared/ApiErrorPanel';
 import { PlatformIcon } from '../ContentBoard';
@@ -53,14 +55,14 @@ export default function CampaignGenerate({
   const ready = missing.length === 0 && marketsState === 'ready' && markets.length > 0;
 
   const known = [
-    { label: 'Business', value: profile.businessName },
-    { label: 'Category', value: category },
-    { label: 'Services', value: services.length ? services.join(', ') : '' },
-    { label: 'Description', value: profile.description ? 'On your profile' : '' },
+    { label: 'Business', value: profile.businessName, icon: Building2 },
+    { label: 'Services', value: services.length ? services.join(', ') : '', icon: Waves },
+    { label: 'Category', value: category, icon: Tag },
+    { label: 'Description', value: profile.description ? 'On your profile' : '', icon: FileText },
   ];
 
   return (
-    <div className="cp-entry">
+    <div className="cp-entry cp-entry--coastal">
       {canGoBack && (
         <button type="button" className="link-back" onClick={onBack}>
           <ArrowLeft size={15} aria-hidden="true" /> All campaigns
@@ -68,22 +70,36 @@ export default function CampaignGenerate({
       )}
 
       <section className="cp-hero" aria-labelledby="cp-entry-title">
-        <span className="cp-hero-glyph" aria-hidden="true"><Sparkles size={22} /></span>
+        <div className="cp-coastal-art" aria-hidden="true">
+          <p className="cp-coastal-script">Turn your<br />local story into<br /><span>a bigger reach.</span></p>
+          <div className="cp-coastal-postcard"><img src="/images/landing/how-lagoon-1000.webp" alt="" /></div>
+          <span className="cp-coastal-caption">More travelers.<br />Brighter tomorrows.</span>
+          <Sparkles className="cp-coastal-sparkle" size={30} />
+        </div>
+        <div className="cp-hero-intro">
+        <span className="cp-planner-badge"><Sparkles size={17} aria-hidden="true" /> AI-powered campaign planner</span>
         <h2 id="cp-entry-title" className="cp-hero-title">Let&rsquo;s plan your next campaign.</h2>
         <p className="cp-hero-sub">
           CeView uses your business profile, tourism demand insights, and available content performance to recommend a
           campaign.
         </p>
 
+        </div>
+        <div className="cp-profile-card">
+          <div className="cp-profile-heading">
+            <h3><Store size={21} aria-hidden="true" /> Your business profile</h3>
+            <span className="cp-profile-source"><Check size={14} aria-hidden="true" /> Pulled from your profile</span>
+          </div>
         <ul className="cp-known" aria-label="What CeView will use">
           {known.map((k) => (
             <li key={k.label} data-ok={Boolean(k.value)}>
-              {k.value ? <Check size={14} aria-hidden="true" /> : <CircleAlert size={14} aria-hidden="true" />}
+              <span className="cp-profile-icon">{k.value ? <k.icon size={23} aria-hidden="true" /> : <CircleAlert size={23} aria-hidden="true" />}</span>
               <span className="cp-known-label">{k.label}</span>
               <span className="cp-known-value">{k.value || 'Missing'}</span>
             </li>
           ))}
         </ul>
+        </div>
 
         {missing.length > 0 && (
           <div className="cp-callout" role="alert">
@@ -118,7 +134,10 @@ export default function CampaignGenerate({
 
         <details className="cp-prefs">
           <summary>
-            Have something specific in mind? <span className="cp-opt">Optional</span>
+            <span className="cp-prefs-icon"><Sparkles size={25} aria-hidden="true" /></span>
+            <span className="cp-prefs-copy"><span>Have something specific in mind? <span className="cp-opt">Optional</span></span>
+              <span className="cp-prefs-description">Share a theme, audience, promotion, or any idea you&rsquo;d like to explore.</span>
+            </span>
             <ChevronDown size={16} aria-hidden="true" className="cp-prefs-caret" />
           </summary>
           <div className="cp-prefs-grid">
@@ -219,6 +238,7 @@ export default function CampaignGenerate({
           <button type="button" className="btn-cta" disabled={!ready} onClick={onGenerate}>
             <Sparkles size={17} aria-hidden="true" />
             {marketsState === 'loading' ? 'Loading market data…' : 'Generate My Campaign'}
+            <ArrowRight size={21} aria-hidden="true" />
           </button>
           <p className="cp-hero-note">You can review and change every recommendation before proceeding.</p>
         </div>
@@ -227,7 +247,7 @@ export default function CampaignGenerate({
       <p className="cp-manual">
         Prefer to start from scratch?{' '}
         <button type="button" className="link-inline" onClick={onManual}>
-          <PenLine size={13} aria-hidden="true" /> Plan a campaign manually
+          <PenLine size={14} aria-hidden="true" /> Plan a campaign manually <ArrowRight size={16} aria-hidden="true" />
         </button>
       </p>
     </div>

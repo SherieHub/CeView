@@ -1,0 +1,91 @@
+/* Campaign entry only: keep the planner and shared studio styles independent. */
+@layer components {
+  .app-wrap .studio-screen .cp-entry--coastal .cp-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: clamp(20px, 2.3vw, 32px);
+    border: 1px solid white;
+    border-radius: 20px;
+    background: #f5fbf8;
+    box-shadow: 0 16px 48px #157c7210;
+  }
+  .cp-entry--coastal .cp-hero::before {
+    content: '';
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    background: linear-gradient(90deg, #fbfcf8 26%, #f7fcf8eb 47%, #f7fcf800 78%), linear-gradient(0deg, #f2fbf7 18%, #f2fbf700 75%), url('/images/landing/hero-cebu-coast-1280.webp') right top / auto 88% no-repeat;
+  }
+  .cp-entry--coastal .cp-hero::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    width: 350px;
+    height: 200px;
+    right: -140px;
+    bottom: -155px;
+    border: 24px solid #87dfcf30;
+    border-radius: 45%;
+    box-shadow: 0 0 0 28px #87dfcf20, 0 0 0 56px #87dfcf18;
+    transform: rotate(-24deg);
+  }
+  .cp-entry--coastal .cp-hero-intro { position: relative; max-width: 60%; min-height: 185px; padding-bottom: 20px; }
+  .cp-planner-badge { display: inline-flex; align-items: center; gap: 9px; padding: 5px 10px; margin-bottom: 14px; border-radius: 30px; background: #d7f5ef; color: #087f76; font-size: .62rem; font-weight: 700; letter-spacing: .075em; text-transform: uppercase; }
+  .app-wrap .studio-screen .cp-entry--coastal .cp-hero-title { max-width: 470px; font-size: clamp(1.8rem, 2.7vw, 2.5rem); line-height: 1.06; letter-spacing: -.035em; color: #09263e; margin-bottom: 10px; }
+  .app-wrap .studio-screen .cp-entry--coastal .cp-hero-sub { font-size: .875rem; line-height: 1.5; color: #607794; max-width: 600px; }
+  .cp-coastal-art { position: absolute; inset: 20px 28px auto auto; width: 36%; height: 185px; pointer-events: none; }
+  .cp-coastal-script { position: absolute; left: 0; top: 30px; margin: 0; color: #087e79; font: 500 clamp(22px, 2vw, 30px)/.95 'Caveat', cursive; transform: rotate(-10deg); }
+  .cp-coastal-script span { border-bottom: 2px solid #2da99b; padding-bottom: 5px; }
+  .cp-coastal-postcard { position: absolute; right: 12px; top: 5px; width: 40%; height: 140px; border: 5px solid white; border-radius: 18px; transform: rotate(-6deg); overflow: hidden; box-shadow: 0 10px 24px #073b3a26; }
+  .cp-coastal-postcard img { width: 100%; height: 100%; object-fit: cover; }
+  .cp-coastal-caption { position: absolute; right: 0; top: 118px; padding: 10px 14px; background: #fffdf6; border-radius: 15px; color: #09263e; font-size: .8rem; line-height: 1.6; box-shadow: 0 8px 20px #073b3a12; }
+  .cp-coastal-sparkle { position: absolute; right: 49%; bottom: 22px; color: white; }
+  .cp-profile-card { position: relative; padding: 14px 18px 16px; border-radius: 14px; background: #fffffff5; box-shadow: 0 4px 14px #195f6510; }
+  .cp-profile-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .cp-profile-heading h3 { display: flex; align-items: center; gap: 13px; margin: 0; color: #0b2940; font-size: .85rem; }
+  .cp-profile-heading h3 svg { color: #075a56; }
+  .cp-profile-source { display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; background: #e5faf5; color: #087d75; padding: 5px 10px; font-size: .7rem; }
+  .cp-entry--coastal .cp-known { grid-template-columns: 1fr 1.25fr 1fr 1fr; gap: 0; border: 0; margin: 0; padding: 0; }
+  .cp-entry--coastal .cp-known li { grid-template-columns: 34px minmax(0, 1fr); gap: 3px 10px; padding: 0 14px; border-left: 1px solid #dce8ed; font-size: .75rem; }
+  .cp-entry--coastal .cp-known li:first-child { border-left: 0; padding-left: 0; }
+  .cp-profile-icon { grid-row: span 2; display: grid; place-items: center; width: 34px; height: 36px; border-radius: 10px; background: #ecf9f5; }
+  .cp-entry--coastal .cp-known svg { color: #075a56; margin: 0; }
+  .cp-entry--coastal .cp-known-value { grid-column: 2; line-height: 1.5; color: #102f40; }
+  .cp-entry--coastal .cp-known-label { color: #607794; }
+  .cp-entry--coastal .cp-prefs { margin-top: 14px; background: #fffffff5; border: 1px solid #dce8ed; border-radius: 18px; box-shadow: 0 3px 12px #195f6508; }
+  .cp-entry--coastal .cp-prefs summary { padding: 13px 18px; gap: 13px; color: #102f40; }
+  .cp-prefs-icon { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; color: #075a56; background: #ecf9f5; }
+  .cp-prefs-copy { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; }
+  .cp-prefs-description { color: #607794; font-size: .75rem; font-weight: 400; }
+  .cp-entry--coastal .cp-prefs-grid { padding: 8px 24px 24px; }
+  .app-wrap .studio-screen .cp-entry--coastal .cp-hero-acts .btn-cta { gap: 12px; border: 1px solid #19aaa3; background: linear-gradient(160deg, #006362, #043d3c); box-shadow: 0 5px 14px #08a99b24; transition: box-shadow .2s, transform .2s; }
+  .app-wrap .studio-screen .cp-entry--coastal .cp-hero-acts .btn-cta:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px #087f7933; }
+  .cp-entry--coastal .cp-manual { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-top: 1px solid #dcece6; padding: 10px 8px 0; margin-top: 12px; font-size: .8rem; }
+  .cp-entry--coastal .cp-hero-acts { margin-top: 18px; gap: 10px 20px; }
+  .cp-entry--coastal .cp-hero-note { font-size: .75rem; }
+  .cp-entry--coastal .cp-profile-icon svg { width: 19px; height: 19px; }
+  .cp-entry--coastal .cp-prefs-icon svg { width: 21px; height: 21px; }
+  .cp-entry--coastal .cp-manual button { display: inline-flex; align-items: center; gap: 8px; }
+  @media (max-width: 1100px) {
+    .cp-entry--coastal .cp-known { grid-template-columns: 1fr 1fr; gap: 16px 0; }
+    .cp-entry--coastal .cp-known li:nth-child(3) { border-left: 0; padding-left: 0; }
+    .cp-coastal-script { font-size: 26px; }
+    .cp-coastal-postcard { height: 135px; }
+  }
+  @media (max-width: 760px) {
+    .cp-entry--coastal .cp-hero-intro { max-width: 100%; min-height: 0; }
+    .cp-coastal-art { display: none; }
+    .cp-entry--coastal .cp-hero::before { opacity: .25; background-size: cover; }
+    .cp-entry--coastal .cp-known { grid-template-columns: 1fr; gap: 18px; }
+    .cp-entry--coastal .cp-known li { padding: 0; border: 0; }
+    .cp-entry--coastal .cp-prefs summary { padding: 12px; gap: 10px; }
+    .cp-entry--coastal .cp-prefs-grid { grid-template-columns: 1fr; padding: 8px 16px 20px; }
+    .cp-prefs-icon { width: 36px; height: 40px; }
+    .cp-entry--coastal .cp-opt { display: inline-block; }
+    .cp-entry--coastal .cp-hero-acts { gap: 4px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app-wrap .studio-screen .cp-entry--coastal .cp-hero-acts .btn-cta { transition: none; }
+  }
+}

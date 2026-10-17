@@ -111,7 +111,7 @@ export default function CampaignPlanner({
   };
 
   return (
-    <div className="cp">
+    <div className={`cp${c.stage === 'strategy' ? ' cp--strategy' : c.stage === 'plan' ? ' cp--plan' : ''}`}>
       <div className="cp-top">
         <button type="button" className="link-back" onClick={onBack}>
           <ArrowLeft size={15} aria-hidden="true" /> All campaigns

@@ -555,13 +555,17 @@ export interface PublishedPost {
   date: string;
   platform: PlatformId;
   caption: string;
-  status: 'published' | 'draft';
+  status: 'published' | 'draft' | 'scheduled';
   reach: number;
   likes: number;
   comments: number;
   shares: number;
   engagementRate: number;
   series: number[];
+  /** The image it went out with, when the post was published from this session. */
+  mediaUrl?: string | null;
+  /** Local date-time (yyyy-mm-ddThh:mm) a scheduled post is set to go out. */
+  scheduledFor?: string | null;
 }
 
 /**

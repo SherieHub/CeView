@@ -11,7 +11,7 @@
  * the irreversible action they govern.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Facebook, FileText, ImagePlus, Instagram, Maximize2, PenLine, Target, Trash2, Upload, UserRound } from 'lucide-react';
+import { Facebook, FileText, ImagePlus, Instagram, Maximize2, Target, Trash2, Upload, UserRound } from 'lucide-react';
 import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import Modal from '../../shared/Modal';
 import CaptionToolbar from './CaptionToolbar';
@@ -107,7 +107,6 @@ export default function PublishComposer({
               <span className="draft-heading-icon" aria-hidden="true"><UserRound size={26} /></span>
               <div><label className="field-label" htmlFor="staged-caption">Edit your caption</label>
                 <p>Make it your own. Adjust the tone, add details, or combine ideas.</p></div>
-              <label className="draft-write-own" htmlFor="staged-caption"><PenLine size={15} aria-hidden="true" /> Write your own</label>
             </div>
             <dl className="draft-facts">
               <div><span className={`draft-fact-icon draft-fact-icon--${platform}`} aria-hidden="true">{platform === 'instagram' ? <Instagram size={29} /> : platform === 'facebook' ? <Facebook size={29} /> : <TikTokGlyph size={29} />}</span><div><dt>Platform</dt><dd>{platform === 'instagram' ? 'Instagram' : platform === 'facebook' ? 'Facebook' : 'TikTok'}</dd></div></div>

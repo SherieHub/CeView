@@ -100,6 +100,6 @@ describe('Content Studio journey', () => {
     // The modal closes and the Content Library gains the published records
     // (it stays mounted while hidden, so its list is in the DOM).
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Publish' })).toBeNull());
-    await waitFor(() => expect(container.querySelectorAll('.post-grid .post-card').length).toBe(2));
+    await waitFor(() => expect(container.querySelectorAll('.lib-rows .lib-row').length).toBe(2));
   }, 40000);
 });
