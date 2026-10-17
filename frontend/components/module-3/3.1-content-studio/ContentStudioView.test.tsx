@@ -16,7 +16,6 @@ import ContentStudioView from './ContentStudioView';
 import { buildContentResponse } from './testFixtures';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
-import { MOCK_CREATIVE_DIRECTION } from '../../../services/fixtures/creativeDirection';
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { ApiError } from '../../../services/apiError';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
@@ -308,65 +307,37 @@ describe('ContentStudioView — generate request', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Review Visual Guide' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    // Nothing approved yet, so the drawer explains the next step instead of sitting blank.
-    expect(within(drawer).getByText(/select a caption option first/i)).toBeTruthy();
+    // No caption chosen yet, so the drawer explains the next step instead of sitting blank.
+    expect(within(drawer).getByText(/Choose a caption in Draft/i)).toBeTruthy();
     // Media guidance only — the moodboard and caption rationale were removed.
     expect(within(drawer).queryByText('Moodboard')).toBeNull();
   });
 
-  // The backend refuses to generate a direction until the operator has
-  // approved captions for the market (400 missing_dependency), so the screen
-  // must not fire the request on mount — it used to, got the 400, swallowed
-  // it, and left the drawer permanently empty.
-  it('does not request a visual guide before anything is approved', async () => {
+  // The guide's shots come from the chosen caption. The approve-and-generate
+  // AI shot list was removed, so nothing is approved or generated from here.
+  it('generates the caption’s shots on request, with the why-box, and approves nothing', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
     renderStudio();
-    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+    await userEvent.click(select[0]);
+    // The guide is media guidance, so it first auto-opens at Attach — and
+    // before the shots are generated it says where to get them.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
+    expect(within(drawer).getByText(/Generate the AI shots/)).toBeTruthy();
+    await userEvent.click(within(drawer).getAllByRole('button', { name: 'Close' })[0]);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
 
+    // Neither the shots nor "Why this matters" before generating.
+    expect(screen.queryByRole('heading', { name: 'Why this matters' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Generate AI shots' }));
+    expect(screen.getByText('Generating shots for your caption…')).toBeTruthy();
+
+    // Both arrive together.
+    expect(await screen.findByRole('region', { name: 'Shots for your caption' }, SLOW)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Why this matters' })).toBeTruthy();
     expect(creativeDirectionMock).not.toHaveBeenCalled();
     expect(approveMock).not.toHaveBeenCalled();
-  });
-
-  it('approves the market then generates its visual guide', async () => {
-    generateMock.mockResolvedValue(buildContentResponse('groq'));
-    creativeDirectionMock.mockResolvedValue(MOCK_CREATIVE_DIRECTION);
-
-    renderStudio();
-    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
-    await userEvent.click(select[0]);
-    // The guide is media guidance, so it first auto-opens at Attach.
-    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
-
-    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
-
-    await waitFor(() => expect(approveMock).toHaveBeenCalledWith(MARKET.id), SLOW);
-    await waitFor(() => expect(creativeDirectionMock).toHaveBeenCalledWith(MARKET.id), SLOW);
-    // Approval must land before generation reads it.
-    expect(approveMock.mock.invocationCallOrder[0]).toBeLessThan(
-      creativeDirectionMock.mock.invocationCallOrder[0],
-    );
-
-    expect(await within(drawer).findByText('Shot list', undefined, SLOW)).toBeTruthy();
-  });
-
-  it('surfaces a failed approval instead of an empty drawer', async () => {
-    generateMock.mockResolvedValue(buildContentResponse('groq'));
-    approveMock.mockRejectedValue(
-      new ApiError({ status: 404, method: 'POST', path: '/api/content/approve', body: undefined }),
-    );
-
-    renderStudio();
-    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
-    await userEvent.click(select[0]);
-    // The guide is media guidance, so it first auto-opens at Attach.
-    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
-
-    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
-
-    expect(await within(drawer).findByRole('button', { name: /try again/i }, SLOW)).toBeTruthy();
-    expect(creativeDirectionMock).not.toHaveBeenCalled();
   });
 
   // The sidebar's active row already says Content Studio; repeating it above

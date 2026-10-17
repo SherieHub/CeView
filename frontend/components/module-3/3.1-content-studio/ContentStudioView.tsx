@@ -14,7 +14,7 @@
  * lives here, and all three panels stay mounted (just hidden), so switching
  * tabs or stages never resets work or re-runs a request.
  *
- * The shooting reference — visual direction and shot list — lives in a
+ * The shooting reference — the chosen caption's shots — lives in a
  * slide-out drawer. This screen renders a labelled <section>, not a <main>:
  * AppShell already owns the page's single main landmark.
  */
@@ -24,8 +24,10 @@ import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
 import AdUrlBlock from './AdUrlBlock';
+import AttachStage from './AttachStage';
+import { MOCK_GENERATION_MS, slidesFromCaption } from './captionShots';
+import type { ShotsState } from './captionShots';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
-import type { VisualGuideStatus } from './CampaignBriefDrawer';
 import CompliancePanel from './CompliancePanel';
 import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
@@ -41,7 +43,7 @@ import type { CampaignMode } from './campaigns/CampaignsView';
 import { useCampaignDrafts } from './campaigns/campaignTypes';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
 import type { AuditState, PublishDraftState, StudioPlatformId } from './contentStudioTypes';
-import type { AttributionLink, ContentResponse, CreativeDirection, Market, PublishedPost } from '../../../types';
+import type { AttributionLink, ContentResponse, Market, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
 // (see docs/superpowers/specs/2026-08-29-frontend-backend-connection-design.md
 // §Non-goals). The board therefore starts empty and only shows fixture posts when
@@ -110,14 +112,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const [contentLoading, setContentLoading] = useState(false);
   const [attributionLink, setAttributionLink] = useState<AttributionLink | null>(null);
 
-  // Fetched here rather than inside the drawer: the view owns the request so a
-  // future consumer does not trigger a second one for the same payload.
-  // Generated only on the operator's explicit "Approve & get visual guide" —
-  // see approveAndGenerateGuide below.
-  const [direction, setDirection] = useState<CreativeDirection | null>(null);
-  const [guideStatus, setGuideStatus] = useState<VisualGuideStatus>('idle');
-  const [guideError, setGuideError] = useState<unknown | null>(null);
-
   // Which option is staged for the ACTIVE platform. Held here because the
   // caption itself lives in `draft`, so the grid's highlight and the composer's
   // contents cannot disagree.
@@ -151,43 +145,6 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       setAudit(IDLE_AUDIT);
     });
   }, [onDisconnect]);
-
-  // Approval and the direction are both per market, so a guide generated for
-  // one market must not linger after switching to another. The ref guards the
-  // in-flight request: a response for the old market is dropped on arrival.
-  const guideMarket = target?.market.id ?? null;
-  const guideRequest = useRef(0);
-  useEffect(() => {
-    guideRequest.current += 1;
-    setDirection(null);
-    setGuideError(null);
-    setGuideStatus('idle');
-  }, [guideMarket]);
-
-  /**
-   * The backend generates a direction only from APPROVED captions (400
-   * missing_dependency otherwise), so this approves the market's generated set
-   * first, then generates. It used to fire generate() on mount with no market
-   * — before anything could have been approved — and swallow the 400, which
-   * left the Visual Guide permanently blank.
-   */
-  const approveAndGenerateGuide = async () => {
-    if (!guideMarket) return;
-    const request = ++guideRequest.current;
-    setGuideStatus('loading');
-    setGuideError(null);
-    try {
-      await apiClient.content.approve(guideMarket);
-      const result = await apiClient.creativeDirection.generate(guideMarket);
-      if (request !== guideRequest.current) return;
-      setDirection(result);
-      setGuideStatus('ready');
-    } catch (e) {
-      if (request !== guideRequest.current) return;
-      setGuideError(e);
-      setGuideStatus('error');
-    }
-  };
 
   // Depended on directly rather than through `target`, so re-picking the same
   // category (a different market on the same surge) does not refetch a list
@@ -274,6 +231,27 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     setSelectedOption(index);
     setStageToken((t) => t + 1);
     patchDraft({ caption: text, agreementChecked: false });
+  };
+
+  // The Visual guide's four shots for the chosen caption (captionShots.ts) —
+  // mock inspiration for now, where generated AI shots will appear. They're
+  // revealed by "Generate AI shots", and a new caption needs new shots, so the
+  // state returns to idle whenever the shots themselves change.
+  const platformGuide = content?.captions[activePlatform]?.guide ?? [];
+  const shotSlides = slidesFromCaption(draft.caption, platformGuide, [profile.businessName]);
+  const shotsKey = shotSlides.map((s) => `${s.id}:${s.quote ?? ''}`).join('|');
+  const [shotsState, setShotsState] = useState<ShotsState>('idle');
+  const shotsTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    window.clearTimeout(shotsTimer.current);
+    setShotsState('idle');
+  }, [shotsKey]);
+  useEffect(() => () => window.clearTimeout(shotsTimer.current), []);
+  const generateShots = () => {
+    // MOCK: stands in for the generation request (see MOCK_GENERATION_MS).
+    setShotsState('loading');
+    window.clearTimeout(shotsTimer.current);
+    shotsTimer.current = window.setTimeout(() => setShotsState('ready'), MOCK_GENERATION_MS);
   };
 
   // Reveals the Publish button. Platform choice and the authorisation tick are
@@ -373,14 +351,18 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           </>
         }
         attachStage={
-          <PublishComposer
+          <AttachStage
             draft={draft}
             onDraftChange={patchDraft}
             audit={audit}
             platform={activePlatform}
             stageToken={stageToken}
-            onOpenBrief={brief.openDrawer}
-            part="media"
+            marketName={target.market.name}
+            slides={shotSlides}
+            shotsState={shotsState}
+            onGenerateShots={generateShots}
+            onOpenGuide={brief.openDrawer}
+            onChooseCaption={() => setQpStep('draft')}
           />
         }
         validateStage={
@@ -470,12 +452,10 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           open={view === 'quick' && brief.open && !onDraft}
           onClose={brief.closeDrawer}
           showWelcome={brief.showWelcome}
-          direction={direction}
-          status={guideStatus}
-          error={guideError}
           marketName={target.market.name}
-          captionChosen={Boolean(draft.caption.trim())}
-          onApprove={approveAndGenerateGuide}
+          slides={shotsState === 'ready' ? shotSlides : []}
+          shotsPending={shotSlides.length > 0 && shotsState !== 'ready'}
+          platformGuide={platformGuide}
         />
       )}
 

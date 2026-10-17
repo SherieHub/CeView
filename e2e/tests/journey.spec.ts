@@ -223,24 +223,14 @@ test.describe('End-to-end authenticated journey', () => {
     }
     await expect(visualGuide).toBeVisible();
 
-    // POST /api/creative-direction/generate -> Spring's
-    // AIInferenceGatewayService.generateCreative -> fastapi-sbert has no known
-    // defect on the happy path, and fastapi-sbert IS started in the e2e-journey
-    // CI job (see this file's header comment) — but a live Groq call can still
-    // fail transiently. ContentStudioView catches that into `direction = null`,
-    // which renders the drawer's header with no sections and NO error panel, so
-    // there is nothing to assert on in that branch. Require real content only
-    // when the shot list actually rendered, mirroring the caption-panel
-    // assertion below.
-    const shotListHeading = visualGuide.getByRole('heading', { name: 'Shot list' });
-    const shotListRendered = await shotListHeading
-      .waitFor({ state: 'visible', timeout: 20_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (shotListRendered) {
-      await expect(visualGuide).not.toContainText('undefined');
-      await expect(visualGuide).not.toContainText('NaN');
-    }
+    // The guide is built from the chosen caption (captionShots.ts); the
+    // approve-and-generate AI shot list was removed from the drawer. With no
+    // caption picked yet it names the market and asks for one — no request,
+    // no empty sections.
+    await expect(visualGuide.getByRole('heading', { name: 'Visual Guide for South Korea' })).toBeVisible();
+    await expect(visualGuide).toContainText('Choose a caption in Draft');
+    await expect(visualGuide).not.toContainText('undefined');
+    await expect(visualGuide).not.toContainText('NaN');
 
     // Close it, then return to Draft, where the caption matrix lives.
     await visualGuide.getByRole('button', { name: 'Close' }).click();

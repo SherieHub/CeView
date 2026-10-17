@@ -181,8 +181,11 @@ export default function RadarDrawerView({
           title={!onTarget ? targetUnavailable : undefined}
           onClick={() => {
             if (!onTarget) return;
-            onTarget(market.id);
+            // Close first: closing rewrites the opener's ?market= query, which
+            // is itself a navigation — run after onTarget's, it sent the owner
+            // straight back to the dashboard instead of on to Content Studio.
             onClose();
+            onTarget(market.id);
           }}
         >
           Target this market <ArrowRight size={16} aria-hidden="true" />

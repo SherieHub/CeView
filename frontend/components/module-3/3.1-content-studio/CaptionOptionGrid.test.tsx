@@ -13,6 +13,33 @@ function renderGrid(ui: ReactElement) {
   return render(<OverlayStackProvider>{ui}</OverlayStackProvider>);
 }
 
+describe('CaptionOptionGrid — whole-card selection', () => {
+  it('selects an option from a click anywhere on its card, but not from its expand button', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<CaptionOptionGrid captions={MOCK_CONTENT.captions.instagram} selectedIndex={null} onSelect={onSelect} />);
+
+    await user.click(screen.getByTestId('cap-body-1'));
+    expect(onSelect).toHaveBeenCalledWith(1, MOCK_CONTENT.captions.instagram.options[1]);
+
+    onSelect.mockClear();
+    await user.click(screen.getByRole('heading', { name: IG.optionNames[0] }));
+    expect(onSelect).toHaveBeenCalledWith(0, IG.options[0]);
+
+    onSelect.mockClear();
+    await user.click(screen.getAllByRole('button', { name: /in full$/ })[2]);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('calls select once when the Select button itself is clicked', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<CaptionOptionGrid captions={MOCK_CONTENT.captions.instagram} selectedIndex={null} onSelect={onSelect} />);
+    await user.click(screen.getAllByRole('button', { name: 'Select' })[0]);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('CaptionOptionGrid', () => {
   it('renders one card per option with its name', () => {
     renderGrid(

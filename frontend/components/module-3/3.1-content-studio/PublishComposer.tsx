@@ -11,9 +11,10 @@
  * the irreversible action they govern.
  */
 import { useEffect, useRef, useState } from 'react';
-import { AlignJustify, Bold, Facebook, FileText, ImagePlus, Instagram, Italic, Link2, List, ListOrdered, Maximize2, PenLine, Redo2, Smile, Target, Trash2, Underline, Undo2, UserRound } from 'lucide-react';
+import { Facebook, FileText, ImagePlus, Instagram, Maximize2, PenLine, Target, Trash2, Upload, UserRound } from 'lucide-react';
 import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import Modal from '../../shared/Modal';
+import CaptionToolbar from './CaptionToolbar';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
 
@@ -77,8 +78,20 @@ export default function PublishComposer({
     el.style.height = `${el.scrollHeight}px`;
   }, [draft.caption]);
 
+  const [dragging, setDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const readImage = (file: File | undefined) => {
-    if (!file || !file.type.match(/^image\/(png|jpeg|webp)$/) || file.size > 20 * 1024 * 1024) return;
+    if (!file) return;
+    // Rejected files used to vanish silently; say why instead.
+    if (!file.type.match(/^image\/(png|jpeg|webp)$/)) {
+      setFileError('That file type isn’t supported — use a PNG, JPG or WEBP image.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setFileError('That image is over 20 MB — use a smaller file.');
+      return;
+    }
+    setFileError(null);
     const reader = new FileReader();
     reader.onload = () => onDraftChange({ mediaDataUrl: String(reader.result), agreementChecked: false });
     reader.readAsDataURL(file);
@@ -117,41 +130,13 @@ export default function PublishComposer({
             placeholder="Approve a matrix option or write your own caption."
           />
           <div className="cap-count caption-toolbar-bar" data-over={overLimit}>
-            <div className="caption-toolbar-tools" role="toolbar" aria-label="Caption formatting">
-              <button type="button" className="caption-tbtn" aria-label="Undo" title="Undo">
-                <Undo2 size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Redo" title="Redo">
-                <Redo2 size={14} aria-hidden="true" />
-              </button>
-              <span className="caption-tsep" aria-hidden="true" />
-              <button type="button" className="caption-tbtn" aria-label="Bold" title="Bold">
-                <Bold size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Italic" title="Italic">
-                <Italic size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Underline" title="Underline">
-                <Underline size={14} aria-hidden="true" />
-              </button>
-              <span className="caption-tsep" aria-hidden="true" />
-              <button type="button" className="caption-tbtn" aria-label="Bullet list" title="Bullet list">
-                <List size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Numbered list" title="Numbered list">
-                <ListOrdered size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Align" title="Align">
-                <AlignJustify size={14} aria-hidden="true" />
-              </button>
-              <span className="caption-tsep" aria-hidden="true" />
-              <button type="button" className="caption-tbtn" aria-label="Insert link" title="Insert link">
-                <Link2 size={14} aria-hidden="true" />
-              </button>
-              <button type="button" className="caption-tbtn" aria-label="Insert emoji" title="Insert emoji">
-                <Smile size={14} aria-hidden="true" />
-              </button>
-            </div>
+            <CaptionToolbar
+              value={draft.caption}
+              onChange={(caption) => onDraftChange({ caption, agreementChecked: false })}
+              textareaRef={captionRef}
+              platform={platform}
+              fieldKey={stageToken}
+            />
             <span className="num">
               Characters: {draft.caption.length.toLocaleString()} / {limit.toLocaleString()}
             </span>
@@ -196,14 +181,40 @@ export default function PublishComposer({
               </div>
             </div>
           ) : (
-            <label className="upload-zone">
+            <label
+              className="upload-zone"
+              data-dragging={dragging || undefined}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                readImage(event.dataTransfer.files?.[0]);
+              }}
+            >
               <span className="upload-glyph"><ImagePlus size={20} aria-hidden="true" /></span>
               <span className="heading-sm">Upload PNG, JPG, or WEBP</span>
               <span className="text-meta mt-1 block">Up to 20 MB</span>
-              <input className="sr" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => readImage(event.target.files?.[0])} />
+              {/* The whole zone is the label, so this is its visible affordance
+                  rather than a second control. */}
+              <span className="upload-choose" aria-hidden="true"><Upload size={15} /> Choose file</span>
+              <span className="upload-drop">or drag and drop</span>
+              <input
+                className="sr"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => {
+                  readImage(event.target.files?.[0]);
+                  event.target.value = '';
+                }}
+              />
             </label>
           )}
-          {reason && <p className="text-meta mt-3" role="status">{reason}</p>}
+          {fileError && <p className="upload-error" role="alert">{fileError}</p>}
+          {reason && !fileError && <p className="text-meta mt-3" role="status">{reason}</p>}
         </div>
         )}
       </div>

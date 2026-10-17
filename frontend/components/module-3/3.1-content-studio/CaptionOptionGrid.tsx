@@ -67,7 +67,20 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
         {captions.options.map((text, index) => {
           const isSelected = selectedIndex === index;
           return (
-            <article key={index} className="cap-card" data-selected={isSelected}>
+            <article
+              key={index}
+              className="cap-card"
+              data-selected={isSelected}
+              // The whole card picks the option — a pointer convenience; the
+              // Select button stays the keyboard and screen-reader control.
+              // Its own buttons (Select, expand) handle themselves, and a
+              // click that ends a text selection is left alone.
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('button')) return;
+                if (window.getSelection()?.toString()) return;
+                onSelect(index, text);
+              }}
+            >
               <div className="cap-head">
                 <span className="badge badge--teal">Option {index + 1}</span>
                 <span className="cap-length">{text.length} characters</span>
