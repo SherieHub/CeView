@@ -37,6 +37,7 @@ import CostTrendChart from './CostTrendChart';
 import AiActionPlan from './AiActionPlan';
 import PreviouslyPublished from './PreviouslyPublished';
 import AttributionEvidenceSection from './AttributionEvidenceSection';
+import './performance.css';
 
 /**
  * Per pseudocode/module-4/kpi-cards.ts: KpiCard takes {label, value} per

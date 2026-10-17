@@ -50,6 +50,7 @@ import type { AttributionLink, ContentResponse, Market, PublishedPost } from '..
 // the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
 import { useConnections } from '../../../services/connectionsStore';
+import { useOptionalPosts } from '../../../services/postStore';
 import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
@@ -76,14 +77,24 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const [activePlatform, setActivePlatform] = useState<StudioPlatformId>('instagram');
   const [draft, setDraft] = useState<PublishDraftState>(initialDraft ?? EMPTY_DRAFT);
   const [audit, setAudit] = useState<AuditState>(IDLE_AUDIT);
-  const [posts, setPosts] = useState<PublishedPost[]>(initialPosts ?? []);
+  // Posts live in the app-wide store, so what is published or scheduled here
+  // is what the Calendar and Performance read. Injected posts (tests) and a
+  // screen rendered without the provider keep a local list instead.
+  const store = useOptionalPosts();
+  const shared = initialPosts ? null : store;
+  const [localPosts, setLocalPosts] = useState<PublishedPost[]>(initialPosts ?? []);
+  const posts = shared ? shared.posts ?? [] : localPosts;
+  const addPosts = (created: PublishedPost[]) => {
+    if (shared) shared.add(created);
+    else setLocalPosts((current) => [...created, ...current]);
+  };
 
   useEffect(() => {
-    if (initialPosts) return;
+    if (initialPosts || store) return;
     let cancelled = false;
     apiClient.posts
       .list()
-      .then((list) => { if (!cancelled) setPosts((current) => (current.length ? current : (list as PublishedPost[]))); })
+      .then((list) => { if (!cancelled) setLocalPosts((current) => (current.length ? current : (list as PublishedPost[]))); })
       .catch(() => {});
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -291,7 +302,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       mediaUrl: draft.mediaDataUrl,
       scheduledFor,
     }));
-    setPosts((current) => [...created, ...current]);
+    addPosts(created);
     setDraft(EMPTY_DRAFT);
     setAudit(IDLE_AUDIT);
     setSelectedOption(null);

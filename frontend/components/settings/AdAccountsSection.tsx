@@ -8,11 +8,12 @@
  *
  * Spec: docs/superpowers/specs/2026-09-06-ad-platform-connections-design.md
  */
-import { useState } from 'react';
-import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Loader2, Megaphone, Plus } from 'lucide-react';
 import { useToast } from '../shared/Toast';
 import { useAdConnections } from '../../services/useAdConnections';
 import { apiClient } from '../../services/apiClient';
+import { PlatformLogo } from './PlatformLogo';
 import type { AdConnection, AdProvider } from '../../types';
 
 const PROVIDER_LABELS: Record<AdProvider, string> = {
@@ -27,13 +28,20 @@ const PROVIDER_HINTS: Record<AdProvider, string> = {
 
 export default function AdAccountsSection({
   onConnected,
+  onLoaded,
 }: {
   /** Called when a provider needs its ad account chosen — opens the picker. */
   onConnected: (provider: AdProvider) => void;
+  /** Reports the list as it loads and changes, for the page's summary. */
+  onLoaded?: (connections: AdConnection[] | null) => void;
 }) {
   const { connections, error, disconnect } = useAdConnections();
   const { showToast } = useToast();
   const [busy, setBusy] = useState<AdProvider | null>(null);
+
+  useEffect(() => {
+    onLoaded?.(connections);
+  }, [connections, onLoaded]);
 
   async function startConnect(provider: AdProvider) {
     setBusy(provider);
@@ -60,44 +68,48 @@ export default function AdAccountsSection({
     }
   }
 
-  if (connections === null) {
-    return (
-      <div className="card p-6">
-        <div className="flex flex-col gap-3" aria-hidden="true">
-          <div className="skel" style={{ height: 64 }} />
-          <div className="skel" style={{ height: 64 }} />
+  return (
+    <section className="pf-card pf-panel" id="pf-ads" aria-labelledby="pf-ads-title">
+      <div className="pf-panel-head pf-panel-head--light">
+        <span className="pf-panel-icon" aria-hidden="true"><Megaphone size={22} /></span>
+        <div>
+          <h2 id="pf-ads-title" className="pf-panel-title">Ad accounts</h2>
+          <p className="pf-panel-sub">
+            Connect an ad account to pull impressions, clicks, and spend into Performance
+            automatically. Revenue and bookings stay yours to enter.
+          </p>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="card p-6">
-      <h2 className="heading-lg mb-1">Ad accounts</h2>
-      <p className="body-sm mb-5">
-        Connect an ad account to pull impressions, clicks, and spend into Performance
-        automatically. Revenue and bookings stay yours to enter.
-      </p>
-
-      {error != null && (
-        <p className="body-sm mb-4 text-[var(--color-critical-text)]">
-          Could not load ad connections. Check that the backend is running.
-        </p>
-      )}
-
-      <div className="flex flex-col gap-3">
-        {connections.map((connection) => (
-          <AdConnectionRow
-            key={connection.provider}
-            connection={connection}
-            busy={busy === connection.provider}
-            onConnect={() => startConnect(connection.provider)}
-            onChooseAccount={() => onConnected(connection.provider)}
-            onDisconnect={() => handleDisconnect(connection.provider)}
-          />
-        ))}
+      <div className="pf-panel-body">
+        {connections === null ? (
+          <div className="flex flex-col gap-3" aria-hidden="true">
+            <div className="skel" style={{ height: 72 }} />
+            <div className="skel" style={{ height: 72 }} />
+          </div>
+        ) : (
+          <>
+            {error != null && (
+              <p className="pf-note pf-note--error">
+                Could not load ad connections. Check that the backend is running.
+              </p>
+            )}
+            <ul className="pf-rows">
+              {connections.map((connection) => (
+                <AdConnectionRow
+                  key={connection.provider}
+                  connection={connection}
+                  busy={busy === connection.provider}
+                  onConnect={() => startConnect(connection.provider)}
+                  onChooseAccount={() => onConnected(connection.provider)}
+                  onDisconnect={() => handleDisconnect(connection.provider)}
+                />
+              ))}
+            </ul>
+          </>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -119,46 +131,43 @@ function AdConnectionRow({
   const isPending = status === 'PENDING_ACCOUNT_SELECTION';
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-gray-light)] p-4">
-      <div className="flex items-center gap-3">
-        {isActive ? (
-          <CheckCircle2 className="text-[var(--color-mint-primary)]" aria-hidden="true" />
-        ) : (
-          <Circle className="text-[var(--color-text-muted)]" aria-hidden="true" />
-        )}
-        <div>
-          <p className="font-semibold text-navy-dark">{PROVIDER_LABELS[provider]}</p>
-          <p className="body-xs text-[var(--color-text-muted)]">{statusLine(connection)}</p>
-        </div>
+    <li className="pf-row" data-muted={!configured || undefined}>
+      <PlatformLogo platform={provider} />
+      <div className="pf-row-text">
+        <p className="pf-row-name">{PROVIDER_LABELS[provider]}</p>
+        <p className="pf-row-sub">{statusLine(connection)}</p>
       </div>
 
-      <div className="flex items-center gap-3">
-        {isActive && <span className="badge badge--teal">Connected</span>}
-        {busy && <Loader2 className="animate-spin" size={16} aria-hidden="true" />}
+      <div className="pf-row-actions">
+        {busy && <Loader2 className="animate-spin pf-busy" size={16} aria-hidden="true" />}
+        {isActive && <span className="pf-pill">Connected</span>}
 
         {isPending && (
-          <button type="button" className="btn-primary" onClick={onChooseAccount}>
+          <button type="button" className="pf-connect" onClick={onChooseAccount}>
             Choose ad account
           </button>
         )}
 
         {isActive || isPending ? (
-          <button type="button" className="btn-outline--sm" onClick={onDisconnect} disabled={busy}>
-            Disconnect
-          </button>
+          <>
+            <span className="pf-divider" aria-hidden="true" />
+            <button type="button" className="pf-text-btn" onClick={onDisconnect} disabled={busy}>
+              Disconnect
+            </button>
+          </>
         ) : (
           <button
             type="button"
-            className="btn-primary"
+            className="pf-connect"
             onClick={onConnect}
             disabled={!configured || busy}
             title={configured ? undefined : 'This server has no credentials for this provider'}
           >
-            Connect
+            <Plus size={16} aria-hidden="true" />Connect
           </button>
         )}
       </div>
-    </div>
+    </li>
   );
 }
 

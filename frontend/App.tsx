@@ -97,7 +97,7 @@ const devPreviewRoutes = import.meta.env.DEV
         path: '/preview',
         element: (
           <ProfileProvider initial={DEMO_PROFILE}>
-            <PostStoreProvider>
+            <PostStoreProvider initial={DEMO_BOARD_POSTS}>
               <ConnectionsStoreProvider>
                 <TargetSelectionProvider initial={DEMO_TARGET}>
                   <AppShell />
@@ -110,6 +110,9 @@ const devPreviewRoutes = import.meta.env.DEV
           { path: 'content', element: <ContentPreviewScreen /> },
           { path: 'calendar', element: page(<CalendarView />) },
           { path: 'performance', element: page(<CampaignAnalyticsView />) },
+          { path: 'settings/profile', element: page(<BusinessProfileSettings />) },
+          { path: 'settings/platforms', element: page(<PlatformsSettings />) },
+          { path: 'settings/workspace', element: page(<WorkspaceSettings />) },
         ],
       },
     ]
@@ -144,7 +147,9 @@ function DashboardPreviewShell() {
  * empty businessName.
  */
 function ContentPreviewScreen() {
-  return page(<ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={DEMO_BOARD_POSTS} />);
+  // Posts come from the preview's PostStoreProvider (seeded with the demo
+  // board), so what is scheduled here also shows on /preview/calendar.
+  return page(<ContentStudioView initialDraft={DEMO_DRAFT} />);
 }
 
 /** DEV-ONLY. Maps the :mode segment onto the dashboard's state machine. */

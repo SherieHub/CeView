@@ -30,6 +30,8 @@ export interface PublishDraft {
 export interface PostStore {
   posts: PublishedPost[] | null;
   publish(draft: PublishDraft): PublishedPost[];
+  /** Adds posts a screen built itself (Quick Post's publish or schedule). */
+  add(created: PublishedPost[]): void;
   metricsFor(postId: string): PublishedPost | null;
 }
 
@@ -39,15 +41,22 @@ function todayISO(): string {
 
 const PostStoreContext = createContext<PostStore | null>(null);
 
-export function PostStoreProvider({ children }: { children: ReactNode }) {
-  const [posts, setPosts] = useState<PublishedPost[] | null>(null);
+export function PostStoreProvider({ children, initial }: { children: ReactNode; initial?: PublishedPost[] }) {
+  // `initial` seeds the dev preview with its demo board instead of fetching.
+  const [posts, setPosts] = useState<PublishedPost[] | null>(initial ?? null);
 
   useEffect(() => {
+    if (initial) return;
     apiClient.posts
       .list()
       .then((list) => setPosts(list as PublishedPost[]))
       .catch(() => setPosts([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function add(created: PublishedPost[]) {
+    setPosts((prev) => [...created, ...(prev ?? [])]);
+  }
 
   function publish(draft: PublishDraft): PublishedPost[] {
     const created: PublishedPost[] = draft.platforms.map((platform) => ({
@@ -63,7 +72,7 @@ export function PostStoreProvider({ children }: { children: ReactNode }) {
       engagementRate: 0,
       series: [],
     }));
-    setPosts((prev) => [...created, ...(prev ?? [])]);
+    add(created);
     return created;
   }
 
@@ -72,12 +81,17 @@ export function PostStoreProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo<PostStore>(
-    () => ({ posts, publish, metricsFor }),
+    () => ({ posts, publish, add, metricsFor }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [posts]
   );
 
   return <PostStoreContext.Provider value={value}>{children}</PostStoreContext.Provider>;
+}
+
+/** The store when one is mounted, else null — for screens that also render standalone (tests). */
+export function useOptionalPosts(): PostStore | null {
+  return useContext(PostStoreContext);
 }
 
 export function usePosts(): PostStore {

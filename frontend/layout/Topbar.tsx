@@ -83,7 +83,11 @@ export default function Topbar({ onToggleSidebar, sidebarOpen = false }: TopbarP
           aria-label={`Account menu for ${who}`}
           onClick={() => setMenuOpen((o) => !o)}
         >
-          {mono || <UserRound size={18} strokeWidth={1.75} aria-hidden="true" />}
+          {profile.imagePreview ? (
+            <img className="topbar-avatar-img" src={profile.imagePreview} alt="" />
+          ) : (
+            mono || <UserRound size={18} strokeWidth={1.75} aria-hidden="true" />
+          )}
           <span className="topbar-avatar-caret" aria-hidden="true">
             <ChevronDown size={11} strokeWidth={2.5} />
           </span>

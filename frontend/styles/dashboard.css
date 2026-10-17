@@ -1581,3 +1581,8 @@
   .business-trend-score { display: grid; place-items: center; flex: none; min-width: 32px; height: 26px; padding: 0 5px; border-radius: 99px; background: #dcf4ee; color: #096663; font-size: .75rem; font-weight: 600; }
   .business-trend-score[data-muted] { background: #eaf1f3; color: #526d7b; }
 }
+
+/* The business's profile photo, when one is set (Business Profile). */
+@layer components {
+  .app-wrap .topbar-avatar-img { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; }
+}

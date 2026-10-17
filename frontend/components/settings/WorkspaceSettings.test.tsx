@@ -110,6 +110,30 @@ describe('WorkspaceSettings', () => {
     expect(screen.queryByText('Invite pending')).not.toBeInTheDocument();
   });
 
+  it('each row has a menu that copies the member email', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderSettings();
+    await screen.findByText('Maria Lopez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'More actions for Jun Tabares' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /copy email/i }));
+
+    expect(writeText).toHaveBeenCalledWith('jun@sunsetcove.ph');
+    expect(await screen.findByText('Copied jun@sunsetcove.ph')).toBeInTheDocument();
+  });
+
+  it('the access note says roles do not limit anything yet, and can be dismissed', async () => {
+    localStorage.removeItem('ceview.workspace.aboutDismissed');
+    renderSettings();
+    await screen.findByText('Maria Lopez');
+
+    expect(screen.getByText(/roles are\s+labels for now/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    expect(screen.queryByText(/about workspace access/i)).not.toBeInTheDocument();
+    localStorage.removeItem('ceview.workspace.aboutDismissed');
+  });
+
   it('"Replay tour" opens the tutorial modal, and it can be closed again', async () => {
     renderSettings();
     await screen.findByText('Maria Lopez');

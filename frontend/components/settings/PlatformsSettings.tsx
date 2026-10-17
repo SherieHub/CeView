@@ -16,13 +16,18 @@
  * (docs/module-3/backend/PlatformConnectionController.md).
  */
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Eye, FileEdit, ShieldCheck } from 'lucide-react';
+import {
+  BarChart3, ChevronRight, Eye, FileEdit, Layers, Plus, Send, Share2, ShieldCheck, Zap,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 import Modal from '../shared/Modal';
 import { useToast } from '../shared/Toast';
 import { useConnections } from '../../services/connectionsStore';
 import AdAccountsSection from './AdAccountsSection';
 import AdAccountPickerModal from './AdAccountPickerModal';
-import type { AdProvider, PlatformId } from '../../types';
+import { PlatformLogo } from './PlatformLogo';
+import type { AdConnection, AdProvider, PlatformId } from '../../types';
+import './platforms.css';
 
 const PLATFORM_LABELS: Record<PlatformId, string> = {
   instagram: 'Instagram',
@@ -42,6 +47,25 @@ const SCOPES = [
 const REDIRECT_DELAY_MS = 1300;
 
 type ModalStep = 'redirecting' | 'scope' | null;
+
+const WHY = [
+  { icon: BarChart3, title: 'Automatically pull performance data', body: 'Ad accounts bring impressions, clicks and spend into Performance.' },
+  { icon: Send, title: 'Publish straight from Content Studio', body: 'Connected platforms are the ones Quick Post can publish to.' },
+  { icon: Zap, title: 'Decide with real numbers', body: 'See what each post and ad actually did, in one place.' },
+];
+
+function StatusTile({ href, icon, value, label }: { href: string; icon: ReactNode; value: string; label: string }) {
+  return (
+    <a className="pf-tile" href={href}>
+      <span className="pf-tile-icon" aria-hidden="true">{icon}</span>
+      <span className="pf-tile-text">
+        <strong className="num">{value}</strong>
+        <span>{label}</span>
+      </span>
+      <ChevronRight size={18} aria-hidden="true" />
+    </a>
+  );
+}
 
 /**
  * Friendly copy for every `adconnect_error` code AdConnectionController can
@@ -71,6 +95,8 @@ export default function PlatformsSettings() {
    */
   const [pickerProvider, setPickerProvider] = useState<AdProvider | null>(null);
   const [adRefreshKey, setAdRefreshKey] = useState(0);
+  // Reported up by AdAccountsSection, for the summary on the left.
+  const [adConnections, setAdConnections] = useState<AdConnection[] | null>(null);
 
   // The backend's callback redirects here with ?adconnect=<provider> on success
   // or ?adconnect_error=<code> on failure. Read them once, then strip them so a
@@ -124,74 +150,119 @@ export default function PlatformsSettings() {
     showToast(`Disconnected from ${PLATFORM_LABELS[platform]}`);
   }
 
-  if (connections === null) {
-    return (
-      <div className="card p-6">
-        <div className="flex flex-col gap-3" aria-hidden="true">
-          <div className="skel" style={{ height: 64 }} />
-          <div className="skel" style={{ height: 64 }} />
-          <div className="skel" style={{ height: 64 }} />
-        </div>
-      </div>
-    );
-  }
+  const platforms = Object.keys(PLATFORM_LABELS) as PlatformId[];
+  const connectedCount = platforms.filter((p) => isConnected(p)).length;
+  const adActive = adConnections?.filter((c) => c.status === 'ACTIVE').length ?? 0;
 
   return (
-    <>
-      <div className="card p-6">
-      <h2 className="heading-lg mb-1">Connected platforms</h2>
-      <p className="body-sm mb-5">
-        Connection state here gates which platforms Content Studio can publish to.
-      </p>
+    <div className="pf">
+      <header className="pf-head">
+        <p className="pf-eyebrow">Settings</p>
+        <h1 className="pf-heading">Platforms</h1>
+        <p className="pf-subhead">Connect where you publish and where you advertise.</p>
+      </header>
 
-      {!available && (
-        <p className="body-sm mb-5 rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-4" role="status">
-          Connecting social platforms isn't available yet, so nothing can be connected from here.
-        </p>
-      )}
+      <div className="pf-layout">
+        <aside className="pf-aside">
+          <section className="pf-card pf-status" aria-labelledby="pf-status-title">
+            <h2 id="pf-status-title" className="pf-side-title">Connection status</h2>
+            <p className="pf-side-sub">
+              {connections === null ? 'Checking your platforms…' : `${connectedCount} of ${platforms.length} platforms connected`}
+            </p>
+            <div className="pf-bar" aria-hidden="true">
+              <i style={{ width: `${(connectedCount / platforms.length) * 100}%` }} />
+            </div>
+            <StatusTile
+              href="#pf-ads"
+              icon={<Layers size={20} />}
+              value={adConnections ? `${adActive} of ${adConnections.length}` : '—'}
+              label="Ad accounts connected"
+            />
+            <StatusTile
+              href="#pf-publishing"
+              icon={<Share2 size={20} />}
+              value={`${connectedCount} of ${platforms.length}`}
+              label="Platforms connected"
+            />
+          </section>
 
-      <div className="flex flex-col gap-3">
-        {(Object.keys(PLATFORM_LABELS) as PlatformId[]).map((platform) => {
-          const connected = isConnected(platform);
-          const handle = connections.find((c) => c.platform === platform)?.handle;
-          return (
-            <div
-              key={platform}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-gray-light)] p-4"
-            >
-              <div className="flex items-center gap-3">
-                {connected ? (
-                  <CheckCircle2 className="text-[var(--color-mint-primary)]" aria-hidden="true" />
-                ) : (
-                  <Circle className="text-[var(--color-text-muted)]" aria-hidden="true" />
-                )}
-                <div>
-                  <p className="font-semibold text-navy-dark">{PLATFORM_LABELS[platform]}</p>
-                  <p className="body-xs text-[var(--color-text-muted)]">
-                    {connected ? handle || 'Connected' : 'Not connected'}
-                  </p>
-                </div>
+          <section className="pf-card pf-why" aria-labelledby="pf-why-title">
+            <h2 id="pf-why-title" className="pf-side-title">Why connect?</h2>
+            <p className="pf-side-sub">Unlock the full power of CeView with your platforms and ad accounts.</p>
+            <ul className="pf-why-list">
+              {WHY.map(({ icon: Icon, title, body }) => (
+                <li key={title}>
+                  <span className="pf-why-icon" aria-hidden="true"><Icon size={18} /></span>
+                  <span>
+                    <strong>{title}</strong>
+                    <span>{body}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <span className="pf-why-art" aria-hidden="true" />
+          </section>
+        </aside>
+
+        <div className="pf-main">
+          <section className="pf-card pf-panel" id="pf-publishing" aria-labelledby="pf-publishing-title">
+            <div className="pf-panel-head pf-panel-head--dark">
+              <span className="pf-panel-icon" aria-hidden="true"><Share2 size={22} /></span>
+              <div>
+                <h2 id="pf-publishing-title" className="pf-panel-title">Connected platforms</h2>
+                <p className="pf-panel-sub">Connection state here gates which platforms Content Studio can publish to.</p>
               </div>
+            </div>
 
-              {connected ? (
-                <div className="flex items-center gap-3">
-                  <span className="badge badge--teal">Verified</span>
-                  <button
-                    type="button"
-                    className="btn-outline--sm"
-                    onClick={() => handleDisconnect(platform)}
-                  >
-                    Disconnect
-                  </button>
+            <div className="pf-panel-body">
+              {connections === null ? (
+                <div className="flex flex-col gap-3" aria-hidden="true">
+                  <div className="skel" style={{ height: 72 }} />
+                  <div className="skel" style={{ height: 72 }} />
+                  <div className="skel" style={{ height: 72 }} />
                 </div>
               ) : (
-                <button type="button" className="btn-primary" disabled={!available} onClick={() => startConnect(platform)}>
-                  Connect
-                </button>
+                <>
+                  {!available && (
+                    <p className="pf-note" role="status">
+                      Connecting social platforms isn't available yet, so nothing can be connected from here.
+                    </p>
+                  )}
+                  <ul className="pf-rows">
+                    {platforms.map((platform) => {
+                      const connected = isConnected(platform);
+                      const handle = connections.find((c) => c.platform === platform)?.handle;
+                      return (
+                        <li key={platform} className="pf-row">
+                          <PlatformLogo platform={platform} />
+                          <div className="pf-row-text">
+                            <p className="pf-row-name">{PLATFORM_LABELS[platform]}</p>
+                            <p className="pf-row-sub">{connected ? handle || 'Connected' : 'Not connected'}</p>
+                          </div>
+                          {connected ? (
+                            <div className="pf-row-actions">
+                              <span className="pf-pill">Verified</span>
+                              <span className="pf-divider" aria-hidden="true" />
+                              <button type="button" className="pf-text-btn" onClick={() => handleDisconnect(platform)}>
+                                Disconnect
+                              </button>
+                            </div>
+                          ) : (
+                            <button type="button" className="pf-connect" disabled={!available} onClick={() => startConnect(platform)}>
+                              <Plus size={16} aria-hidden="true" />Connect
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
               )}
             </div>
-          );
-        })}
+          </section>
+
+          <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} onLoaded={setAdConnections} />
+        </div>
       </div>
 
       <Modal
@@ -230,11 +301,6 @@ export default function PlatformsSettings() {
           </div>
         )}
       </Modal>
-    </div>
-
-      <div className="mt-6">
-        <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} />
-      </div>
 
       {pickerProvider && (
         <AdAccountPickerModal
@@ -248,6 +314,6 @@ export default function PlatformsSettings() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

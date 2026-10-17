@@ -3,9 +3,23 @@ import type { LinkPerformance } from '../../../types';
 
 interface Props {
   performance: LinkPerformance;
+  /** Inside LinkAttributionPanel's card, which already carries the title. */
+  embedded?: boolean;
 }
 
-export default function CreativePerformanceTable({ performance }: Props) {
+/** The card and its title — left out when the panel around it supplies them. */
+function Frame({ embedded, children }: { embedded: boolean; children: React.ReactNode }) {
+  if (embedded) return <div className="perf-ev-table">{children}</div>;
+  return (
+    <div className="card">
+      <h3 className="heading-sm">Link-attributed evidence</h3>
+      <p className="body-sm mt-2">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
+      {children}
+    </div>
+  );
+}
+
+export default function CreativePerformanceTable({ performance, embedded = false }: Props) {
   const rows = [...performance.creatives].sort((a, b) => {
     const diff = b.conversions - a.conversions;
     if (diff !== 0) return diff;
@@ -22,23 +36,19 @@ export default function CreativePerformanceTable({ performance }: Props) {
 
   if (!hasObservedClicks) {
     return (
-      <div className="card">
-        <h3 className="heading-sm">Link-attributed evidence</h3>
-        <p className="body-sm mt-2">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
+      <Frame embedded={embedded}>
         <div className="empty">
           <p className="mx-auto">No tracked clicks yet. Share this campaign's ad URL to begin collecting link-attributed evidence.</p>
         </div>
         <div className="body-xs mt-4 text-[var(--color-text-muted)]">
           Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.
         </div>
-      </div>
+      </Frame>
     );
   }
 
   return (
-    <div className="card">
-      <h3 className="heading-sm">Link-attributed evidence</h3>
-      <p className="body-sm mt-2">Machine-observed clicks; conversions include enquiries and operator-matched bookings.</p>
+    <Frame embedded={embedded}>
 
       {onlyUntagged && (
         <div role="status" className="mt-4 rounded-[var(--radius-sm)] border border-sand bg-mint-pale-alt px-4 py-3 text-sm text-navy-dark">
@@ -82,6 +92,6 @@ export default function CreativePerformanceTable({ performance }: Props) {
         <p>An enquiry counts as one conversion; revenue stays ₱0.00 until an amount is recorded.</p>
         <p>Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.</p>
       </div>
-    </div>
+    </Frame>
   );
 }
