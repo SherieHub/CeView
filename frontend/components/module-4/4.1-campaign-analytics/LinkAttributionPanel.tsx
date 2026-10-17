@@ -6,7 +6,7 @@ import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import { AttributionLink } from '../../../types';
 import { Link2 } from 'lucide-react';
 
-export default function LinkAttributionPanel() {
+export default function LinkAttributionPanel({ period }: { period?: { periodStart: string; periodEnd: string } } = {}) {
   const { links, error: linksError, refresh: refreshLinks } = useAttributionLinks();
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
@@ -23,7 +23,9 @@ export default function LinkAttributionPanel() {
   const { data: performance, loading: perfLoading, error: perfError, refresh: refreshPerf } = useLinkPerformance(selectedLinkId);
 
   const selectedLink = links?.find(l => l.linkId === selectedLinkId);
-  void selectedLink;
+  // Compare calendar days only: a link window is stored as a timestamp.
+  const outsideReport = !!(period && selectedLink) &&
+    (selectedLink.windowEnd.slice(0, 10) < period.periodStart || selectedLink.windowStart.slice(0, 10) > period.periodEnd);
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
@@ -57,6 +59,13 @@ export default function LinkAttributionPanel() {
           </div>
         )}
       </div>
+
+      {selectedLink && (
+        <p className="perf-ev-window" data-outside={outsideReport || undefined}>
+          Tracking window: {formatDate(selectedLink.windowStart)} – {formatDate(selectedLink.windowEnd)}.
+          {outsideReport && ' It doesn\u2019t overlap the period you just scored, so these figures are about a different time.'}
+        </p>
+      )}
 
       {linksError ? (
         <ApiErrorPanel error={linksError} onRetry={refreshLinks} label="Link-attributed evidence — campaign links" />

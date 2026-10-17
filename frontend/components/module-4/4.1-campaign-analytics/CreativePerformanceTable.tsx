@@ -19,6 +19,17 @@ function Frame({ embedded, children }: { embedded: boolean; children: React.Reac
   );
 }
 
+/** The counting caveats: always shown standalone, behind a disclosure when embedded. */
+function Notes({ embedded, children }: { embedded: boolean; children: React.ReactNode }) {
+  if (!embedded) return <>{children}</>;
+  return (
+    <details className="perf-ev-how">
+      <summary>How attribution works</summary>
+      {children}
+    </details>
+  );
+}
+
 export default function CreativePerformanceTable({ performance, embedded = false }: Props) {
   const rows = [...performance.creatives].sort((a, b) => {
     const diff = b.conversions - a.conversions;
@@ -40,9 +51,11 @@ export default function CreativePerformanceTable({ performance, embedded = false
         <div className="empty">
           <p className="mx-auto">No tracked clicks yet. Share this campaign's ad URL to begin collecting link-attributed evidence.</p>
         </div>
-        <div className="body-xs mt-4 text-[var(--color-text-muted)]">
-          Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.
-        </div>
+        <Notes embedded={embedded}>
+          <div className="body-xs mt-4 text-[var(--color-text-muted)]">
+            Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.
+          </div>
+        </Notes>
       </Frame>
     );
   }
@@ -88,10 +101,13 @@ export default function CreativePerformanceTable({ performance, embedded = false
         </table>
       </div>
 
-      <div className="body-xs mt-4 space-y-1 text-[var(--color-text-muted)]">
-        <p>An enquiry counts as one conversion; revenue stays ₱0.00 until an amount is recorded.</p>
-        <p>Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.</p>
-      </div>
+      <Notes embedded={embedded}>
+        <div className="body-xs mt-4 space-y-1 text-[var(--color-text-muted)]">
+          <p>Clicks are machine-observed: counted when someone opens your tracked link.</p>
+          <p>An enquiry counts as one conversion; revenue stays ₱0.00 until an amount is recorded.</p>
+          <p>Click and conversion counts are a floor, not a census. In-app browsers and tracking prevention can remove tracking parameters.</p>
+        </div>
+      </Notes>
     </Frame>
   );
 }

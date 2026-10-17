@@ -23,8 +23,10 @@
  * in the live app until that wiring is done. Out of this card's file scope.
  */
 import { useState } from 'react';
+import { ImageOff } from 'lucide-react';
 import type { PlatformId } from '../../../types';
 import { usePosts } from '../../../services/postStore';
+import { BrandMark } from '../../module-3/3.1-content-studio/ContentBoard';
 import PostAnalyticsModal from './PostAnalyticsModal';
 
 type Filter = 'all' | PlatformId;
@@ -36,29 +38,35 @@ const TABS: { value: Filter; label: string }[] = [
   { value: 'facebook', label: 'Facebook' },
 ];
 
+const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+
+const prettyDate = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
 export default function PreviouslyPublished() {
   const { posts } = usePosts();
   const [filter, setFilter] = useState<Filter>('all');
   const [openPostId, setOpenPostId] = useState<string | null>(null);
 
-  const published = (posts ?? []).filter(
-    (p) => p.status === 'published' && (filter === 'all' || p.platform === filter)
-  );
+  // Newest first, so the latest post is the first one compared.
+  const published = (posts ?? [])
+    .filter((p) => p.status === 'published' && (filter === 'all' || p.platform === filter))
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="card flex max-h-[660px] flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="heading-md">Previously Published</h3>
-        <div role="group" aria-label="Platform filter" className="inline-flex flex-wrap gap-1 rounded-pill bg-mint-pale p-1">
+    <div className="card pp">
+      <div className="pp-head">
+        <div>
+          <h3 className="pp-title">Published Posts</h3>
+          <p className="pp-sub">Your published content and what each post reached.</p>
+        </div>
+        <div role="group" aria-label="Platform filter" className="pp-filters">
           {TABS.map((tab) => (
             <button
               key={tab.value}
               type="button"
               aria-pressed={filter === tab.value}
               onClick={() => setFilter(tab.value)}
-              className={`rounded-pill px-3 py-1.5 text-sm font-semibold transition-colors ${
-                filter === tab.value ? 'bg-mint-primary text-navy-dark' : 'text-navy-primary hover:text-cyan-deep'
-              }`}
             >
               {tab.label}
             </button>
@@ -66,43 +74,36 @@ export default function PreviouslyPublished() {
         </div>
       </div>
 
-      {/* flex-1 + min-h-0 is what lets this area actually shrink to fit the
-          height-capped card instead of forcing the card to grow with it —
-          without min-h-0 a flex child never shrinks below its content size. */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {published.length === 0 ? (
-          <div className="empty py-6">
-            <p className="body-sm">Nothing published yet for this filter.</p>
-          </div>
-        ) : (
-          // Matches Content Studio's ContentBoard post-card style: bordered
-          // tile, platform + status pill, caption preview, meta row — so a
-          // published post reads the same way wherever it's shown.
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {published.map((post) => (
-              <button
-                key={post.id}
-                type="button"
-                onClick={() => setOpenPostId(post.id)}
-                className="flex flex-col rounded-lg border border-gray-light bg-white p-4 text-left transition-colors hover:border-teal-accent"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="capitalize text-sm font-semibold text-navy-dark">{post.platform}</span>
-                  <span className="rounded-full bg-mint-pale px-2 py-1 text-xs font-semibold text-success">
-                    published
+      {published.length === 0 ? (
+        <div className="empty py-6">
+          <p className="body-sm">Nothing published yet for this filter.</p>
+        </div>
+      ) : (
+        <ul className="pp-grid">
+          {published.map((post) => (
+            <li key={post.id}>
+              <button type="button" className="pp-card" onClick={() => setOpenPostId(post.id)}>
+                <span className="pp-thumb" aria-hidden="true">
+                  {post.mediaUrl ? <img src={post.mediaUrl} alt="" loading="lazy" /> : <ImageOff size={20} />}
+                </span>
+                <span className="pp-body">
+                  <span className="pp-meta">
+                    <BrandMark platform={post.platform} />
+                    <span className="pp-platform">{PLATFORM_NAMES[post.platform] ?? post.platform}</span>
+                    <span className="pp-date">{prettyDate(post.date)}</span>
                   </span>
-                </div>
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-navy-dark">{post.caption}</p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-text-muted)]">
-                  <span>{post.date}</span>
-                  <span>Reach {post.reach ? post.reach.toLocaleString() : '—'}</span>
-                  <span>Eng. {post.reach ? `${post.engagementRate.toFixed(1)}%` : '—'}</span>
-                </div>
+                  <span className="pp-caption">{post.caption}</span>
+                  <span className="pp-stats">
+                    <span><b className="num">{post.reach ? post.reach.toLocaleString() : '—'}</b> reach</span>
+                    <span><b className="num">{post.reach ? `${post.engagementRate.toFixed(1)}%` : '—'}</b> engagement</span>
+                    <span className="pp-view">View</span>
+                  </span>
+                </span>
               </button>
-            ))}
-          </div>
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {openPostId && <PostAnalyticsModal postId={openPostId} onClose={() => setOpenPostId(null)} />}
     </div>

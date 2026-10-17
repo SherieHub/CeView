@@ -5,6 +5,11 @@ import LinkAttributionPanel from './LinkAttributionPanel';
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;
   liftEvidence?: React.ReactNode;
+  /** 'tab' is the results screen's Attribution tab: the table full width, the
+   * two unbuilt analyses as a compact note rather than cards of their own. */
+  layout?: 'entry' | 'tab';
+  /** The scored period, so the link panel can say when its window differs. */
+  period?: { periodStart: string; periodEnd: string };
 };
 
 /** Decorative only: a receipt and a rising bar chart, for the two not-yet-built panels. */
@@ -23,7 +28,39 @@ function LiftArt() {
   );
 }
 
-export default function AttributionEvidenceSection({ codeEvidence, liftEvidence }: AttributionEvidenceSectionProps) {
+export default function AttributionEvidenceSection({ codeEvidence, liftEvidence, layout = 'entry', period }: AttributionEvidenceSectionProps) {
+  if (layout === 'tab') {
+    return (
+      <div className="perf-attr">
+        <div className="perf-attr-head">
+          <h2 className="perf-tab-title">Attribution &amp; Evidence</h2>
+          <p className="perf-tab-sub">See which tracked content brought clicks, enquiries and recorded revenue.</p>
+        </div>
+        <LinkAttributionPanel period={period} />
+        <div className="perf-attr-more">
+          <section className="perf-attr-item" aria-labelledby="perf-attr-code">
+            <Ticket size={16} aria-hidden="true" />
+            <div>
+              <h3 id="perf-attr-code" className="perf-attr-item-title">Code-redemption evidence</h3>
+              {codeEvidence ?? (
+                <p>Not available in this build. It will record codes customers mention on Messenger, by phone or at walk-in.</p>
+              )}
+            </div>
+          </section>
+          <section className="perf-attr-item" aria-labelledby="perf-attr-lift">
+            <BarChart3 size={16} aria-hidden="true" />
+            <div>
+              <h3 id="perf-attr-lift" className="perf-attr-item-title">Statistical lift</h3>
+              {liftEvidence ?? (
+                <p>Statistical lift analysis is not available in this build. It will compare results with the period before the campaign.</p>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     // The link table carries four columns, so it gets twice the width of each companion panel.
     <div className="perf-ev-row">
