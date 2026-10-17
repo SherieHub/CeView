@@ -5,6 +5,7 @@ sees "LLM unavailable" with no way to tell an unset key from a dead model id.
 
 Run with: pytest tests/unit/test_agent_llm_model.py -v
 """
+
 import pytest
 
 from app.core.AgentLLMModel import AgentLLMModel

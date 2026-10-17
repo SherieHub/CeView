@@ -33,12 +33,13 @@ from app.unavailable import DependencyUnavailable
 _log = logging.getLogger("gemini_client")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL   = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL)
+GROQ_MODEL = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL)
 
 _groq_client = None
 if GROQ_API_KEY:
     try:
         from openai import OpenAI  # type: ignore[import]
+
         _groq_client = OpenAI(
             api_key=GROQ_API_KEY,
             base_url=GROQ_BASE_URL,
@@ -48,9 +49,7 @@ if GROQ_API_KEY:
         _log.error("Failed to initialise Groq API: %s", _init_exc)
         _groq_client = None
 else:
-    _log.warning(
-        "GROQ_API_KEY not set — all AI calls will return deterministic fallback data."
-    )
+    _log.warning("GROQ_API_KEY not set — all AI calls will return deterministic fallback data.")
 
 
 def _enabled() -> bool:
@@ -79,8 +78,6 @@ def _generate_json(prompt: str) -> dict:
         return {}
 
 
-
-
 # ── Module 3 ────────────────────────────────────────────────────────────────
 
 _content_log = logging.getLogger("module3.content.gemini")
@@ -88,14 +85,15 @@ _creative_log = logging.getLogger("module3.creative.gemini")
 
 
 def generate_content(
-        market: str,
-        business_name: str,
-        description: str,
-        categories: list[str],
-        trend: str,
-        uniqueness_score: int = 0,
-        forecast_context: dict | None = None,
-        research_context: dict | None = None) -> dict:
+    market: str,
+    business_name: str,
+    description: str,
+    categories: list[str],
+    trend: str,
+    uniqueness_score: int = 0,
+    forecast_context: dict | None = None,
+    research_context: dict | None = None,
+) -> dict:
     """Generate market-localised captions + supplementary outputs (FR3.5, FR3.6).
 
     NOTE: not currently wired to the HTTP route — POST /internal/content/generate
@@ -129,11 +127,11 @@ def generate_content(
     research_block = ""
     if research_context:
         research_block = f"""
-Cultural research context (source: {research_context.get('source', 'template')}):
-- Traveler behavior: {research_context.get('traveler_behavior', '')}
-- Tourism preferences: {research_context.get('tourism_preferences', '')}
-- Platform styles: {research_context.get('platform_styles', '')}
-- Language nuances: {research_context.get('language_nuances', '')}
+Cultural research context (source: {research_context.get("source", "template")}):
+- Traveler behavior: {research_context.get("traveler_behavior", "")}
+- Tourism preferences: {research_context.get("tourism_preferences", "")}
+- Platform styles: {research_context.get("platform_styles", "")}
+- Language nuances: {research_context.get("language_nuances", "")}
 """
 
     # FR3.4 — forecasting context block
@@ -147,7 +145,7 @@ Cultural research context (source: {research_context.get('source', 'template')})
 Market forecast context (Module 2 outputs):
 - Market score: {score} / 1.0
 - Predicted 4-week demand index: {demand}
-- Demand spike detected: {spike} {'— use urgency framing' if spike else ''}
+- Demand spike detected: {spike} {"— use urgency framing" if spike else ""}
 - Seasonality score: {seasonality}
 - Uniqueness score: {uniqueness_score} / 100
 """
@@ -161,7 +159,7 @@ Cebu, Philippines tourism businesses, specialising in the {market_label} market.
 BUSINESS CONTEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Business:    {business_name}
-Categories:  {', '.join(categories)}
+Categories:  {", ".join(categories)}
 Trend:       {trend}
 {research_block}{forecast_block}
 
@@ -245,10 +243,10 @@ The optionNames field is a list parallel to options:
 
     _content_log.info("Groq content ok market=%s", market)
     return {
-        "market":    enriched.get("market") or base["market"],
+        "market": enriched.get("market") or base["market"],
         "framework": enriched.get("framework") or base["framework"],
-        "captions":  enriched.get("captions"),
-        "source":    "groq",
+        "captions": enriched.get("captions"),
+        "source": "groq",
     }
 
 
@@ -286,12 +284,13 @@ def get_platform_guides(market: str) -> dict[str, list[str]]:
 
 
 def generate_creative_direction(
-        market: str,
-        business_name: str,
-        categories: list[str],
-        approved_captions: list[str],
-        uniqueness_score: int,
-        forecast_context: dict) -> dict:
+    market: str,
+    business_name: str,
+    categories: list[str],
+    approved_captions: list[str],
+    uniqueness_score: int,
+    forecast_context: dict,
+) -> dict:
     """Generate visual direction, shot lists, lighting, moodboard, platform recs (FR3.13-FR3.16).
 
     Returns: { visualGuide, shots, moodboard, platformRecommendations, source }
@@ -300,7 +299,7 @@ def generate_creative_direction(
     platform_map = {
         "korea": {"primary": "Naver Blog", "secondary": ["Instagram", "TikTok"]},
         "japan": {"primary": "Facebook & Instagram", "secondary": ["TikTok"]},
-        "usa":   {"primary": "Instagram Reels", "secondary": ["TikTok", "Facebook"]},
+        "usa": {"primary": "Instagram Reels", "secondary": ["TikTok", "Facebook"]},
     }
     platforms = platform_map.get(market, platform_map["korea"])
 
@@ -327,26 +326,28 @@ def generate_creative_direction(
 tourism business targeting the {market} market.
 
 Business: {business_name}
-Categories: {', '.join(categories)}
+Categories: {", ".join(categories)}
 Uniqueness score: {uniqueness_score}/100
 Approved promotional captions:
 {captions_block}{forecast_hint}
 
-Primary platform: {platforms['primary']}
-Secondary platforms: {', '.join(platforms['secondary'])}
+Primary platform: {platforms["primary"]}
+Secondary platforms: {", ".join(platforms["secondary"])}
 
 Generate destination-specific creative direction. Return JSON with exactly:
 - visualGuide: array of 4-5 strings — image composition guidelines, framing, subject emphasis, environmental focus (FR3.13)
 - shots: array of 3-4 objects with {{label, description, lighting}} — shot list and short-form video sequences (FR3.14)
 - moodboard: object with {{palette (string describing color/tone), references (array of 2-3 style references)}} — visual tone, lighting style, emotional atmosphere, cinematic style (FR3.15)
-- platformRecommendations: object with platform names as keys and recommendation strings as values — tailored to {platforms['primary']} and secondary platforms (FR3.16)
+- platformRecommendations: object with platform names as keys and recommendation strings as values — tailored to {platforms["primary"]} and secondary platforms (FR3.16)
 """
 
     try:
         out = _generate_json(prompt)
     except Exception as exc:
         _creative_log.exception(
-            "Gemini creative direction failed for market=%s: %s", market, exc,
+            "Gemini creative direction failed for market=%s: %s",
+            market,
+            exc,
             extra={"code": errors.MOD3_CREATIVE_GEMINI_EXCEPTION},
         )
         raise DependencyUnavailable(
@@ -357,10 +358,12 @@ Generate destination-specific creative direction. Return JSON with exactly:
             stage="fastapi-sbert/gemini_client.generate_creative_direction",
         ) from exc
 
-    if not out or not all(out.get(k) for k in
-                          ("visualGuide", "shots", "moodboard", "platformRecommendations")):
+    if not out or not all(
+        out.get(k) for k in ("visualGuide", "shots", "moodboard", "platformRecommendations")
+    ):
         _creative_log.warning(
-            "Gemini returned an incomplete creative payload for market=%s", market,
+            "Gemini returned an incomplete creative payload for market=%s",
+            market,
             extra={"code": errors.MOD3_CREATIVE_GEMINI_EMPTY},
         )
         raise DependencyUnavailable(
@@ -373,9 +376,9 @@ Generate destination-specific creative direction. Return JSON with exactly:
 
     _creative_log.info("Groq creative direction ok market=%s", market)
     return {
-        "visualGuide":             out["visualGuide"],
-        "shots":                   out["shots"],
-        "moodboard":               out["moodboard"],
+        "visualGuide": out["visualGuide"],
+        "shots": out["shots"],
+        "moodboard": out["moodboard"],
         "platformRecommendations": out["platformRecommendations"],
         "source": "groq",
     }

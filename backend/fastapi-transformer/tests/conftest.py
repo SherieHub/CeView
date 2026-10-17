@@ -1,4 +1,5 @@
 """Test-session setup shared by unit and integration tests."""
+
 import os
 
 # Startup must not require an external credential. Tests exercise the local,

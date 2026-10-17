@@ -6,17 +6,18 @@ Graph:  generate_report → evaluate_report → [conditional] → finalize_respo
 LLM backend: Groq (ChatGroq) via AgentLLMModel (see nodes.py).
 No OpenAI / langchain_openai dependency.
 """
+
 from __future__ import annotations
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from app.agents.pes_report_agent.state import AgentState
 from app.agents.pes_report_agent.nodes import (
-    generate_report,
     evaluate_report,
     finalize_response,
+    generate_report,
     route_action,
 )
+from app.agents.pes_report_agent.state import AgentState
 
 # ==========================================
 # Build and compile the graph
@@ -24,8 +25,8 @@ from app.agents.pes_report_agent.nodes import (
 
 workflow = StateGraph(AgentState)
 
-workflow.add_node("generate_report",  generate_report)
-workflow.add_node("evaluate_report",  evaluate_report)
+workflow.add_node("generate_report", generate_report)
+workflow.add_node("evaluate_report", evaluate_report)
 workflow.add_node("finalize_response", finalize_response)
 
 workflow.set_entry_point("generate_report")
@@ -36,7 +37,7 @@ workflow.add_conditional_edges(
     route_action,
     {
         "finalize_response": "finalize_response",
-        "generate_report":   "generate_report",
+        "generate_report": "generate_report",
     },
 )
 workflow.add_edge("finalize_response", END)

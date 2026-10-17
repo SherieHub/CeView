@@ -7,6 +7,7 @@ including the truncated-window edge (an early point in a short series has a
 narrower rolling window than a later one, and must say so via
 stats_window_weeks).
 """
+
 from app.services.seasonal_shift_detector import compute, compute_series
 
 
@@ -47,13 +48,16 @@ def test_no_row_is_left_at_the_old_placeholder_values():
     points = compute_series(series)
 
     for p in points:
-        assert not (p["seasonality_score"] == 0.5 and p["spike_indicator"] is False
-                    and p["rolling_7d_std"] == 0.0)
+        assert not (
+            p["seasonality_score"] == 0.5
+            and p["spike_indicator"] is False
+            and p["rolling_7d_std"] == 0.0
+        )
 
 
 def test_yoy_ratio_is_null_below_fifty_nine_weeks_and_present_at_it():
     short_series = [50.0] * 30
-    long_series = [50.0] * 58 + [70.0]   # 59th point — meets MIN_HISTORY_FOR_YOY
+    long_series = [50.0] * 58 + [70.0]  # 59th point — meets MIN_HISTORY_FOR_YOY
 
     short_points = compute_series(short_series)
     long_points = compute_series(long_series)

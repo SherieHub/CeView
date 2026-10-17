@@ -1,0 +1,92 @@
+# Local quality gates. Installed automatically by `npm install` at the repo root.
+# Bypass in an emergency: `git commit --no-verify` / `git push --no-verify` or LEFTHOOK=0 (CI still enforces).
+# See RUNNING.md "Git hooks".
+pre-commit:
+  parallel: true
+  jobs:
+    - name: frontend
+      glob: "frontend/**/*.{ts,tsx,js,jsx,css,json}"
+      group:
+        piped: true
+        jobs:
+          - name: eslint
+            run: npx --prefix frontend eslint --no-warn-ignored {staged_files}
+          - name: typecheck
+            run: npm --prefix frontend run typecheck
+          - name: related unit tests
+            run: node scripts/hooks/run-and-scan.mjs frontend -- npx vitest related --run --passWithNoTests --exclude "tests/contract/**" {staged_files}
+    - name: spring-boot
+      glob: "backend/spring-boot/**/*.{java,xml,sql,yml,yaml,properties}"
+      group:
+        piped: true
+        jobs:
+          - name: java version
+            run: node scripts/hooks/check-java.mjs
+          - name: format + compile
+            run: node scripts/hooks/run-and-scan.mjs backend/spring-boot -- sh ./mvnw -B -q spotless:check compile
+    - name: fastapi-sbert
+      glob: "backend/fastapi-sbert/**/*.py"
+      group:
+        piped: true
+        jobs:
+          - name: ruff
+            run: node scripts/hooks/py.mjs fastapi-sbert -m ruff check . && node scripts/hooks/py.mjs fastapi-sbert -m ruff format --check .
+          - name: unit tests
+            run: node scripts/hooks/run-and-scan.mjs . -- node scripts/hooks/py.mjs fastapi-sbert -m pytest tests/unit -q
+    - name: fastapi-transformer
+      glob: "backend/fastapi-transformer/**/*.py"
+      group:
+        piped: true
+        jobs:
+          - name: ruff
+            run: node scripts/hooks/py.mjs fastapi-transformer -m ruff check . && node scripts/hooks/py.mjs fastapi-transformer -m ruff format --check .
+          - name: unit tests
+            run: node scripts/hooks/run-and-scan.mjs . -- node scripts/hooks/py.mjs fastapi-transformer -m pytest tests/unit -q
+
+commit-msg:
+  jobs:
+    - name: tests and docs required
+      run: node scripts/hooks/check-tests-docs.mjs {1}
+
+pre-push:
+  jobs:
+    - name: frontend
+      glob: "frontend/**"
+      group:
+        piped: true
+        jobs:
+          - name: lint
+            run: npm --prefix frontend run lint
+          - name: typecheck
+            run: npm --prefix frontend run typecheck
+          - name: tests
+            run: node scripts/hooks/run-and-scan.mjs frontend -- npm test
+    - name: spring-boot
+      glob: "backend/spring-boot/**"
+      group:
+        piped: true
+        jobs:
+          - name: java version
+            run: node scripts/hooks/check-java.mjs
+          - name: format + tests
+            run: node scripts/hooks/run-and-scan.mjs backend/spring-boot -- sh ./mvnw -B spotless:check test
+    - name: fastapi-sbert
+      glob: "backend/fastapi-sbert/**"
+      group:
+        piped: true
+        jobs:
+          - name: ruff
+            run: node scripts/hooks/py.mjs fastapi-sbert -m ruff check . && node scripts/hooks/py.mjs fastapi-sbert -m ruff format --check .
+          - name: tests
+            run: node scripts/hooks/run-and-scan.mjs . -- node scripts/hooks/py.mjs fastapi-sbert -m pytest tests -q
+    - name: fastapi-transformer
+      glob: "backend/fastapi-transformer/**"
+      group:
+        piped: true
+        jobs:
+          - name: ruff
+            run: node scripts/hooks/py.mjs fastapi-transformer -m ruff check . && node scripts/hooks/py.mjs fastapi-transformer -m ruff format --check .
+          - name: tests
+            run: node scripts/hooks/run-and-scan.mjs . -- node scripts/hooks/py.mjs fastapi-transformer -m pytest tests -q
+    - name: e2e
+      run: node scripts/hooks/e2e-if-up.mjs

@@ -3,6 +3,7 @@
 Validates MAPE against the configured threshold and attaches a disclaimer
 flag when the threshold is exceeded (FR2.12).
 """
+
 from __future__ import annotations
 
 MAPE_THRESHOLD = 15.0
@@ -16,5 +17,7 @@ def validate(mape: float, mae: float, rmse: float) -> dict:
         "message": (
             f"MAPE {mape:.1f}% exceeds threshold {MAPE_THRESHOLD}%. "
             "Forecast confidence is reduced; interpret with caution."
-        ) if not passed else "",
+        )
+        if not passed
+        else "",
     }

@@ -114,7 +114,7 @@ function AdConnectionRow({
   onChooseAccount: () => void;
   onDisconnect: () => void;
 }) {
-  const { provider, configured, status, accountName, currency } = connection;
+  const { provider, configured, status } = connection;
   const isActive = status === 'ACTIVE';
   const isPending = status === 'PENDING_ACCOUNT_SELECTION';
 

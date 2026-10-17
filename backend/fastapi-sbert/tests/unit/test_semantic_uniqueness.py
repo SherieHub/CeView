@@ -13,10 +13,10 @@ construction rather than by inspection — see the comment on each fixture.
 
 Run with: pytest tests/unit/test_semantic_uniqueness.py -v
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from app.services.ml_classifier import SemanticUniqueness, compute_semantic_uniqueness
 
@@ -31,9 +31,7 @@ def _cohort(angles_degrees: list[float]) -> list[list[float]]:
 
 
 def test_returns_none_below_the_cohort_floor():
-    result = compute_semantic_uniqueness(
-        _unit_vector(0), _cohort([10, 20]), min_businesses=3
-    )
+    result = compute_semantic_uniqueness(_unit_vector(0), _cohort([10, 20]), min_businesses=3)
 
     assert result is None
 

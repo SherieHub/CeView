@@ -59,10 +59,12 @@ For the native/H2 path (no Docker), the full environment variable reference, see
 
 ## Testing & CI
 
+Local pre-commit/pre-push hooks run the same checks before code leaves your machine — see [RUNNING.md §8a](RUNNING.md#8a-git-hooks-local-quality-gates).
+
 | Workflow | Runs |
 |---|---|
-| [`ci-frontend.yml`](.github/workflows/ci-frontend.yml) | Vitest unit + integration tests, production build |
-| [`ci-spring-boot.yml`](.github/workflows/ci-spring-boot.yml) | JUnit tests against H2, package |
-| [`ci-fastapi-sbert.yml`](.github/workflows/ci-fastapi-sbert.yml) | pytest for the classification/content service |
-| [`ci-fastapi-transformer.yml`](.github/workflows/ci-fastapi-transformer.yml) | pytest for the forecasting service |
+| [`ci-frontend.yml`](.github/workflows/ci-frontend.yml) | ESLint, typecheck, Vitest unit + integration tests, production build |
+| [`ci-spring-boot.yml`](.github/workflows/ci-spring-boot.yml) | Spotless format check, JUnit tests against H2, package |
+| [`ci-fastapi-sbert.yml`](.github/workflows/ci-fastapi-sbert.yml) | ruff + pytest for the classification/content service |
+| [`ci-fastapi-transformer.yml`](.github/workflows/ci-fastapi-transformer.yml) | ruff + pytest for the forecasting service |
 | [`e2e.yml`](.github/workflows/e2e.yml) | Full-stack Playwright run against a Dockerized backend and built frontend |

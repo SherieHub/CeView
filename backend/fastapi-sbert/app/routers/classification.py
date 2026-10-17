@@ -14,6 +14,7 @@ router = APIRouter()
 
 # ── /analyze ──────────────────────────────────────────────────────────────────
 
+
 class AnalyzeRequest(BaseModel):
     businessName: str = ""
     coreServices: list[str] = []
@@ -24,15 +25,18 @@ class AnalyzeRequest(BaseModel):
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
     """Return category allocations from the hosted CeView Hugging Face Space."""
-    return {"categories": hf_space_classifier.predict_categories(
-        req.description, req.uvp, req.coreServices
-    )}
+    return {
+        "categories": hf_space_classifier.predict_categories(
+            req.description, req.uvp, req.coreServices
+        )
+    }
 
 
 # ── /uniqueness ───────────────────────────────────────────────────────────────
 
+
 class UniquenessRequest(BaseModel):
-    businessProfileId: str = ""   # UUID of the saved profile; "" for unsaved drafts
+    businessProfileId: str = ""  # UUID of the saved profile; "" for unsaved drafts
     businessName: str = ""
     categories: list[str] = []
     coreServices: list[str] = []
@@ -78,9 +82,7 @@ def uniqueness(req: UniquenessRequest) -> dict:
     # loading is isolated here, at the one place that can turn its failure
     # into a loud 503 rather than silently defaulting to "cohort too small"
     # (a genuinely different condition) or a fabricated score.
-    candidate_embedding = ml_classifier.embed_business(
-        req.coreServices, req.description, req.uvp
-    )
+    candidate_embedding = ml_classifier.embed_business(req.coreServices, req.description, req.uvp)
     if candidate_embedding is None:
         raise DependencyUnavailable(
             code=MOD1_ML_LOAD_FAIL,
@@ -106,31 +108,31 @@ def uniqueness(req: UniquenessRequest) -> dict:
         # here is meaningful, so none is fabricated; sufficientCohort is the
         # signal the caller must act on (Task 10).
         return {
-            "overallScore":        0,
-            "semanticsScore":      0,
-            "categoryScore":       category_score,
-            "semanticPercentile":  0,
-            "cohortSize":          stats["cohortSize"],
-            "cohortMedianScore":   0,
-            "cohortCategories":    req.categories,
-            "categoryDensity":     stats["categoryDensity"],
-            "sufficientCohort":    False,
+            "overallScore": 0,
+            "semanticsScore": 0,
+            "categoryScore": category_score,
+            "semanticPercentile": 0,
+            "cohortSize": stats["cohortSize"],
+            "cohortMedianScore": 0,
+            "cohortCategories": req.categories,
+            "categoryDensity": stats["categoryDensity"],
+            "sufficientCohort": False,
             "descriptionFeedback": _insufficient_cohort_feedback(stats["cohortSize"]),
-            "categoryFeedback":    _category_feedback(category_score),
+            "categoryFeedback": _category_feedback(category_score),
         }
 
     cohort_median_score = round(median(result.cohort_scores)) if result.cohort_scores else 0
 
     return {
-        "overallScore":        result.percentile,
-        "semanticsScore":      round(result.semantics_score),
-        "categoryScore":       category_score,
-        "semanticPercentile":  result.percentile,
-        "cohortSize":          stats["cohortSize"],
-        "cohortMedianScore":   cohort_median_score,
-        "cohortCategories":    req.categories,
-        "categoryDensity":     stats["categoryDensity"],
-        "sufficientCohort":    True,
+        "overallScore": result.percentile,
+        "semanticsScore": round(result.semantics_score),
+        "categoryScore": category_score,
+        "semanticPercentile": result.percentile,
+        "cohortSize": stats["cohortSize"],
+        "cohortMedianScore": cohort_median_score,
+        "cohortCategories": req.categories,
+        "categoryDensity": stats["categoryDensity"],
+        "sufficientCohort": True,
         "descriptionFeedback": _description_feedback(
             result.percentile, cohort_median_score, stats["categoryDensity"]
         ),
@@ -146,6 +148,7 @@ def uniqueness(req: UniquenessRequest) -> dict:
 # 00-index.md). "A more specific UVP usually raises this score" (the old
 # copy) is unactionable: specificity barely moves a floor-bound metric. This
 # tells the operator where they actually sit instead.
+
 
 def _insufficient_cohort_feedback(cohort_size: int) -> str:
     return (
@@ -199,6 +202,7 @@ def _category_feedback(category_score: float) -> str:
 
 
 # ── /embed ────────────────────────────────────────────────────────────────────
+
 
 class EmbedRequest(BaseModel):
     businessProfileId: str

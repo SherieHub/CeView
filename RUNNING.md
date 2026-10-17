@@ -473,6 +473,33 @@ itself.
 
 ---
 
+## 8a. Git hooks (local quality gates)
+
+[Lefthook](https://lefthook.dev) runs checks automatically on `git commit` and `git push` and rejects them on failure. Config: [`lefthook.yml`](lefthook.yml); scripts: [`scripts/hooks/`](scripts/hooks/).
+
+**One-time setup**
+1. `npm install` at the repo root — installs Lefthook and the git hooks (the `prepare` script).
+2. A virtualenv per FastAPI service (the hooks fail with this exact command if it is missing):
+   `cd backend/fastapi-sbert && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt -r requirements-dev.txt` (use `.venv/bin/pip` on macOS/Linux); repeat for `fastapi-transformer`.
+3. `JAVA_HOME` pointing at JDK 21 (the Spring Boot checks fail with a clear message on older Java).
+4. `cd frontend && npm install`.
+
+**What runs** (only for stacks whose files changed)
+
+| Hook | Checks |
+|---|---|
+| `pre-commit` (fast) | Frontend: ESLint on staged files, `tsc --noEmit`, related Vitest tests. Spring Boot: Spotless format check + compile. FastAPI: `ruff check`, `ruff format --check`, `pytest tests/unit`. |
+| `commit-msg` | Source changed without any test change, or without any docs change, is rejected (see below). |
+| `pre-push` (full) | Frontend lint + typecheck + full Vitest. Spring Boot Spotless + full JUnit. FastAPI ruff + full pytest. Playwright e2e only if the backend answers on `http://localhost:8080/actuator/health` (otherwise skipped with a warning). |
+
+**Unexpected ERROR logs.** Test runs are scanned for output lines containing `ERROR`, and any line fails the hook unless it matches a regex in [`scripts/hooks/error-allowlist.txt`](scripts/hooks/error-allowlist.txt). Add an entry (with a comment naming the test that deliberately produces it) only for errors a test intentionally triggers.
+
+**Tests and docs are required.** If a commit changes source (`frontend/{components,services,layout,content}`, `backend/spring-boot/src/main` outside DB migrations/config, `backend/fastapi-*/app`), it must also change tests and docs. For genuine refactors or config-only changes, add `[no-test: reason]` and/or `[no-docs: reason]` to the commit message.
+
+**Auto-fix:** `npm run lint:fix` (frontend), `ruff check --fix . && ruff format .` (FastAPI), `./mvnw spotless:apply` (Spring Boot).
+
+**Bypass (emergencies only):** `git commit --no-verify`, `git push --no-verify`, or `LEFTHOOK=0`. CI runs the same lint/format/test checks, so skipped failures still surface there.
+
 ## 9. Stopping everything
 
 **Path A (Docker):**

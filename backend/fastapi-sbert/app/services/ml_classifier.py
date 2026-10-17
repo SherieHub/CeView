@@ -37,11 +37,12 @@ given row.
 """
 
 from __future__ import annotations
-from app.core.BertModel import _BertModel, log
 
 from dataclasses import dataclass
 
 import numpy as np
+
+from app.core.BertModel import _BertModel, log
 
 CATEGORY_LABELS: list[str] = [
     "Coastal & Island",
@@ -65,6 +66,7 @@ E5_QUERY_PREFIX = "query: "
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+
 def _build_text(core_services: list[str], uvp: str, description: str) -> str:
     """Format profile text for the E5 encoder, including its instruction prefix.
 
@@ -73,14 +75,11 @@ def _build_text(core_services: list[str], uvp: str, description: str) -> str:
     pinned by tests/unit/test_ml_classifier_text.py.
     """
     services_str = ", ".join(core_services) if core_services else ""
-    return (
-        f"{E5_QUERY_PREFIX}services: {services_str}\n"
-        f"uvp: {uvp}\n"
-        f"description: {description}"
-    )
+    return f"{E5_QUERY_PREFIX}services: {services_str}\nuvp: {uvp}\ndescription: {description}"
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def embed_business(
     core_services: list[str],
@@ -96,8 +95,10 @@ def embed_business(
         768-element float list, or None when the E5 model is unavailable.
     """
     if _bert is None:
-        log.warning("ml_classifier: embed_business — model unavailable, returning None",
-                    extra={"code": "MOD1_ML_LOAD_FAIL"})
+        log.warning(
+            "ml_classifier: embed_business — model unavailable, returning None",
+            extra={"code": "MOD1_ML_LOAD_FAIL"},
+        )
         return None
 
     try:
@@ -106,8 +107,11 @@ def embed_business(
         vector = _bert.encoder.encode([text], normalize_embeddings=True)[0]  # (768,)
         return [float(v) for v in vector]
     except Exception as exc:
-        log.warning("ml_classifier: embed_business error — %s", exc,
-                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
+        log.warning(
+            "ml_classifier: embed_business error — %s",
+            exc,
+            extra={"code": "MOD1_ML_INFERENCE_FAIL"},
+        )
         return None
 
 
@@ -200,9 +204,9 @@ def compute_semantic_uniqueness(
         other_matrix = other_matrix / np.maximum(norms, 1e-8)
 
         # Candidate vs. cohort — cosine similarities via dot product (unit vectors)
-        similarities = other_matrix @ candidate                          # (n,)
+        similarities = other_matrix @ candidate  # (n,)
         similarities = np.clip(similarities, -1.0, 1.0)
-        distances = 1.0 - similarities                                   # (n,) in [0, 2]
+        distances = 1.0 - similarities  # (n,) in [0, 2]
         mean_dist = float(np.mean(distances))
         semantics_score = _raw_score(mean_dist)
 
@@ -210,11 +214,11 @@ def compute_semantic_uniqueness(
         # REST of the cohort, excluding itself. This is the distribution the
         # candidate is ranked against, and — Task 8 — the source of
         # cohortMedianScore with no second pass over the corpus.
-        internal_similarities = other_matrix @ other_matrix.T            # (n, n)
+        internal_similarities = other_matrix @ other_matrix.T  # (n, n)
         internal_similarities = np.clip(internal_similarities, -1.0, 1.0)
         internal_distances = 1.0 - internal_similarities
         np.fill_diagonal(internal_distances, np.nan)
-        cohort_mean_dists = np.nanmean(internal_distances, axis=1)       # (n,)
+        cohort_mean_dists = np.nanmean(internal_distances, axis=1)  # (n,)
         cohort_scores = [_raw_score(float(d)) for d in cohort_mean_dists]
 
         # Percentile rank: share of the cohort whose own mean distance is at
@@ -238,7 +242,9 @@ def compute_semantic_uniqueness(
         )
 
     except Exception as exc:
-        log.warning("ml_classifier: semantic_uniqueness error — %s", exc,
-                    extra={"code": "MOD1_ML_INFERENCE_FAIL"})
+        log.warning(
+            "ml_classifier: semantic_uniqueness error — %s",
+            exc,
+            extra={"code": "MOD1_ML_INFERENCE_FAIL"},
+        )
         return None
-

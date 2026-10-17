@@ -31,6 +31,7 @@ recipe and would place the two sides in different regions of the space.
 
 Run with: pytest tests/unit/test_ml_classifier_text.py -v
 """
+
 from __future__ import annotations
 
 import itertools
@@ -54,13 +55,9 @@ def test_build_text_preserves_field_order_and_content():
     Reordering silently invalidates every stored vector, so it is pinned here.
     """
     text = _build_text(["Canyoneering", "Kayaking"], "the uvp", "the description")
-    body = text[len(E5_QUERY_PREFIX):]
+    body = text[len(E5_QUERY_PREFIX) :]
 
-    assert body == (
-        "services: Canyoneering, Kayaking\n"
-        "uvp: the uvp\n"
-        "description: the description"
-    )
+    assert body == ("services: Canyoneering, Kayaking\nuvp: the uvp\ndescription: the description")
 
 
 def test_build_text_handles_empty_services():

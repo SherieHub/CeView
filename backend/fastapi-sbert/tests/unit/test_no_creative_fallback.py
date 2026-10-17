@@ -2,6 +2,7 @@
 
 Run with: pytest tests/unit/test_no_creative_fallback.py -v
 """
+
 import pytest
 
 from app.services import gemini_client
@@ -13,8 +14,12 @@ def test_raises_when_disabled(monkeypatch):
 
     with pytest.raises(DependencyUnavailable) as excinfo:
         gemini_client.generate_creative_direction(
-            market="korea", business_name="T", categories=["c"],
-            approved_captions=[], uniqueness_score=0, forecast_context={},
+            market="korea",
+            business_name="T",
+            categories=["c"],
+            approved_captions=[],
+            uniqueness_score=0,
+            forecast_context={},
         )
 
     assert excinfo.value.code == "MOD3_CREATIVE_GEMINI_DISABLED"

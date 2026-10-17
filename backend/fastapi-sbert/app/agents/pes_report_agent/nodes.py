@@ -5,21 +5,21 @@ evaluate_report  → scores and validates the report via the Groq LLM
 finalize_response → packages final_ui_payload and metadata
 route_action     → conditional edge: pass (score ≥ PASS_SCORE) or retry (up to MAX_RETRIES)
 """
+
 from __future__ import annotations
 
 import json
 from typing import Any
 
 from app import errors
+from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
 from app.agents.pes_report_agent.state import AgentState, EvaluationResult, ReportOutput
 from app.core.AgentLLMModel import AgentLLMModel
-from app.agents.pes_report_agent.prompt import evaluation_prompt, generation_prompt
 from app.unavailable import DependencyUnavailable
-
 
 # Evaluator score a report needs to pass, and how many generate/evaluate rounds
 # run before the report is released with a needs-human-review flag.
-PASS_SCORE  = 85
+PASS_SCORE = 85
 MAX_RETRIES = 3
 
 
@@ -49,7 +49,7 @@ def generate_report(state: AgentState) -> dict[str, Any]:
     so the generator can correct specific issues.
     """
     metrics_data = state["metrics_data"]
-    iterations   = state.get("iterations", 0)
+    iterations = state.get("iterations", 0)
 
     feedback_context = ""
     if iterations > 0 and state.get("evaluation"):
@@ -74,8 +74,8 @@ def generate_report(state: AgentState) -> dict[str, Any]:
 
 def evaluate_report(state: AgentState) -> dict[str, Any]:
     """Agent 2 — Evaluate the generated report for accuracy and completeness."""
-    metrics_data     = state["metrics_data"]
-    report           = state["report"]
+    metrics_data = state["metrics_data"]
+    report = state["report"]
     formatted_report = json.dumps(report, indent=2)
 
     _base_llm = _require_llm(
@@ -94,16 +94,16 @@ def evaluate_report(state: AgentState) -> dict[str, Any]:
 
 def finalize_response(state: AgentState) -> dict[str, Any]:
     """Agent 3 (Final) — Package report + metadata into the UI payload."""
-    report      = state.get("report", {})
-    evaluation  = state.get("evaluation", {})
-    score       = evaluation.get("score", 0)
-    iterations  = state.get("iterations", 0)
+    report = state.get("report", {})
+    evaluation = state.get("evaluation", {})
+    score = evaluation.get("score", 0)
+    iterations = state.get("iterations", 0)
 
     needs_review = bool(iterations >= MAX_RETRIES and score < PASS_SCORE)
 
     final_metadata = {
-        "final_score":        score,
-        "total_iterations":   iterations,
+        "final_score": score,
+        "total_iterations": iterations,
         "needs_human_review": needs_review,
         "warning_message": (
             "WARNING: Quality threshold not met after maximum retries. "
@@ -115,11 +115,11 @@ def finalize_response(state: AgentState) -> dict[str, Any]:
 
     final_ui_payload = {
         "report_data": report,
-        "metadata":    final_metadata,
+        "metadata": final_metadata,
     }
 
     return {
-        "final_metadata":   final_metadata,
+        "final_metadata": final_metadata,
         "final_ui_payload": final_ui_payload,
     }
 
@@ -131,10 +131,10 @@ def finalize_response(state: AgentState) -> dict[str, Any]:
 
 def route_action(state: AgentState) -> str:
     """Conditional edge: pass → finalize_response; fail → generate_report (retry)."""
-    evaluation  = state.get("evaluation", {})
-    score       = evaluation.get("score", 0)
-    passed      = evaluation.get("pass", False)
-    iterations  = state.get("iterations", 0)
+    evaluation = state.get("evaluation", {})
+    score = evaluation.get("score", 0)
+    passed = evaluation.get("pass", False)
+    iterations = state.get("iterations", 0)
 
     if score >= PASS_SCORE and passed:
         return "finalize_response"

@@ -42,14 +42,15 @@ EXHAUSTIVE_DIMENSION_MAPPING
 MARKET_CONFIG
     { market_key: { geo, hl, tz } } — passed to the SerpApi Google Trends engine (geo, hl, tz params).
 """
+
 from __future__ import annotations
 
 # ─── Market initialisation parameters ────────────────────────────────────────
 
 MARKET_CONFIG: dict[str, dict] = {
-    "korea": {"geo": "KR", "hl": "ko",    "tz": 540},
-    "japan": {"geo": "JP", "hl": "ja",    "tz": 540},
-    "usa":   {"geo": "US", "hl": "en-US", "tz": 300},
+    "korea": {"geo": "KR", "hl": "ko", "tz": 540},
+    "japan": {"geo": "JP", "hl": "ja", "tz": 540},
+    "usa": {"geo": "US", "hl": "en-US", "tz": 300},
 }
 
 
@@ -59,7 +60,6 @@ MARKET_CONFIG: dict[str, dict] = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
-
     # ── 01. Coastal & Island ─────────────────────────────────────────────────
     "Coastal & Island": {
         "US": [
@@ -69,19 +69,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "white sand beach Philippines",
         ],
         "KR": [
-            "세부 여행",           # Cebu travel — highest-volume KR Cebu umbrella term
-            "세부 스노클링",        # Cebu snorkeling
-            "필리핀 해변",          # Philippines beach
-            "세부 섬 투어",         # Cebu island tour / island hopping
+            "세부 여행",  # Cebu travel — highest-volume KR Cebu umbrella term
+            "세부 스노클링",  # Cebu snorkeling
+            "필리핀 해변",  # Philippines beach
+            "세부 섬 투어",  # Cebu island tour / island hopping
         ],
         "JP": [
-            "セブ島",               # Cebu Island — dominant bare-noun JP search term
-            "セブ島 シュノーケリング", # Cebu snorkeling
-            "フィリピン ビーチ",     # Philippines beach
-            "セブ ダイビング",       # Cebu diving
+            "セブ島",  # Cebu Island — dominant bare-noun JP search term
+            "セブ島 シュノーケリング",  # Cebu snorkeling
+            "フィリピン ビーチ",  # Philippines beach
+            "セブ ダイビング",  # Cebu diving
         ],
     },
-
     # ── 02. Adventure & Nature ───────────────────────────────────────────────
     "Adventure & Nature": {
         "US": [
@@ -91,19 +90,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "mountain trek Philippines",
         ],
         "KR": [
-            "세부 액티비티",         # Cebu activities — umbrella adventure term
-            "세부 폭포",             # Cebu waterfall (Kawasan Falls most searched)
-            "필리핀 하이킹",          # Philippines hiking
-            "세부 자연 투어",         # Cebu nature tour
+            "세부 액티비티",  # Cebu activities — umbrella adventure term
+            "세부 폭포",  # Cebu waterfall (Kawasan Falls most searched)
+            "필리핀 하이킹",  # Philippines hiking
+            "세부 자연 투어",  # Cebu nature tour
         ],
         "JP": [
             "セブ島 アクティビティ",  # Cebu activities — top JP adventure umbrella
-            "フィリピン 滝",          # Philippines waterfall (滝 = colloquial; 瀑布 = formal)
-            "セブ ハイキング",         # Cebu hiking
-            "ジップライン セブ",       # Cebu zipline — highest-searched JP adventure term
+            "フィリピン 滝",  # Philippines waterfall (滝 = colloquial; 瀑布 = formal)
+            "セブ ハイキング",  # Cebu hiking
+            "ジップライン セブ",  # Cebu zipline — highest-searched JP adventure term
         ],
     },
-
     # ── 03. Cultural & Heritage ──────────────────────────────────────────────
     "Cultural & Heritage": {
         "US": [
@@ -113,19 +111,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "Fort San Pedro Cebu",
         ],
         "KR": [
-            "세부 문화 투어",         # Cebu cultural tour
-            "세부 성당",              # Cebu cathedral (Basilica Minore del Sto. Niño)
-            "세부 역사",              # Cebu history
-            "필리핀 축제",            # Philippines festival (Sinulog etc.)
+            "세부 문화 투어",  # Cebu cultural tour
+            "세부 성당",  # Cebu cathedral (Basilica Minore del Sto. Niño)
+            "세부 역사",  # Cebu history
+            "필리핀 축제",  # Philippines festival (Sinulog etc.)
         ],
         "JP": [
-            "セブ島 観光",            # Cebu sightseeing — catches most cultural intent
-            "フィリピン 祭り",         # Philippines festival
-            "セブ 歴史",              # Cebu history
-            "マクタン島 史跡",         # Mactan Island historical site (Lapu-Lapu shrine)
+            "セブ島 観光",  # Cebu sightseeing — catches most cultural intent
+            "フィリピン 祭り",  # Philippines festival
+            "セブ 歴史",  # Cebu history
+            "マクタン島 史跡",  # Mactan Island historical site (Lapu-Lapu shrine)
         ],
     },
-
     # ── 04. Theme Parks / Entertainment ──────────────────────────────────────
     "Theme Parks / Entertainment": {
         "US": [
@@ -135,19 +132,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "entertainment Cebu city",
         ],
         "KR": [
-            "세부 워터파크",           # Cebu waterpark
-            "필리핀 놀이공원",          # Philippines amusement park
-            "세부 엔터테인먼트",         # Cebu entertainment
-            "세부 어트랙션",            # Cebu attractions
+            "세부 워터파크",  # Cebu waterpark
+            "필리핀 놀이공원",  # Philippines amusement park
+            "세부 엔터테인먼트",  # Cebu entertainment
+            "세부 어트랙션",  # Cebu attractions
         ],
         "JP": [
-            "セブ島 ウォーターパーク",   # Cebu waterpark
-            "フィリピン 遊園地",         # Philippines amusement park
-            "セブ 観光スポット",          # Cebu tourist spots / attractions
-            "セブ アミューズメント",      # Cebu amusement
+            "セブ島 ウォーターパーク",  # Cebu waterpark
+            "フィリピン 遊園地",  # Philippines amusement park
+            "セブ 観光スポット",  # Cebu tourist spots / attractions
+            "セブ アミューズメント",  # Cebu amusement
         ],
     },
-
     # ── 05. Urban & City ─────────────────────────────────────────────────────
     "Urban & City": {
         "US": [
@@ -157,19 +153,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "casino Philippines",
         ],
         "KR": [
-            "세부 쇼핑",              # Cebu shopping
-            "세부 맛집",              # Cebu restaurant guide — extremely high-volume KR lifestyle term
-            "세부 나이트라이프",        # Cebu nightlife
-            "세부 카지노",             # Cebu casino
+            "세부 쇼핑",  # Cebu shopping
+            "세부 맛집",  # Cebu restaurant guide — extremely high-volume KR lifestyle term
+            "세부 나이트라이프",  # Cebu nightlife
+            "세부 카지노",  # Cebu casino
         ],
         "JP": [
-            "セブ市 ショッピング",      # Cebu city shopping
-            "セブ カフェ",             # Cebu cafes — highly searched JP lifestyle term
-            "セブ ナイトライフ",         # Cebu nightlife
-            "フィリピン カジノ",         # Philippines casino
+            "セブ市 ショッピング",  # Cebu city shopping
+            "セブ カフェ",  # Cebu cafes — highly searched JP lifestyle term
+            "セブ ナイトライフ",  # Cebu nightlife
+            "フィリピン カジノ",  # Philippines casino
         ],
     },
-
     # ── 06. Culinary & Gastronomy ─────────────────────────────────────────────
     "Culinary & Gastronomy": {
         "US": [
@@ -179,19 +174,18 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "Filipino street food",
         ],
         "KR": [
-            "세부 맛집",              # Cebu restaurant guide — top food search KR term
-            "필리핀 음식",             # Philippines food
-            "세부 해산물",             # Cebu seafood
-            "세부 레촌",               # Cebu lechon — direct KR transliteration
+            "세부 맛집",  # Cebu restaurant guide — top food search KR term
+            "필리핀 음식",  # Philippines food
+            "세부 해산물",  # Cebu seafood
+            "세부 레촌",  # Cebu lechon — direct KR transliteration
         ],
         "JP": [
-            "セブ島 グルメ",            # Cebu gourmet — most-used JP food discovery search
-            "フィリピン料理",            # Filipino cuisine
-            "セブ シーフード",           # Cebu seafood
-            "レチョン セブ",             # Lechon Cebu — transliteration used by JP travellers
+            "セブ島 グルメ",  # Cebu gourmet — most-used JP food discovery search
+            "フィリピン料理",  # Filipino cuisine
+            "セブ シーフード",  # Cebu seafood
+            "レチョン セブ",  # Lechon Cebu — transliteration used by JP travellers
         ],
     },
-
     # ── 07. Accommodation & Staycation ───────────────────────────────────────
     "Accommodation & Staycation": {
         "US": [
@@ -201,15 +195,15 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
             "staycation Cebu",
         ],
         "KR": [
-            "호캉스 세부",             # 호텔+바캉스 — highest-volume KR staycation colloquial
-            "세부 호텔",               # Cebu hotel
-            "세부 리조트",             # Cebu resort
-            "필리핀 숙소",             # Philippines accommodation
+            "호캉스 세부",  # 호텔+바캉스 — highest-volume KR staycation colloquial
+            "세부 호텔",  # Cebu hotel
+            "세부 리조트",  # Cebu resort
+            "필리핀 숙소",  # Philippines accommodation
         ],
         "JP": [
-            "セブ島 ホテル",            # Cebu hotel — dominant JP accommodation search
-            "セブ リゾート",             # Cebu resort
-            "フィリピン スパ",           # Philippines spa
+            "セブ島 ホテル",  # Cebu hotel — dominant JP accommodation search
+            "セブ リゾート",  # Cebu resort
+            "フィリピン スパ",  # Philippines spa
             "セブ ラグジュアリーホテル",  # Cebu luxury hotel
         ],
     },
@@ -228,7 +222,6 @@ MACRO_TREND_MAPPING: dict[str, dict[str, list[str]]] = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = {
-
     # ════════════════════════════════════════════════════════════════════════
     # 01. Coastal & Island
     # ════════════════════════════════════════════════════════════════════════
@@ -290,7 +283,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 02. Adventure & Nature
     # ════════════════════════════════════════════════════════════════════════
@@ -352,7 +344,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 03. Cultural & Heritage
     # ════════════════════════════════════════════════════════════════════════
@@ -414,7 +405,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 04. Theme Parks / Entertainment
     # ════════════════════════════════════════════════════════════════════════
@@ -476,7 +466,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 05. Urban & City
     # ════════════════════════════════════════════════════════════════════════
@@ -543,7 +532,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 06. Culinary & Gastronomy
     # ════════════════════════════════════════════════════════════════════════
@@ -605,7 +593,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
             },
         },
     },
-
     # ════════════════════════════════════════════════════════════════════════
     # 07. Accommodation & Staycation
     # ════════════════════════════════════════════════════════════════════════
@@ -680,7 +667,6 @@ EXHAUSTIVE_DIMENSION_MAPPING: dict[str, dict[str, dict[str, dict[str, str]]]] = 
 # ─────────────────────────────────────────────────────────────────────────────
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
-
     "Coastal & Island": [
         "Cebu beach",
         "Philippines island hopping",
@@ -693,7 +679,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "Cebu hidden cove",
         "Cebu island tour",
     ],
-
     "Adventure & Nature": [
         "mountain hiking Philippines",
         "cave exploration Philippines",
@@ -706,7 +691,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "Philippines mountain summit trek",
         "Cebu nature tour",
     ],
-
     "Cultural & Heritage": [
         "Cebu Basilica cathedral church",
         "Cebu museum history culture",
@@ -719,7 +703,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "Cebu cultural heritage tour",
         "Magellan Cross Lapu Lapu statue Cebu",
     ],
-
     "Theme Parks / Entertainment": [
         "Cebu waterpark resort water slides",
         "Philippines theme park amusement",
@@ -732,7 +715,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "amusement park Philippines fun",
         "Philippines fireworks festival show",
     ],
-
     "Urban & City": [
         "SM Seaside Cebu mall shopping",
         "Cebu IT Park tower skyline",
@@ -745,7 +727,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "rooftop bar sunset view Cebu",
         "best cafes Cebu Philippines",
     ],
-
     "Culinary & Gastronomy": [
         "Cebu Carbon market local produce",
         "craft beer brewery Cebu",
@@ -758,7 +739,6 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
         "vegan restaurants plant-based Cebu",
         "Filipino street food Cebu tour",
     ],
-
     "Accommodation & Staycation": [
         "backpacker hostel budget Cebu Philippines",
         "mountain lodge Philippines nature stay",

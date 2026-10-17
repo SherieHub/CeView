@@ -4,6 +4,7 @@ Phase 2 architecture:
   POST /inference-batch — one engine call for all market forecasts
   POST /score      — XGBoost economic viability scoring (GDP, FX, flight, distance)
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,59 +26,79 @@ router = APIRouter()
 
 # ─── Pydantic schemas ─────────────────────────────────────────────────────────
 
+
 class GdpTrendPoint(BaseModel):
     """One annual GDP growth data point for MarketRadar trend charts."""
-    year:  int
+
+    year: int
     value: float
 
 
 class ForexTrendPoint(BaseModel):
     """One monthly forex rate data point (foreign-currency units per PHP)."""
-    date:  str    # "YYYY-MM"
+
+    date: str  # "YYYY-MM"
     value: float
 
 
 class GeminiForecastRequest(BaseModel):
     """Deprecated pre-feature-matrix payload; accepted during client rollout."""
+
     model_config = ConfigDict(extra="forbid", json_schema_extra={"deprecated": True})
     profileId: str = ""
     market: str
     # Full chronological series of weekly normalised trend indices (0–100).
     trendSeries: list[float] = Field(default_factory=list)
     # Pre-computed rolling statistics from SeasonalShiftDetector / DB.
-    rolling7dAvg:      float = Field(default=50.0, ge=0.0, le=100.0)
-    rolling30dAvg:     float = Field(default=50.0, ge=0.0, le=100.0)
-    rollingStd7d:      float = Field(default=0.0,  ge=0.0)
-    spikeIndicator:    bool  = False
-    yoyRatio:          float | None = None
+    rolling7dAvg: float = Field(default=50.0, ge=0.0, le=100.0)
+    rolling30dAvg: float = Field(default=50.0, ge=0.0, le=100.0)
+    rollingStd7d: float = Field(default=0.0, ge=0.0)
+    spikeIndicator: bool = False
+    yoyRatio: float | None = None
     # seasonalityScore is stored in DB as 0–1; passed as-is to Gemini.
-    seasonalityScore:  float = Field(default=0.5, ge=0.0, le=1.0)
-    forexRate:         float = Field(default=1.0, ge=0.0)
-    gdpGrowth:         float = 2.0
-    holidayFlag:       bool  = False
+    seasonalityScore: float = Field(default=0.5, ge=0.0, le=1.0)
+    forexRate: float = Field(default=1.0, ge=0.0)
+    gdpGrowth: float = 2.0
+    holidayFlag: bool = False
     # ── Economic trend context (Phase 3 MarketRadar extension) ────────────────
     # Optional — absent from early-stage requests.
-    gdpTrendDirection: str   | None = None   # "growing" | "declining" | "flat"
-    gdpTrendDelta:     float | None = None   # newest − oldest GDP growth point
-    gdpTrend:    list[GdpTrendPoint]   = Field(default_factory=list)
-    forexTrend:  list[ForexTrendPoint] = Field(default_factory=list)
+    gdpTrendDirection: str | None = None  # "growing" | "declining" | "flat"
+    gdpTrendDelta: float | None = None  # newest − oldest GDP growth point
+    gdpTrend: list[GdpTrendPoint] = Field(default_factory=list)
+    forexTrend: list[ForexTrendPoint] = Field(default_factory=list)
 
 
 class WeeklyFeatureRow(BaseModel):
     """One fixed-order feature row, represented by named fields at the HTTP seam."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     iso_year: int = Field(validation_alias=AliasChoices("isoYear", "iso_year"), ge=2000, le=2100)
     iso_week: int = Field(validation_alias=AliasChoices("isoWeek", "iso_week"), ge=1, le=53)
     week_start_date: date = Field(validation_alias=AliasChoices("weekStartDate", "week_start_date"))
-    trend_index: float = Field(validation_alias=AliasChoices("trendIndex", "trend_index"), ge=0.0, le=100.0)
+    trend_index: float = Field(
+        validation_alias=AliasChoices("trendIndex", "trend_index"), ge=0.0, le=100.0
+    )
     forex_rate: float = Field(validation_alias=AliasChoices("forexRate", "forex_rate"), gt=0.0)
     gdp_growth: float = Field(validation_alias=AliasChoices("gdpGrowth", "gdp_growth"))
-    seasonality_score: float = Field(validation_alias=AliasChoices("seasonalityScore", "seasonality_score"), ge=0.0, le=1.0)
-    spike_indicator: float = Field(validation_alias=AliasChoices("spikeIndicator", "spike_indicator"), ge=0.0, le=1.0)
-    holiday_flag: float = Field(validation_alias=AliasChoices("holidayFlag", "holiday_flag"), ge=0.0, le=1.0)
+    seasonality_score: float = Field(
+        validation_alias=AliasChoices("seasonalityScore", "seasonality_score"), ge=0.0, le=1.0
+    )
+    spike_indicator: float = Field(
+        validation_alias=AliasChoices("spikeIndicator", "spike_indicator"), ge=0.0, le=1.0
+    )
+    holiday_flag: float = Field(
+        validation_alias=AliasChoices("holidayFlag", "holiday_flag"), ge=0.0, le=1.0
+    )
 
-    @field_validator("trend_index", "forex_rate", "gdp_growth", "seasonality_score", "spike_indicator", "holiday_flag")
+    @field_validator(
+        "trend_index",
+        "forex_rate",
+        "gdp_growth",
+        "seasonality_score",
+        "spike_indicator",
+        "holiday_flag",
+    )
     @classmethod
     def finite_float(cls, value: float) -> float:
         if not math.isfinite(value):
@@ -122,15 +143,24 @@ _ENGINE_PAYLOAD_KEYS: dict[str, str] = {
 
 class SequenceForecastRequest(BaseModel):
     """Module 2 fixed 12-week forecasting request (C-02/T-09/T-10)."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     profile_id: str = Field(validation_alias=AliasChoices("profileId", "profile_id"))
     market: str = Field(min_length=1)
     category: str | None = None
-    data_as_of: str | None = Field(default=None, validation_alias=AliasChoices("dataAsOf", "data_as_of"))
-    data_stale: bool = Field(default=False, validation_alias=AliasChoices("dataStale", "data_stale"))
+    data_as_of: str | None = Field(
+        default=None, validation_alias=AliasChoices("dataAsOf", "data_as_of")
+    )
+    data_stale: bool = Field(
+        default=False, validation_alias=AliasChoices("dataStale", "data_stale")
+    )
     sequence: list[WeeklyFeatureRow] = Field(min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
-    imputed_mask: list[dict[str, bool]] = Field(validation_alias=AliasChoices("imputedMask", "imputed_mask"), min_length=WINDOW_LENGTH, max_length=WINDOW_LENGTH)
+    imputed_mask: list[dict[str, bool]] = Field(
+        validation_alias=AliasChoices("imputedMask", "imputed_mask"),
+        min_length=WINDOW_LENGTH,
+        max_length=WINDOW_LENGTH,
+    )
     # Full measured weekly trend history (oldest first), longer than `sequence`'s
     # frozen 12-row window. Engines with a longer lookback than WINDOW_LENGTH read
     # this instead — the BiLSTM + Transformer takes a fixed 52-week input — while
@@ -141,15 +171,33 @@ class SequenceForecastRequest(BaseModel):
         validation_alias=AliasChoices("trendHistory", "trend_history"),
     )
     # Deprecated scalar compatibility fields are retained for Groq rollout.
-    trend_series: list[float] | None = Field(default=None, validation_alias=AliasChoices("trendSeries", "trend_series"))
-    rolling_7d_avg: float | None = Field(default=None, validation_alias=AliasChoices("rolling7dAvg", "rolling_7d_avg"))
-    rolling_30d_avg: float | None = Field(default=None, validation_alias=AliasChoices("rolling30dAvg", "rolling_30d_avg"))
-    rolling_std_7d: float | None = Field(default=None, validation_alias=AliasChoices("rollingStd7d", "rolling_std_7d"))
-    spike_indicator: bool | None = Field(default=None, validation_alias=AliasChoices("spikeIndicator", "spike_indicator"))
-    yoy_ratio: float | None = Field(default=None, validation_alias=AliasChoices("yoyRatio", "yoy_ratio"))
-    seasonality_score: float | None = Field(default=None, validation_alias=AliasChoices("seasonalityScore", "seasonality_score"))
-    forex_rate: float | None = Field(default=None, validation_alias=AliasChoices("forexRate", "forex_rate"))
-    gdp_growth: float | None = Field(default=None, validation_alias=AliasChoices("gdpGrowth", "gdp_growth"))
+    trend_series: list[float] | None = Field(
+        default=None, validation_alias=AliasChoices("trendSeries", "trend_series")
+    )
+    rolling_7d_avg: float | None = Field(
+        default=None, validation_alias=AliasChoices("rolling7dAvg", "rolling_7d_avg")
+    )
+    rolling_30d_avg: float | None = Field(
+        default=None, validation_alias=AliasChoices("rolling30dAvg", "rolling_30d_avg")
+    )
+    rolling_std_7d: float | None = Field(
+        default=None, validation_alias=AliasChoices("rollingStd7d", "rolling_std_7d")
+    )
+    spike_indicator: bool | None = Field(
+        default=None, validation_alias=AliasChoices("spikeIndicator", "spike_indicator")
+    )
+    yoy_ratio: float | None = Field(
+        default=None, validation_alias=AliasChoices("yoyRatio", "yoy_ratio")
+    )
+    seasonality_score: float | None = Field(
+        default=None, validation_alias=AliasChoices("seasonalityScore", "seasonality_score")
+    )
+    forex_rate: float | None = Field(
+        default=None, validation_alias=AliasChoices("forexRate", "forex_rate")
+    )
+    gdp_growth: float | None = Field(
+        default=None, validation_alias=AliasChoices("gdpGrowth", "gdp_growth")
+    )
 
     @model_validator(mode="after")
     def increasing_weeks_and_masks(self) -> "SequenceForecastRequest":
@@ -166,70 +214,85 @@ class SequenceForecastRequest(BaseModel):
         payload = self.model_dump()
         for snake, camel in _ENGINE_PAYLOAD_KEYS.items():
             payload[camel] = payload.pop(snake)
-        payload["sequence"] = [{
-            "isoYear": row["iso_year"], "isoWeek": row["iso_week"], "weekStartDate": row["week_start_date"].isoformat(),
-            "trendIndex": row["trend_index"], "forexRate": row["forex_rate"], "gdpGrowth": row["gdp_growth"],
-            "seasonalityScore": row["seasonality_score"], "spikeIndicator": row["spike_indicator"], "holidayFlag": row["holiday_flag"],
-        } for row in payload["sequence"]]
+        payload["sequence"] = [
+            {
+                "isoYear": row["iso_year"],
+                "isoWeek": row["iso_week"],
+                "weekStartDate": row["week_start_date"].isoformat(),
+                "trendIndex": row["trend_index"],
+                "forexRate": row["forex_rate"],
+                "gdpGrowth": row["gdp_growth"],
+                "seasonalityScore": row["seasonality_score"],
+                "spikeIndicator": row["spike_indicator"],
+                "holidayFlag": row["holiday_flag"],
+            }
+            for row in payload["sequence"]
+        ]
         return payload
 
 
 class ForecastResponse(BaseModel):
-    predicted_demand_4w:     float
-    predicted_demand_12w:    float
+    predicted_demand_4w: float
+    predicted_demand_12w: float
     # Individual per-week forecasts [Wk+1, Wk+2, Wk+3, Wk+4] — used by the
     # Spring Boot ForecastingService to render a real trend line on the chart
     # instead of a flat repeated value.
-    weekly_forecasts:        list[float] = Field(default_factory=list)
-    mape:                    float | None
-    mae:                     float | None
-    rmse:                    float | None
-    confidence:              float
-    passed:                  bool
+    weekly_forecasts: list[float] = Field(default_factory=list)
+    mape: float | None
+    mae: float | None
+    rmse: float | None
+    confidence: float
+    passed: bool
     low_confidence_disclaimer: bool = False
-    message:                 str   = ""
-    source:                  str   = "gemini"
+    message: str = ""
+    source: str = "gemini"
 
 
-ForecastRequest = Annotated[SequenceForecastRequest | GeminiForecastRequest, Field(union_mode="left_to_right")]
+ForecastRequest = Annotated[
+    SequenceForecastRequest | GeminiForecastRequest, Field(union_mode="left_to_right")
+]
 
 
 class GeminiBatchForecastRequest(BaseModel):
     """Batch accepts fixed sequence requests and deprecated Gemini requests."""
+
     markets: list[ForecastRequest]
 
 
 class GeminiBatchForecastResponse(BaseModel):
     """Batch response: forecast results keyed by market name (e.g. 'korea')."""
+
     results: dict[str, ForecastResponse]
 
 
 class EconomicScoreRequest(BaseModel):
     """Economic signal features for XGBoost market viability scoring (FR2.13)."""
+
     market: str = ""
     # Demand and seasonality feed the composite market_score.
-    predicted_demand:   float = Field(default=50.0, ge=0.0,  le=100.0)
-    seasonality_score:  float = Field(default=0.5,  ge=0.0,  le=1.0)
-    spike_indicator:    bool  = False
+    predicted_demand: float = Field(default=50.0, ge=0.0, le=100.0)
+    seasonality_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    spike_indicator: bool = False
     # Economic access features — core XGBoost inputs.
-    gdp_growth:         float = 2.0
-    forex_vs_php:       float = Field(default=1.0, ge=0.0)
-    direct_flight:      bool  = False
-    distance_km:        int   = Field(default=5000, ge=0)
-    flight_frequency:   int   = Field(default=3,    ge=0)
+    gdp_growth: float = 2.0
+    forex_vs_php: float = Field(default=1.0, ge=0.0)
+    direct_flight: bool = False
+    distance_km: int = Field(default=5000, ge=0)
+    flight_frequency: int = Field(default=3, ge=0)
     # ── Economic trend context — optional; forwarded from ForecastingService ──
-    gdp_trend_direction: str  | None = None   # "growing" | "declining" | "flat"
-    gdp_trend_delta:     float | None = None
+    gdp_trend_direction: str | None = None  # "growing" | "declining" | "flat"
+    gdp_trend_delta: float | None = None
 
 
 class EconomicScoreResponse(BaseModel):
-    market_score:             float
+    market_score: float
     economic_viability_score: float
-    scorer:                   Literal["xgboost", "linear"]
-    components:               dict
+    scorer: Literal["xgboost", "linear"]
+    components: dict
 
 
 # ─── Submodule 2.2: batch demand forecasting (FR2.11) ─────────────────────────
+
 
 def _engine_payload(body: ForecastRequest) -> dict:
     if isinstance(body, SequenceForecastRequest):
@@ -238,6 +301,7 @@ def _engine_payload(body: ForecastRequest) -> dict:
 
 
 # ─── Submodule 2.2: batch inference (one call for all markets) ───────────────
+
 
 def _classify_engine_error(error_msg: str) -> tuple[str, str]:
     """Map an engine RuntimeError message to (error code, operator-facing reason)."""
@@ -258,7 +322,10 @@ def _classify_engine_error(error_msg: str) -> tuple[str, str]:
             "The service may be experiencing high load — retry in a few minutes."
         )
     if "missing forecast for market" in error_msg:
-        return "MOD22_AI_INCOMPLETE_RESPONSE", f"AI model returned an incomplete batch response: {error_msg}"
+        return (
+            "MOD22_AI_INCOMPLETE_RESPONSE",
+            f"AI model returned an incomplete batch response: {error_msg}",
+        )
     return "MOD22_AI_UNAVAILABLE", f"AI model failed after 3 attempts: {error_msg}"
 
 
@@ -295,6 +362,7 @@ def run_inference_batch(body: GeminiBatchForecastRequest) -> GeminiBatchForecast
 
 
 # ─── Submodule 2.2: XGBoost economic scoring (FR2.13) ────────────────────────
+
 
 @router.post("/score", response_model=EconomicScoreResponse)
 def score_market(body: EconomicScoreRequest) -> EconomicScoreResponse:

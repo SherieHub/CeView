@@ -23,6 +23,7 @@ Valid category values: must match one of the 7 CATEGORY_LABELS in ml_classifier.
     "Culinary & Gastronomy"
     "Accommodation & Staycation"
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,10 +35,11 @@ from app.services.trend_service import fetch_and_process, rank_markets_by_catego
 from app.unavailable import DependencyUnavailable
 
 router = APIRouter()
-log    = logging.getLogger("module2.trends")
+log = logging.getLogger("module2.trends")
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
+
 
 class TrendsFetchRequest(BaseModel):
     """Request body: one (market, category) pair per POST.
@@ -47,7 +49,8 @@ class TrendsFetchRequest(BaseModel):
     - A single HTTP 429 from Google does not fail all 21 combinations
     - Jitter sleep is isolated and proportional per fetch
     """
-    market:   str = Field(
+
+    market: str = Field(
         ...,
         description="Target source market.",
         examples=["korea"],
@@ -69,22 +72,34 @@ class TrendsFetchResponse(BaseModel):
 
     All floating-point fields match the output of seasonal_shift_detector.compute().
     """
-    market:            str
-    category:          str
-    keywords_used:     list[str]  = Field(description="Localized keywords submitted to Google Trends")
-    trend_index:       float      = Field(ge=0.0,  le=100.0,  description="Current normalised Google Trends index (0–100)")
-    rolling_7d_avg:    float      = Field(description="7-week rolling mean of trend_index  (§2 SeasonalShift spec)")
-    rolling_30d_avg:   float      = Field(description="30-week rolling mean of trend_index (§2 SeasonalShift spec)")
-    rolling_7d_std:    float      = Field(ge=0.0,             description="7-week population std-dev (§3)")
-    spike_indicator:   bool       = Field(description="True iff current > rolling_7d_avg + 2σ  (§3.3)")
-    yoy_ratio:         float | None = Field(description="rolling_7d_avg(t) / rolling_7d_avg(t−52w); None when < 59 data points  (§4)")
-    seasonality_score: float      = Field(ge=0.0,  le=1.0,   description="Composite seasonality score 0–1  (§5)")
-    data_points:       int        = Field(ge=0,               description="Weekly data points in the fetched series")
-    fetched_at:        str        = Field(description="ISO-8601 UTC timestamp of the fetch")
-    source:            str        = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
+
+    market: str
+    category: str
+    keywords_used: list[str] = Field(description="Localized keywords submitted to Google Trends")
+    trend_index: float = Field(
+        ge=0.0, le=100.0, description="Current normalised Google Trends index (0–100)"
+    )
+    rolling_7d_avg: float = Field(
+        description="7-week rolling mean of trend_index  (§2 SeasonalShift spec)"
+    )
+    rolling_30d_avg: float = Field(
+        description="30-week rolling mean of trend_index (§2 SeasonalShift spec)"
+    )
+    rolling_7d_std: float = Field(ge=0.0, description="7-week population std-dev (§3)")
+    spike_indicator: bool = Field(description="True iff current > rolling_7d_avg + 2σ  (§3.3)")
+    yoy_ratio: float | None = Field(
+        description="rolling_7d_avg(t) / rolling_7d_avg(t−52w); None when < 59 data points  (§4)"
+    )
+    seasonality_score: float = Field(
+        ge=0.0, le=1.0, description="Composite seasonality score 0–1  (§5)"
+    )
+    data_points: int = Field(ge=0, description="Weekly data points in the fetched series")
+    fetched_at: str = Field(description="ISO-8601 UTC timestamp of the fetch")
+    source: str = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
 
 
 # ── Endpoint ──────────────────────────────────────────────────────────────────
+
 
 @router.post(
     "/fetch",
@@ -118,7 +133,8 @@ def fetch_trends(req: TrendsFetchRequest) -> TrendsFetchResponse:
         log.info(
             "trends.fetch ok market=%s category=%s source=%s "
             "trend_index=%.1f spike=%s seasonality=%.3f",
-            req.market, req.category,
+            req.market,
+            req.category,
             result.get("source"),
             result.get("trend_index", 0),
             result.get("spike_indicator"),
@@ -139,7 +155,9 @@ def fetch_trends(req: TrendsFetchRequest) -> TrendsFetchResponse:
     except Exception as exc:  # noqa: BLE001
         log.exception(
             "trends.fetch 500 — market=%s category=%s error=%s",
-            req.market, req.category, exc,
+            req.market,
+            req.category,
+            exc,
         )
         raise HTTPException(
             status_code=500,
@@ -149,13 +167,15 @@ def fetch_trends(req: TrendsFetchRequest) -> TrendsFetchResponse:
 
 # ─── Category-volume ranking endpoint ─────────────────────────────────────────
 
+
 class RankMarketsRequest(BaseModel):
     """Request body: one category to rank across all 3 markets."""
+
     category: str = Field(
         ...,
         description=(
             "CeView tourism category label. Must match one of the 7 CATEGORY_LABELS "
-            "(case-sensitive). Example: \"Coastal & Island\"."
+            '(case-sensitive). Example: "Coastal & Island".'
         ),
         examples=["Coastal & Island"],
         min_length=1,
@@ -164,25 +184,31 @@ class RankMarketsRequest(BaseModel):
 
 class MarketVolumeResult(BaseModel):
     """Per-market aggregated keyword volume."""
-    market:       str   = Field(description="Market key: 'korea' | 'japan' | 'usa'")
-    total_volume: float = Field(ge=0.0, description="Sum of mean keyword volumes across 10 keywords")
-    top_keyword:  str   = Field(description="Keyword with the highest individual volume in this market")
-    top_volume:   float = Field(ge=0.0, description="Volume of the top keyword")
+
+    market: str = Field(description="Market key: 'korea' | 'japan' | 'usa'")
+    total_volume: float = Field(
+        ge=0.0, description="Sum of mean keyword volumes across 10 keywords"
+    )
+    top_keyword: str = Field(
+        description="Keyword with the highest individual volume in this market"
+    )
+    top_volume: float = Field(ge=0.0, description="Volume of the top keyword")
 
 
 class RankMarketsResponse(BaseModel):
     """Full cross-market ranking result for one category."""
-    category:            str
-    ranked_markets:      list[MarketVolumeResult] = Field(
+
+    category: str
+    ranked_markets: list[MarketVolumeResult] = Field(
         description="Markets sorted by total_volume descending"
     )
-    top_market:          str = Field(description="Market key of the highest-volume market")
-    top_keyword:         str = Field(description="Top keyword in the winning market")
+    top_market: str = Field(description="Market key of the highest-volume market")
+    top_keyword: str = Field(description="Top keyword in the winning market")
     top_market_keywords: dict[str, float] = Field(
         description="Full {keyword: volume} map for the top market — used for notification keywordData"
     )
-    fetched_at:          str
-    source:              str = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
+    fetched_at: str
+    source: str = Field(description="Always 'serpapi' (Google Trends via SerpApi)")
 
 
 @router.post(
@@ -216,7 +242,9 @@ def rank_markets(req: RankMarketsRequest) -> RankMarketsResponse:
 
         log.info(
             "trends.rank-markets ok category=%s top_market=%s top_kw=%s source=%s",
-            req.category, result.get("top_market"), result.get("top_keyword"),
+            req.category,
+            result.get("top_market"),
+            result.get("top_keyword"),
             result.get("source"),
         )
         return RankMarketsResponse(**result)

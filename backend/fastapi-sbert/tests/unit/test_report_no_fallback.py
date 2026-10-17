@@ -2,6 +2,7 @@
 
 Run with: pytest tests/unit/test_report_no_fallback.py -v
 """
+
 from fastapi.testclient import TestClient
 
 from app.routers import report
@@ -21,7 +22,9 @@ def test_llm_offline_is_a_503_and_no_report_is_built(monkeypatch):
     calls = []
     monkeypatch.setattr(report_llm, "performance_report", lambda **kw: calls.append(kw))
 
-    response = TestClient(app).post("/internal/report/generate", json={"funnelTransitions": TRANSITIONS})
+    response = TestClient(app).post(
+        "/internal/report/generate", json={"funnelTransitions": TRANSITIONS}
+    )
 
     assert response.status_code == 503
     assert response.json()["code"] == "MOD4_REPORT_UNAVAILABLE"
@@ -43,7 +46,9 @@ def test_an_empty_model_answer_is_a_503_not_a_200_with_an_empty_report(monkeypat
     monkeypatch.setattr(gemini_client, "_enabled", lambda: True)
     monkeypatch.setattr(report_llm, "performance_report", lambda **kw: {})
 
-    response = TestClient(app).post("/internal/report/generate", json={"funnelTransitions": TRANSITIONS})
+    response = TestClient(app).post(
+        "/internal/report/generate", json={"funnelTransitions": TRANSITIONS}
+    )
 
     assert response.status_code == 503
     assert response.json()["code"] == "MOD4_REPORT_UNAVAILABLE"
@@ -53,9 +58,13 @@ def test_a_partial_model_answer_is_a_503_naming_what_is_missing(monkeypatch):
     from app.main import app
 
     monkeypatch.setattr(gemini_client, "_enabled", lambda: True)
-    monkeypatch.setattr(report_llm, "performance_report", lambda **kw: {"executiveSummary": "only this"})
+    monkeypatch.setattr(
+        report_llm, "performance_report", lambda **kw: {"executiveSummary": "only this"}
+    )
 
-    response = TestClient(app).post("/internal/report/generate", json={"funnelTransitions": TRANSITIONS})
+    response = TestClient(app).post(
+        "/internal/report/generate", json={"funnelTransitions": TRANSITIONS}
+    )
 
     assert response.status_code == 503
     assert "funnelDiagnostics" in response.json()["cause"]
@@ -65,13 +74,17 @@ def test_a_complete_model_answer_is_returned_unchanged(monkeypatch):
     from app.main import app
 
     report_body = {
-        "executiveSummary": "s", "funnelDiagnostics": [{"stage": "a"}],
-        "recommendations": [{"stage": "a"}], "recommendedPlatform": "Naver Blog",
+        "executiveSummary": "s",
+        "funnelDiagnostics": [{"stage": "a"}],
+        "recommendations": [{"stage": "a"}],
+        "recommendedPlatform": "Naver Blog",
     }
     monkeypatch.setattr(gemini_client, "_enabled", lambda: True)
     monkeypatch.setattr(report_llm, "performance_report", lambda **kw: dict(report_body))
 
-    response = TestClient(app).post("/internal/report/generate", json={"funnelTransitions": TRANSITIONS})
+    response = TestClient(app).post(
+        "/internal/report/generate", json={"funnelTransitions": TRANSITIONS}
+    )
 
     assert response.status_code == 200
     assert response.json() == report_body

@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 public class CeViewApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(CeViewApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(CeViewApplication.class, args);
+  }
 }

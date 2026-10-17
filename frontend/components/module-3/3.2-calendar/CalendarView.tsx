@@ -410,6 +410,7 @@ function ListView({ posts }: { posts: Post[] }) {
 
 // ─── Original stub — DO NOT REMOVE (required by shell routing) ────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function CalendarViewPlaceholder() {
   return (
     <div className="empty flex h-full flex-col items-center justify-center gap-1 text-center">

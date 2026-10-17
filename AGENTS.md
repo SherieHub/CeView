@@ -20,6 +20,9 @@ Read `README.md` for setup, `RUNNING.md` before troubleshooting local developmen
 - Do not add new work to `ceview/` or `ceview/old-components/`; they are frozen legacy code.
 - Preserve multi-tenant isolation. Scope every data-access path to the authenticated business operator.
 - Place changes within their module boundaries. For example, Module 3 UI belongs in `frontend/components/module-3/`.
+- Every new feature or bug fix must include at least one test case in the stack's suite (Vitest / JUnit / pytest / Playwright) that fails without the change.
+- Every feature or fix must update the relevant docs: `docs/module-N/README.md` and `*_SYSTEM_DOCUMENTATION.md` for module behavior, `backend/CONTRACT.md` for API changes, `ARCHITECTURE_SPEC.md` for formula changes, `RUNNING.md` for setup changes.
+- Local Lefthook hooks (`lefthook.yml`, see `RUNNING.md` §8a) enforce tests, lint/format, and docs on commit and push. Use `[no-test: reason]` / `[no-docs: reason]` in a commit message only for genuine refactors or config-only changes. Never weaken a hook or allowlist an ERROR line to make a failure pass.
 - Run the relevant focused tests or validation after a change when practical, and report what ran.
 - Never run destructive Git commands such as `git reset --hard`, `git clean -f`, force-push, or destructive checkout operations.
 - Do not run `git commit` or `git push`. If this policy is later changed to allow commits, use an industry-standard Conventional Commit message, for example: `feat(module-3): add campaign approval status`.

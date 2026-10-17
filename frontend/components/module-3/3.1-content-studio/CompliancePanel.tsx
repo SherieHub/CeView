@@ -4,7 +4,6 @@ import type { CSSProperties } from 'react';
 // OMCS_RUBRIC_LABELS is a static display map (rubric key -> human label), not
 // data the backend serves — kept as a direct fixture import deliberately.
 import { OMCS_RUBRIC_LABELS } from '../../../services/fixtures/omcs';
-import PanelHead from './PanelHead';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { ComplianceSlotProps } from './contentStudioTypes';

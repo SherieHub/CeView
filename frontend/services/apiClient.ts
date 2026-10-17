@@ -34,7 +34,6 @@ import {
 import type {
   WorkspaceMemberFixture,
   PlatformConnection,
-  PostMetric,
   BusinessProfileDto,
   CategoryAllocation,
   UniquenessResult,

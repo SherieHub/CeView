@@ -4,6 +4,7 @@ The logic tests use a fake encoder so they need no model download. The final
 test uses the real encoder and skips when it cannot load — it pins the
 calibration in ``app/services/profile_alignment.py``.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,7 +38,7 @@ class _FakeEncoder:
 
     def encode(self, texts, normalize_embeddings=True):
         self.texts = list(texts)
-        return [[1.0, 0.0], [self.cosine, math.sqrt(1 - self.cosine ** 2)]]
+        return [[1.0, 0.0], [self.cosine, math.sqrt(1 - self.cosine**2)]]
 
 
 class _FakeBert:
@@ -86,8 +87,15 @@ def test_core_services_may_arrive_as_a_comma_separated_string(monkeypatch):
     assert "services: Freediving courses, Night dives" in bert.encoder.texts[0]
 
 
-@pytest.mark.parametrize("profile", [None, {}, {"business_name": "Only a name"},
-                                      {"core_services": [], "uvp": "  ", "business_description": ""}])
+@pytest.mark.parametrize(
+    "profile",
+    [
+        None,
+        {},
+        {"business_name": "Only a name"},
+        {"core_services": [], "uvp": "  ", "business_description": ""},
+    ],
+)
 def test_profile_without_text_raises_instead_of_inventing_a_score(monkeypatch, profile):
     _use_cosine(monkeypatch, 0.8)
     with pytest.raises(DependencyUnavailable) as excinfo:
@@ -123,24 +131,37 @@ def test_omcs_calculation_keeps_the_specific_503_code(monkeypatch):
     class _Graph:
         async def ainvoke(self, _state):
             raise DependencyUnavailable(
-                code=errors.MOD33_PROFILE_MISSING, message="m", dependency="d", cause="c", stage="s",
+                code=errors.MOD33_PROFILE_MISSING,
+                message="m",
+                dependency="d",
+                cause="c",
+                stage="s",
             )
 
     monkeypatch.setattr(omcs_analysis, "omcs_graph", _Graph())
     from app.model.ComplianceScoreInputClass import ComplianceInputClass
 
     with pytest.raises(DependencyUnavailable) as excinfo:
-        asyncio.run(omcs_analysis.omcs_calculation(ComplianceInputClass(caption="c", image_url="u", recommendations=_RECS)))
+        asyncio.run(
+            omcs_analysis.omcs_calculation(
+                ComplianceInputClass(caption="c", image_url="u", recommendations=_RECS)
+            )
+        )
     assert excinfo.value.code == errors.MOD33_PROFILE_MISSING
 
 
 def test_endpoint_returns_503_with_the_profile_code_when_no_profile_is_sent():
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     response = TestClient(app).post(
         "/internal/omcs/analyze",
-        json={"caption": "c", "image_url": "https://example.invalid/x.jpg", "recommendations": _RECS},
+        json={
+            "caption": "c",
+            "image_url": "https://example.invalid/x.jpg",
+            "recommendations": _RECS,
+        },
     )
     assert response.status_code == 503
     assert response.json()["code"] == errors.MOD33_PROFILE_MISSING
@@ -154,7 +175,9 @@ _REEF_SHOP = {
     "business_description": "A family-run dive and freediving outfit working the reef wall off Moalboal.",
 }
 _ON_BRAND = "Float over the reef wall at sunrise and swim through a swirling sardine ball. Book a small-group freedive with our certified instructors."
-_OFF_BRAND = "Crackling lechon, charcoal-grilled seafood and sweet mango dessert at our family-run kitchen."
+_OFF_BRAND = (
+    "Crackling lechon, charcoal-grilled seafood and sweet mango dessert at our family-run kitchen."
+)
 _UNRELATED = "Huge sale on running shoes this weekend, 50% off all sneakers in store."
 
 

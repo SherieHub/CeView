@@ -5,6 +5,7 @@ require widening this type, which is a visible and arguable diff.
 
 Run with: pytest tests/unit/test_source_is_closed.py -v
 """
+
 import pytest
 from pydantic import ValidationError
 
@@ -24,7 +25,10 @@ def test_content_source_accepts_groq():
 def test_creative_source_rejects_fallback():
     with pytest.raises(ValidationError):
         CreativeDirectionResponse(
-            visualGuide=[], shots=[], moodboard={}, platformRecommendations={},
+            visualGuide=[],
+            shots=[],
+            moodboard={},
+            platformRecommendations={},
             source="fallback",
         )
 

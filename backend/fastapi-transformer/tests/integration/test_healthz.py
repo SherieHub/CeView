@@ -1,4 +1,5 @@
 """Integration smoke test: the app starts with no external forecast credential."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app

@@ -29,6 +29,7 @@ rate-limited (HTTP 429) whenever Google changes its frontend or a burst of
 requests goes out. SerpApi mirrors pytrends' geo/hl/tz/timeframe parameters
 closely, which is why the shapes below still look familiar.
 """
+
 from __future__ import annotations
 
 import logging
@@ -55,8 +56,8 @@ else:
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-TIMEFRAME:       str   = "today 5-y"   # ~260 weekly points; satisfies 52w YoY requirement
-KEYWORDS_PER_REQUEST: int = 5          # SerpApi/Google Trends max terms per request
+TIMEFRAME: str = "today 5-y"  # ~260 weekly points; satisfies 52w YoY requirement
+KEYWORDS_PER_REQUEST: int = 5  # SerpApi/Google Trends max terms per request
 REQUEST_TIMEOUT: httpx.Timeout = httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0)
 
 
@@ -151,6 +152,7 @@ def _extract_series(timeline: list[dict[str, Any]], keyword: str) -> list[float]
 
 # ─── Public API ───────────────────────────────────────────────────────────────
 
+
 def fetch_and_process(market: str, category: str) -> dict:
     """Fetch Google Trends data (via SerpApi) for one (market, category) pair and
     run SeasonalShift math.
@@ -178,15 +180,17 @@ def fetch_and_process(market: str, category: str) -> dict:
     """
     market_key, config = _resolve_market(market)
 
-    geo_code   = config["geo"]    # "KR" | "JP" | "US"
-    hl         = config["hl"]
-    tz_offset  = config["tz"]
+    geo_code = config["geo"]  # "KR" | "JP" | "US"
+    hl = config["hl"]
+    tz_offset = config["tz"]
 
     # ── 1. Resolve localized keywords ─────────────────────────────────────────
     keywords = _resolve_localized_keywords(market_key, geo_code, [category])
 
     # ── 2. Fetch from SerpApi (Google Trends) ─────────────────────────────────
-    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, hl, tz_offset, TIMEFRAME)
+    timeline = _serpapi_timeline(
+        keywords[:KEYWORDS_PER_REQUEST], geo_code, hl, tz_offset, TIMEFRAME
+    )
 
     primary_kw = keywords[0]
     series = _extract_series(timeline, primary_kw)
@@ -206,31 +210,35 @@ def fetch_and_process(market: str, category: str) -> dict:
     logger.info(
         "trend_service fetched ok — market=%s category=%s geo=%s "
         "points=%d trend_index=%.1f spike=%s yoy=%s seasonality=%.3f",
-        market_key, category, geo_code,
-        len(series), trend_index,
+        market_key,
+        category,
+        geo_code,
+        len(series),
+        trend_index,
         shift["spike_indicator"],
         f"{shift['yoy_ratio']:.3f}" if shift["yoy_ratio"] is not None else "n/a",
         shift["seasonality_score"],
     )
 
     return {
-        "market":            market_key,
-        "category":          category,
-        "keywords_used":     list(keywords[:KEYWORDS_PER_REQUEST]),
-        "trend_index":       round(max(0.0, min(100.0, trend_index)), 2),
-        "rolling_7d_avg":    shift["rolling_7d_avg"],
-        "rolling_30d_avg":   shift["rolling_30d_avg"],
-        "rolling_7d_std":    shift["rolling_7d_std"],
-        "spike_indicator":   shift["spike_indicator"],
-        "yoy_ratio":         shift["yoy_ratio"],
+        "market": market_key,
+        "category": category,
+        "keywords_used": list(keywords[:KEYWORDS_PER_REQUEST]),
+        "trend_index": round(max(0.0, min(100.0, trend_index)), 2),
+        "rolling_7d_avg": shift["rolling_7d_avg"],
+        "rolling_30d_avg": shift["rolling_30d_avg"],
+        "rolling_7d_std": shift["rolling_7d_std"],
+        "spike_indicator": shift["spike_indicator"],
+        "yoy_ratio": shift["yoy_ratio"],
         "seasonality_score": shift["seasonality_score"],
-        "data_points":       len(series),
-        "fetched_at":        datetime.now(timezone.utc).isoformat(),
-        "source":            "serpapi",
+        "data_points": len(series),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "serpapi",
     }
 
 
 # ─── Market-data ingestion API (consumed by /internal/market-data router) ──────
+
 
 def fetch_current_index(market: str, categories: list[str]) -> dict:
     """Fetch the current Google Trends index (via SerpApi) for a market using
@@ -254,16 +262,18 @@ def fetch_current_index(market: str, categories: list[str]) -> dict:
     geo_code = config["geo"]
     keywords = _resolve_localized_keywords(market_key, geo_code, categories)
 
-    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], "today 3-m")
+    timeline = _serpapi_timeline(
+        keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], "today 3-m"
+    )
     series = _extract_series(timeline, keywords[0])
     trend_index = sum(series[-4:]) / len(series[-4:]) if series else 0.0
 
     return {
-        "market":        market_key,
-        "trend_index":   round(max(0.0, min(100.0, trend_index)), 2),
+        "market": market_key,
+        "trend_index": round(max(0.0, min(100.0, trend_index)), 2),
         "keywords_used": list(keywords[:KEYWORDS_PER_REQUEST]),
-        "fetched_at":    datetime.now(timezone.utc).isoformat(),
-        "source":        "serpapi",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "serpapi",
     }
 
 
@@ -296,7 +306,9 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
     # a preset long enough to guarantee weekly points, then keep only the
     # trailing `weeks` of them, rather than requesting a short custom range.
     preset = "today 12-m" if weeks <= 52 else TIMEFRAME
-    timeline = _serpapi_timeline(keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], preset)
+    timeline = _serpapi_timeline(
+        keywords[:KEYWORDS_PER_REQUEST], geo_code, config["hl"], config["tz"], preset
+    )
 
     primary_kw = keywords[0]
     idx = 0
@@ -323,10 +335,18 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
                 + timedelta(days=1)
             ).isoformat(),
             "trend_index": round(
-                max(0.0, min(100.0, float(
-                    point.get("values", [])[idx].get("extracted_value", 0)
-                    if idx < len(point.get("values", [])) else 0
-                ))), 2,
+                max(
+                    0.0,
+                    min(
+                        100.0,
+                        float(
+                            point.get("values", [])[idx].get("extracted_value", 0)
+                            if idx < len(point.get("values", []))
+                            else 0
+                        ),
+                    ),
+                ),
+                2,
             ),
         }
         for point in timeline
@@ -334,34 +354,34 @@ def fetch_trend_history(market: str, categories: list[str], weeks: int = 12) -> 
 
     logger.info(
         "fetch_trend_history ok market=%s geo=%s weeks=%d points=%d",
-        market_key, geo_code, weeks, len(series),
+        market_key,
+        geo_code,
+        weeks,
+        len(series),
     )
 
     return {
-        "market":        market_key,
+        "market": market_key,
         "weekly_series": series,
         "keywords_used": list(keywords[:KEYWORDS_PER_REQUEST]),
-        "fetched_at":    datetime.now(timezone.utc).isoformat(),
-        "source":        "serpapi",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "serpapi",
     }
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _resolve_market(market: str) -> tuple[str, dict]:
     """Normalize a market name and return (market_key, config), raising on unknown."""
     market_key = market.strip().lower()
-    config     = MARKET_CONFIG.get(market_key)
+    config = MARKET_CONFIG.get(market_key)
     if config is None:
-        raise ValueError(
-            f"Unknown market '{market}'. Valid values: {list(MARKET_CONFIG.keys())}"
-        )
+        raise ValueError(f"Unknown market '{market}'. Valid values: {list(MARKET_CONFIG.keys())}")
     return market_key, config
 
 
-def _resolve_localized_keywords(
-    market_key: str, geo_code: str, categories: list[str]
-) -> list[str]:
+def _resolve_localized_keywords(market_key: str, geo_code: str, categories: list[str]) -> list[str]:
     """Resolve localized SerpApi/Google Trends keywords from the FIRST tagged category.
 
     Mirrors fetch_and_process's resolution but accepts the category LIST that
@@ -369,12 +389,13 @@ def _resolve_localized_keywords(
     the first category; falls back to generic per-market keywords when absent.
     """
     first_category = categories[0] if categories else ""
-    cat_map  = MACRO_TREND_MAPPING.get(first_category, {})
+    cat_map = MACRO_TREND_MAPPING.get(first_category, {})
     keywords = cat_map.get(geo_code, [])
     if not keywords:
         logger.info(
             "No keyword mapping for category='%s' geo='%s' — using generic query terms",
-            first_category, geo_code,
+            first_category,
+            geo_code,
         )
         keywords = _generic_keywords(market_key)
     return keywords
@@ -385,7 +406,7 @@ def _generic_keywords(market_key: str) -> list[str]:
     defaults: dict[str, list[str]] = {
         "korea": ["세부 여행", "필리핀 관광"],
         "japan": ["セブ島", "フィリピン旅行"],
-        "usa":   ["Cebu Philippines", "Cebu travel"],
+        "usa": ["Cebu Philippines", "Cebu travel"],
     }
     return defaults.get(market_key, ["Cebu Philippines travel"])
 
@@ -393,6 +414,7 @@ def _generic_keywords(market_key: str) -> list[str]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Category volume aggregation — cross-market keyword ranking pipeline
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def fetch_category_volume(category: str, market: str) -> dict:
     """Fetch and sum search volumes for the 10 fixed CATEGORY_KEYWORDS in one market.
@@ -420,9 +442,7 @@ def fetch_category_volume(category: str, market: str) -> dict:
     market_key = market.strip().lower()
     config = MARKET_CONFIG.get(market_key)
     if config is None:
-        raise ValueError(
-            f"Unknown market '{market}'. Valid: {list(MARKET_CONFIG.keys())}"
-        )
+        raise ValueError(f"Unknown market '{market}'. Valid: {list(MARKET_CONFIG.keys())}")
 
     keywords = CATEGORY_KEYWORDS.get(category)
     if not keywords:
@@ -430,13 +450,13 @@ def fetch_category_volume(category: str, market: str) -> dict:
             f"Unknown category '{category}'. Check CATEGORY_KEYWORDS in keyword_mapping.py."
         )
 
-    geo_code  = config["geo"]
-    hl        = config["hl"]
+    geo_code = config["geo"]
+    hl = config["hl"]
     tz_offset = config["tz"]
 
     keyword_volumes: dict[str, float] = {}
     batches = [
-        keywords[i: i + KEYWORDS_PER_REQUEST]
+        keywords[i : i + KEYWORDS_PER_REQUEST]
         for i in range(0, len(keywords), KEYWORDS_PER_REQUEST)
     ]
 
@@ -444,11 +464,16 @@ def fetch_category_volume(category: str, market: str) -> dict:
         timeline = _serpapi_timeline(batch, geo_code, hl, tz_offset, TIMEFRAME)
 
         for i, kw in enumerate(batch):
-            series = _extract_series(timeline, kw) if i == 0 else [
-                float(point.get("values", [])[i].get("extracted_value", 0) or 0)
-                if i < len(point.get("values", [])) else 0.0
-                for point in timeline
-            ]
+            series = (
+                _extract_series(timeline, kw)
+                if i == 0
+                else [
+                    float(point.get("values", [])[i].get("extracted_value", 0) or 0)
+                    if i < len(point.get("values", []))
+                    else 0.0
+                    for point in timeline
+                ]
+            )
             tail = series[-4:] if series else []
             keyword_volumes[kw] = sum(tail) / len(tail) if tail else 0.0
 
@@ -458,23 +483,26 @@ def fetch_category_volume(category: str, market: str) -> dict:
         )
 
     total_volume = round(sum(keyword_volumes.values()), 2)
-    top_keyword  = max(keyword_volumes, key=lambda k: keyword_volumes[k])
-    top_volume   = round(keyword_volumes[top_keyword], 2)
+    top_keyword = max(keyword_volumes, key=lambda k: keyword_volumes[k])
+    top_volume = round(keyword_volumes[top_keyword], 2)
 
     logger.info(
         "fetch_category_volume ok market=%s category=%s total=%.1f top_kw=%s",
-        market_key, category, total_volume, top_keyword,
+        market_key,
+        category,
+        total_volume,
+        top_keyword,
     )
 
     return {
-        "market":          market_key,
-        "category":        category,
-        "total_volume":    total_volume,
+        "market": market_key,
+        "category": category,
+        "total_volume": total_volume,
         "keyword_volumes": keyword_volumes,
-        "top_keyword":     top_keyword,
-        "top_volume":      top_volume,
-        "source":          "serpapi",
-        "fetched_at":      datetime.now(timezone.utc).isoformat(),
+        "top_keyword": top_keyword,
+        "top_volume": top_volume,
+        "source": "serpapi",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -515,16 +543,16 @@ def rank_markets_by_category(category: str) -> dict:
         "category": category,
         "ranked_markets": [
             {
-                "market":       r["market"],
+                "market": r["market"],
                 "total_volume": r["total_volume"],
-                "top_keyword":  r["top_keyword"],
-                "top_volume":   r["top_volume"],
+                "top_keyword": r["top_keyword"],
+                "top_volume": r["top_volume"],
             }
             for r in results
         ],
-        "top_market":          top.get("market", ""),
-        "top_keyword":         top.get("top_keyword", ""),
+        "top_market": top.get("market", ""),
+        "top_keyword": top.get("top_keyword", ""),
         "top_market_keywords": top.get("keyword_volumes", {}),
-        "fetched_at":          datetime.now(timezone.utc).isoformat(),
-        "source":              "serpapi",
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "serpapi",
     }

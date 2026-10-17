@@ -1,0 +1,11 @@
+target-version = "py312"
+line-length = 100
+extend-exclude = ["models", "data", ".venv"]
+
+[lint]
+# Explicit so results don't change between ruff versions: pycodestyle errors, pyflakes, isort.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[lint.per-file-ignores]
+# load_dotenv() must run before the app modules import and read os.environ.
+"app/main.py" = ["E402"]

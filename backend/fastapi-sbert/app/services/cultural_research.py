@@ -6,6 +6,7 @@ Singleton + fallback pattern:
   - templates are market-specific and cover all UC-3.1 step 6 data points:
       traveler_behavior, tourism_preferences, platform_styles, language_nuances
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,6 +23,7 @@ _serpapi = None
 try:
     if _SERPAPI_KEY:
         from serpapi import GoogleSearch  # type: ignore[import]
+
         _serpapi = GoogleSearch
         logger.info("SerpAPI loaded successfully")
     else:
@@ -154,9 +156,7 @@ def research_market(market: str) -> dict:
         query = f"Cebu Philippines tourism {market} travelers 2024 trends preferences"
         results = _serpapi({"q": query, "api_key": _SERPAPI_KEY, "num": 5}).get_dict()
         snippets = [
-            r.get("snippet", "")
-            for r in results.get("organic_results", [])[:5]
-            if r.get("snippet")
+            r.get("snippet", "") for r in results.get("organic_results", [])[:5] if r.get("snippet")
         ]
         live_context = " ".join(snippets)
 
@@ -176,7 +176,8 @@ def research_market(market: str) -> dict:
     except Exception as exc:
         logger.warning(
             "SerpAPI research failed for market=%s — using template: %s",
-            market, exc,
+            market,
+            exc,
             extra={"code": MOD31_SERP_UNAVAILABLE},
         )
         return {**template, "source": "template", "researched_at": _now()}

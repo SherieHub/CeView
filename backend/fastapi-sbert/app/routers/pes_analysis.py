@@ -17,6 +17,7 @@ Agent output (final_ui_payload):
     report_data   — { metric_conditions, cross_metric_logic, ranked_weaknesses }
     metadata      — { final_score, total_iterations, needs_human_review, warning_message }
 """
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ _LLM_AVAILABLE: bool = AgentLLMModel().get_model() is not None
 
 # ─── Pydantic schema ──────────────────────────────────────────────────────────
 
+
 class PesAnalysisRequest(BaseModel):
     """Request body forwarded from Spring Boot AnalyticsController.
 
@@ -48,6 +50,7 @@ class PesAnalysisRequest(BaseModel):
     weeks        — analysis window hint; used only for logging (the agent
                    derives window length from the list length itself).
     """
+
     metrics_data: dict = Field(
         default_factory=dict,
         description=(
@@ -59,6 +62,7 @@ class PesAnalysisRequest(BaseModel):
 
 
 # ─── /generate ────────────────────────────────────────────────────────────────
+
 
 @router.post("/generate")
 async def generate(req: PesAnalysisRequest) -> dict:
@@ -77,10 +81,10 @@ async def generate(req: PesAnalysisRequest) -> dict:
     Response shape:
         {
           "report_data": {
-            "metric_conditions":  [ { metric_name, current_status, trend, peak_value, low_value, 
-            insights (2 - 3 sentences that explains the current condition of this metric and how 
+            "metric_conditions":  [ { metric_name, current_status, trend, peak_value, low_value,
+            insights (2 - 3 sentences that explains the current condition of this metric and how
             this values means to the bussiness) } ]
-            
+
             ,
             "cross_metric_logic": { relationships, insights },
             "ranked_weaknesses":  [ { metric_name, rank, weakness_meaning, recommendation } ]
@@ -99,7 +103,7 @@ async def generate(req: PesAnalysisRequest) -> dict:
             message="No campaign metrics to analyse.",
             dependency="campaign_records",
             cause="metrics_data was empty — ingest at least one campaign before "
-                  "requesting a PES analysis",
+            "requesting a PES analysis",
             stage="fastapi-sbert/pes_analysis",
             status_code=424,
         )
@@ -112,10 +116,12 @@ async def generate(req: PesAnalysisRequest) -> dict:
     )
 
     try:
-        state = await pes_agent_graph.ainvoke({
-            "metrics_data": metrics_json,
-            "iterations":   0,
-        })
+        state = await pes_agent_graph.ainvoke(
+            {
+                "metrics_data": metrics_json,
+                "iterations": 0,
+            }
+        )
 
         payload = state.get("final_ui_payload")
         if not payload:

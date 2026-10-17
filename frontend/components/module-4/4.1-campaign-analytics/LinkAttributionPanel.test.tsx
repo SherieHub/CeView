@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest';
 import LinkAttributionPanel from './LinkAttributionPanel';
 import { apiClient } from '../../../services/apiClient';
 import { ApiError } from '../../../services/apiError';
@@ -21,13 +21,13 @@ describe('LinkAttributionPanel', () => {
 
   it('renders loading initially', () => {
     // Return unresolved promises
-    (apiClient.attributionLinks.list as any).mockReturnValue(new Promise(() => {}));
+    (apiClient.attributionLinks.list as unknown as Mock).mockReturnValue(new Promise(() => {}));
     render(<LinkAttributionPanel />);
     expect(screen.getByText('Loading links...')).toBeInTheDocument();
   });
 
   it('handles empty links list', async () => {
-    (apiClient.attributionLinks.list as any).mockResolvedValue([]);
+    (apiClient.attributionLinks.list as unknown as Mock).mockResolvedValue([]);
     render(<LinkAttributionPanel />);
     await waitFor(() => {
       expect(screen.getByText('No tracked campaign links yet.')).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('LinkAttributionPanel', () => {
   });
 
   it('handles links error and retry', async () => {
-    (apiClient.attributionLinks.list as any).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Links Error' } }))
+    (apiClient.attributionLinks.list as unknown as Mock).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Links Error' } }))
                                             .mockResolvedValueOnce([]);
     render(<LinkAttributionPanel />);
     await waitFor(() => {
@@ -50,8 +50,8 @@ describe('LinkAttributionPanel', () => {
 
   it('selects first link and fetches performance', async () => {
     const links = mockLinks();
-    (apiClient.attributionLinks.list as any).mockResolvedValue(links);
-    (apiClient.attributionLinks.performance as any).mockResolvedValue(mockLinkPerformance(links[0].linkId));
+    (apiClient.attributionLinks.list as unknown as Mock).mockResolvedValue(links);
+    (apiClient.attributionLinks.performance as unknown as Mock).mockResolvedValue(mockLinkPerformance(links[0].linkId));
 
     render(<LinkAttributionPanel />);
     
@@ -71,8 +71,8 @@ describe('LinkAttributionPanel', () => {
 
   it('handles performance error and retry separately', async () => {
     const links = mockLinks();
-    (apiClient.attributionLinks.list as any).mockResolvedValue(links);
-    (apiClient.attributionLinks.performance as any).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Perf Error' } }))
+    (apiClient.attributionLinks.list as unknown as Mock).mockResolvedValue(links);
+    (apiClient.attributionLinks.performance as unknown as Mock).mockRejectedValueOnce(new ApiError({ status: 500, method: 'GET', path: '/api/attribution/links', body: { message: 'Perf Error' } }))
                                                    .mockResolvedValueOnce(mockLinkPerformance(links[0].linkId));
 
     render(<LinkAttributionPanel />);
@@ -89,8 +89,8 @@ describe('LinkAttributionPanel', () => {
 
   it('allows selection change', async () => {
     const links = mockLinks();
-    (apiClient.attributionLinks.list as any).mockResolvedValue(links);
-    (apiClient.attributionLinks.performance as any).mockResolvedValue(mockLinkPerformance(links[1].linkId));
+    (apiClient.attributionLinks.list as unknown as Mock).mockResolvedValue(links);
+    (apiClient.attributionLinks.performance as unknown as Mock).mockResolvedValue(mockLinkPerformance(links[1].linkId));
 
     render(<LinkAttributionPanel />);
 

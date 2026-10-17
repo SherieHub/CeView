@@ -1,5 +1,7 @@
 package com.ceview.common;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -10,99 +12,93 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
- * Global exception → JSON shape. Adds {@code traceId} (always present, sourced
- * from {@link TraceIdFilter}'s MDC entry) and {@code code} (when a controller
- * tagged the failure via {@code MDC.put("code", ...)}) so the frontend can
- * surface both in its error banner and match them against backend logs.
+ * Global exception → JSON shape. Adds {@code traceId} (always present, sourced from {@link
+ * TraceIdFilter}'s MDC entry) and {@code code} (when a controller tagged the failure via {@code
+ * MDC.put("code", ...)}) so the frontend can surface both in its error banner and match them
+ * against backend logs.
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> validation(MethodArgumentNotValidException e) {
-        return ResponseEntity.badRequest().body(body("validation_failed", 400, e.getMessage()));
-    }
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<?> validation(MethodArgumentNotValidException e) {
+    return ResponseEntity.badRequest().body(body("validation_failed", 400, e.getMessage()));
+  }
 
-    /**
-     * Non-2xx from a WebClient call that did not go through
-     * {@link com.ceview.ai.AIInferenceGatewayService}'s {@code post(...)} helper.
-     * Calls that do go through it never reach here: its {@code .onStatus(...)}
-     * intercepts every non-2xx and throws an {@code AiDependencyException} carrying
-     * the upstream `cause`, which {@code AiDependencyExceptionHandler} renders instead.
-     *
-     * <p>One AI call still lands here, and its `cause` is discarded when it does:
-     * {@code AIInferenceGatewayService.generateReportPdf}, which builds its own
-     * WebClient chain because it returns {@code byte[]} rather than a JSON map.
-     */
-    @ExceptionHandler(WebClientResponseException.class)
-    public ResponseEntity<?> downstream(WebClientResponseException e) {
-        return ResponseEntity.status(502)
-                .body(body("ai_service_unavailable", e.getStatusCode().value(), e.getMessage()));
-    }
+  /**
+   * Non-2xx from a WebClient call that did not go through {@link
+   * com.ceview.ai.AIInferenceGatewayService}'s {@code post(...)} helper. Calls that do go through
+   * it never reach here: its {@code .onStatus(...)} intercepts every non-2xx and throws an {@code
+   * AiDependencyException} carrying the upstream `cause`, which {@code
+   * AiDependencyExceptionHandler} renders instead.
+   *
+   * <p>One AI call still lands here, and its `cause` is discarded when it does: {@code
+   * AIInferenceGatewayService.generateReportPdf}, which builds its own WebClient chain because it
+   * returns {@code byte[]} rather than a JSON map.
+   */
+  @ExceptionHandler(WebClientResponseException.class)
+  public ResponseEntity<?> downstream(WebClientResponseException e) {
+    return ResponseEntity.status(502)
+        .body(body("ai_service_unavailable", e.getStatusCode().value(), e.getMessage()));
+  }
 
-    /**
-     * Connection-refused from a WebClient other than the AI gateway's — e.g.
-     * {@code ExternalMarketDataClient}'s World Bank and forex clients. A FastAPI
-     * call made through {@code AIInferenceGatewayService.post(...)} no longer lands
-     * here: the gateway translates it into an {@code AiDependencyException} naming
-     * {@code dependency: "fastapi"}, which this shared handler could not do without
-     * mislabelling those other upstreams. {@code generateReportPdf} bypasses that
-     * helper and so still arrives here on connection-refused, without `dependency`
-     * or `cause`.
-     *
-     * <p><b>Not a read timeout, despite this class's older name for the concern.</b>
-     * A genuine Reactor blocking-read timeout on {@code generateReportPdf} throws
-     * {@code IllegalStateException}, not {@code WebClientRequestException} — this
-     * handler never sees it. That falls through to Spring's default {@code /error}
-     * as a blank 500 with no code, dependency, or cause. {@code post(...)} closed
-     * this exact gap for every call routed through it; {@code generateReportPdf}
-     * is the one caller that still has it open, because it returns {@code byte[]}
-     * rather than a JSON map and was left out of that helper on purpose.
-     */
-    @ExceptionHandler(WebClientRequestException.class)
-    public ResponseEntity<?> unreachable(WebClientRequestException e) {
-        return ResponseEntity.status(503)
-                .body(body("ai_service_unreachable", 503, e.getMessage()));
-    }
+  /**
+   * Connection-refused from a WebClient other than the AI gateway's — e.g. {@code
+   * ExternalMarketDataClient}'s World Bank and forex clients. A FastAPI call made through {@code
+   * AIInferenceGatewayService.post(...)} no longer lands here: the gateway translates it into an
+   * {@code AiDependencyException} naming {@code dependency: "fastapi"}, which this shared handler
+   * could not do without mislabelling those other upstreams. {@code generateReportPdf} bypasses
+   * that helper and so still arrives here on connection-refused, without `dependency` or `cause`.
+   *
+   * <p><b>Not a read timeout, despite this class's older name for the concern.</b> A genuine
+   * Reactor blocking-read timeout on {@code generateReportPdf} throws {@code
+   * IllegalStateException}, not {@code WebClientRequestException} — this handler never sees it.
+   * That falls through to Spring's default {@code /error} as a blank 500 with no code, dependency,
+   * or cause. {@code post(...)} closed this exact gap for every call routed through it; {@code
+   * generateReportPdf} is the one caller that still has it open, because it returns {@code byte[]}
+   * rather than a JSON map and was left out of that helper on purpose.
+   */
+  @ExceptionHandler(WebClientRequestException.class)
+  public ResponseEntity<?> unreachable(WebClientRequestException e) {
+    return ResponseEntity.status(503).body(body("ai_service_unreachable", 503, e.getMessage()));
+  }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<?> badArgs(IllegalArgumentException e) {
-        return ResponseEntity.badRequest().body(body(e.getMessage(), 400, null));
-    }
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<?> badArgs(IllegalArgumentException e) {
+    return ResponseEntity.badRequest().body(body(e.getMessage(), 400, null));
+  }
 
-    /**
-     * Catches {@link ResponseStatusException} thrown directly by controllers/helpers
-     * (e.g. {@code CurrentOperator}'s 401, {@code BusinessProfileController}'s 403 on
-     * cross-operator ownership) so their status *and* reason land in the same
-     * {@code {error, status, traceId, code, message}} shape as every other handled
-     * exception here, instead of falling through to Spring Boot's bare default error
-     * body (which omits the message unless {@code server.error.include-message} is set).
-     */
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<?> statusException(ResponseStatusException e) {
-        HttpStatusCode status = e.getStatusCode();
-        String error = switch (status.value()) {
-            case 401 -> "unauthorized";
-            case 403 -> "forbidden";
-            case 404 -> "not_found";
-            default -> "request_failed";
+  /**
+   * Catches {@link ResponseStatusException} thrown directly by controllers/helpers (e.g. {@code
+   * CurrentOperator}'s 401, {@code BusinessProfileController}'s 403 on cross-operator ownership) so
+   * their status *and* reason land in the same {@code {error, status, traceId, code, message}}
+   * shape as every other handled exception here, instead of falling through to Spring Boot's bare
+   * default error body (which omits the message unless {@code server.error.include-message} is
+   * set).
+   */
+  @ExceptionHandler(ResponseStatusException.class)
+  public ResponseEntity<?> statusException(ResponseStatusException e) {
+    HttpStatusCode status = e.getStatusCode();
+    String error =
+        switch (status.value()) {
+          case 401 -> "unauthorized";
+          case 403 -> "forbidden";
+          case 404 -> "not_found";
+          default -> "request_failed";
         };
-        return ResponseEntity.status(status).body(body(error, status.value(), e.getReason()));
-    }
+    return ResponseEntity.status(status).body(body(error, status.value(), e.getReason()));
+  }
 
-    private Map<String, Object> body(String error, int status, String message) {
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("error", error);
-        out.put("status", status);
-        String traceId = MDC.get(TraceIdFilter.MDC_KEY);
-        if (traceId != null) out.put("traceId", traceId);
-        String code = MDC.get(TraceIdFilter.MDC_CODE_KEY);
-        if (code != null) out.put("code", code);
-        if (message != null && !message.isBlank()) out.put("message", message);
-        return out;
-    }
+  private Map<String, Object> body(String error, int status, String message) {
+    Map<String, Object> out = new LinkedHashMap<>();
+    out.put("error", error);
+    out.put("status", status);
+    String traceId = MDC.get(TraceIdFilter.MDC_KEY);
+    if (traceId != null) out.put("traceId", traceId);
+    String code = MDC.get(TraceIdFilter.MDC_CODE_KEY);
+    if (code != null) out.put("code", code);
+    if (message != null && !message.isBlank()) out.put("message", message);
+    return out;
+  }
 }

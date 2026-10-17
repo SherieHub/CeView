@@ -16,6 +16,7 @@ which deliberately does not run Postgres for this service.
 
 Run with: pytest tests/integration/test_embedding_store_cohort.py -v
 """
+
 from __future__ import annotations
 
 import os
@@ -30,14 +31,15 @@ pytestmark = pytest.mark.skipif(
 # Fixed reference-corpus IDs seeded by V26 (see 01-prerequisites.md Task 2) —
 # stable across machines because the whole point of the shared dump is that
 # every developer imports the same rows under the same UUIDs.
-ADVENTURE_AND_NATURE = "Adventure & Nature"           # dense: 12 seeded rows
+ADVENTURE_AND_NATURE = "Adventure & Nature"  # dense: 12 seeded rows
 ADVENTURE_MEMBER_ID = "25000000-0000-0000-0000-000000000013"
-URBAN_AND_CITY = "Urban & City"                       # sparse: 5 seeded rows
-CULTURAL_AND_HERITAGE = "Cultural & Heritage"         # moderate: 9 seeded rows
+URBAN_AND_CITY = "Urban & City"  # sparse: 5 seeded rows
+CULTURAL_AND_HERITAGE = "Cultural & Heritage"  # moderate: 9 seeded rows
 
 
 def _store():
     from app.services import embedding_store
+
     return embedding_store
 
 

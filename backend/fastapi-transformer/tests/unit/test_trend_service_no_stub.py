@@ -5,6 +5,7 @@ series that flowed into real forecasts indistinguishably from measured data.
 
 Run with: pytest tests/unit/test_trend_service_no_stub.py -v
 """
+
 import pytest
 
 from app.services import trend_service

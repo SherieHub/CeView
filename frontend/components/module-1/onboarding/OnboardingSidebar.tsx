@@ -51,7 +51,6 @@ export default function OnboardingSidebar({
           {ONBOARDING_STEPS.map((step, idx) => {
             const isCurrent = idx === currentStepIndex;
             const isDone = completedSteps[idx] ?? idx < currentStepIndex;
-            const isPending = !isCurrent && !isDone;
 
             let stateAttr = 'pending';
             if (isCurrent) stateAttr = 'current';

@@ -2,6 +2,7 @@
 
 Run with: pytest tests/unit/test_no_caption_fallback.py -v
 """
+
 import pytest
 
 from app.services import gemini_client
@@ -13,8 +14,11 @@ def test_raises_when_gemini_is_disabled(monkeypatch):
 
     with pytest.raises(DependencyUnavailable) as excinfo:
         gemini_client.generate_content(
-            market="korea", business_name="Test Dive Co",
-            description="Diving in Cebu", categories=["Coastal & Island"], trend="surging",
+            market="korea",
+            business_name="Test Dive Co",
+            description="Diving in Cebu",
+            categories=["Coastal & Island"],
+            trend="surging",
         )
 
     assert excinfo.value.dependency == "groq"
@@ -31,8 +35,11 @@ def test_raises_when_the_model_call_explodes(monkeypatch):
 
     with pytest.raises(DependencyUnavailable) as excinfo:
         gemini_client.generate_content(
-            market="korea", business_name="T", description="d",
-            categories=["c"], trend="t",
+            market="korea",
+            business_name="T",
+            description="d",
+            categories=["c"],
+            trend="t",
         )
 
     assert "404 model_not_found" in excinfo.value.cause
@@ -44,8 +51,11 @@ def test_raises_when_the_model_returns_nothing_usable(monkeypatch):
 
     with pytest.raises(DependencyUnavailable) as excinfo:
         gemini_client.generate_content(
-            market="korea", business_name="T", description="d",
-            categories=["c"], trend="t",
+            market="korea",
+            business_name="T",
+            description="d",
+            categories=["c"],
+            trend="t",
         )
 
     assert excinfo.value.code == "MOD3_CONTENT_GEMINI_EMPTY"

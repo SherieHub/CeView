@@ -25,6 +25,7 @@ Response (OmcsAnalysisResponse) — the full graph state, minus the image:
     status                        — "Pass" | "Fail"
     feedback                      — diagnostic text (root-cause + fixes on Fail)
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,6 +50,7 @@ class OmcsAnalysisResponse(BaseModel):
     (DataBufferLimitException → 502) on any real photo. No caller reads it —
     Spring's mapOmcsAgentResponse keeps only the scores and text.
     """
+
     caption: str
     business_profile: Dict[str, Any] = Field(default_factory=dict)
     recommendations: Dict[str, Any] = Field(default_factory=dict)
@@ -69,7 +71,9 @@ async def analyze(body: ComplianceInputClass) -> OmcsAnalysisResponse:
     """Run the omcs_agent compliance audit and return its full evaluation state."""
     log.info(
         "omcs.analyze caption_len=%d image_url_present=%s recommendations_keys=%s",
-        len(body.caption), bool(body.image_url), list((body.recommendations or {}).keys()),
+        len(body.caption),
+        bool(body.image_url),
+        list((body.recommendations or {}).keys()),
     )
 
     try:

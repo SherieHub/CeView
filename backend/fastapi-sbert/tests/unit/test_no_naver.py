@@ -6,10 +6,10 @@ text. See the spec's Section 2a.
 
 Run with: pytest tests/unit/test_no_naver.py -v
 """
+
 import inspect
 
-from app.services import caption_formatting
-from app.services import gemini_client
+from app.services import caption_formatting, gemini_client
 
 
 def test_hardcoded_naver_captions_are_gone():
@@ -32,5 +32,7 @@ def test_the_caption_prompt_does_not_ask_for_naver():
 
 def test_the_schema_example_has_three_platforms():
     assert set(gemini_client._caption_schema_example()) == {
-        "instagram", "tiktok", "facebook",
+        "instagram",
+        "tiktok",
+        "facebook",
     }

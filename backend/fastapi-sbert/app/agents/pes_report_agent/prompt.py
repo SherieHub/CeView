@@ -1,12 +1,13 @@
 from langchain_core.prompts import (
     ChatPromptTemplate,
+    HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
-    HumanMessagePromptTemplate
 )
 
-generation_prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(
-        """
+generation_prompt = ChatPromptTemplate.from_messages(
+    [
+        SystemMessagePromptTemplate.from_template(
+            """
 You are CeView's Senior Campaign Analyst specialising in Cebu MSME tourism businesses.
 
 Your operators are small-to-medium tourism businesses in Cebu, Philippines — resorts, tour operators,
@@ -27,10 +28,9 @@ Your role: interpret time-series KPI data and produce a strictly structured JSON
 metric-level conditions, cross-metric relationships, and ranked actionable weaknesses — all
 framed specifically around what a Cebu tourism MSME operator can realistically act on.
         """
-    ),
-
-    HumanMessagePromptTemplate.from_template(
-        """
+        ),
+        HumanMessagePromptTemplate.from_template(
+            """
 You are analysing a digital ad campaign for a Cebu, Philippines tourism MSME targeting international tourists.
 
 CRITICAL DATA STRUCTURE RULE:
@@ -63,22 +63,23 @@ Instructions:
 
 Return ONLY valid JSON — no markdown, no explanation text outside the JSON.
         """
-    )
-])
+        ),
+    ]
+)
 
-evaluation_prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template(
-        """
+evaluation_prompt = ChatPromptTemplate.from_messages(
+    [
+        SystemMessagePromptTemplate.from_template(
+            """
 You are a strict quality evaluator for CeView marketing reports targeting Cebu MSME tourism operators.
 
 Your job: evaluate whether the generated JSON report accurately reflects the input data, correctly
 identifies trends given that index [0] = current week and the last index = baseline, and provides
 recommendations that are specific and actionable for a Cebu tourism MSME — not generic marketing advice.
         """
-    ),
-
-    HumanMessagePromptTemplate.from_template(
-        """
+        ),
+        HumanMessagePromptTemplate.from_template(
+            """
 Evaluate the generated JSON report against the original campaign data.
 
 Original time-series metrics (index [0] = CURRENT week, last index = baseline / campaign start):
@@ -98,5 +99,6 @@ Evaluation Criteria:
 5. Ranking & Actionability: Is rank 1 the metric with the highest improvement opportunity for the operator?
    Are recommendations specific enough that the operator knows exactly what to do?
         """
-    )
-])
+        ),
+    ]
+)

@@ -22,6 +22,7 @@ measured one once it reaches a chart, which is exactly what
 docs/superpowers/specs/2026-08-30-remove-synthetic-fallbacks-design.md forbids —
 the same rule behind MOD21_TRENDS_UNAVAILABLE and MOD22_NO_MARKET_DATA.
 """
+
 from __future__ import annotations
 
 import json
@@ -54,9 +55,16 @@ PROVISIONAL_CONFIDENCE: float = 0.5
 VALIDATED_CONFIDENCE: float = 0.8
 
 MARKET_BY_ID: dict[str, str] = {
-    "korea": "KR", "kr": "KR", "south korea": "KR", "south_korea": "KR",
-    "japan": "JP", "jp": "JP",
-    "usa": "US", "us": "US", "united states": "US", "united_states": "US",
+    "korea": "KR",
+    "kr": "KR",
+    "south korea": "KR",
+    "south_korea": "KR",
+    "japan": "JP",
+    "jp": "JP",
+    "usa": "US",
+    "us": "US",
+    "united states": "US",
+    "united_states": "US",
 }
 
 CATEGORY_BY_LABEL: dict[str, str] = {
@@ -74,7 +82,10 @@ _cached_client = None
 
 def _unavailable(code: str, message: str, cause: str) -> DependencyUnavailable:
     return DependencyUnavailable(
-        code=code, message=message, dependency=SOURCE, cause=cause,
+        code=code,
+        message=message,
+        dependency=SOURCE,
+        cause=cause,
         stage="fastapi-transformer/bilstm_forecaster",
     )
 
@@ -86,6 +97,7 @@ def _client():
         return _cached_client
     try:
         from gradio_client import Client
+
         _cached_client = Client(SPACE_ID, token=_HF_TOKEN, verbose=False)
         logger.info("BiLSTM+Transformer client connected to %s", SPACE_ID)
         return _cached_client
@@ -131,7 +143,9 @@ def build_history_tensor(trend_history: list[float], anchor_iso_week: int | None
     conditional "divide only if > 1" rule would silently read a genuine index of
     1.0 as 100 and 0.5 as 50.
     """
-    measured = [float(v) for v in (trend_history or []) if v is not None and math.isfinite(float(v))]
+    measured = [
+        float(v) for v in (trend_history or []) if v is not None and math.isfinite(float(v))
+    ]
     if len(measured) < MIN_HISTORY_WEEKS:
         raise _unavailable(
             "MOD22_INSUFFICIENT_HISTORY",
@@ -145,6 +159,7 @@ def build_history_tensor(trend_history: list[float], anchor_iso_week: int | None
 
     if anchor_iso_week is None:
         from datetime import date
+
         anchor_iso_week = date.today().isocalendar().week
     # The newest row sits on anchor week, so the oldest is 51 weeks earlier.
     start_week = ((int(anchor_iso_week) - MIN_HISTORY_WEEKS) % 52) + 1
@@ -213,7 +228,12 @@ def _adapt(raw: dict[str, Any], market: str, category: str) -> dict[str, Any]:
 
     logger.info(
         "bilstm forecast ok — market=%s category=%s 4w=%.2f 12w=%.2f model_version=%s status=%s",
-        market, category, demand_4w, demand_12w, version, status or "unknown",
+        market,
+        category,
+        demand_4w,
+        demand_12w,
+        version,
+        status or "unknown",
     )
 
     return {
@@ -232,8 +252,8 @@ def _adapt(raw: dict[str, Any], market: str, category: str) -> dict[str, Any]:
         "message": (
             f"BiLSTM + Transformer ({version}) — provisional checkpoint, "
             "not yet validated against measured outcomes."
-            if provisional else
-            f"BiLSTM + Transformer ({version})."
+            if provisional
+            else f"BiLSTM + Transformer ({version})."
         ),
         "source": SOURCE,
     }
@@ -281,7 +301,4 @@ def forecast_batch(requests: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     Keyed "{market}::{category}" to match stub_forecaster.forecast_batch and the
     key Spring rebuilds in ForecastingService's CategorySequence.
     """
-    return {
-        batch_key(request): forecast(request)
-        for request in requests
-    }
+    return {batch_key(request): forecast(request) for request in requests}

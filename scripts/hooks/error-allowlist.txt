@@ -1,0 +1,8 @@
+# One regex per line. Output lines containing the word ERROR are failures
+# unless they match a pattern here. Add a comment naming the test that
+# deliberately produces each expected ERROR line.
+
+# MacroInputProvenanceTest: asserts a missing macro reading raises instead of silently falling back.
+ExternalMarketDataClient .*live fetch failed and no last-known-good reading exists
+# AdConnectionPersistenceTest: asserts the DB unique indexes reject duplicate rows.
+SqlExceptionHelper .*Unique index or primary key violation: "PUBLIC\.UQ_AD_(INSIGHT_PERIOD|CONN_PROFILE_PROVIDER)

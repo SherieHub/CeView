@@ -11,6 +11,7 @@ Both nodes raise RuntimeError with a structured error code when the LLM is
 unavailable or Gemini returns an unusable response.  No fallback captions are
 returned — callers must surface the error to the operator.
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 # ── Graph nodes ───────────────────────────────────────────────────────────────
 
+
 def analyze_services(state: SocialAgentState) -> dict:
     """Node 1 — Filter business services to those relevant to the market category."""
 
@@ -49,7 +51,7 @@ def analyze_services(state: SocialAgentState) -> dict:
             message="This business profile has no core services recorded.",
             dependency="business_profile",
             cause="both core services and extra_additional_services were empty — "
-                  "complete the business profile before generating content",
+            "complete the business profile before generating content",
             stage="fastapi-sbert/caption_agent.analyze_services",
             status_code=424,
         )
@@ -60,38 +62,33 @@ def analyze_services(state: SocialAgentState) -> dict:
             "[%s] caption_agent.analyze_services: LLM unavailable — GROQ_API_KEY may be unset or invalid.",
             errors.MOD31_LLM_UNAVAILABLE,
         )
-        return {
-            "relevant_services": all_services,
-            "unique_differentiators": []
-        }
+        return {"relevant_services": all_services, "unique_differentiators": []}
 
     try:
         chain = service_analysis_prompt | llm | JsonOutputParser()
-        
-        filtered = chain.invoke({
-            "market_category": state.get("market_category", ""),
-            "business_services": all_services,
-        })
-        
+
+        filtered = chain.invoke(
+            {
+                "market_category": state.get("market_category", ""),
+                "business_services": all_services,
+            }
+        )
+
         # FIX: Map the LLM's output keys to match SocialAgentState exactly
         if isinstance(filtered, dict):
             return {
                 "relevant_priority_services": filtered.get("relevant_services", all_services),
-                "extra_additional_services": filtered.get("unique_differentiators", [])
+                "extra_additional_services": filtered.get("unique_differentiators", []),
             }
         else:
-            logger.warning("caption_agent.analyze_services: Unexpected LLM output format. Using fallback.")
-            return {
-                "relevant_priority_services": all_services,
-                "extra_additional_services": []
-            }
-            
+            logger.warning(
+                "caption_agent.analyze_services: Unexpected LLM output format. Using fallback."
+            )
+            return {"relevant_priority_services": all_services, "extra_additional_services": []}
+
     except Exception as exc:
         logger.warning("caption_agent.analyze_services failed: %s", exc)
-        return {
-            "relevant_priority_services": all_services,
-            "extra_additional_services": []
-        }
+        return {"relevant_priority_services": all_services, "extra_additional_services": []}
 
 
 def generate_platform_captions(state: SocialAgentState) -> dict:
@@ -117,21 +114,20 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
 
         # FIX: Build prompt variables to match template placeholders EXACTLY
         invoke_data = {
-            "business_name":              state.get("business_name", ""),
-            "business_description":       state.get("business_description", ""),
-            "business_uvp":               state.get("business_uvp", ""),
-            "business_services":          state.get("business_services", []),
-            "market_category":            state.get("market_category", ""),
-            "target_market":              state.get("target_market", ""),
-            "forecast_context":           state.get("forecast_context", ""),
-            "research_context":           state.get("research_context", ""),
-            "market_score":               state.get("market_score", ""),
-            
+            "business_name": state.get("business_name", ""),
+            "business_description": state.get("business_description", ""),
+            "business_uvp": state.get("business_uvp", ""),
+            "business_services": state.get("business_services", []),
+            "market_category": state.get("market_category", ""),
+            "target_market": state.get("target_market", ""),
+            "forecast_context": state.get("forecast_context", ""),
+            "research_context": state.get("research_context", ""),
+            "market_score": state.get("market_score", ""),
             # These two now match BOTH the State keys and the Prompt Variables.
             # analyze_services runs first in the graph and guarantees a non-empty
             # list here (it raises otherwise), so this is a plain read.
             "relevant_priority_services": state["relevant_priority_services"],
-            "extra_additional_services":  state.get("extra_additional_services", []),
+            "extra_additional_services": state.get("extra_additional_services", []),
         }
 
         matrix = chain.invoke(invoke_data)
@@ -142,7 +138,9 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
                 errors.MOD31_CAPTION_AGENT_FAILED,
                 type(matrix),
             )
-            raise ValueError(f"[{errors.MOD31_CAPTION_AGENT_FAILED}] Gemini returned non-dict for caption matrix")
+            raise ValueError(
+                f"[{errors.MOD31_CAPTION_AGENT_FAILED}] Gemini returned non-dict for caption matrix"
+            )
 
         for platform in ("facebook", "instagram", "tiktok"):
             if not matrix.get(platform) or len(matrix[platform]) < 1:
@@ -151,7 +149,9 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
                     errors.MOD31_CAPTION_AGENT_FAILED,
                     platform,
                 )
-                raise ValueError(f"[{errors.MOD31_CAPTION_AGENT_FAILED}] Gemini output missing platform '{platform}'")
+                raise ValueError(
+                    f"[{errors.MOD31_CAPTION_AGENT_FAILED}] Gemini output missing platform '{platform}'"
+                )
             for opt in matrix[platform]:
                 if isinstance(opt, dict) and not opt.get("caption"):
                     opt["caption"] = ""

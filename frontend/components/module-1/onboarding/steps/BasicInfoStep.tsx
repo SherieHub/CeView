@@ -13,7 +13,6 @@
  */
 import { Info, Sparkles } from 'lucide-react';
 import { useObDraft } from '../obDraft';
-import type { ObDraft } from '../obDraft';
 
 /** Canonical tourism categories — matches ceview/constants.ts and docs/module-1/README.md. */
 export const BUSINESS_CATEGORIES = [
