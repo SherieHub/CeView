@@ -119,6 +119,7 @@ create the instance.
 |---|---|
 | **SerpApi** (Google Trends + cultural research) | The daily ingestion job queries per market × business category. With 20–100 businesses, the free quota will likely run out within days. Step B16 measures actual usage on day 1. Decide on a paid plan or fewer markets (`MODULE2_MARKETS`) before go-live. |
 | **Groq** (all AI text and image analysis) | Free-tier rate limits. Under pilot load, expect `429` errors at busy moments. Check limits at console.groq.com and consider the paid developer tier. |
+| **Resend** (sign-up verification and password-reset emails) | Free tier: 3,000 emails/month and **100/day**. Each sign-up or reset sends one, resends send more. The backend caps each account and each IP to protect the quota; if it is exhausted users see "We could not send the email right now". Move to a paid plan before a large invite wave. |
 | **Hugging Face Space** (`FORECAST_ENGINE=bilstm`) | Free Spaces sleep when idle. The first forecast after a quiet period is slow and may time out once. |
 
 ## A3. Security and Data Privacy Act notes
@@ -151,7 +152,7 @@ create the instance.
 
 **Third-party processors (disclose these in the privacy notice).** Business descriptions, images and
 generated captions are sent to **Groq** (US) for AI generation and analysis. Forecast inputs go to
-**Hugging Face** (the `JamJamzz/*` Spaces). Search terms go to **SerpApi**. Google sign-in goes through
+**Hugging Face** (the `JamJamzz/*` Spaces). Search terms go to **SerpApi**. Operators' email addresses and first names go to **Resend** (US) to deliver verification and password-reset emails. Google sign-in goes through
 **Firebase/Google**. Ad metrics come from **Meta**. The landing page and Meta's app settings both need a
 privacy policy URL (`VITE_PRIVACY_URL`), and **a privacy notice must exist before go-live.**
 
@@ -331,8 +332,36 @@ problems.
 | `/ceview/prod/META_APP_ID` | From the Meta app (see [`AD_PLATFORM_SETUP.md`](../AD_PLATFORM_SETUP.md) §2) |
 | `/ceview/prod/META_APP_SECRET` | Same place |
 | `/ceview/prod/FIREBASE_CREDENTIALS_JSON` | The service-account JSON from [`RUNNING.md`](../RUNNING.md) §6 "Google Sign-In setup" step 3, **minified to one line**. In CloudShell, upload the file and run `jq -c . key.json`. |
+| `/ceview/prod/EMAIL_PROVIDER` | The literal text `resend`. **Required:** the release fails its health check and rolls back without it. |
+| `/ceview/prod/RESEND_API_KEY` | From Resend, see "Email delivery (Resend)" below |
+| `/ceview/prod/EMAIL_FROM` | `CeView <no-reply@<domain>>`, an address on the domain verified in Resend |
 
 Don't create `/ceview/prod/release-sha`; the first release creates it.
+
+### Email delivery (Resend)
+
+New accounts (and, once, every existing account) must enter a 6-digit emailed code before using the
+app, and "Forgot password" uses the same codes. The server sends them through
+[Resend](https://resend.com)'s HTTPS API (free tier: 3,000/month, 100/day).
+
+1. Create a Resend account → **Domains → Add Domain**, using `<domain>` (a subdomain such as
+   `mail.<domain>` also works if you prefer to keep the apex clean).
+2. Resend shows DNS records (SPF and DKIM, plus a recommended DMARC). Add each in **Route 53 →
+   Hosted zones → `<domain>` → Create record**, copying type, name and value exactly (TXT values go
+   in quotes; MX/TXT records for a `send.` subdomain are normal). Wait until Resend shows **Verified**.
+   Until then Resend only delivers to your own address.
+3. Resend → **API Keys → Create API Key** with "Sending access". Store it as
+   `/ceview/prod/RESEND_API_KEY`.
+4. Create `/ceview/prod/EMAIL_PROVIDER` = `resend` and `/ceview/prod/EMAIL_FROM` =
+   `CeView <no-reply@<domain>>` (an address on the verified domain).
+5. Create all three **before** the release that ships this feature. If `EMAIL_PROVIDER` is missing the
+   deploy rolls back; if the key or sender is missing Spring refuses to start. Either way the server
+   reverts to the previous release and logs `DEPLOY_FAILED`.
+
+**Existing pilot users:** that release adds a database migration that marks every current account as
+unverified, so each operator is asked for an emailed code the next time they sign in. Tell them in
+advance. The demo accounts are removed by B13, so none of them are affected. To change a value later,
+use the "Change a secret" row in B18.
 
 ## B10. Configure and run the first release
 
@@ -562,6 +591,10 @@ Tick every item before inviting MSMEs:
 - [ ] `https://api.<domain>/actuator/health` → `UP`.
 - [ ] `https://<domain>/` loads. A deep link such as `https://<domain>/enquiry` loads directly rather
       than returning a 404. `https://www.<domain>` redirects to `https://<domain>`.
+- [ ] Register a brand-new operator with a real inbox: the "Your CeView verification code" email
+      arrives (not in spam), the code works, and "Forgot password?" sends a reset code too (checks
+      Resend and the Route 53 DNS records). If nothing arrives, check `sudo ceview-compose logs
+      spring-boot` for `email provider rejected`.
 - [ ] Register a brand-new operator, onboard, and get a uniqueness score that isn't the flat 100
       (checks E5 and the corpus).
 - [ ] Generate a caption in Content Studio (checks Groq through sbert).

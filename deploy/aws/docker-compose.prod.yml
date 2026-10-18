@@ -114,6 +114,14 @@ services:
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
+      # Email verification / password reset codes, sent through Resend's HTTPS API.
+      # EMAIL_PROVIDER is required (no default) on purpose: with the 'log' fallback no
+      # email is sent and the codes only land in CloudWatch, so nobody could verify.
+      # A missing parameter fails this deploy's health check and rolls back instead.
+      # Never set CEVIEW_TEST_SUPPORT_ENABLED here (Spring refuses it alongside Resend).
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:?EMAIL_PROVIDER missing from Parameter Store (set it to resend)}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       # URLs derived from DOMAIN (deploy.env).
       CORS_ALLOWED_ORIGINS: https://${DOMAIN}
       FRONTEND_BASE_URL: https://${DOMAIN}
