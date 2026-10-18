@@ -90,7 +90,12 @@ services:
       # fixture-mode Vite server on :3001 — without it here every e2e request
       # fails CORS preflight (403 "Invalid CORS request") before reaching the
       # app, e.g. registration in onboarding-uniqueness.spec.ts.
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173
+      # Overridable from backend/.env; if you do, keep :3012 in the list.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173}
+      # Public origin baked into /r/{slug} attribution links.
+      CEVIEW_ATTRIBUTION_BASE_URL: ${CEVIEW_ATTRIBUTION_BASE_URL:-http://localhost:8080}
+      # Nightly market-data refresh; each run spends SerpApi searches. false stops it.
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
       # Email verification. 'log' (default) prints each 6-digit code to this container's log
       # (`docker compose logs spring-boot`) and sends nothing; set EMAIL_PROVIDER=resend with

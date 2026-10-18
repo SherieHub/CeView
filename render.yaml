@@ -88,17 +88,32 @@ services:
     dockerContext: ./backend/fastapi-transformer
     healthCheckPath: /healthz
     envVars:
+      # bilstm = the HuggingFace Space forecaster; the default "stub" is a placeholder.
+      - key: FORECAST_ENGINE
+        value: bilstm
+      # Google Trends for Market Radar; trend calls answer 503 without it.
+      - key: SERPAPI_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false
+      # Only read when FORECAST_ENGINE=groq.
       - key: GROQ_API_KEY
         sync: false
 
   - type: web
     name: ceview-frontend
     runtime: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
+    routes:
+      # SPA: serve index.html for client-side routes such as /enquiry.
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
+      # The browser calls this, so it must be Spring Boot's PUBLIC https URL
+      # (e.g. https://ceview-spring-boot-xxxx.onrender.com). fromService
+      # hostport would give the private-network host:port, which a browser
+      # can't reach.
       - key: VITE_API_BASE_URL
-        fromService:
-          type: web
-          name: ceview-spring-boot
-          property: hostport
+        sync: false

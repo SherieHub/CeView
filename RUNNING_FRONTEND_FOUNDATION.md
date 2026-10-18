@@ -6,8 +6,13 @@ from
 (Project Scaffold, Design System, Shell & Routing, Fixture Data Layer), including logging in and
 signing up **against the real backend**, not fixture mode.
 
+> **Historical.** `frontend/` has since replaced `ceview/` as the developed and deployed app, and
+> [`RUNNING.md`](RUNNING.md) is the current guide for setup, environment variables and every test
+> command (unit, integration, e2e). Notes below about `ceview/` being deployed, or e2e targeting it,
+> are out of date.
+
 This is a companion to [`RUNNING.md`](RUNNING.md), not a replacement — `RUNNING.md` covers the
-full stack + `ceview/` (the current production frontend) in more depth. Use this doc for anything
+full stack in more depth. Use this doc for anything
 specific to `frontend/`; fall back to `RUNNING.md` for backend prerequisites, Docker troubleshooting,
 and environment variables not repeated here.
 
@@ -78,8 +83,9 @@ $env:VITE_USE_FIXTURES="true"; npm run test:unit -- apiClient.fixtures   # fixtu
 npm run test:unit                                          # full unit suite
 ```
 
-Playwright/e2e coverage for `frontend/` is **deferred** — `e2e/` still targets `ceview/` only (see
-`00-index.md`'s Testing Strategy). The manual steps below substitute until that later plan lands.
+Playwright now runs against `frontend/` (it starts its own dev server on `:3012`); see
+[`RUNNING.md` §8](RUNNING.md#8-running-the-tests). The manual steps below are still useful for a
+quick check.
 
 ---
 

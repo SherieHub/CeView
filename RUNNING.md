@@ -23,7 +23,8 @@ The frontend and e2e test suite are identical in both paths.
 | JDK 21 (Temurin) | — | ✅ required | `winget install EclipseAdoptium.Temurin.21.JDK` |
 | Python 3.12 | — | ✅ required | `winget install Python.Python.3.12` |
 | Node.js ≥ 20 | ✅ required | ✅ required | already installed if `node --version` works |
-| A GROQ API key | ✅ required to run `fastapi-transformer` | ✅ required to run `fastapi-transformer` | https://console.groq.com/keys |
+| A Groq API key | needed for every AI feature | needed for every AI feature | https://console.groq.com/keys |
+| A SerpApi key | needed for Market Radar trends | needed for Market Radar trends | https://serpapi.com/manage-api-key |
 | A HuggingFace token (read-only) | optional | optional | https://huggingface.co/settings/tokens |
 
 The Spring Boot Maven Wrapper (`mvnw`/`mvnw.cmd`) is included — you do **not**
@@ -40,15 +41,18 @@ start; Docker caches it afterward in a named volume so it only happens once.
 Run through this once per machine (or once per fresh clone):
 
 1. Install the prerequisites above for whichever path you're using.
-2. Get a **GROQ API key** (required — `fastapi-transformer` will not start
-   without one) and, optionally, a **read-only HuggingFace token**.
-3. Copy `backend/.env.example` → `backend/.env` and fill in the two keys
-   above (see [§5 Environment variables](#5-environment-variables) for the
-   full list). **`backend/.env` is gitignored — never commit it.**
+2. Get a **Groq API key** (captions, reports, compliance audit), a **SerpApi key** (Market Radar
+   trends) and, optionally, a **read-only HuggingFace token**. The stack starts without them; the
+   features that need them answer 503 and say which key is missing.
+3. Copy `backend/.env.example` → `backend/.env`. For Path A also set `JWT_SECRET` and
+   `CEVIEW_ATTRIBUTION_IP_HASH_SALT` — Spring Boot refuses to start without real values
+   ([§5](#5-environment-variables) has the commands to generate them and the full list).
+   **`backend/.env` is gitignored — never commit it.**
 4. Pick Path A or Path B below and bring the backend up.
-5. Install and run the frontend (§4).
+5. Install and run the frontend (§4). Copy `frontend/.env.example` → `frontend/.env` only if you
+   need Google sign-in or a non-default backend URL.
 6. Log in with a seeded demo account (§6) and confirm data loads.
-7. Optionally run the automated Playwright e2e suite (§7).
+7. Run the tests (§8): unit and integration need nothing running; e2e needs the backend up.
 
 ---
 
@@ -61,7 +65,7 @@ together.
 
 ```powershell
 cd backend
-copy .env.example .env       # first time only — then fill in GROQ_API_KEY (required)
+copy .env.example .env       # first time only — then fill in JWT_SECRET, the salt and your keys (§5)
 docker-compose up --build
 ```
 
@@ -73,6 +77,24 @@ SBERT encoder; later builds reuse Docker's layer cache unless `pom.xml` or
 
 When you see `Started CeViewApplication` and the FastAPI worker lines, the
 backend is ready.
+
+#### Building and rebuilding containers
+
+Compose service names (use these, not the container names): `postgres`, `fastapi` (sbert),
+`fastapi-transformer`, `spring-boot`.
+
+```powershell
+docker-compose build                         # build every image without starting anything
+docker-compose up -d --build spring-boot     # rebuild + restart one service after a code change
+docker-compose up -d                         # re-read backend/.env after editing it (recreates changed services)
+docker-compose ps                            # status and health
+docker-compose logs -f --tail 100 spring-boot
+```
+
+Images build from each service's own `Dockerfile` (`backend/spring-boot`, `backend/fastapi-sbert`,
+`backend/fastapi-transformer`). To build one by hand, e.g. to check a Dockerfile change:
+`docker build -t ceview-spring backend/spring-boot`. The frontend has no container: it runs with
+`npm run dev` locally and is deployed as static files (§4).
 
 #### Resetting a stale Postgres volume
 
@@ -131,11 +153,15 @@ Three terminals. Keep all three open while testing.
 
 ```powershell
 cd backend\fastapi-sbert
+$env:GROQ_API_KEY = "your-groq-key-here"   # AI features answer 503 without it
 # First time only — install Python deps
 py -3.12 -m pip install -r requirements.txt
 # Run
 py -3.12 -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+
+`DATABASE_URL` is unset on this path (there's no Postgres), so the uniqueness cohort store is
+unavailable and uniqueness scoring answers 503. Use Path A to work on Module 1 scoring.
 
 (`py -3.12` is the Windows Python launcher. If you don't have it, substitute
 the full path to your 3.12 interpreter.)
@@ -145,12 +171,13 @@ http://localhost:8000/docs.
 
 #### 2. FastAPI (transformer) — terminal 2
 
-Requires `GROQ_API_KEY` to be set (see §5) — this service raises and exits
-immediately at startup without it.
+It starts without any key. Market Radar trends need `SERPAPI_KEY`; `FORECAST_ENGINE` picks the
+forecaster (default `stub`, see §5).
 
 ```powershell
 cd backend\fastapi-transformer
-$env:GROQ_API_KEY = "your-groq-key-here"
+$env:SERPAPI_KEY = "your-serpapi-key-here"
+$env:FORECAST_ENGINE = "stub"              # or bilstm (HF Space) / groq (needs GROQ_API_KEY)
 # First time only — install Python deps
 py -3.12 -m pip install -r requirements.txt
 # Run
@@ -172,8 +199,12 @@ cd backend\spring-boot
     --spring.profiles.active=h2 `
     --ceview.fastapi.sbert.base-url=http://127.0.0.1:8000 `
     --ceview.fastapi.transformer.base-url=http://127.0.0.1:8001 `
-    --ceview.cors.allowed-origins=http://localhost:3001
+    --ceview.cors.allowed-origins=http://localhost:3001,http://localhost:3012
 ```
+
+`:3012` is the port Playwright starts its own frontend on (§8). For e2e, also set
+`$env:CEVIEW_TEST_SUPPORT_ENABLED = "true"` and `$env:CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS = "1000"`
+before starting the jar.
 
 Wait for `Started CeViewApplication in N seconds`. Health at
 http://localhost:8080/actuator/health.
@@ -197,17 +228,24 @@ npm run dev
 
 Vite reports `http://localhost:3001/`. Open that in your browser.
 
-By default it talks to the backend at `http://localhost:8080`
-(`VITE_API_BASE_URL` env var overrides this if you need to point it
-elsewhere).
+By default it talks to the backend at `http://localhost:8080`. To change that, or to turn on
+Google sign-in, copy `frontend/.env.example` → `frontend/.env` and set the values (§5). Vite reads
+the file at start-up, so restart `npm run dev` after editing it.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on :3001 |
+| `npm run build` | Production build into `frontend/dist` (refuses `VITE_USE_FIXTURES=true`) |
+| `npm run preview` | Serves the production build locally |
+| `npm run typecheck` | `tsc --noEmit` |
+
+`VITE_USE_FIXTURES=true npm run dev` runs the UI against fixture data with no backend.
 
 ---
 
 ## 5. Environment variables
 
-All backend secrets/config live in `backend/.env` (Path A / Docker Compose)
-or as shell env vars (Path B / native). **`backend/.env` is gitignored —
-never commit real keys.** Start from `backend/.env.example`.
+### Where each stack reads them
 
 | Variable | Required? | Used by | Notes |
 |---|---|---|---|
@@ -233,33 +271,6 @@ never commit real keys.** Start from `backend/.env.example`.
 > register the OAuth redirect URI and test the connection end to end. None of
 > them are required for normal local development — the backend starts without
 > them and the ad-connection endpoints report 503.
-
----
-
-## 5b. Email verification codes in local development
-
-Every new account (and, once, every existing one — the seeded demo operators included) must enter a
-6-digit code emailed to it before it can use the app. With the default `EMAIL_PROVIDER=log` nothing is
-sent: the code is printed in the backend log.
-
-```bash
-# Path A (Docker Compose)
-cd backend && docker compose logs --tail 20 spring-boot | grep -A10 "email:log"
-# Path B (native): it is in the terminal running `mvnw spring-boot:run`
-```
-
-The line looks like `[email:log] to=ramon.delacruz@ceview.local subject="Your CeView verification code"`
-followed by `Your code: 123456`. Sign in as a seeded operator, and the app lands on **Verify your email**;
-enter that code once. Codes last 10 minutes; "Resend code" waits 60 seconds.
-
-To receive real emails locally instead, set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and `EMAIL_FROM`
-(see [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md#email-resend)). Resend's free tier allows 100 emails a
-day. Forgot-password uses the same codes: **Forgot password?** on the sign-in tab.
-
-**Playwright e2e** needs to read those codes without a mailbox: set `CEVIEW_TEST_SUPPORT_ENABLED=true`
-(and, to avoid the per-IP cap, `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000`) in `backend/.env` before
-`docker compose up`. `e2e/global-setup.ts` then verifies the seeded operator through the API. CI sets both
-(`.github/workflows/e2e.yml`).
 
 ---
 
@@ -313,6 +324,35 @@ dump and the code drift apart silently.
 > The reference rows are marked `is_reference = TRUE` and have no operator.
 > They are corpus material, not tenants, and must never appear in an
 > operator-scoped query. Only the uniqueness cohort reads them.
+
+---
+
+## 5b. Email verification codes in local development
+
+Every new account (and, once, every existing one — the seeded demo operators included) must enter a
+6-digit code emailed to it before it can use the app. With the default `EMAIL_PROVIDER=log` nothing is
+sent: the code is printed in the backend log.
+
+```bash
+# Path A (Docker Compose)
+cd backend && docker compose logs --tail 20 spring-boot | grep -A10 "email:log"
+# Path B (native): it is in the terminal running the Spring Boot jar
+```
+
+The line looks like `[email:log] to=ramon.delacruz@ceview.local subject="Your CeView verification code"`
+followed by `Your code: 123456`. Sign in as a seeded operator, and the app lands on **Verify your email**;
+enter that code once. Codes last 10 minutes; "Resend code" waits 60 seconds.
+
+To receive real emails locally instead, set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and `EMAIL_FROM`
+(see [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md#email-resend)). Resend's free tier allows 100 emails a
+day. Forgot-password uses the same codes: **Forgot password?** on the sign-in tab.
+
+**Playwright e2e** needs to read those codes without a mailbox: set `CEVIEW_TEST_SUPPORT_ENABLED=true`
+(and, to avoid the per-IP cap, `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000`) in `backend/.env` before
+`docker compose up`. `e2e/global-setup.ts` then verifies the seeded operator through the API. CI sets both
+(`.github/workflows/e2e.yml`).
+
+---
 
 ## 6. Authentication & seeded demo accounts
 
@@ -483,24 +523,80 @@ See `backend/CONTRACT.md` for the full endpoint table.
 
 ---
 
-## 8. Automated e2e tests (Playwright)
+## 8. Running the tests
 
-The `e2e/` package runs the real login → dashboard flow against a live
-frontend + backend.
+Each stack's commands match what CI runs (`.github/workflows/ci-*.yml`, `e2e.yml`).
+
+### Unit and integration
+
+These need nothing running: no database, no keys, no network.
+
+| Stack | Unit | Integration |
+|---|---|---|
+| Frontend (`cd frontend`) | `npm run test:unit` | `npm run test:integration` |
+| Spring Boot (`cd backend/spring-boot`) | `.\mvnw.cmd test` (bash: `./mvnw test`) runs both | MockMvc/H2 tests run in the same command |
+| fastapi-sbert (`cd backend/fastapi-sbert`) | `pytest tests/unit` | `pytest tests/integration` |
+| fastapi-transformer (`cd backend/fastapi-transformer`) | `pytest tests/unit` | `pytest tests/integration` |
+
+First-time setup:
 
 ```powershell
-cd e2e
-npm install          # first time only
-npx playwright install   # first time only — downloads browser binaries
-npx playwright test      # runs against http://localhost:3001 by default
+cd frontend; npm install
+cd backend\fastapi-sbert;       py -3.12 -m pip install -r requirements.txt -r requirements-dev.txt
+cd backend\fastapi-transformer; py -3.12 -m pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-Set `E2E_BASE_URL` to point at a different frontend URL if needed (see
-`e2e/playwright.config.ts`).
+Also useful before a PR: `npm run typecheck` and `npm run build` in `frontend/` (both run in CI).
+Spring tests build their schema from the JPA entities on H2, so they don't exercise the Flyway
+migrations; start Path A once to check a new migration.
 
-This requires the full stack (Postgres/H2 + Spring Boot + both FastAPI
-services + frontend) to already be running — it does not start anything
-itself.
+**Contract tests** call a running backend and check the frontend's types against real responses:
+
+```powershell
+cd frontend
+npm run test:contract          # needs the backend on VITE_API_BASE_URL (default http://localhost:8080)
+```
+
+### End-to-end (Playwright)
+
+The `e2e/` suite drives a real browser against the real stack. Playwright **starts the frontend
+itself** on `:3012` (fixtures off, Firebase blanked so phone numbers skip SMS); it does **not**
+start the backend.
+
+1. Start the backend with test support on. In `backend/.env`:
+   ```
+   CEVIEW_TEST_SUPPORT_ENABLED=true
+   CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000
+   ```
+   then `cd backend; docker-compose up -d --build` and wait for `docker-compose ps` to show
+   `spring-boot` and `fastapi` healthy. (Path B: set the same two env vars and the `:3012` CORS
+   origin, §3.) Keep `EMAIL_PROVIDER=log`; Spring refuses test support together with `resend`.
+2. Run the suite:
+   ```powershell
+   cd e2e
+   npm install                  # first time only
+   npx playwright install       # first time only — downloads browsers
+   npx playwright test                          # everything
+   npx playwright test tests/login.spec.ts      # one screen
+   npx playwright test --ui                     # interactive runner
+   ```
+
+`global-setup.ts` verifies the seeded operator's email through the API before any spec runs. A spec
+skips itself when no backend answers at `E2E_API_BASE_URL`. To test a frontend you already started,
+set `E2E_BASE_URL` (CI does this with `http://localhost:3000`). Turn test support back off when you're
+done.
+
+Some screen specs are still `describe.skip` placeholders; a green run doesn't mean every screen is
+covered. Check the spec file before relying on it.
+
+### What CI runs
+
+| Workflow | Runs |
+|---|---|
+| `ci-frontend.yml` | `npm ci`, `typecheck`, `test:unit`, `test:integration`, `build` |
+| `ci-spring-boot.yml` | `./mvnw -B test`, then `package -DskipTests` |
+| `ci-fastapi-sbert.yml` / `ci-fastapi-transformer.yml` | `pip install -r requirements.txt -r requirements-dev.txt`, `pytest tests/ -v` |
+| `e2e.yml` | Docker Compose backend with throwaway secrets and test support on, frontend dev server on `:3000`, Playwright per screen; full run nightly |
 
 ---
 
@@ -527,12 +623,14 @@ Get-Process node   | Stop-Process -Force
 |---|---|
 | `docker-compose` says *Virtualization support not detected* | Enable Intel VT-x / AMD-V in BIOS, or use Path B instead. |
 | `mvnw.cmd` fails with *"The system cannot find the file ...maven-wrapper.properties"* (Path B only) | The `.mvn/wrapper/` folder is missing from the checkout. Regenerate it with an installed Maven (`mvn -N wrapper:wrapper -Dmaven=3.9.9`), or install Maven directly (`winget install Apache.Maven`) and run `mvn -B package -DskipTests` instead of `mvnw.cmd`. |
-| `ceview-fastapi-transformer` container exits immediately / `docker-compose ps` doesn't list it | It crashes on startup with `RuntimeError: GROQ_API_KEY environment variable is not set` — no stub mode. Set `GROQ_API_KEY` in `backend/.env` (see §5), then restart just that service: `docker-compose up -d --build fastapi-transformer`. |
+| `ceview-fastapi-transformer` container exits immediately | `FORECAST_ENGINE` has a value other than `stub`, `groq` or `bilstm` (the log says `Invalid FORECAST_ENGINE`). Fix it in `backend/.env`, then `docker-compose up -d fastapi-transformer`. |
+| `ceview-spring` exits at start-up with `... must be set to a non-default value` | `JWT_SECRET` or `CEVIEW_ATTRIBUTION_IP_HASH_SALT` is missing from `backend/.env`. Generate them (§5), then `docker-compose up -d spring-boot`. |
+| Market Radar or captions show a 503 that names a key | The key isn't set, or isn't reaching the container. Check `backend/.env`, then that `docker-compose.yml` forwards that variable to the service (§5). |
 | Spring Boot fails with a Flyway checksum/validation error, `column "..." does not exist` mid-migration, an FK-constraint violation while seeding, or Postgres reports `password authentication failed for user "ceview"` right after a migration crash | Stale Postgres volume from before a migration file was edited — see the full "How to tell you need this" callout and reset options in §3 (Path A). Short version: `docker-compose down -v && docker-compose up --build` (Path A), or just restart (Path B/H2 is always fresh, nothing to wipe). |
 | Every screen shows blank/login-prompts you never expected | You're not logged in, or your token expired — the app auto-logs-out on any `401` from the backend. Log back in with a seeded account (§6). |
 | `curl`/API calls return `401 {"error":"unauthorized",...}` | Expected if you didn't send `Authorization: Bearer <token>` — see §7's "Direct API testing" for how to get one. |
 | `curl`/API calls return `403 {"error":"forbidden",...}` | You're authenticated but requested a resource (business profile / campaign / market data) that belongs to a **different** operator than the one in your token — this is the per-operator isolation working as intended, not a bug. |
-| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your Vite port. Restart Spring with `--ceview.cors.allowed-origins=http://localhost:3001`, or check `CORS_ALLOWED_ORIGINS` in `backend/.env`. |
+| Browser shows `Failed to fetch` on `localhost:8080` | Spring Boot isn't running, or CORS isn't allowing your frontend's port. Path B: add the port to `--ceview.cors.allowed-origins`. Path A: set `CORS_ALLOWED_ORIGINS` in `backend/.env` (keep `http://localhost:3012` in it for e2e) and run `docker-compose up -d spring-boot`. |
 | Spring Boot fails with `Schema-validation` errors | You started with the Postgres profile but pointed at a fresh H2, or vice versa. Use `--spring.profiles.active=h2` for Path B. |
 | `mvnw.cmd is not recognized` | You're not in `backend\spring-boot` — `cd` there first, or invoke it explicitly: `& .\mvnw.cmd package -DskipTests`. PowerShell doesn't resolve commands from the current directory without the `.\` prefix. |
 | Frontend shows mock data even when the backend is up | You're running with `VITE_USE_FIXTURES=true`. Nothing else serves mock data — a failed call surfaces an error, it does not silently fall back. Unset the variable and restart Vite. |
@@ -540,7 +638,8 @@ Get-Process node   | Stop-Process -Force
 | The redirect takes 30+ seconds on first hit | Expected on a spun-down instance. `render.yaml` runs the Spring service on `plan: free`, and this is blocking for real-world use, not a local-only annoyance: it will be cold exactly when a surge ad first runs. |
 | Port 8080/8000/8001/3001 already in use | `Get-NetTCPConnection -LocalPort 8080` to find the PID, then `Stop-Process -Id <pid> -Force`. |
 | `fastapi-sbert` takes forever to become healthy on first run | Expected — it's downloading the ~1.1GB SBERT/E5 encoder from HuggingFace (`start_period: 600s` in the healthcheck accounts for this). Subsequent runs reuse the cached model via the `ceview-hf-cache` Docker volume. |
-| Playwright e2e tests fail with connection errors | The stack isn't running yet — Playwright doesn't start it for you. Bring up backend + frontend first (§3, §4), then run `npx playwright test`. |
+| Playwright specs are skipped with "No backend at http://localhost:8080" | The backend isn't running. Playwright starts the frontend itself but not the backend: bring it up first (§3), then `npx playwright test`. |
+| Playwright specs stop at **Verify your email** | The backend was started without `CEVIEW_TEST_SUPPORT_ENABLED=true` (§8). |
 
 ---
 
