@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ChartColumnIncreasing, Clock, Lock, Mail, MapPin, Phone, UserRound, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ChartColumnIncreasing, Clock, Eye, EyeOff, Lock, Mail, MapPin, UserRound, type LucideIcon } from 'lucide-react';
 import '@fontsource-variable/fraunces/opsz.css';
 import '@fontsource-variable/fraunces/opsz-italic.css';
 import { useAuth } from '../../services/auth';
@@ -18,6 +18,7 @@ import { signInWithGooglePopup } from '../../services/firebase';
 import { ApiError } from '../../services/apiError';
 import { LandingImage } from '../landing/ui';
 import { BrandMark } from '../landing/LandingNav';
+import PhoneVerifyField, { type VerifiedPhone } from './PhoneVerifyField';
 
 const HIGHLIGHTS: [LucideIcon, string, string][] = [
   [ChartColumnIncreasing, 'Smarter', 'insights'],
@@ -43,9 +44,10 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
+  const [phone, setPhone] = useState<VerifiedPhone | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
@@ -56,9 +58,16 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (mode === 'signin') await login(email, password);
-      else await register(email, password, firstName, lastName, contactNumber);
-    } catch {
-      setError('Something went wrong. Check your details and try again.');
+      else if (phone) await register(email, password, firstName, lastName, phone.contactNumber, {
+        phoneIdToken: phone.phoneIdToken,
+        verifyLater: phone.verifyLater,
+      });
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? 'Too many attempts. Please wait a few minutes and try again.'
+          : 'Something went wrong. Check your details and try again.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -176,19 +185,7 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
-                <div className="cv-auth-field cv-auth-field--wide">
-                  <label htmlFor="login-contact-number">Contact number</label>
-                  <div className="cv-auth-control">
-                    <Phone size={16} strokeWidth={1.75} aria-hidden="true" />
-                    <input
-                      id="login-contact-number"
-                      type="tel"
-                      required
-                      value={contactNumber}
-                      onChange={(e) => setContactNumber(e.target.value)}
-                    />
-                  </div>
-                </div>
+                <PhoneVerifyField id="login-contact-number" variant="auth" onChange={setPhone} />
               </div>
             )}
             <div className="cv-auth-field">
@@ -211,12 +208,21 @@ export default function LoginPage() {
                 <Lock size={16} strokeWidth={1.75} aria-hidden="true" />
                 <input
                   id="login-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  className="cv-auth-reveal"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff size={16} strokeWidth={1.75} aria-hidden="true" /> : <Eye size={16} strokeWidth={1.75} aria-hidden="true" />}
+                </button>
               </div>
             </div>
             {error && (
@@ -224,7 +230,7 @@ export default function LoginPage() {
                 {error}
               </p>
             )}
-            <button type="submit" disabled={submitting} className="cv-auth-submit">
+            <button type="submit" disabled={submitting || (!signin && !phone)} className="cv-auth-submit">
               {signin ? 'Sign in' : 'Create account'}
               <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
             </button>

@@ -22,6 +22,7 @@ public class MsmeOperator {
     @Column(name = "contact_number") private String contactNumber;
     @Column(name = "created_at")  private OffsetDateTime createdAt;
     @Column(name = "google_uid", unique = true) private String googleUid;
+    @Column(name = "phone_verified_at") private OffsetDateTime phoneVerifiedAt;
 
     @PrePersist
     void onCreate() {

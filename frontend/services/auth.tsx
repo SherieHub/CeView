@@ -6,7 +6,7 @@
  */
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { apiClient } from './apiClient';
+import { apiClient, type PhoneProof } from './apiClient';
 import { clearTokens, loadTokens, saveTokens } from './authStorage';
 import type { AuthUser } from '../types';
 
@@ -15,7 +15,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   profileCompleted: boolean | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) => Promise<void>;
   loginWithGoogle: (idToken: string, intent: 'login' | 'register') => Promise<void>;
   markProfileCompleted: () => void;
   logout: () => void;
@@ -64,8 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     firstName: string,
     lastName: string,
     contactNumber: string,
+    phone?: PhoneProof,
   ) => {
-    const res = await apiClient.auth.register(email, password, firstName, lastName, contactNumber);
+    const res = await apiClient.auth.register(email, password, firstName, lastName, contactNumber, phone);
     applySession(res);
   }, [applySession]);
 

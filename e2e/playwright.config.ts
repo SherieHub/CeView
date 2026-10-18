@@ -16,7 +16,16 @@ export default defineConfig({
     command: 'npm run dev -- --host 127.0.0.1 --port 3012',
     cwd: '../frontend',
     url: 'http://127.0.0.1:3012',
-    env: { ...process.env, VITE_USE_FIXTURES: 'false' },
+    // Blank Firebase config so signup uses the plain-number fallback (no real SMS in e2e),
+    // even if frontend/.env has Firebase set up for Google sign-in / phone OTP.
+    env: {
+      ...process.env,
+      VITE_USE_FIXTURES: 'false',
+      VITE_FIREBASE_API_KEY: '',
+      VITE_FIREBASE_AUTH_DOMAIN: '',
+      VITE_FIREBASE_PROJECT_ID: '',
+      VITE_FIREBASE_APP_ID: '',
+    },
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },

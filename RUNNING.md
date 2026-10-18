@@ -360,6 +360,41 @@ A brand-new Google sign-in provisions an operator with no contact number yet
 whose verified email matches an existing password account links to that
 account instead of creating a duplicate.
 
+### Phone (SMS OTP) verification setup (optional)
+
+Signup and `/complete-profile` verify the contact number with Firebase Phone
+Auth, reusing the same Firebase project and env vars as Google Sign-In. With
+Firebase configured, the backend only accepts a number that comes from a
+verified Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`.
+Without Firebase env vars, the form falls back to a plain unverified number
+input, so local dev, CI and e2e keep working.
+
+1. Firebase Console → Authentication → Sign-in method → enable **Phone**.
+2. Phone Auth needs the **Blaze** plan (billing account). The first 10 real
+   SMS per day are free; test numbers are unlimited and free. **Set a budget
+   alert.**
+3. Authentication → Settings → **SMS region policy**: allow only the
+   Philippines (`+63`) to prevent SMS-pumping fraud.
+4. Confirm `localhost` and your deployed frontend domain are in Authorized
+   domains.
+5. Authentication → Sign-in method → Phone → **Phone numbers for testing**:
+   add a fictional number (e.g. `+63 917 555 0100` → code `123456`) for
+   dev, demos and e2e. These never send a real SMS.
+
+**Rate limits.** The browser allows 3 code sends per hour (plus a 30 s resend
+cooldown); Firebase enforces its own quotas on top. The backend limits
+`POST /api/auth/register` and `PATCH /api/auth/profile` per client IP (429 +
+`Retry-After`), default 20 requests per 900 s, tunable with
+`ceview.auth.rate-limit.max-requests` / `ceview.auth.rate-limit.window-seconds`.
+
+**Verify later.** If SMS can't be sent (cap reached, quota, region or outage
+errors), the form offers "Verify later". The number is saved with
+`phone_verified_at = NULL`; the backend accepts this only when the client sends
+`verifyLater: true` with a plausible number. The number can be verified later
+under **Settings → Business profile → Contact number** ("Verify number"), which
+runs the same OTP flow and saves via `PATCH /api/auth/profile`; the section
+reads its status from `GET /api/auth/profile`.
+
 ---
 
 ## 7. End-to-end smoke test (manual)

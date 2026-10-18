@@ -77,6 +77,12 @@ function delay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
+/** Evidence accompanying a contact number: a Firebase token, or an explicit "verify later" opt-out. */
+export interface PhoneProof {
+  phoneIdToken?: string;
+  verifyLater?: boolean;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const tokens = loadTokens();
   const method = init?.method ?? 'GET';
@@ -537,12 +543,12 @@ export const apiClient = {
             // populated once one exists (see AuthProvider's mount comment).
             user: { id: operatorId, email, businessName: null },
           })),
-    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) =>
+    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
         : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, firstName, lastName, contactNumber }),
+            body: JSON.stringify({ email, password, firstName, lastName, contactNumber, ...phone }),
           }).then(({ token, operatorId, profileCompleted }) => ({
             accessToken: token,
             profileCompleted,
@@ -562,13 +568,18 @@ export const apiClient = {
             // response body — callers that need it read it off the token.
             user: { id: operatorId, email: null, businessName: null },
           })),
+    /** The caller's contact number and whether it has been SMS-verified (settings "Contact number"). */
+    getProfile: () =>
+      USE_FIXTURES
+        ? delay({ contactNumber: '+63 917 000 0000' as string | null, phoneVerified: false })
+        : request<{ contactNumber: string | null; phoneVerified: boolean }>('/api/auth/profile'),
     /** The one-time "complete your profile" step (see ProfileCompletionGate). */
-    completeProfile: (contactNumber: string) =>
+    completeProfile: (contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay({ profileCompleted: true })
         : request<{ profileCompleted: boolean }>('/api/auth/profile', {
             method: 'PATCH',
-            body: JSON.stringify({ contactNumber }),
+            body: JSON.stringify({ contactNumber, ...phone }),
           }),
   },
 };

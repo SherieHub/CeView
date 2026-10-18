@@ -253,6 +253,50 @@
   .cv-auth-control input::placeholder {
     color: #8a99a3;
   }
+  .cv-auth-phone-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .cv-auth-phone-btn {
+    align-self: flex-start;
+    padding: 6px 12px;
+    border: 1.5px solid var(--teal-500);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--teal-500);
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .cv-auth-phone-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .cv-auth-phone-note {
+    font-size: 0.8125rem;
+    color: var(--ink-700);
+  }
+  .cv-auth-reveal {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-right: -4px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-500);
+    cursor: pointer;
+  }
+  .cv-auth-reveal:hover {
+    color: var(--ink-900);
+  }
+  .cv-auth-reveal:focus-visible {
+    outline: 2px solid var(--teal-500);
+  }
 
   .cv-auth-error {
     padding: 10px 14px;
