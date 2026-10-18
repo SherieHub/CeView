@@ -222,7 +222,7 @@ never commit real keys.** Start from `backend/.env.example`.
 | `EMAIL_PROVIDER` | Has a default (`log`) | `spring-boot` | How verification and password-reset codes are delivered. `log` prints the code to the spring-boot log and sends nothing (see §5b); `resend` sends through Resend's API and needs the next two variables. |
 | `RESEND_API_KEY` / `EMAIL_FROM` | Only with `EMAIL_PROVIDER=resend` | `spring-boot` | Resend API key, and the sender, e.g. `CeView <no-reply@yourdomain.com>`, on a domain verified in Resend. The backend refuses to start with `resend` and either missing. Setup: [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md#email-resend). |
 | `CEVIEW_TEST_SUPPORT_ENABLED` | Optional (e2e only) | `spring-boot` | Default `false`. `true` exposes `/api/test-support/email-codes/latest` so Playwright can read emailed codes. The backend refuses to start with this and `EMAIL_PROVIDER=resend`. Leave it off outside e2e. |
-| `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS` | Has a default (`10`) | `spring-boot` | Per-IP cap, per 15 minutes, on the auth endpoints that send email. Raise it for e2e runs, which register many accounts from one address. |
+| `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS` | Has a default (`10`) | `spring-boot` | Per-IP cap, per 15 minutes, on the auth endpoints that send email. Also overrides the separate phone-verification cap on register / complete-profile (default `20`, see §6). Raise it for e2e runs, which register many accounts from one address. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
 | `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
@@ -390,6 +390,43 @@ A brand-new Google sign-in provisions an operator with no contact number yet
 (`/complete-profile`) before reaching the rest of the app; a Google sign-in
 whose verified email matches an existing password account links to that
 account instead of creating a duplicate.
+
+### Phone (SMS OTP) verification setup (optional)
+
+Signup and `/complete-profile` verify the contact number with Firebase Phone
+Auth, reusing the same Firebase project and env vars as Google Sign-In. With
+Firebase configured, the backend only accepts a number that comes from a
+verified Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`.
+Without Firebase env vars, the form falls back to a plain unverified number
+input, so local dev, CI and e2e keep working.
+
+1. Firebase Console → Authentication → Sign-in method → enable **Phone**.
+2. Phone Auth needs the **Blaze** plan (billing account). The first 10 real
+   SMS per day are free; test numbers are unlimited and free. **Set a budget
+   alert.**
+3. Authentication → Settings → **SMS region policy**: allow only the
+   Philippines (`+63`) to prevent SMS-pumping fraud.
+4. Confirm `localhost` and your deployed frontend domain are in Authorized
+   domains.
+5. Authentication → Sign-in method → Phone → **Phone numbers for testing**:
+   add a fictional number (e.g. `+63 917 555 0100` → code `123456`) for
+   dev, demos and e2e. These never send a real SMS.
+
+**Rate limits.** The browser allows 3 code sends per hour (plus a 30 s resend
+cooldown); Firebase enforces its own quotas on top. The backend limits
+`POST /api/auth/register` and `PATCH /api/auth/profile` per client IP (429 +
+`Retry-After`), default 20 requests per 900 s, tunable with
+`ceview.auth.rate-limit.max-requests` / `ceview.auth.rate-limit.window-seconds`
+(`CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS` overrides the count, same as for the email cap).
+Register also counts against the email cap, so both limits apply to it.
+
+**Verify later.** If SMS can't be sent (cap reached, quota, region or outage
+errors), the form offers "Verify later". The number is saved with
+`phone_verified_at = NULL`; the backend accepts this only when the client sends
+`verifyLater: true` with a plausible number. The number can be verified later
+under **Settings → Business profile → Contact number** ("Verify number"), which
+runs the same OTP flow and saves via `PATCH /api/auth/profile`; the section
+reads its status from `GET /api/auth/profile`.
 
 ---
 

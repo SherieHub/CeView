@@ -42,6 +42,12 @@
   .bp-sec-sub { margin: 2px 0 0; font-size: .8125rem; color: #647887; }
   .bp-sec-aside { flex: none; align-self: flex-end; font-size: .75rem; color: #7b8c99; }
 
+  .bp-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bp-contact-number { font-size: .9375rem; font-weight: 600; color: #102f40; }
+  .bp-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+  .bp-badge--ok { background: #e6f5f0; color: #12877f; }
+  .bp-badge--warn { background: #fdf0e3; color: #a35a12; }
+
   .bp-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .bp-field { display: grid; gap: 6px; }
   .bp-label { font-size: .8125rem; font-weight: 600; color: #102f40; }

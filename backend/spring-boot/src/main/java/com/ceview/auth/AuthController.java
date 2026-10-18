@@ -27,6 +27,7 @@ public class AuthController {
     private final Optional<FirebaseAuth> firebaseAuth;
     private final CurrentOperator currentOperator;
     private final EmailCodeService emailCodes;
+    private final PhoneVerificationService phoneVerification;
 
     public AuthController(
         MsmeOperatorRepository repo,
@@ -34,7 +35,8 @@ public class AuthController {
         JwtService jwt,
         Optional<FirebaseAuth> firebaseAuth,
         CurrentOperator currentOperator,
-        EmailCodeService emailCodes
+        EmailCodeService emailCodes,
+        PhoneVerificationService phoneVerification
     ) {
         this.repo = repo;
         this.encoder = encoder;
@@ -42,6 +44,7 @@ public class AuthController {
         this.firebaseAuth = firebaseAuth;
         this.currentOperator = currentOperator;
         this.emailCodes = emailCodes;
+        this.phoneVerification = phoneVerification;
     }
 
     public record RegisterRequest(
@@ -49,14 +52,16 @@ public class AuthController {
         @NotBlank String lastName,
         @NotBlank @Email String email,
         @NotBlank String password,
-        @NotBlank String contactNumber
+        String contactNumber,
+        String phoneIdToken,
+        Boolean verifyLater
     ) {}
 
     public record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {}
 
     public record GoogleAuthRequest(@NotBlank String idToken, @NotBlank String intent) {}
 
-    public record CompleteProfileRequest(@NotBlank String contactNumber) {}
+    public record CompleteProfileRequest(String contactNumber, String phoneIdToken, Boolean verifyLater) {}
 
     public record VerifyCodeRequest(@NotBlank String code) {}
 
@@ -73,6 +78,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest req) {
         PasswordPolicy.require(req.password());
+        // Validate the phone before the takeover below, so a rejected phone token never deletes
+        // the unverified account it would have replaced.
+        var phone = phoneVerification.resolve(req.phoneIdToken(), req.contactNumber(), Boolean.TRUE.equals(req.verifyLater()));
 
         Optional<MsmeOperator> existing = repo.findByEmail(req.email());
         if (existing.isPresent()) {
@@ -93,7 +101,8 @@ public class AuthController {
         op.setLastName(req.lastName());
         op.setEmail(req.email());
         op.setPasswordHash(encoder.encode(req.password()));
-        op.setContactNumber(req.contactNumber());
+        op.setContactNumber(phone.contactNumber());
+        if (phone.verified()) op.setPhoneVerifiedAt(OffsetDateTime.now());
         repo.save(op);
 
         try {
@@ -219,6 +228,20 @@ public class AuthController {
         return sessionResponse(op);
     }
 
+    /** The caller's contact number and whether it was verified by SMS OTP (for the settings UI). */
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile() {
+        UUID operatorId = currentOperator.resolve();
+        MsmeOperator op = repo.findById(operatorId)
+            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                HttpStatus.NOT_FOUND, "operator not found"));
+        // HashMap, not Map.of: contactNumber may be null for an incomplete profile.
+        var body = new java.util.HashMap<String, Object>();
+        body.put("contactNumber", op.getContactNumber());
+        body.put("phoneVerified", op.getPhoneVerifiedAt() != null);
+        return ResponseEntity.ok(body);
+    }
+
     /**
      * The one-time "complete your profile" step: fills in the contactNumber that a
      * Google-provisioned operator (or any other account missing it) still needs, after
@@ -230,7 +253,9 @@ public class AuthController {
         MsmeOperator op = repo.findById(operatorId)
             .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                 HttpStatus.NOT_FOUND, "operator not found"));
-        op.setContactNumber(req.contactNumber());
+        var phone = phoneVerification.resolve(req.phoneIdToken(), req.contactNumber(), Boolean.TRUE.equals(req.verifyLater()));
+        op.setContactNumber(phone.contactNumber());
+        op.setPhoneVerifiedAt(phone.verified() ? OffsetDateTime.now() : null);
         repo.save(op);
         return ResponseEntity.ok(Map.of("profileCompleted", op.isProfileCompleted()));
     }

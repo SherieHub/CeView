@@ -31,6 +31,8 @@ vi.mock('firebase/auth', () => ({
     this.setCustomParameters = mockSetCustomParameters;
   }),
   signInWithPopup: (...args: unknown[]) => mockSignInWithPopup(...args),
+  RecaptchaVerifier: vi.fn(),
+  signInWithPhoneNumber: vi.fn(),
 }));
 
 describe('signInWithGooglePopup', () => {
@@ -77,5 +79,19 @@ describe('signInWithGooglePopup', () => {
     const { signInWithGooglePopup } = await import('./firebase');
 
     await expect(signInWithGooglePopup()).rejects.toThrow('popup-closed-by-user');
+  });
+});
+
+describe('toE164PH', () => {
+  it.each([
+    ['09171234567', '+639171234567'],
+    ['0917 123 4567', '+639171234567'],
+    ['9171234567', '+639171234567'],
+    ['639171234567', '+639171234567'],
+    ['+63 917 123 4567', '+639171234567'],
+    ['+14155550100', '+14155550100'],
+  ])('normalizes %s to %s', async (input, expected) => {
+    const { toE164PH } = await import('./firebase');
+    expect(toE164PH(input)).toBe(expected);
   });
 });
