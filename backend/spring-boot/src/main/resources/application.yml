@@ -1,5 +1,9 @@
 server:
   port: 8080
+  # Behind Render's proxy request.getRemoteAddr() is the proxy, not the client; honouring
+  # X-Forwarded-For lets the per-IP rate limiters (auth email, attribution enquiries) tell
+  # clients apart instead of putting everyone in one bucket.
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -38,6 +42,29 @@ ceview:
     # see config/RequiredSecretsEnvironmentPostProcessor).
     secret: ${JWT_SECRET:}
     expiry-hours: 24
+  email:
+    # 'log' prints the code to the backend log and sends nothing (local dev, e2e, seeded
+    # @ceview.local operators). 'resend' sends through Resend's HTTPS API — SMTP is not an option
+    # on Render's free tier, which blocks outbound ports 25/465/587.
+    provider: ${EMAIL_PROVIDER:log}
+    # Must be an address on a domain verified in Resend, e.g. CeView <no-reply@yourdomain.com>.
+    from: ${EMAIL_FROM:}
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      base-url: https://api.resend.com
+  email-code:
+    ttl: 10m
+    max-attempts: 5
+    resend-cooldown: 60s
+    max-sends-per-hour: 5
+  # Per-IP cap on the auth endpoints that send email (protects Resend's 100/day free quota).
+  auth-rate-limit:
+    # Overridable because an e2e run registers far more than 10 accounts from one IP.
+    max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:10}
+    window: 15m
+  test-support:
+    # E2E only: exposes /api/test-support/email-codes/latest. Never enable with a real provider.
+    enabled: ${CEVIEW_TEST_SUPPORT_ENABLED:false}
   attribution:
     # Public origin the redirect is served from. This string is embedded in live ads.
     base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:http://localhost:8080}

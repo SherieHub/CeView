@@ -89,10 +89,41 @@ a pre-built jar the way the local `RUNNING.md` workflow historically did.
    | `JWT_SECRET` | any random 32+ char string |
    | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | any random string — the service refuses to start without it |
    | `CORS_ALLOWED_ORIGINS` | the frontend's Render URL, from step 6 (you'll circle back and fill this in once it exists) |
+   | `EMAIL_PROVIDER` | `resend` — see [Email (Resend)](#email-resend) below; without it, codes are only written to the log and nobody can verify |
+   | `RESEND_API_KEY` | your Resend API key |
+   | `EMAIL_FROM` | e.g. `CeView <no-reply@yourdomain.com>`, on the domain you verified in Resend |
 
 5. Health check path: `/actuator/health`.
 6. Deploy. First build compiles the whole app inside Docker — expect several
    minutes.
+
+### Email (Resend)
+
+Sign-up verification and forgot-password email a 6-digit code. This costs nothing, but note two
+constraints:
+
+- **SMTP is blocked on Render's free tier.** Free web services cannot reach outbound ports 25, 465 or 587
+  ([Render changelog](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports)),
+  so Gmail/SMTP will not work. CeView therefore sends over [Resend](https://resend.com)'s HTTPS API.
+- **Resend's free tier** is 3,000 emails a month and **100 a day**, with one verified domain. Each
+  sign-up or reset sends one email; resends send more. The backend also caps each account (60 s between
+  codes, 5 an hour) and each IP (10 requests per 15 minutes) to stop one visitor burning the daily quota.
+  When the quota is hit, users see "We could not send the email right now".
+
+Setup:
+
+1. Create a Resend account → **Domains** → **Add Domain** and enter a domain you own.
+2. Add the DNS records Resend shows (SPF and DKIM; DMARC is recommended) at your DNS host and wait for
+   the domain to show **Verified**. Without a verified domain Resend only delivers to your own address.
+3. **API Keys** → create a key with "Sending access".
+4. On the Spring Boot service set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY=<key>` and
+   `EMAIL_FROM=CeView <no-reply@yourdomain.com>` (an address on the verified domain). The service
+   refuses to start if the key or sender is missing.
+5. Do **not** set `CEVIEW_TEST_SUPPORT_ENABLED` here; the service refuses to start with it and Resend.
+
+**The nine seeded demo operators cannot verify on Render.** Their addresses (`@ceview.local`) do not
+exist, so no code can reach them and they stay locked out. That is intentional: demo accounts are for
+local development. Register a real account on the deployed site instead.
 
 ---
 

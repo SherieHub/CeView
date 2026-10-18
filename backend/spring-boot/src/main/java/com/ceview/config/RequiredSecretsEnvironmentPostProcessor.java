@@ -34,6 +34,14 @@ public class RequiredSecretsEnvironmentPostProcessor implements EnvironmentPostP
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+        List<String> emailProblems = emailProblems(
+                environment.getProperty("ceview.email.provider"),
+                environment.getProperty("ceview.email.resend.api-key"),
+                environment.getProperty("ceview.email.from"),
+                environment.getProperty("ceview.test-support.enabled", Boolean.class, false));
+        if (!emailProblems.isEmpty()) {
+            throw new IllegalStateException("Refusing to start: " + String.join(" ", emailProblems));
+        }
         if (environment.acceptsProfiles(Profiles.of(LOCAL_PROFILE))) {
             return;
         }
@@ -46,6 +54,27 @@ public class RequiredSecretsEnvironmentPostProcessor implements EnvironmentPostP
                     "Refusing to start: " + String.join(" ", problems)
                     + " Development defaults are only allowed with the '" + LOCAL_PROFILE + "' profile.");
         }
+    }
+
+    /**
+     * Email-provider consistency, checked in every profile (including h2): choosing the real
+     * provider requires its credentials, and the e2e code-reading hook must never be enabled
+     * alongside it. Messages name the variable only, never its value.
+     */
+    static List<String> emailProblems(String provider, String apiKey, String from, boolean testSupport) {
+        List<String> problems = new ArrayList<>();
+        if ("resend".equalsIgnoreCase(provider == null ? "" : provider.trim())) {
+            if (apiKey == null || apiKey.isBlank()) {
+                problems.add("RESEND_API_KEY must be set when EMAIL_PROVIDER=resend.");
+            }
+            if (from == null || from.isBlank()) {
+                problems.add("EMAIL_FROM must be set when EMAIL_PROVIDER=resend.");
+            }
+            if (testSupport) {
+                problems.add("CEVIEW_TEST_SUPPORT_ENABLED must not be true when EMAIL_PROVIDER=resend.");
+            }
+        }
+        return problems;
     }
 
     private static void check(String value, String devDefault, String variable, List<String> problems) {

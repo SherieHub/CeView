@@ -2,6 +2,8 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  // Verifies the seeded operator's email once, before any spec signs in as them.
+  globalSetup: './global-setup.ts',
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',

@@ -19,6 +19,10 @@
 
 ## Notes
 
+- **Email verification.** Every account, these included, must enter a 6-digit emailed code once before
+  using the app. The `@ceview.local` addresses cannot receive mail, so locally (`EMAIL_PROVIDER=log`) the
+  code is printed in the backend log — see `RUNNING.md` §5b. On a deployment that sends real email
+  (Render + Resend) these demo accounts cannot be verified and stay locked out; use a real account there.
 - Passwords are stored as real BCrypt hashes (`BCryptPasswordEncoder`, default
   strength 10, matching `SecurityConfig.passwordEncoder()`), generated and
   verified with a throwaway JUnit test before being committed into the

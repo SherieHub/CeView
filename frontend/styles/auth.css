@@ -350,6 +350,71 @@
     cursor: pointer;
   }
 
+  /* "Forgot password?" under the sign-in password field. */
+  .cv-auth-forgot {
+    justify-self: end;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--teal-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  /* Password rule shown under the new-password field. */
+  .cv-auth-hint {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-500);
+  }
+  /* Neutral confirmation ("We sent a code to ..."), the calm sibling of .cv-auth-error. */
+  .cv-auth-notice {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #e6f6f2;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--teal-900);
+  }
+  /* One-time code: big, monospaced-feeling digits so six of them read at a glance. */
+  .cv-auth-control input.cv-auth-code {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: 0.5em;
+    font-variant-numeric: tabular-nums;
+  }
+  .cv-auth-control input.cv-auth-code::placeholder {
+    letter-spacing: 0.5em;
+  }
+  /* Resend / change-email text buttons under a code form. */
+  .cv-auth-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-top: 16px;
+  }
+  .cv-auth-links button,
+  .cv-auth-switch a {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--teal-700);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .cv-auth-links button:disabled {
+    color: var(--ink-500);
+    text-decoration: none;
+    cursor: not-allowed;
+  }
+  .cv-auth-form--inset {
+    padding-top: 16px;
+    border-top: 1px solid #dfe7e5;
+  }
+
   .cv-auth-submit:disabled,
   .cv-auth-google:disabled {
     opacity: 0.6;
@@ -358,7 +423,10 @@
   .cv-auth-tabs button:focus-visible,
   .cv-auth-submit:focus-visible,
   .cv-auth-google:focus-visible,
-  .cv-auth-switch button:focus-visible {
+  .cv-auth-switch button:focus-visible,
+  .cv-auth-switch a:focus-visible,
+  .cv-auth-links button:focus-visible,
+  .cv-auth-forgot:focus-visible {
     outline: 2px solid var(--teal-500);
     outline-offset: 3px;
   }

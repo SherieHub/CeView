@@ -2,22 +2,31 @@
  * JWT auth context. Login/register call apiClient.auth.* and persist the
  * returned access token via authStorage; AuthGate (components/auth/AuthGate)
  * reads isAuthenticated off this context to guard routes. profileCompleted
- * additionally gates ProfileCompletionGate — see components/auth/CompleteProfilePage.
+ * additionally gates ProfileCompletionGate — see components/auth/CompleteProfilePage —
+ * and emailVerified gates EmailVerificationGate (see components/auth/VerifyEmailPage).
  */
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { apiClient } from './apiClient';
+import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { clearTokens, loadTokens, saveTokens } from './authStorage';
-import type { AuthUser } from '../types';
+import type { AuthSession, AuthUser } from '../types';
 
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   profileCompleted: boolean | null;
+  /** `null` = unknown (a session stored before email verification shipped). */
+  emailVerified: boolean | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) => Promise<void>;
   loginWithGoogle: (idToken: string, intent: 'login' | 'register') => Promise<void>;
+  /** Finishes a password reset: the emailed code proves ownership, so this also signs the user in. */
+  completePasswordReset: (email: string, code: string, newPassword: string) => Promise<void>;
   markProfileCompleted: () => void;
+  markEmailVerified: () => void;
+  /** Reflects an address change made on the verify screen (apiClient.auth.changeEmail already succeeded). */
+  updateEmail: (email: string) => void;
   logout: () => void;
 }
 
@@ -33,25 +42,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // and lose the originally-requested route.
 function hydrateUser(): AuthUser | null {
   const tokens = loadTokens();
-  return tokens ? { id: 'unknown', email: '', businessName: null } : null;
+  return tokens ? { id: 'unknown', email: tokens.email ?? '', businessName: null } : null;
 }
 
 function hydrateProfileCompleted(): boolean | null {
   return loadTokens()?.profileCompleted ?? null;
 }
 
+function hydrateEmailVerified(): boolean | null {
+  return loadTokens()?.emailVerified ?? null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(hydrateUser);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(hydrateProfileCompleted);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(hydrateEmailVerified);
 
-  const applySession = useCallback(
-    (res: { accessToken: string; profileCompleted: boolean; user: AuthUser }) => {
-      saveTokens({ accessToken: res.accessToken, profileCompleted: res.profileCompleted });
-      setUser(res.user);
-      setProfileCompleted(res.profileCompleted);
-    },
-    [],
-  );
+  const applySession = useCallback((res: AuthSession) => {
+    saveTokens({
+      accessToken: res.accessToken,
+      profileCompleted: res.profileCompleted,
+      emailVerified: res.emailVerified,
+      ...(res.user.email ? { email: res.user.email } : {}),
+    });
+    setUser(res.user);
+    setProfileCompleted(res.profileCompleted);
+    setEmailVerified(res.emailVerified);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiClient.auth.login(email, password);
@@ -74,6 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applySession(res);
   }, [applySession]);
 
+  const completePasswordReset = useCallback(async (email: string, code: string, newPassword: string) => {
+    const res = await apiClient.auth.confirmPasswordReset(email, code, newPassword);
+    applySession(res);
+  }, [applySession]);
+
   /**
    * Called after the "complete your profile" form (CompleteProfilePage)
    * succeeds against PATCH /api/auth/profile — flips the flag locally
@@ -86,15 +108,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileCompleted(true);
   }, []);
 
+  /** Same idea for the verify screen: the backend already accepted the code. */
+  const markEmailVerified = useCallback(() => {
+    const tokens = loadTokens();
+    if (tokens) saveTokens({ ...tokens, emailVerified: true });
+    setEmailVerified(true);
+  }, []);
+
+  const updateEmail = useCallback((email: string) => {
+    const tokens = loadTokens();
+    if (tokens) saveTokens({ ...tokens, email });
+    setUser((u) => (u ? { ...u, email } : u));
+  }, []);
+
   const logout = useCallback(() => {
     clearTokens();
     setUser(null);
     setProfileCompleted(null);
+    setEmailVerified(null);
+  }, []);
+
+  // apiClient dispatches this when the backend answers 403 EMAIL_NOT_VERIFIED, e.g. for a
+  // session stored before verification shipped. Flip the flag so EmailVerificationGate
+  // redirects to /verify-email instead of leaving the screen stuck on a failed request.
+  useEffect(() => {
+    const onUnverified = () => {
+      const tokens = loadTokens();
+      if (tokens) saveTokens({ ...tokens, emailVerified: false });
+      setEmailVerified(false);
+    };
+    window.addEventListener(EMAIL_NOT_VERIFIED_EVENT, onUnverified);
+    return () => window.removeEventListener(EMAIL_NOT_VERIFIED_EVENT, onUnverified);
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: !!user, profileCompleted, login, register, loginWithGoogle, markProfileCompleted, logout }),
-    [user, profileCompleted, login, register, loginWithGoogle, markProfileCompleted, logout],
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      profileCompleted,
+      emailVerified,
+      login,
+      register,
+      loginWithGoogle,
+      completePasswordReset,
+      markProfileCompleted,
+      markEmailVerified,
+      updateEmail,
+      logout,
+    }),
+    [user, profileCompleted, emailVerified, login, register, loginWithGoogle, completePasswordReset,
+      markProfileCompleted, markEmailVerified, updateEmail, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

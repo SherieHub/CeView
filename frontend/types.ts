@@ -24,6 +24,23 @@ export interface AuthTokens {
    * provisioned Google sign-in). See services/auth.tsx's profileCompleted.
    */
   profileCompleted: boolean;
+  /**
+   * Whether the operator has proven they own their email (6-digit code, or
+   * Google). `false` sends them to /verify-email and the backend 403s every
+   * other route; absent on sessions stored before verification shipped, which
+   * is treated as "unknown" until the first EMAIL_NOT_VERIFIED response.
+   */
+  emailVerified?: boolean;
+  /** Persisted so the verify screen can name the address after a reload (no /me endpoint yet). */
+  email?: string;
+}
+
+/** What a successful login / register / google / password-reset call hands to AuthProvider. */
+export interface AuthSession {
+  accessToken: string;
+  profileCompleted: boolean;
+  emailVerified: boolean;
+  user: AuthUser;
 }
 
 export interface BusinessProfile {

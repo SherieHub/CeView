@@ -68,7 +68,7 @@ export function ProfileProvider({
   initial?: BusinessProfile;
 }) {
   const seeded = initial !== undefined;
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, emailVerified } = useAuth();
   const [profile, setProfile] = useState<BusinessProfile>(initial ?? EMPTY_PROFILE);
   // Starts true when already authenticated on mount (e.g. a fresh full page
   // load with a valid persisted token) so the very first render shows the
@@ -109,6 +109,15 @@ export function ProfileProvider({
       return;
     }
 
+    // The backend 403s every route, this one included, until the email is verified. Don't ask
+    // yet, and stay "loading" so that the moment verification lands ProfileGate waits for the
+    // real profile instead of judging the still-empty one and sending an existing operator to
+    // /onboarding. This effect re-runs when emailVerified flips (see the deps below).
+    if (emailVerified === false) {
+      setIsLoading(true);
+      return;
+    }
+
     setIsLoading(true);
     apiClient.businessProfile
       .load()
@@ -124,7 +133,7 @@ export function ProfileProvider({
         if (requestToken.current !== token) return; // superseded — discard
         setIsLoading(false);
       });
-  }, [isAuthenticated, seeded]);
+  }, [isAuthenticated, emailVerified, seeded]);
 
   const value = useMemo(() => ({ profile, setProfile, isLoading }), [profile, isLoading]);
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

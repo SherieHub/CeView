@@ -88,13 +88,14 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
      * profile" endpoint itself). Concatenating both fields is correct regardless of which
      * mapping style is in effect, since exactly one of them is ever non-empty.
      */
-    private static String requestPath(HttpServletRequest req) {
+    static String requestPath(HttpServletRequest req) {
         String servletPath = req.getServletPath();
         String pathInfo = req.getPathInfo();
         return pathInfo == null ? servletPath : servletPath + pathInfo;
     }
 
-    private boolean isExempt(String path) {
+    /** Shared with {@link EmailVerificationFilter}: the two gates exempt exactly the same routes. */
+    static boolean isExempt(String path) {
         return path.startsWith("/api/auth/")
             || path.startsWith("/actuator/")
             || path.equals("/error")
@@ -115,7 +116,7 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
      * kept in lockstep with the single-segment {@code /api/ad-connections/*&#47;callback}
      * Ant matcher in {@code SecurityConfig}.
      */
-    private boolean isAdConnectionCallback(String path) {
+    private static boolean isAdConnectionCallback(String path) {
         return path.matches("^/api/ad-connections/[^/]+/callback$");
     }
 }

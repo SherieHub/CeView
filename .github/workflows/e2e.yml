@@ -51,6 +51,10 @@ jobs:
             login:
               - 'frontend/components/auth/**'
               - 'e2e/tests/login.spec.ts'
+            verify-email:
+              - 'frontend/components/auth/**'
+              - 'e2e/global-setup.ts'
+              - 'e2e/tests/verify-email.spec.ts'
             onboarding-wizard:
               - 'frontend/components/module-1/onboarding/**'
               - 'e2e/tests/onboarding-wizard.spec.ts'
@@ -94,7 +98,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           CHANGED: ${{ steps.filter.outputs.changes }}
         run: |
-          ALL='["login","onboarding-wizard","settings-business-profile","dashboard","market-radar-drawer","content-studio","calendar","settings-platforms","settings-workspace","performance"]'
+          ALL='["login","verify-email","onboarding-wizard","settings-business-profile","dashboard","market-radar-drawer","content-studio","calendar","settings-platforms","settings-workspace","performance"]'
           if [ "$EVENT_NAME" != "pull_request" ] || jq -e 'index("foundation")' <<< "$CHANGED" >/dev/null; then
             SCREENS="$ALL"
           else
@@ -164,6 +168,11 @@ jobs:
         run: |
           echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
           echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+          # Email verification: the suite reads each emailed code through the test-support
+          # hook (EMAIL_PROVIDER stays "log", so nothing is sent), and registers far more
+          # accounts from one IP than the production per-IP cap allows.
+          echo "CEVIEW_TEST_SUPPORT_ENABLED=true" >> "$GITHUB_ENV"
+          echo "CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000" >> "$GITHUB_ENV"
 
       - name: Start backend stack (Postgres + Spring Boot + FastAPI services)
         working-directory: backend
@@ -270,6 +279,11 @@ jobs:
         run: |
           echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
           echo "CEVIEW_ATTRIBUTION_IP_HASH_SALT=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+          # Email verification: the suite reads each emailed code through the test-support
+          # hook (EMAIL_PROVIDER stays "log", so nothing is sent), and registers far more
+          # accounts from one IP than the production per-IP cap allows.
+          echo "CEVIEW_TEST_SUPPORT_ENABLED=true" >> "$GITHUB_ENV"
+          echo "CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000" >> "$GITHUB_ENV"
 
       - name: Start backend stack
         working-directory: backend

@@ -36,6 +36,7 @@ class AuthControllerTest {
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final JwtService jwt = mock(JwtService.class);
     private final CurrentOperator currentOperator = new CurrentOperator(repo);
+    private final EmailCodeService emailCodes = mock(EmailCodeService.class);
 
     @AfterEach
     void clearContext() {
@@ -43,7 +44,7 @@ class AuthControllerTest {
     }
 
     private AuthController newController(Optional<FirebaseAuth> firebaseAuth) {
-        return new AuthController(repo, encoder, jwt, firebaseAuth, currentOperator);
+        return new AuthController(repo, encoder, jwt, firebaseAuth, currentOperator, emailCodes);
     }
 
     private void authenticateAs(UUID operatorId) {
@@ -65,7 +66,7 @@ class AuthControllerTest {
         AuthController controller = newController(Optional.empty());
 
         ResponseEntity<?> response = controller.register(
-            new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "pw", "0917"));
+            new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "0917"));
 
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(Boolean.TRUE, body.get("profileCompleted"));

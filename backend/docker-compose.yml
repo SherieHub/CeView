@@ -92,6 +92,17 @@ services:
       # app, e.g. registration in onboarding-uniqueness.spec.ts.
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      # Email verification. 'log' (default) prints each 6-digit code to this container's log
+      # (`docker compose logs spring-boot`) and sends nothing; set EMAIL_PROVIDER=resend with
+      # RESEND_API_KEY + EMAIL_FROM to send real mail. See RUNNING.md.
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-log}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      # E2E only (set by .github/workflows/e2e.yml, or in backend/.env to run Playwright locally):
+      # exposes /api/test-support/email-codes/latest so the suite can read codes. The backend
+      # refuses to start with this on and EMAIL_PROVIDER=resend.
+      CEVIEW_TEST_SUPPORT_ENABLED: ${CEVIEW_TEST_SUPPORT_ENABLED:-false}
+      CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:-10}
       # Ad-platform (Meta Ads / TikTok Ads) connections — see AD_PLATFORM_SETUP.md.
       # All optional: absent, the /api/ad-connections endpoints just report
       # "not configured on this server" rather than failing to start.

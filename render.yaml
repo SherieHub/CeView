@@ -53,6 +53,15 @@ services:
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      # Email verification / password reset. Free web services on Render block outbound SMTP
+      # (ports 25/465/587), so mail goes out over Resend's HTTPS API. Set the key and a sender on
+      # a domain verified in Resend (docs/DEPLOY_RENDER.md, "Email (Resend)").
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
 
   - type: web
     name: ceview-fastapi-sbert
