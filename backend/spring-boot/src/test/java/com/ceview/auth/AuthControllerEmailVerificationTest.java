@@ -53,11 +53,13 @@ class AuthControllerEmailVerificationTest {
     }
 
     private AuthController controller() {
-        return new AuthController(repo, encoder, jwt, Optional.empty(), currentOperator, emailCodes);
+        return new AuthController(repo, encoder, jwt, Optional.empty(), currentOperator, emailCodes,
+            new PhoneVerificationService(Optional.empty()));
     }
 
     private AuthController controller(FirebaseAuth firebaseAuth) {
-        return new AuthController(repo, encoder, jwt, Optional.of(firebaseAuth), currentOperator, emailCodes);
+        return new AuthController(repo, encoder, jwt, Optional.of(firebaseAuth), currentOperator, emailCodes,
+            new PhoneVerificationService(Optional.of(firebaseAuth)));
     }
 
     private static MsmeOperator operator(String email) {
@@ -88,7 +90,7 @@ class AuthControllerEmailVerificationTest {
     }
 
     private static AuthController.RegisterRequest registration(String email, String password) {
-        return new AuthController.RegisterRequest("Ana", "Cruz", email, password, "0917");
+        return new AuthController.RegisterRequest("Ana", "Cruz", email, password, "0917", null, null);
     }
 
     private static AuthFlowException flowError(Executable call) {

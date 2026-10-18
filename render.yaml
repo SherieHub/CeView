@@ -73,6 +73,9 @@ services:
     envVars:
       - key: GROQ_API_KEY
         sync: false
+      # Optional, not declared (sync:false would make Render prompt for a value):
+      #   GROQ_MODEL              Groq text model for captions
+      #   GROQ_TRANSLATION_MODEL  English-translation model; defaults to GROQ_MODEL
       - key: HF_TOKEN
         sync: false
       - key: DATABASE_URL

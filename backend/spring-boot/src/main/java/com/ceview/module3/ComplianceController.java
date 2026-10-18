@@ -80,12 +80,19 @@ public class ComplianceController {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("caption", caption);
+        String captionEn = body.captionEn() == null ? "" : body.captionEn().strip();
+        if (captionEn.length() > 8000) {
+            MDC.put(TraceIdFilter.MDC_CODE_KEY, Module3ErrorCodes.MOD3_COMPLIANCE_VALIDATION);
+            log.warn("compliance.omcs-analyze rejected — captionEn too long");
+            throw new IllegalArgumentException("captionEn must be at most 8000 characters");
+        }
+        if (!captionEn.isBlank()) payload.put("caption_en", captionEn);
         payload.put("image_url", imageUrl);
         payload.put("business_profile", profileContext(profile));
         payload.put("recommendations", body.recommendations() != null ? body.recommendations() : Map.of());
 
-        log.info("compliance.omcs-analyze caption_len={} image_url_len={} recommendations_keys={}",
-                caption.length(), imageUrl.length(),
+        log.info("compliance.omcs-analyze caption_len={} caption_en_len={} image_url_len={} recommendations_keys={}",
+                caption.length(), captionEn.length(), imageUrl.length(),
                 body.recommendations() == null ? 0 : body.recommendations().size());
 
         Map<String, Object> raw;

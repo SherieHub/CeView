@@ -43,6 +43,11 @@ export const MOCK_CONTENT: ContentResponse = {
         'Sunset Cove Beach Resort — Moalboal, Cebu.\n\n📍 Direct access to the Moalboal sardine run, a phenomenon visible year-round within 30 metres of our shoreline.\n🐢 Certified marine biologist on site; every guided dive is briefed and logged.\n📅 Peak Korean season: July–August and December–January. Booking six weeks ahead secures the best rates.\n\nWe are the only eco-certified resort on this stretch of coast. Details and rates via the link in bio.\n\n#세부여행 #모알보알 #다이빙 #에코리조트 #CebuDiving',
         'The water goes quiet first.\n\nThen the light shifts, and a wall of silver turns beneath you — a million sardines moving as one body, close enough to touch, thirty metres from where you had breakfast.\n\nYou surface. Nobody says anything for a while.\n\nThat is the moment people fly to Moalboal for. 힐링은 그렇게 시작됩니다.\n\nSunset Cove — link in bio 🌊\n\n#힐링여행 #세부여행 #모알보알 #사딘런 #OceanHealing',
       ],
+      optionsEn: [
+        'POV: you finally booked the hotel-staycation (호캉스) you kept putting off 🌴 Sunset Cove, Moalboal — sardine run at sunrise, hammock by noon, zero notifications all day. Your healing trip (힐링여행) starts the moment the boat cuts its engine. Link in bio 🔗\n\n#세부여행 (Cebu trip) #호캉스 (hotel staycation) #힐링여행 (healing trip) #모알보알 (Moalboal) #세부자유여행 (Cebu independent travel) #스노클링 (snorkeling) #südsee #CebuTravel #IslandLife #SardineRun',
+        'Sunset Cove Beach Resort — Moalboal, Cebu.\n\n📍 Direct access to the Moalboal sardine run, a phenomenon visible year-round within 30 metres of our shoreline.\n🐢 Certified marine biologist on site; every guided dive is briefed and logged.\n📅 Peak Korean season: July–August and December–January. Booking six weeks ahead secures the best rates.\n\nWe are the only eco-certified resort on this stretch of coast. Details and rates via the link in bio.\n\n#세부여행 (Cebu trip) #모알보알 (Moalboal) #다이빙 (diving) #에코리조트 (eco resort) #CebuDiving',
+        'The water goes quiet first.\n\nThen the light shifts, and a wall of silver turns beneath you — a million sardines moving as one body, close enough to touch, thirty metres from where you had breakfast.\n\nYou surface. Nobody says anything for a while.\n\nThat is the moment people fly to Moalboal for. Healing begins just like that. (힐링은 그렇게 시작됩니다)\n\nSunset Cove — link in bio 🌊\n\n#힐링여행 (healing trip) #세부여행 (Cebu trip) #모알보알 (Moalboal) #사딘런 (sardine run) #OceanHealing',
+      ],
       optionMetadata: [
         meta(
           "Leads with the sardine run and the 30-metre shoreline proximity — the resort's single most defensible differentiator — and pairs it with the hammock/no-notifications rest promise from the UVP.",
@@ -81,6 +86,11 @@ export const MOCK_CONTENT: ContentResponse = {
         'Moalboal, Cebu: the sardine run is visible year-round, 30m offshore. Certified marine biologist on every dive. Peak KR season Jul–Aug. #세부여행 #다이빙 #모알보알',
         'The water goes quiet. Then a million fish turn at once. Nobody talks after. 🌊 #힐링여행 #세부여행 #모알보알 #OceanHealing',
       ],
+      optionsEn: [
+        'no thoughts. just sardines. 🐟🌊 30m from breakfast, Moalboal #세부여행 (Cebu trip) #힐링여행 (healing trip) #TravelTok #SardineRun #모알보알 (Moalboal)',
+        'Moalboal, Cebu: the sardine run is visible year-round, 30m offshore. Certified marine biologist on every dive. Peak KR season Jul–Aug. #세부여행 (Cebu trip) #다이빙 (diving) #모알보알 (Moalboal)',
+        'The water goes quiet. Then a million fish turn at once. Nobody talks after. 🌊 #힐링여행 (healing trip) #세부여행 (Cebu trip) #모알보알 (Moalboal) #OceanHealing',
+      ],
       optionMetadata: [
         meta(
           'Compresses the single strongest differentiator — sardine run 30m from the resort — into a scroll-stopping fragment.',
@@ -118,6 +128,11 @@ export const MOCK_CONTENT: ContentResponse = {
         'Sunset Cove Beach Resort — Moalboal, Cebu\n\nDirect shoreline access to the Moalboal sardine run, visible year-round roughly 30 metres offshore. Every guided dive is led and logged by our on-site certified marine biologist, and we remain the only eco-certified property on this stretch of coast.\n\nPeak Korean season runs July–August and December–January; booking around six weeks ahead secures the best available rates.\n\nFull rates, dive schedules and transfer details: sunsetcove.ph/kr\n\n#세부여행 #에코리조트',
         'The water goes quiet first. Then the light shifts and a wall of silver turns beneath you — a million sardines moving as one body, thirty metres from where you had breakfast. You surface, and nobody says anything for a while.\n\nThat is the moment people fly to Moalboal for.\n\nSunset Cove — sunsetcove.ph/kr\n\n#힐링여행 #세부여행',
       ],
+      optionsEn: [
+        'Had your hotel staycation (호캉스) yet? 🌴 Sunset Cove sits 30 metres from the Moalboal sardine run — sunrise snorkel, hammock by noon, nothing else on the schedule. Rates and dates → sunsetcove.ph/kr\n\n#세부여행 (Cebu trip) #호캉스 (hotel staycation)',
+        'Sunset Cove Beach Resort — Moalboal, Cebu\n\nDirect shoreline access to the Moalboal sardine run, visible year-round roughly 30 metres offshore. Every guided dive is led and logged by our on-site certified marine biologist, and we remain the only eco-certified property on this stretch of coast.\n\nPeak Korean season runs July–August and December–January; booking around six weeks ahead secures the best available rates.\n\nFull rates, dive schedules and transfer details: sunsetcove.ph/kr\n\n#세부여행 (Cebu trip) #에코리조트 (eco resort)',
+        'The water goes quiet first. Then the light shifts and a wall of silver turns beneath you — a million sardines moving as one body, thirty metres from where you had breakfast. You surface, and nobody says anything for a while.\n\nThat is the moment people fly to Moalboal for.\n\nSunset Cove — sunsetcove.ph/kr\n\n#힐링여행 (healing trip) #세부여행 (Cebu trip)',
+      ],
       optionMetadata: [
         meta(
           'Sardine-run proximity plus the unstructured-day rest promise, compressed for a conversational feed.',
@@ -150,3 +165,20 @@ export const MOCK_CONTENT: ContentResponse = {
     },
   },
 };
+
+/**
+ * Offline stand-in for POST /api/content/translate: answers from the fixture's own
+ * `optionsEn` when the caption is one of the fixture options.
+ */
+export function fixtureTranslation(caption: string) {
+  for (const platform of Object.values(MOCK_CONTENT.captions)) {
+    const i = platform.options.indexOf(caption);
+    const en = i >= 0 ? platform.optionsEn?.[i] : undefined;
+    if (en) return { captionEn: en, sourceLanguage: 'ko', source: 'groq' as const };
+  }
+  return {
+    captionEn: '[fixture] No offline translation for this caption.',
+    sourceLanguage: 'ko',
+    source: 'groq' as const,
+  };
+}

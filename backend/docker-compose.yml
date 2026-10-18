@@ -23,6 +23,8 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       # Groq decommissions models periodically; override without a rebuild.
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # Caption translation / re-localisation model; blank falls back to GROQ_MODEL.
+      GROQ_TRANSLATION_MODEL: ${GROQ_TRANSLATION_MODEL:-}
       # The compliance audit needs an image-capable model (omcs_agent/node.py).
       OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}

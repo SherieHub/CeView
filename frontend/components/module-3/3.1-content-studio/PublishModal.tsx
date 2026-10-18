@@ -39,6 +39,8 @@ import Modal from '../../shared/Modal';
 import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import { BrandMark } from '../../landing/LandingNav';
 import DevicePreview, { PREVIEW_DEVICES } from './DevicePreview';
+import { CaptionTranslationToggle, EnglishEditBar } from './CaptionTranslationToggle';
+import { useEditableCaptionTranslation } from './useCaptionTranslation';
 import type { PreviewDevice } from './DevicePreview';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import { STUDIO_PLATFORMS } from './contentStudioTypes';
@@ -160,6 +162,15 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
   // The strictest limit among the chosen platforms is the one that bites.
   const limit = Math.min(...previewList.map((p) => PLATFORM_CHAR_LIMITS[p]));
   const overLimit = draft.caption.length > limit;
+  // One translation state drives both the Final caption box and the device
+  // preview, so they always show the same language. Publishing uses draft.caption.
+  const translation = useEditableCaptionTranslation(draft.caption, {
+    knownEnglish: draft.captionEn,
+    platform: previewPlatform,
+    onTranslated: (captionEn) => onDraftChange({ captionEn }),
+    onApply: (caption, captionEn) => onDraftChange({ caption, captionEn }),
+  });
+  const viewingEnglish = translation.showing === 'english';
   // Scheduling: a local date-time on the draft; null means publish now.
   const scheduled = draft.scheduledFor != null;
   const [schedDate, schedTime] = (draft.scheduledFor ?? defaultSchedule()).split('T');
@@ -334,7 +345,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                 <DevicePreview
                   ref={frameRef}
                   platform={previewPlatform}
-                  caption={draft.caption}
+                  caption={viewingEnglish ? translation.englishDraft : draft.caption}
                   mediaDataUrl={draft.mediaDataUrl}
                   device={device}
                   accountName={accountName}
@@ -349,6 +360,9 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
 
             <div className="pubx-preview-foot">
               <span className="pubx-preview-label">{label(previewPlatform)} preview</span>
+              {viewingEnglish && (
+                <span className="cap-lang-note">English preview — the original caption is what will be published.</span>
+              )}
               {previewList.length > 1 && (
                 <span className="pubx-dots">
                   {previewList.map((id, i) => (
@@ -374,15 +388,26 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
               <label className="pubx-box-title" htmlFor="pub-caption">
                 <FileText size={17} aria-hidden="true" /> Final caption
               </label>
+              {translation.visible && (
+                <div className="cap-lang-bar">
+                  <CaptionTranslationToggle state={translation} />
+                </div>
+              )}
               <textarea
                 id="pub-caption"
                 className="pubx-caption"
-                value={draft.caption}
-                onChange={(event) => onDraftChange({ caption: event.target.value })}
+                lang={viewingEnglish ? 'en' : undefined}
+                value={viewingEnglish ? translation.englishDraft : draft.caption}
+                onChange={(event) =>
+                  viewingEnglish
+                    ? translation.setEnglishDraft(event.target.value)
+                    : onDraftChange({ caption: event.target.value })
+                }
               />
               <p className="pubx-count" data-over={overLimit || undefined}>
                 {draft.caption.length.toLocaleString()} / {limit.toLocaleString()}
               </p>
+              <EnglishEditBar state={translation} />
             </div>
 
             <div className="pubx-box">

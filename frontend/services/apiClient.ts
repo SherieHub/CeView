@@ -12,7 +12,7 @@ import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { ApiError } from './apiError';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
-import { MOCK_CONTENT } from './fixtures/content';
+import { MOCK_CONTENT, fixtureTranslation } from './fixtures/content';
 import { MOCK_OMCS } from './fixtures/omcs';
 import { MOCK_CREATIVE_DIRECTION } from './fixtures/creativeDirection';
 import { MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
@@ -47,6 +47,9 @@ import type {
   ManualIngestResponse,
   PrescriptiveReport,
   ContentResponse,
+  CaptionLanguage,
+  CaptionLocalization,
+  CaptionTranslation,
   OmcsAuditResult,
   CreativeDirection,
   AdAccountOption,
@@ -113,6 +116,11 @@ function fixtureSession(email: string | null): AuthSession {
   };
 }
 
+/** Evidence accompanying a contact number: a Firebase token, or an explicit "verify later" opt-out. */
+export interface PhoneProof {
+  phoneIdToken?: string;
+  verifyLater?: boolean;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const tokens = loadTokens();
@@ -315,6 +323,38 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify(input),
           }),
+    /**
+     * Meaning-faithful English for a Korean/Japanese caption (the "Show English"
+     * toggle). Fixture mode answers from the fixture's own `optionsEn`.
+     */
+    translate: (input: { caption: string; platform?: string }) =>
+      USE_FIXTURES
+        ? delay<CaptionTranslation>(fixtureTranslation(input.caption))
+        : request<CaptionTranslation>('/api/content/translate', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
+    /**
+     * Rewrites owner-edited English as a natural Korean/Japanese caption
+     * ("Apply to Korean/Japanese"). `originalCaption` keeps the existing voice.
+     */
+    localize: (input: {
+      captionEn: string;
+      targetLanguage: CaptionLanguage;
+      platform?: string;
+      originalCaption?: string;
+    }) =>
+      USE_FIXTURES
+        ? delay<CaptionLocalization>({
+            caption: input.originalCaption || input.captionEn,
+            captionEn: input.captionEn,
+            targetLanguage: input.targetLanguage,
+            source: 'groq',
+          })
+        : request<CaptionLocalization>('/api/content/localize', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
     /** Operator approves the generated set for a market. */
     approve: (market: string) =>
       USE_FIXTURES
@@ -334,6 +374,11 @@ export const apiClient = {
      */
     omcsAnalyze: (input: {
       caption: string;
+      /**
+       * English translation of `caption`, when it is not English. Used only for the
+       * profile-similarity sub-score; the image checks still read `caption`.
+       */
+      captionEn?: string;
       imageUrl: string;
       recommendations: Record<string, unknown>;
     }) =>
@@ -574,12 +619,12 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }).then((dto) => toSession(dto, email)),
-    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) =>
+    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay(fixtureSession(email))
         : request<SessionDto>('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, firstName, lastName, contactNumber }),
+            body: JSON.stringify({ email, password, firstName, lastName, contactNumber, ...phone }),
           }).then((dto) => toSession(dto, email)),
     /** Verifies a Firebase ID token server-side and mints the same session shape as login/register. */
     google: (idToken: string, intent: 'login' | 'register') =>
@@ -623,13 +668,18 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify({ email, code, newPassword }),
           }).then((dto) => toSession(dto, email)),
+    /** The caller's contact number and whether it has been SMS-verified (settings "Contact number"). */
+    getProfile: () =>
+      USE_FIXTURES
+        ? delay({ contactNumber: '+63 917 000 0000' as string | null, phoneVerified: false })
+        : request<{ contactNumber: string | null; phoneVerified: boolean }>('/api/auth/profile'),
     /** The one-time "complete your profile" step (see ProfileCompletionGate). */
-    completeProfile: (contactNumber: string) =>
+    completeProfile: (contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay({ profileCompleted: true })
         : request<{ profileCompleted: boolean }>('/api/auth/profile', {
             method: 'PATCH',
-            body: JSON.stringify({ contactNumber }),
+            body: JSON.stringify({ contactNumber, ...phone }),
           }),
   },
 };

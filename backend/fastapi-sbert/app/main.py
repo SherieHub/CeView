@@ -11,6 +11,7 @@ from app.routers import (
     creative,
     report,
     caption_generation,
+    caption_translation,
     pes_analysis,
     pes_compute,
     omcs_analysis,
@@ -31,6 +32,7 @@ app.include_router(classification.router, prefix="/internal/classification", tag
 app.include_router(creative.router,       prefix="/internal/creative",       tags=["creative"])
 app.include_router(report.router,         prefix="/internal/report",         tags=["report"])
 app.include_router(caption_generation.router, prefix="/internal/generation",   tags=["caption"])
+app.include_router(caption_translation.router, prefix="/internal/generation",   tags=["caption"])
 app.include_router(pes_analysis.router,       prefix="/internal/pes-analysis",  tags=["pes-analysis"])
 app.include_router(pes_compute.router,        prefix="/internal/pes-compute",   tags=["pes-compute"])
 app.include_router(omcs_analysis.router,      prefix="/internal/omcs",          tags=["omcs"])

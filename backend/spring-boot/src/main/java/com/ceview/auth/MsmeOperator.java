@@ -30,6 +30,7 @@ public class MsmeOperator {
      */
     @Column(name = "created_before_verification", nullable = false)
     private boolean createdBeforeVerification;
+    @Column(name = "phone_verified_at") private OffsetDateTime phoneVerifiedAt;
 
     @PrePersist
     void onCreate() {

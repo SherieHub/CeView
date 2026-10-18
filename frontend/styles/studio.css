@@ -3878,3 +3878,48 @@
 @layer components {
   .app-wrap .app-main:has(.studio-screen) { padding-top: 12px; }
 }
+
+/* English translation toggle (CaptionTranslationToggle) — reuses .link-inline,
+   .chip--muted and the button scale; only layout lives here. */
+@layer components {
+  .cap-lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 0.8125rem;
+  }
+  .cap-lang-toggle[aria-pressed='true'] {
+    color: var(--color-navy-primary);
+  }
+  .cap-lang-toggle .spinner {
+    width: 14px;
+    height: 14px;
+  }
+  .cap-lang-error {
+    font-size: 0.8125rem;
+    color: var(--color-critical-text);
+  }
+  .cap-lang-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+  }
+  .cap-lang-note {
+    margin: var(--space-xs) 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-body);
+  }
+  .cap-lang-prompt {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+    font-size: 0.875rem;
+  }
+}

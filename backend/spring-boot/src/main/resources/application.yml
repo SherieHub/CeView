@@ -62,6 +62,12 @@ ceview:
     # Overridable because an e2e run registers far more than 10 accounts from one IP.
     max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:10}
     window: 15m
+  # Separate per-IP cap on register / complete-profile, the endpoints that carry phone
+  # verification (AuthRateLimiter). Takes the same e2e override as the email cap above.
+  auth:
+    rate-limit:
+      max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:20}
+      window-seconds: 900
   test-support:
     # E2E only: exposes /api/test-support/email-codes/latest. Never enable with a real provider.
     enabled: ${CEVIEW_TEST_SUPPORT_ENABLED:false}

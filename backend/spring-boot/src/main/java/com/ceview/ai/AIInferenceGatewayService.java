@@ -162,6 +162,16 @@ public class AIInferenceGatewayService {
         return postSbert("/internal/generation/caption", payload);
     }
 
+    /** Translate a native caption into English (fastapi-sbert). */
+    public Map<String, Object> translateCaption(Map<String, Object> payload) {
+        return postSbert("/internal/generation/translate", payload);
+    }
+
+    /** Rewrite owner-edited English as a native caption (fastapi-sbert). */
+    public Map<String, Object> localizeCaption(Map<String, Object> payload) {
+        return postSbert("/internal/generation/localize", payload);
+    }
+
     public Map<String, Object> generateCreative(Map<String, Object> payload) {
         return postSbert("/internal/creative/generate", payload);
     }

@@ -8,6 +8,8 @@ import PanelHead from './PanelHead';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { ComplianceSlotProps } from './contentStudioTypes';
+import { hasNonEnglishScript } from './captionLanguage';
+import { getTranslation, requestTranslation } from './captionTranslationStore';
 
 const STEPS = ['Read caption and platform constraints', 'Analyse publication media', 'Match business profile signals', 'Score visual direction consistency', 'Evaluate audience and cultural fit', 'Create compliance recommendation'];
 
@@ -23,15 +25,29 @@ export default function CompliancePanel({ draft, audit, onAuditChange, recommend
     if (audit.status !== 'running') return;
     if (audit.step >= STEPS.length) {
       let cancelled = false;
-      apiClient.compliance
-        .omcsAnalyze({ caption: draft.caption, imageUrl: draft.mediaDataUrl ?? '', recommendations: recommendations ?? {} })
+      // The profile-similarity sub-score compares the caption with an English
+      // profile, so a Korean/Japanese caption is scored via its English meaning.
+      // A failed translation never blocks the audit — it just scores the native text.
+      const send = (captionEn?: string) =>
+        apiClient.compliance.omcsAnalyze({
+          caption: draft.caption,
+          ...(captionEn ? { captionEn } : {}),
+          imageUrl: draft.mediaDataUrl ?? '',
+          recommendations: recommendations ?? {},
+        });
+      const known = draft.captionEn || getTranslation(draft.caption);
+      const call =
+        !known && hasNonEnglishScript(draft.caption)
+          ? requestTranslation(draft.caption).catch(() => undefined).then(send)
+          : send(known);
+      call
         .then((result) => { if (!cancelled) onAuditChange({ status: 'complete', step: STEPS.length, result }); })
         .catch((e) => { if (!cancelled) onAuditChange({ status: 'error', step: 0, result: null, error: e }); });
       return () => { cancelled = true; };
     }
     const timer = window.setTimeout(() => onAuditChange({ ...audit, step: audit.step + 1 }), 420);
     return () => window.clearTimeout(timer);
-  }, [audit, onAuditChange, draft.caption, draft.mediaDataUrl, recommendations]);
+  }, [audit, onAuditChange, draft.caption, draft.captionEn, draft.mediaDataUrl, recommendations]);
 
   // Unique per instance: a campaign post's audit can be mounted beside Quick Post's.
   const titleId = useId();

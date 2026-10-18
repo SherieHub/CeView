@@ -112,6 +112,26 @@ class ComplianceControllerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void captionEnIsForwardedOnlyWhenPresent() throws Exception {
+        mvc.perform(post("/api/compliance/omcs-analyze")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(BODY.formatted(", \"captionEn\": \"  Dive the reef wall  \"")))
+            .andExpect(status().isOk());
+        mvc.perform(post("/api/compliance/omcs-analyze")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(BODY.formatted(", \"captionEn\": \"   \"")))
+            .andExpect(status().isOk());
+
+        ArgumentCaptor<Map<String, Object>> sent = ArgumentCaptor.forClass(Map.class);
+        verify(ai, org.mockito.Mockito.times(2)).analyzeOmcsAgent(sent.capture());
+        assertThat(sent.getAllValues().get(0)).containsEntry("caption_en", "Dive the reef wall");
+        assertThat(sent.getAllValues().get(1)).doesNotContainKey("caption_en");
+    }
+
+    @Test
     void anOperatorWithNoBusinessProfileGetsConflictAndNoAgentCall() throws Exception {
         profileRepo.deleteAll();
 

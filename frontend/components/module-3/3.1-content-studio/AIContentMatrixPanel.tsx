@@ -84,6 +84,7 @@ export default function AIContentMatrixPanel({
         <div className="mt-4">
           <CaptionOptionGrid
             captions={captions}
+            platform={platform}
             selectedIndex={selectedOption ?? null}
             onSelect={(index, text) => onSelectCaption?.(index, text)}
           />

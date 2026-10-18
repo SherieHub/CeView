@@ -12,12 +12,16 @@ import type { ReactNode } from 'react';
 import { ImageIcon, Maximize2, PenLine } from 'lucide-react';
 import Modal from '../../shared/Modal';
 import CompliancePanel from './CompliancePanel';
+import { CaptionTranslationToggle } from './CaptionTranslationToggle';
+import { useCaptionTranslation } from './useCaptionTranslation';
 import type { AuditState, PublishDraftState } from './contentStudioTypes';
 
 interface ValidateStageProps {
   draft: PublishDraftState;
   audit: AuditState;
   onAuditChange: (audit: AuditState) => void;
+  /** Stores an on-demand English translation on the draft. */
+  onDraftChange?: (patch: Partial<PublishDraftState>) => void;
   recommendations: Record<string, unknown> | null;
   onEditCaption: () => void;
   onManageMedia: () => void;
@@ -29,6 +33,7 @@ export default function ValidateStage({
   draft,
   audit,
   onAuditChange,
+  onDraftChange,
   recommendations,
   onEditCaption,
   onManageMedia,
@@ -36,6 +41,10 @@ export default function ValidateStage({
 }: ValidateStageProps) {
   const [mediaOpen, setMediaOpen] = useState(false);
   const caption = draft.caption.trim();
+  const translation = useCaptionTranslation(caption, {
+    knownEnglish: draft.captionEn,
+    onTranslated: (captionEn) => onDraftChange?.({ captionEn }),
+  });
 
   return (
     <div className="val">
@@ -63,12 +72,13 @@ export default function ValidateStage({
 
           <div className="val-box-head val-box-head--caption">
             <h4 className="val-label">Caption</h4>
+            <CaptionTranslationToggle state={translation} />
             <button type="button" className="val-link" onClick={onEditCaption}>
               <PenLine size={14} aria-hidden="true" /> Edit
             </button>
           </div>
           <p className="val-caption" data-empty={!caption || undefined}>
-            {caption || 'No caption yet — choose one in Draft.'}
+            {translation.showing === 'english' ? translation.english : caption || 'No caption yet — choose one in Draft.'}
           </p>
         </section>
       </div>

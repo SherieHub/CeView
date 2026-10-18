@@ -50,6 +50,10 @@ vi.mock('../../services/apiClient', () => ({
     businessProfile: {
       save: vi.fn((profile: BusinessProfile) => Promise.resolve(profile)),
     },
+    // ContactNumberSection loads this on mount; it hides itself when the call fails.
+    auth: {
+      getProfile: vi.fn(() => Promise.reject(new Error('not under test'))),
+    },
   },
 }));
 

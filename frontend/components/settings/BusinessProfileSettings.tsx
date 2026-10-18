@@ -25,6 +25,7 @@ import { LandingImage } from '../landing/ui';
 import { useDismiss } from '../shared/useDismiss';
 import { useToast } from '../shared/Toast';
 import { MAX_PHOTO_BYTES, readProfilePhoto } from './profilePhoto';
+import ContactNumberSection from './ContactNumberSection';
 import { apiClient } from '../../services/apiClient';
 import { useProfile } from '../../services/profileContext';
 import type { BusinessProfile } from '../../types';
@@ -350,6 +351,8 @@ export default function BusinessProfileSettings() {
               />
             </div>
           </section>
+
+          <ContactNumberSection />
 
           <div className="bp-foot">
             <button type="button" className="bp-save" onClick={handleSave}>

@@ -7,7 +7,7 @@
 ## Goal
 
 Move CeView off the Render free-tier path and onto AWS for a **pilot with 20–100 real Cebu MSMEs**. The
-target is about $30/mo; up to about $40/mo has been accepted. The deployment has to keep the 90-second
+target is about $30/mo; up to about $40/mo has been accepted. *Revised 2026-10-19 for a 10-user pilot: see "Pilot cost revision" at the end; the running cost is about $28–29/mo and new-account credits cover it for several months.* The deployment has to keep the 90-second
 AI calls working, keep the `/r/{slug}` attribution links that live ads point at always warm, give the
 Meta OAuth callback a stable HTTPS host, and produce evidence for a Data Privacy Act (DPA) review.
 
@@ -31,8 +31,8 @@ service off its current framework.
 | Box credentials | IAM user `ceview-box` with a least-privilege policy; access key stored in `/root/.aws/credentials` | Lightsail has no instance roles. Rotate the key quarterly |
 | Integrations live | Firebase Google sign-in, Meta Ads, SerpApi, Groq, HF Space (`FORECAST_ENGINE=bilstm`). TikTok off. W&B off | Pilot scope |
 | Demo seed data | Deleted after the first migration by an idempotent script. The V26 reference corpus is kept, and its vectors are imported | The 9 demo logins have plaintext passwords published in the repo |
-| Backups | Nightly `pg_dump -Fc` to the S3 ops bucket (SSE-S3, 30-day lifecycle), plus Lightsail automatic snapshots of the instance and data disk | Lose at most about 24 hours of data |
-| Monitoring | AWS Budgets ($35), Lightsail CPU and status alarms, CloudWatch agent (memory and disk), Route 53 health check on `/actuator/health`, and a log metric filter on `DEPLOY_FAILED`. All alerts go out by email | Email-only alerting fits a pilot |
+| Backups | Nightly `pg_dump -Fc` to the S3 ops bucket (SSE-S3, 30-day lifecycle), plus a Lightsail automatic snapshot of the data disk (the instance is not snapshotted; see the revision note) | Lose at most about 24 hours of data |
+| Monitoring | AWS Budgets ($30 plus a zero-spend budget), Lightsail CPU and status alarms, CloudWatch agent (memory and disk), a free external uptime monitor on `/actuator/health`, and a log metric filter on `DEPLOY_FAILED`. All alerts go out by email | Email-only alerting fits a pilot |
 | Render | Delete `render.yaml` and `docs/DEPLOY_RENDER.md`. Repoint references in `README.md`, `RUNNING.md` and `.claude/CLAUDE.md` | One deployment path |
 
 ## Architecture
@@ -191,8 +191,8 @@ backward compatible across one release.
   It works while ECR still holds those images (the last 10).
 - **Schema changes are forward-only:** rolling the app back across a migration that dropped or renamed
   columns fails Hibernate `validate`. Write migrations additively.
-- **Lost instance:** create a new instance from the latest Lightsail snapshot (or a fresh one with
-  bootstrap), restore the newest `backups/pg/*.dump`, then repoint the static IP.
+- **Lost instance:** create a fresh instance and run bootstrap, attach the data disk (or restore the newest
+  `backups/pg/*.dump`), then repoint the static IP.
 - **E5 download failure:** sbert stays unhealthy and Spring's classification calls degrade as they do
   locally. The `hf-cache` on `/data` survives restarts, so the download happens once.
 
@@ -224,3 +224,20 @@ backward compatible across one release.
   - `init-data.sh` run twice gives the same result.
   - The admin trigger returns 404.
 - **Post-deploy:** the go-live checklist in `docs/DEPLOY_AWS.md` §B17.
+
+## Pilot cost revision (2026-10-19)
+
+The pilot is now about 10 users, and the goal is to pay as little as possible. The architecture is
+unchanged (one 4GB Lightsail server: the E5 encoder alone is allowed 2.2GB, so no smaller plan fits).
+What changed is the line items that bought safety the pilot doesn't need:
+
+- **No instance snapshots.** The server is rebuilt by `bootstrap.sh`; the data lives on the data disk
+  (snapshotted) and in the nightly S3 dump. Saves about $2–4/mo.
+- **No Route 53 health check.** A free external uptime monitor watches `/actuator/health`. Saves about
+  $0.50–0.75/mo and removes the second (us-east-1) SNS topic.
+- **CloudWatch inside the always-free limits** (10 metrics, 10 alarms, 5GB log ingestion).
+- **Budgets:** $30 plus a zero-spend budget, so the first real charge after the credits run out sends an
+  email.
+- **SerpApi is the real pilot cost.** `MODULE2_MARKETS` was documented as a way to cut searches but no
+  code reads it; `INGESTION_ENABLED` (now overridable from Parameter Store) is the working switch.
+- A wind-down checklist (DEPLOY_AWS.md B19) stops every charge when the pilot ends.

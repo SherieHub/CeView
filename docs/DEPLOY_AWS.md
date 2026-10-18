@@ -2,7 +2,8 @@
 
 This guide covers the production deployment of CeView for the MSME pilot. It deploys Postgres +
 pgvector, Spring Boot, both FastAPI services and the React frontend to AWS in **Singapore
-(`ap-southeast-1`)** for about **$30–33/month**.
+(`ap-southeast-1`)** for about **$28–29/month**, sized for a pilot of about 10 users. A new account's
+credits cover that for several months (see A2).
 
 - **Part A** explains what gets built and why: architecture, cost, security and Data Privacy Act (DPA)
   notes, risks, rollback and restore.
@@ -89,38 +90,79 @@ The server **pulls** releases rather than GitHub **pushing** them, because Light
 remote-command service and the deployer doesn't have admin rights on the GitHub repo to store SSH
 keys. Nothing secret is stored in GitHub at all.
 
-## A2. Monthly cost estimate
+## A2. Cost: what the pilot really pays
 
-These are list prices as of October 2026. Before you start, confirm them in the
-[AWS Pricing Calculator](https://calculator.aws/) with Singapore selected.
+Sized for a **short pilot of about 10 users**. These are list prices as of October 2026. Before you
+start, confirm them in the [AWS Pricing Calculator](https://calculator.aws/) with Singapore selected.
 
-| Item | ≈ USD/month |
+| Item | ≈ USD/month | Covered by AWS credits? |
+|---|---|---|
+| Lightsail Medium 4GB instance (2 vCPU, 80GB SSD, 4TB transfer, public IPv4 included) | 24.00 | Yes |
+| Lightsail 20GB block-storage disk (`ceview-prod-data`) | 2.00 | Yes |
+| Lightsail automatic snapshot of the **data disk only** | 0.50–1.00 | Yes |
+| Route 53 hosted zone (no health check) | 0.50 | Yes |
+| S3 (frontend + 30 days of DB dumps + release bundles) | 0.30 | Yes |
+| ECR image storage | 0.30 | Yes |
+| CloudFront (pilot traffic stays inside the always-free 1TB/month) | 0.00 | n/a |
+| CloudWatch (4 custom metrics, 4 alarms and the logs stay inside the always-free 10 metrics / 10 alarms / 5GB ingestion) | 0.00 | n/a |
+| Parameter Store (standard tier), IAM, ACM certificate, CloudTrail event history | 0.00 | n/a |
+| **AWS total** | **≈ 28–29** | |
+| Domain registration (yearly, shown per month; `.com` is about $15/yr, other TLDs differ) | 1.25+ | Usually **not** |
+
+### How it ends up costing you $0
+
+AWS gives a new account **$100 in credits at sign-up and up to $100 more** for finishing onboarding
+tasks (*Billing and Cost Management → Credits* shows the balance and the expiry date). Credits pay for
+Lightsail, S3 and Route 53 like any other usage, so:
+
+| Credits | ≈ Months of the AWS bill covered |
 |---|---|
-| Lightsail Medium 4GB instance (2 vCPU, 80GB SSD, 4TB transfer, public IPv4 included) | 24.00 |
-| Lightsail 20GB block-storage disk (`ceview-prod-data`) | 2.00 |
-| Lightsail automatic snapshots (incremental) | 1.00–2.00 |
-| Route 53 hosted zone + 1 health check | 0.50–1.25 |
-| Domain registration (yearly, shown per month; `.com` is about $15/yr) | 1.25 |
-| S3 (frontend + 30 days of DB dumps + release bundles) | 0.50 |
-| ECR image storage (~3GB after lifecycle cleanup) | 0.30 |
-| CloudFront (pilot traffic stays inside the always-free 1TB/month) | 0.00 |
-| CloudWatch Logs (14-day retention) + 2 custom metrics + alarms | 1.50–2.50 |
-| Parameter Store (standard tier), IAM, ACM certificate, CloudTrail event history | 0.00 |
-| **Total** | **≈ 31–34** |
+| $100 | 3.5 |
+| $200 | 7 |
 
-A new AWS account starts with $100 in credits, which can grow to $200 by completing onboarding tasks.
-These usually cover the first few months; domain registration may not be covered. Lightsail
-sometimes offers a free trial period on new accounts, so check what the console shows when you
-create the instance.
+A pilot of two to four months is therefore **free out of pocket apart from the domain**, as long as the
+credits are still valid. Note the credit **expiry date** now and put a reminder two weeks before it.
+After the credits run out, the bill is the full ≈ $28–29/month until you wind the pilot down (B19).
 
-**Costs outside AWS. Check these before go-live; they can exceed the AWS bill:**
+**The instance is about 85% of the bill and can't be made smaller.** `fastapi-sbert` alone is allowed
+2.2GB for the E5 encoder (`docker-compose.prod.yml`), and Spring, Postgres and the forecaster need
+about 2GB more. Lightsail's smaller plans (some of which have had free trials) can't hold the stack, and the only
+free-tier-eligible EC2 size that could (`m7i-flex.large`, 8GB) burns far more credits per month than this
+plan does.
 
-| Service | Risk |
-|---|---|
-| **SerpApi** (Google Trends + cultural research) | The daily ingestion job queries per market × business category. With 20–100 businesses, the free quota will likely run out within days. Step B16 measures actual usage on day 1. Decide on a paid plan or fewer markets (`MODULE2_MARKETS`) before go-live. |
-| **Groq** (all AI text and image analysis) | Free-tier rate limits. Under pilot load, expect `429` errors at busy moments. Check limits at console.groq.com and consider the paid developer tier. |
-| **Resend** (sign-up verification and password-reset emails) | Free tier: 3,000 emails/month and **100/day**. Each sign-up or reset sends one, resends send more. The backend caps each account and each IP to protect the quota; if it is exhausted users see "We could not send the email right now". Move to a paid plan before a large invite wave. |
-| **Hugging Face Space** (`FORECAST_ENGINE=bilstm`) | Free Spaces sleep when idle. The first forecast after a quiet period is slow and may time out once. |
+### What was trimmed for the pilot
+
+| Cut | Saves | What you give up |
+|---|---|---|
+| No automatic snapshots of the **instance** (80GB). Only the data disk is snapshotted. | ≈ 2–4 | Nothing unique: the server is rebuilt by `bootstrap.sh` in 10–15 minutes. The data lives on the disk, which keeps its snapshot, and in the nightly S3 dump. |
+| No Route 53 health check; a free external monitor does the same job (B15) | 0.50–0.75 | Alerts come from outside AWS, every 5 minutes. |
+| One SNS topic (Singapore) instead of two | 0 | Fewer things to set up. |
+| CloudWatch kept inside the always-free limits | ≈ 1.50–2.50 | Nothing, as long as log volume stays under 5GB/month (B16 checks it). |
+
+### Costs outside AWS
+
+For 10 users most of these can stay on free plans. **SerpApi is the one that can't.**
+
+| Service | Free plan | Verdict for 10 users |
+|---|---|---|
+| **SerpApi** (Google Trends for Market Radar) | 100–250 searches/month (the plan page and third-party pages disagree; check yours) | **Won't fit.** Each refresh of a business costs about one search per market × category (3 markets × your categories). The nightly sweep alone is roughly 10 users × 2 categories × 3 markets = **60 searches/day, about 1,800/month**. See "Keeping SerpApi inside the free plan" below. A paid Starter plan is about $25/month for 1,000 searches. |
+| **Groq** (captions, English translations, compliance audit) | Free tier with rate limits | Fine for 10 users. Spread the load across models: the English translation can run on a second model with its own limit by setting `GROQ_TRANSLATION_MODEL` (B9). Expect an occasional `429`; the app shows a clear error and the user retries. |
+| **Resend** (verification and password-reset emails) | 3,000/month and **100/day** | Fine. The backend rate-limits each account and IP. |
+| **Hugging Face Space** (`FORECAST_ENGINE=bilstm`) | Free Spaces sleep when idle | Free. The first forecast after a quiet period is slow and may time out once. |
+| **Firebase** (Google sign-in) | Free | Free. |
+
+#### Keeping SerpApi inside the free plan
+
+1. In Parameter Store add `/ceview/prod/INGESTION_ENABLED` = `false` (a plain **String** is fine,
+   **SecureString** also works). This turns off the 00:00 UTC sweep that refreshes every business
+   whether or not anyone opens the app (change a secret: B18). Forecasts then refresh only when an
+   operator opens the dashboard and the data is more than 12 hours old, so searches follow real use.
+2. Measure instead of guessing: B16 compares the SerpApi dashboard against your quota the morning after
+   go-live. If the daily use times 30 still exceeds the plan, either buy the paid plan for the pilot's
+   months or accept that Market Radar shows "unavailable" for the rest of the month once the quota is gone.
+3. `MODULE2_MARKETS` does **not** limit anything: no code reads it. Don't use it to cut searches.
+
+---
 
 ## A3. Security and Data Privacy Act notes
 
@@ -147,7 +189,7 @@ create the instance.
 | Encryption at rest | Postgres data sits on an attached Lightsail block-storage disk. AWS documents attached disks and their snapshots as encrypted at rest by default. Backups in S3 use SSE-S3, and secrets use KMS (`aws/ssm`). |
 | Access control | Root account protected by MFA and not used day to day. Humans use the `ceview-admin` IAM user with MFA. The server and CI each get their own least-privilege identity. SSH limited to one IP. The database isn't exposed to the internet. |
 | Audit | CloudTrail event history (90 days, free) records every AWS API call, including every secret read. |
-| Backups / recovery | Nightly encrypted database dumps kept 30 days, plus daily snapshots. A restore drill is documented (B16) and should be run monthly, with the date recorded. |
+| Backups / recovery | Nightly encrypted database dumps kept 30 days, plus daily snapshots of the data disk (the OS disk isn't snapshotted; bootstrap rebuilds it). A restore drill is documented (B16) and should be run monthly, with the date recorded. |
 | Minimisation | Traveller IPs are hashed with a secret salt before storage. |
 
 **Third-party processors (disclose these in the privacy notice).** Business descriptions, images and
@@ -168,6 +210,8 @@ privacy policy URL (`VITE_PRIVACY_URL`), and **a privacy notice must exist befor
 | Rolling back across a migration that dropped or renamed columns breaks startup | Write additive migrations only. Roll forward instead of back when schema changed. |
 | New Flyway seed migrations that reference the deleted demo accounts will fail in prod | Rule: no demo or seed rows in `db/migration` from now on. |
 | Meta Ads for users outside the app's roles needs App Review and Business Verification | Until approved, add each pilot MSME's Facebook account as an app tester (B14). |
+| The AWS credits that make the pilot free expire or run out, and the bill becomes ≈ $28–29/month | Note the expiry date under *Billing and Cost Management → Credits* (A2), keep the budget alerts from B1, and wind down (B19) if you aren't continuing. |
+| No instance snapshot, so a lost server means a rebuild | The rebuild is scripted (B11 + B12, about 30 minutes) and the data survives on the disk, its snapshot and the nightly dump. |
 
 ## A5. Rollback and restore at a glance
 
@@ -177,7 +221,7 @@ privacy policy URL (`VITE_PRIVACY_URL`), and **a privacy notice must exist befor
 | A release is healthy but buggy | `git revert` the change on `main`, fast-forward `release`, push. Rolls back frontend and backend together. |
 | Emergency backend-only rollback | In CloudShell: `aws ssm put-parameter --name /ceview/prod/release-sha --value <older-sha> --overwrite`. The server picks it up within 2 minutes. Works for the last 10 releases. |
 | Bad data or accidental deletion | Restore the last nightly dump (B16, "Restore for real"). |
-| Server lost or broken | Create a new instance from the latest snapshot, attach the data disk or restore the newest dump, and move the static IP to it (B18). |
+| Server lost or broken | Create a new instance (B11), attach the data disk (or a disk restored from its snapshot), or restore the newest dump, move the static IP to it, and run B12 (B18). |
 
 ---
 
@@ -202,9 +246,16 @@ and `openssl`, and it's signed in as you.
 4. Sign out, then sign back in as `ceview-admin` using the account's sign-in URL (shown on the IAM
    dashboard). **Do every remaining step as `ceview-admin`, not root.**
 5. *Billing and Cost Management → Budgets → Create budget*:
-   1. Choose **Customize**, **Cost budget**, Monthly, amount **$35**.
+   1. Choose **Customize**, **Cost budget**, Monthly, amount **$30**.
    2. Add alerts at 50%, 80% and 100% of *actual* cost, and 100% of *forecasted* cost, each emailing
       `<alert-email>`.
+   3. Create a second budget from the **Zero spend budget** template, also emailing `<alert-email>`.
+
+   Budgets count cost **after credits** by default (if you see a *Credits* checkbox under Advanced
+   options, leave it ticked). They stay quiet while credits pay the bill and email you the first time
+   real money is charged. That's the signal you want.
+6. *Billing and Cost Management → Credits*: write down each credit's amount and **expiry date**, and add a
+   calendar reminder two weeks before the earliest one (A2).
 
 ## B2. Buy the domain
 
@@ -338,6 +389,14 @@ problems.
 
 Don't create `/ceview/prod/release-sha`; the first release creates it.
 
+**Optional parameters** (plain `String` or `SecureString`; the defaults are fine if you skip them):
+
+| Name | Value | Why |
+|---|---|---|
+| `/ceview/prod/INGESTION_ENABLED` | `false` | Stops the nightly refresh of every business. Saves SerpApi searches, see A2. Default `true`. |
+| `/ceview/prod/GROQ_MODEL` | a Groq model your key can use | Caption and report model. Default `openai/gpt-oss-120b`. |
+| `/ceview/prod/GROQ_TRANSLATION_MODEL` | a different Groq model | Model for the Content Studio **Show English** translation. Defaults to `GROQ_MODEL`. Needs no extra key. Groq limits are per model, so a second model spreads the free-tier load. |
+
 ### Email delivery (Resend)
 
 New accounts (and, once, every existing account) must enter a 6-digit emailed code before using the
@@ -421,8 +480,10 @@ From now on, **releasing** means: merge to `main`, wait for CI to pass, then
    - HTTPS, TCP 443: any IP.
 
    Apply the same to the IPv6 firewall, minus SSH.
-5. **Snapshots** tab → turn on **Automatic snapshots**, time **19:00 UTC** (after the nightly dump).
-   On the disk's page, also turn on automatic snapshots for `ceview-prod-data`.
+5. **Snapshots:** leave automatic snapshots **off** for the instance. It holds nothing you can't rebuild
+   (B12), and an 80GB snapshot is the largest avoidable charge. On the **disk's** page
+   (`ceview-prod-data`), turn on **Automatic snapshots**, time **19:00 UTC** (after the nightly dump).
+   The disk holds Postgres, so its snapshot is the one that matters.
 6. Back in **Route 53 → `<domain>` hosted zone → Create record**: `api`, type **A**, value = the static
    IP, TTL 300. Wait about 5 minutes, then check from CloudShell: `dig +short api.<domain>` should
    print the static IP.
@@ -513,22 +574,22 @@ Then confirm a demo login fails, for example `ramon.delacruz@ceview.local` on `h
    2. Instance → **Metrics** tab:
       - **CPU utilization** alarm: above 80% for 3 of 3 datapoints over 5 minutes.
       - **Status check failures** alarm: ≥1.
-2. **SNS topics** for CloudWatch alarms. One is needed in each region used:
-   1. In **Singapore**: *SNS → Topics → Create topic*, Standard, named `ceview-alerts`. Create a
-      subscription, protocol Email, to `<alert-email>`, and confirm the email.
-   2. Switch to **us-east-1** and repeat (also named `ceview-alerts`). Route 53 health-check alarms only
-      work there.
+2. **SNS topic** for CloudWatch alarms. In **Singapore**: *SNS → Topics → Create topic*, Standard,
+   named `ceview-alerts`. Create a subscription, protocol Email, to `<alert-email>`, and confirm the
+   email.
 3. **Memory and disk alarms (Singapore).** Bootstrap's CloudWatch agent publishes
    `CWAgent / mem_used_percent` and `CWAgent / disk_used_percent`. *CloudWatch → Alarms → Create alarm*
    for each:
    - memory > 90% for 15 minutes
    - disk (path `/` and `/data`) > 80%
 
-   Notify `ceview-alerts`.
-4. **API health check (us-east-1).**
-   1. *Route 53 → Health checks → Create*: Endpoint by domain name, HTTPS, `api.<domain>`, port 443,
-      path `/actuator/health`, interval 30s.
-   2. On the next page, create an alarm that notifies the us-east-1 `ceview-alerts` topic.
+   Notify `ceview-alerts`. The agent publishes 3 metrics and the deploy-failure filter adds 1, so all
+   of these stay inside CloudWatch's always-free 10 metrics and 10 alarms.
+4. **API uptime check (free, outside AWS).** A Route 53 health check plus its alarm costs about
+   $0.50–0.75/month, so use a free uptime monitor instead, for example Better Stack or UptimeRobot (read
+   the plan's terms for your use). Create an HTTPS monitor on `https://api.<domain>/actuator/health`, expect
+   status 200, check every 5 minutes, and email `<alert-email>`. Also add a second monitor on
+   `https://<domain>/`.
 5. **Logs and the deploy-failure alarm (Singapore).**
    1. *CloudWatch → Log groups*: confirm `/ceview/prod` exists (containers and `deploy.log` stream
       there). Set **Retention: 14 days**.
@@ -551,8 +612,12 @@ Then confirm a demo login fails, for example `ramon.delacruz@ceview.local` on `h
   aws s3 ls s3://ceview-prod-ops-<account-id>/backups/pg/   # in CloudShell
   ```
 - Check *SerpApi dashboard → searches used today* against your plan's monthly quota. If
-  `daily usage × 30` exceeds the quota, act now: upgrade the plan or reduce `MODULE2_MARKETS`.
-- Check the Lightsail **Snapshots** tab: one instance and one disk snapshot.
+  `daily usage × 30` exceeds the quota, act now: set `INGESTION_ENABLED=false` (B9) or buy a plan for
+  the pilot's months (A2).
+- Check the Lightsail **Snapshots** tab: one **disk** snapshot, and none for the instance.
+- Check *Billing and Cost Management → Free Tier*: CloudWatch log ingestion should be on pace for
+  under 5GB a month (about 170MB a day). If it isn't, a container is logging too much; look at
+  `sudo ceview-compose logs --tail=200 <service>`.
 
 **Restore drill.** Run it once now and then monthly; record the date for DPA evidence. On the server:
 
@@ -623,9 +688,34 @@ Tick every item before inviting MSMEs:
 | **Change a secret** | Edit it in Parameter Store, then on the server: `sudo /opt/ceview/current/scripts/fetch-secrets.sh && sudo ceview-compose up -d`. |
 | **Rotate the server key** (quarterly) | IAM → `ceview-box` → create a second access key. Then `sudo aws configure` on the server with the new key, `sudo systemctl restart docker amazon-cloudwatch-agent`, check the next deploy-timer run in `deploy.log`, and delete the old key. |
 | **Emergency backend rollback** | See A5. |
-| **Resize to 8GB** | Lightsail → Snapshots → create a snapshot → *Create new instance* from it with the 8GB plan. Detach `ceview-prod-data` from the old instance and attach it to the new one. Move the static IP. Delete the old instance after verifying. |
-| **Replace a lost server** | Create an instance as in B11 (or from the latest snapshot), attach `ceview-prod-data` (or a disk restored from its snapshot), move the static IP, run B12. If the data disk is lost, restore the newest dump (B16). |
+| **Resize to 8GB** | Lightsail → Snapshots → create a snapshot → *Create new instance* from it with the 8GB plan (delete that snapshot once the new server is verified; snapshots are billed). Detach `ceview-prod-data` from the old instance and attach it to the new one. Move the static IP. Delete the old instance after verifying. |
+| **Replace a lost server** | Create an instance as in B11, attach `ceview-prod-data` (or a disk restored from its snapshot), move the static IP, run B12. If the data disk is lost, restore the newest dump (B16). |
 | **Patch the OS** | Unattended-upgrades applies security updates nightly. Reboot monthly outside business hours: `sudo reboot`. The stack restarts by itself. |
+
+## B19. Wind down after the pilot (stop every charge)
+
+Do this when the pilot ends, or when the credits are about to. Idle resources keep billing: a stopped
+Lightsail instance is still charged, and so are disks, snapshots and an unattached static IP.
+
+1. **Export what you need.** Download the newest dump from `s3://ceview-prod-ops-<account-id>/backups/pg/`
+   and keep it somewhere private. It holds personal data; the privacy notice (A3) says how long you may
+   keep it. Delete it when that period ends.
+2. **Lightsail:** delete `ceview-prod-1`, then the disk `ceview-prod-data`, then **every snapshot**
+   (instance and disk), then the static IP `ceview-prod-ip`.
+3. **S3:** empty both buckets (*Empty*), then delete them.
+4. **CloudFront:** *Disable* the distribution, wait until it finishes deploying, then delete it. Delete
+   the `ceview-spa-rewrite` function.
+5. **Route 53:** delete every record except `NS` and `SOA`, then delete the hosted zone ($0.50/month
+   until you do). In *Registered domains* turn **auto-renew off**; the domain itself stays yours until it
+   expires.
+6. **ECR:** delete the three repositories.
+7. **CloudWatch:** delete the log group `/ceview/prod` and the alarms.
+8. **Parameter Store:** delete the `/ceview/prod/*` parameters.
+9. **IAM:** delete the `ceview-box` user and its access keys. Delete the `ceview-github-deploy` role and
+   the GitHub OIDC provider if nothing else uses them.
+10. **Elsewhere:** cancel or downgrade the paid SerpApi plan, and remove the domain from Firebase's
+    authorised domains and Meta's app settings.
+11. Next day, open *Billing and Cost Management → Bills* and confirm no AWS service still shows usage.
 
 ---
 
@@ -639,4 +729,5 @@ Tick every item before inviting MSMEs:
 | A container keeps restarting with exit code 137 | Out of memory. Check `free -m` and the memory alarm, then consider resizing (B18). |
 | Browser shows CORS errors | The frontend origin isn't `https://<domain>`, for example when testing from `www` before the redirect took effect, or `DOMAIN` in `deploy.env` is wrong. |
 | Meta connect fails with "URL blocked" | The redirect URI in Meta doesn't exactly match `https://api.<domain>/api/ad-connections/meta/callback`. |
+| Market Radar says forecasts are unavailable part-way through the month | SerpApi's monthly quota is used up (A2). Check the SerpApi dashboard, then B9's `INGESTION_ENABLED` or a paid plan. |
 | AI features return 503 "dependency unavailable" | The Groq, SerpApi or HF key is missing or out of quota. Check Parameter Store, then run the "change a secret" steps. |

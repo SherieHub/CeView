@@ -7,7 +7,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { apiClient } from './apiClient';
+import { apiClient, type PhoneProof } from './apiClient';
 import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { clearTokens, loadTokens, saveTokens } from './authStorage';
 import type { AuthSession, AuthUser } from '../types';
@@ -19,7 +19,7 @@ interface AuthContextValue {
   /** `null` = unknown (a session stored before email verification shipped). */
   emailVerified: boolean | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) => Promise<void>;
   loginWithGoogle: (idToken: string, intent: 'login' | 'register') => Promise<void>;
   /** Finishes a password reset: the emailed code proves ownership, so this also signs the user in. */
   completePasswordReset: (email: string, code: string, newPassword: string) => Promise<void>;
@@ -81,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     firstName: string,
     lastName: string,
     contactNumber: string,
+    phone?: PhoneProof,
   ) => {
-    const res = await apiClient.auth.register(email, password, firstName, lastName, contactNumber);
+    const res = await apiClient.auth.register(email, password, firstName, lastName, contactNumber, phone);
     applySession(res);
   }, [applySession]);
 
