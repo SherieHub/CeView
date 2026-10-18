@@ -1,9 +1,11 @@
 package com.ceview.config;
 
+import com.ceview.auth.EmailVerificationFilter;
 import com.ceview.auth.JwtAuthenticationFilter;
 import com.ceview.auth.ProfileCompletionFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,16 +23,22 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final EmailVerificationFilter emailVerificationFilter;
     private final ProfileCompletionFilter profileCompletionFilter;
     private final ObjectMapper objectMapper;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final boolean testSupportEnabled;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter, ProfileCompletionFilter profileCompletionFilter,
-                           ObjectMapper objectMapper, CorsConfigurationSource corsConfigurationSource) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, EmailVerificationFilter emailVerificationFilter,
+                           ProfileCompletionFilter profileCompletionFilter,
+                           ObjectMapper objectMapper, CorsConfigurationSource corsConfigurationSource,
+                           @Value("${ceview.test-support.enabled:false}") boolean testSupportEnabled) {
         this.jwtFilter = jwtFilter;
+        this.emailVerificationFilter = emailVerificationFilter;
         this.profileCompletionFilter = profileCompletionFilter;
         this.objectMapper = objectMapper;
         this.corsConfigurationSource = corsConfigurationSource;
+        this.testSupportEnabled = testSupportEnabled;
     }
 
     @Bean
@@ -38,7 +46,14 @@ public class SecurityConfig {
         http.csrf(c -> c.disable())
             .cors(c -> c.configurationSource(corsConfigurationSource))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+            .authorizeHttpRequests(auth -> {
+                // E2E-only hook that reads the last emailed verification code. The controller
+                // behind it only exists when ceview.test-support.enabled=true; the property is
+                // refused at startup in combination with a real email provider.
+                if (testSupportEnabled) {
+                    auth.requestMatchers("/api/test-support/**").permitAll();
+                }
+                auth
                 // The ad-platform OAuth callback is a browser redirect from
                 // Meta/TikTok — it carries no Authorization header, so tenancy
                 // travels in a single-use state token instead (see AdOAuthState).
@@ -51,10 +66,14 @@ public class SecurityConfig {
                 // enquiry additionally requires a valid in-window click id.
                 .requestMatchers("/r/**", "/api/public/attribution/**").permitAll()
                 .requestMatchers("/api/auth/**", "/actuator/**", "/error").permitAll()
-                .anyRequest().authenticated())
+                .anyRequest().authenticated();
+            })
             .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint()))
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(profileCompletionFilter, JwtAuthenticationFilter.class);
+            // Order matters: an unverified operator is told to verify before being told to
+            // complete their profile.
+            .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class)
+            .addFilterAfter(profileCompletionFilter, EmailVerificationFilter.class);
         return http.build();
     }
 

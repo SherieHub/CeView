@@ -163,6 +163,7 @@ public class ContentGenerationService {
             record.setSelectedMarket(market);
             record.setPlatform(platform);
             record.setGeneratedCaption(firstOption(pContent));
+            record.setGeneratedCaptionEn(firstOptionEn(pContent));
             record.setContentDirection(joinGuide(pContent));
             record.setFramework(framework);
             record.setSource(source);
@@ -232,6 +233,12 @@ public class ContentGenerationService {
     private String firstOption(PlatformContentDto p) {
         if (p == null || p.options() == null || p.options().isEmpty()) return "";
         return p.options().get(0);
+    }
+
+    private String firstOptionEn(PlatformContentDto p) {
+        if (p == null || p.optionsEn() == null || p.optionsEn().isEmpty()) return null;
+        String en = p.optionsEn().get(0);
+        return en == null || en.isBlank() ? null : en;
     }
 
     private String joinGuide(PlatformContentDto p) {

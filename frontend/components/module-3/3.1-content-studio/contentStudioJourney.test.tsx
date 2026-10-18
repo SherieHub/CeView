@@ -51,7 +51,11 @@ vi.mock('../../../services/connectionsStore', () => ({
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
     markets: { forCategory: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
-    content: { generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))) },
+    content: {
+      generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))),
+      // DEMO_DRAFT's caption carries Hangul, so the audit translates it first.
+      translate: vi.fn(() => Promise.resolve({ captionEn: 'Healing begins just like that.', sourceLanguage: 'ko', source: 'groq' })),
+    },
     creativeDirection: { generate: vi.fn(() => Promise.resolve({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } })) },
     compliance: { omcsAnalyze: vi.fn(() => Promise.resolve(MOCK_OMCS)) },
     attributionLinks: { list: vi.fn(() => Promise.resolve([])) },

@@ -211,7 +211,9 @@ never commit real keys.** Start from `backend/.env.example`.
 
 | Variable | Required? | Used by | Notes |
 |---|---|---|---|
-| `GROQ_API_KEY` | **Required** for `fastapi-transformer` | `fastapi-transformer`, `fastapi-sbert` | `fastapi-transformer` raises `RuntimeError` and refuses to start without it — no stub mode. `fastapi-sbert` degrades gracefully instead: without it, AI calls (captions, prescriptive reports) return a deterministic fallback tagged `"source": "fallback"`. Get one at https://console.groq.com/keys. |
+| `GROQ_API_KEY` | **Required** for `fastapi-transformer` | `fastapi-transformer`, `fastapi-sbert` | `fastapi-transformer` raises `RuntimeError` and refuses to start without it — no stub mode. `fastapi-sbert` starts without it, but every AI call (captions, caption translation, prescriptive reports) then answers 503 naming the missing key — there is no canned fallback. Get one at https://console.groq.com/keys. |
+| `GROQ_MODEL` | Optional | `fastapi-sbert` | Groq text model for caption generation. Default `openai/gpt-oss-120b`. Groq retires models periodically — set this to one your key can access if generation starts returning `model_not_found`. |
+| `GROQ_TRANSLATION_MODEL` | Optional | `fastapi-sbert` | Model for the Content Studio **Show English** translation and the *Apply to Korean/Japanese* rewrite. Defaults to `GROQ_MODEL`. Needs **no extra key** — it uses `GROQ_API_KEY`. Set it only to run translation on a different (e.g. cheaper or stronger) Groq model. |
 | `HF_TOKEN` | Optional | `fastapi-sbert` | Used to download the SBERT/E5 encoder from HuggingFace. **Use a read-only token** — nothing in this codebase writes to HuggingFace. Get one at https://huggingface.co/settings/tokens. |
 | `JWT_SECRET` | **Required** except Path B (H2) | `spring-boot` | Signs/verifies login JWTs; a random 32+ char string (e.g. `openssl rand -hex 32`). Only the `h2` profile has a built-in dev value. Everywhere else — including Path A (Docker Compose) — Spring Boot refuses to start if it is unset, blank, or that dev value. |
 | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | **Required** except Path B (H2) | `spring-boot` | Salt for hashing traveller IPs from tracked links; any random string (e.g. `openssl rand -hex 16`). Same rule as `JWT_SECRET`: only the `h2` profile has a dev value. |
@@ -219,6 +221,10 @@ never commit real keys.** Start from `backend/.env.example`.
 | `CEVIEW_ATTRIBUTION_BASE_URL` | Has a default | `spring-boot` | Public origin the `/r/{slug}` redirect is served from; bound to `ceview.attribution.base-url`, defaults to `http://localhost:8080`. This string ends up inside live paid ads, so changing it after ads are running breaks every link already in market. |
 | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | Has a dev default | `spring-boot` | Salt for hashing traveller IPs before they are stored for click debounce. Rotating it resets the debounce because existing `ip_hash` values stop matching new ones. |
 | `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
+| `EMAIL_PROVIDER` | Has a default (`log`) | `spring-boot` | How verification and password-reset codes are delivered. `log` prints the code to the spring-boot log and sends nothing (see §5b); `resend` sends through Resend's API and needs the next two variables. |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Only with `EMAIL_PROVIDER=resend` | `spring-boot` | Resend API key, and the sender, e.g. `CeView <no-reply@yourdomain.com>`, on a domain verified in Resend. The backend refuses to start with `resend` and either missing. Setup: [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md#email-resend). |
+| `CEVIEW_TEST_SUPPORT_ENABLED` | Optional (e2e only) | `spring-boot` | Default `false`. `true` exposes `/api/test-support/email-codes/latest` so Playwright can read emailed codes. The backend refuses to start with this and `EMAIL_PROVIDER=resend`. Leave it off outside e2e. |
+| `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS` | Has a default (`10`) | `spring-boot` | Per-IP cap, per 15 minutes, on the auth endpoints that send email. Also overrides the separate phone-verification cap on register / complete-profile (default `20`, see §6). Raise it for e2e runs, which register many accounts from one address. |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | Path A only, has defaults | `spring-boot` | Already wired in `docker-compose.yml` to the `postgres` service (`ceview`/`ceview`/`ceview`). Only needed manually for Path B + real Postgres (uncommon — Path B normally uses H2). |
 | `VITE_API_BASE_URL` | Optional | frontend | Overrides the default `http://localhost:8080` backend URL. |
 | `VITE_FIREBASE_API_KEY` / `_AUTH_DOMAIN` / `_PROJECT_ID` / `_APP_ID` | Optional | frontend | Firebase web app config, used by the "Continue with Google" button. Without these, the button still renders but the Firebase popup will fail. See §6 below. |
@@ -229,6 +235,33 @@ never commit real keys.** Start from `backend/.env.example`.
 > register the OAuth redirect URI and test the connection end to end. None of
 > them are required for normal local development — the backend starts without
 > them and the ad-connection endpoints report 503.
+
+---
+
+## 5b. Email verification codes in local development
+
+Every new account (and, once, every existing one — the seeded demo operators included) must enter a
+6-digit code emailed to it before it can use the app. With the default `EMAIL_PROVIDER=log` nothing is
+sent: the code is printed in the backend log.
+
+```bash
+# Path A (Docker Compose)
+cd backend && docker compose logs --tail 20 spring-boot | grep -A10 "email:log"
+# Path B (native): it is in the terminal running `mvnw spring-boot:run`
+```
+
+The line looks like `[email:log] to=ramon.delacruz@ceview.local subject="Your CeView verification code"`
+followed by `Your code: 123456`. Sign in as a seeded operator, and the app lands on **Verify your email**;
+enter that code once. Codes last 10 minutes; "Resend code" waits 60 seconds.
+
+To receive real emails locally instead, set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and `EMAIL_FROM`
+(see [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md#email-resend)). Resend's free tier allows 100 emails a
+day. Forgot-password uses the same codes: **Forgot password?** on the sign-in tab.
+
+**Playwright e2e** needs to read those codes without a mailbox: set `CEVIEW_TEST_SUPPORT_ENABLED=true`
+(and, to avoid the per-IP cap, `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS=1000`) in `backend/.env` before
+`docker compose up`. `e2e/global-setup.ts` then verifies the seeded operator through the API. CI sets both
+(`.github/workflows/e2e.yml`).
 
 ---
 
@@ -359,6 +392,43 @@ A brand-new Google sign-in provisions an operator with no contact number yet
 (`/complete-profile`) before reaching the rest of the app; a Google sign-in
 whose verified email matches an existing password account links to that
 account instead of creating a duplicate.
+
+### Phone (SMS OTP) verification setup (optional)
+
+Signup and `/complete-profile` verify the contact number with Firebase Phone
+Auth, reusing the same Firebase project and env vars as Google Sign-In. With
+Firebase configured, the backend only accepts a number that comes from a
+verified Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`.
+Without Firebase env vars, the form falls back to a plain unverified number
+input, so local dev, CI and e2e keep working.
+
+1. Firebase Console → Authentication → Sign-in method → enable **Phone**.
+2. Phone Auth needs the **Blaze** plan (billing account). The first 10 real
+   SMS per day are free; test numbers are unlimited and free. **Set a budget
+   alert.**
+3. Authentication → Settings → **SMS region policy**: allow only the
+   Philippines (`+63`) to prevent SMS-pumping fraud.
+4. Confirm `localhost` and your deployed frontend domain are in Authorized
+   domains.
+5. Authentication → Sign-in method → Phone → **Phone numbers for testing**:
+   add a fictional number (e.g. `+63 917 555 0100` → code `123456`) for
+   dev, demos and e2e. These never send a real SMS.
+
+**Rate limits.** The browser allows 3 code sends per hour (plus a 30 s resend
+cooldown); Firebase enforces its own quotas on top. The backend limits
+`POST /api/auth/register` and `PATCH /api/auth/profile` per client IP (429 +
+`Retry-After`), default 20 requests per 900 s, tunable with
+`ceview.auth.rate-limit.max-requests` / `ceview.auth.rate-limit.window-seconds`
+(`CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS` overrides the count, same as for the email cap).
+Register also counts against the email cap, so both limits apply to it.
+
+**Verify later.** If SMS can't be sent (cap reached, quota, region or outage
+errors), the form offers "Verify later". The number is saved with
+`phone_verified_at = NULL`; the backend accepts this only when the client sends
+`verifyLater: true` with a plausible number. The number can be verified later
+under **Settings → Business profile → Contact number** ("Verify number"), which
+runs the same OTP flow and saves via `PATCH /api/auth/profile`; the section
+reads its status from `GET /api/auth/profile`.
 
 ---
 

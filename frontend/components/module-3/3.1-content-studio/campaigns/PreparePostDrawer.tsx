@@ -13,6 +13,8 @@ import { Check, ImageIcon, Undo2 } from 'lucide-react';
 import Drawer from '../../../shared/Drawer';
 import CompliancePanel from '../CompliancePanel';
 import PublishComposer from '../PublishComposer';
+import { CaptionTranslationToggle, EnglishEditBar } from '../CaptionTranslationToggle';
+import { useEditableCaptionTranslation } from '../useCaptionTranslation';
 import { PLATFORM_CHAR_LIMITS } from '../AIContentMatrixPanel';
 import { STUDIO_PLATFORMS } from '../contentStudioTypes';
 import type { AuditState, PublishDraftState } from '../contentStudioTypes';
@@ -54,6 +56,7 @@ export default function PreparePostDrawer({ post, open, onClose, onPatch, conten
   const draft: PublishDraftState | null = post
     ? {
         caption: post.caption,
+        captionEn: post.captionEn,
         mediaDataUrl: post.mediaDataUrl,
         platforms: [post.platform],
         visibility: 'public',
@@ -66,6 +69,7 @@ export default function PreparePostDrawer({ post, open, onClose, onPatch, conten
   const onDraftChange = (patch: Partial<PublishDraftState>) => {
     const next: Partial<PlannedPost> = {};
     if ('mediaDataUrl' in patch) next.mediaDataUrl = patch.mediaDataUrl ?? null;
+    if ('captionEn' in patch) next.captionEn = patch.captionEn ?? null;
     if ('caption' in patch && patch.caption !== undefined) {
       next.caption = patch.caption;
       next.captionOrigin = 'edited';
@@ -76,6 +80,14 @@ export default function PreparePostDrawer({ post, open, onClose, onPatch, conten
     }
     if (Object.keys(next).length) onPatch(next);
   };
+
+  const translation = useEditableCaptionTranslation(post?.caption ?? '', {
+    knownEnglish: post?.captionEn,
+    platform: post?.platform,
+    onTranslated: (captionEn) => onDraftChange({ captionEn }),
+    onApply: (caption, captionEn) => onDraftChange({ caption, captionEn }),
+  });
+  const viewingEnglish = translation.showing === 'english';
 
   const label = post ? STUDIO_PLATFORMS.find((p) => p.id === post.platform)?.label : '';
   const limit = post ? PLATFORM_CHAR_LIMITS[post.platform] : 0;
@@ -144,14 +156,23 @@ export default function PreparePostDrawer({ post, open, onClose, onPatch, conten
           </div>
 
           <div className="cb-field">
-            <label htmlFor={`cp-prep-caption-${post.id}`}>Caption</label>
+            <div className="cp-field-head">
+              <label htmlFor={`cp-prep-caption-${post.id}`}>Caption</label>
+              <CaptionTranslationToggle state={translation} />
+            </div>
             <textarea
               id={`cp-prep-caption-${post.id}`}
               className="textarea cp-caption"
               rows={7}
-              value={post.caption}
-              onChange={(e) => onDraftChange({ caption: e.target.value })}
+              lang={viewingEnglish ? 'en' : undefined}
+              value={viewingEnglish ? translation.englishDraft : post.caption}
+              onChange={(e) =>
+                viewingEnglish
+                  ? translation.setEnglishDraft(e.target.value)
+                  : onDraftChange({ caption: e.target.value })
+              }
             />
+            <EnglishEditBar state={translation} />
             <div className="cp-field-foot">
               <span>{post.cta ? `Call to action: ${post.cta}` : ''}</span>
               <span className="num" data-over={post.caption.length > limit}>

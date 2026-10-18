@@ -5,6 +5,8 @@
  * accepts every post still suggested in one action — accepting the plan is
  * not approval to publish, which comes after preparation.
  */
+import { CaptionTranslationToggle, EnglishEditBar } from '../CaptionTranslationToggle';
+import { useEditableCaptionTranslation } from '../useCaptionTranslation';
 import './campaign-plan.css';
 import { useState } from 'react';
 import { CalendarDays, Check, CircleSlash, FileText, MapPin, Megaphone, Plus, RefreshCw, Sparkles, Undo2 } from 'lucide-react';
@@ -57,6 +59,14 @@ export default function ContentPlanReview({
 
   const posts = sortedPosts(c.posts);
   const post = c.posts.find((p) => p.id === shownId) ?? null;
+  // English reading aid for the open post's caption; Apply rewrites the native caption from it.
+  const translation = useEditableCaptionTranslation(post?.caption ?? '', {
+    knownEnglish: post?.captionEn,
+    platform: post?.platform,
+    onTranslated: (captionEn) => post && patchPost(post.id, { captionEn }),
+    onApply: (caption, captionEn) => post && patchPost(post.id, { caption, captionEn, captionOrigin: 'edited' }),
+  });
+  const viewingEnglish = translation.showing === 'english';
   const live = posts.filter((p) => p.status !== 'skipped');
   const platforms = [...new Set(live.map((p) => p.platform))];
   const themes = [...new Set(live.map((p) => p.purpose).filter(Boolean))];
@@ -283,6 +293,7 @@ export default function ContentPlanReview({
             <div className="cb-field">
               <div className="cp-field-head">
                 <label htmlFor={`cp-caption-${post.id}`}>Recommended caption</label>
+                <CaptionTranslationToggle state={translation} />
                 {generated && (
                   <button type="button" className="link-inline" onClick={regenerateCaption} disabled={busy}>
                     <Sparkles size={13} aria-hidden="true" /> {busy ? 'Getting a new caption…' : 'Regenerate caption'}
@@ -293,8 +304,13 @@ export default function ContentPlanReview({
                 id={`cp-caption-${post.id}`}
                 className="textarea cp-caption"
                 rows={7}
-                value={post.caption}
-                onChange={(e) => patchPost(post.id, { caption: e.target.value, captionOrigin: 'edited' })}
+                lang={viewingEnglish ? 'en' : undefined}
+                value={viewingEnglish ? translation.englishDraft : post.caption}
+                onChange={(e) =>
+                  viewingEnglish
+                    ? translation.setEnglishDraft(e.target.value)
+                    : patchPost(post.id, { caption: e.target.value, captionOrigin: 'edited' })
+                }
                 placeholder={generated ? 'No caption generated for this post — regenerate one or write your own.' : 'Write a caption for this post.'}
               />
               <div className="cp-field-foot">
@@ -309,6 +325,7 @@ export default function ContentPlanReview({
                   {post.caption.length.toLocaleString()} / {limit.toLocaleString()}
                 </span>
               </div>
+              <EnglishEditBar state={translation} />
               {captionNote && <p className="cp-inline-error" role="alert">{captionNote}</p>}
             </div>
 

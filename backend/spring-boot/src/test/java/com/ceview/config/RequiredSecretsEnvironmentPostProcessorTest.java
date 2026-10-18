@@ -102,6 +102,71 @@ class RequiredSecretsEnvironmentPostProcessorTest {
         assertThatCode(() -> run(postgres(VALID_JWT, VALID_SALT))).doesNotThrowAnyException();
     }
 
+    // ---- email provider consistency (checked in every profile, h2 included) ----
+
+    private static MockEnvironment withEmail(String provider, String apiKey, String from, String testSupport) {
+        MockEnvironment env = postgres(VALID_JWT, VALID_SALT);
+        if (provider != null) env.setProperty("ceview.email.provider", provider);
+        if (apiKey != null) env.setProperty("ceview.email.resend.api-key", apiKey);
+        if (from != null) env.setProperty("ceview.email.from", from);
+        if (testSupport != null) env.setProperty("ceview.test-support.enabled", testSupport);
+        return env;
+    }
+
+    @Test
+    void logProviderNeedsNoEmailCredentials() {
+        assertThatCode(() -> run(withEmail("log", null, null, null))).doesNotThrowAnyException();
+        assertThatCode(() -> run(withEmail(null, null, null, null))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void resendProviderRequiresTheApiKey() {
+        assertThatThrownBy(() -> run(withEmail("resend", "", "CeView <no-reply@example.com>", null)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("RESEND_API_KEY");
+    }
+
+    @Test
+    void resendProviderRequiresTheSenderAddress() {
+        assertThatThrownBy(() -> run(withEmail("resend", "re_key", null, null)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("EMAIL_FROM");
+    }
+
+    @Test
+    void resendProviderWithCredentialsIsAccepted() {
+        assertThatCode(() -> run(withEmail("resend", "re_key", "CeView <no-reply@example.com>", "false")))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void theCodeReadingHookCanNeverRunAgainstARealEmailProvider() {
+        assertThatThrownBy(() -> run(withEmail("resend", "re_key", "CeView <no-reply@example.com>", "true")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CEVIEW_TEST_SUPPORT_ENABLED");
+    }
+
+    @Test
+    void theCodeReadingHookIsFineWithTheLogProvider() {
+        assertThatCode(() -> run(withEmail("log", null, null, "true"))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void emailGuardAlsoAppliesToTheH2Profile() {
+        MockEnvironment env = withEmail("resend", "re_key", "CeView <no-reply@example.com>", "true");
+        env.setActiveProfiles("h2");
+
+        assertThatThrownBy(() -> run(env)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void emailErrorMessageNeverContainsTheApiKey() {
+        assertThatThrownBy(() -> run(withEmail("resend", "re_super_secret_key", null, null)))
+                .isInstanceOf(IllegalStateException.class)
+                .satisfies(e -> org.assertj.core.api.Assertions.assertThat(e.getMessage())
+                        .doesNotContain("re_super_secret_key"));
+    }
+
     @Test
     void errorMessageNeverContainsTheRejectedValue() {
         assertThatThrownBy(() -> run(postgres(RequiredSecretsEnvironmentPostProcessor.DEV_JWT_SECRET,

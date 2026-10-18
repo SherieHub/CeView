@@ -469,6 +469,13 @@ export function unusedCaption(content: ContentResponse | null, platform: StudioP
   return options.find((o) => o.trim() && !used.has(o)) ?? null;
 }
 
+/** The English meaning generated alongside `caption`, or null when there is none. */
+export function englishForCaption(content: ContentResponse | null, platform: StudioPlatformId, caption: string): string | null {
+  const set = content?.captions[platform];
+  const i = set?.options.indexOf(caption) ?? -1;
+  return (i >= 0 && set?.optionsEn?.[i]) || null;
+}
+
 function visualFallback(beat: Beat, item: string): string {
   return {
     introduce: 'A wide shot that shows where you are — the setting, the view, the way in.',
@@ -555,6 +562,7 @@ export function buildPostPlan({ campaign: c, profile, content }: PlanInput): Pla
       purpose: BEAT_PURPOSE[beat],
       direction: text.direction,
       caption: caption ?? '',
+      captionEn: caption ? englishForCaption(content, platform, caption) : null,
       captionOrigin: caption ? 'generated' : 'none',
       visual,
       cta: text.cta,

@@ -9,10 +9,15 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 
 | Method | Path | Frontend trigger | Returns |
 |---|---|---|---|
-| POST | `/api/auth/register` | Create Account form | `{ operatorId, token, profileCompleted }` |
-| POST | `/api/auth/login` | Sign In form | `{ operatorId, token, profileCompleted }` |
+| POST | `/api/auth/register` | Create Account form — body `{ firstName, lastName, email, password, contactNumber }`; password must be 8-72 bytes with a letter and a digit (400 `WEAK_PASSWORD`). Emails a 6-digit verification code | `{ operatorId, token, profileCompleted, emailVerified }`; 400 `EMAIL_TAKEN` if the email belongs to a verified, Google, or pre-verification account (an unverified sign-up made after verification shipped is replaced instead) |
+| POST | `/api/auth/login` | Sign In form | `{ operatorId, token, profileCompleted, emailVerified }` — an unverified account still gets a token, but see [Email verification](#email-verification--password-reset) |
 | POST | `/api/auth/google` | "Continue with Google" — body `{ idToken, intent }` (a Firebase ID token, and `"login"` or `"register"` matching the active tab) | `{ operatorId, token, profileCompleted }`, or 503 if Google sign-in isn't configured (no `FIREBASE_CREDENTIALS_JSON`), 401 on an invalid/expired token, 409 `google_account_already_registered` when `intent: "register"` targets an already-linked Google account, 404 `google_account_not_registered` when `intent: "login"` targets one that was never registered |
 | PATCH | `/api/auth/profile` | CompleteProfilePage — body `{ contactNumber }` | `{ profileCompleted: true }` |
+| POST | `/api/auth/email-verification/send` | VerifyEmailPage (on arrival, and "Resend code") — auth required | 202 `{ sentTo, resendAvailableInSeconds }`; 409 `ALREADY_VERIFIED`; 429 `RESEND_COOLDOWN` / `SEND_LIMIT` (+ `retryAfterSeconds`); 503 `EMAIL_SEND_FAILED` |
+| POST | `/api/auth/email-verification/verify` | VerifyEmailPage — body `{ code }`, auth required | `{ emailVerified: true }`; 400 `INVALID_CODE` (+ `attemptsRemaining`) / `CODE_EXPIRED` / `CODE_LOCKED` / `NO_ACTIVE_CODE` |
+| PATCH | `/api/auth/email` | VerifyEmailPage "Wrong email? Change it" — body `{ email }`, auth required, unverified accounts only | `{ email }` and a new code is mailed to it; 400 `EMAIL_TAKEN` / `SAME_EMAIL`; 409 `ALREADY_VERIFIED` |
+| POST | `/api/auth/password-reset/request` | ForgotPasswordPage step 1 — body `{ email }`, public | 202 `{ sentTo, resendAvailableInSeconds }`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` (no password to reset); same 429/503 codes as `send` |
+| POST | `/api/auth/password-reset/confirm` | ForgotPasswordPage step 2 — body `{ email, code, newPassword }`, public | `{ operatorId, token, profileCompleted, emailVerified: true }` (signs the user in); 400 `WEAK_PASSWORD` / `INVALID_CODE` / `CODE_EXPIRED` / `CODE_LOCKED` / `NO_ACTIVE_CODE`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` |
 | POST | `/api/classification/analyze` | UniquenessCalibrationForm "Analyze" | `{ categories: CategoryAllocation[] }` |
 | POST | `/api/classification/uniqueness` | Onboarding Step 5 "Compute uniqueness score" | `UniquenessResponse` — see [Uniqueness response](#uniqueness-response) |
 | GET  | `/api/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
@@ -23,7 +28,9 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/forecasting/ensure?maxAgeHours=` | `DashboardView` initial staleness gate | `204 No Content` or readiness error |
 | POST | `/api/forecasting/analyze` | `DashboardView` “Refresh forecast” | `{ markets: MarketDto[] }` |
 | GET  | `/api/forecasting/status` | `DashboardView` degraded-mode banner | `{ available: boolean }` |
-| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance) |
+| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance). Each platform's `captions.<platform>` carries `options` (Korea/Japan captions are written entirely in Korean/Japanese) and a parallel `optionsEn` — a meaning-faithful English translation of each option (`""` = none, e.g. USA) |
+| POST | `/api/content/translate` | “Show English” toggle (edited captions and captions with no `optionsEn`) | req `{ caption, platform? }` → `{ captionEn, sourceLanguage, source }`. 400 `MOD31_TRANSLATION_VALIDATION` (blank / >8000 chars / bad platform); 503 `MOD31_TRANSLATION_UNAVAILABLE` / `MOD31_TRANSLATION_FAILED` |
+| POST | `/api/content/localize` | “Apply to Korean/Japanese” after editing the English | req `{ captionEn, targetLanguage: "ko"\|"ja", platform?, originalCaption? }` → `{ caption, captionEn, targetLanguage, source }`. Same error codes; 400 for any other `targetLanguage` |
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
 | POST | `/api/compliance/evaluate` | Smart Optimization Audit (multipart) | same shape, accepts media upload |
@@ -114,9 +121,23 @@ operator-scoped query; the uniqueness cohort is the only reader that wants them.
 `BusinessProfileRepository.findAllNonReference()` is the cross-operator read that enforces
 this — `findAll()` must not be used for tenant-facing work.
 
+## Email verification & password reset
+
+Every account must prove it owns its email with a 6-digit code before it can use the app.
+
+- **Gate.** An unverified operator can still sign in and receive a JWT, but `EmailVerificationFilter` answers every route outside `/api/auth/**`, `/actuator/**`, `/error` and the public attribution routes with `403 { error: "email not verified", code: "EMAIL_NOT_VERIFIED" }`. It runs before `ProfileCompletionFilter`. The frontend routes such a user to `/verify-email`.
+- **Verified means.** `email_verified_at` is set by a correct code, by a completed password reset, or by Google sign-in when Firebase reports `email_verified: true` (no code). Linking Google to an existing *unverified* password account verifies it and clears its password.
+- **Existing accounts.** The migration leaves `email_verified_at` NULL for everyone, seeded demo operators included, so each must verify once. It also sets `created_before_verification = TRUE` for them, which makes them ineligible for takeover (below).
+- **Codes.** 6 random digits, stored only as a BCrypt hash, valid 10 minutes, locked after 5 wrong guesses, one active code per account and purpose (a new code supersedes the old), 60 s between sends, at most 5 sends per hour per account and purpose. All values are `ceview.email-code.*` in `application.yml`. A code is only valid while it still matches the account's current email.
+- **Takeover.** `POST /register` for an email held by an account that is unverified, created after verification shipped, password-based and not linked to Google deletes that account and creates the new one (a fresh `operatorId`, so the old JWT 401s). Any other existing account returns `EMAIL_TAKEN`.
+- **Per-IP limit.** `register`, `email-verification/send`, `PATCH /email` and `password-reset/request` share a per-IP budget (default 10 per 15 minutes, `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS`) to protect the email provider's free quota: `429 { code: "RATE_LIMITED", retryAfterSeconds }` with a `Retry-After` header.
+- **Error shape.** Failures in these flows are `{ error, code, ...details }` (`error` is a human sentence; clients switch on `code`).
+- **Delivery.** `EMAIL_PROVIDER=log` (default) writes the code to the backend log; `resend` sends through Resend's HTTPS API (Render's free tier blocks SMTP). See `RUNNING.md` and `docs/DEPLOY_RENDER.md`.
+- **E2E hook.** With `CEVIEW_TEST_SUPPORT_ENABLED=true`, `GET /api/test-support/email-codes/latest?email=` returns `{ code, subject }` for the last email sent to an address. The backend refuses to start with this on and `EMAIL_PROVIDER=resend`.
+
 ## Notes
 
-- **Auth is open in scaffolding**: `SecurityConfig` permits everything under `/api/**` so the existing frontend (which has no login flow yet) can hit endpoints. Lock this down once the React side has an auth screen.
+- **Auth**: every route except `/api/auth/**`, `/actuator/**`, `/error` and the public attribution routes (`/r/**`, `/api/public/attribution/**`, the ad-platform OAuth callback) requires a valid JWT, and — see above — a verified email. (An earlier revision of this file described auth as open; that is no longer true.)
 - **Notifications and markets are envelope-wrapped** (`{ notifications: [...] }`, `{ markets: [...] }`) — the frontend currently reads bare arrays from constants, so when `geminiService.ts` is swapped over, unwrap one level.
 - **PES is computed Spring-side** (no AI call) — pure formula per SDD §4.2.
 - **Metrics are computed Spring-side** — SDD §4.1 specifies the math, no model needed.

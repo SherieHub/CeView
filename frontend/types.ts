@@ -24,6 +24,23 @@ export interface AuthTokens {
    * provisioned Google sign-in). See services/auth.tsx's profileCompleted.
    */
   profileCompleted: boolean;
+  /**
+   * Whether the operator has proven they own their email (6-digit code, or
+   * Google). `false` sends them to /verify-email and the backend 403s every
+   * other route; absent on sessions stored before verification shipped, which
+   * is treated as "unknown" until the first EMAIL_NOT_VERIFIED response.
+   */
+  emailVerified?: boolean;
+  /** Persisted so the verify screen can name the address after a reload (no /me endpoint yet). */
+  email?: string;
+}
+
+/** What a successful login / register / google / password-reset call hands to AuthProvider. */
+export interface AuthSession {
+  accessToken: string;
+  profileCompleted: boolean;
+  emailVerified: boolean;
+  user: AuthUser;
 }
 
 export interface BusinessProfile {
@@ -433,6 +450,11 @@ export interface CaptionMetadata {
 export interface PlatformCaptions {
   optionNames: string[];
   options: string[];
+  /**
+   * Meaning-faithful English of each option, parallel to `options`. `''` means there
+   * is none (English-market captions); absent on older responses and fixtures.
+   */
+  optionsEn?: string[];
   optionMetadata: CaptionMetadata[];
   guide: string[];
 }
@@ -461,6 +483,24 @@ export interface ContentResponse {
     tiktok: PlatformCaptions;
     facebook: PlatformCaptions;
   };
+}
+
+/** Languages a caption can be translated from / re-localised into. */
+export type CaptionLanguage = 'ko' | 'ja';
+
+/** POST /api/content/translate */
+export interface CaptionTranslation {
+  captionEn: string;
+  sourceLanguage: string;
+  source: ContentSource;
+}
+
+/** POST /api/content/localize */
+export interface CaptionLocalization {
+  caption: string;
+  captionEn: string;
+  targetLanguage: CaptionLanguage;
+  source: ContentSource;
 }
 
 export interface OmcsAuditResult {
@@ -555,6 +595,8 @@ export interface PublishedPost {
   date: string;
   platform: PlatformId;
   caption: string;
+  /** English reading aid for a non-English caption. Never published. */
+  captionEn?: string | null;
   status: 'published' | 'draft' | 'scheduled';
   reach: number;
   likes: number;

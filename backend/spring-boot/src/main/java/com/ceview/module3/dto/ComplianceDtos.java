@@ -27,6 +27,8 @@ public class ComplianceDtos {
      */
     public record OmcsAuditRequest(
         String caption,
+        /** Optional English translation; used only for the profile-similarity sub-score. */
+        String captionEn,
         String imageUrl,
         Map<String, Object> businessProfile,
         Map<String, Object> recommendations

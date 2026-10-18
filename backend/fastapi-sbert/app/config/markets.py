@@ -28,6 +28,20 @@ MARKET_DISPLAY_NAMES: dict[str, str] = {
     "usa":   "USA",
 }
 
+# Language every caption for a market is written in, keyed by the display name
+# Spring sends as target_market (ContentGenerationService.MARKET_DISPLAY).
+CAPTION_LANGUAGE_NAMES: dict[str, str] = {
+    "South Korea": "Korean (한국어)",
+    "Japan":       "Japanese (日本語)",
+    "USA":         "American English",
+}
+
+# Languages a caption can be translated from / re-localised into.
+LANGUAGE_NAMES: dict[str, str] = {
+    "ko": "Korean",
+    "ja": "Japanese",
+}
+
 # Platform the Module 4 report recommends per market (channel analysis, not
 # fabricated output — spec D6). Accepts both full names and ISO-style codes.
 REPORT_PLATFORM_BY_MARKET: dict[str, str] = {

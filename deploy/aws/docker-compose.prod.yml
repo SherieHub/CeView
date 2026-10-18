@@ -63,6 +63,8 @@ services:
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # English-translation model for Content Studio; blank falls back to GROQ_MODEL.
+      GROQ_TRANSLATION_MODEL: ${GROQ_TRANSLATION_MODEL:-}
       OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
       HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
@@ -114,6 +116,14 @@ services:
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
+      # Email verification / password reset codes, sent through Resend's HTTPS API.
+      # EMAIL_PROVIDER is required (no default) on purpose: with the 'log' fallback no
+      # email is sent and the codes only land in CloudWatch, so nobody could verify.
+      # A missing parameter fails this deploy's health check and rolls back instead.
+      # Never set CEVIEW_TEST_SUPPORT_ENABLED here (Spring refuses it alongside Resend).
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:?EMAIL_PROVIDER missing from Parameter Store (set it to resend)}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       # URLs derived from DOMAIN (deploy.env).
       CORS_ALLOWED_ORIGINS: https://${DOMAIN}
       FRONTEND_BASE_URL: https://${DOMAIN}
@@ -122,10 +132,11 @@ services:
       # Caddy is the only proxy in front; Tomcat trusts Docker's private range,
       # so rate limiting and click hashing see the real client IP.
       SERVER_FORWARD_HEADERS_STRATEGY: native
-      INGESTION_ENABLED: "true"
+      # The nightly 00:00 UTC sweep spends SerpApi searches on every business.
+      # Add /ceview/prod/INGESTION_ENABLED=false in Parameter Store to stop it
+      # (docs/DEPLOY_AWS.md A2); forecasts then refresh when a dashboard is opened.
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       CEVIEW_INGESTION_ADMIN_TRIGGER_ENABLED: "false"
-      # Add /ceview/prod/MODULE2_MARKETS in Parameter Store to override.
-      MODULE2_MARKETS: ${MODULE2_MARKETS:-korea,japan,usa}
     # Deliberately not waiting on fastapi-sbert: its first start can spend
     # minutes downloading E5, and Spring degrades gracefully meanwhile.
     depends_on:

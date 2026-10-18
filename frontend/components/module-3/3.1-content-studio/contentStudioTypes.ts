@@ -21,6 +21,11 @@ export interface PublishDraftState {
   /** Set when the post is scheduled rather than published now — local yyyy-mm-ddThh:mm. */
   scheduledFor?: string | null;
   caption: string;
+  /**
+   * English reading aid for `caption` when it is not English. Cleared whenever the
+   * caption text changes; never published.
+   */
+  captionEn?: string | null;
   mediaDataUrl: string | null;
   platforms: PlatformId[];
   visibility: 'public' | 'private';

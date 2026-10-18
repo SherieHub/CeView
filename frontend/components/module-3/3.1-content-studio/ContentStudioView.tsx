@@ -49,6 +49,7 @@ import type { AttributionLink, ContentResponse, Market, PublishedPost } from '..
 // §Non-goals). The board therefore starts empty and only shows fixture posts when
 // the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
+import { getTranslation, seedFromContent } from './captionTranslationStore';
 import { useConnections } from '../../../services/connectionsStore';
 import { useOptionalPosts } from '../../../services/postStore';
 import { useProfile } from '../../../services/profileContext';
@@ -193,7 +194,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         categories: profile.categories,
         trend: marketTrend,
       })
-      .then((c) => { if (!cancelled) setContent(c); })
+      .then((c) => {
+        if (cancelled) return;
+        seedFromContent(c);
+        setContent(c);
+      })
       .catch((e) => { if (!cancelled) setContentError(e); })
       .finally(() => { if (!cancelled) setContentLoading(false); });
 
@@ -229,7 +234,13 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   useEffect(() => { setSelectedOption(null); }, [activePlatform]);
 
   const patchDraft = (patch: Partial<PublishDraftState>) => {
-    setDraft((current) => ({ ...current, ...patch }));
+    setDraft((current) => {
+      const next = { ...current, ...patch };
+      // A translation describes one exact caption: changing the text without
+      // supplying its new English leaves the old one pointing at words that are gone.
+      if ('caption' in patch && !('captionEn' in patch) && patch.caption !== current.caption) next.captionEn = null;
+      return next;
+    });
     // Caption and media ONLY. The audit scores those two against each other, so
     // editing either invalidates its verdict — but the destination list does
     // not, and resetting on it was a dead end: the modal is where platforms are
@@ -241,7 +252,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   const stageCaption = (index: number, text: string) => {
     setSelectedOption(index);
     setStageToken((t) => t + 1);
-    patchDraft({ caption: text, agreementChecked: false });
+    patchDraft({
+      caption: text,
+      captionEn: content?.captions[activePlatform]?.optionsEn?.[index] || null,
+      agreementChecked: false,
+    });
   };
 
   // The Visual guide's four shots for the chosen caption (captionShots.ts) —
@@ -297,6 +312,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     const date = scheduledFor ? scheduledFor.slice(0, 10) : new Date().toISOString().slice(0, 10);
     const created = draft.platforms.map((platform, index): PublishedPost => ({
       id: `published-${Date.now()}-${index}`, date, platform, caption: draft.caption,
+      captionEn: draft.captionEn ?? getTranslation(draft.caption) ?? null,
       status: scheduledFor ? 'scheduled' : 'published',
       reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [],
       mediaUrl: draft.mediaDataUrl,
@@ -413,6 +429,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
             draft={draft}
             audit={audit}
             onAuditChange={setAudit}
+            onDraftChange={patchDraft}
             recommendations={recommendations}
             onEditCaption={() => setQpStep('draft')}
             onManageMedia={() => setQpStep('attach')}

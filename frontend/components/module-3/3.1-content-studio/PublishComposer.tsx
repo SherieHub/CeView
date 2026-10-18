@@ -15,6 +15,8 @@ import { Facebook, FileText, ImagePlus, Instagram, Maximize2, Target, Trash2, Up
 import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import Modal from '../../shared/Modal';
 import CaptionToolbar from './CaptionToolbar';
+import { CaptionTranslationToggle, EnglishEditBar } from './CaptionTranslationToggle';
+import { useEditableCaptionTranslation } from './useCaptionTranslation';
 import { PLATFORM_CHAR_LIMITS } from './AIContentMatrixPanel';
 import type { ComposerSlotProps, PublishDraftState } from './contentStudioTypes';
 
@@ -52,6 +54,16 @@ export default function PublishComposer({
   const reason = blockReason(draft);
   const overLimit = draft.caption.length > limit;
 
+  // The English view edits a reading aid; "Apply" rewrites the native caption
+  // from it. What is published is always draft.caption.
+  const translation = useEditableCaptionTranslation(draft.caption, {
+    knownEnglish: draft.captionEn,
+    platform,
+    onTranslated: (captionEn) => onDraftChange({ captionEn }),
+    onApply: (caption, captionEn) => onDraftChange({ caption, captionEn, agreementChecked: false }),
+  });
+  const viewingEnglish = translation.showing === 'english';
+
   /**
    * Grow the caption field to its content so the whole caption is visible
    * without scrolling — these run to several paragraphs and the operator is
@@ -76,7 +88,7 @@ export default function PublishComposer({
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
-  }, [draft.caption]);
+  }, [draft.caption, viewingEnglish, translation.englishDraft]);
 
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -117,29 +129,42 @@ export default function PublishComposer({
           {/* The changing `key` remounts the element, which is what restarts a
               one-shot CSS animation — without it the flash plays once and never
               again on subsequent selections. */}
+          {translation.visible && (
+            <div className="cap-lang-bar">
+              <CaptionTranslationToggle state={translation} />
+            </div>
+          )}
           <textarea
             id="staged-caption"
-            aria-label="Your caption"
+            aria-label={viewingEnglish ? 'Your caption (English translation)' : 'Your caption'}
+            lang={viewingEnglish ? 'en' : undefined}
             ref={captionRef}
             className={`textarea textarea--caption ${overLimit ? 'is-invalid' : ''}`}
             data-flash={stageToken != null && stageToken > 0}
             key={`staged-${stageToken ?? 0}`}
-            value={draft.caption}
-            onChange={(event) => onDraftChange({ caption: event.target.value, agreementChecked: false })}
+            value={viewingEnglish ? translation.englishDraft : draft.caption}
+            onChange={(event) =>
+              viewingEnglish
+                ? translation.setEnglishDraft(event.target.value)
+                : onDraftChange({ caption: event.target.value, agreementChecked: false })
+            }
             placeholder="Approve a matrix option or write your own caption."
           />
           <div className="cap-count caption-toolbar-bar" data-over={overLimit}>
-            <CaptionToolbar
-              value={draft.caption}
-              onChange={(caption) => onDraftChange({ caption, agreementChecked: false })}
-              textareaRef={captionRef}
-              platform={platform}
-              fieldKey={stageToken}
-            />
+            {!viewingEnglish && (
+              <CaptionToolbar
+                value={draft.caption}
+                onChange={(caption) => onDraftChange({ caption, agreementChecked: false })}
+                textareaRef={captionRef}
+                platform={platform}
+                fieldKey={stageToken}
+              />
+            )}
             <span className="num">
               Characters: {draft.caption.length.toLocaleString()} / {limit.toLocaleString()}
             </span>
           </div>
+          <EnglishEditBar state={translation} />
         </div>
         )}
 

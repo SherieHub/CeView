@@ -8,10 +8,11 @@
  * Real endpoints are added as each screen card wires its backend.
  */
 import { loadTokens } from './authStorage';
+import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { ApiError } from './apiError';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
-import { MOCK_CONTENT } from './fixtures/content';
+import { MOCK_CONTENT, fixtureTranslation } from './fixtures/content';
 import { MOCK_OMCS } from './fixtures/omcs';
 import { MOCK_CREATIVE_DIRECTION } from './fixtures/creativeDirection';
 import { MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
@@ -35,6 +36,7 @@ import type {
   WorkspaceMemberFixture,
   PlatformConnection,
   PostMetric,
+  AuthSession,
   BusinessProfileDto,
   CategoryAllocation,
   UniquenessResult,
@@ -45,6 +47,9 @@ import type {
   ManualIngestResponse,
   PrescriptiveReport,
   ContentResponse,
+  CaptionLanguage,
+  CaptionLocalization,
+  CaptionTranslation,
   OmcsAuditResult,
   CreativeDirection,
   AdAccountOption,
@@ -77,6 +82,46 @@ function delay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
+/** Backend session body shared by login / register / google / password-reset confirm. */
+interface SessionDto {
+  token: string;
+  operatorId: string;
+  profileCompleted: boolean;
+  /** Absent only from a backend that predates email verification; treated as verified then. */
+  emailVerified?: boolean;
+}
+
+interface CodeSentDto {
+  sentTo: string;
+  resendAvailableInSeconds: number;
+}
+
+function toSession(dto: SessionDto, email: string | null): AuthSession {
+  return {
+    accessToken: dto.token,
+    profileCompleted: dto.profileCompleted,
+    emailVerified: dto.emailVerified ?? true,
+    // No /me endpoint yet — businessName isn't returned, and Google sign-in's
+    // email comes back inside the JWT rather than this body (hence null there).
+    user: { id: dto.operatorId, email, businessName: null },
+  };
+}
+
+function fixtureSession(email: string | null): AuthSession {
+  return {
+    accessToken: 'mock-access-token-123',
+    profileCompleted: true,
+    emailVerified: true,
+    user: { id: 'usr-1', email, businessName: null },
+  };
+}
+
+/** Evidence accompanying a contact number: a Firebase token, or an explicit "verify later" opt-out. */
+export interface PhoneProof {
+  phoneIdToken?: string;
+  verifyLater?: boolean;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const tokens = loadTokens();
   const method = init?.method ?? 'GET';
@@ -97,7 +142,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       body = undefined;
     }
-    throw new ApiError({ status: res.status, method, path, body });
+    const error = new ApiError({ status: res.status, method, path, body });
+    // The backend gates every non-auth route on a verified email. Tell AuthProvider so it can
+    // route to /verify-email, which also repairs a session stored before verification shipped.
+    if (res.status === 403 && error.code === 'EMAIL_NOT_VERIFIED') {
+      window.dispatchEvent(new Event(EMAIL_NOT_VERIFIED_EVENT));
+    }
+    throw error;
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -272,6 +323,38 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify(input),
           }),
+    /**
+     * Meaning-faithful English for a Korean/Japanese caption (the "Show English"
+     * toggle). Fixture mode answers from the fixture's own `optionsEn`.
+     */
+    translate: (input: { caption: string; platform?: string }) =>
+      USE_FIXTURES
+        ? delay<CaptionTranslation>(fixtureTranslation(input.caption))
+        : request<CaptionTranslation>('/api/content/translate', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
+    /**
+     * Rewrites owner-edited English as a natural Korean/Japanese caption
+     * ("Apply to Korean/Japanese"). `originalCaption` keeps the existing voice.
+     */
+    localize: (input: {
+      captionEn: string;
+      targetLanguage: CaptionLanguage;
+      platform?: string;
+      originalCaption?: string;
+    }) =>
+      USE_FIXTURES
+        ? delay<CaptionLocalization>({
+            caption: input.originalCaption || input.captionEn,
+            captionEn: input.captionEn,
+            targetLanguage: input.targetLanguage,
+            source: 'groq',
+          })
+        : request<CaptionLocalization>('/api/content/localize', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
     /** Operator approves the generated set for a market. */
     approve: (market: string) =>
       USE_FIXTURES
@@ -291,6 +374,11 @@ export const apiClient = {
      */
     omcsAnalyze: (input: {
       caption: string;
+      /**
+       * English translation of `caption`, when it is not English. Used only for the
+       * profile-similarity sub-score; the image checks still read `caption`.
+       */
+      captionEn?: string;
       imageUrl: string;
       recommendations: Record<string, unknown>;
     }) =>
@@ -526,49 +614,72 @@ export const apiClient = {
   auth: {
     login: (email: string, password: string) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/login', {
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            // No /me endpoint yet — businessName isn't returned by login, only
-            // populated once one exists (see AuthProvider's mount comment).
-            user: { id: operatorId, email, businessName: null },
-          })),
-    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) =>
+          }).then((dto) => toSession(dto, email)),
+    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/register', {
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, firstName, lastName, contactNumber }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            user: { id: operatorId, email, businessName: null },
-          })),
+            body: JSON.stringify({ email, password, firstName, lastName, contactNumber, ...phone }),
+          }).then((dto) => toSession(dto, email)),
     /** Verifies a Firebase ID token server-side and mints the same session shape as login/register. */
     google: (idToken: string, intent: 'login' | 'register') =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: false, user: { id: 'usr-1', email: null, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/google', {
+        ? delay({ ...fixtureSession(null), profileCompleted: false })
+        : request<SessionDto>('/api/auth/google', {
             method: 'POST',
             body: JSON.stringify({ idToken, intent }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            // Google sign-in's email comes back inside the JWT, not this
-            // response body — callers that need it read it off the token.
-            user: { id: operatorId, email: null, businessName: null },
-          })),
+          }).then((dto) => toSession(dto, null)),
+    /** Emails a fresh 6-digit code to the signed-in operator. Rejects with code RESEND_COOLDOWN / SEND_LIMIT / EMAIL_SEND_FAILED. */
+    sendVerificationCode: () =>
+      USE_FIXTURES
+        ? delay({ sentTo: 'you@example.com', resendAvailableInSeconds: 60 })
+        : request<CodeSentDto>('/api/auth/email-verification/send', { method: 'POST' }),
+    /** Rejects with code INVALID_CODE (+ attemptsRemaining) / CODE_EXPIRED / CODE_LOCKED / NO_ACTIVE_CODE. */
+    verifyEmail: (code: string) =>
+      USE_FIXTURES
+        ? delay({ emailVerified: true })
+        : request<{ emailVerified: boolean }>('/api/auth/email-verification/verify', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+          }),
+    /** Fixes a mistyped address while unverified; the backend mails a new code to it. Rejects with EMAIL_TAKEN / SAME_EMAIL. */
+    changeEmail: (email: string) =>
+      USE_FIXTURES
+        ? delay({ email })
+        : request<{ email: string }>('/api/auth/email', { method: 'PATCH', body: JSON.stringify({ email }) }),
+    /** Rejects with ACCOUNT_NOT_FOUND / GOOGLE_ACCOUNT / RESEND_COOLDOWN / SEND_LIMIT. */
+    requestPasswordReset: (email: string) =>
+      USE_FIXTURES
+        ? delay({ sentTo: email, resendAvailableInSeconds: 60 })
+        : request<CodeSentDto>('/api/auth/password-reset/request', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+          }),
+    /** Completing a reset also verifies the email and signs the user in (same session shape as login). */
+    confirmPasswordReset: (email: string, code: string, newPassword: string) =>
+      USE_FIXTURES
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/password-reset/confirm', {
+            method: 'POST',
+            body: JSON.stringify({ email, code, newPassword }),
+          }).then((dto) => toSession(dto, email)),
+    /** The caller's contact number and whether it has been SMS-verified (settings "Contact number"). */
+    getProfile: () =>
+      USE_FIXTURES
+        ? delay({ contactNumber: '+63 917 000 0000' as string | null, phoneVerified: false })
+        : request<{ contactNumber: string | null; phoneVerified: boolean }>('/api/auth/profile'),
     /** The one-time "complete your profile" step (see ProfileCompletionGate). */
-    completeProfile: (contactNumber: string) =>
+    completeProfile: (contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay({ profileCompleted: true })
         : request<{ profileCompleted: boolean }>('/api/auth/profile', {
             method: 'PATCH',
-            body: JSON.stringify({ contactNumber }),
+            body: JSON.stringify({ contactNumber, ...phone }),
           }),
   },
 };

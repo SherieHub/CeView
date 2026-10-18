@@ -12,24 +12,34 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
 import { useAuth } from '../../services/auth';
+import { ApiError } from '../../services/apiError';
+import PhoneVerifyField, { type VerifiedPhone } from './PhoneVerifyField';
 
 export default function CompleteProfilePage() {
   const { markProfileCompleted } = useAuth();
   const navigate = useNavigate();
-  const [contactNumber, setContactNumber] = useState('');
+  const [phone, setPhone] = useState<VerifiedPhone | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!phone) return;
     setError(null);
     setSubmitting(true);
     try {
-      await apiClient.auth.completeProfile(contactNumber);
+      await apiClient.auth.completeProfile(phone.contactNumber, {
+        phoneIdToken: phone.phoneIdToken,
+        verifyLater: phone.verifyLater,
+      });
       markProfileCompleted();
       navigate('/dashboard', { replace: true });
-    } catch {
-      setError('Something went wrong saving your contact number. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? 'Too many attempts. Please wait a few minutes and try again.'
+          : 'Something went wrong saving your contact number. Please try again.',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -44,25 +54,13 @@ export default function CompleteProfilePage() {
         </p>
 
         <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label className="field-label" htmlFor="complete-profile-contact-number">
-              Contact number
-            </label>
-            <input
-              id="complete-profile-contact-number"
-              type="tel"
-              required
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              className="input"
-            />
-          </div>
+          <PhoneVerifyField id="complete-profile-contact-number" variant="card" onChange={setPhone} />
           {error && (
             <p className="body-xs mb-3" role="alert" style={{ color: 'var(--color-critical-text)' }}>
               {error}
             </p>
           )}
-          <button type="submit" disabled={submitting} className="btn-cta w-full">
+          <button type="submit" disabled={submitting || !phone} className="btn-cta w-full">
             Continue
           </button>
         </form>

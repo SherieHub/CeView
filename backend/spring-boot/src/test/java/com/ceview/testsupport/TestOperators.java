@@ -4,6 +4,7 @@ import com.ceview.auth.MsmeOperator;
 import com.ceview.auth.MsmeOperatorRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
@@ -30,7 +31,8 @@ public class TestOperators {
     /**
      * Insert a fully-onboarded operator row for {@code operatorId}; a no-op if it
      * already exists. A {@code contactNumber} is set so {@code ProfileCompletionFilter}
-     * (which gates on {@code MsmeOperator.isProfileCompleted()}) lets the request through.
+     * (which gates on {@code MsmeOperator.isProfileCompleted()}) lets the request through,
+     * and the email is marked verified so {@code EmailVerificationFilter} does too.
      */
     public UUID create(UUID operatorId) {
         if (repo.existsById(operatorId)) {
@@ -40,6 +42,8 @@ public class TestOperators {
         op.setOperatorId(operatorId);
         op.setEmail("op-" + operatorId + "@example.com");
         op.setContactNumber("+639170000000");
+        // EmailVerificationFilter 403s every non-auth route for an unverified operator.
+        op.setEmailVerifiedAt(OffsetDateTime.now());
         repo.save(op);
         return operatorId;
     }
