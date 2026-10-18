@@ -28,7 +28,9 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/forecasting/ensure?maxAgeHours=` | `DashboardView` initial staleness gate | `204 No Content` or readiness error |
 | POST | `/api/forecasting/analyze` | `DashboardView` “Refresh forecast” | `{ markets: MarketDto[] }` |
 | GET  | `/api/forecasting/status` | `DashboardView` degraded-mode banner | `{ available: boolean }` |
-| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance) |
+| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance). Each platform's `captions.<platform>` carries `options` (Korea/Japan captions are written entirely in Korean/Japanese) and a parallel `optionsEn` — a meaning-faithful English translation of each option (`""` = none, e.g. USA) |
+| POST | `/api/content/translate` | “Show English” toggle (edited captions and captions with no `optionsEn`) | req `{ caption, platform? }` → `{ captionEn, sourceLanguage, source }`. 400 `MOD31_TRANSLATION_VALIDATION` (blank / >8000 chars / bad platform); 503 `MOD31_TRANSLATION_UNAVAILABLE` / `MOD31_TRANSLATION_FAILED` |
+| POST | `/api/content/localize` | “Apply to Korean/Japanese” after editing the English | req `{ captionEn, targetLanguage: "ko"\|"ja", platform?, originalCaption? }` → `{ caption, captionEn, targetLanguage, source }`. Same error codes; 400 for any other `targetLanguage` |
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
 | POST | `/api/compliance/evaluate` | Smart Optimization Audit (multipart) | same shape, accepts media upload |

@@ -267,7 +267,7 @@ Archetype 3 — "Storytelling, Immersive & Emotional"   (Aspirational)
 
 **The 4 Caption Factors** force holistic caption construction across four dimensions simultaneously:
 - **Factor 1 (Core Business Context)**: Tourism category metadata, unique services, UVP, and Cebu's destination-specific appeal.
-- **Factor 2 (Market & Cultural Localisation)**: Native-language integration — Hangul for Korean (힐링여행, 호캉스, 세부여행); Kanji/Katakana for Japanese (絶景, 癒し, セブ島, 非日常); casual American English with FOMO vocabulary for USA.
+- **Factor 2 (Market & Cultural Localisation)**: Captions are written **entirely** in the market's language — natural Korean (존댓말; vocabulary such as 힐링여행, 호캉스, 세부여행), natural Japanese (です・ます; 絶景, 癒し, セブ島, 非日常), or casual American English with FOMO vocabulary for USA. Business name, URLs and codes stay in Latin script; hashtags are mostly native plus a few English discovery tags. Each Korean/Japanese caption also carries `caption_en`, a meaning-faithful English translation (see *Caption translation* in `3.1-content-generation/README.md`).
 - **Factor 3 (Psychological Vectors)**: Per-archetype emotional activation — Archetype 1 uses FOMO/urgency; Archetype 2 uses exclusivity/value; Archetype 3 uses escapism/tropical healing via the tension→threshold→release emotional arc.
 - **Factor 4 (Platform Mechanics)**: Character limits, truncation windows, link policies, and hashtag counts strictly enforced.
 
@@ -288,14 +288,14 @@ Archetype 3 — "Storytelling, Immersive & Emotional"   (Aspirational)
 | Links | "Link in bio" only | Embed clickable URL in CTA | "Link in bio" only |
 | Hashtags | 10–30, native-language, at bottom | Max 1–3 only | Strictly 3–5 trending |
 
-**Output schema** (6-field object per archetype, per platform):
+**Output schema** (7-field object per archetype, per platform — `caption_en` is last and `""` for USA):
 ```json
 {
   "facebook":  [ { "core_business_context": "...", "market_cultural_localization": "...",
                    "psychological_elements": "...", "creative_tone_atmosphere": "...",
-                   "algorithmic_platform_architecture": "...", "caption": "..." }, ×3 ],
-  "instagram": [ { same 6 fields }, ×3 ],
-  "tiktok":    [ { same 6 fields }, ×3 ]
+                   "algorithmic_platform_architecture": "...", "caption": "...", "caption_en": "..." }, ×3 ],
+  "instagram": [ { same 7 fields }, ×3 ],
+  "tiktok":    [ { same 7 fields }, ×3 ]
 }
 ```
 
@@ -388,6 +388,8 @@ class AgentLLMModel:
 |--------|------|------|-------------|
 | `POST` | `/api/content/generate` | `permitAll` | Generate 3-platform × 3-archetype caption matrix |
 | `POST` | `/api/content/approve` | `permitAll` | Approve content for a market (UC-3.1 step 14) |
+| `POST` | `/api/content/translate` | JWT | Native caption → meaning-faithful English (stateless; fastapi-sbert `/internal/generation/translate`) |
+| `POST` | `/api/content/localize` | JWT | Owner-edited English → natural Korean/Japanese caption (stateless; `/internal/generation/localize`) |
 | `POST` | `/api/creative-direction/generate/{profileId}` | `permitAll` | Generate visual direction (requires 3.1 approved) |
 | `POST` | `/api/creative-direction/approve/{profileId}` | `permitAll` | Approve creative direction output |
 | `POST` | `/api/compliance/omcs-analyze` | `permitAll` | OMCS compliance audit — stateless passthrough to FastAPI omcs_agent (Submodule 3.3) |
@@ -483,7 +485,7 @@ class AgentLLMModel:
 
 | Table | Key Columns | Purpose |
 |-------|-------------|---------|
-| `tbl_localized_promotional_content` | `content_id UUID PK`, `business_profile_id FK`, `selected_market VARCHAR`, `platform VARCHAR`, `generated_caption TEXT`, `content_direction TEXT`, `hashtags TEXT`, `cta TEXT`, `tone_suggestion TEXT`, `framework VARCHAR`, `source VARCHAR`, `approval_status BOOLEAN`, `approved_at TIMESTAMPTZ` | Per-platform generated content rows; `approval_status` is the 3.1 → 3.2 dependency gate |
+| `tbl_localized_promotional_content` | `content_id UUID PK`, `business_profile_id FK`, `selected_market VARCHAR`, `platform VARCHAR`, `generated_caption TEXT`, `generated_caption_en TEXT` (English of option 0; NULL for English markets), `content_direction TEXT`, `hashtags TEXT`, `cta TEXT`, `tone_suggestion TEXT`, `framework VARCHAR`, `source VARCHAR`, `approval_status BOOLEAN`, `approved_at TIMESTAMPTZ` | Per-platform generated content rows; `approval_status` is the 3.1 → 3.2 dependency gate |
 | `tbl_content_generation_log` | `content_log_id UUID PK`, `business_profile_id FK`, `generation_status VARCHAR`, `diagnostics TEXT`, `logged_at TIMESTAMPTZ` | Generation audit trail per request |
 | `tbl_creative_direction_output` | `creative_direction_id UUID PK`, `business_profile_id FK`, `selected_market VARCHAR`, `shot_list_recommendations TEXT`, `visual_recommendations TEXT`, `lighting_suggestions TEXT`, `moodboard_references TEXT`, `platform_recommendations TEXT`, `visual_tone TEXT`, `approval_status BOOLEAN`, `approved_at TIMESTAMPTZ` | Creative direction storage (operator reference / display) |
 | `tbl_creative_direction_log` | `creative_log_id UUID PK`, `business_profile_id FK`, `generation_status VARCHAR`, `diagnostics TEXT`, `logged_at TIMESTAMPTZ` | Creative direction audit trail |
@@ -506,7 +508,8 @@ Schema migration: `V5__module3_content_creative_columns.sql`.
 | **Frontend framework** | React 18 + TypeScript, Vite | Single view (`ContentStudioView`) owns all Module 3 state; `approvedIndices`, `approvedCaptions` are lifted to the view level so all panels share consistent state |
 | **Caption matrix UI** | `AIContentMatrixPanel` + `CopywritingOptionCard` | Inline editing with `editOverrides` state map; character counter with platform-specific limits |
 | **Agent framework** | LangGraph (`StateGraph`, `ainvoke`) | Two-node sequential workflow — service filtering (Node 1) then caption matrix generation (Node 2); async `ainvoke()` integrates naturally with FastAPI's async request handler |
-| **Agent LLM** | `langchain_groq.ChatGroq` (`llama-3.3-70b-versatile`, temperature=0.7) | Higher temperature (0.7) for creative caption writing diversity; thread-safe singleton via `threading.Lock()` prevents concurrent initialization race conditions |
+| **Translation LLM** | `langchain_groq.ChatGroq` via `TranslationLLMModel` (`GROQ_TRANSLATION_MODEL`, default `GROQ_MODEL`; temperature=0.3, max_tokens=8192) | Lower temperature keeps translations faithful yet natural; a separate wrapper (not the `AgentLLMModel` singleton) lets translation run on its own model |
+| **Agent LLM** | `langchain_groq.ChatGroq` (`GROQ_MODEL`, default `openai/gpt-oss-120b`, temperature=0.7, max_tokens=16384) | Higher temperature (0.7) for creative caption writing diversity; thread-safe singleton via `threading.Lock()` prevents concurrent initialization race conditions |
 | **Groq client (creative)** | `openai.OpenAI` (Groq OpenAI-compatible API, temperature=0.4) | Lower temperature (0.4) for deterministic factual evaluation; `response_format={"type": "json_object"}` ensures clean JSON without markdown fences |
 | **Cultural research** | SerpAPI (`google-search-results` package) → curated template fallback | Live search enriches the Groq prompt with current traveler behavior; curated templates covering all 4 UC-3.1 data points ensure quality output even without SerpAPI access |
 | **Visual guides** | `gemini_client.get_platform_guides(market)` — in-memory dict | Market × platform curated visual direction (Korea/Japan/USA × Instagram/TikTok/Facebook/Naver); no Groq call needed for guides — reduces RPM consumption |

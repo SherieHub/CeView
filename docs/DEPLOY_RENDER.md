@@ -140,7 +140,9 @@ Its `Dockerfile` is already self-contained (no changes needed).
 
    | Key | Value |
    |---|---|
-   | `GROQ_API_KEY` | your key from https://console.groq.com/keys (optional here — degrades to fallback responses without it) |
+   | `GROQ_API_KEY` | your key from https://console.groq.com/keys (required for captions, translation and reports — without it those endpoints answer 503 naming the missing key) |
+   | `GROQ_MODEL` | optional — Groq text model for captions (default `openai/gpt-oss-120b`) |
+   | `GROQ_TRANSLATION_MODEL` | optional — model for the Content Studio English translation toggle; defaults to `GROQ_MODEL`. No extra key needed |
    | `HF_TOKEN` | your token from https://huggingface.co/settings/tokens (optional, avoids HF rate limits on the model download) |
    | `DATABASE_URL` | `postgresql://ceview:<password>@<db-host>:5432/ceview` |
 

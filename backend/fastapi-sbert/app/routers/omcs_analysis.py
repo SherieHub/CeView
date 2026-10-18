@@ -68,8 +68,8 @@ class OmcsAnalysisResponse(BaseModel):
 async def analyze(body: ComplianceInputClass) -> OmcsAnalysisResponse:
     """Run the omcs_agent compliance audit and return its full evaluation state."""
     log.info(
-        "omcs.analyze caption_len=%d image_url_present=%s recommendations_keys=%s",
-        len(body.caption), bool(body.image_url), list((body.recommendations or {}).keys()),
+        "omcs.analyze caption_len=%d caption_en_present=%s image_url_present=%s recommendations_keys=%s",
+        len(body.caption), bool((body.caption_en or "").strip()), bool(body.image_url), list((body.recommendations or {}).keys()),
     )
 
     try:

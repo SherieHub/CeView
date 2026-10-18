@@ -18,6 +18,7 @@ import ContentPlanReview from './ContentPlanReview';
 import PreparePosts from './PreparePosts';
 import StrategyReview from './StrategyReview';
 import { buildPostPlan, classifyMarket, unusedCaption } from './campaignRecommendations';
+import { getTranslation } from '../captionTranslationStore';
 import { planBasis } from './campaignTypes';
 import type { CampaignDraft, CampaignStage, PlannedPost } from './campaignTypes';
 import type { useCaptionPool } from './useCampaignData';
@@ -98,7 +99,7 @@ export default function CampaignPlanner({
       }
     }
     if (!next) return false;
-    onPatchPost(postId, { caption: next, captionOrigin: 'generated' });
+    onPatchPost(postId, { caption: next, captionEn: getTranslation(next) ?? null, captionOrigin: 'generated' });
     return true;
   };
 

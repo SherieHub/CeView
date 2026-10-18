@@ -114,6 +114,8 @@ export interface PlannedPost {
   purpose: string;
   direction: string;
   caption: string;
+  /** English reading aid for a non-English caption. Cleared when the caption text changes. */
+  captionEn?: string | null;
   captionOrigin: CaptionOrigin;
   visual: string;
   cta: string;
@@ -299,6 +301,11 @@ export const CALENDAR_LABELS: Record<CalendarState, string> = {
 
 /** An audit and sign-off apply only to the exact content that was reviewed. */
 export function reconcilePost(previous: PlannedPost, next: PlannedPost): PlannedPost {
+  // A translation describes one exact caption. If the text moved and no new English
+  // came with it, the old English now describes words that are gone.
+  if (previous.caption !== next.caption && previous.captionEn === next.captionEn) {
+    next = { ...next, captionEn: null };
+  }
   const changed = (['caption', 'mediaDataUrl', 'platform', 'visual'] as const)
     .some((key) => previous[key] !== next[key]);
   if (!changed) return next;

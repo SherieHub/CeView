@@ -18,18 +18,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Maximize2, Minimize2 } from 'lucide-react';
 import type { PlatformCaptions } from '../../../types';
+import { CaptionTranslationToggle } from './CaptionTranslationToggle';
+import { useCaptionTranslationSet } from './useCaptionTranslation';
 
 export interface CaptionOptionGridProps {
   captions: PlatformCaptions;
+  /** Which platform these options are for; sent with on-demand translations. */
+  platform?: string;
   /** Index of the option currently staged, or null. Owned by the parent. */
   selectedIndex: number | null;
   onSelect: (index: number, text: string) => void;
 }
 
-export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }: CaptionOptionGridProps) {
+export default function CaptionOptionGrid({ captions, platform, selectedIndex, onSelect }: CaptionOptionGridProps) {
   const [maximized, setMaximized] = useState<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // The English toggle swaps what is READ; selecting always stages the native text.
+  const translation = useCaptionTranslationSet(captions.options, captions.optionsEn, platform);
 
   const optionName = (index: number) => captions.optionNames[index] ?? `Option ${index + 1}`;
 
@@ -85,6 +92,7 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
                 <span className="badge badge--teal">Option {index + 1}</span>
                 <span className="cap-length">{text.length} characters</span>
                 <div className="cap-head-act">
+                  <CaptionTranslationToggle state={translation.stateAt(index)} label={optionName(index)} />
                   {isSelected && (
                     <span className="chip chip--success">
                       <Check aria-hidden="true" /> Staged
@@ -110,8 +118,12 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
               </div>
               <h3 className="cap-title">{optionName(index)}</h3>
 
-              <p className="cap-body" data-testid={`cap-body-${index}`}>
-                {text}
+              <p
+                className="cap-body"
+                data-testid={`cap-body-${index}`}
+                lang={translation.stateAt(index).showing === 'english' ? 'en' : undefined}
+              >
+                {translation.displayAt(index)}
               </p>
 
               <div className="cap-actions">
@@ -143,12 +155,15 @@ export default function CaptionOptionGrid({ captions, selectedIndex, onSelect }:
           <div className="cap-expanded-head">
             <span className="badge badge--teal">Option {maximized + 1}</span>
             <span className="cap-length">{captions.options[maximized].length} characters</span>
+            <CaptionTranslationToggle state={translation.stateAt(maximized)} label={optionName(maximized)} stopPropagation />
             <button type="button" className="icon-btn cap-zoom" aria-label="Back to all options" onClick={close}>
               <Minimize2 size={15} aria-hidden="true" />
             </button>
           </div>
           <h3 id="cap-expanded-title" className="cap-expanded-title">{optionName(maximized)}</h3>
-          <p className="cap-full">{captions.options[maximized]}</p>
+          <p className="cap-full" lang={translation.stateAt(maximized).showing === 'english' ? 'en' : undefined}>
+            {translation.displayAt(maximized)}
+          </p>
           {/* Selecting from the expanded view is the point: having read the
               whole thing, the reader should not have to go back and hunt for
               the card they just read. */}

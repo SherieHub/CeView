@@ -70,6 +70,12 @@ shot, warm low-contrast filter, 4:5 portrait ratio…"; TikTok: "9:16 vertical, 
 
 - Staged caption textarea (editable directly, independent of the option cards — an operator can write
   from scratch instead of approving an option).
+- **English toggle** — when the caption contains Hangul, Kana or Han, a **Show English** / **Show original** control swaps
+  the box to a meaning-faithful English reading aid (not published). The same toggle appears on the option cards (and their
+  expanded view), the campaign plan / prepare-post caption editors, the Validate step, the publish modal (box and device
+  preview, with an "English preview" note) and the Content Library row and detail. In editable boxes the English can be edited;
+  **Apply to Korean/Japanese** rewrites the native caption from it, and leaving with unapplied edits asks to apply or discard.
+  Editing the native text discards the old translation. Selecting, copying and publishing always use the native caption.
 - Pubmat dropzone — drag or click, PNG/JPG/WEBP up to 20MB, preview with remove.
 - **Publish-to platform picker** — one toggle per platform. **Deviation from the prototype**:
   platforms not connected in [Settings → Platforms](settings-platforms.md) render disabled with an

@@ -38,6 +38,8 @@ import Modal from '../../shared/Modal';
 import { useDismiss } from '../../shared/useDismiss';
 import { formatSchedule } from './schedule';
 import type { PublishedPost } from '@/types';
+import { CaptionTranslationToggle } from './CaptionTranslationToggle';
+import { useCaptionTranslation } from './useCaptionTranslation';
 import type { BoardSlotProps } from './contentStudioTypes';
 
 type Filter = 'all' | 'draft' | 'scheduled' | 'published';
@@ -143,6 +145,7 @@ const STATUS_LABEL: Record<PublishedPost['status'], string> = {
 
 function PostRow({ post, isNew, onOpen }: { post: PublishedPost; isNew: boolean; onOpen: () => void }) {
   const name = PLATFORM_NAMES[post.platform] ?? post.platform;
+  const translation = useCaptionTranslation(post.caption, { knownEnglish: post.captionEn, platform: post.platform });
   return (
     // The whole row opens the post — a pointer convenience; the View button is
     // the keyboard and screen-reader control.
@@ -164,7 +167,10 @@ function PostRow({ post, isNew, onOpen }: { post: PublishedPost; isNew: boolean;
             <b>{name}</b>
             <span className="num">{post.date}</span>
           </p>
-          <p className="lib-caption">{post.caption}</p>
+          <p className="lib-caption" lang={translation.showing === 'english' ? 'en' : undefined}>
+            {translation.showing === 'english' ? translation.english : post.caption}
+          </p>
+          <CaptionTranslationToggle state={translation} />
         </div>
       </div>
       <div className="lib-cell lib-cell--perf"><Performance post={post} /></div>
@@ -212,6 +218,10 @@ function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | 
   const scheduled = post?.status === 'scheduled';
   const others = siblings.map((s) => PLATFORM_NAMES[s.platform] ?? s.platform).join(' and ');
   const hasResults = Boolean(post && published && post.reach > 0);
+  const translation = useCaptionTranslation(post?.caption ?? '', {
+    knownEnglish: post?.captionEn,
+    platform: post?.platform,
+  });
   return (
     <Modal
       open={post != null}
@@ -251,7 +261,10 @@ function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | 
               </div>
 
               <p className="post-detail-label">Caption</p>
-              <p className="post-detail-caption">{post.caption}</p>
+              <CaptionTranslationToggle state={translation} />
+              <p className="post-detail-caption" lang={translation.showing === 'english' ? 'en' : undefined}>
+                {translation.showing === 'english' ? translation.english : post.caption}
+              </p>
 
               <p className="post-detail-label">Results</p>
               {hasResults ? (

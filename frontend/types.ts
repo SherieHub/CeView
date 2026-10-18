@@ -450,6 +450,11 @@ export interface CaptionMetadata {
 export interface PlatformCaptions {
   optionNames: string[];
   options: string[];
+  /**
+   * Meaning-faithful English of each option, parallel to `options`. `''` means there
+   * is none (English-market captions); absent on older responses and fixtures.
+   */
+  optionsEn?: string[];
   optionMetadata: CaptionMetadata[];
   guide: string[];
 }
@@ -478,6 +483,24 @@ export interface ContentResponse {
     tiktok: PlatformCaptions;
     facebook: PlatformCaptions;
   };
+}
+
+/** Languages a caption can be translated from / re-localised into. */
+export type CaptionLanguage = 'ko' | 'ja';
+
+/** POST /api/content/translate */
+export interface CaptionTranslation {
+  captionEn: string;
+  sourceLanguage: string;
+  source: ContentSource;
+}
+
+/** POST /api/content/localize */
+export interface CaptionLocalization {
+  caption: string;
+  captionEn: string;
+  targetLanguage: CaptionLanguage;
+  source: ContentSource;
 }
 
 export interface OmcsAuditResult {
@@ -572,6 +595,8 @@ export interface PublishedPost {
   date: string;
   platform: PlatformId;
   caption: string;
+  /** English reading aid for a non-English caption. Never published. */
+  captionEn?: string | null;
   status: 'published' | 'draft' | 'scheduled';
   reach: number;
   likes: number;

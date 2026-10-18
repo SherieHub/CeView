@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '../../../../services/apiClient';
+import { seedFromContent } from '../captionTranslationStore';
 import type { BusinessProfile, ContentResponse, Market } from '@/types';
 import type { MarketOpportunity } from './campaignTypes';
 
@@ -63,6 +64,7 @@ export function useCaptionPool() {
         // The same two values Quick Post sends: is this market surging now.
         trend: input.opportunity === 'surge' ? 'surging' : 'steady',
       });
+      seedFromContent(result);
       setPools((p) => ({ ...p, [campaignId]: [...(p[campaignId] ?? []), result] }));
       return result;
     },
@@ -79,11 +81,16 @@ export function useCaptionPool() {
     if (!list.length) return null;
     const [first, ...rest] = list;
     const captions = { ...first.captions };
+    // optionsEn runs parallel to options; a set without it is padded with '' so the
+    // indexes of later sets still line up.
+    const padEn = (set: ContentResponse['captions'][keyof ContentResponse['captions']]) =>
+      set.optionsEn ?? set.options.map(() => '');
     for (const r of rest) {
       for (const key of Object.keys(captions) as (keyof ContentResponse['captions'])[]) {
         captions[key] = {
           optionNames: [...captions[key].optionNames, ...r.captions[key].optionNames],
           options: [...captions[key].options, ...r.captions[key].options],
+          optionsEn: [...padEn(captions[key]), ...padEn(r.captions[key])],
           optionMetadata: [...captions[key].optionMetadata, ...r.captions[key].optionMetadata],
           guide: [...new Set([...captions[key].guide, ...r.captions[key].guide])],
         };
