@@ -139,6 +139,20 @@ class AttributionMintTest {
     }
 
     @Test
+    void thePipelinesMarketIdsBecomeCountryCodesTravellersRecognise() {
+        // ForecastingService passes MarketCatalog ids, not ISO codes. Clipping
+        // "korea" / "japan" to two letters used to give KO- and JA-.
+        assertEquals("KR-DIVE-1019", codeService.mintForWindow(
+                profileId, "Dive Shop", "korea", windowOpen, UUID.randomUUID()).getCode());
+        assertEquals("JP-DIVE-1019", codeService.mintForWindow(
+                profileId, "Dive Shop", "japan", windowOpen, UUID.randomUUID()).getCode());
+        assertEquals("US-DIVE-1019", codeService.mintForWindow(
+                profileId, "Dive Shop", "usa", windowOpen, UUID.randomUUID()).getCode());
+        // An unmapped market still gets a sayable two-letter prefix.
+        assertEquals("CH-DIVE-1019", AttributionCodeService.deriveCode("china", "Dive Shop", windowOpen));
+    }
+
+    @Test
     void aCodeCollisionIsSuffixedRatherThanThrowing() {
         // Two categories sharing a four-letter prefix in the same market and
         // window. A raw constraint violation here would roll back the entire

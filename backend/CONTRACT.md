@@ -23,7 +23,7 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/forecasting/ensure?maxAgeHours=` | `DashboardView` initial staleness gate | `204 No Content` or readiness error |
 | POST | `/api/forecasting/analyze` | `DashboardView` “Refresh forecast” | `{ markets: MarketDto[] }` |
 | GET  | `/api/forecasting/status` | `DashboardView` degraded-mode banner | `{ available: boolean }` |
-| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance) |
+| POST | `/api/content/generate` | ContentStudioView load — optional `demandAlertId` in the body pins which surge window's attribution code the captions carry; without it the market's live-or-upcoming window is used (CVW-42) | full `MOCK` shape (market, framework, captions, compliance); every caption option ends with the code's call to action when a window exists |
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
 | POST | `/api/compliance/evaluate` | Smart Optimization Audit (multipart) | same shape, accepts media upload |
@@ -32,6 +32,12 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | GET  | `/api/analytics/pes/{campaignId}` | PESComputationBoard | `{ overallScore, label, breakdown }` |
 | POST | `/api/analytics/report` | AIActionPlanReport "Generate" | `{ executiveSummary, lowestMetric, lowestMetricMeaning, recommendations, otherAreasImprove, weakestStage, secondaryLeaks }` |
 | GET  | `/api/analytics/report/{id}/pdf` | "Download PDF" | application/pdf stream |
+| GET  | `/api/attribution/codes` | Performance → Code-redemption evidence; dashboard quick log | `AttributionCodeSummary[]` — each code with bookings split by capture kind (`ENQUIRY`, `BOOKING_PLATFORM`, `CLICK_MATCHED`, `CODE_LOGGED`), plus `reportedBookings` (null until a week in the window is submitted) and `trackedExceedsReported` |
+| GET  | `/api/attribution/tracked?periodStart=&periodEnd=` | IngestionForm Bookings hint (dates `YYYY-MM-DD`, inclusive, Asia/Manila) | `TrackedPeriodSummary` — tracked bookings by kind and tracked revenue; 400 when `periodEnd` precedes `periodStart` |
+| GET  | `/api/attribution/lift/{attributionCodeId}` | Performance → Statistical lift | `AttributionLift` — per-week bookings/revenue in the window vs. the 28 days before, `status` `OK`/`UPCOMING`/`NO_WINDOW_DATA`/`NO_BASELINE`; 404 for another operator's code |
+| POST | `/api/attribution/redemptions` | "Log a booking" — body `{ attributionCodeId?, clickId?, bookings?, revenue?, eventAt? }` | `201 AttributionRedemption`; 400 when neither id is sent or `eventAt` is in the future, 404 for another operator's code/click, 409 when the click already has a booking |
+| GET  | `/api/attribution/redemptions` | Code-redemption evidence "Recent bookings" | `AttributionRedemption[]`, newest first (max 50) |
+| DELETE | `/api/attribution/redemptions/{id}` | "Remove" on a recent booking | `204`; 409 for enquiry- or sync-sourced rows, which the operator did not author |
 
 ## New endpoints — UI/UX overhaul (specified, not yet implemented)
 

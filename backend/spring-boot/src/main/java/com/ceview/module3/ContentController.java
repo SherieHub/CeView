@@ -48,7 +48,10 @@ public class ContentController {
         String businessName,
         String description,
         List<String> categories,
-        String trend
+        String trend,
+        // Optional: the surge alert Content Studio was opened from. Pins which
+        // window's attribution code the captions carry (CVW-42).
+        UUID demandAlertId
     ) {}
 
     /**
@@ -67,7 +70,8 @@ public class ContentController {
                 req.businessName(),
                 req.description(),
                 req.categories(),
-                req.trend());
+                req.trend(),
+                req.demandAlertId());
     }
 
     /**

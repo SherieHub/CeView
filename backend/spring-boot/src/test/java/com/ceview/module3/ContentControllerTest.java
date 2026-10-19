@@ -82,7 +82,7 @@ class ContentControllerTest {
                 "framework",
                 new CaptionsDto(null, null, null),
                 ContentSource.GROQ);
-        when(generationService.generate(any(), anyString(), any(), any(), any(), any()))
+        when(generationService.generate(any(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(dummy);
         when(approvalService.approveForMarket(any(), anyString()))
                 .thenReturn(List.of(UUID.randomUUID()));
