@@ -80,3 +80,27 @@ Design: [`docs/superpowers/specs/2026-09-20-link-attribution-design.md`](../supe
 Screen: [`screens/link-attribution.md`](screens/link-attribution.md).
 Developer setup: [`LINK_ATTRIBUTION_SETUP.md`](../../LINK_ATTRIBUTION_SETUP.md) (owned by Track 3,
 not yet in the repository).
+
+## Conversion capture — codes and logged bookings (CVW-42)
+
+Every caption generated for a market with a live or upcoming surge window ends with a call to action
+quoting that window's attribution code (e.g. `KR-DIVE-1019`), in the market's language. When a
+customer quotes it, staff press **Log a booking** in the Performance screen's code-redemption panel
+at the moment of the booking, and can attach it to a recorded ad click so the creative is known.
+The panel splits each code's bookings by how they were captured (enquiry form, booking platform,
+click-matched, code logged), and operator-logged rows can be removed if logged by mistake.
+
+A code whose tracked bookings exceed what the operator reported for the same weeks is flagged in
+the panel, and the weekly form shows the period's tracked bookings under its Bookings field, warning
+(never blocking) when the typed total is lower. The same quick entry is on the dashboard
+("Took a booking?"), since that is where staff land.
+
+**Statistical lift** compares the operator's reported bookings and revenue per week during a code's
+window with the 28 days before it. A baseline under four weeks is flagged; missing data is shown as
+a status, never as an invented percentage.
+
+The AI report receives the same split for its window (`bookingProvenance`) and is required to say
+how much of the booking total is tracked versus self-reported, and to qualify its confidence.
+
+Research, and why FareHarbor, POS and the operator survey are not yet built:
+[`CONVERSION_CAPTURE_RESEARCH.md`](CONVERSION_CAPTURE_RESEARCH.md).
