@@ -14,9 +14,10 @@
  * owns the page's single main landmark.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, PenLine } from 'lucide-react';
+import { Image as ImageIcon, Megaphone, PenLine } from 'lucide-react';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
+import AdPlannerDrawer from './AdPlannerDrawer';
 import AdUrlBlock from './AdUrlBlock';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
 import type { VisualGuideStatus } from './CampaignBriefDrawer';
@@ -121,6 +122,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // irreversible action here, and the destinations and authorisation it needs
   // are decisions worth making beside a live preview of the result.
   const [publishOpen, setPublishOpen] = useState(false);
+  const [adPlannerOpen, setAdPlannerOpen] = useState(false);
 
   useEffect(() => {
     return onDisconnect((platform) => {
@@ -205,6 +207,9 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         description: profile.description,
         categories: profile.categories,
         trend: marketTrend,
+        // Pins the caption's attribution code to this alert's window. The backend
+        // ignores it when the picked market differs from the alert's own.
+        demandAlertId: target.alert.id,
       })
       .then((c) => { if (!cancelled) setContent(c); })
       .catch((e) => { if (!cancelled) setContentError(e); })
@@ -396,6 +401,33 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
             onPublished={() => setPublishOpen(true)}
           />
         </div>
+
+        {/* CVW-43 — for operators who have never run a paid ad. Available as
+            soon as there is a caption to promote: the staged one, or the
+            last post published (publishing clears the draft). */}
+        <section className="studio-section" aria-labelledby="promote-ad-title">
+          <div className="card flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-1 basis-72 items-start gap-3">
+              <span className="conn-ico" aria-hidden="true"><Megaphone /></span>
+              <div className="studio-head-text">
+                <h2 id="promote-ad-title" className="heading-md">Promote as an ad</h2>
+                <p className="body-sm">
+                  Never run a Facebook or TikTok ad? Say who you want to reach — CeView builds the plan
+                  and walks you through Ads Manager, field by field.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-primary shrink-0"
+              onClick={() => setAdPlannerOpen(true)}
+              disabled={!(draft.caption.trim() || posts[0]?.caption)}
+              title={draft.caption.trim() || posts[0]?.caption ? undefined : 'Choose a caption first'}
+            >
+              Plan an ad
+            </button>
+          </div>
+        </section>
       </div>
 
       {/* A SIBLING of .studio-flow, never a descendant — the flow carries a
@@ -430,6 +462,21 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         captionChosen={Boolean(draft.caption.trim())}
         onApprove={approveAndGenerateGuide}
       />
+
+      {/* Mounted only while open: it fetches cost rates and codes on open, and
+          its Settings link needs the router, which a closed drawer has no
+          reason to touch. */}
+      {adPlannerOpen && (
+        <AdPlannerDrawer
+          open
+          onClose={() => setAdPlannerOpen(false)}
+          alert={target.alert}
+          market={target.market}
+          caption={draft.caption.trim() ? draft.caption : (posts[0]?.caption ?? '')}
+          mediaDataUrl={draft.mediaDataUrl}
+          link={attributionLink}
+        />
+      )}
 
       <PublishModal
         open={publishOpen}

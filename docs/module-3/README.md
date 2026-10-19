@@ -36,6 +36,19 @@ below.
 | [`3.2-creative-direction/`](3.2-creative-direction/) | `POST /api/creative-direction/generate/{profileId}` | Groq visual direction |
 | [`3.3-compliance/`](3.3-compliance/) | `POST /api/compliance/evaluate` | OMCS audit |
 
+## Promote as an ad (CVW-43)
+
+For operators who have never run a paid ad. A **Promote as an ad** card in Content Studio opens a
+side drawer: the operator says what they want ("get seen by 5,000 people in South Korea", booking-
+page visits, or Messenger conversations) and picks Facebook & Instagram or TikTok. CeView fills in
+the plan — objective, location, language, surge-window dates, ad text with the attribution code,
+the tracked link — and walks them through Ads Manager step by step with a copy button on every
+value. The budget estimate comes only from the operator's own past ad costs
+(`GET /api/analytics/cost-rates`); with no history it says so instead of guessing.
+
+CeView does **not** create the ad on the platform itself yet. Research, and why that part is
+blocked: [`MSME_AD_SUPPORT_RESEARCH.md`](MSME_AD_SUPPORT_RESEARCH.md).
+
 ## Diagrams
 
 [`class.puml`](class.puml) · [`sequence.puml`](sequence.puml) · [`er.puml`](er.puml) — module-level,

@@ -46,21 +46,23 @@ SET @WE = TIMESTAMP WITH TIME ZONE '2026-10-31 00:00:00+08:00';
 
 -- ---------------------------------------------------------------- codes
 -- Every redemption row needs a code (NOT NULL FK), even LINK-sourced ones.
+-- target_market uses the pipeline's MarketCatalog ids ('korea', 'japan', 'usa'), the
+-- same keys Content Studio sends, so these codes are stamped onto generated captions.
 INSERT INTO tbl_attribution_code
     (attribution_code_id, business_profile_id, category, target_market, code, window_start, window_end, created_at)
 VALUES
-    ('7a5d0000-0000-0000-0000-000000000001', @RAMON,  'T5 Seed', 'KR', 'T5SEED-KR', @WS, @WE, CURRENT_TIMESTAMP),
-    ('7a5d0000-0000-0000-0000-000000000002', @RAMON,  'T5 Seed', 'JP', 'T5SEED-JP', @WS, @WE, CURRENT_TIMESTAMP),
-    ('7a5d0000-0000-0000-0000-000000000004', @FERDIE, 'T5 Seed', 'KR', 'T5SEED-FB', @WS, @WE, CURRENT_TIMESTAMP);
+    ('7a5d0000-0000-0000-0000-000000000001', @RAMON,  'T5 Seed', 'korea', 'T5SEED-KR', @WS, @WE, CURRENT_TIMESTAMP),
+    ('7a5d0000-0000-0000-0000-000000000002', @RAMON,  'T5 Seed', 'japan', 'T5SEED-JP', @WS, @WE, CURRENT_TIMESTAMP),
+    ('7a5d0000-0000-0000-0000-000000000004', @FERDIE, 'T5 Seed', 'korea', 'T5SEED-FB', @WS, @WE, CURRENT_TIMESTAMP);
 
 -- ---------------------------------------------------------------- links
 INSERT INTO tbl_attribution_link
     (link_id, business_profile_id, category, target_market, slug, window_start, window_end, created_at)
 VALUES
-    ('7a5a0000-0000-0000-0000-000000000001', @RAMON,  'T5 Seed', 'KR', 't5-split',    @WS, @WE, CURRENT_TIMESTAMP),
-    ('7a5a0000-0000-0000-0000-000000000002', @RAMON,  'T5 Seed', 'JP', 't5-untagged', @WS, @WE, CURRENT_TIMESTAMP),
-    ('7a5a0000-0000-0000-0000-000000000003', @RAMON,  'T5 Seed', 'US', 't5-empty',    @WS, @WE, CURRENT_TIMESTAMP),
-    ('7a5a0000-0000-0000-0000-000000000004', @FERDIE, 'T5 Seed', 'KR', 't5-ferdie',   @WS, @WE, CURRENT_TIMESTAMP);
+    ('7a5a0000-0000-0000-0000-000000000001', @RAMON,  'T5 Seed', 'korea', 't5-split',    @WS, @WE, CURRENT_TIMESTAMP),
+    ('7a5a0000-0000-0000-0000-000000000002', @RAMON,  'T5 Seed', 'japan', 't5-untagged', @WS, @WE, CURRENT_TIMESTAMP),
+    ('7a5a0000-0000-0000-0000-000000000003', @RAMON,  'T5 Seed', 'usa', 't5-empty',    @WS, @WE, CURRENT_TIMESTAMP),
+    ('7a5a0000-0000-0000-0000-000000000004', @FERDIE, 'T5 Seed', 'korea', 't5-ferdie',   @WS, @WE, CURRENT_TIMESTAMP);
 
 -- ---------------------------------------------------------------- link 1: t5-split
 -- Expected (sorted by conversions desc, then ad id; untagged last on ties):

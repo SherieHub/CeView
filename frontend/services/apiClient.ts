@@ -26,6 +26,7 @@ import {
   mockInsights,
   mockSetCampaign,
 } from './fixtures/adConnections';
+import { mockCodes, mockLift, mockRedemptions, mockTracked } from './fixtures/attributionCodes';
 import {
   mockLinkPerformance,
   mockLinks,
@@ -56,6 +57,12 @@ import type {
   AttributionLink,
   LinkPerformance,
   UnconvertedClick,
+  AdCostRates,
+  AttributionCodeSummary,
+  AttributionLift,
+  AttributionRedemption,
+  LogBookingInput,
+  TrackedPeriodSummary,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
@@ -265,6 +272,8 @@ export const apiClient = {
       description: string;
       categories: string[];
       trend: string;
+      /** The surge alert Content Studio was opened for; pins which window's attribution code captions carry. */
+      demandAlertId?: string;
     }) =>
       USE_FIXTURES
         ? delay(MOCK_CONTENT)
@@ -329,6 +338,18 @@ export const apiClient = {
         : request<{ snapshots: CampaignHistoryEntry[] }>(
             `/api/analytics/history?weeks=${weeks}`,
           ).then((r) => r.snapshots),
+    /**
+     * The operator's own past cost per 1,000 views and per click, for the ad
+     * planner's budget estimate (CVW-43). Fixture mode returns no history, so
+     * the planner's "no estimate" path is what a fresh demo shows.
+     */
+    costRates: () =>
+      USE_FIXTURES
+        ? delay<AdCostRates>({
+            periods: 0, totalSpend: 0, totalImpressions: 0, totalClicks: 0,
+            costPerThousandImpressions: null, costPerClick: null,
+          })
+        : request<AdCostRates>('/api/analytics/cost-rates'),
     /** AI-generated prescriptive report. POST, not GET — it computes on demand. */
     report: () =>
       USE_FIXTURES
@@ -505,6 +526,63 @@ export const apiClient = {
         : request<UnconvertedClick[]>(
             `/api/attribution/clicks/unconverted?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
           ),
+  },
+
+  /**
+   * Conversion capture (CVW-42) — docs/module-4/CONVERSION_CAPTURE_RESEARCH.md.
+   * Codes cover the Messenger, phone and walk-in bookings a tracked link can
+   * never see: staff log the booking the moment a customer quotes the code,
+   * optionally attaching it to a recorded ad click.
+   */
+  attribution: {
+    codes: () =>
+      USE_FIXTURES
+        ? delay<AttributionCodeSummary[]>(mockCodes())
+        : request<AttributionCodeSummary[]>('/api/attribution/codes'),
+
+    logBooking: (input: LogBookingInput) =>
+      USE_FIXTURES
+        ? delay<AttributionRedemption>({
+            ...mockRedemptions()[0],
+            redemptionId: `mock-${Date.now()}`,
+            attributionCodeId: input.attributionCodeId ?? mockRedemptions()[0].attributionCodeId,
+            bookings: input.bookings ?? 1,
+            revenue: input.revenue ?? 0,
+            eventAt: input.eventAt ?? new Date().toISOString(),
+            clickId: input.clickId ?? null,
+            source: input.clickId ? 'LINK' : 'MANUAL',
+            kind: input.clickId ? 'CLICK_MATCHED' : 'CODE_LOGGED',
+          })
+        : request<AttributionRedemption>('/api/attribution/redemptions', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
+
+    /** Most recent bookings across every code, newest first. */
+    recentRedemptions: () =>
+      USE_FIXTURES
+        ? delay<AttributionRedemption[]>(mockRedemptions())
+        : request<AttributionRedemption[]>('/api/attribution/redemptions'),
+
+    /** Undoes an operator-logged booking. Enquiries and synced rows are refused (409). */
+    deleteRedemption: (redemptionId: string) =>
+      USE_FIXTURES
+        ? delay<void>(undefined)
+        : request<void>(`/api/attribution/redemptions/${redemptionId}`, { method: 'DELETE' }),
+
+    /** Bookings tracked in one reporting period (both dates inclusive, YYYY-MM-DD). */
+    tracked: (periodStart: string, periodEnd: string) =>
+      USE_FIXTURES
+        ? delay<TrackedPeriodSummary>(mockTracked(periodStart, periodEnd))
+        : request<TrackedPeriodSummary>(
+            `/api/attribution/tracked?periodStart=${periodStart}&periodEnd=${periodEnd}`,
+          ),
+
+    /** A code's surge window vs. the four weeks before it. */
+    lift: (attributionCodeId: string) =>
+      USE_FIXTURES
+        ? delay<AttributionLift>(mockLift(attributionCodeId))
+        : request<AttributionLift>(`/api/attribution/lift/${attributionCodeId}`),
   },
 
   workspace: {

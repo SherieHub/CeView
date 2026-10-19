@@ -220,6 +220,8 @@ describe('ContentStudioView — generate request', () => {
       description: BASE_PROFILE.description,
       categories: BASE_PROFILE.categories,
       trend: MARKET.spikeIndicator ? 'surging' : 'steady',
+      // CVW-42 — pins the caption's attribution code to the picked alert's window.
+      demandAlertId: ALERT.id,
     });
   });
 

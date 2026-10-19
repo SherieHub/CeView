@@ -1,5 +1,6 @@
 package com.ceview.module4.attribution;
 
+import com.ceview.module2.MarketFlags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -91,6 +92,43 @@ public class AttributionCodeService {
     }
 
     /**
+     * Resolves the code that captions generated for {@code market} should carry.
+     *
+     * <p>An explicit alert id wins when its code is for the same market. Otherwise the operator's live-or-upcoming
+     * window for that market is used — Content Studio is reached from the
+     * market picker, not only from an alert notification, and a Korea caption
+     * written while a Korea surge window is open is that campaign's content
+     * either way. Upcoming windows count because alerts fire ahead of the
+     * surge: the caption is posted before the window opens. A category match
+     * breaks ties, then the soonest window.
+     *
+     * @return empty when the operator has no current window for the market,
+     *         in which case captions are generated untagged, as before
+     */
+    @Transactional(readOnly = true)
+    public Optional<AttributionCode> findForContent(UUID businessProfileId, String market,
+                                                    String category, UUID demandAlertId) {
+        if (demandAlertId != null) {
+            // Content Studio lets the operator pick a different market than the
+            // alert's own, so the alert's code only applies when its market matches.
+            Optional<AttributionCode> byAlert = codeRepo.findByDemandAlertId(demandAlertId)
+                    .filter(c -> c.getBusinessProfileId().equals(businessProfileId))
+                    .filter(c -> market != null && market.equalsIgnoreCase(c.getTargetMarket()));
+            if (byAlert.isPresent()) return byAlert;
+        }
+        if (businessProfileId == null || market == null || market.isBlank()) return Optional.empty();
+
+        OffsetDateTime now = OffsetDateTime.now();
+        return codeRepo.findByBusinessProfileIdOrderByWindowStartDesc(businessProfileId).stream()
+                .filter(c -> market.equalsIgnoreCase(c.getTargetMarket()))
+                .filter(c -> !c.getWindowEnd().isBefore(now))
+                .min(java.util.Comparator
+                        .comparing((AttributionCode c) -> !c.getCategory().equalsIgnoreCase(
+                                category == null ? "" : category))
+                        .thenComparing(AttributionCode::getWindowStart));
+    }
+
+    /**
      * Derives a short, sayable code and disambiguates it if the operator already
      * has one by that name.
      *
@@ -117,7 +155,18 @@ public class AttributionCodeService {
 
     /** e.g. {@code KR-DIVE-1019}. */
     static String deriveCode(String market, String category, OffsetDateTime windowStart) {
-        return token(market, 2) + "-" + token(category, 4) + "-" + DATE_PART.format(windowStart);
+        return marketPrefix(market) + "-" + token(category, 4) + "-" + DATE_PART.format(windowStart);
+    }
+
+    /**
+     * The country code a traveller recognises. The pipeline's market ids are
+     * "korea" / "japan" / "usa", which clipped to two letters gave {@code KO} and
+     * {@code JA}; {@link MarketFlags} maps them to ISO-3166 {@code KR} / {@code JP} /
+     * {@code US}. An unmapped market falls back to its first two letters.
+     */
+    private static String marketPrefix(String market) {
+        String iso = market == null ? "" : MarketFlags.isoFor(market.trim().toLowerCase(Locale.ROOT));
+        return iso.isEmpty() ? token(market, 2) : iso;
     }
 
     /** Letters and digits only, uppercased, clipped — ad captions are not a place for punctuation. */

@@ -63,12 +63,33 @@ class FunnelTransition(BaseModel):
     dropRate: str  # e.g. "88.1%"
 
 
+class BookingProvenance(BaseModel):
+    """
+    How the period's bookings were captured (CVW-42), computed by Spring Boot
+    AttributionRedemptionService.provenance().
+
+    reportedBookings is the operator's typed weekly total; the tracked counts are
+    bookings CeView recorded as they happened. Automatic = hosted enquiry or
+    booking-platform sync; clickMatched = operator confirmed against a recorded
+    ad click; codeLogged = operator logged a quoted promo code.
+    """
+    reportedBookings:       int  = Field(default=0, ge=0)
+    trackedBookings:        int  = Field(default=0, ge=0)
+    automaticBookings:      int  = Field(default=0, ge=0)
+    clickMatchedBookings:   int  = Field(default=0, ge=0)
+    codeLoggedBookings:     int  = Field(default=0, ge=0)
+    untrackedBookings:      int  = Field(default=0, ge=0)
+    trackedExceedsReported: bool = False
+
+
 class ReportRequest(BaseModel):
     """Request body for /generate — enriched by Spring Boot AnalyticsController."""
     metrics:            MetricsPayload      = Field(default_factory=MetricsPayload)
     funnelTransitions:  list[FunnelTransition] = Field(default_factory=list)
     weeks:              int                 = Field(default=4, ge=4, le=8)
     market:             str                 = Field(default="korea")
+    # Optional so older callers keep working; absent means "unknown provenance".
+    bookingProvenance:  BookingProvenance | None = None
 
 
 # Fields the frontend's action plan renders; a report without them is no report.
@@ -131,6 +152,7 @@ def generate(req: ReportRequest) -> dict:
         transitions=[{"stage": t.stage, "dropRate": t.dropRate} for t in transitions],
         weeks=req.weeks,
         market=req.market,
+        provenance=req.bookingProvenance.model_dump() if req.bookingProvenance else None,
     )
 
     # _generate_json returns {} on any model error, and the model can also answer
