@@ -715,3 +715,25 @@ export interface AttributionEnquiryInput {
   requestedEnd?: string;
   message?: string;
 }
+
+/** POST /api/media/uploads — where to PUT the file, and the public URL it will have. */
+export interface MediaUploadSlot {
+  mediaId: string;
+  /** Absolute (S3), relative to the API origin (local dev), or starting with '#' in fixture mode. */
+  uploadUrl: string;
+  publicUrl: string;
+  kind: 'image' | 'video';
+}
+
+/** POST /api/media/{id}/complete */
+export interface MediaAssetDto {
+  mediaId: string;
+  kind: 'image' | 'video';
+  contentType: string;
+  sizeBytes: number;
+  publicUrl: string;
+  status: 'PENDING' | 'READY';
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
+}

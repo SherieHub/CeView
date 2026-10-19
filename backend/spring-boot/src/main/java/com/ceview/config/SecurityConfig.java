@@ -58,6 +58,12 @@ public class SecurityConfig {
                 // Meta/TikTok — it carries no Authorization header, so tenancy
                 // travels in a single-use state token instead (see AdOAuthState).
                 .requestMatchers("/api/ad-connections/*/callback").permitAll()
+                // Local-dev media (ceview.media.storage=local): the browser PUTs to a one-time
+                // URL named by an unguessable media id, as with a presigned S3 URL, and reads
+                // uploads back from /media/**. In production CloudFront serves /media/* from
+                // S3 and neither route is reachable on the API.
+                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/media/local/*").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/media/**").permitAll()
                 // The attribution redirect and the hosted enquiry form are hit
                 // by a traveller who clicked an ad — a browser with no JWT and
                 // no CeView account. Authenticating them is not possible, so

@@ -61,10 +61,14 @@ import type {
   AttributionLink,
   LinkPerformance,
   UnconvertedClick,
+  MediaUploadSlot,
+  MediaAssetDto,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+/** The API origin, for the few callers (media upload) that must build absolute URLs themselves. */
+export const API_BASE_URL = BASE_URL;
 
 // Build-time guard (T-01..T-08): import.meta.env.PROD is a compile-time
 // constant Vite replaces during a production build, so this branch is dead
@@ -468,6 +472,30 @@ export const apiClient = {
     disconnect: (platform: string) =>
       USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/disconnect`, { method: 'POST' }),
   },
+  /** Media uploads for publishing — see services/mediaUpload.ts for the full flow. */
+  media: {
+    requestUpload: (contentType: string, sizeBytes: number) =>
+      USE_FIXTURES
+        ? delay<MediaUploadSlot>({
+            mediaId: 'fixture-media',
+            uploadUrl: '#fixture-no-upload',
+            publicUrl: 'https://example.invalid/fixture-media',
+            kind: contentType.startsWith('video/') ? 'video' : 'image',
+          })
+        : request<MediaUploadSlot>('/api/media/uploads', {
+            method: 'POST',
+            body: JSON.stringify({ contentType, sizeBytes }),
+          }),
+
+    complete: (mediaId: string, dims: { width?: number; height?: number; durationSeconds?: number } = {}) =>
+      USE_FIXTURES
+        ? delay<MediaAssetDto | null>(null)
+        : request<MediaAssetDto>(`/api/media/${mediaId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(dims),
+          }),
+  },
+
   /**
    * Ad-platform (Meta / TikTok) account connections and metric sync.
    *

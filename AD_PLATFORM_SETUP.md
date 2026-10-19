@@ -18,6 +18,8 @@ one account, since the account total otherwise blends them into one PES score.
 - It does **not** fetch organic post engagement (likes, comments, shares,
   reach on unpaid posts). It only reads **paid ad account** metrics.
 
+> Publishing posts and creating ads is a separate connection: see `docs/SOCIAL_PUBLISHING_SETUP.md`.
+
 If you've never set up an OAuth app with Meta or TikTok before, budget more
 calendar time than you'd expect — see §2.
 

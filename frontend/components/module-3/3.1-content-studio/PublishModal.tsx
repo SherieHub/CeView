@@ -347,6 +347,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                   platform={previewPlatform}
                   caption={viewingEnglish ? translation.englishDraft : draft.caption}
                   mediaDataUrl={draft.mediaDataUrl}
+                  videoSrc={draft.localVideoUrl}
                   device={device}
                   accountName={accountName}
                 />

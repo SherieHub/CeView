@@ -290,7 +290,8 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // Reveals the Publish button. Platform choice and the authorisation tick are
   // the modal's job now, so they gate "Confirm & Publish" in there rather than
   // the button that opens it.
-  const canPublish = Boolean(draft.caption.trim() && draft.mediaDataUrl && audit.result?.status === 'Pass');
+  const mediaUploadSettled = draft.mediaUpload?.status !== 'uploading' && draft.mediaUpload?.status !== 'failed';
+  const canPublish = Boolean(draft.caption.trim() && draft.mediaDataUrl && mediaUploadSettled && audit.result?.status === 'Pass');
 
   // The library's open post, and the ones just published (flagged in its list).
   const [openPostId, setOpenPostId] = useState<string | null>(null);
@@ -319,6 +320,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       scheduledFor,
     }));
     addPosts(created);
+    if (draft.localVideoUrl) URL.revokeObjectURL(draft.localVideoUrl);
     setDraft(EMPTY_DRAFT);
     setAudit(IDLE_AUDIT);
     setSelectedOption(null);
@@ -445,7 +447,13 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
               Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
             </button>
           ) : (
-            <p className="qp-finish-hint">Run the audit — Publish unlocks when your post passes.</p>
+            <p className="qp-finish-hint">
+              {draft.mediaUpload?.status === 'uploading'
+                ? 'Uploading your media… Publish unlocks when it finishes.'
+                : draft.mediaUpload?.status === 'failed'
+                  ? 'Media upload failed — go back to Attach to retry.'
+                  : 'Run the audit — Publish unlocks when your post passes.'}
+            </p>
           )
         }
       />

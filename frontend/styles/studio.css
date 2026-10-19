@@ -2733,7 +2733,7 @@
     border-radius: 12px;
     background: #dfeeea;
   }
-  .val-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .val-media img, .val-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .val-media-expand {
     position: absolute;
     top: 10px;

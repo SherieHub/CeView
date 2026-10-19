@@ -108,7 +108,10 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
             // operator behind the request whose profile could be incomplete,
             // and a 403 here would break a link inside a running paid ad.
             || path.startsWith("/r/")
-            || path.startsWith("/api/public/attribution/");
+            || path.startsWith("/api/public/attribution/")
+            // Local-dev media upload/readback (see SecurityConfig): no operator is behind these.
+            || path.startsWith("/media/")
+            || path.matches("^/api/media/local/[^/]+$");
     }
 
     /**

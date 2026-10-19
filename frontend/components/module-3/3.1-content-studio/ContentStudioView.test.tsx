@@ -385,6 +385,33 @@ describe('ContentStudioView — generate request', () => {
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
     expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull();
   });
+
+  it('explains why Publish is locked while media uploads or after the upload fails', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    const base: PublishDraftState = {
+      caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+      visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false,
+    };
+
+    const { unmount } = render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'uploading' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(screen.getByText('Uploading your media… Publish unlocks when it finishes.')).toBeTruthy();
+    unmount();
+
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'failed', message: 'nope' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(2), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(await screen.findByText('Media upload failed — go back to Attach to retry.')).toBeTruthy();
+  });
 });
 
 describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {

@@ -1,0 +1,8 @@
+[
+  {
+    "AllowedOrigins": ["https://ceview.online"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["content-type"],
+    "MaxAgeSeconds": 3000
+  }
+]
