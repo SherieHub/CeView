@@ -24,8 +24,6 @@ export const SITE = {
   walkthroughUrl: read(env.VITE_WALKTHROUGH_URL),
   leadFormEndpoint: read(env.VITE_LEAD_FORM_ENDPOINT),
   contactEmail: read(env.VITE_CONTACT_EMAIL),
-  privacyUrl: read(env.VITE_PRIVACY_URL),
-  termsUrl: read(env.VITE_TERMS_URL),
 } as const;
 
 export const DEMO_ANCHOR = '#demo';
@@ -879,6 +877,8 @@ export const FOOTER = {
   /** Text only; no UN logos. */
   supports: ['UN SDG 8 · Decent work & economic growth', 'SDG 9 · Industry & innovation', 'SDG 11 · Sustainable communities'],
   copyright: '© 2026 CeView. All rights reserved.',
+  termsLink: 'Terms of Use',
+  privacyLink: 'Privacy Notice',
   creditsLink: 'Photo credits',
   creditsTitle: 'Photo credits',
   creditsIntro: 'Every photo on this page is a real photograph, used under the licence shown.',

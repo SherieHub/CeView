@@ -35,10 +35,11 @@ describe('LandingPage', () => {
     expect(document.getElementById('demo')).not.toBeNull();
   });
 
-  it('hides footer legal and contact links until they are configured', () => {
+  it('links the Terms of Use and Privacy Notice pages, and hides Contact until it is configured', () => {
     renderPage();
-    expect(screen.queryByRole('link', { name: 'Privacy Policy' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Terms' })).not.toBeInTheDocument();
+    const legal = screen.getByRole('navigation', { name: 'Legal' });
+    expect(within(legal).getByRole('link', { name: 'Terms of Use' })).toHaveAttribute('href', '/terms');
+    expect(within(legal).getByRole('link', { name: 'Privacy Notice' })).toHaveAttribute('href', '/privacy');
     expect(screen.queryByRole('link', { name: 'Contact' })).not.toBeInTheDocument();
   });
 
