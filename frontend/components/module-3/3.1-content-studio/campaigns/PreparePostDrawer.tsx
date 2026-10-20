@@ -152,6 +152,7 @@ export default function PreparePostDrawer({ post, open, onClose, onPatch, conten
               audit={post.audit}
               platform={post.platform}
               part="media"
+              uploadToStorage={false}
             />
           </div>
 

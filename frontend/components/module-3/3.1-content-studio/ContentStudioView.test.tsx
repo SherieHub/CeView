@@ -92,7 +92,7 @@ vi.mock('../../../services/apiClient', () => ({
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
     compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
-    posts: { list: () => Promise.resolve([]) },
+    posts: { list: () => Promise.resolve([]), publish: vi.fn((req) => Promise.resolve(req.platforms.map((platform: string) => ({ id: `server-${platform}`, date: '2026-10-19', platform, caption: req.captionsByPlatform[platform], status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] })))) },
     attributionLinks: {
       list: (...args: unknown[]) => attributionLinksListMock(...args),
     },
@@ -385,6 +385,33 @@ describe('ContentStudioView — generate request', () => {
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
     expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull();
   });
+
+  it('explains why Publish is locked while media uploads or after the upload fails', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    const base: PublishDraftState = {
+      caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+      visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false,
+    };
+
+    const { unmount } = render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'uploading' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(screen.getByText('Uploading your media… Publish unlocks when it finishes.')).toBeTruthy();
+    unmount();
+
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'failed', message: 'nope' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(2), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(await screen.findByText('Media upload failed — go back to Attach to retry.')).toBeTruthy();
+  });
 });
 
 describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
@@ -408,7 +435,7 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
 
     render(
       <OverlayStackProvider>
-        <ContentStudioView initialDraft={STAGED} />
+        <ContentStudioView initialDraft={{ ...STAGED, mediaUpload: { status: 'ready', mediaId: 'media', publicUrl: 'https://example.test/media.jpg' } }} />
       </OverlayStackProvider>,
     );
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
@@ -441,7 +468,7 @@ describe('ContentStudioView — after publishing', () => {
     mockIsConnected = () => true;
     render(
       <OverlayStackProvider>
-        <ContentStudioView initialDraft={STAGED} />
+        <ContentStudioView initialDraft={{ ...STAGED, mediaUpload: { status: 'ready', mediaId: 'media', publicUrl: 'https://example.test/media.jpg' } }} />
       </OverlayStackProvider>,
     );
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);

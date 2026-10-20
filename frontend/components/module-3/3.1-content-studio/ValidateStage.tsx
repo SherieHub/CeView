@@ -15,6 +15,7 @@ import CompliancePanel from './CompliancePanel';
 import { CaptionTranslationToggle } from './CaptionTranslationToggle';
 import { useCaptionTranslation } from './useCaptionTranslation';
 import type { AuditState, PublishDraftState } from './contentStudioTypes';
+import MediaPreview from './MediaPreview';
 
 interface ValidateStageProps {
   draft: PublishDraftState;
@@ -58,7 +59,7 @@ export default function ValidateStage({
           </div>
           {draft.mediaDataUrl ? (
             <div className="val-media">
-              <img src={draft.mediaDataUrl} alt="Attached media" />
+              <MediaPreview src={draft.mediaDataUrl} videoSrc={draft.localVideoUrl} alt="Attached media" />
               <button type="button" className="val-media-expand" aria-label="View media full size" onClick={() => setMediaOpen(true)}>
                 <Maximize2 size={15} aria-hidden="true" />
               </button>
@@ -90,7 +91,9 @@ export default function ValidateStage({
       {footer && <div className="val-foot">{footer}</div>}
 
       <Modal open={mediaOpen} onClose={() => setMediaOpen(false)} title="Publication media">
-        {draft.mediaDataUrl && <img className="media-full" src={draft.mediaDataUrl} alt="Publication media at full size" />}
+        {draft.mediaDataUrl && (
+          <MediaPreview className="media-full" src={draft.mediaDataUrl} videoSrc={draft.localVideoUrl} alt="Publication media at full size" />
+        )}
       </Modal>
     </div>
   );

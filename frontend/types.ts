@@ -137,9 +137,37 @@ export interface UniquenessResult {
  */
 export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
 
+/** What the backend derives for a publishing platform (GET /api/social-connections). */
+export type SocialStatus =
+  | 'DISCONNECTED'
+  | 'NEEDS_RECONNECT'
+  | 'NEEDS_PAGE'
+  | 'NO_LINKED_INSTAGRAM'
+  | 'ACTIVE';
+
 export interface PlatformConnection {
   platform: PlatformId;
+  /** True only when status is ACTIVE — i.e. CeView can publish there. */
   connected: boolean;
+  handle: string | null;
+  connectedAt: string | null;
+  status: SocialStatus;
+  /** Whether THIS SERVER has credentials for the platform's app. */
+  configured?: boolean;
+}
+
+/** One Facebook Page the Meta login administers (GET /api/social-connections/meta/pages). */
+export interface MetaPageOption {
+  id: string;
+  name: string;
+  instagramUsername: string | null;
+}
+
+/** GET /api/social-connections row. */
+export interface SocialConnectionDto {
+  platform: PlatformId;
+  configured: boolean;
+  status: SocialStatus;
   handle: string | null;
   connectedAt: string | null;
 }
@@ -590,20 +618,47 @@ export interface WorkspaceMemberFixture {
   status?: 'active' | 'pending';
 }
 
+export interface PublishAd {
+  objective: 'OUTCOME_TRAFFIC' | 'OUTCOME_AWARENESS';
+  dailyBudgetMinor: number;
+  startTime: string;
+  endTime: string;
+  countries: string[];
+  attributionLinkId: string;
+  pinCampaign: boolean;
+}
+export interface PublishRequest {
+  requestId: string;
+  platforms: string[];
+  captionsByPlatform: Record<string, string>;
+  mediaId: string;
+  contentId?: string;
+  market?: string;
+  visibility: 'public' | 'private';
+  scheduledFor?: string;
+  approved: true;
+  ad?: PublishAd;
+}
 export interface PublishedPost {
   id: string;
   date: string;
-  platform: PlatformId;
+  platform: PlatformId | 'meta_ads';
   caption: string;
   /** English reading aid for a non-English caption. Never published. */
   captionEn?: string | null;
-  status: 'published' | 'draft' | 'scheduled';
-  reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  engagementRate: number;
-  series: number[];
+  status: 'published' | 'draft' | 'scheduled' | 'processing' | 'inbox' | 'failed' | 'cancelled';
+  deliveryStatus?: string;
+  mediaType?: 'image' | 'video';
+  permalink?: string | null;
+  adsManagerUrl?: string | null;
+  errorMessage?: string | null;
+  metricsAvailable?: boolean;
+  reach: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  engagementRate: number | null;
+  series: (number | null)[];
   /** The image it went out with, when the post was published from this session. */
   mediaUrl?: string | null;
   /** Local date-time (yyyy-mm-ddThh:mm) a scheduled post is set to go out. */
@@ -714,4 +769,26 @@ export interface AttributionEnquiryInput {
   requestedStart?: string;
   requestedEnd?: string;
   message?: string;
+}
+
+/** POST /api/media/uploads — where to PUT the file, and the public URL it will have. */
+export interface MediaUploadSlot {
+  mediaId: string;
+  /** Absolute (S3), relative to the API origin (local dev), or starting with '#' in fixture mode. */
+  uploadUrl: string;
+  publicUrl: string;
+  kind: 'image' | 'video';
+}
+
+/** POST /api/media/{id}/complete */
+export interface MediaAssetDto {
+  mediaId: string;
+  kind: 'image' | 'video';
+  contentType: string;
+  sizeBytes: number;
+  publicUrl: string;
+  status: 'PENDING' | 'READY';
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
 }

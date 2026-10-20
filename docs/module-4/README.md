@@ -19,7 +19,7 @@ diagnoses every funnel bottleneck with urgency-ranked recommendations.
 
 | Component | Doc |
 |---|---|
-| Post-level metrics (specified, not implemented) | [`backend/post-metrics.md`](backend/post-metrics.md) |
+| Post-level metrics (daily sync and owned read endpoints) | [`backend/post-metrics.md`](backend/post-metrics.md) |
 
 Existing, unchanged backend for KPI computation (4.1), PES scoring (4.2), and the AI prescriptive
 report (4.3) is documented in full in
@@ -50,9 +50,9 @@ Operators can OAuth-connect their Meta Ads and/or TikTok Ads account from Settin
 pull that period's account-level metrics (impressions, clicks, spend, conversions) straight into
 the [`IngestionForm`](../../frontend/components/module-4/4.1-campaign-analytics/IngestionForm.tsx)
 via a "Sync from ad accounts" button. Revenue, bookings, and new customers stay operator-entered —
-the ad platforms don't know them. This is ads-metrics-only: it does not publish content and is
-unrelated to the (unimplemented) publishing connection in
-[`PlatformConnectionController`](../module-3/backend/PlatformConnectionController.md). Design:
+the ad platforms don't know them. Account-level insight sync remains a reporting feature.
+Meta now shares its upgraded grant with [social publishing](../module-3/backend/PlatformConnectionController.md),
+while TikTok Ads and creator publishing use separate apps. Original reporting design:
 [`docs/superpowers/specs/2026-09-06-ad-platform-connections-design.md`](../superpowers/specs/2026-09-06-ad-platform-connections-design.md).
 Developer setup: [`AD_PLATFORM_SETUP.md`](../../AD_PLATFORM_SETUP.md).
 

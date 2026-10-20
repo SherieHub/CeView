@@ -15,7 +15,7 @@ const POSTS: PublishedPost[] = [
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    posts: { list: vi.fn(() => Promise.resolve(POSTS)) },
+    posts: { metrics: vi.fn((id: string) => Promise.resolve(POSTS.find((p) => p.id === id))), list: vi.fn(() => Promise.resolve(POSTS)) },
   },
 }));
 
@@ -73,4 +73,14 @@ describe('PostAnalyticsModal', () => {
     expect(screen.getByText(truncated)).toBeInTheDocument();
     expect(screen.queryByText(LONG_CAPTION)).not.toBeInTheDocument();
   });
+});
+
+
+it('renders unavailable nullable metrics without inventing zeros', async () => {
+  POSTS.push({ id: 'partial', date: '2026-10-20', platform: 'tiktok', caption: 'Partial report', status: 'published', metricsAvailable: true, reach: null, likes: 12, comments: null, shares: null, engagementRate: null, series: [null, 10, null] });
+  renderModal('partial');
+  await readyDialog();
+  expect(screen.getAllByText('Unavailable')).toHaveLength(4);
+  expect(screen.getByText('12')).toBeInTheDocument();
+  expect(screen.getByTestId('reach-chart')).toBeInTheDocument();
 });

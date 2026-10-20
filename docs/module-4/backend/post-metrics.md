@@ -1,4 +1,10 @@
-# Post-level metrics (specified, not yet implemented)
+# Post-level metrics (implemented)
+
+`com.ceview.module4.postmetrics` implements V51 `tbl_post_metric`, daily refresh and the authenticated `/api/analytics/posts` list/detail routes. Both routes use JWT profile ownership and the common post view. The daily job defaults to 03:00 UTC and reads Facebook/Instagram insights; TikTok inbox status must expose public post IDs before Display API metrics can be read. Views are never substituted for unique reach. Individual metrics and engagement rate remain null when unavailable. The first seven UTC days since publication form the reach series; missing days are null and repeated same-day sync replaces that day's sample. API details: [contract](../../../backend/CONTRACT.md#social-publishing-endpoints).
+
+The earlier proposal below is historical; the implementation uses the publishing-account grants and actual post lifecycle from the October social-publishing design.
+
+Paid Meta ads read ad-level reach through the accepted ad account's user grant. Organic interaction counts and engagement rate remain unavailable for that metric source. Creating a PAUSED ad does not establish a publication timestamp or reach history. Performance includes such an ad only after the platform reports positive reach; launching and pausing remain actions in Ads Manager.
 
 > **Still unimplemented.** The ad-connection work of September 2026 delivered
 > account-level *ad* metrics (`tbl_ad_insight`), not per-post organic insights.

@@ -33,8 +33,12 @@ import {
   mockUnconvertedClicks,
 } from './fixtures/attributionLinks';
 import type {
+  PublishedPost,
+  PublishRequest,
   WorkspaceMemberFixture,
   PlatformConnection,
+  SocialConnectionDto,
+  MetaPageOption,
   PostMetric,
   AuthSession,
   BusinessProfileDto,
@@ -61,10 +65,14 @@ import type {
   AttributionLink,
   LinkPerformance,
   UnconvertedClick,
+  MediaUploadSlot,
+  MediaAssetDto,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+/** The API origin, for the few callers (media upload) that must build absolute URLs themselves. */
+export const API_BASE_URL = BASE_URL;
 
 // Build-time guard (T-01..T-08): import.meta.env.PROD is a compile-time
 // constant Vite replaces during a production build, so this branch is dead
@@ -94,6 +102,17 @@ interface SessionDto {
 interface CodeSentDto {
   sentTo: string;
   resendAvailableInSeconds: number;
+}
+
+function toPlatformConnections(dtos: SocialConnectionDto[]): PlatformConnection[] {
+  return dtos.map((dto) => ({
+    platform: dto.platform,
+    connected: dto.status === 'ACTIVE',
+    handle: dto.handle,
+    connectedAt: dto.connectedAt,
+    status: dto.status,
+    configured: dto.configured,
+  }));
 }
 
 function toSession(dto: SessionDto, email: string | null): AuthSession {
@@ -455,19 +474,83 @@ export const apiClient = {
           }),
   },
   posts: {
-    list: () => (USE_FIXTURES ? delay(MOCK_POSTS) : request('/api/posts')),
-    metrics: (postId: string) =>
-      USE_FIXTURES
-        ? delay(MOCK_POST_METRICS.find((m) => m.postId === postId) ?? null)
-        : request(`/api/posts/${postId}/metrics`),
+    list: () => (USE_FIXTURES ? delay(MOCK_POSTS) : request<PublishedPost[]>('/api/posts')),
+    publish: (payload: PublishRequest) => request<PublishedPost[]>('/api/posts/publish', { method: 'POST', body: JSON.stringify(payload) }),
+    cancel: (id: string) => request<void>(`/api/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    metrics: (postId: string) => USE_FIXTURES
+      ? delay(MOCK_POSTS.find((post) => post.id === postId) ?? null)
+      : request<PublishedPost>(`/api/analytics/posts/${encodeURIComponent(postId)}`),
   },
+  /**
+   * Publishing connections (Facebook Page, Instagram, TikTok). Meta's login itself is
+   * adConnections.authorize('meta') — one Meta login serves ads and publishing.
+   */
   connections: {
-    list: () => (USE_FIXTURES ? delay(MOCK_CONNECTIONS) : request<PlatformConnection[]>('/api/connections')),
-    connect: (platform: string) =>
-      USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/connect`, { method: 'POST' }),
+    list: () =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections').then(toPlatformConnections),
+
+    tiktokAuthorize: () =>
+      USE_FIXTURES
+        ? delay<{ authorizeUrl: string }>({ authorizeUrl: '#fixture-no-oauth' })
+        : request<{ authorizeUrl: string }>('/api/social-connections/tiktok/authorize', { method: 'POST' }),
+
+    /** Finishes TikTok's login from the SPA (code + state come from the callback redirect). */
+    tiktokComplete: (code: string, state: string) =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections/tiktok/complete', {
+            method: 'POST',
+            body: JSON.stringify({ code, state }),
+          }).then(toPlatformConnections),
+
+    metaPages: () =>
+      USE_FIXTURES
+        ? delay<MetaPageOption[]>([
+            { id: 'page-1', name: 'Cebu Dive Co.', instagramUsername: 'cebu.dive' },
+            { id: 'page-2', name: 'Mactan Cafe', instagramUsername: null },
+          ])
+        : request<MetaPageOption[]>('/api/social-connections/meta/pages'),
+
+    /** Returns the fresh connection list. */
+    selectMetaPage: (pageId: string) =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections/meta/page', {
+            method: 'PUT',
+            body: JSON.stringify({ pageId }),
+          }).then(toPlatformConnections),
+
     disconnect: (platform: string) =>
-      USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/disconnect`, { method: 'POST' }),
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request<void>(`/api/social-connections/${platform}`, { method: 'DELETE' }),
   },
+  /** Media uploads for publishing — see services/mediaUpload.ts for the full flow. */
+  media: {
+    requestUpload: (contentType: string, sizeBytes: number) =>
+      USE_FIXTURES
+        ? delay<MediaUploadSlot>({
+            mediaId: 'fixture-media',
+            uploadUrl: '#fixture-no-upload',
+            publicUrl: 'https://example.invalid/fixture-media',
+            kind: contentType.startsWith('video/') ? 'video' : 'image',
+          })
+        : request<MediaUploadSlot>('/api/media/uploads', {
+            method: 'POST',
+            body: JSON.stringify({ contentType, sizeBytes }),
+          }),
+
+    complete: (mediaId: string, dims: { width?: number; height?: number; durationSeconds?: number } = {}) =>
+      USE_FIXTURES
+        ? delay<MediaAssetDto | null>(null)
+        : request<MediaAssetDto>(`/api/media/${mediaId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(dims),
+          }),
+  },
+
   /**
    * Ad-platform (Meta / TikTok) account connections and metric sync.
    *
@@ -487,6 +570,14 @@ export const apiClient = {
         ? delay<{ authorizeUrl: string }>({ authorizeUrl: '#fixture-no-oauth' })
         : request<{ authorizeUrl: string }>(`/api/ad-connections/${provider}/authorize`, {
             method: 'POST',
+          }),
+
+    complete: (provider: AdProvider, code: string, state: string) =>
+      USE_FIXTURES
+        ? delay<void>(undefined)
+        : request<void>(`/api/ad-connections/${provider}/complete`, {
+            method: 'POST',
+            body: JSON.stringify({ code, state }),
           }),
 
     accounts: (provider: AdProvider) =>

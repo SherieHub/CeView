@@ -99,9 +99,35 @@ ceview:
     meta:
       app-id: ${META_APP_ID:}
       app-secret: ${META_APP_SECRET:}
+      graph-base-url: ${META_GRAPH_BASE_URL:https://graph.facebook.com/v25.0}
+      dialog-url: ${META_DIALOG_URL:https://www.facebook.com/v25.0/dialog/oauth}
     tiktok:
       app-id: ${TIKTOK_APP_ID:}
       app-secret: ${TIKTOK_APP_SECRET:}
+  social:
+    dispatch-enabled: ${SOCIAL_DISPATCH_ENABLED:true}
+    dispatch-delay-ms: ${SOCIAL_DISPATCH_DELAY_MS:30000}
+    metrics-enabled: ${SOCIAL_METRICS_ENABLED:true}
+    metrics-cron: ${SOCIAL_METRICS_CRON:0 0 3 * * *}
+    tiktok:
+      # TikTok for Developers app (Login Kit + Content Posting API) — NOT the TikTok For Business
+      # ads app above. Blank = the TikTok publishing connection reports "not configured".
+      client-key: ${TIKTOK_CONTENT_CLIENT_KEY:}
+      client-secret: ${TIKTOK_CONTENT_CLIENT_SECRET:}
+  media:
+    # "s3" in production (compose sets it); "local" keeps uploads on disk for dev and tests.
+    storage: ${MEDIA_STORAGE:local}
+    # Origin that serves uploaded files. Platforms fetch media from here, so it must be
+    # public HTTPS in production (TikTok additionally verifies this URL prefix).
+    public-base-url: ${MEDIA_PUBLIC_BASE_URL:http://localhost:8080}
+    local-dir: ${MEDIA_LOCAL_DIR:./media-uploads}
+    s3:
+      bucket: ${MEDIA_BUCKET:}
+      region: ${MEDIA_AWS_REGION:ap-southeast-1}
+      # Blank = fall back to the SDK's default credential chain (env, ~/.aws).
+      access-key-id: ${MEDIA_AWS_ACCESS_KEY_ID:}
+      secret-access-key: ${MEDIA_AWS_SECRET_ACCESS_KEY:}
+      presign-minutes: ${MEDIA_PRESIGN_MINUTES:15}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3001,http://localhost:3002}
   external:

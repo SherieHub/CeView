@@ -13,5 +13,10 @@
 
     <!-- Verbose during development; tighten in prod via env override. -->
     <logger name="com.ceview.module3" level="DEBUG"/>
+    <!-- OAuth exchanges carry secrets in bodies/URLs; framework tracing must not print them. -->
+    <logger name="org.springframework.web.reactive.function.client" level="WARN"/>
+    <logger name="org.springframework.http.codec" level="WARN"/>
+    <logger name="org.springframework.core.codec" level="WARN"/>
+    <logger name="org.springframework.web" level="WARN"/>
 
 </configuration>

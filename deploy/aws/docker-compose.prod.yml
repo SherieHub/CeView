@@ -129,6 +129,25 @@ services:
       FRONTEND_BASE_URL: https://${DOMAIN}
       CEVIEW_ATTRIBUTION_BASE_URL: https://api.${DOMAIN}
       OAUTH_REDIRECT_BASE_URL: https://api.${DOMAIN}
+      # Media uploads (docs/SOCIAL_PUBLISHING_SETUP.md part A). The app presigns S3 PUT
+      # URLs with its own least-privilege ceview-media key, not the server's ceview-box
+      # key. Left unset, the media endpoints answer 503 instead of the app failing to boot.
+      MEDIA_STORAGE: s3
+      MEDIA_AWS_REGION: ${AWS_REGION}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-}
+      MEDIA_AWS_ACCESS_KEY_ID: ${MEDIA_AWS_ACCESS_KEY_ID:-}
+      MEDIA_AWS_SECRET_ACCESS_KEY: ${MEDIA_AWS_SECRET_ACCESS_KEY:-}
+      # The origin CloudFront serves /media/* from; TikTok must verify this prefix too.
+      MEDIA_PUBLIC_BASE_URL: https://${DOMAIN}
+      # TikTok app credentials (ads app today; the content-posting app arrives in Phase 2).
+      TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
+      TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TIKTOK_CONTENT_CLIENT_KEY: ${TIKTOK_CONTENT_CLIENT_KEY:-}
+      TIKTOK_CONTENT_CLIENT_SECRET: ${TIKTOK_CONTENT_CLIENT_SECRET:-}
+      SOCIAL_DISPATCH_ENABLED: ${SOCIAL_DISPATCH_ENABLED:-true}
+      SOCIAL_DISPATCH_DELAY_MS: ${SOCIAL_DISPATCH_DELAY_MS:-30000}
+      SOCIAL_METRICS_ENABLED: ${SOCIAL_METRICS_ENABLED:-true}
+      SOCIAL_METRICS_CRON: ${SOCIAL_METRICS_CRON:-0 0 3 * * *}
       # Caddy is the only proxy in front; Tomcat trusts Docker's private range,
       # so rate limiting and click hashing see the real client IP.
       SERVER_FORWARD_HEADERS_STRATEGY: native
