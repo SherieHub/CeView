@@ -12,6 +12,8 @@ import com.ceview.module4.adconnections.AdConnectionDtos.SelectCampaignRequest;
 import com.ceview.module4.adconnections.client.AdPlatformClient;
 import com.ceview.module4.adconnections.client.AdPlatformException;
 import com.ceview.module4.adconnections.client.TokenGrant;
+import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -36,8 +38,8 @@ import java.util.stream.Collectors;
  * Submodule 4.1 — ad-platform account connections.
  *
  * <p>Every endpoint except the callback is JWT-authenticated and scoped to the
- * caller's own business profile. The callback is deliberately public; see
- * {@link AdOAuthState} for how tenancy survives that.
+ * caller's own business profile. The public callback only redirects; authenticated
+ * completion checks that the caller owns the one-time OAuth state.
  */
 @RestController
 @RequestMapping("/api/ad-connections")
@@ -98,7 +100,7 @@ public class AdConnectionController {
     }
 
     private AdConnectionView toView(AdProvider provider, AdPlatformConnection conn) {
-        boolean configured = props.isConfigured(provider);
+        boolean configured = props.isConfigured(provider) && service.isEncryptionConfigured();
         if (conn == null) {
             return new AdConnectionView(provider.key(), configured,
                     AdConnectionDtos.STATUS_DISCONNECTED, null, null, null, null, null, null);
@@ -263,9 +265,9 @@ public class AdConnectionController {
         }
 
         if (error != null && !error.isBlank()) {
-            log.info("[Module4] {} callback returned an OAuth error: {}", resolved.key(), error);
             String safeErrorCode = KNOWN_OAUTH_ERRORS.contains(error.toLowerCase())
                     ? error.toLowerCase() : "consent_declined";
+            log.info("[Module4] {} callback returned an OAuth error: {}", resolved.key(), safeErrorCode);
             return redirectToFrontend(resolved.key(), safeErrorCode);
         }
 
@@ -273,23 +275,43 @@ public class AdConnectionController {
             return redirectToFrontend(resolved.key(), "missing_code_or_state");
         }
 
-        UUID profileId;
+        String url = UriComponentsBuilder.fromUriString(props.getFrontendBaseUrl())
+                .path("/settings/platforms")
+                .queryParam("ad_code", "{code}")
+                .queryParam("ad_provider", resolved.key())
+                .queryParam("state", "{state}")
+                .encode().buildAndExpand(Map.of("code", grantCode, "state", state)).toUriString();
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
+    }
+
+    /** Bind the one-time state to the signed-in browser before exchanging credentials. */
+    @PostMapping("/{provider}/complete")
+    public ResponseEntity<Void> complete(@PathVariable String provider,
+            @Valid @RequestBody AdConnectionDtos.CompleteRequest body) {
+        AdProvider resolved = parseProvider(provider);
+        requireConfigured(resolved);
+        UUID caller = currentBusinessProfile.resolveProfileId();
+        UUID owner;
         try {
-            profileId = service.consumeState(UUID.fromString(state), resolved);
+            owner = service.consumeState(UUID.fromString(body.state()), resolved);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            log.info("[Module4] {} callback had an invalid state: {}", resolved.key(), e.getMessage());
-            return redirectToFrontend(resolved.key(), "invalid_state");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid_state");
+        }
+        if (!caller.equals(owner)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "state_profile_mismatch");
         }
 
         try {
-            TokenGrant grant = clientFor(resolved).exchangeCode(grantCode);
-            service.storeGrant(profileId, resolved, grant);
+            TokenGrant grant = clientFor(resolved).exchangeCode(body.code());
+            service.storeGrant(caller, resolved, grant);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "connection_changed");
         } catch (AdPlatformException | IllegalStateException e) {
-            log.warn("[Module4] {} token exchange failed: {}", resolved.key(), e.getMessage());
-            return redirectToFrontend(resolved.key(), "token_exchange_failed");
+            // Platform errors can contain credentials; never echo or log their raw text.
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "token_exchange_failed");
         }
 
-        return successRedirect(resolved.key());
+        return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<Void> redirectToFrontend(String provider, String errorCode) {
@@ -297,15 +319,6 @@ public class AdConnectionController {
                 .path("/settings/platforms")
                 .queryParam("adconnect_error", errorCode)
                 .queryParam("provider", provider)
-                .build()
-                .toUriString();
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
-    }
-
-    private ResponseEntity<Void> successRedirect(String provider) {
-        String url = UriComponentsBuilder.fromUriString(props.getFrontendBaseUrl())
-                .path("/settings/platforms")
-                .queryParam("adconnect", provider)
                 .build()
                 .toUriString();
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
@@ -352,7 +365,7 @@ public class AdConnectionController {
     }
 
     private void requireConfigured(AdProvider provider) {
-        if (!props.isConfigured(provider)) {
+        if (!props.isConfigured(provider) || !service.isEncryptionConfigured()) {
             MDC.put(TraceIdFilter.MDC_CODE_KEY, "AD_PROVIDER_NOT_CONFIGURED");
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "AD_PROVIDER_NOT_CONFIGURED");

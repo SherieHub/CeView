@@ -1,5 +1,5 @@
-import { CheckCircle2, LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
-import { useEffect } from 'react';
+import { CheckCircle2, LoaderCircle, RefreshCw, ShieldCheck, XCircle } from 'lucide-react';
+import { useEffect, useId } from 'react';
 import type { CSSProperties } from 'react';
 // OMCS_RUBRIC_LABELS is a static display map (rubric key -> human label), not
 // data the backend serves — kept as a direct fixture import deliberately.
@@ -8,6 +8,8 @@ import PanelHead from './PanelHead';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { ComplianceSlotProps } from './contentStudioTypes';
+import { hasNonEnglishScript } from './captionLanguage';
+import { getTranslation, requestTranslation } from './captionTranslationStore';
 
 const STEPS = ['Read caption and platform constraints', 'Analyse publication media', 'Match business profile signals', 'Score visual direction consistency', 'Evaluate audience and cultural fit', 'Create compliance recommendation'];
 
@@ -22,49 +24,74 @@ export default function CompliancePanel({ draft, audit, onAuditChange, recommend
   useEffect(() => {
     if (audit.status !== 'running') return;
     if (audit.step >= STEPS.length) {
-      apiClient.compliance
-        .omcsAnalyze({ caption: draft.caption, imageUrl: draft.mediaDataUrl ?? '', recommendations: recommendations ?? {} })
-        .then((result) => onAuditChange({ status: 'complete', step: STEPS.length, result }))
-        .catch((e) => onAuditChange({ status: 'error', step: 0, result: null, error: e }));
-      return;
+      let cancelled = false;
+      // The profile-similarity sub-score compares the caption with an English
+      // profile, so a Korean/Japanese caption is scored via its English meaning.
+      // A failed translation never blocks the audit — it just scores the native text.
+      const send = (captionEn?: string) =>
+        apiClient.compliance.omcsAnalyze({
+          caption: draft.caption,
+          ...(captionEn ? { captionEn } : {}),
+          imageUrl: draft.mediaDataUrl ?? '',
+          recommendations: recommendations ?? {},
+        });
+      const known = draft.captionEn || getTranslation(draft.caption);
+      const call =
+        !known && hasNonEnglishScript(draft.caption)
+          ? requestTranslation(draft.caption).catch(() => undefined).then(send)
+          : send(known);
+      call
+        .then((result) => { if (!cancelled) onAuditChange({ status: 'complete', step: STEPS.length, result }); })
+        .catch((e) => { if (!cancelled) onAuditChange({ status: 'error', step: 0, result: null, error: e }); });
+      return () => { cancelled = true; };
     }
     const timer = window.setTimeout(() => onAuditChange({ ...audit, step: audit.step + 1 }), 420);
     return () => window.clearTimeout(timer);
-  }, [audit, onAuditChange, draft.caption, draft.mediaDataUrl, recommendations]);
+  }, [audit, onAuditChange, draft.caption, draft.captionEn, draft.mediaDataUrl, recommendations]);
 
+  // Unique per instance: a campaign post's audit can be mounted beside Quick Post's.
+  const titleId = useId();
   const result = audit.result;
   const passed = result?.status === 'Pass';
 
   return (
-    <section className="card" aria-labelledby="compliance-title">
+    <section className="card" aria-labelledby={titleId}>
       <div className="studio-head">
         <span className="conn-ico" aria-hidden="true"><ShieldCheck /></span>
         <div className="studio-head-text">
-          <h2 id="compliance-title" className="heading-md">Compliance audit</h2>
+          <h2 id={titleId} className="heading-md">Compliance audit</h2>
           <p className="body-sm">Checks the caption and selected media before publishing.</p>
         </div>
+        {result && (
+          <button
+            type="button"
+            className="btn-outline btn-outline--sm audit-rerun"
+            onClick={() => onAuditChange({ status: 'idle', step: 0, result: null })}
+          >
+            <RefreshCw size={15} aria-hidden="true" />Re-run audit
+          </button>
+        )}
       </div>
 
       {audit.status === 'idle' && (
-        <>
-          <p className="studio-note">
+        // One action, centred in the card — the same shape as the Visual
+        // guide's "Generate AI shots" on the step before.
+        <div className="audit-start">
+          <span className="audit-start-glyph" aria-hidden="true"><ShieldCheck size={26} /></span>
+          <p className="audit-start-title">Check your post before it goes live</p>
+          <p className="audit-start-sub">
             Add a caption and media, then run the six-step audit.
             {!recommendations && ' Generate captions first — the audit checks the image against their visual guidance.'}
           </p>
-          {/* Right-aligned and sized down to match the caption grid's Select:
-              both are the forward action of their block, so they should look
-              like the same kind of commitment. */}
-          <div className="audit-foot mt-4">
-            <button
-              type="button"
-              className="btn-cta btn-cta--sm"
-              disabled={!ready}
-              onClick={() => onAuditChange({ status: 'running', step: 0, result: null })}
-            >
-              <ShieldCheck size={15} aria-hidden="true" /> Run Compliance Audit
-            </button>
-          </div>
-        </>
+          <button
+            type="button"
+            className="btn-cta audit-start-btn"
+            disabled={!ready}
+            onClick={() => onAuditChange({ status: 'running', step: 0, result: null })}
+          >
+            <ShieldCheck size={18} aria-hidden="true" /> Run Compliance Audit
+          </button>
+        </div>
       )}
 
       {audit.status === 'running' && (
@@ -100,61 +127,56 @@ export default function CompliancePanel({ draft, audit, onAuditChange, recommend
 
       {result && (
         <div className="audit-result">
-          {/* Score on the left, the detail it summarises on the right. The two
-              read at different distances: the dial is the verdict you take in
-              at a glance, the bars are what you study if the verdict surprises
-              you — so stacking them made the page long for no gain. */}
-          <div className="audit-score">
-            {/* The dial's ring is driven by --omcs, so the figure is shown as
-                well as printed — the flat 8px border it replaced said nothing
-                about how close the score was to the pass threshold. */}
-            <div
-              className="omcs-dial"
-              data-pass={passed}
-              style={{ '--omcs': Math.round(result.omcsScore) } as CSSProperties}
-            >
-              <b className="num">{Math.round(result.omcsScore)}</b>
-            </div>
-            <div className="min-w-0">
+          {/* The verdict you take in at a glance — the dial and what it means —
+              then the detail behind it, for when the verdict surprises you. */}
+          <div className="audit-summary">
+            <div className="audit-score">
+              {/* The ring is driven by --omcs, so the figure is shown as well as
+                  printed: how close the score sits to the pass threshold. */}
+              <div
+                className="omcs-dial"
+                data-pass={passed}
+                style={{ '--omcs': Math.round(result.omcsScore) } as CSSProperties}
+              >
+                <span className="omcs-dial-copy">
+                  <b className="num">{Math.round(result.omcsScore)}</b>
+                  <span>OMCS score</span>
+                </span>
+              </div>
               <p className="audit-verdict">
-                <span>OMCS score</span>
                 <span className={`chip ${passed ? 'chip--success' : 'chip--critical'}`}>
-                  <CheckCircle2 aria-hidden="true" />{result.status}
+                  {passed ? <CheckCircle2 aria-hidden="true" /> : <XCircle aria-hidden="true" />}
+                  {result.status}
                 </span>
               </p>
               <p className="text-meta">Pass threshold: 70</p>
             </div>
+
+            <div className="audit-explain" data-pass={passed}>
+              <span className="audit-explain-icon" aria-hidden="true">
+                {passed ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+              </span>
+              <div>
+                <p className="audit-explain-title">
+                  {passed ? 'Your post meets the guidelines.' : 'Your post needs changes before it can publish.'}
+                </p>
+                <p className="audit-explain-text">{result.consistencyExplanation}</p>
+              </div>
+            </div>
           </div>
 
-          {/* Its own query container: the rubric splits into two sub-columns on
-              the width of THIS box, not of the card, which is now roughly a
-              third wider than the space the bars actually get. */}
-          <div className="audit-metrics">
-            <div className="omcs-rubric">
-              {Object.entries(result.rubricEvaluationData.scores).map(([key, value]) => (
-                <div key={key}>
-                  <div className="omcs-rubric-head">
-                    <span>{OMCS_RUBRIC_LABELS[key]}</span>
-                    <span className="num">{value}/100</span>
-                  </div>
-                  <div className="bar">
-                    <i style={{ width: `${value}%` }} />
-                  </div>
+          <div className="omcs-rubric">
+            {Object.entries(result.rubricEvaluationData.scores).map(([key, value]) => (
+              <div key={key}>
+                <div className="omcs-rubric-head">
+                  <span>{OMCS_RUBRIC_LABELS[key]}</span>
+                  <span className="num">{value}/100</span>
                 </div>
-              ))}
-            </div>
-
-            <p className="body-xs">{result.consistencyExplanation}</p>
-
-            <div className="audit-foot">
-              <button
-                type="button"
-                className="btn-outline btn-outline--sm"
-                onClick={() => onAuditChange({ status: 'idle', step: 0, result: null })}
-              >
-                <RefreshCw size={15} aria-hidden="true" />Re-run audit
-              </button>
-            </div>
+                <div className="bar">
+                  <i style={{ width: `${value}%` }} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

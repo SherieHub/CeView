@@ -16,7 +16,6 @@ import ContentStudioView from './ContentStudioView';
 import { buildContentResponse } from './testFixtures';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
-import { MOCK_CREATIVE_DIRECTION } from '../../../services/fixtures/creativeDirection';
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { ApiError } from '../../../services/apiError';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
@@ -93,7 +92,7 @@ vi.mock('../../../services/apiClient', () => ({
       generate: (...args: unknown[]) => creativeDirectionMock(...args),
     },
     compliance: { omcsAnalyze: (...args: unknown[]) => omcsAnalyzeMock(...args) },
-    posts: { list: () => Promise.resolve([]) },
+    posts: { list: () => Promise.resolve([]), publish: vi.fn((req) => Promise.resolve(req.platforms.map((platform: string) => ({ id: `server-${platform}`, date: '2026-10-19', platform, caption: req.captionsByPlatform[platform], status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] })))) },
     attributionLinks: {
       list: (...args: unknown[]) => attributionLinksListMock(...args),
     },
@@ -201,6 +200,9 @@ describe('ContentStudioView — generate request', () => {
     ]);
 
     renderStudio();
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    // Quick Post shows one stage at a time; the Ad URL block is in Validate.
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
 
     expect(await screen.findByRole('heading', { name: 'Ad URL' }, SLOW)).toBeInTheDocument();
     expect(screen.getByText(ATTRIBUTION_LINK.urls.metaAdUrl)).toBeInTheDocument();
@@ -278,7 +280,7 @@ describe('ContentStudioView — generate request', () => {
     const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
     await userEvent.click(select[0]);
 
-    expect((screen.getByLabelText('Staged caption') as HTMLTextAreaElement).value)
+    expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value)
       .toBe('Instagram caption text');
   });
 
@@ -291,6 +293,9 @@ describe('ContentStudioView — generate request', () => {
     renderStudio();
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
+    // The media control, and the link beside it, live in the Attach stage.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
+
     // Dismiss the first-run auto-open so the assertion below is about the link.
     // The shared Drawer keeps its children mounted when closed — it slides
     // off-canvas so the transition can run — so "is the content in the DOM" is
@@ -302,62 +307,39 @@ describe('ContentStudioView — generate request', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Review Visual Guide' }));
 
     const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    // Nothing approved yet, so the drawer explains the next step instead of sitting blank.
-    expect(within(drawer).getByText(/select a caption option first/i)).toBeTruthy();
+    // No caption chosen yet, so the drawer explains the next step instead of sitting blank.
+    expect(within(drawer).getByText(/Choose a caption in Draft/i)).toBeTruthy();
     // Media guidance only — the moodboard and caption rationale were removed.
     expect(within(drawer).queryByText('Moodboard')).toBeNull();
   });
 
-  // The backend refuses to generate a direction until the operator has
-  // approved captions for the market (400 missing_dependency), so the screen
-  // must not fire the request on mount — it used to, got the 400, swallowed
-  // it, and left the drawer permanently empty.
-  it('does not request a visual guide before anything is approved', async () => {
+  // The guide's shots come from the chosen caption. The approve-and-generate
+  // AI shot list was removed, so nothing is approved or generated from here.
+  it('generates the caption’s shots on request, with the why-box, and approves nothing', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
     renderStudio();
-    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+    await userEvent.click(select[0]);
+    // The guide is media guidance, so it first auto-opens at Attach — and
+    // before the shots are generated it says where to get them.
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
+    expect(within(drawer).getByText(/Generate the AI shots/)).toBeTruthy();
+    await userEvent.click(within(drawer).getAllByRole('button', { name: 'Close' })[0]);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
 
+    // Neither the shots nor "Why this matters" before generating.
+    expect(screen.queryByRole('heading', { name: 'Why this matters' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Generate AI shots' }));
+    expect(screen.getByText('Generating shots for your caption…')).toBeTruthy();
+
+    // Both arrive together.
+    expect(await screen.findByRole('region', { name: 'Shots for your caption' }, SLOW)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Why this matters' })).toBeTruthy();
     expect(creativeDirectionMock).not.toHaveBeenCalled();
     expect(approveMock).not.toHaveBeenCalled();
-  });
-
-  it('approves the market then generates its visual guide', async () => {
-    generateMock.mockResolvedValue(buildContentResponse('groq'));
-    creativeDirectionMock.mockResolvedValue(MOCK_CREATIVE_DIRECTION);
-
-    renderStudio();
-    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
-    await userEvent.click(select[0]);
-
-    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
-
-    await waitFor(() => expect(approveMock).toHaveBeenCalledWith(MARKET.id), SLOW);
-    await waitFor(() => expect(creativeDirectionMock).toHaveBeenCalledWith(MARKET.id), SLOW);
-    // Approval must land before generation reads it.
-    expect(approveMock.mock.invocationCallOrder[0]).toBeLessThan(
-      creativeDirectionMock.mock.invocationCallOrder[0],
-    );
-
-    expect(await within(drawer).findByText('Shot list', undefined, SLOW)).toBeTruthy();
-  });
-
-  it('surfaces a failed approval instead of an empty drawer', async () => {
-    generateMock.mockResolvedValue(buildContentResponse('groq'));
-    approveMock.mockRejectedValue(
-      new ApiError({ status: 404, method: 'POST', path: '/api/content/approve', body: undefined }),
-    );
-
-    renderStudio();
-    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
-    await userEvent.click(select[0]);
-
-    const drawer = await screen.findByRole('dialog', { name: 'Visual Guide' });
-    await userEvent.click(within(drawer).getByRole('button', { name: /approve & get visual guide/i }));
-
-    expect(await within(drawer).findByRole('button', { name: /try again/i }, SLOW)).toBeTruthy();
-    expect(creativeDirectionMock).not.toHaveBeenCalled();
-  });
+    // Includes the mock generation delay: past vitest's 5s default under a full run.
+  }, 20000);
 
   // The sidebar's active row already says Content Studio; repeating it above
   // the title pushed the market selector up level with a label rather than
@@ -368,29 +350,29 @@ describe('ContentStudioView — generate request', () => {
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
     expect(container.querySelector('.page-head .eyebrow')).toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: /Create content that fits the market/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Content Studio' })).toBeTruthy();
     // The market selector still lives in the head's actions slot.
     expect(container.querySelector('.page-head-actions .studio-select')).not.toBeNull();
   });
 
-  // The floating trigger is icon-only so it does not sit over the content it
-  // floats above. Its name therefore has to come from aria-label — without it
-  // the control is announced as "button" and is unreachable by voice.
-  it('keeps the visual-guide trigger reachable with no visible label', async () => {
+  // The floating trigger was removed; the guide opens from the link beside
+  // the upload control (tested above). Draft is caption-only, so the
+  // first-run auto-open waits until Attach.
+  it('has no floating visual-guide trigger, and no guide on Draft', async () => {
     generateMock.mockResolvedValue(buildContentResponse('groq'));
-    renderStudio();
+    const { container } = renderStudio();
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
-    const trigger = screen.getByRole('button', { name: 'Visual Guide' });
-    expect(trigger.className).toContain('brief-trigger');
-    // Icon only — no text node of its own beyond the first-run tooltip.
-    expect(trigger.textContent).not.toContain('Visual Guide');
+    expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull();
+    expect(container.querySelector('.brief-trigger')).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull(), SLOW);
+    await userEvent.click(screen.getByRole('tab', { name: 'Campaigns' }));
+    expect(screen.queryByRole('dialog', { name: 'Visual Guide' })).toBeNull();
+    await userEvent.click(screen.getByRole('tab', { name: 'Quick Post' }));
 
-    await userEvent.click(trigger);
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
     expect(await screen.findByRole('dialog', { name: 'Visual Guide' })).toBeTruthy();
+    expect(container.querySelector('.brief-trigger')).toBeNull();
   });
 
   // Progressive disclosure, end to end: nothing on the screen offers Publish
@@ -402,6 +384,33 @@ describe('ContentStudioView — generate request', () => {
 
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
     expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull();
+  });
+
+  it('explains why Publish is locked while media uploads or after the upload fails', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    const base: PublishDraftState = {
+      caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+      visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false,
+    };
+
+    const { unmount } = render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'uploading' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(screen.getByText('Uploading your media… Publish unlocks when it finishes.')).toBeTruthy();
+    unmount();
+
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...base, mediaUpload: { status: 'failed', message: 'nope' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(2), SLOW);
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    expect(await screen.findByText('Media upload failed — go back to Attach to retry.')).toBeTruthy();
   });
 });
 
@@ -426,11 +435,12 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
 
     render(
       <OverlayStackProvider>
-        <ContentStudioView initialDraft={STAGED} />
+        <ContentStudioView initialDraft={{ ...STAGED, mediaUpload: { status: 'ready', mediaId: 'media', publicUrl: 'https://example.test/media.jpg' } }} />
       </OverlayStackProvider>,
     );
     await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
 
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
     await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/i }));
     // Six 420ms stepper ticks stand between the click and the verdict.
     const publish = await screen.findByRole('button', { name: /^Publish/ }, SLOW);
@@ -444,5 +454,34 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
     // Six real 420ms stepper ticks put this past vitest's 5s default before the
     // waitFor budgets above are even reached — it timed out in the full-suite
     // run and passed alone, which is the tell.
+  }, 30000);
+});
+
+describe('ContentStudioView — after publishing', () => {
+  const STAGED: PublishDraftState = {
+    caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
+    visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: true,
+  };
+
+  it('lands on the Content Library with the published post open', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    mockIsConnected = () => true;
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ ...STAGED, mediaUpload: { status: 'ready', mediaId: 'media', publicUrl: 'https://example.test/media.jpg' } }} />
+      </OverlayStackProvider>,
+    );
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Validate' }));
+    await userEvent.click(screen.getByRole('button', { name: /Run Compliance Audit/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Publish/ }, SLOW));
+    await userEvent.click(screen.getByRole('button', { name: /Confirm & Publish/ }));
+
+    expect(screen.getByRole('tab', { name: /Content Library/ })).toHaveAttribute('aria-selected', 'true');
+    const detail = await screen.findByRole('dialog', { name: 'Published to Instagram' });
+    expect(within(detail).getByText('A staged caption')).toBeTruthy();
+    expect(screen.getByText('Just published')).toBeTruthy();
+    // Six real 420ms audit steps come first.
   }, 30000);
 });

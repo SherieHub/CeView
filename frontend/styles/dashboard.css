@@ -125,8 +125,6 @@
   /* ================= top bar ================= */
   .app-wrap .app-topbar {
     gap: 14px;
-    background: rgba(255, 255, 255, 0.96);
-    border-bottom: 1px solid #e6eeec;
   }
   .app-wrap .app-topbar .icon-btn {
     width: 38px;
@@ -149,23 +147,23 @@
     color: var(--teal-700);
   }
 
-  /* On the dashboard the bar has no surface of its own: the cover photo runs
-     up behind it and the controls float on white discs. */
-  .app-wrap .app-col:has(.dash-screen) .app-topbar {
+  /* The bar has no surface of its own on any screen: the controls float on
+     white discs over the page (on the dashboard, over its cover photo). */
+  .app-wrap .app-col .app-topbar {
     background: transparent;
     border-bottom: 0;
     pointer-events: none;
   }
-  .app-wrap .app-col:has(.dash-screen) .app-topbar > * {
+  .app-wrap .app-col .app-topbar > * {
     pointer-events: auto;
   }
-  .app-wrap .app-col:has(.dash-screen) .app-topbar .icon-btn,
-  .app-wrap .app-col:has(.dash-screen) .topbar-avatar {
+  .app-wrap .app-col .app-topbar .icon-btn,
+  .app-wrap .app-col .topbar-avatar {
     background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 6px 18px -6px rgba(9, 52, 51, 0.35);
     opacity: 1;
   }
-  .app-wrap .app-col:has(.dash-screen) .topbar-avatar {
+  .app-wrap .app-col .topbar-avatar {
     background: #d9f3ec;
     box-shadow: 0 0 0 2px var(--white), 0 6px 18px -6px rgba(9, 52, 51, 0.35);
   }
@@ -1582,4 +1580,9 @@
   .business-trend-spark { flex: 0 0 36px; width: 36px; height: 24px; color: #13b29c; }
   .business-trend-score { display: grid; place-items: center; flex: none; min-width: 32px; height: 26px; padding: 0 5px; border-radius: 99px; background: #dcf4ee; color: #096663; font-size: .75rem; font-weight: 600; }
   .business-trend-score[data-muted] { background: #eaf1f3; color: #526d7b; }
+}
+
+/* The business's profile photo, when one is set (Business Profile). */
+@layer components {
+  .app-wrap .topbar-avatar-img { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; }
 }

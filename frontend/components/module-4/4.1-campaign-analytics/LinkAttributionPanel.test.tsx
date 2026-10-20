@@ -62,11 +62,13 @@ describe('LinkAttributionPanel', () => {
     // Option exists
     expect(screen.getAllByRole('option')).toHaveLength(links.length);
     
-    // Check if performance is rendered
+    // The title now sits in the card header from the start, so wait on the
+    // fetch and the table rather than on the title.
     await waitFor(() => {
-      expect(screen.getByText('Link-attributed evidence')).toBeInTheDocument();
+      expect(apiClient.attributionLinks.performance).toHaveBeenCalledWith(links[0].linkId);
     });
-    expect(apiClient.attributionLinks.performance).toHaveBeenCalledWith(links[0].linkId);
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(screen.getByText('Link-attributed evidence')).toBeInTheDocument();
   });
 
   it('handles performance error and retry separately', async () => {

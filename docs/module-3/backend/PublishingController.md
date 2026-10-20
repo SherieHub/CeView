@@ -1,4 +1,8 @@
-# `PublishingController` (specified, not yet implemented)
+# `PublishingController` (implemented)
+
+The implementation lives in `com.ceview.module3.social.publish` and supersedes the historical proposal below. V50 persists `tbl_social_post`; V52 serializes rotating creator token refreshes. `POST /api/posts/publish` supports per-platform captions, a ready tenant-owned `mediaId`, request idempotency, schedules and PAUSED Meta ads. List/detail/cancel routes are tenant-scoped through the JWT. The dispatcher claims one due row with `FOR UPDATE SKIP LOCKED`, commits the claim, then performs platform calls outside the transaction. Successful remote stages are checkpointed. Interrupted/ambiguous writes require operator inspection; they are not blindly repeated. Full request/view shapes and validation: [API contract](../../../backend/CONTRACT.md#social-publishing-endpoints).
+
+The remaining text records the earlier proposal and is superseded where it differs (especially `operatorId`, media refs and lifecycle statuses).
 
 **Package (proposed):** `com.ceview.module3.publishing` · **File (proposed):**
 `backend/spring-boot/src/main/java/com/ceview/module3/publishing/PublishingController.java`

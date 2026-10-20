@@ -8,10 +8,37 @@ import { OverlayStackProvider } from '../../shared/useOverlayStack';
 
 const IG = MOCK_CONTENT.captions.instagram;
 
-/** The grid mounts a Modal for the maximised view, which joins the overlay stack. */
+/** Wrapped as the app wraps it; the expanded view itself needs no overlay stack. */
 function renderGrid(ui: ReactElement) {
   return render(<OverlayStackProvider>{ui}</OverlayStackProvider>);
 }
+
+describe('CaptionOptionGrid — whole-card selection', () => {
+  it('selects an option from a click anywhere on its card, but not from its expand button', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<CaptionOptionGrid captions={MOCK_CONTENT.captions.instagram} selectedIndex={null} onSelect={onSelect} />);
+
+    await user.click(screen.getByTestId('cap-body-1'));
+    expect(onSelect).toHaveBeenCalledWith(1, MOCK_CONTENT.captions.instagram.options[1]);
+
+    onSelect.mockClear();
+    await user.click(screen.getByRole('heading', { name: IG.optionNames[0] }));
+    expect(onSelect).toHaveBeenCalledWith(0, IG.options[0]);
+
+    onSelect.mockClear();
+    await user.click(screen.getAllByRole('button', { name: /in full$/ })[2]);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('calls select once when the Select button itself is clicked', async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<CaptionOptionGrid captions={MOCK_CONTENT.captions.instagram} selectedIndex={null} onSelect={onSelect} />);
+    await user.click(screen.getAllByRole('button', { name: 'Select' })[0]);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('CaptionOptionGrid', () => {
   it('renders one card per option with its name', () => {
@@ -61,31 +88,50 @@ describe('CaptionOptionGrid', () => {
     expect(within(screen.getAllByRole('article')[1]).getByRole('button', { name: 'Selected' })).toBeTruthy();
   });
 
-  // Reading in full opens a modal rather than growing the card. In-place
-  // expansion pushed the row to the tallest card's height and shifted the two
-  // options the reader was comparing against — the comparison the row is for.
-  it('opens one option in a modal without changing the row', async () => {
+  // Reading in full expands that option over the cards' own area — no modal,
+  // nothing dimmed — and the cards stay mounted underneath, unchanged.
+  it('expands one option in place over the cards, without a modal', async () => {
     renderGrid(
       <CaptionOptionGrid captions={IG} selectedIndex={null} onSelect={vi.fn()} />,
     );
-    expect(screen.queryByRole('dialog')).toBeNull();
-
     const card = screen.getAllByRole('article')[0];
     await userEvent.click(
       within(card).getByRole('button', { name: 'Read Witty, Trend-Conscious & High-Energy in full' }),
     );
 
-    const dialog = await screen.findByRole('dialog');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const panel = screen.getByRole('region', { name: 'Witty, Trend-Conscious & High-Energy' });
     // A fragment, not the whole caption: these carry deliberate blank lines
-    // between paragraphs and getByText's exact match works on normalised text,
-    // so the raw multi-paragraph string never matches.
-    expect(within(dialog).getByText(/starts the moment the boat cuts the engine/)).toBeTruthy();
-    expect(within(dialog).getByRole('heading', { name: 'Witty, Trend-Conscious & High-Energy' })).toBeTruthy();
-    // The row is untouched — still three cards, none of them grown.
-    expect(screen.getAllByRole('article')).toHaveLength(3);
+    // between paragraphs and getByText's exact match works on normalised text.
+    expect(within(panel).getByText(/starts the moment the boat cuts the engine/)).toBeTruthy();
+    // The row is untouched underneath — still three cards.
+    expect(screen.getAllByRole('article', { hidden: true })).toHaveLength(3);
   });
 
-  it('stages the option from inside the modal and closes it', async () => {
+  it('puts the cards back on a click anywhere, or on Escape', async () => {
+    const user = userEvent.setup();
+    renderGrid(
+      <div>
+        <p>Elsewhere on the page</p>
+        <CaptionOptionGrid captions={IG} selectedIndex={null} onSelect={vi.fn()} />
+      </div>,
+    );
+    const open = () =>
+      user.click(screen.getByRole('button', { name: 'Read Formal, Educational & Value-Driven in full' }));
+
+    await open();
+    expect(screen.getByRole('region')).toBeTruthy();
+    await user.click(screen.getByText('Elsewhere on the page'));
+    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
+
+    await open();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
+    // Focus returns to the control that opened it.
+    expect(screen.getByRole('button', { name: 'Read Formal, Educational & Value-Driven in full' })).toHaveFocus();
+  });
+
+  it('stages the option from the expanded view and puts the cards back', async () => {
     const onSelect = vi.fn();
     renderGrid(
       <CaptionOptionGrid captions={IG} selectedIndex={null} onSelect={onSelect} />,
@@ -95,10 +141,10 @@ describe('CaptionOptionGrid', () => {
       within(card).getByRole('button', { name: 'Read Formal, Educational & Value-Driven in full' }),
     );
 
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Select' }));
+    const panel = screen.getByRole('region');
+    await userEvent.click(within(panel).getByRole('button', { name: 'Select' }));
 
     expect(onSelect).toHaveBeenCalledWith(1, IG.options[1]);
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
   });
 });

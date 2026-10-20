@@ -88,13 +88,14 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
      * profile" endpoint itself). Concatenating both fields is correct regardless of which
      * mapping style is in effect, since exactly one of them is ever non-empty.
      */
-    private static String requestPath(HttpServletRequest req) {
+    static String requestPath(HttpServletRequest req) {
         String servletPath = req.getServletPath();
         String pathInfo = req.getPathInfo();
         return pathInfo == null ? servletPath : servletPath + pathInfo;
     }
 
-    private boolean isExempt(String path) {
+    /** Shared with {@link EmailVerificationFilter}: the two gates exempt exactly the same routes. */
+    static boolean isExempt(String path) {
         return path.startsWith("/api/auth/")
             || path.startsWith("/actuator/")
             || path.equals("/error")
@@ -102,12 +103,17 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
             // Blocking it here would 403 an operator mid-redirect with no way
             // to recover the grant they just approved.
             || isAdConnectionCallback(path)
+            // TikTok publishing-login callback: a redirect from TikTok, not a UI call.
+            || path.equals("/api/social-connections/tiktok/callback")
             // Attribution redirect and hosted enquiry form. Both are hit by a
             // traveller's browser, not by the operator's app — there is no
             // operator behind the request whose profile could be incomplete,
             // and a 403 here would break a link inside a running paid ad.
             || path.startsWith("/r/")
-            || path.startsWith("/api/public/attribution/");
+            || path.startsWith("/api/public/attribution/")
+            // Local-dev media upload/readback (see SecurityConfig): no operator is behind these.
+            || path.startsWith("/media/")
+            || path.matches("^/api/media/local/[^/]+$");
     }
 
     /**
@@ -115,7 +121,7 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
      * kept in lockstep with the single-segment {@code /api/ad-connections/*&#47;callback}
      * Ant matcher in {@code SecurityConfig}.
      */
-    private boolean isAdConnectionCallback(String path) {
+    private static boolean isAdConnectionCallback(String path) {
         return path.matches("^/api/ad-connections/[^/]+/callback$");
     }
 }

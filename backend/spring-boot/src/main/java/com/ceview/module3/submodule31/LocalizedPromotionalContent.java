@@ -31,6 +31,10 @@ public class LocalizedPromotionalContent {
     @Column(name = "generated_caption", columnDefinition = "TEXT")
     private String generatedCaption;
 
+    /** Meaning-faithful English of generatedCaption; null for English-market rows. */
+    @Column(name = "generated_caption_en", columnDefinition = "TEXT")
+    private String generatedCaptionEn;
+
     @Column(name = "content_direction", columnDefinition = "TEXT")
     private String contentDirection;
 

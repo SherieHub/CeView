@@ -24,6 +24,7 @@ import { useCoverPhoto } from './useCoverPhoto';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
+import { isSurge } from '../../../types';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import { StaleDataBanner } from '../../shared/StaleDataBanner';
 import { useDashboardState } from './useDashboardState';
@@ -248,7 +249,21 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           // here. Content Studio refuses to render without both (see
           // ContentStudioView), so an incomplete pick is never written.
           const market = state.rankedMarkets.find((m) => m.id === marketId);
-          if (state.selectedAlert && market) setTarget(state.selectedAlert, market);
+          // Opened from the Top International Market tile there is no selected
+          // alert, so the pick used to be dropped and Content Studio fell back
+          // to its picker. Use the operator's own alert for this category —
+          // this market's, then a surge, then any — so the click lands on
+          // Quick Post with the market already chosen. Never invents an alert:
+          // with none for the category, the picker still asks.
+          const category = state.selectedAlert?.category ?? state.topMarket?.category ?? null;
+          const inCategory = state.myAlerts.filter((a) => a.category === category);
+          const alert =
+            state.selectedAlert ??
+            inCategory.find((a) => a.marketId === marketId) ??
+            inCategory.find(isSurge) ??
+            inCategory[0] ??
+            null;
+          if (alert && market) setTarget(alert, market);
           navigate('/content');
         }}
       />

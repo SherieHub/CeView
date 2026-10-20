@@ -27,13 +27,16 @@ The app is fully authenticated and multi-tenant: every API route is JWT-gated an
 
 ## Quick Start
 
-Backend (Docker, requires Docker Desktop and a [GROQ API key](https://console.groq.com/keys)):
+Backend (Docker, requires Docker Desktop):
 
 ```bash
 cd backend
-copy .env.example .env   # then fill in GROQ_API_KEY (required)
+copy .env.example .env   # set JWT_SECRET + CEVIEW_ATTRIBUTION_IP_HASH_SALT (required), GROQ_API_KEY, SERPAPI_KEY
 docker-compose up --build
 ```
+
+[Groq](https://console.groq.com/keys) powers the AI features and [SerpApi](https://serpapi.com/manage-api-key)
+the Market Radar trends; the stack starts without them, and those features report which key is missing.
 
 Frontend:
 
@@ -43,25 +46,36 @@ npm install
 npm run dev   # http://localhost:3001
 ```
 
-For the native/H2 path (no Docker), the full environment variable reference, seeded demo accounts, troubleshooting, and end-to-end tests, see **[RUNNING.md](RUNNING.md)** — the complete setup guide.
+Tests:
+
+```bash
+# each from the repo root
+cd frontend && npm run test:unit && npm run test:integration
+cd backend/spring-boot && ./mvnw test
+cd backend/fastapi-sbert && pytest tests/        # same in backend/fastapi-transformer
+cd e2e && npx playwright test                    # needs the backend running, see RUNNING.md §8
+```
+
+For the native/H2 path (no Docker), the full environment variable reference, building containers, seeded demo accounts, every test command, and troubleshooting, see **[RUNNING.md](RUNNING.md)** — the complete setup guide.
 
 ## Documentation Map
 
 | Doc | Path | Covers |
 |---|---|---|
-| Setup & Running | [`RUNNING.md`](RUNNING.md) | Full local setup (Docker and native/H2 paths), environment variables, demo accounts, troubleshooting, e2e tests |
+| Setup & Running | [`RUNNING.md`](RUNNING.md) | Full local setup (Docker and native/H2 paths), environment variables for every stack, building containers, demo accounts, unit/integration/e2e tests, troubleshooting |
 | System Architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) | End-to-end sequence/flow diagrams across all integration paths |
 | Architecture Spec | [`ARCHITECTURE_SPEC.md`](ARCHITECTURE_SPEC.md) | Scoring algorithms/formulas behind each module |
 | API Contract | [`backend/CONTRACT.md`](backend/CONTRACT.md) | Full REST endpoint contract between frontend and backend |
 | Module 1–4 docs | [`docs/module-1/`](docs/module-1/README.md) … [`docs/module-4/`](docs/module-4/README.md) | Per-module deep dives: components, DB schema, sequence diagrams |
-| Deployment | [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md) | Deploying the full stack to Render |
+| Deployment (AWS) | [`docs/DEPLOY_AWS.md`](docs/DEPLOY_AWS.md) | Production pilot on AWS: Lightsail + S3/CloudFront, secrets in Parameter Store, release flow |
+| Deployment (Render) | [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md) | Deploying the full stack to Render |
 | Ad platform setup | [`AD_PLATFORM_SETUP.md`](AD_PLATFORM_SETUP.md) | Connecting Meta and TikTok ad accounts; OAuth setup, env vars, manual testing |
 
 ## Testing & CI
 
 | Workflow | Runs |
 |---|---|
-| [`ci-frontend.yml`](.github/workflows/ci-frontend.yml) | Vitest unit + integration tests, production build |
+| [`ci-frontend.yml`](.github/workflows/ci-frontend.yml) | Type check, Vitest unit + integration tests, production build |
 | [`ci-spring-boot.yml`](.github/workflows/ci-spring-boot.yml) | JUnit tests against H2, package |
 | [`ci-fastapi-sbert.yml`](.github/workflows/ci-fastapi-sbert.yml) | pytest for the classification/content service |
 | [`ci-fastapi-transformer.yml`](.github/workflows/ci-fastapi-transformer.yml) | pytest for the forecasting service |

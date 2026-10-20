@@ -108,7 +108,10 @@ def _multimodal(text: str, image_url: str) -> HumanMessage:
 def node_profile_diff(state: CeviewValidationState) -> dict:
     return {
         "profile_semantic_score": profile_alignment_score(
-            state.get("business_profile") or {}, state["caption"]
+            state.get("business_profile") or {},
+            # The profile is English; a Korean/Japanese caption is compared via
+            # its English translation when the caller has one.
+            (state.get("caption_en") or "").strip() or state["caption"],
         )
     }
 

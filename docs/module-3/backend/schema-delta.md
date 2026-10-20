@@ -1,5 +1,7 @@
 # Schema delta — Module 3 new surfaces
 
+**October 2026 implementation:** the social-publishing design supersedes this proposal. Migrations V48 (`tbl_media_asset`), V49 (`tbl_publishing_account` and creator OAuth state key), V50 (`tbl_social_post` with delivery checkpoints), V51 (`tbl_post_metric`) and V52 (creator token refresh lease) implement these surfaces. There is no `tbl_platform_connection` table. See [API contract](../../../backend/CONTRACT.md#social-publishing-endpoints).
+
 Two new tables are required for the UI/UX overhaul's Module 3 surfaces. Neither exists today. This is
 a **specification**, not yet implemented.
 

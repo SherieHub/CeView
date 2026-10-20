@@ -8,10 +8,11 @@
  * Real endpoints are added as each screen card wires its backend.
  */
 import { loadTokens } from './authStorage';
+import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { ApiError } from './apiError';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
-import { MOCK_CONTENT } from './fixtures/content';
+import { MOCK_CONTENT, fixtureTranslation } from './fixtures/content';
 import { MOCK_OMCS } from './fixtures/omcs';
 import { MOCK_CREATIVE_DIRECTION } from './fixtures/creativeDirection';
 import { MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
@@ -32,9 +33,14 @@ import {
   mockUnconvertedClicks,
 } from './fixtures/attributionLinks';
 import type {
+  PublishedPost,
+  PublishRequest,
   WorkspaceMemberFixture,
   PlatformConnection,
+  SocialConnectionDto,
+  MetaPageOption,
   PostMetric,
+  AuthSession,
   BusinessProfileDto,
   CategoryAllocation,
   UniquenessResult,
@@ -45,6 +51,9 @@ import type {
   ManualIngestResponse,
   PrescriptiveReport,
   ContentResponse,
+  CaptionLanguage,
+  CaptionLocalization,
+  CaptionTranslation,
   OmcsAuditResult,
   CreativeDirection,
   AdAccountOption,
@@ -56,10 +65,14 @@ import type {
   AttributionLink,
   LinkPerformance,
   UnconvertedClick,
+  MediaUploadSlot,
+  MediaAssetDto,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+/** The API origin, for the few callers (media upload) that must build absolute URLs themselves. */
+export const API_BASE_URL = BASE_URL;
 
 // Build-time guard (T-01..T-08): import.meta.env.PROD is a compile-time
 // constant Vite replaces during a production build, so this branch is dead
@@ -75,6 +88,57 @@ if (USE_FIXTURES && import.meta.env.PROD) {
 /** Simulated network delay so fixture-backed UI still exercises loading states. */
 function delay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+}
+
+/** Backend session body shared by login / register / google / password-reset confirm. */
+interface SessionDto {
+  token: string;
+  operatorId: string;
+  profileCompleted: boolean;
+  /** Absent only from a backend that predates email verification; treated as verified then. */
+  emailVerified?: boolean;
+}
+
+interface CodeSentDto {
+  sentTo: string;
+  resendAvailableInSeconds: number;
+}
+
+function toPlatformConnections(dtos: SocialConnectionDto[]): PlatformConnection[] {
+  return dtos.map((dto) => ({
+    platform: dto.platform,
+    connected: dto.status === 'ACTIVE',
+    handle: dto.handle,
+    connectedAt: dto.connectedAt,
+    status: dto.status,
+    configured: dto.configured,
+  }));
+}
+
+function toSession(dto: SessionDto, email: string | null): AuthSession {
+  return {
+    accessToken: dto.token,
+    profileCompleted: dto.profileCompleted,
+    emailVerified: dto.emailVerified ?? true,
+    // No /me endpoint yet — businessName isn't returned, and Google sign-in's
+    // email comes back inside the JWT rather than this body (hence null there).
+    user: { id: dto.operatorId, email, businessName: null },
+  };
+}
+
+function fixtureSession(email: string | null): AuthSession {
+  return {
+    accessToken: 'mock-access-token-123',
+    profileCompleted: true,
+    emailVerified: true,
+    user: { id: 'usr-1', email, businessName: null },
+  };
+}
+
+/** Evidence accompanying a contact number: a Firebase token, or an explicit "verify later" opt-out. */
+export interface PhoneProof {
+  phoneIdToken?: string;
+  verifyLater?: boolean;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -97,7 +161,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       body = undefined;
     }
-    throw new ApiError({ status: res.status, method, path, body });
+    const error = new ApiError({ status: res.status, method, path, body });
+    // The backend gates every non-auth route on a verified email. Tell AuthProvider so it can
+    // route to /verify-email, which also repairs a session stored before verification shipped.
+    if (res.status === 403 && error.code === 'EMAIL_NOT_VERIFIED') {
+      window.dispatchEvent(new Event(EMAIL_NOT_VERIFIED_EVENT));
+    }
+    throw error;
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -272,6 +342,38 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify(input),
           }),
+    /**
+     * Meaning-faithful English for a Korean/Japanese caption (the "Show English"
+     * toggle). Fixture mode answers from the fixture's own `optionsEn`.
+     */
+    translate: (input: { caption: string; platform?: string }) =>
+      USE_FIXTURES
+        ? delay<CaptionTranslation>(fixtureTranslation(input.caption))
+        : request<CaptionTranslation>('/api/content/translate', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
+    /**
+     * Rewrites owner-edited English as a natural Korean/Japanese caption
+     * ("Apply to Korean/Japanese"). `originalCaption` keeps the existing voice.
+     */
+    localize: (input: {
+      captionEn: string;
+      targetLanguage: CaptionLanguage;
+      platform?: string;
+      originalCaption?: string;
+    }) =>
+      USE_FIXTURES
+        ? delay<CaptionLocalization>({
+            caption: input.originalCaption || input.captionEn,
+            captionEn: input.captionEn,
+            targetLanguage: input.targetLanguage,
+            source: 'groq',
+          })
+        : request<CaptionLocalization>('/api/content/localize', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          }),
     /** Operator approves the generated set for a market. */
     approve: (market: string) =>
       USE_FIXTURES
@@ -291,6 +393,11 @@ export const apiClient = {
      */
     omcsAnalyze: (input: {
       caption: string;
+      /**
+       * English translation of `caption`, when it is not English. Used only for the
+       * profile-similarity sub-score; the image checks still read `caption`.
+       */
+      captionEn?: string;
       imageUrl: string;
       recommendations: Record<string, unknown>;
     }) =>
@@ -367,19 +474,83 @@ export const apiClient = {
           }),
   },
   posts: {
-    list: () => (USE_FIXTURES ? delay(MOCK_POSTS) : request('/api/posts')),
-    metrics: (postId: string) =>
-      USE_FIXTURES
-        ? delay(MOCK_POST_METRICS.find((m) => m.postId === postId) ?? null)
-        : request(`/api/posts/${postId}/metrics`),
+    list: () => (USE_FIXTURES ? delay(MOCK_POSTS) : request<PublishedPost[]>('/api/posts')),
+    publish: (payload: PublishRequest) => request<PublishedPost[]>('/api/posts/publish', { method: 'POST', body: JSON.stringify(payload) }),
+    cancel: (id: string) => request<void>(`/api/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    metrics: (postId: string) => USE_FIXTURES
+      ? delay(MOCK_POSTS.find((post) => post.id === postId) ?? null)
+      : request<PublishedPost>(`/api/analytics/posts/${encodeURIComponent(postId)}`),
   },
+  /**
+   * Publishing connections (Facebook Page, Instagram, TikTok). Meta's login itself is
+   * adConnections.authorize('meta') — one Meta login serves ads and publishing.
+   */
   connections: {
-    list: () => (USE_FIXTURES ? delay(MOCK_CONNECTIONS) : request<PlatformConnection[]>('/api/connections')),
-    connect: (platform: string) =>
-      USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/connect`, { method: 'POST' }),
+    list: () =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections').then(toPlatformConnections),
+
+    tiktokAuthorize: () =>
+      USE_FIXTURES
+        ? delay<{ authorizeUrl: string }>({ authorizeUrl: '#fixture-no-oauth' })
+        : request<{ authorizeUrl: string }>('/api/social-connections/tiktok/authorize', { method: 'POST' }),
+
+    /** Finishes TikTok's login from the SPA (code + state come from the callback redirect). */
+    tiktokComplete: (code: string, state: string) =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections/tiktok/complete', {
+            method: 'POST',
+            body: JSON.stringify({ code, state }),
+          }).then(toPlatformConnections),
+
+    metaPages: () =>
+      USE_FIXTURES
+        ? delay<MetaPageOption[]>([
+            { id: 'page-1', name: 'Cebu Dive Co.', instagramUsername: 'cebu.dive' },
+            { id: 'page-2', name: 'Mactan Cafe', instagramUsername: null },
+          ])
+        : request<MetaPageOption[]>('/api/social-connections/meta/pages'),
+
+    /** Returns the fresh connection list. */
+    selectMetaPage: (pageId: string) =>
+      USE_FIXTURES
+        ? delay(MOCK_CONNECTIONS)
+        : request<SocialConnectionDto[]>('/api/social-connections/meta/page', {
+            method: 'PUT',
+            body: JSON.stringify({ pageId }),
+          }).then(toPlatformConnections),
+
     disconnect: (platform: string) =>
-      USE_FIXTURES ? delay({ ok: true }) : request(`/api/connections/${platform}/disconnect`, { method: 'POST' }),
+      USE_FIXTURES
+        ? delay({ ok: true })
+        : request<void>(`/api/social-connections/${platform}`, { method: 'DELETE' }),
   },
+  /** Media uploads for publishing — see services/mediaUpload.ts for the full flow. */
+  media: {
+    requestUpload: (contentType: string, sizeBytes: number) =>
+      USE_FIXTURES
+        ? delay<MediaUploadSlot>({
+            mediaId: 'fixture-media',
+            uploadUrl: '#fixture-no-upload',
+            publicUrl: 'https://example.invalid/fixture-media',
+            kind: contentType.startsWith('video/') ? 'video' : 'image',
+          })
+        : request<MediaUploadSlot>('/api/media/uploads', {
+            method: 'POST',
+            body: JSON.stringify({ contentType, sizeBytes }),
+          }),
+
+    complete: (mediaId: string, dims: { width?: number; height?: number; durationSeconds?: number } = {}) =>
+      USE_FIXTURES
+        ? delay<MediaAssetDto | null>(null)
+        : request<MediaAssetDto>(`/api/media/${mediaId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(dims),
+          }),
+  },
+
   /**
    * Ad-platform (Meta / TikTok) account connections and metric sync.
    *
@@ -399,6 +570,14 @@ export const apiClient = {
         ? delay<{ authorizeUrl: string }>({ authorizeUrl: '#fixture-no-oauth' })
         : request<{ authorizeUrl: string }>(`/api/ad-connections/${provider}/authorize`, {
             method: 'POST',
+          }),
+
+    complete: (provider: AdProvider, code: string, state: string) =>
+      USE_FIXTURES
+        ? delay<void>(undefined)
+        : request<void>(`/api/ad-connections/${provider}/complete`, {
+            method: 'POST',
+            body: JSON.stringify({ code, state }),
           }),
 
     accounts: (provider: AdProvider) =>
@@ -526,49 +705,72 @@ export const apiClient = {
   auth: {
     login: (email: string, password: string) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/login', {
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            // No /me endpoint yet — businessName isn't returned by login, only
-            // populated once one exists (see AuthProvider's mount comment).
-            user: { id: operatorId, email, businessName: null },
-          })),
-    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string) =>
+          }).then((dto) => toSession(dto, email)),
+    register: (email: string, password: string, firstName: string, lastName: string, contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: true, user: { id: 'usr-1', email, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/register', {
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, firstName, lastName, contactNumber }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            user: { id: operatorId, email, businessName: null },
-          })),
+            body: JSON.stringify({ email, password, firstName, lastName, contactNumber, ...phone }),
+          }).then((dto) => toSession(dto, email)),
     /** Verifies a Firebase ID token server-side and mints the same session shape as login/register. */
     google: (idToken: string, intent: 'login' | 'register') =>
       USE_FIXTURES
-        ? delay({ accessToken: 'mock-access-token-123', profileCompleted: false, user: { id: 'usr-1', email: null, businessName: null } })
-        : request<{ token: string; operatorId: string; profileCompleted: boolean }>('/api/auth/google', {
+        ? delay({ ...fixtureSession(null), profileCompleted: false })
+        : request<SessionDto>('/api/auth/google', {
             method: 'POST',
             body: JSON.stringify({ idToken, intent }),
-          }).then(({ token, operatorId, profileCompleted }) => ({
-            accessToken: token,
-            profileCompleted,
-            // Google sign-in's email comes back inside the JWT, not this
-            // response body — callers that need it read it off the token.
-            user: { id: operatorId, email: null, businessName: null },
-          })),
+          }).then((dto) => toSession(dto, null)),
+    /** Emails a fresh 6-digit code to the signed-in operator. Rejects with code RESEND_COOLDOWN / SEND_LIMIT / EMAIL_SEND_FAILED. */
+    sendVerificationCode: () =>
+      USE_FIXTURES
+        ? delay({ sentTo: 'you@example.com', resendAvailableInSeconds: 60 })
+        : request<CodeSentDto>('/api/auth/email-verification/send', { method: 'POST' }),
+    /** Rejects with code INVALID_CODE (+ attemptsRemaining) / CODE_EXPIRED / CODE_LOCKED / NO_ACTIVE_CODE. */
+    verifyEmail: (code: string) =>
+      USE_FIXTURES
+        ? delay({ emailVerified: true })
+        : request<{ emailVerified: boolean }>('/api/auth/email-verification/verify', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+          }),
+    /** Fixes a mistyped address while unverified; the backend mails a new code to it. Rejects with EMAIL_TAKEN / SAME_EMAIL. */
+    changeEmail: (email: string) =>
+      USE_FIXTURES
+        ? delay({ email })
+        : request<{ email: string }>('/api/auth/email', { method: 'PATCH', body: JSON.stringify({ email }) }),
+    /** Rejects with ACCOUNT_NOT_FOUND / GOOGLE_ACCOUNT / RESEND_COOLDOWN / SEND_LIMIT. */
+    requestPasswordReset: (email: string) =>
+      USE_FIXTURES
+        ? delay({ sentTo: email, resendAvailableInSeconds: 60 })
+        : request<CodeSentDto>('/api/auth/password-reset/request', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+          }),
+    /** Completing a reset also verifies the email and signs the user in (same session shape as login). */
+    confirmPasswordReset: (email: string, code: string, newPassword: string) =>
+      USE_FIXTURES
+        ? delay(fixtureSession(email))
+        : request<SessionDto>('/api/auth/password-reset/confirm', {
+            method: 'POST',
+            body: JSON.stringify({ email, code, newPassword }),
+          }).then((dto) => toSession(dto, email)),
+    /** The caller's contact number and whether it has been SMS-verified (settings "Contact number"). */
+    getProfile: () =>
+      USE_FIXTURES
+        ? delay({ contactNumber: '+63 917 000 0000' as string | null, phoneVerified: false })
+        : request<{ contactNumber: string | null; phoneVerified: boolean }>('/api/auth/profile'),
     /** The one-time "complete your profile" step (see ProfileCompletionGate). */
-    completeProfile: (contactNumber: string) =>
+    completeProfile: (contactNumber: string, phone?: PhoneProof) =>
       USE_FIXTURES
         ? delay({ profileCompleted: true })
         : request<{ profileCompleted: boolean }>('/api/auth/profile', {
             method: 'PATCH',
-            body: JSON.stringify({ contactNumber }),
+            body: JSON.stringify({ contactNumber, ...phone }),
           }),
   },
 };

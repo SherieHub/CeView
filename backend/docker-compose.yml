@@ -23,6 +23,8 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       # Groq decommissions models periodically; override without a rebuild.
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      # Caption translation / re-localisation model; blank falls back to GROQ_MODEL.
+      GROQ_TRANSLATION_MODEL: ${GROQ_TRANSLATION_MODEL:-}
       # The compliance audit needs an image-capable model (omcs_agent/node.py).
       OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
@@ -90,8 +92,24 @@ services:
       # fixture-mode Vite server on :3001 — without it here every e2e request
       # fails CORS preflight (403 "Invalid CORS request") before reaching the
       # app, e.g. registration in onboarding-uniqueness.spec.ts.
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173
+      # Overridable from backend/.env; if you do, keep :3012 in the list.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:3001,http://localhost:3002,http://localhost:3012,http://192.168.1.194:3000,http://192.168.1.194:5173}
+      # Public origin baked into /r/{slug} attribution links.
+      CEVIEW_ATTRIBUTION_BASE_URL: ${CEVIEW_ATTRIBUTION_BASE_URL:-http://localhost:8080}
+      # Nightly market-data refresh; each run spends SerpApi searches. false stops it.
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-true}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      # Email verification. 'log' (default) prints each 6-digit code to this container's log
+      # (`docker compose logs spring-boot`) and sends nothing; set EMAIL_PROVIDER=resend with
+      # RESEND_API_KEY + EMAIL_FROM to send real mail. See RUNNING.md.
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-log}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      # E2E only (set by .github/workflows/e2e.yml, or in backend/.env to run Playwright locally):
+      # exposes /api/test-support/email-codes/latest so the suite can read codes. The backend
+      # refuses to start with this on and EMAIL_PROVIDER=resend.
+      CEVIEW_TEST_SUPPORT_ENABLED: ${CEVIEW_TEST_SUPPORT_ENABLED:-false}
+      CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:-10}
       # Ad-platform (Meta Ads / TikTok Ads) connections — see AD_PLATFORM_SETUP.md.
       # All optional: absent, the /api/ad-connections endpoints just report
       # "not configured on this server" rather than failing to start.
@@ -99,6 +117,19 @@ services:
       META_APP_SECRET: ${META_APP_SECRET:-}
       TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
       TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TIKTOK_CONTENT_CLIENT_KEY: ${TIKTOK_CONTENT_CLIENT_KEY:-}
+      TIKTOK_CONTENT_CLIENT_SECRET: ${TIKTOK_CONTENT_CLIENT_SECRET:-}
+      MEDIA_STORAGE: ${MEDIA_STORAGE:-local}
+      MEDIA_LOCAL_DIR: /app/media-uploads
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:8080}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-}
+      MEDIA_AWS_REGION: ${MEDIA_AWS_REGION:-ap-southeast-1}
+      MEDIA_AWS_ACCESS_KEY_ID: ${MEDIA_AWS_ACCESS_KEY_ID:-}
+      MEDIA_AWS_SECRET_ACCESS_KEY: ${MEDIA_AWS_SECRET_ACCESS_KEY:-}
+      SOCIAL_DISPATCH_ENABLED: ${SOCIAL_DISPATCH_ENABLED:-true}
+      SOCIAL_DISPATCH_DELAY_MS: ${SOCIAL_DISPATCH_DELAY_MS:-30000}
+      SOCIAL_METRICS_ENABLED: ${SOCIAL_METRICS_ENABLED:-true}
+      SOCIAL_METRICS_CRON: ${SOCIAL_METRICS_CRON:-0 0 3 * * *}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       # Public HTTPS origin the platforms redirect back to. In local dev this
       # is a native `cloudflared tunnel --url http://localhost:8080` (or
@@ -108,6 +139,8 @@ services:
       # (§5) each session.
       OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3001}
+    volumes:
+      - ceview-media-uploads:/app/media-uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,3 +154,4 @@ services:
 volumes:
   ceview-pgdata:
   ceview-hf-cache:
+  ceview-media-uploads:

@@ -206,44 +206,36 @@ test.describe('End-to-end authenticated journey', () => {
     await expect(page.getByText('Step 2 of 2')).toBeVisible();
     await page.getByRole('heading', { name: 'South Korea' }).click();
 
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Create content that fits the market' }),
-    ).toBeVisible();
+    // Quick Post's Draft stage — rendered only once a target is picked.
+    await expect(page.getByRole('heading', { name: 'Caption Choices' })).toBeVisible();
 
     // The shot list lives in the "Visual Guide" drawer now — the inline
     // VisualDirectionBoard (section[aria-labelledby="visual-direction-title"])
     // was removed in the studio rebuild, which is what this assertion used to
     // reach for. The drawer auto-opens on a first visit (useFirstRunDrawer);
-    // the floating trigger opens it if that FTUE flag has already been set.
+    // the "Review Visual Guide" link opens it if that FTUE flag has already been set.
+    // Neither shows on Draft — the guide is media guidance, so it starts at
+    // the Attach stage.
+    await page.getByRole('button', { name: 'Attach', exact: true }).click();
     const visualGuide = page.getByRole('dialog', { name: 'Visual Guide' });
     if (!(await visualGuide.isVisible())) {
-      await page.getByRole('button', { name: 'Visual Guide' }).click();
+      await page.getByRole('button', { name: 'Review Visual Guide' }).click();
     }
     await expect(visualGuide).toBeVisible();
 
-    // POST /api/creative-direction/generate -> Spring's
-    // AIInferenceGatewayService.generateCreative -> fastapi-sbert has no known
-    // defect on the happy path, and fastapi-sbert IS started in the e2e-journey
-    // CI job (see this file's header comment) — but a live Groq call can still
-    // fail transiently. ContentStudioView catches that into `direction = null`,
-    // which renders the drawer's header with no sections and NO error panel, so
-    // there is nothing to assert on in that branch. Require real content only
-    // when the shot list actually rendered, mirroring the caption-panel
-    // assertion below.
-    const shotListHeading = visualGuide.getByRole('heading', { name: 'Shot list' });
-    const shotListRendered = await shotListHeading
-      .waitFor({ state: 'visible', timeout: 20_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (shotListRendered) {
-      await expect(visualGuide).not.toContainText('undefined');
-      await expect(visualGuide).not.toContainText('NaN');
-    }
+    // The guide is built from the chosen caption (captionShots.ts); the
+    // approve-and-generate AI shot list was removed from the drawer. With no
+    // caption picked yet it names the market and asks for one — no request,
+    // no empty sections.
+    await expect(visualGuide.getByRole('heading', { name: 'Visual Guide for South Korea' })).toBeVisible();
+    await expect(visualGuide).toContainText('Choose a caption in Draft');
+    await expect(visualGuide).not.toContainText('undefined');
+    await expect(visualGuide).not.toContainText('NaN');
 
-    // Close it before asserting on the caption matrix underneath — the drawer
-    // scrim covers the column the cards are in.
+    // Close it, then return to Draft, where the caption matrix lives.
     await visualGuide.getByRole('button', { name: 'Close' }).click();
     await expect(visualGuide).toBeHidden();
+    await page.getByRole('button', { name: 'Draft', exact: true }).click();
 
     // POST /api/content/generate currently 500s with
     // MOD31_CAPTION_AGENT_FAILED — a known, out-of-scope defect in the

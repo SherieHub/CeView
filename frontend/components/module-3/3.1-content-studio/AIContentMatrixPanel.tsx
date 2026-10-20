@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Facebook, Instagram, Loader2 } from 'lucide-react';
+import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import type { ContentResponse } from '../../../types';
 import { STUDIO_PLATFORMS } from './contentStudioTypes';
 import type { StudioPlatformId } from './contentStudioTypes';
@@ -66,6 +67,7 @@ export default function AIContentMatrixPanel({
               aria-selected={selected}
               onClick={() => selectPlatform(item.id)}
             >
+              {item.id === 'instagram' ? <Instagram size={21} aria-hidden="true" /> : item.id === 'facebook' ? <Facebook size={21} aria-hidden="true" /> : <TikTokGlyph size={21} />}
               {item.label}
             </button>
           );
@@ -82,6 +84,7 @@ export default function AIContentMatrixPanel({
         <div className="mt-4">
           <CaptionOptionGrid
             captions={captions}
+            platform={platform}
             selectedIndex={selectedOption ?? null}
             onSelect={(index, text) => onSelectCaption?.(index, text)}
           />

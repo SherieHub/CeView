@@ -39,6 +39,9 @@ public class AdConnectionsConfig {
         }
 
         @Override
+        public boolean isConfigured() { return false; }
+
+        @Override
         public String encrypt(String plaintext) {
             throw new IllegalStateException(
                     "TOKEN_ENCRYPTION_KEY is not configured; refusing to store an ad-platform token");

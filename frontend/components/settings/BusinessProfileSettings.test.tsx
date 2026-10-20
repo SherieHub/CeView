@@ -50,6 +50,10 @@ vi.mock('../../services/apiClient', () => ({
     businessProfile: {
       save: vi.fn((profile: BusinessProfile) => Promise.resolve(profile)),
     },
+    // ContactNumberSection loads this on mount; it hides itself when the call fails.
+    auth: {
+      getProfile: vi.fn(() => Promise.reject(new Error('not under test'))),
+    },
   },
 }));
 
@@ -170,6 +174,48 @@ describe('BusinessProfileSettings', () => {
     expect(screen.getByRole('heading', { name: BASE_PROFILE.businessName })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Renamed Resort' })).not.toBeInTheDocument();
     expect(screen.getByText(/^Uniqueness 82$/)).toBeInTheDocument(); // 0.82 -> formatted ×100
+  });
+
+  describe('profile photo', () => {
+    function upload(file: File) {
+      fireEvent.change(screen.getByTestId('profile-photo-input'), { target: { files: [file] } });
+    }
+
+    it('shows an uploaded photo at once and keeps it on Save', async () => {
+      const { setProfile } = renderSettings();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add profile photo' }));
+      expect(screen.getByRole('menuitem', { name: /upload a photo/i })).toBeInTheDocument();
+      upload(new File(['img'], 'logo.png', { type: 'image/png' }));
+
+      const avatar = await screen.findByRole('button', { name: 'Change profile photo' });
+      expect(avatar.querySelector('img')).toHaveAttribute('src', expect.stringMatching(/^data:image\//));
+      expect(screen.getByText(/unsaved/i)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      expect(await screen.findByText(/business profile saved/i)).toBeInTheDocument();
+      expect(setProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ imagePreview: expect.stringMatching(/^data:image\//) })
+      );
+    });
+
+    it('turns away a file that is not an image', () => {
+      renderSettings();
+
+      upload(new File(['%PDF'], 'menu.pdf', { type: 'application/pdf' }));
+
+      expect(screen.getByText(/choose an image file/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add profile photo' })).toBeInTheDocument();
+    });
+
+    it('removes a saved photo, back to initials', () => {
+      renderSettings({ imagePreview: 'data:image/png;base64,AAAA' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Change profile photo' }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /remove photo/i }));
+
+      expect(screen.getByRole('button', { name: 'Add profile photo' })).toHaveTextContent('SC');
+    });
   });
 
   it('omits the score chip before a uniqueness score exists', () => {

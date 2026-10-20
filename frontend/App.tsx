@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider, useParams } from 'react-router-dom';
 import AuthGate, { RedirectIfAuthenticated } from './components/auth/AuthGate';
+import EmailVerificationGate from './components/auth/EmailVerificationGate';
 import ProfileCompletionGate from './components/auth/ProfileCompletionGate';
 import AppShell from './layout/AppShell';
 import { ProfileProvider, ProfileGate } from './services/profileContext';
@@ -21,11 +22,16 @@ import LandingPage from './components/LandingPage';
  * (`page`), so loading one never blanks the shell around it.
  */
 const LoginPage = lazy(() => import('./components/auth/LoginPage'));
+const VerifyEmailPage = lazy(() => import('./components/auth/VerifyEmailPage'));
+const ForgotPasswordPage = lazy(() => import('./components/auth/ForgotPasswordPage'));
 const CompleteProfilePage = lazy(() => import('./components/auth/CompleteProfilePage'));
 const OnboardingWizard = lazy(() => import('./components/module-1/onboarding/OnboardingWizard'));
 const AssetsLinksStep = lazy(() => import('./components/module-1/onboarding/steps/AssetsLinksStep'));
 const CampaignAnalyticsView = lazy(() => import('./components/module-4/4.1-campaign-analytics/CampaignAnalyticsView'));
 const EnquiryPage = lazy(() => import('./components/module-4/enquiries/EnquiryPage'));
+// Terms of Use and Privacy Notice — public, readable signed in or out.
+const TermsPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.PrivacyPage })));
 const DashboardView = lazy(() => import('./components/module-2/2.1-dashboard/DashboardView'));
 const ContentStudioView = lazy(() => import('./components/module-3/3.1-content-studio/ContentStudioView'));
 const CalendarView = lazy(() => import('./components/module-3/3.2-calendar/CalendarView'));
@@ -97,7 +103,7 @@ const devPreviewRoutes = import.meta.env.DEV
         path: '/preview',
         element: (
           <ProfileProvider initial={DEMO_PROFILE}>
-            <PostStoreProvider>
+            <PostStoreProvider initial={DEMO_BOARD_POSTS}>
               <ConnectionsStoreProvider>
                 <TargetSelectionProvider initial={DEMO_TARGET}>
                   <AppShell />
@@ -110,6 +116,9 @@ const devPreviewRoutes = import.meta.env.DEV
           { path: 'content', element: <ContentPreviewScreen /> },
           { path: 'calendar', element: page(<CalendarView />) },
           { path: 'performance', element: page(<CampaignAnalyticsView />) },
+          { path: 'settings/profile', element: page(<BusinessProfileSettings />) },
+          { path: 'settings/platforms', element: page(<PlatformsSettings />) },
+          { path: 'settings/workspace', element: page(<WorkspaceSettings />) },
         ],
       },
     ]
@@ -144,7 +153,9 @@ function DashboardPreviewShell() {
  * empty businessName.
  */
 function ContentPreviewScreen() {
-  return page(<ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={DEMO_BOARD_POSTS} />);
+  // Posts come from the preview's PostStoreProvider (seeded with the demo
+  // board), so what is scheduled here also shows on /preview/calendar.
+  return page(<ContentStudioView initialDraft={DEMO_DRAFT} />);
 }
 
 /** DEV-ONLY. Maps the :mode segment onto the dashboard's state machine. */
@@ -158,8 +169,11 @@ function DashboardPreviewScreen() {
 
 /**
  * Route tree:
- *   /login                       - public
+ *   /login, /forgot-password     - public (redirect to the app when already signed in)
  *   (AuthGate: redirects to /login when unauthenticated)
+ *     /verify-email              - enter the emailed 6-digit code; deliberately OUTSIDE
+ *                                  EmailVerificationGate, which redirects here
+ *     (EmailVerificationGate: redirects to /verify-email until the email is verified)
  *     (ProfileCompletionGate: complete-profile <-> rest-of-app redirect on profileCompleted)
  *       /complete-profile        - one-time contact-number step for Google-provisioned operators
  *       (ProfileGate: onboarding <-> dashboard redirect on uniquenessScore)
@@ -182,10 +196,17 @@ const router = createBrowserRouter([
   ...devPreviewRoutes,
   { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/enquiry', element: page(<EnquiryPage />) },
+  { path: '/terms', element: page(<TermsPage />) },
+  { path: '/privacy', element: page(<PrivacyPage />) },
   { path: '/login', element: <RedirectIfAuthenticated>{page(<LoginPage />)}</RedirectIfAuthenticated> },
+  { path: '/forgot-password', element: <RedirectIfAuthenticated>{page(<ForgotPasswordPage />)}</RedirectIfAuthenticated> },
   {
     element: <AuthGate />,
     children: [
+      { path: 'verify-email', element: page(<VerifyEmailPage />) },
+      {
+        element: <EmailVerificationGate />,
+        children: [
       {
         element: <ProfileCompletionGate />,
         children: [
@@ -239,6 +260,8 @@ const router = createBrowserRouter([
               },
             ],
           },
+        ],
+      },
         ],
       },
     ],

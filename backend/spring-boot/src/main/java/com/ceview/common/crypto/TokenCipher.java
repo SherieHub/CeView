@@ -18,11 +18,13 @@ import java.util.Base64;
  * returning corrupted plaintext, which is why {@link #decrypt} can promise that
  * whatever it returns is what was stored.
  *
- * <p>This is deliberately not a Spring {@code @Component} — it is constructed by
- * {@code AdConnectionsConfig} only when a key is configured, so environments
- * without one start cleanly (the same shape as {@code FirebaseConfig}).
+ * <p>{@code AdConnectionsConfig} constructs this class for a configured key, or
+ * supplies an unconfigured fallback so the application can start and the affected
+ * endpoints can report unavailable configuration without retaining plaintext tokens.
  */
 public class TokenCipher {
+    /** The unconfigured fallback overrides this; no key material is exposed. */
+    public boolean isConfigured() { return true; }
 
     private static final String TRANSFORMATION = "AES/GCM/NoPadding";
     private static final int IV_LENGTH_BYTES = 12;

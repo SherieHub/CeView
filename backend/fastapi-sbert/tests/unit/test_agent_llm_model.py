@@ -71,7 +71,7 @@ def test_max_tokens_is_configured(monkeypatch):
     wrapper = AgentLLMModel()
     wrapper.get_model()
 
-    assert captured.get("max_tokens") == 8192
+    assert captured.get("max_tokens") == 16384
 
 
 def test_long_exception_message_is_truncated(monkeypatch):

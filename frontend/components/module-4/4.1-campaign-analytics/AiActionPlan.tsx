@@ -16,96 +16,102 @@
  * existing brand accent ramp — coral -> sand -> mint — rather than inventing
  * new colors.
  */
-import { Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, Info, Sparkles } from 'lucide-react';
 import type { ActionPlanSlotProps } from './campaignTypes';
 
+/** Urgency as the report states it, and the plain priority it stands for. */
 const URGENCY_CHIP_CLASS: Record<string, string> = {
-  'Most Urgent': 'bg-coral-cta text-white',
-  Urgent: 'bg-sand text-navy-dark',
-  'Not Very Urgent': 'bg-mint-pale text-navy-primary',
+  'Most Urgent': 'ap-chip ap-chip--high',
+  Urgent: 'ap-chip ap-chip--medium',
+  'Not Very Urgent': 'ap-chip ap-chip--low',
 };
-const DEFAULT_CHIP_CLASS = 'bg-mint-pale text-navy-primary';
+const DEFAULT_CHIP_CLASS = 'ap-chip ap-chip--low';
+const PRIORITY_LABEL: Record<string, string> = {
+  'Most Urgent': 'High priority',
+  Urgent: 'Medium priority',
+  'Not Very Urgent': 'Lower priority',
+};
 
 function UrgencyChip({ urgency }: { urgency: string }) {
-  return (
-    <span
-      className={`inline-flex items-center whitespace-nowrap rounded-sm px-2 py-1 text-xs font-semibold ${
-        URGENCY_CHIP_CLASS[urgency] ?? DEFAULT_CHIP_CLASS
-      }`}
-    >
-      {urgency}
-    </span>
-  );
+  return <span className={URGENCY_CHIP_CLASS[urgency] ?? DEFAULT_CHIP_CLASS}>{urgency}</span>;
 }
 
+/** Platforms CeView can publish to; anything else the operator posts on themselves. */
+const PUBLISHABLE = /instagram|tiktok|facebook/i;
+
 export default function AiActionPlan({ report }: ActionPlanSlotProps) {
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const canPublish = PUBLISHABLE.test(report.recommendedPlatform);
+
   return (
-    <div className="flex flex-col gap-4">
-      {/* Full-width summary: prose on the left uses the column's width, the
-          right rail carries the recommended platform + a scannable priority
-          list that the detail cards below expand on. */}
-      <div className="card grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex flex-col gap-2">
-          <h2 className="heading-md flex items-center gap-2">
-            <Sparkles size={20} className="text-teal-accent" aria-hidden="true" />
-            AI Action Plan
+    <div className="ap">
+      <div className="ap-head card">
+        <div className="ap-head-main">
+          <h2 className="ap-title">
+            <Sparkles size={20} aria-hidden="true" /> Your AI Action Plan
           </h2>
-          <p className="body-sm">{report.executiveSummary}</p>
+          <p className="ap-sub">Practical improvements, most important first.</p>
+          <p className={`ap-summary ${summaryOpen ? 'is-open' : ''}`}>{report.executiveSummary}</p>
+          <button type="button" className="ap-more" aria-expanded={summaryOpen} onClick={() => setSummaryOpen((o) => !o)}>
+            {summaryOpen ? 'Show less' : 'Read the full summary'}
+            <ChevronDown size={15} aria-hidden="true" />
+          </button>
+          <p className="ap-scope">
+            <Info size={14} aria-hidden="true" />
+            Written from your last 4 saved periods combined, so its figures can differ from this period&rsquo;s score.
+          </p>
         </div>
-        <div className="flex flex-col gap-3 lg:border-l lg:border-[var(--color-gray-light)] lg:pl-6">
-          <span className="badge badge--teal w-fit whitespace-nowrap">
-            Recommended platform: {report.recommendedPlatform}
+        <aside className="ap-platform" aria-label="Suggested channel">
+          <span className="ap-platform-label">Suggested channel</span>
+          <span className="ap-platform-name">Recommended platform: {report.recommendedPlatform}</span>
+          <span className="ap-platform-note">
+            {canPublish
+              ? 'CeView can publish there once the account is connected in Settings → Platforms.'
+              : 'CeView doesn’t publish there — post on it yourself if you try it.'}
           </span>
-          <div>
-            <span className="eyebrow">Funnel priorities</span>
-            <ul className="mt-2 flex flex-col divide-y divide-[var(--color-gray-light)]">
-              {report.funnelDiagnostics.map((diagnostic) => (
-                <li
-                  key={diagnostic.stage}
-                  className="flex items-center justify-between gap-3 py-2 text-sm"
-                >
-                  <span className="font-semibold text-[var(--color-text-heading)]">
-                    {diagnostic.stage}
-                  </span>
-                  <span className="text-meta shrink-0">
-                    {diagnostic.rank} · {diagnostic.dropRate}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        </aside>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <ol className="ap-list">
         {report.funnelDiagnostics.map((diagnostic, index) => {
           const recommendation = report.recommendations[index];
           return (
-            <div
+            <li
               key={diagnostic.stage}
               data-testid={`action-plan-card-${index}`}
-              className="card flex flex-col gap-3"
+              className="card ap-card"
+              data-lead={index === 0 || undefined}
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="eyebrow">{diagnostic.rank}</span>
-                  <h3 className="heading-sm">{diagnostic.stage}</h3>
-                </div>
+              <div className="ap-card-top">
+                <span className="ap-num" aria-hidden="true">{index + 1}</span>
+                {recommendation && (
+                  <span className="ap-priority">{PRIORITY_LABEL[recommendation.urgency] ?? recommendation.urgency}</span>
+                )}
                 {recommendation && <UrgencyChip urgency={recommendation.urgency} />}
               </div>
 
-              <p className="body-sm max-w-[56ch]">{diagnostic.insight}</p>
+              <div className="ap-stage">
+                <span className="ap-rank">{diagnostic.rank}</span>
+                <h3 className="ap-stage-name">{diagnostic.stage}</h3>
+                <span className="ap-drop">{diagnostic.dropRate} drop</span>
+              </div>
 
               {recommendation && (
-                <div className="rounded-md bg-mint-pale-alt p-4">
-                  <h4 className="heading-sm">{recommendation.title}</h4>
-                  <p className="body-sm mt-1 max-w-[56ch]">{recommendation.action}</p>
+                <div className="ap-rec">
+                  <h4 className="ap-rec-title">{recommendation.title}</h4>
+                  <p className="ap-rec-action">{recommendation.action}</p>
                 </div>
               )}
-            </div>
+
+              <details className="ap-why">
+                <summary>Why this matters</summary>
+                <p>{diagnostic.insight}</p>
+              </details>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </div>
   );
 }

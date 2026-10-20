@@ -83,6 +83,21 @@ Each generated caption carries 5 metadata fields (`CaptionMetadata`) explaining 
 3. **`psychological_elements`** — emotional anchors, desire triggers, e.g. escapism / FOMO / healing (the *Why*)
 4. **`creative_tone_atmosphere`** + **`algorithmic_platform_architecture`** — tone/voice/pacing and platform mechanics: char limits, hook window, hashtag count (the *How* + Constraints)
 
+## Caption translation (English toggle)
+
+Korea and Japan captions are written **entirely** in Korean / Japanese (USA stays English), so the owner can read them through a per-caption **Show English** toggle.
+
+- **Rules for native captions** (`NATIVE_CAPTION_RULES` in `prompts.py`): natural idiomatic copy, not translated-sounding English; 존댓말 (해요체 for archetypes 1 and 3, 합니다체 for 2) / です・ます; CTAs in the caption's language; business name, URLs, @handles and attribution codes stay in Latin script; place names stay Latin in running text (optionally `Moalboal(모알보알)`); hashtags are mostly native plus 1–3 English discovery tags. The five visual-direction fields stay in English.
+- **Translations are meaning-faithful, never word-for-word** (`TRANSLATION_GUIDELINES`): intent, tone and register carry over; idioms/slang become natural English (with a short `[gloss]` when none exists); wordplay gets a `[wordplay: …]` note; hashtags keep their text followed by their meaning, e.g. `#세부여행 (Cebu trip)`; emojis, URLs, codes, names, numbers and prices are untouched; claims and CTAs are never added, dropped or softened.
+- **Two sources**:
+  1. Generation also emits `caption_en` per caption (7th field, written last so truncation drops a translation, not a caption) → `optionsEn`, parallel to `options`. `""` means none (USA).
+  2. On demand — `POST /api/content/translate` for captions with no `optionsEn` (edited captions, published posts).
+- **Edit in English, apply to the native caption**: in editable boxes the English can be edited; **Apply to Korean/Japanese** calls `POST /api/content/localize`, which rewrites the native caption naturally (keeping the original's voice) and returns a fresh English version. Leaving the English view with unapplied edits asks to apply or discard.
+- **Compliance**: the OMCS `profile_semantic_score` compares the caption with an English profile, so the English translation (`caption_en`) is scored when supplied; the rubric, consistency and vision checks still read the native caption that will be published.
+- **Persistence**: the English of option 0 is stored in `tbl_localized_promotional_content.generated_caption_en` (Postgres `V47`, H2 `V24`). Published posts and campaign drafts live in browser memory only, so `captionEn` travels on the `PublishedPost` / `PlannedPost` record and is cleared whenever the native text changes.
+- **Config**: the translation model is `GROQ_TRANSLATION_MODEL`, defaulting to `GROQ_MODEL`; it uses `GROQ_API_KEY` — no extra secret. The caption model's `max_tokens` is 16384.
+- **Errors**: `MOD31_TRANSLATION_VALIDATION` (400), `MOD31_TRANSLATION_UNAVAILABLE` / `MOD31_TRANSLATION_FAILED` (503). There is no server-side rate limit on these endpoints.
+
 ## Platform Character Limits
 
 Enforced by `PLATFORM_CHAR_LIMITS` in `CopywritingOptionCard.tsx` (UI counters / progress bars):
@@ -100,12 +115,16 @@ Enforced by `PLATFORM_CHAR_LIMITS` in `CopywritingOptionCard.tsx` (UI counters /
 |--------|------|-------------|
 | POST | `/api/content/generate` | Generate captions; optional `?profileId={UUID}` enriches from DB and persists rows |
 | POST | `/api/content/approve` | Approve content for a profile + market; body `{ market }`; returns `{ approvedIds, market, count }` |
+| POST | `/api/content/translate` | Native caption → English; body `{ caption, platform? }`; returns `{ captionEn, sourceLanguage, source }` |
+| POST | `/api/content/localize` | Owner-edited English → native caption; body `{ captionEn, targetLanguage: ko\|ja, platform?, originalCaption? }`; returns `{ caption, captionEn, targetLanguage, source }` |
 
 ## FastAPI Internal Endpoint
 
 | Method | Path | Router | Description |
 |--------|------|--------|-------------|
-| POST | `/internal/generation/caption` | `caption_generation.py` | Live path — LangGraph caption agent (`CaptionInputClass` → caption matrix) |
+| POST | `/internal/generation/caption` | `caption_generation.py` | Live path — LangGraph caption agent (`CaptionInputClass` → caption matrix, with `optionsEn`) |
+| POST | `/internal/generation/translate` | `caption_translation.py` | Native caption → English (`TranslationLLMModel`) |
+| POST | `/internal/generation/localize` | `caption_translation.py` | Edited English → native caption + fresh English |
 
 ## Database
 

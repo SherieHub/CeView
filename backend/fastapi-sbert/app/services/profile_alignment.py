@@ -22,7 +22,8 @@ COS_FLOOR 0.75 sits at the off-topic mean; COS_CEIL 0.86 at the on-brand p90.
 That puts a typical on-brand caption near 65, a caption written for a different
 business near 35 and unrelated copy near 0. The signal is real but coarse: it
 separates on-brand from off-brand, not two similar businesses. Korean captions
-score a little lower than English ones against English profile text. Re-measure
+score a little lower than English ones against English profile text, so callers
+pass the English translation (``caption_en``) when they have one. Re-measure
 if ``ml_classifier._build_text`` or the encoder changes.
 
 Unavailability: with no encoder, or a profile that has no text to compare, this

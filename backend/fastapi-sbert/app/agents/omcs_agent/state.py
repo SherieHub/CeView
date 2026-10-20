@@ -1,8 +1,9 @@
-from typing import TypedDict, Dict, Any
+from typing import TypedDict, Dict, Any, Optional
 
 # 1. Define the Shared State
 class CeviewValidationState(TypedDict):
     caption: str
+    caption_en: Optional[str]  # English translation; used only for profile_semantic_score
     image_url: str
     business_profile: Dict[str, Any]  
     recommendations: Dict[str, Any]

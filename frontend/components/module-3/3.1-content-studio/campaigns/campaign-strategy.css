@@ -1,0 +1,82 @@
+@layer components {
+  .cp--strategy .cp-top { gap: 18px; margin-bottom: 12px; }
+  .cp--strategy .cp-rail { margin-left: auto; }
+  .cp--strategy .cp-rail button { padding: 6px 8px; }
+  .cp--strategy .cp-rail button[data-state='current'] { background: transparent; opacity: 1; }
+  .cp--strategy .cp-rail [data-state='current'] .cp-rail-no { background: linear-gradient(135deg, #12b7a7, #00746f); border-color: #00988d; }
+  .cp-strategy .cp-stage-head { margin-bottom: 16px; }
+  .app-wrap .studio-screen .cp-strategy .cp-stage-title { font-size: clamp(1.5rem, 2.2vw, 1.9rem); margin-bottom: 5px; color: #09283f; }
+  .app-wrap .studio-screen .cp-strategy .cp-stage-sub { font-size: .82rem; max-width: none; }
+  .app-wrap .studio-screen .cp-strategy .cp-summary {
+    padding: 18px 16px 14px;
+    margin-bottom: 16px;
+    border: 1px solid #d8e9e7;
+    border-radius: 13px;
+    background: linear-gradient(90deg, #003d3c 0%, #005452f5 29%, #00545280 52%, #00545210 80%), url('/images/landing/hero-cebu-coast-1280.webp') center 56% / cover;
+    box-shadow: 0 4px 16px #176f6510;
+  }
+  .cp-summary-intro { display: flex; align-items: center; gap: 15px; min-height: 92px; padding: 0 6px 12px; }
+  .cp-summary-emblem { display: grid; place-items: center; flex-shrink: 0; width: 43px; height: 43px; color: #effffb; border-radius: 15px; background: #009c9499; }
+  .cp-summary-copy { min-width: 0; width: min(64%, 600px); }
+  .cp-summary-eyebrow { display: block; font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #b9e9e5; margin-bottom: 3px; }
+  .cp-strategy .cp-name-input { font-size: clamp(1.15rem, 1.7vw, 1.5rem); line-height: 1.3; padding: 0; }
+  .cp-strategy .cp-summary-name > svg { flex-shrink: 0; opacity: .65; }
+  .cp-summary-description { margin: 4px 0 0; font-size: .8rem; line-height: 1.5; color: #cdeae8; max-width: 440px; }
+  .cp-summary-script { margin: 0 12px 0 auto; transform: rotate(-10deg); color: white; font: 500 2.5rem/.85 'Caveat', cursive; text-align: center; border-bottom: 3px solid #f4d28e; padding-bottom: 9px; text-shadow: 0 2px 10px #174d6870; }
+  .cp-strategy .cp-summary-facts { grid-template-columns: 1fr 1fr 1.15fr 1.1fr; gap: 0; padding: 13px 4px; margin: 6px 0 0; border-radius: 11px; background: #fffffff7; color: #113249; }
+  .cp-strategy .cp-summary-facts > div { position: relative; padding: 0 14px 0 48px; border-left: 1px solid #dfe9ed; min-width: 0; }
+  .cp-strategy .cp-summary-facts > div:first-child { border-left: 0; }
+  .cp-fact-icon { position: absolute; left: 16px; top: 8px; color: #006d6c; }
+  .cp-strategy .cp-summary-facts dt { margin-bottom: 3px; color: #607794; font-size: .65rem; }
+  .cp-strategy .cp-summary-facts dd { font-size: .75rem; font-weight: 600; }
+  .cp-strategy .cp-summary-meta { margin-top: 0; font-size: .65rem; color: #607794; font-weight: 400; }
+  .cp-reasons-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+  .cp-strategy .cp-section-title { font-family: var(--ff-display); color: #09283f; font-size: 1.15rem; margin: 0; }
+  .cp-reasons-heading > p { font-size: .68rem; color: #607794; margin: 0; }
+  .cp-strategy .cp-why-grid { position: relative; gap: 9px; padding-left: 36px; counter-reset: reasons; }
+  .cp-strategy .cp-why-grid::before { content: ''; position: absolute; top: 30px; bottom: 40px; left: 10px; width: 1px; background: #b9ddd9; }
+  .app-wrap .studio-screen .cp-strategy .cp-why { position: relative; padding: 12px 80px 12px 88px; border: 1px solid #dceaea; border-radius: 12px; box-shadow: 0 2px 6px #176f6506; min-height: 96px; counter-increment: reasons; }
+  .cp-strategy .cp-why::before { content: counter(reasons); position: absolute; left: -36px; top: 28px; width: 22px; height: 22px; display: grid; place-items: center; background: #f3fcf9; border: 1px solid #15988e; border-radius: 50%; color: #093d4c; font-size: .7rem; font-weight: 600; }
+  .cp-strategy .cp-why-icon { position: absolute; left: 13px; top: 13px; display: grid; place-items: center; width: 58px; height: 60px; border-radius: 12px; color: #009e91; background: #e1f8f3; }
+  .cp-strategy .cp-why:nth-child(2) .cp-why-icon { color: #ce8a20; background: #fff5df; }
+  .cp-strategy .cp-why:nth-child(3) .cp-why-icon { color: #069bc8; background: #e5f7fd; }
+  .cp-strategy .cp-why-head { gap: 8px; }
+  .cp-strategy .cp-why-title { font-size: .82rem; color: #0c2e45; }
+  .cp-strategy .cp-evidence { padding: 3px 8px; font-size: .6rem; }
+  .cp-strategy .cp-evidence[data-kind='demand'] { color: #006e68; background: #def8f2; }
+  .cp-strategy .cp-edit { position: absolute; right: 12px; top: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid #e0eded; background: #f3f9f9; font-size: .68rem; }
+  .cp-strategy .cp-why-value { font-size: .8rem; margin: 4px 0; color: #10334b; }
+  .cp-strategy .cp-why-tag { font-size: .62rem; border-radius: 5px; padding: 2px 6px; background: #e2f5f0; color: #14635e; }
+  .cp-strategy .cp-why-text { font-size: .71rem; line-height: 1.45; color: #607794; }
+  .cp-strategy .cp-details { font-size: .65rem; margin-top: 4px; }
+  .cp-strategy .cp-why-edit { margin-top: 12px; padding-top: 12px; }
+  .cp-strategy .cp-foot { border: 0; margin-top: 9px; padding-top: 0; }
+  .app-wrap .studio-screen .cp-strategy .cp-foot > .btn-primary { background: linear-gradient(140deg, #006d67, #004846); color: white; }
+  @media (max-width: 1100px) {
+    .cp--strategy .cp-rail-hint { display: none; }
+    .cp-reasons-heading > p { max-width: 40%; }
+    .app-wrap .studio-screen .cp-strategy .cp-why { padding-right: 80px; }
+    .cp-strategy .cp-summary-facts { grid-template-columns: 1fr 1fr; gap: 14px 0; }
+    .cp-strategy .cp-summary-facts > div:nth-child(3) { border-left: 0; }
+  }
+  @media (max-width: 640px) {
+    .cp--strategy .cp-top { display: flex; flex-wrap: wrap; }
+    .cp--strategy .cp-rail { order: 3; width: 100%; margin-left: 0; }
+    .cp--strategy .cp-rail ol { justify-content: space-between; gap: 2px; }
+    .cp--strategy .cp-rail button { padding: 5px 0; gap: 5px; }
+    .cp--strategy .cp-rail-label { font-size: .65rem; }
+    .cp-summary-emblem, .cp-summary-script { display: none; }
+    .cp-summary-copy { width: 100%; }
+    .cp-strategy .cp-summary-facts > div { padding: 0 10px; }
+    .cp-fact-icon { display: none; }
+    .cp-reasons-heading { display: block; }
+    .cp-reasons-heading > p { max-width: none; margin-top: 6px; }
+    .cp-strategy .cp-why-grid { padding-left: 29px; }
+    .cp-strategy .cp-why::before { left: -29px; }
+    .app-wrap .studio-screen .cp-strategy .cp-why { padding: 12px; }
+    .cp-strategy .cp-why-icon { display: none; }
+    .cp-strategy .cp-why-head { padding-right: 55px; min-height: 30px; }
+    .cp-strategy .cp-why-text { font-size: .75rem; }
+    .cp-strategy .cp-edit { right: 8px; top: 10px; }
+  }
+}

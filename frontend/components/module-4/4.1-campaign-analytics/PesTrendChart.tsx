@@ -30,19 +30,21 @@ function formatPeriodLabel(entry: CampaignHistoryEntry): string {
   return `${format(entry.periodStart)}–${format(entry.periodEnd)}`;
 }
 
-export default function PesTrendChart({ window }: Pick<TrendSlotProps, 'window'>) {
+export default function PesTrendChart({ window, compact = false }: Pick<TrendSlotProps, 'window'> & { compact?: boolean }) {
   const data = window.map((entry) => ({ period: formatPeriodLabel(entry), pesScore: entry.pesScore }));
 
   return (
-    <div className="card flex flex-col gap-4">
-      <div>
-        <h3 className="heading-sm">PES Trend</h3>
-        <p className="body-xs">Weekly Performance Efficiency Score against the label-threshold bands.</p>
-      </div>
+    <div className={compact ? 'flex flex-col' : 'card flex flex-col gap-4'}>
+      {!compact && (
+        <div>
+          <h3 className="heading-sm">Performance score</h3>
+          <p className="body-xs">Your score each period, against the Fair (0.40), Good (0.60) and Excellent (0.80) lines.</p>
+        </div>
+      )}
 
-      <div data-testid="pes-trend-chart" data-point-count={data.length} className="h-[280px] w-full">
+      <div data-testid="pes-trend-chart" data-point-count={data.length} className={`${compact ? 'h-[170px]' : 'h-[340px]'} w-full`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
+          <LineChart data={data} margin={{ top: 8, right: 44, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="4 4" stroke="var(--color-gray-light)" vertical={false} />
             <XAxis
               dataKey="period"

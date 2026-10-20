@@ -28,6 +28,7 @@
 @import "./auth.css";
 @import "./onboarding.css";
 @import "./dashboard.css";
+@import "./studio.css";
 
 @theme {
   /* ---- Anchor / Structural ---- */
@@ -144,7 +145,10 @@
   --radius-pill: 24px;
   /* Shared height for the header row's small controls — the compact outline
      button and the uniqueness badge's capsule. */
-  --btn-sm-h: 32px;
+  --btn-sm-h: 34px;
+  --btn-md-h: 42px;
+  --btn-lg-h: 48px;
+  --btn-icon: 34px;
   /* The badge's disc overhangs its capsule, so it is deliberately taller. */
   --score-disc: 40px;
   --radius-full: 999px;
@@ -4045,7 +4049,8 @@
      against a parent whose own height comes from `flex: 1`, which browsers
      handle inconsistently — inset:0 sidesteps that entirely, so the image
      always fills whatever height the caption column settles at. */
-  .media-frame img {
+  .media-frame img,
+  .media-frame video {
     position: absolute;
     inset: 0;
     display: block;
@@ -5384,7 +5389,8 @@
     overflow: hidden;
     /* aspect-ratio is set inline, per platform. */
   }
-  .device-media img {
+  .device-media img,
+  .device-media video {
     display: block;
     width: 100%;
     height: 100%;

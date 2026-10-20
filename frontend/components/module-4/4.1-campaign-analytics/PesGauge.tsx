@@ -98,9 +98,7 @@ export function computeContributions(metrics: Metrics): Contribution[] {
   return specs.map((s) => ({ ...s, contribution: s.normalized * (s.weightPct / 100) }));
 }
 
-// Sized (and the surrounding gaps kept tight) so the card's fixed 660px holds
-// its content without scrolling — see the height note below.
-const GAUGE_SIZE = 176;
+const GAUGE_SIZE = 148;
 
 export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
   const clampedScore = clamp01(score);
@@ -109,27 +107,19 @@ export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
   const contributions = computeContributions(metrics);
 
   return (
-    // Hard h-[660px] (not min-h): CampaignAnalyticsView pairs this card with
-    // the KPI grid, whose three rows split this height evenly — a min-height
-    // only guarantees "at least", and the pair drifted apart under content.
-    // 660px, not 600: this card's fixed content (title + 176px gauge + label
-    // + "Contribution breakdown" heading + 5 metric rows + formula line +
-    // card padding) measures to ~636px on its own, so 600 clipped it into a
-    // visible scrollbar. overflow-y-auto stays as a safety net for future
-    // content growth, not because this card is expected to scroll today.
-    <div className="card flex h-[660px] flex-col gap-4 overflow-y-auto">
-      <h3 className="heading-md">Performance Score</h3>
+    <div className="card pes-card">
+      <h3 className="pes-title">Performance Score</h3>
 
-      <div className="flex flex-col items-center gap-2">
-        <div className="relative" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
+      <div className="pes-main">
+        <div className="relative shrink-0" style={{ width: GAUGE_SIZE, height: GAUGE_SIZE }}>
           <RadialBarChart
             width={GAUGE_SIZE}
             height={GAUGE_SIZE}
             cx="50%"
             cy="50%"
-            innerRadius="72%"
+            innerRadius="74%"
             outerRadius="100%"
-            barSize={18}
+            barSize={14}
             data={gaugeData}
             startAngle={90}
             endAngle={-270}
@@ -144,49 +134,56 @@ export default function PesGauge({ score, label, metrics }: PesGaugeSlotProps) {
             />
           </RadialBarChart>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="num heading-xl" data-testid="pes-score-value">
+            <span className="num pes-value" data-testid="pes-score-value">
               {clampedScore.toFixed(2)}
             </span>
-            <span className="body-xs">out of 1.00</span>
+            <span className="pes-outof">out of 1.00</span>
           </div>
         </div>
-        <p data-testid="pes-label" className={`heading-sm text-center ${TIER_TEXT_CLASS[tier]}`}>
-          {label}
-        </p>
+        <div className="pes-side">
+          <p data-testid="pes-label" className={`pes-label ${TIER_TEXT_CLASS[tier]}`}>
+            {label}
+          </p>
+          <p className="pes-explain">
+            One score from five ad results, weighted by how much each matters to bookings.
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h4 className="text-meta font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-          Contribution breakdown
-        </h4>
-        {contributions.map((c) => (
-          <div key={c.key} className="flex flex-col gap-1.5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <span className="body-sm font-semibold text-[var(--color-text-heading)]">
-                {c.label}{' '}
-                <span className="body-xs text-[var(--color-text-muted)]">({c.weightPct}%)</span>
-              </span>
-              <span
-                data-testid={`pes-contribution-${c.key}`}
-                data-value={c.contribution}
-                className="num body-sm font-semibold text-[var(--color-text-heading)]"
-              >
-                {c.contribution.toFixed(3)}
-              </span>
+      {/* The working is there for anyone who wants it, closed by default so
+          the score itself reads first. */}
+      <details className="pes-details">
+        <summary>How is my score calculated?</summary>
+        <div className="pes-breakdown">
+          {contributions.map((c) => (
+            <div key={c.key} className="pes-row">
+              <div className="pes-row-top">
+                <span className="pes-row-name">
+                  {c.label}{' '}
+                  <span className="pes-row-weight">({c.weightPct}%)</span>
+                </span>
+                <span
+                  data-testid={`pes-contribution-${c.key}`}
+                  data-value={c.contribution}
+                  className="num pes-row-value"
+                >
+                  {c.contribution.toFixed(3)}
+                </span>
+              </div>
+              <div className="pes-bar">
+                <i style={{ width: `${clamp01(c.normalized) * 100}%` }} />
+              </div>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-pill bg-[var(--color-mint-pale)]">
-              <div
-                className="h-full rounded-pill bg-[var(--color-mint-primary)]"
-                style={{ width: `${clamp01(c.normalized) * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <p data-testid="pes-formula" className="body-xs text-[var(--color-text-muted)]">
-        PES = ROAS×0.35 + CR×0.30 + CAC⁻¹×0.15 + CTR×0.15 + CPC⁻¹×0.05
-      </p>
+          ))}
+          <p data-testid="pes-formula" className="pes-formula">
+            PES = ROAS×0.35 + CR×0.30 + CAC⁻¹×0.15 + CTR×0.15 + CPC⁻¹×0.05
+          </p>
+          <p className="pes-caveat">
+            Each result is scaled to 0–1 against a target for Cebu tourism, then weighted. A good score is
+            not the same as profit — check return on ad spend for that.
+          </p>
+        </div>
+      </details>
     </div>
   );
 }

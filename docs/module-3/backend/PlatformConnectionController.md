@@ -1,4 +1,8 @@
-# `PlatformConnectionController` (specified, not yet implemented)
+# Social connections (implemented)
+
+The October 2026 social publishing design supersedes the proposal below. The implementation is `com.ceview.module3.social.SocialConnectionController`, using `/api/social-connections` and `tbl_publishing_account` (V49). Facebook/Instagram share the upgraded Meta ads OAuth grant and selected Page. TikTok creator login is separate from TikTok Ads. Both public callback routes only redirect; authenticated completion consumes the state and checks ownership before exchanging credentials. Full shipped contracts: [backend/CONTRACT.md](../../../backend/CONTRACT.md#social-publishing-endpoints).
+
+The remaining text is historical proposal context; `/api/platform-connections`, Naver and boolean-only connection responses are not the implemented contract.
 
 > **Not the same thing as an ad-account connection.** This document specifies a
 > *publishing* grant (post on the operator's behalf, read post insights) and
