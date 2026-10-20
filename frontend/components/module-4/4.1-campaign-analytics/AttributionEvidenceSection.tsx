@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3, Ticket } from 'lucide-react';
 import LinkAttributionPanel from './LinkAttributionPanel';
+import CvLaunchVoucherCard from './CvLaunchVoucherCard';
 
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;
@@ -12,14 +13,7 @@ type AttributionEvidenceSectionProps = {
   period?: { periodStart: string; periodEnd: string };
 };
 
-/** Decorative only: a receipt and a rising bar chart, for the two not-yet-built panels. */
-function CodeArt() {
-  return (
-    <span className="perf-ev-art perf-ev-art--code" aria-hidden="true">
-      <i /><i /><i /><i />
-    </span>
-  );
-}
+/** Decorative only: a rising bar chart for the not-yet-built lift panel. */
 function LiftArt() {
   return (
     <span className="perf-ev-art perf-ev-art--lift" aria-hidden="true">
@@ -67,18 +61,12 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
       <div className="min-w-0">
         <LinkAttributionPanel />
       </div>
-
       <section className="card perf-ev" aria-labelledby="perf-ev-code-title">
         <div className="perf-ev-head">
           <span className="perf-ev-icon" aria-hidden="true"><Ticket size={18} /></span>
           <h3 id="perf-ev-code-title" className="perf-ev-title">Code-redemption evidence</h3>
         </div>
-        {codeEvidence ?? (
-          <>
-            <p className="perf-ev-text">Code-redemption evidence is not available in this build. It records operator-reported codes from Messenger, phone and walk-in bookings.</p>
-            <CodeArt />
-          </>
-        )}
+        {codeEvidence ?? <CvLaunchVoucherCard />}
       </section>
 
       <section className="card perf-ev" aria-labelledby="perf-ev-lift-title">

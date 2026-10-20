@@ -23,6 +23,9 @@ import MediaPreview from './MediaPreview';
 import { captureVideoPoster } from './videoPoster';
 import { MEDIA_LIMITS, mediaKindOf, uploadMedia } from '../../../services/mediaUpload';
 import type { MediaDimensions } from '../../../services/mediaUpload';
+import { apiClient } from '../../../services/apiClient';
+import type { AttributionVoucher } from '../../../types';
+import { composeVoucherOverlay } from './voucherImageOverlay';
 
 /**
  * What is still missing before the audit can run. Scoped to this panel's own
@@ -91,6 +94,15 @@ export default function PublishComposer({
   // the only way to check the whole frame — what the crop is cutting — is to
   // open it uncropped.
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [sourceMedia, setSourceMedia] = useState<string | null>(null);
+  const [vouchers, setVouchers] = useState<AttributionVoucher[]>([]);
+  const [voucherId, setVoucherId] = useState('');
+  const [voucherEnabled, setVoucherEnabled] = useState(false);
+  const [voucherError, setVoucherError] = useState('');
+  useEffect(() => { apiClient.vouchers.list().then((items) => {
+    const active = items.filter((item) => item.voucherStatus === 'ACTIVE' && item.redemptionsRemaining !== 0);
+    setVouchers(active); setVoucherId((current) => current || active.find((item) => item.code === 'CVLAUNCH')?.attributionCodeId || active[0]?.attributionCodeId || '');
+  }).catch(() => setVouchers([])); }, []);
 
   const captionRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -163,10 +175,14 @@ export default function PublishComposer({
         const dataUrl = await readFileAsDataUrl(file);
         if (token !== uploadSeq.current) return;
         if (!uploadToStorage) {
+          setSourceMedia(dataUrl);
+          setVoucherEnabled(false);
           onDraftChange({ mediaDataUrl: dataUrl, agreementChecked: false });
           return;
         }
         if (prevUrl) URL.revokeObjectURL(prevUrl);
+        setSourceMedia(dataUrl);
+        setVoucherEnabled(false);
         onDraftChange({ mediaDataUrl: dataUrl, mediaType: 'image', localVideoUrl: null, mediaUpload: null, agreementChecked: false });
       } else {
         // The poster is what the audit reads; playback uses the object URL.
@@ -174,6 +190,8 @@ export default function PublishComposer({
         const info = await captureVideoPoster(file);
         if (token !== uploadSeq.current) return;
         if (prevUrl) URL.revokeObjectURL(prevUrl);
+        setSourceMedia(info.posterDataUrl);
+        setVoucherEnabled(false);
         onDraftChange({
           mediaDataUrl: info.posterDataUrl,
           mediaType: 'video',
@@ -204,8 +222,20 @@ export default function PublishComposer({
     pending.current = null;
     setPreparing(false);
     if (draft.localVideoUrl) URL.revokeObjectURL(draft.localVideoUrl);
+    setSourceMedia(null);
+    setVoucherEnabled(false);
     onDraftChange({ mediaDataUrl: null, mediaType: undefined, localVideoUrl: null, mediaUpload: null, agreementChecked: false });
   };
+  const selectedVoucher = vouchers.find((item) => item.attributionCodeId === voucherId);
+  const setVoucherOverlay = async (enabled: boolean) => {
+    const original = sourceMedia ?? draft.mediaDataUrl;
+    if (!original || !selectedVoucher) return;
+    setVoucherError(''); setSourceMedia(original);
+    if (!enabled) { setVoucherEnabled(false); onDraftChange({ mediaDataUrl: original, agreementChecked: false }); return; }
+    try { const composed = await composeVoucherOverlay(original, selectedVoucher); setVoucherEnabled(true); onDraftChange({ mediaDataUrl: composed, agreementChecked: false }); }
+    catch (error) { setVoucherEnabled(false); setVoucherError(error instanceof Error ? error.message : 'Voucher overlay could not be created.'); }
+  };
+  useEffect(() => { if (voucherEnabled) void setVoucherOverlay(true); }, [voucherId]);
 
   return (
     <>
@@ -281,7 +311,8 @@ export default function PublishComposer({
             )}
           </div>
           {draft.mediaDataUrl ? (
-            <div className="media-frame">
+            <>
+              <div className="media-frame">
               <MediaPreview src={draft.mediaDataUrl} videoSrc={draft.localVideoUrl} alt="Publication media preview" />
               <div className="media-acts">
                 <button
@@ -302,6 +333,12 @@ export default function PublishComposer({
                 </button>
               </div>
             </div>
+              {vouchers.length > 0 && <div className="mt-3 space-y-2">
+                <label><input type="checkbox" checked={voucherEnabled} onChange={(event) => setVoucherOverlay(event.target.checked)} /> Add voucher to image</label>
+                {voucherEnabled && <label className="field-label">Voucher<select value={voucherId} onChange={(event) => setVoucherId(event.target.value)}><option value="">Choose voucher</option>{vouchers.map((voucher) => <option key={voucher.attributionCodeId} value={voucher.attributionCodeId}>{voucher.code} — PHP {voucher.discountAmount} off</option>)}</select></label>}
+                {voucherError && <p role="status" className="text-meta">{voucherError}</p>}
+              </div>}
+            </>
           ) : (
             <label
               className="upload-zone"

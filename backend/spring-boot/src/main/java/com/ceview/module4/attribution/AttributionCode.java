@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -58,6 +59,17 @@ public class AttributionCode {
     /** Short and human-quotable, e.g. {@code KR-DIVE-1019}. */
     @Column(name = "code", nullable = false, length = 64)
     private String code;
+
+    /** Null means this remains a tracking-only attribution code. */
+    @Column(name = "discount_amount", precision = 14, scale = 2)
+    private BigDecimal discountAmount;
+
+    /** Null means unlimited; CVLAUNCH is capped at ten redemptions. */
+    @Column(name = "redemption_limit")
+    private Long redemptionLimit;
+
+    @Column(name = "voucher_status", nullable = false, length = 20)
+    private String voucherStatus = "ACTIVE";
 
     @Column(name = "window_start", nullable = false)
     private OffsetDateTime windowStart;
