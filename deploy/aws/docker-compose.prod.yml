@@ -144,6 +144,10 @@ services:
       TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
       TIKTOK_CONTENT_CLIENT_KEY: ${TIKTOK_CONTENT_CLIENT_KEY:-}
       TIKTOK_CONTENT_CLIENT_SECRET: ${TIKTOK_CONTENT_CLIENT_SECRET:-}
+      SOCIAL_DISPATCH_ENABLED: ${SOCIAL_DISPATCH_ENABLED:-true}
+      SOCIAL_DISPATCH_DELAY_MS: ${SOCIAL_DISPATCH_DELAY_MS:-30000}
+      SOCIAL_METRICS_ENABLED: ${SOCIAL_METRICS_ENABLED:-true}
+      SOCIAL_METRICS_CRON: ${SOCIAL_METRICS_CRON:-0 0 3 * * *}
       # Caddy is the only proxy in front; Tomcat trusts Docker's private range,
       # so rate limiting and click hashing see the real client IP.
       SERVER_FORWARD_HEADERS_STRATEGY: native

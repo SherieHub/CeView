@@ -20,9 +20,9 @@ are unchanged.
 
 | Component | Doc |
 |---|---|
-| `PlatformConnectionController` (specified, not implemented) | [`backend/PlatformConnectionController.md`](backend/PlatformConnectionController.md) |
-| `PublishingController` (specified, not implemented) | [`backend/PublishingController.md`](backend/PublishingController.md) |
-| Schema delta (`tbl_platform_connection`, `tbl_social_post`) | [`backend/schema-delta.md`](backend/schema-delta.md) |
+| `SocialConnectionController` (Meta Page/Instagram/TikTok OAuth) | [`backend/PlatformConnectionController.md`](backend/PlatformConnectionController.md) |
+| `PublishingController` (persisted delivery, schedules and PAUSED ads) | [`backend/PublishingController.md`](backend/PublishingController.md) |
+| Schema delta (media, publishing grants, posts and metric snapshots) | [`backend/schema-delta.md`](backend/schema-delta.md) |
 
 Existing, unchanged backend for content generation (3.1), creative direction (3.2), and compliance
 (3.3) — `ContentController`, `CreativeDirectionController`, `ComplianceController`, the LangGraph
@@ -53,6 +53,6 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
   per-platform-shared-caption approach is kept, with one deviation ported from the alternate design:
   the publish-to picker is gated on platform connection state. See
   [`screens/content-studio.md`](screens/content-studio.md) for the full rationale.
-- Two screens are entirely new: [Calendar](screens/calendar.md) and
-  [Settings → Platforms](screens/settings-platforms.md). Both need backend that doesn't exist yet —
-  see [`backend/schema-delta.md`](backend/schema-delta.md).
+- [Calendar](screens/calendar.md) reads persisted posts; [Settings → Platforms](screens/settings-platforms.md)
+  connects real publishing grants. Shipped endpoints and delivery states are in
+  [the API contract](../../backend/CONTRACT.md#social-publishing-endpoints).

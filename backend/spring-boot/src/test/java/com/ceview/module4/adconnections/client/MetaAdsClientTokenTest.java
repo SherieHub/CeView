@@ -56,6 +56,7 @@ class MetaAdsClientTokenTest {
     void exchangesTheCodeThenUpgradesToALongLivedToken() throws Exception {
         server.enqueue(json(fixture("meta-token.json")));
         server.enqueue(json(fixture("meta-long-lived-token.json")));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"},{\"permission\":\"pages_show_list\",\"status\":\"granted\"},{\"permission\":\"instagram_content_publish\",\"status\":\"declined\"}]}"));
 
         TokenGrant grant = client.exchangeCode("AUTH-CODE-1");
 
@@ -64,13 +65,14 @@ class MetaAdsClientTokenTest {
         assertNotNull(grant.expiresAt());
         assertTrue(grant.expiresAt().isAfter(OffsetDateTime.now().plusDays(50)),
                    "long-lived token should be ~60 days out");
-        assertEquals("ads_read", grant.scopes());
+        assertEquals("ads_read,pages_show_list", grant.scopes());
     }
 
     @Test
     void sendsTheCodeAppCredentialsAndRedirectUri() throws Exception {
         server.enqueue(json(fixture("meta-token.json")));
         server.enqueue(json(fixture("meta-long-lived-token.json")));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"}]}"));
 
         client.exchangeCode("AUTH-CODE-1");
 
@@ -89,6 +91,7 @@ class MetaAdsClientTokenTest {
     void requestsTheLongLivedTokenWithTheFbExchangeGrant() throws Exception {
         server.enqueue(json(fixture("meta-token.json")));
         server.enqueue(json(fixture("meta-long-lived-token.json")));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"}]}"));
 
         client.exchangeCode("AUTH-CODE-1");
         server.takeRequest();
@@ -131,6 +134,7 @@ class MetaAdsClientTokenTest {
         // before it is added as a query param.
         server.enqueue(json(fixture("meta-token.json")));
         server.enqueue(json(fixture("meta-long-lived-token.json")));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"}]}"));
 
         client.exchangeCode("AUTH+CODE/1=");
 
@@ -154,10 +158,39 @@ class MetaAdsClientTokenTest {
     void returnsAGrantWithNoExpiryWhenExpiresInIsAbsent() throws Exception {
         server.enqueue(json("{\"access_token\":\"EAAshort-lived-token\"}"));
         server.enqueue(json("{\"access_token\":\"EAAlong-lived-token\"}"));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"}]}"));
 
         TokenGrant grant = client.exchangeCode("AUTH-CODE-1");
 
         assertEquals("EAAlong-lived-token", grant.accessToken());
         assertNull(grant.expiresAt(), "missing expires_in should leave expiresAt null, not error");
+    }
+
+    @Test
+    void failsWhenThePermissionsLookupFails() throws Exception {
+        // short-lived token, long-lived token, then a 400 from /me/permissions
+        server.enqueue(json("{\"access_token\":\"SHORT\"}"));
+        server.enqueue(json("{\"access_token\":\"LONG\",\"expires_in\":5184000}"));
+        server.enqueue(new MockResponse().setResponseCode(400).setBody("{\"error\":{\"message\":\"Invalid OAuth access token.\"}}"));
+
+        AdPlatformException e = assertThrows(AdPlatformException.class, () -> client.exchangeCode("CODE"));
+
+        assertFalse(e.getMessage().contains("LONG"), "the token must never appear in an error message");
+    }
+
+    @Test
+    void readsTheGrantedPermissionsWithTheLongLivedToken() throws Exception {
+        server.enqueue(json(fixture("meta-token.json")));
+        server.enqueue(json(fixture("meta-long-lived-token.json")));
+        server.enqueue(json("{\"data\":[{\"permission\":\"ads_read\",\"status\":\"granted\"}]}"));
+
+        client.exchangeCode("AUTH-CODE-1");
+        server.takeRequest();
+        server.takeRequest();
+        RecordedRequest third = server.takeRequest();
+
+        String path = third.getPath();
+        assertTrue(path.startsWith("/v21.0/me/permissions"), path);
+        assertTrue(path.contains("access_token=EAAlong-lived-token"), path);
     }
 }

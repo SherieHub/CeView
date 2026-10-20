@@ -99,9 +99,21 @@ ceview:
     meta:
       app-id: ${META_APP_ID:}
       app-secret: ${META_APP_SECRET:}
+      graph-base-url: ${META_GRAPH_BASE_URL:https://graph.facebook.com/v25.0}
+      dialog-url: ${META_DIALOG_URL:https://www.facebook.com/v25.0/dialog/oauth}
     tiktok:
       app-id: ${TIKTOK_APP_ID:}
       app-secret: ${TIKTOK_APP_SECRET:}
+  social:
+    dispatch-enabled: ${SOCIAL_DISPATCH_ENABLED:true}
+    dispatch-delay-ms: ${SOCIAL_DISPATCH_DELAY_MS:30000}
+    metrics-enabled: ${SOCIAL_METRICS_ENABLED:true}
+    metrics-cron: ${SOCIAL_METRICS_CRON:0 0 3 * * *}
+    tiktok:
+      # TikTok for Developers app (Login Kit + Content Posting API) — NOT the TikTok For Business
+      # ads app above. Blank = the TikTok publishing connection reports "not configured".
+      client-key: ${TIKTOK_CONTENT_CLIENT_KEY:}
+      client-secret: ${TIKTOK_CONTENT_CLIENT_SECRET:}
   media:
     # "s3" in production (compose sets it); "local" keeps uploads on disk for dev and tests.
     storage: ${MEDIA_STORAGE:local}

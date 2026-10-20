@@ -49,7 +49,7 @@ import type { AttributionLink, ContentResponse, Market, PublishedPost } from '..
 // §Non-goals). The board therefore starts empty and only shows fixture posts when
 // the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
-import { getTranslation, seedFromContent } from './captionTranslationStore';
+import { seedFromContent } from './captionTranslationStore';
 import { useConnections } from '../../../services/connectionsStore';
 import { useOptionalPosts } from '../../../services/postStore';
 import { useProfile } from '../../../services/profileContext';
@@ -136,6 +136,9 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // irreversible action here, and the destinations and authorisation it needs
   // are decisions worth making beside a live preview of the result.
   const [publishOpen, setPublishOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const requestId = useRef<string | null>(null);
 
   // Navigation only — which view and Quick Post stage are showing. Changing
   // either never touches the draft, audit or generated content above.
@@ -234,6 +237,8 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   useEffect(() => { setSelectedOption(null); }, [activePlatform]);
 
   const patchDraft = (patch: Partial<PublishDraftState>) => {
+    if (publishing) return;
+    requestId.current = null;
     setDraft((current) => {
       const next = { ...current, ...patch };
       // A translation describes one exact caption: changing the text without
@@ -306,38 +311,37 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
     setPendingOpen(null);
   }, [publishOpen, pendingOpen]);
 
-  const publish = (): PublishedPost[] => {
-    if (!canPublish) return [];
-    // A scheduled post is dated for when it goes out, not for today.
-    const scheduledFor = draft.scheduledFor ?? null;
-    const date = scheduledFor ? scheduledFor.slice(0, 10) : new Date().toISOString().slice(0, 10);
-    const created = draft.platforms.map((platform, index): PublishedPost => ({
-      id: `published-${Date.now()}-${index}`, date, platform, caption: draft.caption,
-      captionEn: draft.captionEn ?? getTranslation(draft.caption) ?? null,
-      status: scheduledFor ? 'scheduled' : 'published',
-      reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [],
-      mediaUrl: draft.mediaDataUrl,
-      scheduledFor,
-    }));
-    addPosts(created);
-    if (draft.localVideoUrl) URL.revokeObjectURL(draft.localVideoUrl);
-    setDraft(EMPTY_DRAFT);
-    setAudit(IDLE_AUDIT);
-    setSelectedOption(null);
-    return created;
-  };
-
-  // Straight to the Content Library, with the new (or newly scheduled) post
-  // open — the post is the result, so that is where the owner lands. Quick Post resets to Draft for
-  // the next one.
-  const confirmPublish = () => {
-    const created = publish();
-    setPublishOpen(false);
-    if (!created.length) return;
-    setJustPublished(created.map((p) => p.id));
-    setPendingOpen(created[0].id);
-    setQpStep('draft');
-    setView('library');
+  const confirmPublish = async () => {
+    if (publishing || !canPublish || !draft.agreementChecked) return;
+    if (draft.mediaUpload?.status !== 'ready') { setPublishError('Upload your media before publishing.'); return; }
+    setPublishing(true);
+    setPublishError(null);
+    requestId.current ??= crypto.randomUUID();
+    try {
+      const platforms = [...draft.platforms, ...(draft.paidPartnership ? ['meta_ads'] : [])];
+      const created = await apiClient.posts.publish({
+        requestId: requestId.current, platforms,
+        captionsByPlatform: Object.fromEntries(platforms.map((p) => [p, draft.caption])),
+        mediaId: draft.mediaUpload.mediaId, market: target?.market.id,
+        visibility: draft.visibility, approved: true,
+        scheduledFor: draft.scheduledFor ? new Date(draft.scheduledFor).toISOString() : undefined,
+        ad: draft.paidPartnership ? draft.ad : undefined,
+      });
+      addPosts(created);
+      if (draft.mediaType === 'video' && created.some((p) => p.status === 'inbox')) {
+        try { await navigator.clipboard.writeText(draft.caption); } catch { /* Copy remains available in post detail. */ }
+      }
+      setPublishOpen(false);
+      setJustPublished(created.map((p) => p.id));
+      setPendingOpen(created[0]?.id ?? null);
+      setView('library');
+      if (!created.some((p) => p.status === 'failed')) {
+        if (draft.localVideoUrl) URL.revokeObjectURL(draft.localVideoUrl);
+        setDraft(EMPTY_DRAFT); setAudit(IDLE_AUDIT); setSelectedOption(null); setQpStep('draft');
+        requestId.current = null;
+      }
+    } catch (err) { setPublishError(err instanceof Error ? err.message : 'Publishing failed. Please retry.'); }
+    finally { setPublishing(false); }
   };
 
 
@@ -488,6 +492,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         />
       </div>
 
+      {shared?.error && <p role="alert">Unable to refresh your posts: {shared.error}</p>}
       <div id="studio-panel-library" role="tabpanel" aria-labelledby="studio-tab-library" hidden={view !== 'library'} className="studio-panel">
         {/* Publishing moved into Quick Post's Validate stage, next to the
             review it depends on, so the library only lists content. */}
@@ -527,6 +532,10 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           onDraftChange={patchDraft}
           onClose={() => setPublishOpen(false)}
           onConfirm={confirmPublish}
+          busy={publishing}
+          error={publishError}
+          attributionLinkId={attributionLink?.linkId}
+          market={target.market.id}
           accountName={profile.businessName || undefined}
         />
       )}

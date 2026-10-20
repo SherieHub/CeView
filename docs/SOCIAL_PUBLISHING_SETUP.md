@@ -6,6 +6,13 @@ setup (the existing `ads_read` connection) stays in `AD_PLATFORM_SETUP.md`.
 
 Everything here is free. Console labels change; if one differs, follow the intent.
 
+> **Database:** the social connection tables (V48/V49: `tbl_media_asset`, `tbl_publishing_account`)
+> exist only on Postgres. The native H2 "Path B" profile in `RUNNING.md` does not create them, so
+> Settings → Platforms and Content Studio publishing need the Docker/Postgres path (Path A).
+>
+> **Limits:** the Facebook Page picker lists at most the first 100 Pages a Meta login administers;
+> Pages beyond that are not shown.
+
 ## A. Media storage on AWS (needed from Phase 1)
 
 Uploaded images and videos live in their own private S3 bucket, served publicly through the
@@ -94,5 +101,19 @@ Separate from the TikTok For Business ads app.
 - **Meta:** Business Verification, then App Review for every permission above, with screen
   recordings of each use. Free; plan for weeks. Switch the app to Live mode.
 - **TikTok:** an audit of the app. Until it passes, content posted by the API is private-only.
-- **Graph API version:** the code defaults to `v21.0`; bump `ceview.adplatform.meta.graph-base-url`
-  (and the dialog URL) to a current version before App Review.
+- **Graph API version:** the shared login, Page, publishing and insight clients use `v25.0`.
+  Override `META_GRAPH_BASE_URL` and `META_DIALOG_URL` together when upgrading; re-test insight fields and permissions before App Review.
+
+## E. Delivery and local verification
+
+Publishing now persists uploads, grants, post lifecycle/checkpoints and metric snapshots (V48–V52). Run the Postgres path; H2 remains a test-only stand-in for these new tables. Local compose passes the media and creator-app environment variables and persists local uploads in `ceview-media-uploads`.
+
+OAuth public callbacks only redirect to Settings; the authenticated SPA completes each exchange using its own JWT. A state belonging to another profile is consumed and rejected. Existing Meta ads-only grants must reconnect for publishing permissions and select a Page again. Page/Instagram disconnection discards publishing tokens while retaining the ads grant.
+
+Facebook uses native scheduling; Instagram and TikTok use the dispatcher. `SOCIAL_DISPATCH_ENABLED` (default true), `SOCIAL_DISPATCH_DELAY_MS` (30000), `SOCIAL_METRICS_ENABLED` (true), and `SOCIAL_METRICS_CRON` (03:00 UTC) configure jobs. Jobs perform platform HTTP calls outside database transactions. Token refresh is serialized across workers using a short lease. Rate-limit retries are bounded; an uncertain write or interrupted process requires checking the platform before making another post.
+
+Instagram images must be JPEG. TikTok photos must be JPEG or WEBP. Video goes through platform processing before delivery is reported. TikTok receives inbox drafts, not direct posts; users choose final privacy in TikTok. Video inbox drafts do not carry captions, so copy the caption from CeView's post detail. Metrics remain unavailable until the platform exposes a public post ID and returns the relevant fields.
+
+Meta ads are created PAUSED at every stage. The Publish window uses the connected ad account's currency, dates, countries and a tenant-owned campaign tracking link. Successful campaign/ad-set/media/creative stages survive retries. Changing the selected ad account or Page prevents resuming work against a different account. Review and launch in Ads Manager; CeView never launches the ad.
+
+Local verification uses MockWebServer, MockMvc, Vitest, Playwright route fixtures and isolated Postgres. It does not validate actual consent screens, production callbacks, App Review, verified media prefixes or live delivery. Those require the tester-account refinement pass agreed with the user. Do not use real platform credentials in automated tests.

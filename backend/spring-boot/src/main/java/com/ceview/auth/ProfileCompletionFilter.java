@@ -103,6 +103,8 @@ public class ProfileCompletionFilter extends OncePerRequestFilter {
             // Blocking it here would 403 an operator mid-redirect with no way
             // to recover the grant they just approved.
             || isAdConnectionCallback(path)
+            // TikTok publishing-login callback: a redirect from TikTok, not a UI call.
+            || path.equals("/api/social-connections/tiktok/callback")
             // Attribution redirect and hosted enquiry form. Both are hit by a
             // traveller's browser, not by the operator's app — there is no
             // operator behind the request whose profile could be incomplete,

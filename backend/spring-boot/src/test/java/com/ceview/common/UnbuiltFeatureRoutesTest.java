@@ -42,8 +42,4 @@ class UnbuiltFeatureRoutesTest {
         mvc.perform(get("/api/connections").header("Authorization", token())).andExpect(status().isNotFound());
     }
 
-    @Test
-    void publishedPostsHaveNoBackendYet() throws Exception {
-        mvc.perform(get("/api/posts").header("Authorization", token())).andExpect(status().isNotFound());
-    }
 }

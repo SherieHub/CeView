@@ -40,7 +40,57 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/analytics/report` | AIActionPlanReport "Generate" | `{ executiveSummary, lowestMetric, lowestMetricMeaning, recommendations, otherAreasImprove, weakestStage, secondaryLeaks }` |
 | GET  | `/api/analytics/report/{id}/pdf` | "Download PDF" | application/pdf stream |
 
-## New endpoints — UI/UX overhaul (specified, not yet implemented)
+## Social publishing endpoints
+
+All routes below require the authenticated operator's profile, except the two public OAuth redirect callbacks. Client-supplied operator/profile IDs never select the tenant. Credentials never appear in responses.
+
+| Method | Path | Contract |
+|---|---|---|
+| GET | `/api/social-connections` | Three `{platform, configured, status, handle, connectedAt}` rows; status is `DISCONNECTED`, `NEEDS_RECONNECT`, `NEEDS_PAGE`, `NO_LINKED_INSTAGRAM`, or `ACTIVE` |
+| POST | `/api/ad-connections/meta/authorize` | Shared Meta publishing/ads OAuth URL |
+| GET | `/api/ad-connections/{provider}/callback` | Public redirect only; forwards `ad_code`, `ad_provider`, `state` to Settings |
+| POST | `/api/ad-connections/{provider}/complete` | `{code,state}`; consumes state and binds it to the authenticated profile, then stores the grant; 204 |
+| POST | `/api/social-connections/tiktok/authorize` | TikTok creator OAuth URL (separate from TikTok Ads) |
+| GET | `/api/social-connections/tiktok/callback` | Public redirect only; forwards `tiktok_code`, `state` |
+| POST | `/api/social-connections/tiktok/complete` | `{code,state}`; authenticated state completion; fresh connection list |
+| GET | `/api/social-connections/meta/pages` | First 100 eligible Pages, including linked Instagram username |
+| PUT | `/api/social-connections/meta/page` | `{pageId}`; verifies membership before storing Page/Instagram grants |
+| DELETE | `/api/social-connections/{platform}` | Discards local publishing credentials; Facebook/Instagram disconnect together; ads connection is retained |
+| POST | `/api/media/uploads` | `{contentType,sizeBytes}` → `{mediaId,uploadUrl,publicUrl,kind}` |
+| POST | `/api/media/{id}/complete` | Verifies storage and marks the upload ready |
+| POST | `/api/posts/publish` | Approved captions, ready media, destinations and optional schedule/ad settings; returns persisted post views |
+| GET | `/api/posts?from=&to=&status=` | Tenant-owned post views, optionally filtered by date/status |
+| GET | `/api/posts/{id}` | One owned post view; foreign IDs return 404 |
+| DELETE | `/api/posts/{id}` | Cancels pending or native scheduled work; conflicts when already in flight, published, or accepted by TikTok |
+| GET | `/api/analytics/posts?platform=` | Delivered posts with available metric snapshots |
+| GET | `/api/analytics/posts/{id}` | One owned post plus nullable per-post metrics |
+
+`POST /api/posts/publish` accepts:
+
+```json
+{
+  "requestId": "UUID",
+  "platforms": ["instagram"],
+  "captionsByPlatform": {"instagram": "Approved caption"},
+  "mediaId": "UUID",
+  "contentId": null,
+  "market": "japan",
+  "visibility": "public",
+  "approved": true,
+  "scheduledFor": null,
+  "ad": null
+}
+```
+
+`requestId` deduplicates a tenant's complete request. Reusing it with different content returns 409. `contentId`, when supplied, must reference the tenant's approved generated content. Platforms are `facebook`, `instagram`, `tiktok`, `meta_ads`. A paid ad requires `ad: {objective, dailyBudgetMinor, startTime, endTime, countries, attributionLinkId, pinCampaign}`. Objectives are `OUTCOME_TRAFFIC` or `OUTCOME_AWARENESS`; budget is integer minor units in the chosen ad account's currency; countries are ISO alpha-2. The attribution link must belong to the tenant. All remote ad objects remain PAUSED for review in Ads Manager.
+
+Post views contain `id,date,platform,caption,status,deliveryStatus,mediaUrl,mediaType,scheduledFor,permalink,adsManagerUrl,errorMessage,metricsAvailable,reach,likes,comments,shares,engagementRate,series`. UI statuses are `processing`, `scheduled`, `published`, `inbox`, `failed`, `cancelled`, `draft` (PAUSED ad). Delivery statuses preserve the backend lifecycle. Metrics are nullable; absent information is unavailable, never a measured zero. Reach history contains up to seven UTC calendar-day samples, including null gaps.
+
+Facebook schedules use native platform scheduling (10 minutes to 6 months ahead); Instagram and TikTok execute through CeView's dispatcher. TikTok delivers a draft to the inbox: users finish publication and choose privacy in TikTok. Video drafts require copying the caption. Instagram images must be JPEG; TikTok photos JPEG or WEBP. Ready media is checked again in storage immediately before delivery. A platform timeout with an uncertain remote write outcome fails safely for operator inspection rather than reposting automatically. Definite rate limits retry up to three delivery attempts; processing polls preserve the remote identifier.
+
+Missing platform configuration returns 503, disconnected/changed accounts 409, foreign resources 404, malformed requests 400, and OAuth completion errors 400/403/502 as applicable. Local tests mock all platform calls. See [setup](../docs/SOCIAL_PUBLISHING_SETUP.md).
+
+## Remaining UI/UX overhaul endpoints
 
 The screens introduced by [`ui-ux-prototype.html`](../ui-ux-prototype.html) need endpoints that don't
 exist above. Full detail — request/response shape, entities, migrations — is in each linked doc; this
@@ -48,15 +98,6 @@ table is the flat index.
 
 | Method | Path | Frontend trigger | Doc |
 |---|---|---|---|
-| GET  | `/api/platform-connections?operatorId=` | Settings → Platforms load; Content Studio publish-gate check | [`docs/module-3/backend/PlatformConnectionController.md`](../docs/module-3/backend/PlatformConnectionController.md) |
-| POST | `/api/platform-connections/{platform}/connect` | Settings → Platforms "Connect" | same |
-| POST | `/api/platform-connections/{platform}/callback` | OAuth redirect callback | same |
-| DELETE | `/api/platform-connections/{platform}` | Settings → Platforms "Disconnect" | same |
-| GET  | `/api/posts?operatorId=&from=&to=` | Calendar load | [`docs/module-3/backend/PublishingController.md`](../docs/module-3/backend/PublishingController.md) |
-| GET  | `/api/posts?operatorId=&status=` | Content Studio content board | same |
-| POST | `/api/posts/publish` | Content Studio "Publish now" | same |
-| GET  | `/api/analytics/posts?operatorId=&platform=` | Performance "Previously published" | [`docs/module-4/backend/post-metrics.md`](../docs/module-4/backend/post-metrics.md) |
-| GET  | `/api/analytics/posts/{postId}` | Post analytics modal | same |
 | GET  | `/api/workspace/members?operatorId=` | Settings → Workspace load | [`docs/shared/workspace.md`](../docs/shared/workspace.md) |
 | POST | `/api/workspace/invites` | Settings → Workspace "Send invite" | same |
 | DELETE | `/api/workspace/members/{id}` | (gap — not in the prototype, needed for a real product) | same |

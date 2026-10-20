@@ -5,11 +5,13 @@ import com.ceview.module4.adconnections.AdConnectionDtos.AdAccountOption;
 import com.ceview.module4.adconnections.client.TokenGrant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -20,6 +22,7 @@ import java.util.UUID;
  */
 @Service
 public class AdConnectionService {
+    public boolean isEncryptionConfigured() { return tokenCipher.isConfigured(); }
 
     private static final Logger log = LoggerFactory.getLogger(AdConnectionService.class);
 
@@ -30,16 +33,22 @@ public class AdConnectionService {
      */
     static final Duration STATE_TTL = Duration.ofMinutes(10);
 
+    /** The only state keys that may be minted (they also satisfy {@code chk_ad_state_provider}). */
+    private static final Set<String> STATE_KEYS = Set.of("meta", "tiktok", "tiktok_creator");
+
     private final AdOAuthStateRepository stateRepo;
     private final AdPlatformConnectionRepository connectionRepo;
     private final TokenCipher tokenCipher;
+    private final ApplicationEventPublisher events;
 
     public AdConnectionService(AdOAuthStateRepository stateRepo,
                                AdPlatformConnectionRepository connectionRepo,
-                               TokenCipher tokenCipher) {
+                               TokenCipher tokenCipher,
+                               ApplicationEventPublisher events) {
         this.stateRepo = stateRepo;
         this.connectionRepo = connectionRepo;
         this.tokenCipher = tokenCipher;
+        this.events = events;
     }
 
     /**
@@ -48,12 +57,25 @@ public class AdConnectionService {
      */
     @Transactional
     public UUID mintState(UUID businessProfileId, AdProvider provider) {
+        return mintState(businessProfileId, provider.key());
+    }
+
+    /**
+     * As above for callers whose login is not an {@link AdProvider} — e.g. the TikTok
+     * <em>creator</em> login, key {@code tiktok_creator}. The key must satisfy
+     * {@code chk_ad_state_provider} (V49).
+     */
+    @Transactional
+    public UUID mintState(UUID businessProfileId, String providerKey) {
+        if (providerKey == null || !STATE_KEYS.contains(providerKey)) {
+            throw new IllegalArgumentException("unsupported oauth state key: " + providerKey);
+        }
         // Opportunistic housekeeping — rows nobody came back for.
         stateRepo.deleteExpiredBefore(OffsetDateTime.now().minusDays(1));
 
         AdOAuthState state = new AdOAuthState();
         state.setBusinessProfileId(businessProfileId);
-        state.setProvider(provider.key());
+        state.setProvider(providerKey);
         state.setExpiresAt(OffsetDateTime.now().plus(STATE_TTL));
         return stateRepo.save(state).getState();
     }
@@ -77,6 +99,12 @@ public class AdConnectionService {
      */
     @Transactional
     public UUID consumeState(UUID state, AdProvider provider) {
+        return consumeState(state, provider.key());
+    }
+
+    /** See the {@code AdProvider} overload for the atomic-burn rationale; unchanged here. */
+    @Transactional
+    public UUID consumeState(UUID state, String providerKey) {
         AdOAuthState row = stateRepo.findById(state)
                 .orElseThrow(() -> new IllegalStateException("unknown oauth state"));
 
@@ -86,7 +114,7 @@ public class AdConnectionService {
         if (row.getExpiresAt().isBefore(OffsetDateTime.now())) {
             throw new IllegalStateException("oauth state expired");
         }
-        if (!row.getProvider().equals(provider.key())) {
+        if (!row.getProvider().equals(providerKey)) {
             throw new IllegalStateException("oauth state was minted for a different provider");
         }
 
@@ -129,6 +157,7 @@ public class AdConnectionService {
 
         connectionRepo.save(conn);
         log.info("[Module4] stored {} grant for profile={}", provider.key(), businessProfileId);
+        publishResetIfMeta(businessProfileId, provider);
     }
 
     /** Records which ad account to report on, and activates the connection. */
@@ -195,7 +224,18 @@ public class AdConnectionService {
                     connectionRepo.save(conn);
                     log.info("[Module4] {} connection revoked for profile={}",
                              provider.key(), businessProfileId);
+                    publishResetIfMeta(businessProfileId, provider);
                 });
+    }
+
+    /**
+     * A new or removed Meta login invalidates whatever was derived from the old one (Page
+     * tokens), so tell the listeners — synchronously, in this transaction.
+     */
+    private void publishResetIfMeta(UUID businessProfileId, AdProvider provider) {
+        if (provider == AdProvider.META) {
+            events.publishEvent(new MetaConnectionResetEvent(businessProfileId));
+        }
     }
 
     /** The usable, decrypted access token for a stored connection. */

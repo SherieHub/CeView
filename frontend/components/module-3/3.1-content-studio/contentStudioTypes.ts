@@ -1,4 +1,4 @@
-import type { PlatformId, OmcsAuditResult, PublishedPost } from '../../../types';
+import type { PublishAd, PlatformId, OmcsAuditResult, PublishedPost } from '../../../types';
 
 /**
  * The platforms the Content Studio offers.
@@ -47,6 +47,7 @@ export interface PublishDraftState {
   visibility: 'public' | 'private';
   commentsEnabled: boolean;
   paidPartnership: boolean;
+  ad?: PublishAd;
   agreementChecked: boolean;
 }
 

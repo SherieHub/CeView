@@ -13,12 +13,11 @@ one account, since the account total otherwise blends them into one PES score.
 
 **What this does NOT do:**
 - It does **not** publish posts to Facebook, Instagram, or TikTok. That is a
-  separate, unbuilt integration (see `docs/module-3/backend/PlatformConnectionController.md`)
-  with different scopes.
+  separate publishing feature (see `docs/SOCIAL_PUBLISHING_SETUP.md`). Meta now shares one upgraded login across publishing and ads; TikTok creator and ads apps remain separate.
 - It does **not** fetch organic post engagement (likes, comments, shares,
   reach on unpaid posts). It only reads **paid ad account** metrics.
 
-> Publishing posts and creating ads is a separate connection: see `docs/SOCIAL_PUBLISHING_SETUP.md`.
+> Publishing and PAUSED ad creation setup: see `docs/SOCIAL_PUBLISHING_SETUP.md`.
 
 If you've never set up an OAuth app with Meta or TikTok before, budget more
 calendar time than you'd expect — see §2.
@@ -79,12 +78,12 @@ amount of **real ad spend**.
    **Settings → Basic** page. You'll put both into the backend's environment
    in §7.
 
-This integration was built and tested against **Graph API v21.0**
-(`https://graph.facebook.com/v21.0`). Meta versions its Graph API roughly
+The original integration used v21.0; social publishing now defaults to **Graph API v25.0**
+(`https://graph.facebook.com/v25.0`). Meta versions its Graph API roughly
 quarterly and eventually retires old versions — if you're reading this
 months after it was written, check the [Meta API versioning
 changelog](https://developers.facebook.com/docs/graph-api/changelog) for
-whether v21.0 is still current. You do not need to touch code to move to a
+which version is current. You do not need to touch code to move to a
 newer version: override the Spring property
 `ceview.adplatform.meta.graph-base-url` (e.g. via
 `--ceview.adplatform.meta.graph-base-url=https://graph.facebook.com/v22.0`

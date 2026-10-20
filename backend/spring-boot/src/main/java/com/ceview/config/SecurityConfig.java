@@ -58,6 +58,9 @@ public class SecurityConfig {
                 // Meta/TikTok — it carries no Authorization header, so tenancy
                 // travels in a single-use state token instead (see AdOAuthState).
                 .requestMatchers("/api/ad-connections/*/callback").permitAll()
+                // TikTok's publishing-login redirect: a browser arriving from TikTok with no JWT;
+                // the tenant travels in the single-use state token (same model as the ads callback).
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/social-connections/tiktok/callback").permitAll()
                 // Local-dev media (ceview.media.storage=local): the browser PUTs to a one-time
                 // URL named by an unguessable media id, as with a presigned S3 URL, and reads
                 // uploads back from /media/**. In production CloudFront serves /media/* from

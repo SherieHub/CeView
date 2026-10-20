@@ -236,7 +236,7 @@ const platformLabel = (id: StudioPlatformId) => STUDIO_PLATFORMS.find((p) => p.i
 export function platformStats(posts: PublishedPost[]): PlatformStat[] {
   const by = new Map<StudioPlatformId, number[]>();
   for (const p of posts) {
-    if (p.status !== 'published' || !(p.reach > 0) || !Number.isFinite(p.engagementRate) || p.engagementRate < 0) continue;
+    if (p.metricsAvailable === false || p.reach == null || p.engagementRate == null || p.status !== 'published' || !(p.reach > 0) || !Number.isFinite(p.engagementRate) || p.engagementRate < 0) continue;
     if (!STUDIO_PLATFORMS.some((s) => s.id === p.platform)) continue;
     const id = p.platform as StudioPlatformId;
     by.set(id, [...(by.get(id) ?? []), p.engagementRate]);

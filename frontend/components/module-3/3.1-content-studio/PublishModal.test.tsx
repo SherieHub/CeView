@@ -160,10 +160,10 @@ describe('PublishModal', () => {
     const { onDraftChange } = setup();
 
     await userEvent.click(screen.getByRole('radio', { name: 'private' }));
-    expect(onDraftChange).toHaveBeenCalledWith({ visibility: 'private' });
+    expect(screen.getByRole('radio', { name: 'private' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('checkbox', { name: /Run as Paid Ad/ }));
-    expect(onDraftChange).toHaveBeenCalledWith({ paidPartnership: true });
+    expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({ paidPartnership: true, visibility: 'public', ad: expect.objectContaining({ objective: 'OUTCOME_TRAFFIC' }) }));
   });
 
   it('blocks confirm until the agreement is ticked', () => {
@@ -354,5 +354,22 @@ describe('PublishModal — scheduling', () => {
     const { onDraftChange } = setup({ scheduledFor: '2099-03-14T10:30' });
     await userEvent.click(screen.getByRole('radio', { name: /Publish now/ }));
     expect(onDraftChange).toHaveBeenCalledWith({ scheduledFor: null });
+  });
+});
+
+
+describe('publishing validation', () => {
+  it('disables private visibility for Meta publishing', () => {
+    setup({ platforms: ['facebook'] });
+    expect(screen.getByRole('radio', { name: 'private' })).toBeDisabled();
+  });
+  it('blocks a paid ad without complete budget and attribution details', () => {
+    setup({ agreementChecked: true, paidPartnership: true, ad: { objective: 'OUTCOME_TRAFFIC', dailyBudgetMinor: 0, startTime: new Date(Date.now() + 3600000).toISOString(), endTime: new Date(Date.now() + 86400000).toISOString(), countries: ['PH'], attributionLinkId: '', pinCampaign: false } });
+    expect(screen.getByRole('button', { name: 'Confirm & Publish' })).toBeDisabled();
+    expect(screen.getByText(/Enter a positive budget/)).toBeInTheDocument();
+  });
+  it('explains the TikTok video inbox handoff', () => {
+    setup({ platforms: ['tiktok'], mediaType: 'video' });
+    expect(screen.getByText(/Video drafts do not include the caption/)).toBeInTheDocument();
   });
 });

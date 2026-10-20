@@ -108,6 +108,17 @@ All authenticated routes resolve the tenant through `CurrentBusinessProfile`. No
 
 ## Testing
 
+### Implementation amendments (2026-10-20)
+
+- Public Meta/TikTok OAuth callbacks only redirect. Authenticated completion consumes state, verifies the caller's profile and stores the grant, closing the Meta login-CSRF follow-up from Phase 2.
+- TikTok inbox upload (`MEDIA_UPLOAD`) does not accept Direct Post privacy settings. CeView disables private visibility and explains that the user chooses privacy when completing the draft in TikTok. Video captions remain a clipboard/manual handoff. Upload status must confirm inbox delivery before the UI reports it.
+- The common Meta Graph/dialog default is v25.0. Instagram photos are validated as JPEG and TikTok photos as JPEG/WEBP; unsupported formats are rejected with an actionable message rather than silently converted.
+- Post requests have a tenant/request/platform idempotency key and fingerprint. Successful remote stages are checkpointed. Definite rate limits retry up to three times. An interrupted or ambiguous external write is marked failed for operator inspection, because automatic reposting could duplicate it. Media-processing polls resume the same remote ID and have a 24-hour window from first dispatch.
+- V52 adds a short creator-token refresh lease so multiple workers cannot rotate the same refresh token simultaneously. Refresh completion rechecks the active grant and cannot resurrect a disconnected account.
+- Metrics are nullable, including individual fields. Views are never presented as unique reach. TikTok metrics require a confirmed public post ID; absent IDs remain unavailable. The first seven UTC calendar days form the reach series, with null gaps for missed days.
+- Meta ads use the connected account's currency and a selected owned campaign tracking link. Ad account/Page changes prevent continuing an old partial delivery against the new account. The Ads Manager handoff uses the account campaign-list fallback because campaign deep links remain unverified.
+- Verification is local only: mocked platform endpoints, authenticated route isolation, browser route fixtures and disposable Postgres. Real consent, tester-account delivery and public HTTPS/media-prefix validation remain the later refinement pass requested by the user.
+
 - JUnit with MockWebServer for every Graph/TikTok call, including partial-failure chains; MockMvc tenant-isolation and no-token-leak tests; dispatcher claim/retry tests.
 - Vitest for the settings redirect and picker, modal ad-form validation, publish-to-API behaviour, and video preview.
 - Playwright publish journey on fixtures.
