@@ -440,6 +440,7 @@
     color: var(--white);
   }
   .cv-footer-col a,
+  .cv-footer-legal a,
   .cv-footer-credits-btn {
     border-radius: 4px;
     font-family: var(--ff-ui);
@@ -448,12 +449,14 @@
     text-decoration: none;
   }
   .cv-footer-col a:hover,
+  .cv-footer-legal a:hover,
   .cv-footer-credits-btn:hover {
     color: var(--white);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
   .cv-footer-col a:focus-visible,
+  .cv-footer-legal a:focus-visible,
   .cv-footer-credits-btn:focus-visible {
     outline: 2px solid var(--teal-100);
     outline-offset: 3px;
@@ -476,6 +479,22 @@
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     font-family: var(--ff-ui);
     font-size: 0.875rem;
+  }
+  /* Terms · Privacy · Photo credits, separated by quiet dots. */
+  .cv-footer-legal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 22px;
+  }
+  .cv-footer-legal .cv-footer-credits-btn { text-decoration: none; }
+  .cv-footer-legal > * + *::before {
+    display: inline-block;
+    margin-right: 22px;
+    margin-left: -12px;
+    color: rgba(255, 255, 255, 0.35);
+    text-decoration: none;
+    content: '·';
   }
   .cv-footer-credits-btn {
     padding: 0;

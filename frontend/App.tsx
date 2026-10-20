@@ -29,6 +29,9 @@ const OnboardingWizard = lazy(() => import('./components/module-1/onboarding/Onb
 const AssetsLinksStep = lazy(() => import('./components/module-1/onboarding/steps/AssetsLinksStep'));
 const CampaignAnalyticsView = lazy(() => import('./components/module-4/4.1-campaign-analytics/CampaignAnalyticsView'));
 const EnquiryPage = lazy(() => import('./components/module-4/enquiries/EnquiryPage'));
+// Terms of Use and Privacy Notice — public, readable signed in or out.
+const TermsPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.PrivacyPage })));
 const DashboardView = lazy(() => import('./components/module-2/2.1-dashboard/DashboardView'));
 const ContentStudioView = lazy(() => import('./components/module-3/3.1-content-studio/ContentStudioView'));
 const CalendarView = lazy(() => import('./components/module-3/3.2-calendar/CalendarView'));
@@ -193,6 +196,8 @@ const router = createBrowserRouter([
   ...devPreviewRoutes,
   { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/enquiry', element: page(<EnquiryPage />) },
+  { path: '/terms', element: page(<TermsPage />) },
+  { path: '/privacy', element: page(<PrivacyPage />) },
   { path: '/login', element: <RedirectIfAuthenticated>{page(<LoginPage />)}</RedirectIfAuthenticated> },
   { path: '/forgot-password', element: <RedirectIfAuthenticated>{page(<ForgotPasswordPage />)}</RedirectIfAuthenticated> },
   {
