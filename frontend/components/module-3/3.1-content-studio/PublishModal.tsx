@@ -47,6 +47,7 @@ import { STUDIO_PLATFORMS } from './contentStudioTypes';
 import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import { useConnections } from '../../../services/connectionsStore';
 import { defaultSchedule, formatSchedule, isFuture, timeZoneName } from './schedule';
+import { useShellMode } from '../../../layout/shellContext';
 
 /**
  * Fitted frames stop just short of the canvas edge. A preview touching the
@@ -88,6 +89,7 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
 
 export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName }: PublishModalProps) {
   const [device, setDevice] = useState<PreviewDevice>('mobile');
+  const { demo } = useShellMode();
   // A disconnected platform cannot be added to "Publish to" without first
   // connecting it (Settings -> Platforms). Read here rather than in
   // PublishComposer: that panel no longer owns destination choice, this does.
@@ -461,6 +463,9 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
           </button>
           <div className="pubx-foot-end">
             {/* Says what is still missing, so a disabled Confirm is never a mystery. */}
+            {demo && canConfirm && (
+              <span className="pubx-foot-hint">Demo: nothing is posted to your accounts.</span>
+            )}
             {!canConfirm && (
               <span className="pubx-foot-hint">
                 {draft.platforms.length === 0

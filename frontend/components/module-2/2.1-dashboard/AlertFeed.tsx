@@ -13,7 +13,7 @@
  * Different cause, different remedy, different copy.
  */
 import { BellOff, Tag, Inbox } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { AppLink } from '../../../layout/shellContext';
 import AlertCard from './AlertCard';
 import FeedFilter from './FeedFilter';
 import type { AlertFeedSlotProps } from './dashboardTypes';
@@ -81,9 +81,9 @@ export default function AlertFeed({
             </p>
             {/* The prototype only pointed at Settings in prose. A real control
                 is one click instead of a hunt through the nav. */}
-            <Link to="/settings/profile" className="btn-primary mt-3">
+            <AppLink to="/settings/profile" className="btn-primary mt-3">
               Edit business categories
-            </Link>
+            </AppLink>
           </div>
         </div>
       </section>

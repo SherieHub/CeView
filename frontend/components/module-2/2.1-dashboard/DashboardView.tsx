@@ -16,6 +16,7 @@
  */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAppPath } from '../../../layout/shellContext';
 import { AlertTriangle, Info } from 'lucide-react';
 import '@fontsource-variable/fraunces/opsz.css';
 import { LandingImage } from '../../landing/ui';
@@ -65,6 +66,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
   const { profile } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const appPath = useAppPath();
   const state = useDashboardState({ forceMode });
   const { setTarget } = useTargetSelection();
   const tutorial = useJustOnboardedTutorial();
@@ -264,7 +266,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
             inCategory[0] ??
             null;
           if (alert && market) setTarget(alert, market);
-          navigate('/content');
+          navigate(appPath('/content'));
         }}
       />
       <TutorialModal open={tutorial.open} onClose={tutorial.close} />

@@ -11,6 +11,7 @@
  * must degrade to "never auto-opens" rather than crashing the screen.
  */
 import { useCallback, useState } from 'react';
+import { useShellMode } from '../../../layout/shellContext';
 
 export const BRIEF_SEEN_KEY = 'ceview.contentStudio.briefSeen';
 
@@ -37,7 +38,10 @@ export interface FirstRunDrawer {
 }
 
 export function useFirstRunDrawer(): FirstRunDrawer {
-  const [flag] = useState(readFlag);
+  // The public demo introduces the studio with its own tour, and must not
+  // record a dismissal that a real account in this browser would inherit.
+  const { demo } = useShellMode();
+  const [flag] = useState<BriefFlag>(() => (demo ? { seen: true, ok: true } : readFlag()));
   const [seen, setSeen] = useState(flag.seen);
   // First render decides. Auto-open requires BOTH that the operator has never
   // dismissed it and that storage works — auto-opening when the dismissal
@@ -48,13 +52,14 @@ export function useFirstRunDrawer(): FirstRunDrawer {
   const closeDrawer = useCallback(() => {
     setOpen(false);
     setSeen(true);
+    if (demo) return;
     try {
       localStorage.setItem(BRIEF_SEEN_KEY, 'true');
     } catch {
       // Nothing to do — it will auto-open again next time, which is the safe
       // failure for a discovery aid.
     }
-  }, []);
+  }, [demo]);
 
   const openDrawer = useCallback(() => setOpen(true), []);
 

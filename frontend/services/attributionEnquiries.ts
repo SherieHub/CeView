@@ -1,5 +1,6 @@
 import type { AttributionEnquiryInput } from '../types';
 import { loadTokens } from './authStorage';
+import { demoUnavailable, isDemoActive } from './demoMode';
 
 export interface OperatorEnquiry {
   enquiryId: string;
@@ -15,6 +16,9 @@ export interface OperatorEnquiry {
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // This file calls fetch itself rather than going through apiClient, so it
+  // needs the public demo's guard of its own: nothing leaves the browser there.
+  if (isDemoActive()) throw demoUnavailable(path);
   const response = await fetch(`${BASE_URL}${path}`, { cache: 'no-store', ...init });
   if (!response.ok) throw new Error('Unable to complete the enquiry request.');
   return response.json() as Promise<T>;
@@ -33,7 +37,9 @@ export const attributionEnquiries = {
       body: JSON.stringify(input),
     }),
   list: (signal?: AbortSignal): Promise<OperatorEnquiry[]> => {
-    if (import.meta.env.VITE_USE_FIXTURES === 'true' && !import.meta.env.PROD) {
+    // The demo business has no enquiries — and a signed-in visitor's own must
+    // never load into it.
+    if (isDemoActive() || (import.meta.env.VITE_USE_FIXTURES === 'true' && !import.meta.env.PROD)) {
       return Promise.resolve([]);
     }
     const tokens = loadTokens();

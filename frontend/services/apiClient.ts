@@ -10,6 +10,7 @@
 import { loadTokens } from './authStorage';
 import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { ApiError } from './apiError';
+import { guardForDemo, isDemoActive } from './demoMode';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
 import { MOCK_CONTENT, fixtureTranslation } from './fixtures/content';
@@ -123,6 +124,11 @@ export interface PhoneProof {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Second line of defence for the public demo: nothing reaches the network
+  // while it runs, and never with the visitor's token.
+  if (isDemoActive()) {
+    throw new ApiError({ status: 404, method: init?.method ?? 'GET', path, body: { code: 'DEMO_UNAVAILABLE' } });
+  }
   const tokens = loadTokens();
   const method = init?.method ?? 'GET';
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -165,7 +171,7 @@ const EMPTY_BUSINESS_PROFILE_DTO: BusinessProfileDto = {
   uniquenessScore: null,
 };
 
-export const apiClient = {
+const rawClient = {
   /** The operator's real, persisted business profile — see ProfileProvider. */
   businessProfile: {
     load: () =>
@@ -683,3 +689,13 @@ export const apiClient = {
           }),
   },
 };
+
+/**
+ * What the app imports. Outside the public demo every method is the one
+ * above; inside it (services/demoMode.ts) they answer from sample data or
+ * refuse. No namespace is exempt — `auth` included, since account screens such
+ * as the Business Profile's contact number read it, and in the demo that must
+ * never be a signed-in visitor's own.
+ */
+export const apiClient = guardForDemo(rawClient, []);
+

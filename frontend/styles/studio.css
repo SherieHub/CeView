@@ -606,20 +606,9 @@
     padding: 0;
     list-style: none;
   }
-  .cv-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 20px;
-    border: 1px solid var(--studio-line);
-    border-radius: 14px;
-    background: var(--white);
-  }
-  .cv-card-main {
-    min-width: 0;
-  }
-  .cv-card-title,
+  /* (The old campaign-list card rules, .cv-card*, were removed: the list now
+     uses CampaignCard's .cl-* styles, and the generic name was overriding the
+     landing page's own .cv-card.) */
   .cw-title {
     font-size: 1.0625rem;
     font-weight: 700;
@@ -642,26 +631,11 @@
     font-size: 0.875rem;
     color: var(--color-text-muted);
   }
-  .cv-card-facts {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 18px;
-    margin-top: 10px;
-    font-size: 0.8125rem;
-    color: var(--ink-700);
-  }
-  .cv-card-facts > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
   .cw-plats {
     display: inline-flex;
     gap: 6px;
   }
-  .cw-plats .lib-plat,
-  .cv-card-facts .lib-plat {
+  .cw-plats .lib-plat {
     width: 26px;
     height: 26px;
   }
@@ -1160,10 +1134,6 @@
     .app-wrap .studio-screen .lib .post-end {
       grid-column: 2;
       justify-self: start;
-    }
-    .cv-card {
-      flex-direction: column;
-      align-items: stretch;
     }
     .app-wrap .studio-screen .cv-search .input {
       width: 100%;

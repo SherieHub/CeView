@@ -17,6 +17,7 @@ import { Bell, ChevronDown, LogOut, Menu, UserRound } from 'lucide-react';
 import { useDismiss } from '../components/shared/useDismiss';
 import { useAuth } from '../services/auth';
 import { useProfile } from '../services/profileContext';
+import { useAppPath, useShellMode } from './shellContext';
 
 /** "Sunset Cove Beach Resort" -> "SC"; falls back to the email's first letters. */
 function initials(name: string | null | undefined, email: string | null | undefined): string {
@@ -43,9 +44,13 @@ export default function Topbar({ onToggleSidebar, sidebarOpen = false }: TopbarP
   const { profile } = useProfile();
   // The signed-in user's name can be missing right after a reload (only the
   // token is restored), so the business profile's name is the fallback.
-  const name = user?.businessName || profile.businessName || null;
-  const who = name || user?.email || 'Your profile';
-  const mono = initials(name, user?.email);
+  // In the demo the shell belongs to the sample business, whoever is visiting.
+  const { demo } = useShellMode();
+  const appPath = useAppPath();
+  const email = demo ? null : user?.email;
+  const name = (demo ? null : user?.businessName) || profile.businessName || null;
+  const who = name || email || 'Your profile';
+  const mono = initials(name, email);
 
   return (
     <header className="app-topbar">
@@ -96,14 +101,14 @@ export default function Topbar({ onToggleSidebar, sidebarOpen = false }: TopbarP
           <div className="topbar-menu" role="menu" aria-label="Account">
             <div className="topbar-menu-who">
               <b>{name || 'Your account'}</b>
-              {user?.email && <span>{user.email}</span>}
+              {demo ? <span>Sample business · interactive demo</span> : email && <span>{email}</span>}
             </div>
             <button
               type="button"
               role="menuitem"
               onClick={() => {
                 closeMenu();
-                navigate('/settings/profile');
+                navigate(appPath('/settings/profile'));
               }}
             >
               <UserRound size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -114,11 +119,12 @@ export default function Topbar({ onToggleSidebar, sidebarOpen = false }: TopbarP
               role="menuitem"
               onClick={() => {
                 closeMenu();
-                logout();
+                if (demo) navigate('/');
+                else logout();
               }}
             >
               <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
-              Sign out
+              {demo ? 'Exit demo' : 'Sign out'}
             </button>
           </div>
         )}
