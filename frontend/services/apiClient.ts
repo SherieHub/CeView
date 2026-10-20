@@ -67,6 +67,8 @@ import type {
   UnconvertedClick,
   MediaUploadSlot,
   MediaAssetDto,
+  AttributionVoucher,
+  VoucherRedemption,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
@@ -684,6 +686,14 @@ export const apiClient = {
         : request<UnconvertedClick[]>(
             `/api/attribution/clicks/unconverted?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
           ),
+  },
+
+  vouchers: {
+    list: () => USE_FIXTURES ? delay<AttributionVoucher[]>([]) : request<AttributionVoucher[]>('/api/attribution/vouchers'),
+    redeem: (voucherId: string, grossRevenue: number, eventAt?: string) =>
+      USE_FIXTURES ? delay<VoucherRedemption>({ code: 'CVLAUNCH', grossRevenue, discountAmount: 50, netRevenue: Math.max(0, grossRevenue - 50), redemptionsRemaining: 0 }) : request<VoucherRedemption>(`/api/attribution/vouchers/${voucherId}/redeem`, {
+        method: 'POST', body: JSON.stringify({ grossRevenue, eventAt }),
+      }),
   },
 
   workspace: {
