@@ -27,6 +27,12 @@ vi.mock('../../../services/apiClient', () => ({
       list: vi.fn(() => Promise.resolve([])),
       performance: vi.fn(() => Promise.resolve(null)),
     },
+    attribution: {
+      codes: vi.fn(() => Promise.resolve([])),
+      recentRedemptions: vi.fn(() => Promise.resolve([])),
+      tracked: vi.fn(() => Promise.resolve({ trackedBookings: 0 })),
+      lift: vi.fn(() => Promise.resolve(null)),
+    },
   },
 }));
 

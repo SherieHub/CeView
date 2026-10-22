@@ -760,6 +760,101 @@ export interface LinkPerformance {
   creatives: CreativePerformance[];
 }
 
+/**
+ * Conversion capture (CVW-42) — docs/module-4/CONVERSION_CAPTURE_RESEARCH.md.
+ * How a booking reached CeView, most to least trustworthy: a traveller's
+ * hosted enquiry and a booking-platform sync are automatic; a click match is
+ * operator-confirmed against a click CeView recorded; a code log is the
+ * operator noting that a customer quoted the code.
+ */
+export type CaptureKind = 'ENQUIRY' | 'BOOKING_PLATFORM' | 'CLICK_MATCHED' | 'CODE_LOGGED';
+
+export interface CaptureKindTotal {
+  kind: CaptureKind;
+  bookings: number;
+  revenue: number;
+}
+
+/** A surge window's quotable code and what it has captured so far. */
+export interface AttributionCodeSummary {
+  attributionCodeId: string;
+  code: string;
+  category: string;
+  targetMarket: string;
+  windowStart: string;
+  windowEnd: string;
+  status: 'UPCOMING' | 'ACTIVE' | 'ENDED';
+  totalBookings: number;
+  totalRevenue: number;
+  byKind: CaptureKindTotal[];
+  /** Operator-reported bookings for the window's weeks; null until a week in it is submitted. */
+  reportedBookings: number | null;
+  /** More bookings were tracked in the window than the operator reported — a flag, not an error. */
+  trackedExceedsReported: boolean;
+}
+
+/** Bookings CeView tracked in one reporting period, shown beside the weekly form's Bookings field. */
+export interface TrackedPeriodSummary {
+  periodStart: string;
+  periodEnd: string;
+  trackedBookings: number;
+  automaticBookings: number;
+  clickMatchedBookings: number;
+  codeLoggedBookings: number;
+  trackedRevenue: number;
+}
+
+export type LiftStatus = 'OK' | 'UPCOMING' | 'NO_WINDOW_DATA' | 'NO_BASELINE';
+
+/**
+ * A code's surge window compared with the four weeks before it, as per-week
+ * rates of the operator's reported results. Percentages are null unless
+ * `status` is OK and the baseline is non-zero.
+ */
+export interface AttributionLift {
+  attributionCodeId: string;
+  code: string;
+  windowStart: string;
+  windowEnd: string;
+  baselineStart: string;
+  status: LiftStatus;
+  windowPeriods: number;
+  baselinePeriods: number;
+  baselineWeeks: number;
+  /** Fewer than four weeks of history before the window. */
+  shortBaseline: boolean;
+  windowBookingsPerWeek: number | null;
+  baselineBookingsPerWeek: number | null;
+  bookingsLiftPct: number | null;
+  windowRevenuePerWeek: number | null;
+  baselineRevenuePerWeek: number | null;
+  revenueLiftPct: number | null;
+}
+
+/** One booking, logged against a code or attached to a recorded ad click. */
+export interface LogBookingInput {
+  attributionCodeId?: string;
+  clickId?: string;
+  bookings?: number;
+  revenue?: number;
+  /** ISO timestamp; omitted means now. */
+  eventAt?: string;
+}
+
+export interface AttributionRedemption {
+  redemptionId: string;
+  attributionCodeId: string;
+  code: string | null;
+  source: 'MANUAL' | 'FAREHARBOR' | 'LINK';
+  kind: CaptureKind;
+  bookings: number;
+  revenue: number;
+  eventAt: string | null;
+  clickId: string | null;
+  /** Only operator-created rows can be undone. */
+  deletable: boolean;
+}
+
 /** Traveller submission on the public enquiry page. `clickId` is the `cv=` value. */
 export interface AttributionEnquiryInput {
   clickId: string;

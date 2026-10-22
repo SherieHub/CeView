@@ -1,6 +1,8 @@
 import React from 'react';
 import { BarChart3, Ticket } from 'lucide-react';
 import LinkAttributionPanel from './LinkAttributionPanel';
+import CodeRedemptionPanel from './CodeRedemptionPanel';
+import StatisticalLiftPanel from './StatisticalLiftPanel';
 
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;

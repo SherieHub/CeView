@@ -196,6 +196,9 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         description: profile.description,
         categories: profile.categories,
         trend: marketTrend,
+        // Pins the caption's attribution code to this alert's window. The backend
+        // ignores it when the picked market differs from the alert's own.
+        demandAlertId: target.alert.id,
       })
       .then((c) => {
         if (cancelled) return;
