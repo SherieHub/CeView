@@ -68,6 +68,8 @@ import type {
   UnconvertedClick,
   MediaUploadSlot,
   MediaAssetDto,
+  AttributionVoucher,
+  VoucherRedemption,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';

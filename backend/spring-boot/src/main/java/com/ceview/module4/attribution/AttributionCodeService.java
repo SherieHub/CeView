@@ -5,8 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
@@ -89,6 +92,30 @@ public class AttributionCodeService {
     public Optional<AttributionCode> findForAlert(UUID demandAlertId) {
         if (demandAlertId == null) return Optional.empty();
         return codeRepo.findByDemandAlertId(demandAlertId);
+    }
+
+    /** Creates the one-time CeView launch offer for the current business. */
+    @Transactional
+    public AttributionCode createCvLaunch(UUID businessProfileId, String category, String targetMarket,
+                                          OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+        return createVoucher(businessProfileId, "CVLAUNCH", new BigDecimal("50.00"), 10L,
+                category, targetMarket, windowStart, windowEnd);
+    }
+
+    /** Creates a reusable fixed-peso voucher for a promotion campaign. */
+    @Transactional
+    public AttributionCode createVoucher(UUID businessProfileId, String voucherCode, BigDecimal discountAmount,
+                                         Long redemptionLimit, String category, String targetMarket,
+                                         OffsetDateTime windowStart, OffsetDateTime windowEnd) {
+        if (discountAmount == null || discountAmount.signum() <= 0 || redemptionLimit == null || redemptionLimit <= 0
+                || windowEnd == null || windowStart == null || !windowEnd.isAfter(windowStart)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Voucher terms are invalid");
+        }
+        AttributionCode code = new AttributionCode();
+        code.setBusinessProfileId(businessProfileId); code.setCategory(category); code.setTargetMarket(targetMarket);
+        code.setCode(voucherCode.trim().toUpperCase(Locale.ROOT)); code.setWindowStart(windowStart); code.setWindowEnd(windowEnd);
+        code.setDiscountAmount(discountAmount); code.setRedemptionLimit(redemptionLimit); code.setVoucherStatus("ACTIVE");
+        return codeRepo.save(code);
     }
 
     /**

@@ -71,6 +71,10 @@ public class AttributionRedemption {
     @Column(name = "revenue", nullable = false, precision = 14, scale = 2)
     private BigDecimal revenue = BigDecimal.ZERO;
 
+    /** Booking amount before any voucher discount; null for legacy rows. */
+    @Column(name = "gross_revenue", precision = 14, scale = 2)
+    private BigDecimal grossRevenue;
+
     /** Set on LINK rows, null otherwise. The path to the ad creative. */
     @Column(name = "attribution_click_id")
     private UUID attributionClickId;

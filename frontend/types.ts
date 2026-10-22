@@ -901,3 +901,22 @@ export interface MediaAssetDto {
   height: number | null;
   durationSeconds: number | null;
 }
+
+/** A fixed-value, capacity-limited voucher attached to an attribution campaign. */
+export interface AttributionVoucher {
+  attributionCodeId: string;
+  code: string;
+  discountAmount: number;
+  redemptionLimit: number | null;
+  redemptionsUsed: number;
+  redemptionsRemaining: number;
+  voucherStatus: 'ACTIVE' | 'EXHAUSTED' | 'EXPIRED';
+}
+
+export interface VoucherRedemption {
+  code: string;
+  grossRevenue: number;
+  discountAmount: number;
+  netRevenue: number;
+  redemptionsRemaining: number;
+}

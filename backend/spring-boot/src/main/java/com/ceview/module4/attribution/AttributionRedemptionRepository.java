@@ -14,6 +14,8 @@ public interface AttributionRedemptionRepository extends JpaRepository<Attributi
 
     List<AttributionRedemption> findByAttributionCodeId(UUID attributionCodeId);
 
+    long countByAttributionCodeIdAndSource(UUID attributionCodeId, String source);
+
     List<AttributionRedemption> findByBusinessProfileId(UUID businessProfileId);
 
     /**
