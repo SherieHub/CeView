@@ -23,6 +23,7 @@ import { ChevronDown, Send } from 'lucide-react';
 import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
+import AdPlannerDrawer from './AdPlannerDrawer';
 import AdUrlBlock from './AdUrlBlock';
 import AttachStage from './AttachStage';
 import ValidateStage from './ValidateStage';

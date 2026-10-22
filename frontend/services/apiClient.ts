@@ -439,6 +439,18 @@ export const apiClient = {
         : request<{ snapshots: CampaignHistoryEntry[] }>(
             `/api/analytics/history?weeks=${weeks}`,
           ).then((r) => r.snapshots),
+    /**
+     * The operator's own past cost per 1,000 views and per click, for the ad
+     * planner's budget estimate (CVW-43). Fixture mode returns no history, so
+     * the planner's "no estimate" path is what a fresh demo shows.
+     */
+    costRates: () =>
+      USE_FIXTURES
+        ? delay<AdCostRates>({
+            periods: 0, totalSpend: 0, totalImpressions: 0, totalClicks: 0,
+            costPerThousandImpressions: null, costPerClick: null,
+          })
+        : request<AdCostRates>('/api/analytics/cost-rates'),
     /** AI-generated prescriptive report. POST, not GET — it computes on demand. */
     report: () =>
       USE_FIXTURES

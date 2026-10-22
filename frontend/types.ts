@@ -793,6 +793,20 @@ export interface AttributionCodeSummary {
   trackedExceedsReported: boolean;
 }
 
+/**
+ * What ads have actually cost this operator, from their own reported paid weeks
+ * (CVW-43). Rates are null when there is nothing to compute them from — the ad
+ * planner then gives no budget estimate rather than an invented one.
+ */
+export interface AdCostRates {
+  periods: number;
+  totalSpend: number;
+  totalImpressions: number;
+  totalClicks: number;
+  costPerThousandImpressions: number | null;
+  costPerClick: number | null;
+}
+
 /** Bookings CeView tracked in one reporting period, shown beside the weekly form's Bookings field. */
 export interface TrackedPeriodSummary {
   periodStart: string;

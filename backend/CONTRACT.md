@@ -37,6 +37,7 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | GET  | `/api/analytics/metrics?start=&end=` | EngagementMetricsBoard | `{ metrics, funnel }` |
 | POST | `/api/analytics/manual` | DataIngestionForm submit | `{ metrics, funnel }` (computed) |
 | GET  | `/api/analytics/pes/{campaignId}` | PESComputationBoard | `{ overallScore, label, breakdown }` |
+| GET  | `/api/analytics/cost-rates` | Content Studio → Promote as an ad (budget estimate) | `AdCostRates` — `{ periods, totalSpend, totalImpressions, totalClicks, costPerThousandImpressions, costPerClick }` from the operator's 12 most recent weeks with ad spend; rates are null with no such weeks |
 | POST | `/api/analytics/report` | AIActionPlanReport "Generate" | `{ executiveSummary, lowestMetric, lowestMetricMeaning, recommendations, otherAreasImprove, weakestStage, secondaryLeaks }` |
 | GET  | `/api/analytics/report/{id}/pdf` | "Download PDF" | application/pdf stream |
 | GET  | `/api/attribution/codes` | Performance → Code-redemption evidence; dashboard quick log | `AttributionCodeSummary[]` — each code with bookings split by capture kind (`ENQUIRY`, `BOOKING_PLATFORM`, `CLICK_MATCHED`, `CODE_LOGGED`), plus `reportedBookings` (null until a week in the window is submitted) and `trackedExceedsReported` |
