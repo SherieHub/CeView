@@ -54,12 +54,12 @@ class AuthControllerEmailVerificationTest {
 
     private AuthController controller() {
         return new AuthController(repo, encoder, jwt, Optional.empty(), currentOperator, emailCodes,
-            new PhoneVerificationService(Optional.empty()));
+            new PhoneVerificationService(Optional.empty(), true));
     }
 
     private AuthController controller(FirebaseAuth firebaseAuth) {
         return new AuthController(repo, encoder, jwt, Optional.of(firebaseAuth), currentOperator, emailCodes,
-            new PhoneVerificationService(Optional.of(firebaseAuth)));
+            new PhoneVerificationService(Optional.of(firebaseAuth), true));
     }
 
     private static MsmeOperator operator(String email) {

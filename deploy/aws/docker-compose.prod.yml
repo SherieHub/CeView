@@ -114,6 +114,9 @@ services:
       CEVIEW_ATTRIBUTION_IP_HASH_SALT: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:?CEVIEW_ATTRIBUTION_IP_HASH_SALT missing from Parameter Store}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
+      # SMS phone verification needs Firebase's paid Blaze plan; off unless
+      # /ceview/prod/PHONE_VERIFICATION_ENABLED=true (and the frontend flag matches).
+      PHONE_VERIFICATION_ENABLED: ${PHONE_VERIFICATION_ENABLED:-false}
       META_APP_ID: ${META_APP_ID:-}
       META_APP_SECRET: ${META_APP_SECRET:-}
       # Email verification / password reset codes, sent through Resend's HTTPS API.

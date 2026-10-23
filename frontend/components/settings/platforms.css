@@ -175,6 +175,9 @@
     background: #1f9a78 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 11px no-repeat;
     content: '';
   }
+  /* Neutral "In development" badge: no tick, so it never reads as connected. */
+  .pf-pill--dev { padding: 0 14px; background: #eef2f4; color: #4a5f70; }
+  .pf-pill--dev::before { display: none; }
   .pf-divider { width: 1px; height: 26px; background: #e3ecea; }
   .pf-text-btn {
     height: var(--btn-sm-h, 34px);

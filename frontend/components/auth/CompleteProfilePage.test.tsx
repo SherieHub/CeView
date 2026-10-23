@@ -7,6 +7,7 @@ import { AuthProvider } from '../../services/auth';
 
 vi.mock('../../services/firebase', () => ({
   isFirebaseConfigured: () => false,
+  isPhoneVerificationEnabled: () => false,
 }));
 
 vi.stubEnv('VITE_USE_FIXTURES', 'false');

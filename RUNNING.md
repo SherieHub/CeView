@@ -436,12 +436,18 @@ account instead of creating a duplicate.
 
 ### Phone (SMS OTP) verification setup (optional)
 
-Signup and `/complete-profile` verify the contact number with Firebase Phone
-Auth, reusing the same Firebase project and env vars as Google Sign-In. With
-Firebase configured, the backend only accepts a number that comes from a
-verified Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`.
-Without Firebase env vars, the form falls back to a plain unverified number
-input, so local dev, CI and e2e keep working.
+Signup and `/complete-profile` can verify the contact number with Firebase Phone
+Auth, reusing the same Firebase project and env vars as Google Sign-In.
+
+**It is switched off by default**, because SMS needs Firebase's paid Blaze plan.
+Two switches must match: `VITE_PHONE_VERIFICATION_ENABLED=true` (frontend,
+build time) and `PHONE_VERIFICATION_ENABLED=true` (spring-boot,
+`ceview.auth.phone-verification.enabled`). With them on and Firebase
+configured, the backend only accepts a number that comes from a verified
+Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`. With them
+off, or without Firebase env vars, the form is a plain unverified number input,
+so local dev, CI, e2e and Google sign-in all keep working. The steps below are
+only needed to turn it on.
 
 1. Firebase Console → Authentication → Sign-in method → enable **Phone**.
 2. Phone Auth needs the **Blaze** plan (billing account). The first 10 real

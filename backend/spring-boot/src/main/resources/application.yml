@@ -68,6 +68,11 @@ ceview:
     rate-limit:
       max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:20}
       window-seconds: 900
+    # SMS phone verification (Firebase Phone Auth) needs the paid Blaze plan, so it is off by
+    # default; numbers are then stored unverified. Turn on together with the frontend's
+    # VITE_PHONE_VERIFICATION_ENABLED.
+    phone-verification:
+      enabled: ${PHONE_VERIFICATION_ENABLED:false}
   test-support:
     # E2E only: exposes /api/test-support/email-codes/latest. Never enable with a real provider.
     enabled: ${CEVIEW_TEST_SUPPORT_ENABLED:false}

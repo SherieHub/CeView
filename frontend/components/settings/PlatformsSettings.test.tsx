@@ -116,8 +116,34 @@ describe('PlatformsSettings', () => {
 
     expect(screen.getByText('@cebu.dive')).toBeInTheDocument();
     expect(screen.getAllByText('Verified')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Connect TikTok' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Connect Facebook' })).toBeInTheDocument();
+  });
+
+  describe('TikTok while it is in development', () => {
+    it('shows "In development" instead of a Connect button, even when the server is configured', () => {
+      renderSettings();
+
+      const row = screen.getByText('TikTok').closest('li') as HTMLElement;
+      expect(within(row).getByText('In development')).toBeInTheDocument();
+      expect(within(row).getByText(/coming soon/i)).toBeInTheDocument();
+      expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /connect tiktok/i })).not.toBeInTheDocument();
+    });
+
+    it('does not offer a Reconnect either', () => {
+      connections = CONNECTIONS.map((c) => (c.platform === 'tiktok' ? { ...c, status: 'NEEDS_RECONNECT' as const } : c));
+      renderSettings();
+
+      const row = screen.getByText('TikTok').closest('li') as HTMLElement;
+      expect(within(row).getByText('In development')).toBeInTheDocument();
+      expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('leaves it out of the connection count, so the progress reflects what can be connected', () => {
+      renderSettings();
+
+      expect(screen.getByText('1 of 2 platforms connected')).toBeInTheDocument();
+    });
   });
 
   it('shows a loading skeleton before connections have loaded', () => {
@@ -146,7 +172,7 @@ describe('PlatformsSettings', () => {
     it('starts the real login when Connect is pressed (no fake consent modal)', async () => {
       renderSettings();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Connect TikTok' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Connect Facebook' }));
 
       await waitFor(() => expect(connectMock).toHaveBeenCalledTimes(1));
       expect(connectMock.mock.calls[0]).toHaveLength(1); // connect(platform) — no handle argument
@@ -154,12 +180,12 @@ describe('PlatformsSettings', () => {
     });
 
     it('disables Connect when the server has no credentials for that platform', () => {
-      connections = CONNECTIONS.map((c) => (c.platform === 'tiktok' ? { ...c, configured: false } : c));
+      connections = CONNECTIONS.map((c) => (c.platform === 'facebook' ? { ...c, configured: false } : c));
       renderSettings();
 
-      const tiktokRow = screen.getByText('TikTok').closest('li') as HTMLElement;
-      expect(within(tiktokRow).getByRole('button', { name: 'Connect TikTok' })).toBeDisabled();
-      expect(within(tiktokRow).getByText('Not available on this server yet')).toBeInTheDocument();
+      const facebookRow = screen.getByText('Facebook').closest('li') as HTMLElement;
+      expect(within(facebookRow).getByRole('button', { name: 'Connect Facebook' })).toBeDisabled();
+      expect(within(facebookRow).getByText('Not available on this server yet')).toBeInTheDocument();
     });
 
     it('keeps every Connect disabled after a click (the browser is navigating away)', async () => {
@@ -169,18 +195,16 @@ describe('PlatformsSettings', () => {
 
       await waitFor(() => expect(connectMock).toHaveBeenCalledTimes(1));
       expect(screen.getByRole('button', { name: 'Connect Facebook' })).toBeDisabled();
-      expect(screen.getByRole('button', { name: 'Connect TikTok' })).toBeDisabled();
     });
 
     it('toasts and re-enables Connect when starting the login fails', async () => {
       connectMock.mockRejectedValue(new Error('boom'));
       renderSettings();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Connect TikTok' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Connect Facebook' }));
 
-      expect(await screen.findByText(/could not start the tiktok connection/i)).toBeInTheDocument();
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Connect TikTok' })).toBeEnabled());
-      expect(screen.getByRole('button', { name: 'Connect Facebook' })).toBeEnabled();
+      expect(await screen.findByText(/could not start the facebook connection/i)).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Connect Facebook' })).toBeEnabled());
     });
 
     it('asks for a Page after the Meta login, and opens the picker', async () => {

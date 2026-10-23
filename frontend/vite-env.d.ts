@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_CONTACT_EMAIL?: string;
   readonly VITE_PRIVACY_URL?: string;
   readonly VITE_TERMS_URL?: string;
+  /** "true" turns on SMS phone verification (Firebase Blaze plan). Off when unset. */
+  readonly VITE_PHONE_VERIFICATION_ENABLED?: string;
 }
 
 interface ImportMeta {

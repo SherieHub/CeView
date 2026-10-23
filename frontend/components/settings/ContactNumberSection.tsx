@@ -10,7 +10,7 @@ import PhoneVerifyField, { type VerifiedPhone } from '../auth/PhoneVerifyField';
 import { useToast } from '../shared/Toast';
 import { apiClient } from '../../services/apiClient';
 import { ApiError } from '../../services/apiError';
-import { isFirebaseConfigured } from '../../services/firebase';
+import { isPhoneVerificationEnabled } from '../../services/firebase';
 
 interface ContactState {
   contactNumber: string | null;
@@ -52,7 +52,7 @@ export default function ContactNumberSection() {
   }
 
   if (!contact) return null;
-  const canVerify = isFirebaseConfigured();
+  const canVerify = isPhoneVerificationEnabled();
 
   return (
     <section className="bp-sec" aria-labelledby="bp-contact-title">
@@ -70,21 +70,18 @@ export default function ContactNumberSection() {
           <span className="bp-badge bp-badge--ok">
             <BadgeCheck size={14} aria-hidden="true" /> Verified
           </span>
-        ) : (
+        ) : canVerify ? (
           <span className="bp-badge bp-badge--warn">
             <ShieldAlert size={14} aria-hidden="true" /> Not verified
           </span>
-        )}
+        ) : null}
       </div>
 
-      {!contact.phoneVerified && !verifying && (
-        canVerify ? (
-          <button type="button" className="btn-outline btn-outline--sm" onClick={() => setVerifying(true)}>
-            Verify number
-          </button>
-        ) : (
-          <p className="bp-sec-sub">SMS verification isn&apos;t available right now.</p>
-        )
+      {/* With SMS verification switched off there is nothing to act on, so no warning or action. */}
+      {canVerify && !contact.phoneVerified && !verifying && (
+        <button type="button" className="btn-outline btn-outline--sm" onClick={() => setVerifying(true)}>
+          Verify number
+        </button>
       )}
 
       {!contact.phoneVerified && verifying && (

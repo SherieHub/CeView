@@ -9,7 +9,7 @@ credits cover that for several months (see A2).
   notes, risks, rollback and restore.
 - **Part B** is the click-through runbook, in order.
 - **Part C** redeploys a server that's already running. Start there if `ceview-prod-1` exists; it
-  covers the October 2026 release (social publishing, email and phone verification, booking capture).
+  covers the October 2026 release (social publishing, email verification, booking capture).
 - **Part D** explains how to change or move the AI models. The current release changes none of them.
 
 The design rationale is in
@@ -153,7 +153,7 @@ For 10 users most of these can stay on free plans. **SerpApi is the one that can
 | **Groq** (captions, English translations, compliance audit) | Free tier with rate limits | Fine for 10 users. Spread the load across models: the English translation can run on a second model with its own limit by setting `GROQ_TRANSLATION_MODEL` (B9). Expect an occasional `429`; the app shows a clear error and the user retries. |
 | **Resend** (verification and password-reset emails) | 3,000/month and **100/day** | Fine. The backend rate-limits each account and IP. |
 | **Hugging Face Space** (`FORECAST_ENGINE=bilstm`) | Free Spaces sleep when idle | Free. The first forecast after a quiet period is slow and may time out once. |
-| **Firebase** (Google sign-in, phone verification) | Google sign-in free; phone codes need the **Blaze** plan, 10 SMS/day free | Free for sign-ins. Beyond 10 SMS a day each code is billed, so set a Google Cloud budget alert and allow only `+63` (C2.4). |
+| **Firebase** (Google sign-in; phone verification if switched on) | Google sign-in free; phone codes need the **Blaze** plan, 10 SMS/day free | Free: phone verification ships switched off (C2.4). If you turn it on, each SMS beyond 10 a day is billed. |
 | **Meta, TikTok** (connections, publishing, ads handoff) | Free | Free. CeView never spends ad budget: it creates Meta ads paused. |
 | **S3 media bucket** | Pennies | Cents per GB-month at pilot scale. CloudFront serves the files inside its free 1TB. |
 
@@ -586,7 +586,7 @@ Then confirm a demo login fails, for example `ramon.delacruz@ceview.local` on `h
 **TikTok** (publishing, and optionally TikTok ad accounts). Two separate apps, each with its own
 redirect URI and parameters (C2.3).
 
-**Firebase phone verification.** Enable the Phone provider and the Blaze plan, and restrict SMS to `+63` (C2.4).
+**Firebase phone verification.** Off by default. Only needed if you switch it on (C2.4).
 
 **SerpApi, Groq and the HF Space**
 - **Hugging Face:** open <https://huggingface.co/spaces/JamJamzz/ceview-demand-prediction-model> and
@@ -699,8 +699,8 @@ Tick every item before inviting MSMEs:
 - [ ] *(Oct 2026)* Opening the same link twice within a minute still shows the form. A phone on mobile
       data gets its own form (C4 step 5). Marking the enquiry **Booked** with revenue shows in
       *Performance → Code-redemption evidence*.
-- [ ] *(Oct 2026)* An existing operator is asked for an emailed code at sign-in. A new sign-up's SMS
-      step accepts the Firebase test number.
+- [ ] *(Oct 2026)* An existing operator is asked for an emailed code at sign-in. A new sign-up takes a
+      contact number with no SMS step, since phone verification is switched off (C2.4).
 - [ ] *(Oct 2026)* An image uploaded in Content Studio opens at `https://<domain>/media/…` with `200`.
       A tester's Meta login lists their Page, and one test post publishes.
 - [ ] *(Oct 2026)* Content Studio "Show English" returns a translation.
@@ -769,7 +769,7 @@ builds a server from nothing; you don't repeat it.
 
 It's written for the **October 2026 release**: the `merge` branch, 46 commits on top of `3cd2d753`
 (`main` on 14 October 2026, the release the server was first built from). That release adds social
-publishing, email and phone verification, caption translation, conversion capture and the booking-form
+publishing, email verification (phone verification ships switched off), caption translation, conversion capture and the booking-form
 fixes. Each one-time step below starts with a **Check**. If the check already passes, skip the step.
 
 ## C1. What this release changes
@@ -777,7 +777,7 @@ fixes. Each one-time step below starts with a **Check**. If the check already pa
 | Area | What changed | What you do |
 |---|---|---|
 | **Email verification, password reset** | Every account confirms a 6-digit emailed code before using the app, and "Forgot password?" works. Migration `V45` marks **every existing account** unverified. Spring refuses to start without the email settings. | **Required before the push:** C2.1 |
-| **Phone verification** | Sign-up and profile completion verify the contact number by SMS (Firebase Phone Auth). `V46`. | Firebase console: C2.4. Without it, operators are offered "Verify later" and nothing breaks. |
+| **Phone verification** | SMS verification of the contact number (Firebase Phone Auth), behind a switch that ships **off**, because SMS needs Firebase's paid Blaze plan. Numbers are saved unverified. `V46`. | Nothing for now. To turn it on later, see C2.4. |
 | **Caption translation** | Content Studio "Show English". `V47`. | Optional: `GROQ_TRANSLATION_MODEL` (C2.5) |
 | **Media uploads** | Images and videos go to a new private S3 bucket, served by the existing CloudFront distribution under `/media/*`. `V48`. | C2.2. Without it, upload endpoints answer `503` and the rest of the app works. |
 | **Social publishing** | Connect a Facebook Page, Instagram and TikTok; schedule and publish posts; hand paid ads to Meta (created **paused**); collect post metrics nightly. Spring runs two new background jobs. `V49`–`V52`, `V55`. | Meta and TikTok app setup: C2.3 |
@@ -866,6 +866,10 @@ part A.
 
 ### C2.3 Meta and TikTok apps
 
+**Facebook and Instagram come first; TikTok can wait.** Settings → Platforms shows both TikTok rows
+(publishing and ads) as **In development**, with no Connect button, until the TikTok setup below is done
+and `tiktok` is removed from `frontend/components/settings/platformAvailability.ts`.
+
 Register three callback URLs in total, each **byte for byte**, with no trailing slash:
 
 | App | Callback URL | New? |
@@ -901,22 +905,32 @@ Without the TikTok parameters, the matching connection shows "not configured". E
 uses Graph API **v25.0**. The production compose file doesn't pass `META_GRAPH_BASE_URL` or
 `META_DIALOG_URL`, so changing the version means adding both to `spring-boot`'s environment in a release.
 
-### C2.4 Firebase phone verification
+### C2.4 Firebase phone verification (off for now, skip)
 
-Production already has `FIREBASE_CREDENTIALS_JSON`, so this release turns phone verification on as soon
-as it starts. In the Firebase console:
+**SMS phone verification ships switched off**, because Firebase Phone Auth needs the paid **Blaze**
+plan. Google sign-in keeps working on the free plan.
 
-1. *Authentication → Sign-in method*: enable **Phone**.
-2. Move the project to the **Blaze** plan. The first 10 real SMS a day are free; after that each SMS is
-   billed. Set a budget alert on the Google Cloud billing account.
-3. *Authentication → Settings → SMS region policy*: allow only the Philippines (`+63`). This blocks
-   SMS-pumping fraud.
-4. *Sign-in method → Phone → Phone numbers for testing*: add a fictional number and code for demos.
-   Test numbers never send an SMS.
-5. *Authorized domains* already lists `<domain>` and `www.<domain>` from B14.
+With it off:
+- the contact number is a plain field, with no "Send code";
+- the number is saved unverified;
+- *Settings → Business profile* shows the number without a "Not verified" warning or a "Verify number"
+  button.
 
-If you skip this, sending the code fails and operators are offered "Verify later": the number is saved
-unverified and can be verified later under Settings. Details: [`RUNNING.md`](../RUNNING.md) §6.
+There's nothing to do for this release.
+
+**To turn it on later** (both switches must match, and the frontend one needs a release):
+1. In the Firebase console:
+   1. *Authentication → Sign-in method*: enable **Phone**.
+   2. Move the project to **Blaze** and set a budget alert on the Google Cloud billing account. The
+      first 10 real SMS a day are free; after that each SMS is billed.
+   3. *Authentication → Settings → SMS region policy*: allow only `+63`. This blocks SMS-pumping fraud.
+   4. *Sign-in method → Phone → Phone numbers for testing*: add a fictional number for demos. Test
+      numbers never send an SMS.
+2. Add `VITE_PHONE_VERIFICATION_ENABLED=true` to `deploy/aws/frontend.production.env` and merge it.
+3. Create `/ceview/prod/PHONE_VERIFICATION_ENABLED` = `true` in Parameter Store.
+4. Release (C3).
+
+Details: [`RUNNING.md`](../RUNNING.md) §6.
 
 ### C2.5 Optional parameters
 
@@ -938,7 +952,6 @@ All optional. The defaults are what the release runs with if you skip them.
   "Continue with Google" with the same, Google-verified address also verifies them. **If they do that
   on a password account they haven't verified yet, the password is removed** and they sign in with
   Google from then on.
-- They may be asked to verify their phone number, or can choose "Verify later".
 - Meta connections made before this release only have ads access. To publish, reconnect under
   *Settings → Platforms* and pick a Page.
 - Paid ads need a daily and a total limit under *Settings → Platforms → Ad spending limits* first.
@@ -988,7 +1001,8 @@ On the server:
 In the browser, at `https://<domain>`:
 
 4. **Accounts.** Sign in as an existing operator: you're asked for an emailed code, and it arrives.
-   Register a new operator with the Firebase test number: the SMS step accepts the test code.
+   Register a new operator: the contact number is a plain field with no "Send code", and sign-up
+   completes.
 5. **Booking form.** This is the path paid ads depend on.
    1. *Content Studio → Ad URL*: the bare link starts with `https://api.<domain>/r/`.
    2. Open it in a private window. It redirects to `https://<domain>/enquiry?cv=…` and shows "Enquire
@@ -1165,5 +1179,6 @@ Before starting, update these facts in that document:
 | The browser's upload to S3 fails with a CORS error | The media bucket's CORS `AllowedOrigins` isn't exactly `https://<domain>` (C2.2 step 2). |
 | `https://<domain>/media/…` shows the app instead of the file | The `/media/*` behavior is missing, or `ceview-spa-rewrite` is attached to it (C2.2 step 4). |
 | TikTok rejects a post because of the media URL | The `https://<domain>/media/` prefix isn't verified in the TikTok developer portal (C2.3). |
-| Operators only ever see "Verify later" for their phone | Phone sign-in isn't enabled, the Firebase project isn't on Blaze, or the number is outside the SMS region policy (C2.4). |
+| After switching phone verification on, operators only ever see "Verify later" | Phone sign-in isn't enabled, the Firebase project isn't on Blaze, or the number is outside the SMS region policy (C2.4). |
+| Sign-up or profile completion fails with "phone verification required" | The two switches don't match: `/ceview/prod/PHONE_VERIFICATION_ENABLED` is `true` but the frontend was built without `VITE_PHONE_VERIFICATION_ENABLED=true`. Turn both on or both off (C2.4). |
 | A second device opening the same tracked link within a minute is told the enquiry was already sent | Spring sees Caddy's address for every visitor. Check that `SERVER_FORWARD_HEADERS_STRATEGY: native` is in the running compose file (C4 step 5). |

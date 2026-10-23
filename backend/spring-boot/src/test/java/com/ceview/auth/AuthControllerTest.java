@@ -45,7 +45,7 @@ class AuthControllerTest {
 
     private AuthController newController(Optional<FirebaseAuth> firebaseAuth) {
         return new AuthController(repo, encoder, jwt, firebaseAuth, currentOperator, emailCodes,
-            new PhoneVerificationService(firebaseAuth));
+            new PhoneVerificationService(firebaseAuth, true));
     }
 
     private void authenticateAs(UUID operatorId) {

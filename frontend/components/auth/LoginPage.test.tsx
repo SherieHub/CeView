@@ -8,6 +8,7 @@ import { AuthProvider } from '../../services/auth';
 vi.mock('../../services/firebase', () => ({
   signInWithGooglePopup: vi.fn(),
   isFirebaseConfigured: () => false,
+  isPhoneVerificationEnabled: () => false,
 }));
 
 import { signInWithGooglePopup } from '../../services/firebase';

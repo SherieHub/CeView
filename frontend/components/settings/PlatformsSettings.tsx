@@ -28,6 +28,7 @@ import AdSpendLimitsSection from './AdSpendLimitsSection';
 import AdAccountPickerModal from './AdAccountPickerModal';
 import PagePickerModal from './PagePickerModal';
 import { PlatformLogo } from './PlatformLogo';
+import { IN_DEVELOPMENT_LABEL, IN_DEVELOPMENT_SUBTITLE, isInDevelopment } from './platformAvailability';
 import type { AdConnection, AdProvider, PlatformId, SocialStatus } from '../../types';
 import './platforms.css';
 
@@ -217,8 +218,12 @@ export default function PlatformsSettings() {
   }
 
   const platforms = Object.keys(PLATFORM_LABELS) as PlatformId[];
-  const connectedCount = platforms.filter((p) => isConnected(p)).length;
-  const adActive = adConnections?.filter((c) => c.status === 'ACTIVE').length ?? 0;
+  // A platform still in development only counts once it's somehow connected; otherwise
+  // "1 of 3" would read as unfinished setup the operator can't actually finish.
+  const countable = platforms.filter((p) => !isInDevelopment(p) || isConnected(p));
+  const connectedCount = countable.filter((p) => isConnected(p)).length;
+  const adCountable = adConnections?.filter((c) => !isInDevelopment(c.provider) || c.status === 'ACTIVE');
+  const adActive = adCountable?.filter((c) => c.status === 'ACTIVE').length ?? 0;
 
   return (
     <div className="pf">
@@ -233,21 +238,21 @@ export default function PlatformsSettings() {
           <section className="pf-card pf-status" aria-labelledby="pf-status-title">
             <h2 id="pf-status-title" className="pf-side-title">Connection status</h2>
             <p className="pf-side-sub">
-              {connections === null ? 'Checking your platforms…' : `${connectedCount} of ${platforms.length} platforms connected`}
+              {connections === null ? 'Checking your platforms…' : `${connectedCount} of ${countable.length} platforms connected`}
             </p>
             <div className="pf-bar" aria-hidden="true">
-              <i style={{ width: `${(connectedCount / platforms.length) * 100}%` }} />
+              <i style={{ width: `${countable.length ? (connectedCount / countable.length) * 100 : 0}%` }} />
             </div>
             <StatusTile
               href="#pf-ads"
               icon={<Layers size={20} />}
-              value={adConnections ? `${adActive} of ${adConnections.length}` : '—'}
+              value={adCountable ? `${adActive} of ${adCountable.length}` : '—'}
               label="Ad accounts connected"
             />
             <StatusTile
               href="#pf-publishing"
               icon={<Share2 size={20} />}
-              value={`${connectedCount} of ${platforms.length}`}
+              value={`${connectedCount} of ${countable.length}`}
               label="Platforms connected"
             />
           </section>
@@ -299,12 +304,17 @@ export default function PlatformsSettings() {
                       const status = statusOf(platform);
                       const conn = connections.find((c) => c.platform === platform);
                       const notSetUp = conn?.configured === false;
+                      // Still being built: no way to start (or restart) a connection, but an
+                      // existing one keeps its Disconnect so nobody is stuck with it.
+                      const inDevelopment = isInDevelopment(platform) && status !== 'ACTIVE';
                       return (
-                        <li key={platform} className="pf-row">
+                        <li key={platform} className="pf-row" data-muted={inDevelopment || undefined}>
                           <PlatformLogo platform={platform} />
                           <div className="pf-row-text">
                             <p className="pf-row-name">{PLATFORM_LABELS[platform]}</p>
-                            <p className="pf-row-sub">{rowSubtitle(status, conn?.handle, notSetUp)}</p>
+                            <p className="pf-row-sub">
+                              {inDevelopment ? IN_DEVELOPMENT_SUBTITLE : rowSubtitle(status, conn?.handle, notSetUp)}
+                            </p>
                           </div>
                           {status === 'ACTIVE' ? (
                             <div className="pf-row-actions">
@@ -314,6 +324,8 @@ export default function PlatformsSettings() {
                                 Disconnect
                               </button>
                             </div>
+                          ) : inDevelopment ? (
+                            <span className="pf-pill pf-pill--dev">{IN_DEVELOPMENT_LABEL}</span>
                           ) : status === 'NEEDS_PAGE' ? (
                             <button type="button" className="pf-connect" onClick={() => setPageOpen(true)}>
                               Choose Page

@@ -51,6 +51,15 @@ export function isFirebaseConfigured(): boolean {
 }
 
 /**
+ * SMS phone verification is opt-in: Firebase Phone Auth needs the paid Blaze plan, while
+ * Google sign-in (the other Firebase use) does not. Off unless VITE_PHONE_VERIFICATION_ENABLED
+ * is "true"; the backend's PHONE_VERIFICATION_ENABLED must match.
+ */
+export function isPhoneVerificationEnabled(): boolean {
+  return isFirebaseConfigured() && import.meta.env.VITE_PHONE_VERIFICATION_ENABLED === 'true';
+}
+
+/**
  * Normalizes a Philippine mobile number to E.164: "09171234567" and "9171234567"
  * become "+639171234567"; anything already starting with "+" is kept (digits only).
  */
