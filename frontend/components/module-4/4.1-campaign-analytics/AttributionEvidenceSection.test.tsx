@@ -14,4 +14,13 @@ describe('merged attribution evidence', () => {
       expect(screen.getByText(text)).toBeInTheDocument();
     }
   });
+
+  it.each(['entry', 'tab'] as const)('leaves the code and lift titles to their own panels in the %s layout', (layout) => {
+    render(<AttributionEvidenceSection layout={layout} />);
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Statistical lift' })).toBeInTheDocument();
+    // The panels title themselves; a second heading here repeated each title above its card.
+    expect(screen.queryByRole('heading', { name: 'Code-redemption evidence' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Statistical lift' })).not.toBeInTheDocument();
+  });
 });

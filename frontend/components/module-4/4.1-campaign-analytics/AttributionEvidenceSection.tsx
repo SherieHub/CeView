@@ -1,5 +1,4 @@
 import React from 'react';
-import { BarChart3, Ticket } from 'lucide-react';
 import LinkAttributionPanel from './LinkAttributionPanel';
 import CodeRedemptionPanel from './CodeRedemptionPanel';
 import StatisticalLiftPanel from './StatisticalLiftPanel';
@@ -8,8 +7,8 @@ import CvLaunchVoucherCard from './CvLaunchVoucherCard';
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;
   liftEvidence?: React.ReactNode;
-  /** 'tab' is the results screen's Attribution tab: the table full width, the
-   * two unbuilt analyses as a compact note rather than cards of their own. */
+  /** 'tab' is the results screen's Attribution tab: the link panel full width,
+   * the code and lift panels side by side below it. */
   layout?: 'entry' | 'tab';
   /** The scored period, so the link panel can say when its window differs. */
   period?: { periodStart: string; periodEnd: string };
@@ -34,20 +33,7 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
         </div>
         <LinkAttributionPanel period={period} />
         <div className="perf-attr-more">
-          <section className="perf-attr-item" aria-labelledby="perf-attr-code">
-            <Ticket size={16} aria-hidden="true" />
-            <div>
-              <h3 id="perf-attr-code" className="perf-attr-item-title">Code-redemption evidence</h3>
-              {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
-            </div>
-          </section>
-          <section className="perf-attr-item" aria-labelledby="perf-attr-lift">
-            <BarChart3 size={16} aria-hidden="true" />
-            <div>
-              <h3 id="perf-attr-lift" className="perf-attr-item-title">Statistical lift</h3>
-              {liftEvidence ?? <StatisticalLiftPanel />}
-            </div>
-          </section>
+          <EvidenceColumns codeEvidence={codeEvidence} liftEvidence={liftEvidence} />
         </div>
       </div>
     );
@@ -59,21 +45,21 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
       <div className="min-w-0">
         <LinkAttributionPanel />
       </div>
-      <section className="card perf-ev" aria-labelledby="perf-ev-code-title">
-        <div className="perf-ev-head">
-          <span className="perf-ev-icon" aria-hidden="true"><Ticket size={18} /></span>
-          <h3 id="perf-ev-code-title" className="perf-ev-title">Code-redemption evidence</h3>
-        </div>
+      <EvidenceColumns codeEvidence={codeEvidence} liftEvidence={liftEvidence} />
+    </div>
+  );
+}
+
+/** Each panel is its own titled card, so these sections only name the region. */
+function EvidenceColumns({ codeEvidence, liftEvidence }: Pick<AttributionEvidenceSectionProps, 'codeEvidence' | 'liftEvidence'>) {
+  return (
+    <>
+      <section className="perf-attr-col" aria-label="Code-redemption evidence">
         {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
       </section>
-
-      <section className="card perf-ev" aria-labelledby="perf-ev-lift-title">
-        <div className="perf-ev-head">
-          <span className="perf-ev-icon" aria-hidden="true"><BarChart3 size={18} /></span>
-          <h3 id="perf-ev-lift-title" className="perf-ev-title">Statistical lift</h3>
-        </div>
+      <section className="perf-attr-col" aria-label="Statistical lift">
         {liftEvidence ?? <StatisticalLiftPanel />}
       </section>
-    </div>
+    </>
   );
 }

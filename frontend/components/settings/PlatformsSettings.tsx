@@ -361,8 +361,9 @@ export default function PlatformsSettings() {
             </div>
           </section>
 
-          <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} onLoaded={setAdConnections} />
-          <AdSpendLimitsSection key={adRefreshKey} meta={adConnections?.find((c) => c.provider === 'meta') ?? null} />
+          {/* Sibling keys must differ, or React leaves the old AdAccountsSection mounted on each refresh. */}
+          <AdAccountsSection key={`ads-${adRefreshKey}`} onConnected={setPickerProvider} onLoaded={setAdConnections} />
+          <AdSpendLimitsSection key={`limits-${adRefreshKey}`} meta={adConnections?.find((c) => c.provider === 'meta') ?? null} />
         </div>
       </div>
 

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Plus, Ticket, Trash2 } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { AttributionCodeSummary, AttributionRedemption, CaptureKind } from '../../../types';
 import LogBookingAction from './LogBookingAction';
+import { marketName } from './marketName';
 
 /** Ordered most to least trustworthy, matching the backend's CaptureKind. */
 const KIND_LABEL: Record<CaptureKind, string> = {
@@ -101,6 +102,7 @@ export default function CodeRedemptionPanel() {
   return (
     <div className="card flex h-full flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
+        <span className="perf-ev-icon" aria-hidden="true"><Ticket size={18} /></span>
         <div className="min-w-0 flex-1 basis-56">
           <h3 className="heading-sm">Code-redemption evidence</h3>
           <p className="body-sm mt-1">Bookings where the customer quoted a campaign code.</p>
@@ -176,7 +178,7 @@ export default function CodeRedemptionPanel() {
                         <span className={STATUS[code.status].chip}>{STATUS[code.status].label}</span>
                       </div>
                       <p className="body-xs mt-1 text-[var(--color-text-muted)]">
-                        {code.category} • {code.targetMarket} • {shortDate(code.windowStart)} – {shortDate(code.windowEnd)}
+                        {code.category} • {marketName(code.targetMarket)} • {shortDate(code.windowStart)} – {shortDate(code.windowEnd)}
                       </p>
                       {code.trackedExceedsReported && (
                         <p className="body-xs mt-2 flex items-start gap-1.5 text-[var(--color-critical-text)]">
