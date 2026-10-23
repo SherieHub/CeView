@@ -5,6 +5,7 @@ import CreativePerformanceTable from './CreativePerformanceTable';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import { AttributionLink } from '../../../types';
 import { Link2 } from 'lucide-react';
+import { marketName } from './marketName';
 
 export default function LinkAttributionPanel({ period }: { period?: { periodStart: string; periodEnd: string } } = {}) {
   const { links, error: linksError, refresh: refreshLinks } = useAttributionLinks();
@@ -52,7 +53,7 @@ export default function LinkAttributionPanel({ period }: { period?: { periodStar
             >
               {links.map(link => (
                 <option key={link.linkId} value={link.linkId}>
-                  {link.category} • {link.targetMarket} • {formatDate(link.windowStart)} - {formatDate(link.windowEnd)} ({link.slug})
+                  {link.category} • {marketName(link.targetMarket)} • {formatDate(link.windowStart)} – {formatDate(link.windowEnd)}
                 </option>
               ))}
             </select>

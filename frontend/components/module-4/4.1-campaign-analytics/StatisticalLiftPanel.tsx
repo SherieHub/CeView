@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BarChart3 } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import type { AttributionCodeSummary, AttributionLift } from '../../../types';
@@ -31,8 +31,9 @@ function Comparison({ label, before, during, pct, format }: {
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-gray-light px-4 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="body-sm font-semibold text-navy-dark">{label}</span>
+      {/* Wraps the chip under the label in a narrow tile instead of letting it overflow. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="body-sm whitespace-nowrap font-semibold text-navy-dark">{label}</span>
         <LiftChip pct={pct} />
       </div>
       <div className="num flex items-baseline gap-3">
@@ -100,6 +101,7 @@ export default function StatisticalLiftPanel() {
   return (
     <div className="card flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
+        <span className="perf-ev-icon" aria-hidden="true"><BarChart3 size={18} /></span>
         <div className="min-w-0 flex-1 basis-64">
           <h3 className="heading-sm">Statistical lift</h3>
           <p className="body-sm mt-1">
@@ -107,7 +109,8 @@ export default function StatisticalLiftPanel() {
           </p>
         </div>
         {codes && codes.length > 1 && (
-          <div className="w-full sm:w-64">
+          // Its own row, so the code and the whole window stay readable.
+          <div className="w-full">
             <label htmlFor={selectId} className="sr">Campaign code</label>
             <select
               id={selectId}

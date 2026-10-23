@@ -57,6 +57,7 @@ describe('CodeRedemptionPanel', () => {
     expect(within(captured).getByText('1 via ad click')).toBeInTheDocument();
     expect(within(captured).getByText('3 logged by staff')).toBeInTheDocument();
     expect(within(rows).getByText('Upcoming')).toBeInTheDocument();
+    expect(within(rows).getByText(/Accommodation & Staycation • South Korea •/)).toBeInTheDocument();
     // Totals across both codes.
     expect(screen.getByText('Total').closest('tr')).toHaveTextContent('6');
   });

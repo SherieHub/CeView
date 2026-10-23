@@ -61,7 +61,9 @@ describe('LinkAttributionPanel', () => {
 
     // Option exists
     expect(screen.getAllByRole('option')).toHaveLength(links.length);
-    
+    // Named by country, without the opaque slug that pushed the window dates out of view.
+    expect(screen.getAllByRole('option')[0].textContent).toMatch(/^Accommodation & Staycation • South Korea • \w{3} \d+ – \w{3} \d+$/);
+
     // The title now sits in the card header from the start, so wait on the
     // fetch and the table rather than on the title.
     await waitFor(() => {
