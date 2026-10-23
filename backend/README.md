@@ -1,35 +1,46 @@
 # CeView Backend
 
-Two-process backend matching the SDD:
+Four services, run together by `docker-compose.yml` in this folder:
 
-- **Spring Boot** (`spring-boot/`) — orchestrator, auth, persistence, REST API on `:8080`
-- **FastAPI** (`fastapi/`) — AI microservice (Gemini, SBERT stub, forecast stub) on `:8000`
-- **PostgreSQL + pgvector** — single instance
+| Service (compose name) | Folder | Port | Role |
+|---|---|---|---|
+| `spring-boot` | `spring-boot/` | 8080 | Orchestration API: auth (JWT), persistence, REST endpoints, scheduled jobs |
+| `fastapi` | `fastapi-sbert/` | 8000 | Classification + uniqueness (E5), captions, creative direction, compliance audit, reports |
+| `fastapi-transformer` | `fastapi-transformer/` | 8001 | Demand forecasting, Google Trends (SerpApi), market scoring (XGBoost) |
+| `postgres` | — | 5433 → 5432 | PostgreSQL 16 + pgvector, migrated by Flyway |
 
 ## Run
 
 ```bash
 cd backend
-docker-compose up --build
+cp .env.example .env      # Windows: copy .env.example .env
+# set JWT_SECRET and CEVIEW_ATTRIBUTION_IP_HASH_SALT (required), plus GROQ_API_KEY / SERPAPI_KEY
+docker compose up --build
 ```
 
-Then point the React frontend (Vite at `:5173`) at `http://localhost:8080`.
+Rebuild one service after a change: `docker compose up -d --build spring-boot`.
 
-## Env
+Health:
 
-Optional `.env` next to `docker-compose.yml`:
-
-```
-GEMINI_API_KEY=...
-ENABLE_GEMINI=true
-JWT_SECRET=at-least-32-chars-please-change-me
+```bash
+curl http://localhost:8080/actuator/health
+curl http://localhost:8000/healthz
+curl http://localhost:8001/healthz
 ```
 
-If `ENABLE_GEMINI=false` (default), FastAPI returns deterministic mocks matching the frontend's existing data shapes — useful for offline dev.
+## Test
 
-## Health
+```bash
+# each from backend/
+cd spring-boot && ./mvnw test                      # JUnit on H2, no services needed
+cd fastapi-sbert && pytest tests/unit tests/integration
+cd fastapi-transformer && pytest tests/unit tests/integration
+```
 
-- `GET http://localhost:8080/actuator/health`
-- `GET http://localhost:8000/healthz`
+Install the Python test deps first: `pip install -r requirements.txt -r requirements-dev.txt`.
 
-See `../README.md` (root) and the plan file for the full endpoint contract.
+## More
+
+- [`../RUNNING.md`](../RUNNING.md): every environment variable, the no-Docker (H2) path, e2e tests, troubleshooting.
+- [`CONTRACT.md`](CONTRACT.md): REST endpoints.
+- [`../docs/DEPLOY_AWS.md`](../docs/DEPLOY_AWS.md) and [`../docs/DEPLOY_RENDER.md`](../docs/DEPLOY_RENDER.md): deployment.

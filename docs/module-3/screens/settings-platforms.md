@@ -1,5 +1,7 @@
 # Screen — Settings → Platforms
 
+**October 2026:** the shipped UI uses real Meta/TikTok redirects and authenticated OAuth completion, Page selection and the five connection statuses from [the API contract](../../../backend/CONTRACT.md#social-publishing-endpoints). The modal mock and Naver described below are historical prototype details. The actual component is `frontend/components/settings/PlatformsSettings.tsx`. Facebook/Instagram disconnect together without disconnecting ads; TikTok has its own creator grant.
+
 **Route:** `/settings/platforms` · **Module:** 3 (publishing) · **Access:** authenticated.
 
 **Prototype reference:** [`ui-ux-prototype.html:4267–4284`](../../../ui-ux-prototype.html#L4267)

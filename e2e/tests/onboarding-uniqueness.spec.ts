@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { requireBackend } from './support/stack';
+import { latestEmailCode, requireBackend, requireTestSupport } from './support/stack';
 
 test.describe('Step 5 Analysis', () => {
   test.beforeEach(async () => {
     await requireBackend();
+    // A new account must verify its email before it reaches onboarding; the spec reads the
+    // emailed code through the backend's test-support hook.
+    await requireTestSupport();
   });
 
   function freshEmail() {
@@ -16,9 +19,14 @@ test.describe('Step 5 Analysis', () => {
     await page.getByLabel('First name').fill('E2E');
     await page.getByLabel('Last name').fill('Tester');
     await page.getByLabel('Contact number').fill('+63 917 000 0000');
-    await page.getByPlaceholder('you@example.com').fill(freshEmail());
+    const email = freshEmail();
+    await page.getByPlaceholder('you@example.com').fill(email);
     await page.getByPlaceholder('••••••••').fill('MoalboalDive2024!');
     await page.getByRole('button', { name: 'Create account' }).click();
+
+    await expect(page).toHaveURL(/\/verify-email$/, { timeout: 30_000 });
+    await page.getByLabel('Verification code').fill(await latestEmailCode(email));
+    await page.getByRole('button', { name: 'Verify email' }).click();
 
     await expect(page).toHaveURL(/\/onboarding$/, { timeout: 30_000 });
 

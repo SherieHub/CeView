@@ -11,8 +11,10 @@ import { formatPhpRange } from './format';
 
 export default function RouteCarriers({ market }: { market: Market }) {
   return (
-    <section className="radar-section" aria-label="Route and carriers">
-      <h3 className="heading-md mb-3">Route &amp; Carriers</h3>
+    <section className="radar-section radar-block" aria-label="Route and carriers">
+      <h3 className="heading-md radar-block-title">
+        <Plane size={18} strokeWidth={1.75} aria-hidden="true" /> Route &amp; Carriers
+      </h3>
 
       <div className="card">
         <p className="text-meta">

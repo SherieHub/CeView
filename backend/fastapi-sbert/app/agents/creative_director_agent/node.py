@@ -23,6 +23,7 @@ from app.agents.creative_director_agent.prompts import (
     service_analysis_prompt,
 )
 from app.agents.creative_director_agent.state import SocialAgentState
+from app.config.markets import CAPTION_LANGUAGE_NAMES
 from app.core.AgentLLMModel import _wrapper as _llm_wrapper
 from app.unavailable import DependencyUnavailable
 
@@ -126,6 +127,9 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
             "forecast_context":           state.get("forecast_context", ""),
             "research_context":           state.get("research_context", ""),
             "market_score":               state.get("market_score", ""),
+            "caption_language":           CAPTION_LANGUAGE_NAMES.get(
+                state.get("target_market", ""), "the target market's native language"
+            ),
             
             # These two now match BOTH the State keys and the Prompt Variables.
             # analyze_services runs first in the graph and guarantees a non-empty
@@ -155,6 +159,10 @@ def generate_platform_captions(state: SocialAgentState) -> dict:
             for opt in matrix[platform]:
                 if isinstance(opt, dict) and not opt.get("caption"):
                     opt["caption"] = ""
+                # A missing translation never fails generation: the on-demand
+                # translate endpoint fills it when the owner asks for it.
+                if isinstance(opt, dict) and not isinstance(opt.get("caption_en"), str):
+                    opt["caption_en"] = ""
 
         return {"final_captions": matrix, "source": "groq"}
 

@@ -7,7 +7,7 @@ test.describe('Module 2 Market Radar drawer', () => {
     await page.goto('/preview/dashboard');
     await expect(page.getByRole('button', { name: /Demand window — South Korea/ })).toBeVisible();
     await page.getByRole('button', { name: /Demand window — South Korea/ }).click();
-    await page.getByLabel('Top Target Markets').getByRole('button', { name: /South Korea/ }).click();
+    await page.getByLabel('Top International Market').getByRole('button', { name: /South Korea/ }).click();
 
     await expect(page.getByRole('dialog', { name: /South Korea market radar/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Demand Forecast' })).toBeVisible();
@@ -15,7 +15,9 @@ test.describe('Module 2 Market Radar drawer', () => {
     await page.getByRole('tab', { name: 'Seasonal Patterns' }).click();
     await expect(page.getByText('Seasonality index')).toBeVisible();
     await page.getByRole('tab', { name: 'Purchasing Power' }).click();
-    await expect(page.getByText('Fare reference: reference')).toBeVisible();
+    await expect(page.getByRole('tabpanel', { name: 'Purchasing Power' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Route and carriers' })
+      .getByText('Route & fare figures: reference · valid from 2026-08-24')).toBeVisible();
   });
 
   test('hands the selected market to Module 3', async ({ page }) => {
@@ -24,7 +26,7 @@ test.describe('Module 2 Market Radar drawer', () => {
     await page.goto('/preview/dashboard');
     await expect(page.getByRole('button', { name: /Demand window — South Korea/ })).toBeVisible();
     await page.getByRole('button', { name: /Demand window — South Korea/ }).click();
-    await page.getByLabel('Top Target Markets').getByRole('button', { name: /South Korea/ }).click();
+    await page.getByLabel('Top International Market').getByRole('button', { name: /South Korea/ }).click();
     await page.getByRole('button', { name: 'Target this market' }).click();
     await expect(page).toHaveURL(/\/content$/);
   });

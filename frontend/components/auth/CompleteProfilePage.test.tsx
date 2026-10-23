@@ -5,6 +5,11 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import CompleteProfilePage from './CompleteProfilePage';
 import { AuthProvider } from '../../services/auth';
 
+vi.mock('../../services/firebase', () => ({
+  isFirebaseConfigured: () => false,
+  isPhoneVerificationEnabled: () => false,
+}));
+
 vi.stubEnv('VITE_USE_FIXTURES', 'false');
 
 function jsonResponse(body: unknown, status = 200) {

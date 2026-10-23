@@ -12,13 +12,15 @@
  * row and nothing more. Real product gaps to resolve before this ships for
  * real; not silently invented here.
  */
-import { useEffect, useState } from 'react';
-import { UserPlus } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Copy, Info, MoreHorizontal, UserPlus, Users, Workflow, X } from 'lucide-react';
+import { useDismiss } from '../shared/useDismiss';
 import { useToast } from '../shared/Toast';
 import { apiClient } from '../../services/apiClient';
 import { isNotAvailable } from '../../services/apiError';
 import TutorialModal from '../shared/TutorialModal';
 import type { WorkspaceMemberFixture } from '../../types';
+import './workspace.css';
 
 type InviteRole = 'Editor' | 'Viewer';
 
@@ -43,6 +45,74 @@ function initialsFor(name: string): string {
     .toUpperCase();
 }
 
+const ABOUT_KEY = 'ceview.workspace.aboutDismissed';
+
+function readDismissed(): boolean {
+  try {
+    return localStorage.getItem(ABOUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** The row's "more" menu. Copying the address is the one action there is a
+ * backend for; changing a role or removing someone is not modelled yet. */
+function MemberMenu({ member }: { member: WorkspaceMemberFixture }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const { showToast } = useToast();
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(wrapRef, open, close, triggerRef);
+
+  async function copyEmail() {
+    setOpen(false);
+    try {
+      await navigator.clipboard.writeText(member.email);
+      showToast(`Copied ${member.email}`);
+    } catch {
+      showToast('Could not copy — your browser blocked the clipboard');
+    }
+  }
+
+  return (
+    <div className="ws-menu-wrap" ref={wrapRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="ws-more"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`More actions for ${member.name}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <MoreHorizontal size={18} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="ws-menu" role="menu">
+          <button type="button" role="menuitem" onClick={copyEmail}>
+            <Copy size={15} aria-hidden="true" /> Copy email
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Decorative: three member cards fanned out, echoing the list below. */
+function HeroArt() {
+  return (
+    <div className="ws-art" aria-hidden="true">
+      {(['navy', 'teal', 'coral'] as const).map((tone) => (
+        <span key={tone} className="ws-art-card" data-tone={tone}>
+          <span className="ws-art-avatar"><Users size={16} /></span>
+          <span className="ws-art-lines"><i /><i /></span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function WorkspaceSettings() {
   const { showToast } = useToast();
   const [members, setMembers] = useState<WorkspaceMemberFixture[] | null>(null);
@@ -52,6 +122,16 @@ export default function WorkspaceSettings() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<InviteRole>('Editor');
   const [tourOpen, setTourOpen] = useState(false);
+  const [aboutHidden, setAboutHidden] = useState(readDismissed);
+
+  function hideAbout() {
+    setAboutHidden(true);
+    try {
+      localStorage.setItem(ABOUT_KEY, '1');
+    } catch {
+      // Storage blocked: hidden for this visit only.
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -93,79 +173,141 @@ export default function WorkspaceSettings() {
   }
 
   return (
-    <div className="card p-6">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="heading-lg mb-1">Workspace members</h2>
-          <p className="body-sm">Everyone here shares this business profile and its connected platforms.</p>
+    <div className="ws">
+      <section className="ws-hero" aria-labelledby="ws-title">
+        <div className="ws-hero-main">
+          <div className="ws-hero-top">
+            <span className="ws-hero-icon" aria-hidden="true"><Users size={30} /></span>
+            <div>
+              <h1 id="ws-title" className="ws-heading">Workspace members</h1>
+              <p className="ws-subhead">Everyone here shares this business profile and its connected platforms.</p>
+            </div>
+          </div>
+          <ul className="ws-perks">
+            <li>
+              <span className="ws-perk-icon" aria-hidden="true"><Users size={17} /></span>
+              <span><strong>Shared access</strong><span>Work together on one profile</span></span>
+            </li>
+            <li>
+              <span className="ws-perk-icon" aria-hidden="true"><BadgeCheck size={17} /></span>
+              <span><strong>A role for everyone</strong><span>Owner, Editor or Viewer</span></span>
+            </li>
+            <li>
+              <span className="ws-perk-icon" aria-hidden="true"><Workflow size={17} /></span>
+              <span><strong>Better collaboration</strong><span>Create, plan and grow together</span></span>
+            </li>
+          </ul>
         </div>
-        <button type="button" className="btn-outline" onClick={() => setTourOpen(true)}>
-          Replay tour
-        </button>
+        <HeroArt />
+      </section>
+
+      <div className="ws-layout">
+        <section className="ws-card ws-team" aria-labelledby="ws-team-title">
+          <div className="ws-card-head">
+            <div>
+              <h2 id="ws-team-title" className="ws-card-title">
+                Team members{members ? <> <span className="num">({members.length})</span></> : null}
+              </h2>
+              <p className="ws-card-sub">These people have access to this business profile and its connected platforms.</p>
+            </div>
+            <button type="button" className="ws-tour" onClick={() => setTourOpen(true)}>
+              Replay tour
+            </button>
+          </div>
+
+          {!available && (
+            <p className="ws-note" role="status">
+              Team members and invites aren't available yet.
+            </p>
+          )}
+
+          {members == null ? (
+            <div className="flex flex-col gap-3" aria-hidden="true">
+              <div className="skel" style={{ height: 56 }} />
+              <div className="skel" style={{ height: 56 }} />
+              <div className="skel" style={{ height: 56 }} />
+            </div>
+          ) : members.length === 0 ? (
+            available && <p className="ws-empty">No one else is here yet — invite a teammate.</p>
+          ) : (
+            <div className="ws-table" role="table" aria-label="Team members">
+              <div className="ws-tr ws-tr--head" role="row">
+                <span role="columnheader">Member</span>
+                <span role="columnheader">Email</span>
+                <span role="columnheader">Role</span>
+                <span role="columnheader"><span className="sr-only">Actions</span></span>
+              </div>
+              {members.map((member) => (
+                <div key={member.email} className="ws-tr" role="row" data-pending={member.status === 'pending' || undefined}>
+                  <span role="cell" className="ws-who">
+                    <span className="ws-avatar" aria-hidden="true">{member.initials}</span>
+                    <span className="ws-name">{member.name}</span>
+                  </span>
+                  <span role="cell" className="ws-email">{member.email}</span>
+                  <span role="cell" className="ws-role-cell">
+                    <span className="badge ws-role" data-role={member.role}>{member.role}</span>
+                    {member.status === 'pending' && <span className="ws-pending">Invite pending</span>}
+                  </span>
+                  <span role="cell" className="ws-actions">
+                    <MemberMenu member={member} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="ws-card ws-invite" aria-labelledby="ws-invite-title">
+          <div className="ws-invite-head">
+            <span className="ws-invite-icon" aria-hidden="true"><UserPlus size={22} /></span>
+            <h2 id="ws-invite-title" className="ws-card-title">Invite new member</h2>
+          </div>
+          <p className="ws-card-sub">Add a teammate to give them access to this business profile and its connected platforms.</p>
+          <form
+            className="ws-form"
+            onSubmit={(event) => { event.preventDefault(); sendInvite(); }}
+          >
+            <label className="ws-field">
+              <span className="ws-label">Invite by email</span>
+              <input
+                type="email"
+                className="ws-input"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </label>
+            <label className="ws-field">
+              <span className="ws-label">Role</span>
+              <select className="ws-input ws-select" value={role} onChange={(event) => setRole(event.target.value as InviteRole)}>
+                <option value="Editor">Editor</option>
+                <option value="Viewer">Viewer</option>
+              </select>
+            </label>
+            <button type="submit" className="ws-send" disabled={!available}>
+              <UserPlus size={17} aria-hidden="true" /> Send invite
+            </button>
+          </form>
+        </section>
       </div>
 
-      {!available && (
-        <p className="body-sm mb-5 rounded-[var(--radius-md)] border border-[var(--color-gray-light)] bg-[var(--color-off-white)] p-4" role="status">
-          Team members and invites aren't available yet.
-        </p>
+      {!aboutHidden && (
+        <aside className="ws-about" aria-labelledby="ws-about-title">
+          <span className="ws-about-icon" aria-hidden="true"><Info size={18} /></span>
+          <div>
+            <h2 id="ws-about-title" className="ws-about-title">About workspace access</h2>
+            <p className="ws-about-text">
+              Every member can see and work on this business profile and its connected platforms. Roles are
+              labels for now — they don&rsquo;t limit what someone can do yet, so invite only people you trust
+              with the whole workspace.
+            </p>
+          </div>
+          <button type="button" className="ws-about-close" onClick={hideAbout} aria-label="Dismiss">
+            <X size={18} aria-hidden="true" />
+          </button>
+        </aside>
       )}
-
-      {members == null ? (
-        <div className="flex flex-col gap-3" aria-hidden="true">
-          <div className="skel" style={{ height: 56 }} />
-          <div className="skel" style={{ height: 56 }} />
-        </div>
-      ) : (
-        <ul className="mb-6 flex flex-col gap-3">
-          {members.map((member) => (
-            <li
-              key={member.email}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--color-gray-light)] p-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-navy-primary)] text-xs font-semibold text-[var(--color-text-inverse)]">
-                  {member.initials}
-                </span>
-                <div>
-                  <p className="font-semibold text-navy-dark">{member.name}</p>
-                  <p className="body-xs text-[var(--color-text-muted)]">{member.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {member.status === 'pending' && <span className="chip chip--attention">Invite pending</span>}
-                <span className="badge badge--teal">{member.role}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form
-        className="flex flex-wrap items-end gap-3"
-        onSubmit={(event) => { event.preventDefault(); sendInvite(); }}
-      >
-        <label className="field min-w-[220px] flex-1">
-          <span className="field-label">Invite by email</span>
-          <input
-            type="email"
-            className="input"
-            placeholder="name@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <label className="field">
-          <span className="field-label">Role</span>
-          <select className="input" value={role} onChange={(event) => setRole(event.target.value as InviteRole)}>
-            <option value="Editor">Editor</option>
-            <option value="Viewer">Viewer</option>
-          </select>
-        </label>
-        <button type="submit" className="btn-primary" disabled={!available}>
-          <UserPlus size={16} aria-hidden="true" /> Send invite
-        </button>
-      </form>
 
       <TutorialModal open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './auth';
+import { AuthProvider, useAuth } from './auth';
 import { ProfileProvider, ProfileGate, useProfile } from './profileContext';
 import { saveTokens } from './authStorage';
 
@@ -164,5 +164,101 @@ describe('ProfileProvider — real backend fetch', () => {
     });
 
     await waitFor(() => expect(screen.getByText('DashboardScreen')).toBeInTheDocument());
+  });
+});
+
+// An operator whose email is unverified is 403'd by the backend on every route, the profile
+// included. The load must wait for verification and then run, otherwise an existing operator with
+// a complete profile verifies their email and is sent to /onboarding as if brand new.
+describe('ProfileProvider — email verification', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    mockLoad.mockReset();
+  });
+
+  function VerifyButton() {
+    const { markEmailVerified } = useAuth();
+    return <button onClick={markEmailVerified}>verify</button>;
+  }
+
+  const savedProfile = {
+    businessProfileId: 'bp-1', businessName: 'Reef Co', categories: [], coreServices: [],
+    description: '', uvp: '', imagePreview: null, uniquenessScore: 0.9,
+  };
+
+  it('does not call the backend while the email is unverified, and stays loading', () => {
+    saveTokens({ accessToken: 'jwt-1', profileCompleted: true, emailVerified: false });
+
+    render(
+      <AuthProvider>
+        <ProfileProvider>
+          <Probe />
+        </ProfileProvider>
+      </AuthProvider>,
+    );
+
+    expect(mockLoad).not.toHaveBeenCalled();
+    expect(screen.getByTestId('loading')).toHaveTextContent('true');
+  });
+
+  it('loads the saved profile once the email becomes verified', async () => {
+    saveTokens({ accessToken: 'jwt-1', profileCompleted: true, emailVerified: false });
+    mockLoad.mockResolvedValue(savedProfile);
+    render(
+      <AuthProvider>
+        <ProfileProvider>
+          <Probe />
+          <VerifyButton />
+        </ProfileProvider>
+      </AuthProvider>,
+    );
+    expect(mockLoad).not.toHaveBeenCalled();
+
+    act(() => screen.getByText('verify').click());
+
+    await waitFor(() => expect(screen.getByTestId('name')).toHaveTextContent('Reef Co'));
+    expect(mockLoad).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('loading')).toHaveTextContent('false');
+  });
+
+  it('ProfileGate sends a verified operator with a saved profile to /dashboard, not /onboarding', async () => {
+    saveTokens({ accessToken: 'jwt-1', profileCompleted: true, emailVerified: false });
+    mockLoad.mockResolvedValue(savedProfile);
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <AuthProvider>
+          <ProfileProvider>
+            <VerifyButton />
+            <Routes>
+              <Route element={<ProfileGate />}>
+                <Route path="/onboarding" element={<div>OnboardingScreen</div>} />
+                <Route path="/dashboard" element={<div>DashboardScreen</div>} />
+              </Route>
+            </Routes>
+          </ProfileProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText('OnboardingScreen')).not.toBeInTheDocument();
+
+    act(() => screen.getByText('verify').click());
+
+    await waitFor(() => expect(screen.getByText('DashboardScreen')).toBeInTheDocument());
+    expect(screen.queryByText('OnboardingScreen')).not.toBeInTheDocument();
+  });
+
+  it('still loads straight away for a verified session', async () => {
+    saveTokens({ accessToken: 'jwt-1', profileCompleted: true, emailVerified: true });
+    mockLoad.mockResolvedValue(savedProfile);
+
+    render(
+      <AuthProvider>
+        <ProfileProvider>
+          <Probe />
+        </ProfileProvider>
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('name')).toHaveTextContent('Reef Co'));
   });
 });

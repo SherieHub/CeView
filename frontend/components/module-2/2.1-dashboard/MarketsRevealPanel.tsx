@@ -12,7 +12,7 @@
  * Reserving the track costs nothing when idle, and the resting state explains
  * the interaction before you perform it.
  */
-import { MousePointerClick, Tag } from 'lucide-react';
+import { Info, MousePointerClick } from 'lucide-react';
 import RankCard from './RankCard';
 import type { MarketsRevealSlotProps } from './dashboardTypes';
 
@@ -22,29 +22,22 @@ export default function MarketsRevealPanel({
   onOpenMarket,
 }: MarketsRevealSlotProps) {
   return (
-    <section className="dash-markets" id="dash-markets-panel" aria-label="Top Target Markets">
+    <section className="dash-markets" id="dash-markets-panel" aria-label="Top International Market">
       <div className="feed-head">
-        <h2 className="heading-md">Top Target Markets</h2>
-        {selectedAlert && (
-          <span className="chip chip--attention">
-            <Tag aria-hidden="true" /> {selectedAlert.category ?? 'Uncategorized'}
-          </span>
-        )}
+        <h2 className="heading-md">
+          Top International Market
+          <Info size={16} strokeWidth={1.75} aria-hidden="true" />
+        </h2>
+        <span className="markets-note">
+          {selectedAlert ? (selectedAlert.category ?? 'Uncategorized') : 'Based on your selected alert'}
+        </span>
       </div>
 
       {selectedAlert ? (
-        <div className="grid gap-4">
+        <div className="rank-list">
           {markets.map((market) => (
             <RankCard key={market.id} market={market} onOpen={onOpenMarket} />
           ))}
-          {/* Step 19 (M2-ST-036): docs/module-2/screens/dashboard.md specifies
-              this footer but nothing rendered it — the screen doc and the
-              running app had drifted apart. */}
-          {markets.length > 0 && (
-            <aside data-testid="ranking-formula" className="card text-meta text-center" aria-label="Ranking formula">
-              market_score = 0.40·demand₄w + 0.35·seasonality + 0.25·economic_viability
-            </aside>
-          )}
         </div>
       ) : (
         <div className="card">

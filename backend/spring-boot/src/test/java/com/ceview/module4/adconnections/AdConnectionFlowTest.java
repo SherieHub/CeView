@@ -22,6 +22,8 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -100,7 +102,7 @@ class AdConnectionFlowTest {
     }
 
     @Test
-    void callbackStoresTheGrantAndRedirectsToTheFrontend() throws Exception {
+    void callbackOnlyRedirectsAndAuthenticatedCompletionStoresTheGrant() throws Exception {
         when(metaClient.exchangeCode("CODE-1"))
                 .thenReturn(new TokenGrant("TOKEN", null, null, "ads_read"));
         UUID state = service.mintState(profileId, AdProvider.META);
@@ -110,7 +112,22 @@ class AdConnectionFlowTest {
                         .param("state", state.toString()))
            .andExpect(status().isFound())
            .andExpect(header().string("Location",
-                   "http://localhost:5173/settings/platforms?adconnect=meta"));
+                   "http://localhost:5173/settings/platforms?ad_code=CODE-1&ad_provider=meta&state=" + state));
+
+        org.junit.jupiter.api.Assertions.assertEquals(0, connectionRepo.count());
+        org.junit.jupiter.api.Assertions.assertNull(stateRepo.findById(state).orElseThrow().getConsumedAt());
+        verify(metaClient, never()).exchangeCode(anyString());
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + state + "\"}"))
+           .andExpect(status().isNoContent())
+           .andExpect(content().string(""));
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + state + "\"}"))
+           .andExpect(status().isBadRequest());
 
         AdPlatformConnection saved = connectionRepo
                 .findByBusinessProfileIdAndProvider(profileId, "meta").orElseThrow();
@@ -132,12 +149,9 @@ class AdConnectionFlowTest {
                         .param("state", state.toString()))
            .andExpect(status().isFound())
            .andExpect(header().string("Location",
-                   "http://localhost:5173/settings/platforms?adconnect=tiktok"));
-
-        AdPlatformConnection saved = connectionRepo
-                .findByBusinessProfileIdAndProvider(profileId, "tiktok").orElseThrow();
-        org.junit.jupiter.api.Assertions.assertEquals(
-                AdPlatformConnection.STATUS_PENDING_ACCOUNT_SELECTION, saved.getStatus());
+                   "http://localhost:5173/settings/platforms?ad_code=AUTH-CODE-1&ad_provider=tiktok&state=" + state));
+        org.junit.jupiter.api.Assertions.assertEquals(0, connectionRepo.count());
+        verify(tiktokClient, never()).exchangeCode(anyString());
     }
 
     @Test
@@ -151,13 +165,12 @@ class AdConnectionFlowTest {
     }
 
     @Test
-    void callbackRedirectsWithAnErrorForAnInvalidState() throws Exception {
-        mvc.perform(get("/api/ad-connections/meta/callback")
-                        .param("code", "CODE-1")
-                        .param("state", UUID.randomUUID().toString()))
-           .andExpect(status().isFound())
-           .andExpect(header().string("Location",
-                   org.hamcrest.Matchers.containsString("adconnect_error=invalid_state")));
+    void completionRejectsAnInvalidState() throws Exception {
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + UUID.randomUUID() + "\"}"))
+           .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -173,17 +186,64 @@ class AdConnectionFlowTest {
     }
 
     @Test
-    void callbackRedirectsWithAnErrorWhenTokenExchangeFails() throws Exception {
+    void completionReturns502WhenTokenExchangeFails() throws Exception {
         when(metaClient.exchangeCode("CODE-1"))
                 .thenThrow(new com.ceview.module4.adconnections.client.AdPlatformException("boom"));
         UUID state = service.mintState(profileId, AdProvider.META);
 
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + state + "\"}"))
+           .andExpect(status().isBadGateway());
+    }
+
+    @Test
+    void completionBurnsForeignStateWithoutExchangingCredentials() throws Exception {
+        UUID otherOperator = UUID.randomUUID();
+        testOperators.create(otherOperator);
+        BusinessProfile otherProfile = new BusinessProfile();
+        otherProfile.setUserId(otherOperator);
+        otherProfile.setBusinessName("Other business");
+        UUID foreignState = service.mintState(profileRepo.save(otherProfile).getBusinessProfileId(), AdProvider.META);
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + foreignState + "\"}"))
+           .andExpect(status().isForbidden());
+        org.junit.jupiter.api.Assertions.assertNotNull(stateRepo.findById(foreignState).orElseThrow().getConsumedAt());
+        verify(metaClient, never()).exchangeCode(anyString());
+        org.junit.jupiter.api.Assertions.assertEquals(0, connectionRepo.count());
+    }
+
+    @Test
+    void completionRequiresAuthentication() throws Exception {
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"CODE-1\",\"state\":\"" + UUID.randomUUID() + "\"}"))
+           .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void callbackEncodesUntrustedCodeAndStateWithoutConsumingThem() throws Exception {
         mvc.perform(get("/api/ad-connections/meta/callback")
-                        .param("code", "CODE-1")
-                        .param("state", state.toString()))
+                        .param("code", "C&ad_provider=evil#fragment")
+                        .param("state", "S&extra=value"))
            .andExpect(status().isFound())
            .andExpect(header().string("Location",
-                   org.hamcrest.Matchers.containsString("adconnect_error=token_exchange_failed")));
+                   "http://localhost:5173/settings/platforms?ad_code=C%26ad_provider%3Devil%23fragment&ad_provider=meta&state=S%26extra%3Dvalue"));
+        verify(metaClient, never()).exchangeCode(anyString());
+        org.junit.jupiter.api.Assertions.assertEquals(0, stateRepo.count());
+    }
+
+    @Test
+    void completionRejectsBlankInputs() throws Exception {
+        mvc.perform(post("/api/ad-connections/meta/complete")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"\",\"state\":\"\"}"))
+           .andExpect(status().isBadRequest());
+        verify(metaClient, never()).exchangeCode(anyString());
     }
 
     @Test

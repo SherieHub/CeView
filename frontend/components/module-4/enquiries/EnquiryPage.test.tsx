@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import EnquiryPage from './EnquiryPage';
 import { attributionEnquiries } from '../../../services/attributionEnquiries';
+import { ApiError } from '../../../services/apiError';
 
 vi.mock('../../../services/attributionEnquiries', () => ({
   attributionEnquiries: { context: vi.fn(), submit: vi.fn() },
 }));
 const clickId = '550e8400-e29b-41d4-a716-446655440000';
+const apiError = (status: number) => new ApiError({ status, method: 'GET', path: '/api/public/attribution/enquiries' });
 function open(query = `?cv=${clickId}`) {
   return render(<MemoryRouter initialEntries={[`/enquiry${query}`]}><EnquiryPage /></MemoryRouter>);
 }
@@ -89,10 +91,49 @@ describe('public enquiry form', () => {
     expect(screen.queryByText('Internal database error')).not.toBeInTheDocument();
   });
 
-  it('uses the expired state when context cannot be resolved', async () => {
-    vi.mocked(attributionEnquiries.context).mockRejectedValue(new Error('Unknown click'));
+  it('uses the expired state only when the server says the click is unknown or used (400)', async () => {
+    vi.mocked(attributionEnquiries.context).mockRejectedValue(apiError(400));
     open();
     expect(await screen.findByRole('heading', { name: 'This link has expired' })).toBeInTheDocument();
     expect(screen.queryByRole('form')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['a 502 from a cold-starting server', apiError(502)],
+    ['a 500', apiError(500)],
+    ['a network failure', new TypeError('Failed to fetch')],
+  ])('does not call a valid link expired after %s, and offers a retry that loads the form', async (_label, failure) => {
+    vi.mocked(attributionEnquiries.context).mockRejectedValueOnce(failure);
+    const user = userEvent.setup();
+    open();
+    expect(await screen.findByRole('heading', { name: /trouble loading this form/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'This link has expired' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByRole('heading', { name: 'Enquire with Coastal Stay' })).toBeInTheDocument();
+    expect(attributionEnquiries.context).toHaveBeenCalledTimes(2);
+  });
+
+  it('tells the traveller an already-sent or invalid enquiry cannot be sent again (400 on submit)', async () => {
+    vi.mocked(attributionEnquiries.submit).mockRejectedValue(apiError(400));
+    open();
+    await screen.findByRole('form');
+    fireEvent.change(screen.getByLabelText('Your name (required)'), { target: { value: 'Alex' } });
+    fireEvent.change(screen.getByLabelText(/Email, phone/), { target: { value: 'alex@example.com' } });
+    fireEvent.submit(screen.getByRole('form'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('already sent or the link is no longer valid');
+  });
+
+  it('keeps what the traveller typed when the server is unavailable on submit', async () => {
+    vi.mocked(attributionEnquiries.submit).mockRejectedValue(apiError(503));
+    open();
+    await screen.findByRole('form');
+    fireEvent.change(screen.getByLabelText('Your name (required)'), { target: { value: 'Alex' } });
+    fireEvent.change(screen.getByLabelText(/Email, phone/), { target: { value: 'alex@example.com' } });
+    fireEvent.submit(screen.getByRole('form'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not send your enquiry.');
+    expect(screen.getByLabelText('Your name (required)')).toHaveValue('Alex');
+    expect(screen.getByRole('button', { name: 'Send enquiry' })).toBeEnabled();
   });
 });

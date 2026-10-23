@@ -1,0 +1,679 @@
+/* ============================================================
+   LANDING — value pillars (ValuePillars.tsx, #why) and how it works
+   (WorkflowSection.tsx, #how-it-works).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ---------- value pillars ---------- */
+  .cv-why {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 40px;
+    background: #083c38;
+    background-image: radial-gradient(ellipse at 50% 100%, #104c45 0%, transparent 65%);
+    color: #f7fafb;
+  }
+  .cv-why-photo {
+    position: absolute;
+    z-index: -2;
+    inset: 0 0 auto auto;
+    width: 54%;
+    height: 340px;
+    pointer-events: none;
+    background: url('/images/landing/how-lagoon-1600.webp') center 40% / cover no-repeat;
+    mask-image: linear-gradient(90deg, transparent, #000), linear-gradient(180deg, #000, transparent);
+    mask-composite: intersect;
+    opacity: 0.6;
+  }
+  .cv-why-contours {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    stroke: #439c8e;
+    stroke-width: 1.25;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .cv-why .cv-eyebrow,
+  .cv-why .cv-why-outcome {
+    color: #7de8e8;
+  }
+  .cv-why .cv-display-lg,
+  .cv-why .cv-title {
+    color: #f7fafb;
+  }
+  .cv-why .cv-display-lg {
+    font-size: clamp(1.75rem, 2.5vw, 2.625rem);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .cv-why em.accent {
+    color: #f27655;
+  }
+  .cv-why .cv-eyebrow {
+    font-size: 0.6875rem;
+  }
+  .cv-why-head {
+    row-gap: 12px;
+    margin-bottom: 24px;
+  }
+  .cv-why-heading,
+  .cv-why-intro {
+    grid-column: 1 / -1;
+  }
+  .cv-why-heading {
+    display: grid;
+    gap: 12px;
+  }
+  .cv-why-intro {
+    max-width: 40rem;
+    font-size: 0.875rem;
+    color: #dce7ee;
+  }
+  .cv-why-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-why-grid > li {
+    display: flex;
+  }
+  .cv-why-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    padding: 18px;
+    border: 1px solid rgba(119, 203, 181, 0.3);
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(37, 96, 82, 0.55), rgba(4, 44, 39, 0.55));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition:
+      transform 200ms var(--cv-ease),
+      box-shadow 200ms var(--cv-ease);
+  }
+  .cv-why-card .cv-icon-tile {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 2px;
+    transition: background-color 200ms var(--cv-ease);
+  }
+  .cv-why-card .cv-icon-tile svg {
+    width: 18px;
+    height: 18px;
+  }
+  .cv-why-card .cv-title {
+    font-size: clamp(1.0625rem, 1.25vw, 1.1875rem);
+    line-height: 1.15;
+  }
+  .cv-why-body {
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: #b9cfdd;
+  }
+  /* Outcome label, pinned to the card's foot behind a short rule. */
+  .cv-why-outcome {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 10px;
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--teal-700);
+  }
+  .cv-why-outcome::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 1.5px;
+    margin-top: 0.65em;
+    background: currentColor;
+  }
+  @media (hover: hover) {
+    .cv-why-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-float);
+    }
+    .cv-why-card:hover .cv-icon-tile {
+      background: color-mix(in srgb, var(--teal-100) 78%, var(--teal-500));
+    }
+    .cv-why-card:hover .cv-icon-tile[data-tone='coral'] {
+      background: color-mix(in srgb, var(--coral-100) 78%, var(--coral-500));
+    }
+  }
+  @media (min-width: 640px) {
+    .cv-why-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-why-head {
+      align-items: end;
+      margin-bottom: 24px;
+    }
+    .cv-why-heading {
+      grid-column: 1 / span 7;
+    }
+    .cv-why-intro {
+      grid-column: 8 / -1;
+      padding: 0 0 6px 20px;
+    }
+  }
+  /* Four across from 1200px; below that the cards get too narrow. */
+  @media (min-width: 1200px) {
+    .cv-why-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .cv-why-card {
+      padding: 18px;
+      min-height: 250px;
+    }
+  }
+  @media (min-width: 1280px) {
+    .cv-why-card {
+      padding: 18px;
+    }
+  }
+
+  /* ---------- how it works (light band, phase cards) ---------- */
+  .cv-how {
+    --how-bg: #f3fbfa;
+    --how-gap: 12px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 56px;
+    background: var(--how-bg);
+  }
+  /* Lagoon photo fading in from the top right. */
+  .cv-how-photo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: -1;
+    width: 62%;
+    height: min(460px, 60%);
+  }
+  .cv-how-photo .cv-img {
+    object-position: 60% 40%;
+  }
+  .cv-how-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, var(--how-bg) 0%, rgba(243, 251, 250, 0.94) 22%, rgba(243, 251, 250, 0.55) 38%, rgba(243, 251, 250, 0) 58%),
+      linear-gradient(0deg, var(--how-bg) 0%, rgba(243, 251, 250, 0.6) 22%, rgba(243, 251, 250, 0) 48%);
+  }
+
+  .cv-how-inner {
+    position: relative;
+  }
+  .cv-how-head {
+    display: grid;
+    gap: 12px;
+    max-width: 34rem;
+  }
+  .cv-how-title {
+    max-width: 15em;
+    font-size: clamp(1.875rem, 2.7vw, 2.625rem);
+  }
+  .cv-how-intro {
+    max-width: 30rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-700);
+  }
+
+  /* Handwritten note over the photo. */
+  .cv-how-note {
+    position: absolute;
+    top: -16px;
+    left: 47%;
+    display: grid;
+    width: max-content;
+    font-family: var(--ff-script);
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.12;
+    color: var(--ink-900);
+    text-shadow:
+      0 0 2px #fff,
+      0 0 4px #fff,
+      0 0 8px rgba(255, 255, 255, 0.95),
+      0 0 16px rgba(255, 255, 255, 0.9);
+    transform: rotate(-8deg);
+  }
+  .cv-how-swash {
+    display: block;
+    width: 120%;
+    height: 18px;
+    margin-top: 2px;
+    overflow: visible;
+  }
+  .cv-how-swash path {
+    fill: none;
+    stroke: var(--coral-500);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 900ms var(--cv-ease) 200ms;
+  }
+  .cv-how-note[data-shown] .cv-how-swash path {
+    stroke-dashoffset: 0;
+  }
+
+  /* ---------- the five phase cards ---------- */
+  .cv-how-cards {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--how-gap);
+    margin: 54px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-how-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: var(--shadow-card);
+    color: var(--ink-900);
+  }
+  .cv-how-card[data-step='2'] {
+    border-color: #d5eee9;
+    background: #e8f6f3;
+  }
+  .cv-how-card[data-step='3'] {
+    border-color: #b8e3db;
+    background: #c9ece6;
+  }
+  .cv-how-card[data-step='4'] {
+    border-color: #117d73;
+    background: #117d73;
+    color: var(--white);
+  }
+  .cv-how-card[data-step='5'] {
+    border-color: var(--teal-900);
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-how-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .cv-how-num {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 2rem;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--teal-700);
+  }
+  .cv-how-card[data-step='4'] .cv-how-num,
+  .cv-how-card[data-step='5'] .cv-how-num {
+    color: var(--white);
+  }
+  .cv-how-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--teal-50);
+    color: var(--teal-700);
+  }
+  .cv-how-card[data-step='2'] .cv-how-icon,
+  .cv-how-card[data-step='3'] .cv-how-icon {
+    background: var(--white);
+  }
+  .cv-how-card[data-step='4'] .cv-how-icon,
+  .cv-how-card[data-step='5'] .cv-how-icon {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--white);
+  }
+  .cv-how-card-title {
+    margin-top: 14px;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.125rem;
+    font-weight: 550;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: inherit;
+  }
+  .cv-how-does {
+    margin-top: 8px;
+    margin-bottom: 12px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  /* ink-700 on the deeper tint: ink-500 drops to about 4.1:1 there. */
+  .cv-how-card[data-step='3'] .cv-how-does {
+    color: var(--ink-700);
+  }
+  .cv-how-card[data-step='4'] .cv-how-does {
+    color: var(--white);
+  }
+  .cv-how-card[data-step='5'] .cv-how-does {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .cv-how-get {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid rgba(14, 42, 59, 0.12);
+  }
+  .cv-how-card[data-step='4'] .cv-how-get,
+  .cv-how-card[data-step='5'] .cv-how-get {
+    border-top-color: rgba(255, 255, 255, 0.2);
+  }
+  .cv-how-get-label {
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-700);
+  }
+  .cv-how-card[data-step='4'] .cv-how-get-label {
+    color: var(--white);
+  }
+  .cv-how-card[data-step='5'] .cv-how-get-label {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .cv-how-get-value {
+    margin-top: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: inherit;
+  }
+
+  /* "You approve here": coral marker above phase 04, tied to it by a line.
+     coral-700 fill: white text on the button coral is only 3.1:1. */
+  .cv-how-approve {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 999px;
+    background: var(--coral-700);
+    box-shadow: 0 10px 24px -10px rgba(194, 74, 46, 0.7);
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--white);
+    transform: translateX(-50%);
+  }
+  .cv-how-approve::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 1.5px;
+    height: 12px;
+    background: var(--coral-700);
+    transform: translateX(-50%);
+  }
+  .cv-how-approve-icon {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+
+  /* Dashed loop from phase 05 back to phase 02, spanning card centres. */
+  .cv-how-loop {
+    position: relative;
+    height: 52px;
+    margin-top: 6px;
+    margin-left: calc((100% - 4 * var(--how-gap)) / 5 * 1.5 + var(--how-gap));
+    margin-right: calc((100% - 4 * var(--how-gap)) / 5 * 0.5);
+  }
+  .cv-how-loop svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .cv-how-loop path {
+    fill: none;
+    stroke: var(--coral-500);
+    stroke-width: 1.75;
+    stroke-dasharray: 6 6;
+  }
+  .cv-how-loop-head {
+    position: absolute;
+    top: -2px;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 10px solid var(--coral-500);
+    transform: translateX(-50%);
+  }
+  .cv-how-loop-label {
+    position: absolute;
+    top: calc(52 / 70 * 100%);
+    left: 28%;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: var(--how-bg);
+    font-family: var(--ff-script);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--coral-800);
+    transform: translateY(-50%);
+  }
+  .cv-how-loop-icon {
+    display: none;
+  }
+
+  /* ---------- result card + fine print ---------- */
+  .cv-how-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 24px;
+    margin-top: 18px;
+    padding: 16px 22px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: var(--shadow-card);
+  }
+  .cv-how-result-text {
+    max-width: 40rem;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--ink-900);
+  }
+  .cv-how-result-text strong {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--teal-700);
+  }
+  .cv-how-ctas {
+    display: flex;
+    flex: none;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .cv-how .cv-eyebrow { font-size: 0.6875rem; }
+  .cv-how-icon svg { width: 16px; height: 16px; }
+  .cv-how-ctas .cv-btn { min-height: 40px; padding: 10px 16px; font-size: 0.75rem; }
+  .cv-how-fine {
+    margin-top: 20px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--ink-700);
+  }
+
+  /* ---------- 1024–1279px: tighter cards ---------- */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-how {
+      --how-gap: 12px;
+    }
+    .cv-how-card {
+      padding: 16px 14px 14px;
+    }
+    .cv-how-num {
+      font-size: 2rem;
+    }
+    .cv-how-card-title {
+      margin-top: 14px;
+      font-size: 1.0625rem;
+    }
+    .cv-how-does {
+      font-size: 0.8125rem;
+    }
+    .cv-how-note {
+      font-size: 1.375rem;
+      left: 50%;
+    }
+    .cv-how-result {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* ---------- < 1024px: photo band on top, cards in a grid ---------- */
+  @media (max-width: 1023px) {
+    .cv-how {
+      padding-top: 0;
+    }
+    .cv-how-photo {
+      position: relative;
+      width: 100%;
+      height: 190px;
+      margin-bottom: 8px;
+    }
+    .cv-how-photo::after {
+      background: linear-gradient(0deg, var(--how-bg) 0%, rgba(243, 251, 250, 0) 55%);
+    }
+    .cv-how-note {
+      display: none;
+    }
+    .cv-how-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+    .cv-how-card[data-step='5'] {
+      grid-column: 1 / -1;
+    }
+    .cv-how-card-title {
+      margin-top: 14px;
+    }
+    /* The marker sits inside phase 04 instead of above it. */
+    .cv-how-approve {
+      position: static;
+      align-self: flex-start;
+      margin-bottom: 16px;
+      transform: none;
+    }
+    .cv-how-approve::after {
+      display: none;
+    }
+    .cv-how-loop {
+      height: auto;
+      margin: 24px 0 0;
+      text-align: center;
+    }
+    .cv-how-loop svg,
+    .cv-how-loop-head {
+      display: none;
+    }
+    .cv-how-loop-label {
+      position: static;
+      padding: 2px 8px;
+      white-space: normal;
+      transform: none;
+    }
+    .cv-how-loop-icon {
+      display: inline;
+    }
+    .cv-how-result {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 20px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-how {
+      padding-bottom: 40px;
+    }
+    .cv-how-photo {
+      height: 160px;
+    }
+    .cv-how-cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cv-how-result {
+      padding: 18px;
+    }
+    .cv-how-result-text {
+      font-size: 1.0625rem;
+    }
+    .cv-how-ctas {
+      flex-direction: column;
+      width: 100%;
+    }
+    .cv-how-ctas .cv-btn {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-why-card,
+    .cv-why-card .cv-icon-tile,
+    .cv-how-swash path {
+      transition: none;
+    }
+    .cv-why-card:hover {
+      transform: none;
+    }
+  }
+}

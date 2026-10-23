@@ -80,6 +80,7 @@ def performance_report(
     transitions: list[dict],
     weeks: int = 4,
     market: str = "korea",
+    provenance: dict | None = None,
 ) -> dict:
     """
     Generate a prescriptive performance report using the new exhaustive funnel
@@ -93,6 +94,9 @@ def performance_report(
                      than inventing drop rates.
         weeks:       Analysis window in weeks (4 or 8)
         market:      Target market key (e.g. "korea", "japan", "usa")
+        provenance:  Optional booking-capture breakdown (CVW-42). When present,
+                     the summary must say how much of the booking total was
+                     captured automatically vs. recalled, and qualify confidence.
 
     Returns:
         New schema dict:
@@ -106,11 +110,13 @@ def performance_report(
         for i, t in enumerate(transitions[:3])
     )
 
+    provenance_block, provenance_rule = _provenance_context(provenance)
+
     prompt = f"""You are CeView's Senior Marketing Analyst specialising in Philippine tourism MSMEs.
 
 CAMPAIGN DATA ({weeks}-week window, market: {market.upper()}):
 {json.dumps(metrics, indent=2)}
-
+{provenance_block}
 PRE-RANKED FUNNEL TRANSITIONS (business-impact priority order — do NOT re-order):
 {rank_context}
 
@@ -123,7 +129,7 @@ RULES:
 3. Each funnelDiagnostics entry MUST have exactly one matching recommendations entry (same "stage" value).
 4. Urgency is strictly derived from the rank — do not deviate.
 5. recommendedPlatform MUST be "{recommended_platform}".
-6. Return ONLY valid JSON — no markdown, no explanation text.
+6. Return ONLY valid JSON — no markdown, no explanation text.{provenance_rule}
 
 Return this exact JSON structure:
 {{
@@ -148,3 +154,35 @@ Return this exact JSON structure:
 }}"""
 
     return gemini_client._generate_json(prompt)
+
+
+def _provenance_context(provenance: dict | None) -> tuple[str, str]:
+    """
+    Prompt text describing how the booking total was captured (CVW-42).
+
+    Returns (data block, extra rule). Both are empty when provenance is unknown,
+    so a report for an operator with no tracking set up reads exactly as before.
+    """
+    if not provenance:
+        return "", ""
+
+    reported = int(provenance.get("reportedBookings") or 0)
+    tracked = int(provenance.get("trackedBookings") or 0)
+    block = f"""
+BOOKING DATA PROVENANCE (how the bookings figure above was captured):
+- Bookings reported by the operator (typed from memory/records): {reported}
+- Bookings CeView recorded as they happened: {tracked}
+  - automatically (traveller enquiry form or booking-platform sync): {int(provenance.get("automaticBookings") or 0)}
+  - matched by the operator to a recorded ad click: {int(provenance.get("clickMatchedBookings") or 0)}
+  - logged by the operator when a customer quoted the promo code: {int(provenance.get("codeLoggedBookings") or 0)}
+- Reported bookings with no tracked evidence: {int(provenance.get("untrackedBookings") or 0)}
+- Tracked bookings exceed the reported total: {bool(provenance.get("trackedExceedsReported"))}
+"""
+    rule = (
+        "\n7. The executiveSummary MUST state how much of the bookings figure is backed by tracked "
+        "evidence versus self-reported, and qualify confidence in booking-based KPIs (ROAS, CR, CAC) "
+        "accordingly. If most bookings are untracked, one recommendation's action must ask the operator "
+        "to log bookings with the campaign code or use the tracked link. If tracked bookings exceed the "
+        "reported total, say the reported total looks understated. Never invent tracked numbers."
+    )
+    return block, rule

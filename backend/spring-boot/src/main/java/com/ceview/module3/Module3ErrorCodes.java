@@ -13,7 +13,14 @@ public final class Module3ErrorCodes {
     public static final String MOD31_CONTENT_GENERATION_FAILED  = "MOD31_CONTENT_GENERATION_FAILED";
     public static final String MOD31_CONTENT_STORED             = "MOD31_CONTENT_STORED";
     public static final String MOD31_CONTENT_APPROVED           = "MOD31_CONTENT_APPROVED";
+    public static final String MOD31_TRANSLATION_VALIDATION     = "MOD31_TRANSLATION_VALIDATION";
+    public static final String MOD31_TRANSLATION_FAILED         = "MOD31_TRANSLATION_FAILED";
+    public static final String MOD31_TRANSLATION_UNAVAILABLE    = "MOD31_TRANSLATION_UNAVAILABLE";
     public static final String MOD31_SERP_UNAVAILABLE           = "MOD31_SERP_UNAVAILABLE";
+    public static final String MOD31_DRAFT_VALIDATION           = "MOD31_DRAFT_VALIDATION";
+    public static final String MOD31_DRAFT_NOT_FOUND            = "MOD31_DRAFT_NOT_FOUND";
+    public static final String MOD31_DRAFT_TOO_LARGE            = "MOD31_DRAFT_TOO_LARGE";
+    public static final String MOD31_DRAFT_LIMIT                = "MOD31_DRAFT_LIMIT";
 
     // ─── Submodule 3.2 — Creative Direction ──────────────────────────────────
     public static final String MOD32_CREATIVE_GENERATION_FAILED  = "MOD32_CREATIVE_GENERATION_FAILED";

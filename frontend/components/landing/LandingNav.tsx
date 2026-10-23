@@ -1,18 +1,36 @@
 /**
- * Floating navigation. A centred, lightly translucent bar that stays pinned,
- * highlights the section in view, and folds into a drawer below 1200px.
+ * Site header. A full-width sticky bar: solid white at the top of the page,
+ * frosted with a hairline once the page scrolls, so nothing ever shows above
+ * or around it. The link for the section being read is marked with a coral
+ * dot. Below 1024px the links move into a full-height sheet.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import ceviewMark from './assets/ceview-mark.webp';
-import { DEMO_ANCHOR, NAV_LINKS } from './landingContent';
+import ceviewLogo from './assets/ceview-logo.webp';
+import ceviewLogoLight from './assets/ceview-logo-light.webp';
+import { DEMO_ANCHOR, HEADER, NAV_LINKS } from '../../content/landing';
+import { Button } from './ui';
 
+/** Matches the CSS breakpoint where the full nav appears. */
+const DESKTOP_QUERY = '(min-width: 1024px)';
+const SCROLL_THRESHOLD = 8;
+const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * The CeView logo (sail mark + wordmark). `light` is for dark backgrounds:
+ * the dark-teal sail and wordmark are drawn in white.
+ */
 export function BrandMark({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
   return (
     <span className="lp-brand" data-tone={tone}>
-      <img src={ceviewMark} alt="" width={32} height={32} className="lp-brand-logo" />
-      <span className="lp-brand-name">CeView</span>
+      <img
+        src={tone === 'light' ? ceviewLogoLight : ceviewLogo}
+        alt="CeView"
+        width={440}
+        height={112}
+        className="lp-brand-logo"
+      />
     </span>
   );
 }
@@ -39,7 +57,7 @@ function useActiveSection(ids: string[]): string | null {
         }
         setActive(best);
       },
-      // A band across the upper-middle of the viewport, below the pinned nav.
+      // A band across the upper-middle of the viewport, below the header.
       { rootMargin: '-30% 0px -55% 0px', threshold: [0, 0.01, 0.25, 0.5, 1] },
     );
     for (const id of ids) {
@@ -59,23 +77,23 @@ export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const active = useActiveSection(SECTION_IDS);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Drawer: Escape closes, growing past the breakpoint closes, the page behind
-  // doesn't scroll, and focus moves in on open and back to the toggle on close.
+  // Sheet open: Escape closes, widening to desktop closes, the page behind
+  // doesn't scroll, focus moves in on open and back to the toggle on close.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    const mq = window.matchMedia?.('(min-width: 1200px)');
+    const mq = window.matchMedia?.(DESKTOP_QUERY);
     const onMq = () => {
       if (mq?.matches) setOpen(false);
     };
@@ -83,84 +101,129 @@ export default function LandingNav() {
     mq?.addEventListener?.('change', onMq);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    drawerRef.current?.querySelector<HTMLElement>('a')?.focus();
+    sheetRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     const toggle = toggleRef.current;
     return () => {
       window.removeEventListener('keydown', onKey);
       mq?.removeEventListener?.('change', onMq);
       document.body.style.overflow = prevOverflow;
-      toggle?.focus();
+      toggle?.focus({ preventScroll: true });
     };
   }, [open]);
+
+  // Keep Tab and Shift+Tab inside the sheet while it's open.
+  const trapFocus = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return;
+    const items = Array.from(sheetRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   const close = () => setOpen(false);
 
   return (
-    <header className="lp-nav" data-scrolled={scrolled || undefined}>
-      <div className="lp-nav-bar">
-        <a href="#top" className="lp-nav-brand" aria-label="CeView — back to top">
-          <BrandMark />
-        </a>
-
-        <nav className="lp-nav-links" aria-label="Page sections">
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="lp-nav-link"
-              aria-current={active === l.href.slice(1) ? 'location' : undefined}
-            >
-              {l.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="lp-nav-actions">
-          <Link to="/login" className="lp-nav-signin">
-            Sign In
-          </Link>
-          <a href={DEMO_ANCHOR} className="lp-btn lp-btn--primary lp-btn--sm lp-nav-cta">
-            <span className="lp-nav-cta-long">Request a Demo</span>
-            <span className="lp-nav-cta-short">Demo</span>
-            <ArrowRight size={16} aria-hidden="true" />
+    <>
+      <header className="cv-header" data-scrolled={scrolled || undefined}>
+        <div className="cv-container cv-header-inner">
+          <a href="#top" className="cv-header-home" aria-label={HEADER.homeLabel}>
+            <BrandMark />
           </a>
-          <button
-            ref={toggleRef}
-            type="button"
-            className="lp-nav-toggle"
-            aria-expanded={open}
-            aria-controls="lp-drawer"
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            onClick={() => setOpen((v) => !v)}
-          >
-            {open ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
 
-      {open && (
-        <>
-          <div className="lp-drawer-scrim" onClick={close} aria-hidden="true" />
-          <div className="lp-drawer" id="lp-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-label="Menu">
-            <nav aria-label="Page sections">
+          <nav className="cv-header-nav" aria-label="Page sections">
+            <ul className="cv-header-links">
               {NAV_LINKS.map((l) => (
-                <a key={l.href} href={l.href} className="lp-drawer-link" onClick={close}>
-                  {l.label}
-                  <ArrowRight size={18} aria-hidden="true" />
-                </a>
+                <li key={l.href}>
+                  <a
+                    href={l.href}
+                    className="cv-header-link"
+                    aria-current={active === l.href.slice(1) ? 'location' : undefined}
+                  >
+                    {l.label}
+                  </a>
+                </li>
               ))}
+            </ul>
+          </nav>
+
+          <div className="cv-header-actions">
+            <Link to={HEADER.signIn.to} className="cv-header-signin">
+              {HEADER.signIn.label}
+            </Link>
+            <Button href={DEMO_ANCHOR} className="cv-header-cta">
+              {HEADER.cta}
+            </Button>
+            <button
+              ref={toggleRef}
+              type="button"
+              className="cv-header-toggle"
+              aria-expanded={open}
+              aria-controls="cv-menu"
+              aria-label={HEADER.menuOpen}
+              onClick={() => setOpen(true)}
+            >
+              <Menu size={22} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Outside <header>: its backdrop-filter would otherwise trap this
+          fixed-position sheet inside the 72px bar. */}
+      {open && (
+        <div
+          className="cv-sheet"
+          id="cv-menu"
+          ref={sheetRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+          onKeyDown={trapFocus}
+        >
+          <div className="cv-container cv-sheet-top">
+            <a href="#top" className="cv-header-home" aria-label={HEADER.homeLabel} onClick={close}>
+              <BrandMark />
+            </a>
+            <button type="button" className="cv-sheet-close" aria-label={HEADER.menuClose} onClick={close}>
+              <X size={22} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="cv-container cv-sheet-body">
+            <nav aria-label="Page sections">
+              <ul className="cv-sheet-links">
+                {NAV_LINKS.map((l) => (
+                  <li key={l.href}>
+                    <a
+                      href={l.href}
+                      className="cv-sheet-link"
+                      aria-current={active === l.href.slice(1) ? 'location' : undefined}
+                      onClick={close}
+                    >
+                      {l.label}
+                      <ArrowRight size={20} strokeWidth={1.75} aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </nav>
-            <div className="lp-drawer-actions">
-              <a href={DEMO_ANCHOR} className="lp-btn lp-btn--primary" onClick={close}>
-                Request a Demo <ArrowRight size={18} aria-hidden="true" />
-              </a>
-              <Link to="/login" className="lp-btn lp-btn--ghost" onClick={close}>
-                Sign In
-              </Link>
+            <div className="cv-sheet-actions">
+              <Button href={DEMO_ANCHOR} size="lg" block onClick={close}>
+                {HEADER.cta}
+              </Button>
+              <Button to={HEADER.signIn.to} variant="link" className="cv-sheet-signin" onClick={close}>
+                {HEADER.signIn.label}
+              </Button>
             </div>
           </div>
-        </>
+        </div>
       )}
-    </header>
+    </>
   );
 }

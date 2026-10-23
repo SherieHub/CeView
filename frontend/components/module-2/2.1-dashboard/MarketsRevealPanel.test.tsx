@@ -1,11 +1,13 @@
+import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import PhilippineRegionsPanel from './PhilippineRegionsPanel';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 
-describe('MarketsRevealPanel — ranking formula', () => {
-  it('renders the documented formula in a visible footer card when rankings are shown', () => {
+describe('MarketsRevealPanel', () => {
+  it('lists the ranked markets without the ranking-formula footer', () => {
     render(
       <MarketsRevealPanel
         selectedAlert={MOCK_NOTIFICATIONS[0]}
@@ -14,10 +16,56 @@ describe('MarketsRevealPanel — ranking formula', () => {
       />,
     );
 
-    const footer = screen.getByTestId('ranking-formula');
-    expect(footer).toHaveClass('card');
-    expect(footer).toHaveTextContent(
-      'market_score = 0.40·demand₄w + 0.35·seasonality + 0.25·economic_viability',
-    );
+    for (const market of MOCK_MARKETS) {
+      expect(screen.getByRole('heading', { name: market.name })).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('ranking-formula')).not.toBeInTheDocument();
+    expect(screen.queryByText(/market_score/)).not.toBeInTheDocument();
+  });
+});
+
+describe('PhilippineRegionsPanel', () => {
+  it('shows the empty card until selection and returns to it when cleared', () => {
+    const { rerender } = render(<PhilippineRegionsPanel selectedAlert={null} />);
+    expect(screen.getByRole('heading', { name: 'Select a surge alert' })).toBeInTheDocument();
+    expect(screen.queryByText('CALABARZON')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sample data')).not.toBeInTheDocument();
+    rerender(<PhilippineRegionsPanel selectedAlert={MOCK_NOTIFICATIONS[0]} />);
+    expect(screen.queryByText('Select a surge alert')).not.toBeInTheDocument();
+    expect(screen.getByText('CALABARZON')).toBeInTheDocument();
+    rerender(<PhilippineRegionsPanel selectedAlert={null} />);
+    expect(screen.getByText('Select a surge alert')).toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
+  it('labels the regional preview as sample data and shows all 17 regions', () => {
+    render(<PhilippineRegionsPanel selectedAlert={MOCK_NOTIFICATIONS[0]} />);
+    expect(screen.queryByText('Sample data')).not.toBeInTheDocument();
+    expect(screen.getByText(MOCK_NOTIFICATIONS[0].category!)).toBeInTheDocument();
+    expect(screen.getByText(/live regional forecasts are not available/)).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(17);
+    expect(screen.getByText('CALABARZON')).toBeInTheDocument();
+  });
+});
+
+it('opens region details from a row and closes them', () => {
+  render(<OverlayStackProvider><PhilippineRegionsPanel selectedAlert={MOCK_NOTIFICATIONS[0]} /></OverlayStackProvider>);
+  fireEvent.click(screen.getByRole('button', { name: 'View CALABARZON region details' }));
+  expect(screen.getByRole('dialog', { name: 'CALABARZON region details' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+describe('Region preview data', () => {
+  it('has full drawer details and a map shape for every listed region', async () => {
+    const { SAMPLE_REGIONS } = await import('./regionSamples');
+    const { REGION_MARKETS } = await import('./regionPreview');
+    const { REGION_SHAPES } = await import('./regionShapes');
+    expect(SAMPLE_REGIONS).toHaveLength(17);
+    expect(REGION_MARKETS).toHaveLength(17);
+    for (const m of REGION_MARKETS) {
+      expect(m.directive, m.name).toBeTruthy();
+      expect(m.airlines.length, m.name).toBeGreaterThan(0);
+      expect(REGION_SHAPES[m.name], m.name).toBeTruthy();
+    }
   });
 });

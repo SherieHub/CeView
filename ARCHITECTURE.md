@@ -5,6 +5,16 @@ names the real source file, so you can jump straight to it. Paths are relative t
 `backend/spring-boot/src/main/java/com/ceview/`, `backend/fastapi-sbert/` or
 `backend/fastapi-transformer/`.
 
+## Social publishing
+
+The October 2026 implementation connects Settings to `module3.social` and persists encrypted publishing grants in `tbl_publishing_account`. Meta shares the Module 4 login; TikTok creator login is separate from TikTok Ads. Public OAuth callbacks only redirect to the SPA. Authenticated completion burns state and binds the exchange to the calling profile.
+
+Content Studio uploads through `module3.media`, then calls `PublishingController` with approved per-platform captions and a tenant-owned ready media ID. `PublishingService` validates the request and writes one durable row per destination. A tenant/request/platform key deduplicates submissions. It claims work in a short transaction and calls the platform outside it; remote identifiers are checkpointed before advancing. The dispatcher uses Postgres `FOR UPDATE SKIP LOCKED` and claims one due row at a time.
+
+Facebook schedules natively. Instagram containers and videos are polled asynchronously; TikTok inbox uploads are confirmed before showing a draft handoff. Meta ads create PAUSED campaign, ad set, media, creative and ad, with a tenant-owned attribution URL from `AdUrlBuilder`. Changing the Page or ad account prevents a partial chain from resuming against a different account. Definite rate limits retry; ambiguous remote writes require operator inspection. Rotating TikTok refresh tokens use a short distributed lease without retaining a database transaction during HTTP.
+
+`module4.postmetrics` reads available post insights daily into `tbl_post_metric`. The shared post view serves Content Studio, Calendar and Performance. Null metrics and daily history gaps remain unavailable. The complete contracts supersede the earlier prototype surfaces below: [backend/CONTRACT.md](backend/CONTRACT.md#social-publishing-endpoints).
+
 Scoring formulas live in [`ARCHITECTURE_SPEC.md`](ARCHITECTURE_SPEC.md); the REST contract in
 [`backend/CONTRACT.md`](backend/CONTRACT.md).
 

@@ -3,12 +3,14 @@ package com.ceview.module4.report;
 import com.ceview.ai.AIInferenceGatewayService;
 import com.ceview.ai.AiDependencyException;
 import com.ceview.auth.CurrentBusinessProfile;
+import com.ceview.module4.attribution.AttributionRedemptionService;
 import com.ceview.module4.dto.AnalyticsDtos.*;
 import com.ceview.module4.engagement.MetricsCalculationService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 /**
@@ -31,14 +33,17 @@ public class PrescriptiveReportController {
     private final MetricsCalculationService metricsSvc;
     private final AIInferenceGatewayService ai;
     private final CurrentBusinessProfile    currentBusinessProfile;
+    private final AttributionRedemptionService redemptionService;
 
     public PrescriptiveReportController(
             MetricsCalculationService metricsSvc,
             AIInferenceGatewayService ai,
-            CurrentBusinessProfile currentBusinessProfile) {
+            CurrentBusinessProfile currentBusinessProfile,
+            AttributionRedemptionService redemptionService) {
         this.metricsSvc = metricsSvc;
         this.ai         = ai;
         this.currentBusinessProfile = currentBusinessProfile;
+        this.redemptionService = redemptionService;
     }
 
     // ─── POST /report ─────────────────────────────────────────────────────────
@@ -74,6 +79,12 @@ public class PrescriptiveReportController {
         payload.putIfAbsent("metrics", mr);
         payload.put("funnelTransitions", metricsSvc.computeFunnelTransitions(mr.funnel()));
         payload.put("weeks", weeks);
+        // CVW-42 — tell the model how much of the booking total was captured
+        // automatically vs. recalled, so it can qualify its confidence rather
+        // than treating an operator's memory as a measurement.
+        OffsetDateTime now = OffsetDateTime.now();
+        payload.put("bookingProvenance", redemptionService.provenance(
+                profileId, now.minusWeeks(weeks), now, reportedBookings(mr)));
 
         return ai.generateReport(payload);
     }
@@ -125,5 +136,15 @@ public class PrescriptiveReportController {
     /** Extract the {@code weeks} hint from a generic request body, defaulting to 4. */
     private static int extractWeeks(Map<String, Object> payload) {
         return (payload.get("weeks") instanceof Number n) ? n.intValue() : 4;
+    }
+
+    /** The operator-reported booking total, read off the funnel's last stage. */
+    private static long reportedBookings(MetricsResponse mr) {
+        if (mr == null || mr.funnel() == null) return 0;
+        return mr.funnel().stream()
+                .filter(stage -> "Bookings".equals(stage.stage()))
+                .mapToLong(FunnelStage::value)
+                .findFirst()
+                .orElse(0);
     }
 }

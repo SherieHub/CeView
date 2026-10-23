@@ -1,0 +1,584 @@
+/* ============================================================
+   LANDING — HERO + MARKET STRIP (components/landing/LandingHero.tsx,
+   HeroDashboard.tsx). Built on landing-foundation.css.
+
+   Composition (≥ 1024px): full-bleed Cebu coast photo under a white wash;
+   copy on the left; an illustrative dashboard card on the right, centred
+   on the copy. White background throughout.
+
+   Contrast: copy sits on the wash and was measured against the actual
+   pixels behind it. Keep the wash stops in sync with the copy width.
+   ============================================================ */
+
+@layer components {
+  .cv-hero {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    min-height: min(88vh, 820px);
+    background: var(--white);
+  }
+
+  /* ---------- photo + wash ---------- */
+  .cv-hero-media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+  /* The panorama is wider than any hero box, so it would show mostly sky.
+     Zooming from the bottom brings the turquoise shallows and the bangka up. */
+  .cv-hero-photo {
+    object-position: 62% 100%;
+    transform: scale(1.32);
+    transform-origin: 62% 100%;
+  }
+  .cv-hero-wash {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0) calc(100% - 120px), var(--white) 100%),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.97) 0%,
+        rgba(255, 255, 255, 0.92) 36%,
+        rgba(255, 255, 255, 0.7) 46%,
+        rgba(255, 255, 255, 0) 60%
+      );
+  }
+
+  /* ---------- grid ---------- */
+  .cv-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    column-gap: clamp(32px, 4vw, 72px);
+    align-items: center;
+    padding-block: 56px 72px;
+  }
+
+  /* ---------- copy ---------- */
+  .cv-hero-title {
+    margin-top: 16px;
+    font-family: var(--ff-display);
+    font-size: clamp(2.25rem, 3.5vw, 3.75rem);
+    font-weight: 560;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--ink-900);
+  }
+  /* One span per line: the line count, and so the hero's height, stays the
+     same whichever font is showing. */
+  .cv-hero-title-line {
+    display: block;
+    white-space: nowrap;
+  }
+  .cv-hero-lede {
+    max-width: 34rem;
+    margin-top: 20px;
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-700);
+  }
+  .cv-hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .cv-hero-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    max-width: 36rem;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-hero-trust li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: var(--ink-700);
+  }
+  .cv-hero-trust svg {
+    flex: none;
+    color: var(--teal-700);
+  }
+
+  /* ---------- dashboard card ---------- */
+  .cv-hero-visual {
+    position: relative;
+    min-width: 0;
+  }
+  /* Desktop: the card takes 88% of its column and is drawn at 88% scale,
+     so it shrinks as a whole without its contents re-wrapping. */
+  @media (min-width: 1024px) {
+    .cv-hero-visual {
+      width: 88%;
+      justify-self: end;
+    }
+    .cv-dash {
+      zoom: 0.88;
+    }
+  }
+  /* Frosted-glass frame: a translucent white border the photo shows through. */
+  .cv-hero-visual .cv-dash {
+    border: 12px solid rgba(255, 255, 255, 0.55);
+    border-radius: calc(var(--r-card) + 12px);
+    background-clip: padding-box;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+      0 30px 60px -18px rgba(11, 63, 60, 0.35);
+  }
+  /* Desktop: the card turns slightly away on its left side, as if standing in the scene. */
+  @media (min-width: 1024px) {
+    .cv-hero-visual {
+      transform: perspective(1600px) rotateY(-12deg) rotateX(4deg) rotateZ(2deg);
+      transform-origin: 60% 50%;
+    }
+  }
+  .cv-dash {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    overflow: hidden;
+    border-radius: var(--r-card);
+    background: var(--white);
+    box-shadow: var(--shadow-float);
+    font-family: var(--ff-ui);
+  }
+  .cv-dash-side {
+    padding: 18px 10px;
+    background: linear-gradient(170deg, var(--teal-900) 0%, #0d5a54 100%);
+  }
+  .cv-dash-mark {
+    display: block;
+    width: 44px;
+    height: auto;
+    margin: 4px auto 20px;
+  }
+  .cv-dash-nav {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-dash-nav li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px;
+    border-radius: 9px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.86);
+    white-space: nowrap;
+  }
+  .cv-dash-nav li[data-active] {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--white);
+    font-weight: 600;
+  }
+  .cv-dash-main {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    padding: 18px 20px 16px;
+    background: #fbfdfc;
+  }
+  .cv-dash-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cv-dash-greeting {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink-900);
+  }
+  .cv-dash-sub {
+    margin-top: 3px;
+    font-size: 0.75rem;
+    color: var(--ink-500);
+  }
+  .cv-dash-filters {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    flex: none;
+  }
+  .cv-dash-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    font-size: 0.6875rem;
+    color: var(--ink-700);
+    white-space: nowrap;
+  }
+
+  .cv-dash-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Icon above the figures, so labels get the tile's full width. */
+  .cv-dash-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+  }
+  .cv-dash-stat-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-dash-stat-icon[data-tone='coral'] {
+    background: var(--coral-100);
+    color: var(--coral-800);
+  }
+  .cv-dash-stat-text {
+    display: grid;
+    min-width: 0;
+    line-height: 1.25;
+  }
+  .cv-dash-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .cv-dash-stat-label {
+    margin-top: 2px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--teal-700);
+  }
+  .cv-dash-stat-note {
+    margin-top: 2px;
+    font-size: 0.625rem;
+    color: var(--ink-500);
+  }
+
+  .cv-dash-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .cv-dash-panel {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--white);
+  }
+  .cv-dash-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 10px;
+  }
+  .cv-dash-panel-title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-900);
+  }
+  .cv-dash-panel-sub {
+    margin-top: 2px;
+    font-size: 0.625rem;
+    color: var(--ink-500);
+  }
+  .cv-dash-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.625rem;
+    color: var(--ink-500);
+  }
+  .cv-dash-legend i {
+    width: 8px;
+    height: 8px;
+    margin-left: 4px;
+    border-radius: 999px;
+    background: var(--teal-500);
+  }
+  .cv-dash-legend i[data-series='baseline'] {
+    background: var(--ink-300);
+  }
+  .cv-dash-plot {
+    position: relative;
+    margin-top: 8px;
+  }
+  .cv-dash-plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .cv-dash-grid {
+    stroke: #e9efed;
+    stroke-width: 1;
+  }
+  .cv-dash-axis {
+    font-family: var(--ff-ui);
+    font-size: 9px;
+    fill: var(--ink-500);
+  }
+  .cv-dash-line {
+    fill: none;
+    stroke: var(--teal-500);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .cv-dash-baseline {
+    fill: none;
+    stroke: var(--ink-300);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 4;
+  }
+  .cv-dash-peak {
+    fill: var(--white);
+    stroke: var(--teal-700);
+    stroke-width: 2.5;
+  }
+  .cv-dash-pill {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 10px));
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--teal-700);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--white);
+    white-space: nowrap;
+  }
+  .cv-dash-x {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 1% 0 5%;
+    font-size: 0.625rem;
+    color: var(--ink-500);
+  }
+  .cv-dash-markets ul {
+    display: grid;
+    gap: 2px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-dash-markets li {
+    display: grid;
+    column-gap: 6px;
+    grid-template-columns: minmax(0, 1fr) 18% 18px;
+    align-items: center;
+    padding: 5px 0;
+  }
+  .cv-dash-market {
+    gap: 7px;
+    min-width: 0;
+  }
+  .cv-dash-market .cv-market-flag {
+    width: 18px;
+    height: 13.5px;
+  }
+  .cv-dash-market .cv-market-flag[data-kind='icon'] svg {
+    width: 14px;
+    height: 14px;
+  }
+  .cv-dash-market .cv-market-name {
+    overflow: hidden;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cv-dash-bar {
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--teal-50);
+  }
+  .cv-dash-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--teal-500);
+  }
+  .cv-dash-score {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink-700);
+  }
+  .cv-dash-sample {
+    justify-self: start;
+  }
+
+  /* ---------- 1024–1439px: narrower copy column, wider wash, compact card ---------- */
+  @media (min-width: 1024px) and (max-width: 1439px) {
+    .cv-hero-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .cv-hero-wash {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0) calc(100% - 120px), var(--white) 100%),
+        linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.97) 0%,
+          rgba(255, 255, 255, 0.92) 42%,
+          rgba(255, 255, 255, 0.7) 52%,
+          rgba(255, 255, 255, 0) 64%
+        );
+    }
+    /* Narrow card: icon-only sidebar, notes hidden, panels stacked. */
+    .cv-dash {
+      grid-template-columns: 56px minmax(0, 1fr);
+    }
+    .cv-dash-side {
+      padding-inline: 8px;
+    }
+    .cv-dash-mark {
+      width: 32px;
+    }
+    .cv-dash-nav li {
+      justify-content: center;
+      padding: 9px 0;
+    }
+    .cv-dash-nav-label,
+    .cv-dash-stat-note {
+      display: none;
+    }
+    .cv-dash-stat {
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+    }
+  }
+  /* 1024–1199px: the card is too narrow for side-by-side panels. */
+  @media (min-width: 1024px) and (max-width: 1199px) {
+    .cv-dash-panels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* ---------- tablet: 768–1023px ---------- */
+  @media (max-width: 1023px) {
+    .cv-hero {
+      display: block;
+      min-height: 0;
+    }
+    .cv-hero-wash {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0) calc(100% - 120px), var(--white) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.65) 55%, rgba(255, 255, 255, 0.65) 100%);
+    }
+    .cv-hero-grid {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 48px;
+      padding-block: 48px 0;
+    }
+    .cv-hero-copy {
+      max-width: 40rem;
+    }
+    .cv-hero-visual {
+      width: 100%;
+      max-width: 760px;
+      justify-self: center;
+    }
+    .cv-hero-grid {
+      padding-bottom: 48px;
+    }
+  }
+
+  /* ---------- phone: < 768px ---------- */
+  @media (max-width: 767px) {
+    .cv-hero-media {
+      position: relative;
+      inset: auto;
+      z-index: 0;
+      aspect-ratio: 4 / 3;
+    }
+    .cv-hero-photo {
+      object-position: 22% 58%;
+      transform: none;
+    }
+    .cv-hero-wash {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0) 62%, var(--white) 100%);
+    }
+    .cv-hero-grid {
+      row-gap: 40px;
+      padding-top: 8px;
+    }
+    .cv-hero-title {
+      font-size: 2rem;
+    }
+    /* Lines are too long for a phone: let them wrap naturally. */
+    .cv-hero-title-line {
+      display: inline;
+      white-space: normal;
+    }
+    .cv-hero-lede {
+      font-size: 0.9375rem;
+    }
+    .cv-hero-ctas {
+      flex-direction: column;
+    }
+    .cv-hero-ctas .cv-btn {
+      width: 100%;
+    }
+    .cv-hero-trust {
+      flex-direction: column;
+    }
+    .cv-dash {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cv-dash-side,
+    .cv-dash-filters,
+    .cv-dash-stat-note {
+      display: none;
+    }
+    .cv-dash-main {
+      padding: 14px;
+    }
+    .cv-dash-stats {
+      gap: 6px;
+    }
+    .cv-dash-stat {
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px;
+    }
+    .cv-dash-panels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

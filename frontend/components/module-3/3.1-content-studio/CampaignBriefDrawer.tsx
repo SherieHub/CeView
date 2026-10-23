@@ -1,198 +1,111 @@
 /**
- * Slide-out visual guide — the shooting reference for this campaign: the
- * direction principles, and the shot list with its lighting notes.
+ * Slide-out visual guide — the full shooting reference for the chosen
+ * caption: tips for the target market, the caption's four shots laid out at
+ * once (captionShots.ts — each with its inspiration photo, the caption line it
+ * illustrates and how to take it), and the platform's AI guide lines.
  *
- * Scoped deliberately to MEDIA guidance. It briefly also carried the moodboard
- * and the per-option copywriting rationale, which made it a catch-all "campaign
- * brief" — but the button that opens it sits beside the media step, so that is
- * what an operator expects to find, and mixing copy analysis in meant scrolling
- * past it to reach the shot list.
+ * The four shots are where generated AI inspiration shots will appear; until
+ * that service exists they, and the market tips, are MOCK. The platform guide
+ * lines are real (from caption generation).
  *
- * This is the ONLY copy of the shot list. An inline collapsed accordion above
- * the upload used to render it as well; the composer now offers a
- * "Review Visual Guide" link beside the upload control instead.
+ * Scoped deliberately to MEDIA guidance — the button that opens it sits beside
+ * the media step, so that is what an operator expects to find.
  *
  * Built on the shared Drawer so it joins the same overlay stack as the Market
  * Radar drawer: Escape and the scrim close it, and a modal opened above it
- * (the publish modal) closes first.
- *
- * The guide is generated ON REQUEST, not on mount: the backend only produces a
- * direction once the operator has approved captions for the market (400
- * missing_dependency otherwise). The drawer therefore owns the explicit
- * "Approve & get visual guide" action and a visible state for every step of
- * it — it used to render nothing at all when the request had failed.
+ * closes first.
  */
-import { CheckCircle2, Camera, Lightbulb, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { CheckCircle2, ImageIcon, Lightbulb, Sparkles } from 'lucide-react';
 import Drawer from '../../shared/Drawer';
-import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
-import type { CreativeDirection } from '../../../types';
-
-export type VisualGuideStatus = 'idle' | 'loading' | 'ready' | 'error';
+import { ShotList } from './ShotSlides';
+import { tipsFor } from './captionShots';
+import type { ShotSlide } from './captionShots';
 
 export interface CampaignBriefDrawerProps {
   open: boolean;
   onClose: () => void;
   /** FTUE only — the one-time explanation of what this panel is for. */
   showWelcome: boolean;
-  direction: CreativeDirection | null;
-  /** Defaults to 'ready' when a direction is passed, 'idle' otherwise. */
-  status?: VisualGuideStatus;
-  error?: unknown;
-  /** The market the guide is (or will be) generated for, as the operator knows it. */
+  /** The target market, as the operator knows it. */
   marketName?: string;
-  /** Approval covers the market's generated captions — gated on one being picked. */
-  captionChosen?: boolean;
-  /** Approves the market's captions, then generates the guide. Also the retry. */
-  onApprove?: () => void;
+  /** The chosen caption's shots (captionShots.ts). Empty until they're generated. */
+  slides?: ShotSlide[];
+  /** A caption is chosen but its shots haven't been generated yet. */
+  shotsPending?: boolean;
+  /** The platform's AI visual-guide lines, from caption generation. */
+  platformGuide?: string[];
 }
 
 export default function CampaignBriefDrawer({
   open,
   onClose,
   showWelcome,
-  direction,
-  status = direction ? 'ready' : 'idle',
-  error,
   marketName,
-  captionChosen = false,
-  onApprove,
+  slides = [],
+  shotsPending = false,
+  platformGuide = [],
 }: CampaignBriefDrawerProps) {
-  const forMarket = marketName ? ` for ${marketName}` : '';
-  const empty = status === 'ready' && direction != null
-    && direction.visualGuide.length === 0 && direction.shots.length === 0;
+  const tips = tipsFor(marketName);
 
   return (
     <Drawer open={open} onClose={onClose} label="Visual Guide">
-      <div className="brief-head">
-        <span className="conn-ico" aria-hidden="true"><Camera /></span>
-        <div className="studio-head-text">
-          <h2 className="heading-md">Visual Guide</h2>
-          <p className="body-sm">Shooting reference for this market and platform.</p>
+      <div className="vg-drawer">
+        <div className="vg-drawer-head">
+          <span className="vg-panel-icon" aria-hidden="true"><ImageIcon size={22} /></span>
+          <div>
+            <h2 className="vg-drawer-title">Visual Guide{marketName ? ` for ${marketName}` : ''}</h2>
+            <p className="vg-panel-sub">
+              Shots for your caption, and how to take them{marketName ? ` for travelers from ${marketName}` : ''}.
+            </p>
+          </div>
         </div>
+
+        <section className="vg-tips" aria-labelledby="vg-tips-title">
+          <div className="vg-tips-intro">
+            <span className="vg-tips-icon" aria-hidden="true"><Lightbulb size={18} /></span>
+            <div>
+              <h3 id="vg-tips-title" className="vg-tips-title">Key tips{marketName ? ` for the ${marketName} market` : ''}</h3>
+              <p className="vg-panel-sub">Visual styles that tend to work well{marketName ? ` with travelers from ${marketName}` : ''}.</p>
+            </div>
+          </div>
+          <ul className="vg-tips-list">
+            {tips.map((t) => (
+              <li key={t}><CheckCircle2 size={15} aria-hidden="true" /> {t}</li>
+            ))}
+          </ul>
+        </section>
+
+        {showWelcome && (
+          <p className="studio-note" data-testid="brief-welcome">
+            <Sparkles size={16} aria-hidden="true" />
+            This panel holds the shots for your caption and how to take them. It stays out of your way — reopen it
+            any time with "Review Visual Guide".
+          </p>
+        )}
+
+        <h3 className="vg-section-title">Shots for your caption</h3>
+        {slides.length > 0 ? (
+          <>
+            <ShotList slides={slides} />
+            <p className="vg-mock-note">Photos are examples for inspiration, not your business — shoot your own.</p>
+          </>
+        ) : shotsPending ? (
+          <p className="vg-panel-sub">Generate the AI shots from the Visual guide beside the upload, and they&rsquo;ll appear here.</p>
+        ) : (
+          <p className="vg-panel-sub">Choose a caption in Draft — the guide suggests shots for it.</p>
+        )}
+
+        {platformGuide.length > 0 && (
+          <>
+            <h3 className="vg-section-title">Platform direction</h3>
+            <ul className="vg-platform">
+              {platformGuide.map((line) => (
+                <li key={line}><CheckCircle2 size={15} aria-hidden="true" /> {line}</li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
-
-      {showWelcome && (
-        <p className="studio-note" data-testid="brief-welcome">
-          <Sparkles size={16} aria-hidden="true" />
-          This panel holds the visual direction and shot list for your media. It stays out of your
-          way — reopen it any time with "Visual Guide".
-        </p>
-      )}
-
-      {status === 'idle' && onApprove && (
-        <div className="brief-state">
-          <h3 className="heading-sm">Get a shot list{forMarket}</h3>
-          <p className="body-sm">
-            {captionChosen
-              ? 'Approving marks this market\'s captions as final, then generates the visual direction and shot list to match them.'
-              : 'Select a caption option first. Approving it marks this market\'s captions as final and generates a visual direction and shot list to match.'}
-          </p>
-          <button
-            type="button"
-            className="btn-primary brief-state-action"
-            onClick={onApprove}
-            disabled={!captionChosen}
-          >
-            <CheckCircle2 size={16} aria-hidden="true" />
-            Approve &amp; get visual guide
-          </button>
-        </div>
-      )}
-
-      {status === 'loading' && (
-        <div className="brief-state" role="status">
-          <p className="body-sm brief-state-row">
-            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-            Generating your visual guide{forMarket}…
-          </p>
-          <p className="body-xs">This usually takes a few seconds.</p>
-        </div>
-      )}
-
-      {status === 'error' && (
-        <div className="brief-state">
-          <ApiErrorPanel error={error} label="Visual Guide" />
-          {onApprove && (
-            <button type="button" className="btn-outline brief-state-action" onClick={onApprove}>
-              <RefreshCw size={14} aria-hidden="true" />
-              Try again
-            </button>
-          )}
-        </div>
-      )}
-
-      {empty && (
-        <div className="brief-state">
-          <p className="body-sm">
-            The visual guide{forMarket} came back empty — the AI service returned no direction or shots.
-          </p>
-          {onApprove && (
-            <button type="button" className="btn-outline brief-state-action" onClick={onApprove}>
-              <RefreshCw size={14} aria-hidden="true" />
-              Try again
-            </button>
-          )}
-        </div>
-      )}
-
-      {status === 'ready' && marketName && !empty && (
-        <p className="body-xs brief-for">Generated for {marketName} from your approved captions.</p>
-      )}
-
-      {status === 'ready' && direction && direction.visualGuide.length > 0 && (
-        <div className="studio-block">
-          <h3>Visual direction</h3>
-          <ol className="studio-list">
-            {direction.visualGuide.map((item, index) => (
-              <li key={item}>
-                <span className="badge badge--teal">{index + 1}</span>
-                <span className="body-sm">{item}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {status === 'ready' && direction && direction.shots.length > 0 && (
-        <div className="studio-block">
-          <h3>Shot list</h3>
-          <ol className="shot-list">
-            {direction.shots.map((shot) => (
-              <li key={shot.label} className="shot">
-                <p className="shot-title">
-                  {shot.shotType && <span className="shot-type">{shot.shotType}</span>}
-                  <span className="shot-subject">{shot.subject ?? shot.label}</span>
-                </p>
-
-                {/* Structured directives when the service supplies them; the
-                    narrative otherwise. A photographer on set scans for the one
-                    line they need, which a paragraph does not allow. */}
-                {shot.placement || shot.action || shot.context ? (
-                  <dl className="shot-specs">
-                    {shot.placement && (
-                      <div><dt>Placement</dt><dd>{shot.placement}</dd></div>
-                    )}
-                    {shot.action && (
-                      <div><dt>Action</dt><dd>{shot.action}</dd></div>
-                    )}
-                    {shot.context && (
-                      <div><dt>Context</dt><dd>{shot.context}</dd></div>
-                    )}
-                  </dl>
-                ) : (
-                  <p className="shot-narrative">{shot.description}</p>
-                )}
-
-                <p className="shot-lighting">
-                  <Lightbulb size={15} aria-hidden="true" />
-                  <span><b>Lighting constraint:</b> {shot.lighting}</span>
-                </p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
     </Drawer>
   );
 }

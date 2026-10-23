@@ -22,6 +22,15 @@ public class MsmeOperator {
     @Column(name = "contact_number") private String contactNumber;
     @Column(name = "created_at")  private OffsetDateTime createdAt;
     @Column(name = "google_uid", unique = true) private String googleUid;
+    @Column(name = "email_verified_at") private OffsetDateTime emailVerifiedAt;
+    /**
+     * True for every account that existed when email verification shipped (set by the
+     * migration's backfill). Such accounts may hold real data, so registering over them is
+     * never allowed even while unverified — see AuthController#register.
+     */
+    @Column(name = "created_before_verification", nullable = false)
+    private boolean createdBeforeVerification;
+    @Column(name = "phone_verified_at") private OffsetDateTime phoneVerifiedAt;
 
     @PrePersist
     void onCreate() {
@@ -38,5 +47,10 @@ public class MsmeOperator {
      */
     public boolean isProfileCompleted() {
         return contactNumber != null && !contactNumber.isBlank();
+    }
+
+    /** Whether the operator has proven ownership of {@code email}; gates the whole app. */
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
     }
 }

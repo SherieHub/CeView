@@ -272,6 +272,50 @@ public class ForecastingService {
      *         controller as a non-server 409 so the Home view degrades quietly.
      */
     public MarketsResponse ensureFreshForecast(UUID profileId, long maxAgeHours) {
+        OffsetDateTime newest = newestForecastAt(profileId);
+
+        if (isStale(newest, maxAgeHours)) {
+            log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
+                    profileId, newest, maxAgeHours);
+            return forecastForProfile(profileId, true, true);
+        }
+
+        log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={}) — serving cached DB rows",
+                profileId, newest, maxAgeHours);
+        return loadMarketsFromDb(profileId);
+    }
+
+    /**
+     * What the dashboard's {@code POST /ensure} reports: whether the live pipeline just ran, and
+     * when the profile's forecast was generated. The dashboard already holds the markets (it reads
+     * them with GET /markets), so unlike {@link #ensureFreshForecast} the fresh path does no market
+     * build at all — it is one cheap lookup of the newest forecast timestamp.
+     *
+     * @throws IllegalArgumentException as {@link #ensureFreshForecast} does.
+     */
+    public EnsureResult ensureFresh(UUID profileId, long maxAgeHours) {
+        OffsetDateTime newest = newestForecastAt(profileId);
+
+        if (isStale(newest, maxAgeHours)) {
+            log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
+                    profileId, newest, maxAgeHours);
+            forecastForProfile(profileId, true, true);
+            return new EnsureResult(true, OffsetDateTime.now());
+        }
+
+        log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={})", profileId, newest, maxAgeHours);
+        return new EnsureResult(false, newest);
+    }
+
+    /** Outcome of {@link #ensureFresh}: {@code refreshed} is true when the pipeline ran. */
+    public record EnsureResult(boolean refreshed, OffsetDateTime generatedAt) {}
+
+    private static boolean isStale(OffsetDateTime newest, long maxAgeHours) {
+        return newest == null || newest.isBefore(OffsetDateTime.now().minusHours(maxAgeHours));
+    }
+
+    /** The newest 4-week forecast's {@code generatedAt} across every market, or null when none exists. */
+    private OffsetDateTime newestForecastAt(UUID profileId) {
         if (profileId == null) {
             throw new IllegalArgumentException("profileId is required");
         }
@@ -294,19 +338,7 @@ public class ForecastingService {
                 if (newest == null || g.isAfter(newest)) newest = g;
             }
         }
-
-        boolean stale = newest == null
-                || newest.isBefore(OffsetDateTime.now().minusHours(maxAgeHours));
-
-        if (stale) {
-            log.info("Forecast stale/missing for profile={} (newest={}, maxAgeHours={}) — running live pipeline",
-                    profileId, newest, maxAgeHours);
-            return forecastForProfile(profileId, true, true);
-        }
-
-        log.info("Forecast fresh for profile={} (newest={}, maxAgeHours={}) — serving cached DB rows",
-                profileId, newest, maxAgeHours);
-        return loadMarketsFromDb(profileId);
+        return newest;
     }
 
     // ─── DB-only read path (GET /markets) ────────────────────────────────────

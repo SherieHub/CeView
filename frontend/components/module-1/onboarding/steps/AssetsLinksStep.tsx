@@ -88,28 +88,30 @@ export default function AssetsLinksStep() {
 
       <div className="field">
         <span className="field-label">Social profiles</span>
-        {PLATFORM_META.map(({ platform, label, icon: Icon }) => (
-          <div key={platform} className="field-row mb-3">
-            <span className="conn-ico">
-              <Icon size={18} aria-hidden="true" />
-            </span>
-            <input
-              className="input"
-              value={draft.socials[platform]}
-              placeholder={`${label} handle or page name`}
-              aria-label={`${label} handle or page name`}
-              onChange={(e) =>
-                setDraft({
-                  ...draft,
-                  socials: { ...draft.socials, [platform]: e.target.value },
-                })
-              }
-            />
-          </div>
-        ))}
+        <div className="ob-field-grid ob-field-grid--3">
+          {PLATFORM_META.map(({ platform, label, icon: Icon }) => (
+            <div key={platform} className="field-row">
+              <span className="conn-ico">
+                <Icon size={18} aria-hidden="true" />
+              </span>
+              <input
+                className="input"
+                value={draft.socials[platform]}
+                placeholder={`${label} handle or page name`}
+                aria-label={`${label} handle or page name`}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    socials: { ...draft.socials, [platform]: e.target.value },
+                  })
+                }
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="grid gap-12 md:grid-cols-2">
+      <div className="ob-field-grid ob-field-grid--2">
         <div className="field">
           <span className="field-label">
             <span>Logo</span>

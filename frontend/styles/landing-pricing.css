@@ -1,0 +1,1014 @@
+/* ============================================================
+   LANDING — pricing (PricingSection.tsx, #pricing) and request a
+   demo (DemoSection.tsx + LeadForm.tsx, #demo).
+   Tokens and primitives: landing-foundation.css.
+   ============================================================ */
+
+@layer components {
+  /* ================= pricing ================= */
+  .cv-section.cv-price {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 64px 48px;
+    background: #fdfaf6;
+  }
+  /* Two views of the Cebu Taoist Temple fading in at the top corners:
+     the main hall (left) and the pagoda with its dragon (right). */
+  .cv-price-cliff {
+    position: absolute;
+    top: 0;
+    z-index: -1;
+    width: 24%;
+    height: 340px;
+    opacity: 0.95;
+    -webkit-mask-image: radial-gradient(ellipse 110% 105% at var(--cliff-x) 0%, #000 50%, transparent 88%);
+    mask-image: radial-gradient(ellipse 110% 105% at var(--cliff-x) 0%, #000 50%, transparent 88%);
+  }
+  .cv-price-cliff[data-side='left'] {
+    --cliff-x: 0%;
+    left: 0;
+  }
+  .cv-price-cliff[data-side='right'] {
+    --cliff-x: 100%;
+    right: 0;
+  }
+  .cv-price-cliff[data-side='left'] .cv-img {
+    object-position: 0% 35%;
+  }
+  .cv-price-cliff[data-side='right'] .cv-img {
+    object-position: 100% 25%;
+  }
+
+  .cv-price-head {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+  /* "PLANS" between two short rules. */
+  .cv-price-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .cv-price-eyebrow::before,
+  .cv-price-eyebrow::after {
+    content: '';
+    width: 48px;
+    height: 1px;
+    background: var(--hairline);
+  }
+  .cv-price-title {
+    max-width: 20ch;
+  }
+  .cv-price-intro {
+    max-width: 32rem;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--ink-500);
+  }
+
+  /* Billing toggle: native radios styled as a segmented pill. */
+  .cv-price-toggle {
+    display: flex;
+    width: fit-content;
+    margin: 20px auto 0;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+  }
+  .cv-price-toggle-option {
+    position: relative;
+  }
+  .cv-price-toggle-option input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .cv-price-toggle-option span {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 999px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ink-700);
+    transition: background-color 200ms var(--cv-ease), color 200ms var(--cv-ease);
+  }
+  .cv-price-toggle-option input:checked + span {
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-price-toggle-option input:focus-visible + span {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 2px;
+  }
+
+  /* ---------- plan cards ---------- */
+  .cv-price-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin: 28px 0 0;
+    padding: 14px 0 0;
+    list-style: none;
+  }
+  .cv-price-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 20px 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--white);
+    box-shadow: 0 18px 36px -28px rgba(14, 42, 59, 0.35);
+  }
+  .cv-price-card[data-featured] {
+    border-color: var(--teal-900);
+    background: radial-gradient(ellipse 80% 60% at 80% 0%, #0f5450 0%, var(--teal-900) 70%);
+    box-shadow: var(--shadow-float);
+    color: var(--white);
+  }
+  .cv-price-ribbon {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    padding: 4px 14px;
+    border-radius: 8px;
+    background: var(--coral-btn);
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .cv-price-name {
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--teal-700);
+  }
+  .cv-price-card[data-featured] .cv-price-name {
+    color: var(--teal-100);
+  }
+  /* Every card reserves the "From" line, so prices and "Best for" align. */
+  .cv-price-amount {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 6px;
+    margin-top: 26px;
+  }
+  .cv-price-from {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 2px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .cv-price-value {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 2.375rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-900);
+  }
+  .cv-price-period {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .cv-price-note {
+    min-height: 1.4em;
+    margin-top: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    color: var(--ink-500);
+  }
+  /* "Best for" between two rules, in the display face. */
+  .cv-price-best {
+    margin-top: 6px;
+    padding-block: 10px;
+    border-block: 1px solid var(--line);
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--ink-700);
+  }
+  .cv-price-best span {
+    font-weight: 650;
+    color: var(--ink-900);
+  }
+  .cv-price-list {
+    display: grid;
+    gap: 7px;
+    margin: 12px 0 18px;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-price-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ink-700);
+  }
+  .cv-price-check {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 0;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-price-cta {
+    margin-top: auto;
+    height: 42px;
+    font-size: 0.875rem;
+  }
+  .cv-price-card[data-featured] :is(.cv-price-from, .cv-price-period, .cv-price-note) {
+    color: rgba(255, 255, 255, 0.75);
+  }
+  .cv-price-card[data-featured] :is(.cv-price-value, .cv-price-best span) {
+    color: var(--white);
+  }
+  .cv-price-card[data-featured] :is(.cv-price-best, .cv-price-list li) {
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .cv-price-card[data-featured] .cv-price-best {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+  .cv-price-card[data-featured] .cv-price-check {
+    background: var(--white);
+    color: var(--teal-900);
+  }
+  .cv-price-dots {
+    display: none;
+  }
+
+  /* ---------- add-ons bar ---------- */
+  .cv-price-addons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px 18px;
+    margin-top: 16px;
+    padding: 10px 18px;
+    border: 1px solid #d6eeea;
+    border-radius: 16px;
+    background: #eef8f6;
+  }
+  .cv-price-addons-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 18px;
+    border-right: 1px solid #cfe5e1;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal-900);
+  }
+  .cv-price-addons-label svg {
+    color: var(--teal-900);
+  }
+  .cv-price-addons ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-price-addons li {
+    padding: 6px 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    color: var(--ink-700);
+  }
+  .cv-price-addons strong {
+    font-weight: 700;
+    color: var(--ink-900);
+  }
+
+  /* ---------- Partner Plan band ---------- */
+  .cv-price-partner {
+    display: grid;
+    margin-top: 14px;
+    overflow: hidden;
+    border-radius: 20px;
+    background: linear-gradient(110deg, #fce6dd 0%, #fbeee6 45%, #fdf6f1 100%);
+  }
+  .cv-price-partner-copy {
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    padding: 22px 28px;
+  }
+  .cv-price-partner-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--coral-800);
+  }
+  .cv-price-partner-eyebrow::after {
+    content: '';
+    width: 40px;
+    height: 1px;
+    background: var(--coral-800);
+  }
+  .cv-price-partner-title {
+    max-width: 26ch;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .cv-price-partner-body {
+    max-width: 40rem;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--ink-700);
+  }
+  /* Dark offer panel with a diagonal edge, fading into the island photo. */
+  .cv-price-partner-offer {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 8px;
+    padding: 22px 28px;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .cv-price-partner-photo {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+  }
+  .cv-price-partner-photo .cv-img {
+    object-position: 70% 50%;
+  }
+  .cv-price-partner-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--teal-900) 0%, var(--teal-900) 52%, rgba(11, 63, 60, 0.55) 72%, rgba(11, 63, 60, 0) 100%);
+  }
+  .cv-price-partner-offer .cv-price-amount {
+    margin-top: 0;
+  }
+  .cv-price-partner-offer .cv-price-value {
+    font-size: 2.5rem;
+    color: var(--white);
+  }
+  .cv-price-partner-offer .cv-price-period {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .cv-price-partner-terms {
+    margin-bottom: 4px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .cv-price-fine {
+    margin-top: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    text-align: center;
+    color: var(--ink-500);
+  }
+
+  @media (min-width: 768px) {
+    .cv-price-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-price-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+    }
+    /* Growth stands slightly taller than its neighbours. */
+    .cv-price-card[data-featured] {
+      margin-block: -10px;
+      padding-block: 30px 28px;
+      z-index: 1;
+    }
+    .cv-price-partner {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    }
+    /* Keep the copy clear of the offer panel's diagonal edge. */
+    .cv-price-partner-copy {
+      padding-right: 72px;
+    }
+    .cv-price-partner-offer {
+      clip-path: polygon(12% 0, 100% 0, 100% 100%, 0 100%);
+      margin-left: -48px;
+      padding-left: calc(28px + 9%);
+    }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .cv-price-card {
+      padding-inline: 16px;
+    }
+    .cv-price-value {
+      font-size: 2rem;
+    }
+    .cv-price-period {
+      flex-basis: 100%;
+    }
+  }
+
+  /* < 768px: swipeable carousel that opens on Growth. */
+  @media (max-width: 767px) {
+    .cv-price-cliff {
+      width: 45%;
+      height: 220px;
+    }
+    .cv-price-grid {
+      display: flex;
+      gap: 14px;
+      margin-inline: -20px;
+      padding: 18px 20px 8px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding-inline: 20px;
+      scrollbar-width: none;
+    }
+    .cv-price-grid::-webkit-scrollbar {
+      display: none;
+    }
+    .cv-price-card {
+      flex: 0 0 85%;
+      scroll-snap-align: start;
+    }
+    .cv-price-dots {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .cv-price-dots button {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+    .cv-price-dots button::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--ink-300);
+      transition: width 200ms var(--cv-ease), background-color 200ms var(--cv-ease);
+    }
+    .cv-price-dots button[aria-current='true']::before {
+      width: 20px;
+      background: var(--teal-700);
+    }
+    .cv-price-toggle-option span {
+      padding: 0 12px;
+      font-size: 0.8125rem;
+    }
+    .cv-price-addons,
+    .cv-price-addons ul {
+      justify-content: flex-start;
+    }
+    .cv-price-addons-label {
+      padding-right: 0;
+      border-right: 0;
+    }
+    .cv-price-partner-copy,
+    .cv-price-partner-offer {
+      padding: 20px;
+    }
+  }
+
+  /* ================= request a demo ================= */
+  .cv-section.cv-demo {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding-block: 72px 56px;
+    background:
+      radial-gradient(ellipse 45% 55% at 8% 18%, rgba(28, 154, 142, 0.1) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 50% at 45% 0%, rgba(28, 154, 142, 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 35% 45% at 0% 85%, rgba(28, 154, 142, 0.08) 0%, transparent 70%),
+      #f2fbf9;
+  }
+  .cv-demo-grid {
+    display: grid;
+    gap: 32px;
+  }
+  .cv-demo-copy {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+  }
+  .cv-demo-title {
+    max-width: 16ch;
+  }
+  .cv-demo-lede {
+    max-width: 36rem;
+    font-family: var(--ff-ui);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--ink-500);
+  }
+  .cv-demo-details {
+    display: grid;
+    gap: 18px;
+    align-items: start;
+    margin-top: 10px;
+  }
+  .cv-demo-see {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cv-demo-see li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    color: var(--ink-700);
+  }
+  .cv-demo-see-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: #dff2ee;
+    color: var(--teal-700);
+  }
+  .cv-demo-pilot {
+    position: relative;
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid #ddefeb;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 36px -28px rgba(14, 42, 59, 0.35);
+  }
+  .cv-demo-pilot-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .cv-demo-pilot-body {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--ink-500);
+  }
+  /* Three small strokes over the card's top-right corner. */
+  .cv-demo-spark {
+    position: absolute;
+    top: -34px;
+    right: 14px;
+    width: 44px;
+    height: 33px;
+    overflow: visible;
+    fill: none;
+    stroke: url(#cv-demo-spark-fill);
+    stroke-width: 5.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Wide beach banner closing the section. */
+  .cv-demo-banner {
+    position: relative;
+    height: clamp(180px, 22vw, 300px);
+    margin-top: 32px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--sand-100);
+    box-shadow: 0 24px 48px -32px rgba(14, 42, 59, 0.45);
+  }
+  .cv-demo-banner .cv-img {
+    object-position: 50% 42%;
+  }
+  .cv-demo-banner-word {
+    position: absolute;
+    right: 40px;
+    bottom: 26px;
+    display: grid;
+    justify-items: end;
+    font-family: var(--ff-script);
+    font-size: clamp(2.5rem, 4.5vw, 4rem);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--white);
+    text-shadow: 0 2px 12px rgba(14, 42, 59, 0.35);
+  }
+  .cv-demo-banner-word svg {
+    width: 70%;
+    height: 14px;
+    margin-top: 2px;
+    overflow: visible;
+  }
+  .cv-demo-banner-word path {
+    fill: none;
+    stroke: var(--white);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+
+  /* Form card. */
+  .cv-form {
+    padding: 26px 22px;
+    border: 1px solid #ece6dc;
+    border-radius: 24px;
+    background: #fdfaf5;
+    box-shadow: 0 30px 60px -36px rgba(14, 42, 59, 0.35);
+  }
+  .cv-form-title {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+    font-weight: 550;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--ink-900);
+  }
+  .cv-form-sub {
+    margin-top: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cv-form-plan {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--teal-50);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--teal-700);
+  }
+  .cv-sr-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .cv-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px 16px;
+    margin-top: 24px;
+  }
+  .cv-field {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+  .cv-label {
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-900);
+  }
+  .cv-optional {
+    font-weight: 400;
+    color: var(--ink-500);
+  }
+  .cv-input {
+    width: 100%;
+    height: 52px;
+    padding: 0 14px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 1rem;
+    color: var(--ink-900);
+    transition: border-color 150ms var(--cv-ease), box-shadow 150ms var(--cv-ease);
+  }
+  .cv-input:hover {
+    border-color: var(--ink-300);
+  }
+  .cv-input:focus,
+  .cv-input:focus-visible {
+    outline: none;
+    border-color: var(--teal-500);
+    box-shadow: 0 0 0 3px var(--teal-100);
+  }
+  .cv-input[aria-invalid='true'] {
+    border-color: var(--coral-700);
+  }
+  .cv-select {
+    appearance: none;
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a6e7c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  /* coral-800, not coral-600: coral-600 is ~3.7:1 on white, below AA here. */
+  .cv-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--coral-800);
+  }
+  .cv-field-error svg {
+    flex: none;
+    margin-top: 1px;
+  }
+  .cv-form-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--teal-50);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--ink-700);
+  }
+  .cv-form-notice[data-tone='error'] {
+    background: var(--coral-100);
+    color: var(--ink-900);
+  }
+  .cv-form-notice svg {
+    flex: none;
+    margin-top: 1px;
+  }
+  .cv-form-notice a {
+    color: var(--teal-700);
+    font-weight: 600;
+  }
+  .cv-dev-note {
+    color: var(--ink-500);
+  }
+  .cv-form-submit {
+    margin-top: 24px;
+  }
+  .cv-spin {
+    animation: cv-spin 900ms linear infinite;
+  }
+  @keyframes cv-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .cv-form-consent {
+    margin-top: 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--ink-500);
+  }
+  .cv-form--done {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding-block: 56px;
+    text-align: center;
+  }
+  .cv-form-done-icon {
+    display: grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+    border-radius: 999px;
+    background: var(--teal-100);
+    color: var(--teal-700);
+  }
+  .cv-form-done-link {
+    margin-top: 10px;
+    font-family: var(--ff-ui);
+    font-weight: 600;
+    color: var(--teal-700);
+  }
+
+  @media (min-width: 640px) {
+    .cv-form {
+      padding: 32px;
+    }
+    .cv-form-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cv-field--wide {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (min-width: 640px) {
+    .cv-demo-details {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .cv-demo-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+    .cv-demo-copy {
+      grid-column: 1 / span 6;
+    }
+    .cv-demo-form {
+      grid-column: 7 / -1;
+      align-self: start;
+    }
+  }
+  @media (min-width: 1280px) {
+    .cv-demo-copy {
+      grid-column: 1 / span 6;
+      padding-right: 16px;
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-demo-banner-word {
+      right: 20px;
+      bottom: 16px;
+    }
+  }
+
+  /* ---------- demo: compact sizing, columns levelled on desktop ---------- */
+  .cv-section.cv-demo {
+    padding-block: 88px;
+  }
+  @media (max-width: 639px) {
+    .cv-section.cv-demo {
+      padding-block: 56px;
+    }
+  }
+  .cv-demo-copy {
+    gap: 12px;
+  }
+  .cv-demo-lede {
+    font-size: 1rem;
+  }
+  .cv-demo-details {
+    gap: 16px;
+    margin-top: 6px;
+  }
+  .cv-demo-see {
+    gap: 10px;
+  }
+  .cv-demo-see li {
+    gap: 12px;
+    font-size: 0.8125rem;
+  }
+  .cv-demo-see-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .cv-demo-see-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .cv-demo-pilot {
+    gap: 10px;
+    padding: 16px;
+  }
+  .cv-demo-pilot-body {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+  .cv-demo-banner {
+    height: clamp(150px, 17vw, 240px);
+    margin-top: 28px;
+  }
+  .cv-demo-banner-word {
+    font-size: clamp(2.25rem, 3.6vw, 3.25rem);
+  }
+
+  .cv-demo .cv-form {
+    padding: 18px 22px;
+  }
+  .cv-demo .cv-form-title {
+    font-size: clamp(1.5rem, 2vw, 1.875rem);
+  }
+  .cv-demo .cv-form-sub {
+    margin-top: 4px;
+    font-size: 0.8125rem;
+  }
+  .cv-demo .cv-form-grid {
+    gap: 8px 12px;
+    margin-top: 12px;
+  }
+  .cv-demo .cv-field {
+    gap: 4px;
+  }
+  .cv-demo .cv-label {
+    font-size: 0.8125rem;
+  }
+  .cv-demo .cv-input {
+    height: 40px;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+  }
+  .cv-demo .cv-form-submit {
+    height: 42px;
+    margin-top: 12px;
+  }
+  .cv-demo .cv-form-consent {
+    margin-top: 8px;
+    font-size: 0.75rem;
+  }
+
+  /* Desktop: both columns share one height; the left column's details sit at
+     its foot, so the pilot card and the form end on the same line. */
+  @media (min-width: 1024px) {
+    .cv-demo-grid {
+      align-items: stretch;
+    }
+    .cv-demo-copy {
+      display: flex;
+      flex-direction: column;
+    }
+    .cv-demo-details {
+      margin-top: auto;
+      padding-top: 6px;
+    }
+    .cv-demo-form {
+      align-self: stretch;
+      display: flex;
+    }
+    .cv-demo-form > .cv-form {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .cv-demo-form .cv-form-submit {
+      margin-top: auto;
+    }
+    .cv-demo-form .cv-form-grid {
+      margin-bottom: 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-spin {
+      animation: none;
+    }
+    .cv-price-toggle-option span,
+    .cv-price-dots button::before,
+    .cv-input {
+      transition: none;
+    }
+  }
+}

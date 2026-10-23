@@ -1,0 +1,215 @@
+
+ RUN  v4.1.11 C:/Users/Sherielyn/Desktop/CeView/frontend
+
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — gating > does not call generate() and shows the picker when no target is picked 945ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — gating > shows the empty-alerts state instead of a picker when the operator has no surges 263ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > shows the Ad URL block only for the matching alert window tuple 2393ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > builds the generate request from profile + the picked target market 492ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > offers only the markets for the picked alert’s category 850ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > switches market through the shared store, keeping the same alert 773ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > renders ApiErrorPanel naming the dependency when generate() is rejected as a missing dependency 642ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > stages a selected option into the composer 1304ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > opens the visual guide from the link beside the upload control 2152ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > does not request a visual guide before anything is approved 343ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > approves the market then generates its visual guide 1823ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > surfaces a failed approval instead of an empty drawer 1600ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > shows no eyebrow above the page title 392ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > has no floating visual-guide trigger, and no guide on Draft 707ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — generate request > keeps Publish hidden before the audit has run 681ms
+ ✓ components/module-3/3.1-content-studio/ContentStudioView.test.tsx > ContentStudioView — Settings -> Platforms disconnect rule > withdraws a passed audit when a selected platform is disconnected elsewhere 8811ms
+ ✓ components/module-3/3.1-content-studio/contentStudioJourney.test.tsx > Content Studio journey > runs the audit, opens the modal, and publishes to a platform chosen there 9769ms
+ ✓ components/module-3/3.1-content-studio/AdUrlBlock.test.tsx > AdUrlBlock > copies each of the three distinct strings from its own button 1431ms
+ ✓ components/module-3/3.1-content-studio/AdUrlBlock.test.tsx > AdUrlBlock > renders nothing when no alert-derived link is available 10ms
+ ✓ components/module-3/3.1-content-studio/AdUrlBlock.test.tsx > AdUrlBlock > round-trips from the operator page to CeView hosted mode 535ms
+ ✓ components/module-3/3.1-content-studio/AdUrlBlock.test.tsx > AdUrlBlock > saves an absolute operator destination and rejects unsafe input visibly 2038ms
+stderr | components/module-3/3.1-content-studio/contentPreviewRoute.test.tsx > /preview/content provider stack > mounts every context the studio reads, without throwing
+An update to ContentStudioView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ContentStudioView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ContentStudioView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ConnectionsStoreProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to PostStoreProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | components/module-3/3.1-content-studio/contentPreviewRoute.test.tsx > /preview/content provider stack > mounts every context the studio reads, without throwing
+An update to ContentStudioView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ components/module-3/3.1-content-studio/contentPreviewRoute.test.tsx > /preview/content provider stack > mounts every context the studio reads, without throwing 879ms
+ ✓ components/module-3/3.1-content-studio/contentPreviewRoute.test.tsx > /preview/content provider stack > lands on the studio itself rather than the target picker 1864ms
+ ✓ components/module-3/3.1-content-studio/contentPreviewRoute.test.tsx > /preview/content provider stack > seeds the market the rest of the preview fixtures are written for 968ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > opens on the generation entry, using the profile instead of asking for it 1587ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > asks only for what is missing, and links to the profile 506ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > recommends a strategy with reasons, then plans, prepares and finalizes it 4321ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > lets the owner override a recommendation and restore it 1932ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > keeps the strategy and offers a way forward when captions fail to generate 2180ms
+ ✓ components/module-3/3.1-content-studio/campaigns/CampaignsView.test.tsx > CampaignsView — recommended campaign > offers the manual flow as a fallback 469ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > splits decisions from their consequence 1106ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > disables a platform not yet connected, and leaves a connected one selectable 308ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > does not toggle a disabled platform on click 330ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > previews the selected destination rather than carrying its own tabs 139ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > falls back to Instagram before a destination is chosen 142ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > swaps the device frame from the size toggle 511ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > carries the distribution controls that the composer gave up 596ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > blocks confirm until the agreement is ticked 261ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > blocks confirm when no platform is selected 88ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > confirms once authorised 157ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > scales the frame down to fit the canvas 209ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > never scales UP a frame that already fits 289ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > leaves the scale at 1:1 when nothing has been measured 138ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > settles on the same scale each time a device is re-selected 916ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > still fits on width when the canvas has no measurable height 124ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > keeps the scaled frame inside the canvas — tall frame, short canvas 282ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > keeps the scaled frame inside the canvas — wide frame, narrow canvas 135ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > keeps the scaled frame inside the canvas — frame already fits 200ms
+ ✓ components/module-3/3.1-content-studio/PublishModal.test.tsx > PublishModal > keeps the scaled frame inside the canvas — square-ish canvas 296ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > renders one card per option with its name 298ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > renders a two-option set without a placeholder card 29ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > sends the option text up on Select and marks the card selected 161ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > expands one option in place over the cards, without a modal 111ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > puts the cards back on a click anywhere, or on Escape 288ms
+ ✓ components/module-3/3.1-content-studio/CaptionOptionGrid.test.tsx > CaptionOptionGrid > stages the option from the expanded view and puts the cards back 111ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > carries the visual direction and the shot list 249ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > falls back to the narrative when the service sends no directives 27ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > carries no moodboard and no copywriting rationale 85ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > shows the welcome note only when asked 45ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > before a guide exists > asks for a caption first and keeps the approve button disabled 196ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > before a guide exists > approves once a caption is chosen 93ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > before a guide exists > shows progress while generating 13ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > before a guide exists > reports a failure and offers a retry 80ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > before a guide exists > says so when the service returns an empty guide 17ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > names the market the ready guide was generated for 21ms
+ ✓ components/module-3/3.1-content-studio/CampaignBriefDrawer.test.tsx > CampaignBriefDrawer > closes on the drawer control 70ms
+ ✓ components/module-3/3.1-content-studio/ContentTargetPicker.test.tsx > ContentTargetPicker > lists only surge alerts matching the operator's own categories 234ms
+ ✓ components/module-3/3.1-content-studio/ContentTargetPicker.test.tsx > ContentTargetPicker > shows the "no surge alerts" empty state, naming the profile's categories, when none match 26ms
+ ✓ components/module-3/3.1-content-studio/ContentTargetPicker.test.tsx > ContentTargetPicker > picking an alert advances to the market step, scoped to that alert's category 111ms
+ ✓ components/module-3/3.1-content-studio/ContentTargetPicker.test.tsx > ContentTargetPicker > "Back to alerts" returns to step 1 without calling onPicked 133ms
+ ✓ components/module-3/3.1-content-studio/ContentTargetPicker.test.tsx > ContentTargetPicker > picking a market calls onPicked with both the alert and the market 68ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > does not leave the caption field scrollable 107ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > re-measures when the caption changes without a keystroke 24ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > resets the height before measuring, so the field can shrink 30ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > opens the staged media full size in a modal 253ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > offers no maximize control when nothing is staged 63ms
+ ✓ components/module-3/3.1-content-studio/PublishComposer.test.tsx > PublishComposer — caption sizing > removes the media without opening the modal 108ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > ignores an in-flight audit after the owner edits the content 352ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > does NOT start the audit on its own when the draft becomes ready 11ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > starts the audit only when the button is pressed 92ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > styles the audit trigger like the caption grid Select 20ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > disables the button until the draft is complete 18ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > disables the button and says why when no captions have been generated 25ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > sends the recommendations with the caption and image 12ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > splits the result into a score column and a metrics column 37ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > shows no insight callout 25ms
+ ✓ components/module-3/3.1-content-studio/CompliancePanel.test.tsx > CompliancePanel > lists every rubric metric with a bar in the grid 17ms
+ ✓ components/module-3/3.1-content-studio/StudioNavigation.test.tsx > StudioNavigation > switches views by click and by arrow keys, keeping one tab in the tab order 302ms
+ ✓ components/module-3/3.1-content-studio/ContentBoard.test.tsx > ContentBoard publish disclosure > hides the Publish button entirely before a passing audit 65ms
+ ✓ components/module-3/3.1-content-studio/ContentBoard.test.tsx > ContentBoard publish disclosure > reveals it once the audit passes 117ms
+ ✓ components/module-3/3.1-content-studio/StudioStepRail.test.tsx > StudioStepRail > renders one anchor per step and marks the active one 52ms
+ ✓ components/module-3/3.1-content-studio/StudioStepRail.test.tsx > StudioStepRail > is labelled as navigation for assistive tech 93ms
+ ✓ components/module-3/3.1-content-studio/StudioStepRail.test.tsx > StudioStepRail > marks no steps as done when first step is active 4ms
+ ✓ components/module-3/3.1-content-studio/StudioStepRail.test.tsx > StudioStepRail > marks steps done when last step is active 3ms
+ ✓ components/module-3/3.1-content-studio/DevicePreview.test.tsx > DevicePreview > applies the platform aspect ratio to the media 52ms
+ ✓ components/module-3/3.1-content-studio/DevicePreview.test.tsx > DevicePreview > reformats when the platform changes 10ms
+ ✓ components/module-3/3.1-content-studio/DevicePreview.test.tsx > DevicePreview > cuts the caption at the fold and offers more 12ms
+ ✓ components/module-3/3.1-content-studio/DevicePreview.test.tsx > DevicePreview > shows a placeholder when no media is staged 5ms
+ ✓ components/module-3/3.1-content-studio/useFirstRunDrawer.test.tsx > useFirstRunDrawer > auto-opens with a welcome on the first visit 28ms
+ ✓ components/module-3/3.1-content-studio/useFirstRunDrawer.test.tsx > useFirstRunDrawer > records the dismissal and stays closed afterwards 16ms
+ ✓ components/module-3/3.1-content-studio/useFirstRunDrawer.test.tsx > useFirstRunDrawer > falls back to the tooltip when storage is blocked and auto-open is skipped 5ms
+ ✓ components/module-3/3.1-content-studio/useFirstRunDrawer.test.tsx > useFirstRunDrawer > drops the tooltip once the drawer has been opened and dismissed 4ms
+ ✓ components/module-3/3.1-content-studio/useStepProgress.test.tsx > useStepProgress > starts on the first step and follows the most-visible section 31ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > invalidates approval when caption changes 2ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > invalidates approval when mediaDataUrl changes 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > invalidates approval when platform changes 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > invalidates approval when visual changes 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > keeps the audit when only a planned date changes 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > requires a completed audit even if a stale approval flag exists 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignTypes.test.ts > campaign approval integrity > protects both whole-plan edits and individual post patches 14ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > does not describe an isolated measured spike as forecast growth 2ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > classifies from the backend surge level first 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > calls a rising forecast emerging, but not when its confidence is low 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > calls an upcoming peak month seasonal only with a moderate seasonality score 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > prefers a critical surge over a higher-ranked calm market 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > falls back to the backend rank as a general recommendation 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > honours the owner’s choice and labels it as theirs 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > market recommendation > returns nothing rather than inventing a market 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > does not declare a winner when both platforms have zero engagement 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > ignores invalid engagement metrics 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > is an honest cold start when there are too few published posts 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > picks the platform with the clearly higher median engagement rate, not the bigger reach 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > keeps both platforms when neither clearly leads 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > platform recommendation > ignores drafts and posts without results 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > objective, focus and timing > builds toward an offer only when the owner gave one 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > objective, focus and timing > features only services from the profile, category matches first 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > objective, focus and timing > says so when the profile lists no services 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > objective, focus and timing > starts a surge campaign tomorrow and never claims an optimal posting time 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > objective, focus and timing > starts a seasonal campaign about two weeks before the peak month 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > profile readiness > blocks only on what generation needs 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > content plan > runs from an introduction to a call to action, inside the campaign dates 1ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > content plan > never repeats a generated caption, and leaves the rest blank rather than inventing one 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > content plan > plans without captions when generation was unavailable 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > content plan > mentions an offer only when the owner confirmed one 0ms
+ ✓ components/module-3/3.1-content-studio/campaigns/campaignRecommendations.test.ts > content plan > gives the audit the caption option’s own recommendations plus the post’s visual 1ms
+ ✓ components/module-3/3.1-content-studio/studioSteps.test.ts > STUDIO_STEPS > numbers the steps from 1 with unique ids and DOM-safe section ids 3ms
+ ✓ components/module-3/3.1-content-studio/platformPreview.test.ts > platformPreview > describes every platform the studio offers — Naver is not one of them 2ms
+ ✓ components/module-3/3.1-content-studio/platformPreview.test.ts > platformPreview > cuts a caption at the platform fold and flags the remainder 0ms
+ ✓ components/module-3/3.1-content-studio/auditRecommendations.test.ts > auditRecommendations > a staged option contributes its own metadata plus the platform guide 2ms
+ ✓ components/module-3/3.1-content-studio/auditRecommendations.test.ts > auditRecommendations > a caption the operator typed still gets the platform guide 0ms
+ ✓ components/module-3/3.1-content-studio/auditRecommendations.test.ts > auditRecommendations > is null when nothing has been generated for the platform 0ms
+ ✓ components/module-3/3.1-content-studio/auditRecommendations.test.ts > auditRecommendations > is null for a platform whose generated content carries no guidance at all 0ms
+
+ Test Files  22 passed (22)
+      Tests  142 passed (142)
+   Start at  13:57:23
+   Duration  209.04s (transform 7.05s, setup 12.92s, import 19.49s, tests 63.59s, environment 93.86s)
+

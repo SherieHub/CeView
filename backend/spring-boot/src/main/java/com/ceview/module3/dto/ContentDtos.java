@@ -36,6 +36,9 @@ public class ContentDtos {
      * Per-platform caption content.
      *
      * @param options        Caption text bodies — one per demographic archetype.
+     * @param optionsEn      Meaning-faithful English translation of each caption, parallel to
+     *                       {@code options}. {@code ""} means no translation (e.g. USA); null on
+     *                       responses from an older sbert.
      * @param optionNames    Demographic archetype labels parallel to {@code options}.
      *                       Always length-3 for Instagram / TikTok / Facebook.
      * @param optionMetadata AI reasoning metadata parallel to {@code options}.
@@ -48,6 +51,7 @@ public class ContentDtos {
      */
     public record PlatformContentDto(
         List<String> options,
+        List<String> optionsEn,
         List<String> optionNames,
         List<Map<String, String>> optionMetadata,
         List<String> guide
@@ -69,6 +73,13 @@ public class ContentDtos {
     public enum ContentSource {
         @JsonProperty("groq") GROQ
     }
+
+    /** POST /api/content/translate — native caption → English for the owner. */
+    public record CaptionTranslationDto(String captionEn, String sourceLanguage, ContentSource source) {}
+
+    /** POST /api/content/localize — owner-edited English → native caption (+ fresh English). */
+    public record CaptionLocalizationDto(String caption, String captionEn, String targetLanguage,
+                                         ContentSource source) {}
 
     public record ContentResponseDto(
         MarketHeaderDto market,

@@ -1,18 +1,24 @@
 /**
  * Demo request form.
  *
- * Sending depends on what's configured (SITE in landingContent.ts):
+ * Sending depends on what's configured (SITE in content/landing.ts):
  *   - VITE_LEAD_FORM_ENDPOINT → POSTs JSON there.
  *   - otherwise VITE_CONTACT_EMAIL → opens the visitor's email app with the
  *     request filled in, and says that's what happened.
  *   - neither → says plainly that online requests aren't open yet.
  * It never shows "thanks, we'll be in touch" for a request that went nowhere:
  * a fake confirmation would silently lose a real lead.
+ *
+ * Plan pre-selection: pricing CTAs link to `#demo?plan=<id>`. The plan is
+ * shown on the form and sent as an optional `plan` field, alongside the
+ * existing extra `source` field; the Partner Plan also pre-selects that
+ * "help with" option.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowRight, CircleCheck, LoaderCircle, Mail } from 'lucide-react';
-import { BUSINESS_CATEGORIES, DEMO, SITE } from './landingContent';
+import { CircleAlert, CircleCheck, LoaderCircle, Mail } from 'lucide-react';
+import { DEMO, PARTNER_HELP, PRICING, SITE } from '../../content/landing';
+import { Button } from './ui';
 
 type Status = 'idle' | 'sending' | 'sent' | 'mailto' | 'error' | 'unavailable';
 
@@ -41,7 +47,20 @@ export function validateLead(f: LeadFields): Errors {
   return errors;
 }
 
-function mailtoFor(f: LeadFields): string {
+/** Plan from a `#demo?plan=<id>` link, if it names one we offer (or the Partner Plan). */
+export function planFromHash(hash: string): string {
+  const query = hash.startsWith('#demo?') ? hash.slice('#demo?'.length) : '';
+  const id = new URLSearchParams(query).get('plan') ?? '';
+  if (id === 'partner') return 'partner';
+  return PRICING.plans.some((p) => p.id === id) ? id : '';
+}
+
+function planName(id: string): string {
+  if (id === 'partner') return PRICING.partner.eyebrow;
+  return PRICING.plans.find((p) => p.id === id)?.name ?? '';
+}
+
+function mailtoFor(f: LeadFields, plan: string): string {
   const subject = `CeView demo request — ${f.business.trim()}`;
   const body = [
     `Name: ${f.name.trim()}`,
@@ -49,6 +68,7 @@ function mailtoFor(f: LeadFields): string {
     `Business: ${f.business.trim()}`,
     `Type of business: ${f.businessType}`,
     f.help ? `Would most like help with: ${f.help}` : '',
+    plan ? `Plan of interest: ${planName(plan)}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -59,6 +79,23 @@ export default function LeadForm() {
   const [fields, setFields] = useState<LeadFields>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<Status>('idle');
+  const [plan, setPlan] = useState('');
+  const [announce, setAnnounce] = useState('');
+
+  // Pick up `#demo?plan=…` on load and on later clicks; the browser can't
+  // scroll to that hash by itself, so bring the form into view too.
+  useEffect(() => {
+    const read = () => {
+      if (!window.location.hash.startsWith('#demo?')) return;
+      const p = planFromHash(window.location.hash);
+      setPlan(p);
+      if (p === 'partner') setFields((f) => (f.help ? f : { ...f, help: PARTNER_HELP }));
+      document.getElementById('demo')?.scrollIntoView({ block: 'start' });
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
 
   function set<K extends keyof LeadFields>(key: K, value: LeadFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -72,10 +109,13 @@ export default function LeadForm() {
     setErrors(found);
     const first = ORDER.find((k) => found[k]);
     if (first) {
+      const n = ORDER.filter((k) => found[k]).length;
+      setAnnounce(`${n} ${n === 1 ? 'field needs' : 'fields need'} attention.`);
       // Land keyboard and screen-reader users on the first problem.
       document.getElementById(`lead-${first}`)?.focus();
       return;
     }
+    setAnnounce('');
 
     if (SITE.leadFormEndpoint) {
       setStatus('sending');
@@ -83,7 +123,7 @@ export default function LeadForm() {
         const res = await fetch(SITE.leadFormEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...fields, source: 'landing-page' }),
+          body: JSON.stringify({ ...fields, ...(plan ? { plan } : {}), source: 'landing-page' }),
         });
         if (!res.ok) throw new Error(String(res.status));
         setStatus('sent');
@@ -95,7 +135,7 @@ export default function LeadForm() {
     }
 
     if (SITE.contactEmail) {
-      window.location.href = mailtoFor(fields);
+      window.location.href = mailtoFor(fields, plan);
       setStatus('mailto');
       return;
     }
@@ -105,12 +145,15 @@ export default function LeadForm() {
 
   if (status === 'sent') {
     return (
-      <div className="lp-form lp-form--done" role="status">
-        <span className="lp-form-done-icon" aria-hidden="true">
-          <CircleCheck size={30} />
+      <div className="cv-form cv-form--done" role="status">
+        <span className="cv-form-done-icon" aria-hidden="true">
+          <CircleCheck size={40} strokeWidth={1.5} />
         </span>
-        <h3 className="lp-h3">Thanks — your request is in.</h3>
-        <p className="lp-body">We’ll reach out to arrange a walkthrough that fits your business.</p>
+        <h3 className="cv-form-title">{DEMO.form.doneTitle}</h3>
+        <p className="cv-form-sub">{DEMO.form.doneBody}</p>
+        <a href="#faq" className="cv-form-done-link">
+          {DEMO.form.doneLink}
+        </a>
       </div>
     );
   }
@@ -118,26 +161,36 @@ export default function LeadForm() {
   const describedBy = (key: Required) => (errors[key] ? `lead-${key}-error` : undefined);
   const errorText = (key: Required) =>
     errors[key] ? (
-      <p className="lp-field-error" id={`lead-${key}-error`}>
+      <p className="cv-field-error" id={`lead-${key}-error`}>
+        <CircleAlert size={15} strokeWidth={2} aria-hidden="true" />
         {errors[key]}
       </p>
     ) : null;
+  const sending = status === 'sending';
 
   return (
-    <form className="lp-form" onSubmit={onSubmit} noValidate aria-labelledby="lp-form-title">
-      <h3 className="lp-h3" id="lp-form-title">
-        Request your demo
+    <form className="cv-form" onSubmit={onSubmit} noValidate aria-labelledby="lp-form-title">
+      <h3 className="cv-form-title" id="lp-form-title">
+        {DEMO.form.title}
       </h3>
-      <p className="lp-form-sub">Takes about a minute. Every field is required unless marked optional.</p>
+      <p className="cv-form-sub">{DEMO.form.sub}</p>
+      {plan && (
+        <p className="cv-form-plan">
+          {DEMO.form.planNote} <strong>{planName(plan)}</strong>
+        </p>
+      )}
+      <p className="cv-sr-live" aria-live="polite">
+        {announce}
+      </p>
 
-      <div className="lp-form-grid">
-        <div className="lp-field">
-          <label className="lp-label" htmlFor="lead-name">
+      <div className="cv-form-grid">
+        <div className="cv-field">
+          <label className="cv-label" htmlFor="lead-name">
             Full name
           </label>
           <input
             id="lead-name"
-            className="lp-input"
+            className="cv-input"
             autoComplete="name"
             value={fields.name}
             onChange={(e) => set('name', e.target.value)}
@@ -147,14 +200,14 @@ export default function LeadForm() {
           {errorText('name')}
         </div>
 
-        <div className="lp-field">
-          <label className="lp-label" htmlFor="lead-email">
+        <div className="cv-field">
+          <label className="cv-label" htmlFor="lead-email">
             Work email
           </label>
           <input
             id="lead-email"
             type="email"
-            className="lp-input"
+            className="cv-input"
             autoComplete="email"
             inputMode="email"
             value={fields.email}
@@ -165,13 +218,13 @@ export default function LeadForm() {
           {errorText('email')}
         </div>
 
-        <div className="lp-field lp-field--wide">
-          <label className="lp-label" htmlFor="lead-business">
+        <div className="cv-field cv-field--wide">
+          <label className="cv-label" htmlFor="lead-business">
             Business name
           </label>
           <input
             id="lead-business"
-            className="lp-input"
+            className="cv-input"
             autoComplete="organization"
             value={fields.business}
             onChange={(e) => set('business', e.target.value)}
@@ -181,35 +234,39 @@ export default function LeadForm() {
           {errorText('business')}
         </div>
 
-        <div className="lp-field lp-field--wide">
-          <label className="lp-label" htmlFor="lead-businessType">
+        <div className="cv-field cv-field--wide">
+          <label className="cv-label" htmlFor="lead-businessType">
             Type of tourism business
           </label>
           <select
             id="lead-businessType"
-            className="lp-input lp-select"
+            className="cv-input cv-select"
             value={fields.businessType}
             onChange={(e) => set('businessType', e.target.value)}
             aria-invalid={Boolean(errors.businessType)}
             aria-describedby={describedBy('businessType')}
           >
             <option value="">Choose the closest match…</option>
-            {BUSINESS_CATEGORIES.map((c) => (
+            {DEMO.businessTypes.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
             ))}
-            <option value="Other">Something else</option>
           </select>
           {errorText('businessType')}
         </div>
 
-        <div className="lp-field lp-field--wide">
-          <label className="lp-label" htmlFor="lead-help">
-            What would you most like help with? <span className="lp-optional">(optional)</span>
+        <div className="cv-field cv-field--wide">
+          <label className="cv-label" htmlFor="lead-help">
+            What would you most like help with? <span className="cv-optional">(optional)</span>
           </label>
-          <select id="lead-help" className="lp-input lp-select" value={fields.help} onChange={(e) => set('help', e.target.value)}>
-            <option value="">No preference</option>
+          <select
+            id="lead-help"
+            className="cv-input cv-select"
+            value={fields.help}
+            onChange={(e) => set('help', e.target.value)}
+          >
+            <option value="">{DEMO.noPreference}</option>
             {DEMO.helpOptions.map((o) => (
               <option key={o} value={o}>
                 {o}
@@ -220,7 +277,7 @@ export default function LeadForm() {
       </div>
 
       {status === 'mailto' && (
-        <div className="lp-form-notice" role="status">
+        <div className="cv-form-notice" role="status">
           <Mail size={18} aria-hidden="true" />
           <p>
             Your email app should open with your request filled in — just press send. If it didn’t, email us at{' '}
@@ -229,7 +286,8 @@ export default function LeadForm() {
         </div>
       )}
       {status === 'error' && (
-        <div className="lp-form-notice lp-form-notice--error" role="alert">
+        <div className="cv-form-notice" data-tone="error" role="alert">
+          <CircleAlert size={18} aria-hidden="true" />
           <p>
             We couldn’t send your request just now. Please try again
             {SITE.contactEmail ? (
@@ -242,28 +300,34 @@ export default function LeadForm() {
         </div>
       )}
       {status === 'unavailable' && (
-        <div className="lp-form-notice" role="status">
+        <div className="cv-form-notice" role="status">
           <p>
             Online demo requests aren’t open just yet, so nothing was sent. Please check back soon.
             {import.meta.env.DEV && (
-              <span className="lp-dev-note"> Developer: set VITE_LEAD_FORM_ENDPOINT or VITE_CONTACT_EMAIL.</span>
+              <span className="cv-dev-note"> Developer: set VITE_LEAD_FORM_ENDPOINT or VITE_CONTACT_EMAIL.</span>
             )}
           </p>
         </div>
       )}
 
-      <button type="submit" className="btn-cta lp-form-submit" disabled={status === 'sending'} aria-busy={status === 'sending'}>
-        {status === 'sending' ? (
+      <Button
+        type="submit"
+        size="lg"
+        block
+        arrow={!sending}
+        disabled={sending}
+        aria-busy={sending}
+        className="cv-form-submit"
+      >
+        {sending ? (
           <>
-            <LoaderCircle size={18} className="lp-spin" aria-hidden="true" /> Sending…
+            <LoaderCircle size={18} className="cv-spin" aria-hidden="true" /> {DEMO.form.sending}
           </>
         ) : (
-          <>
-            Request My Demo <ArrowRight size={18} aria-hidden="true" />
-          </>
+          DEMO.form.submit
         )}
-      </button>
-      <p className="lp-consent">{DEMO.consent}</p>
+      </Button>
+      <p className="cv-form-consent">{DEMO.consent}</p>
     </form>
   );
 }

@@ -1,16 +1,37 @@
 /**
- * Split brand/pane login screen — ports ui-ux-prototype.html:900–959 (brand
- * panel with stat tiles + Sign in/Create account tabs). Google Sign-In uses
- * the Firebase JS SDK client-side (services/firebase.ts) to get an ID token,
- * which the backend verifies before minting the same session shape as
+ * Split sign-in / create-account screen (shell: AuthShell). Google Sign-In
+ * uses the Firebase JS SDK client-side (services/firebase.ts) to get an ID
+ * token, which the backend verifies before minting the same session shape as
  * password login/register (see services/apiClient.ts's auth.google).
+ *
+ * A fresh password sign-up lands in the app unverified; EmailVerificationGate
+ * then routes it to /verify-email, so this page needs no redirect of its own.
+ *
+ * Styles: styles/auth.css (.cv-auth-*).
  */
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Eye, EyeOff, Lock, Mail, UserRound } from 'lucide-react';
 import { useAuth } from '../../services/auth';
 import { signInWithGooglePopup } from '../../services/firebase';
 import { ApiError } from '../../services/apiError';
+import { PASSWORD_HINT, isValidPassword } from '../../services/passwordPolicy';
+import AuthShell from './AuthShell';
+import { describeAuthError } from './authErrors';
+import PhoneVerifyField, { type VerifiedPhone } from './PhoneVerifyField';
+
+/** Google "G" mark (decorative; the button text names the action). */
+function GoogleMark() {
+  return (
+    <svg className="cv-auth-google-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle } = useAuth();
@@ -18,9 +39,10 @@ export default function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [contactNumber, setContactNumber] = useState('');
+  const [phone, setPhone] = useState<VerifiedPhone | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
@@ -28,12 +50,19 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (mode === 'signup' && !isValidPassword(password)) {
+      setError(`Choose a stronger password. ${PASSWORD_HINT}`);
+      return;
+    }
     setSubmitting(true);
     try {
       if (mode === 'signin') await login(email, password);
-      else await register(email, password, firstName, lastName, contactNumber);
-    } catch {
-      setError('Something went wrong. Check your details and try again.');
+      else if (phone) await register(email, password, firstName, lastName, phone.contactNumber, {
+        phoneIdToken: phone.phoneIdToken,
+        verifyLater: phone.verifyLater,
+      });
+    } catch (err) {
+      setError(describeAuthError(err, 'Something went wrong. Check your details and try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -58,166 +87,142 @@ export default function LoginPage() {
     }
   }
 
+  const signin = mode === 'signin';
+
   return (
-    <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-      {/* Brand panel — dark chrome, same surface language as .ob-rail/.sb-rail. */}
-      <div
-        className="flex flex-col justify-between p-10"
-        style={{ background: 'var(--gradient-chrome)', color: 'var(--color-text-inverse)' }}
-      >
-        <div className="eyebrow" style={{ color: 'var(--color-text-accent)' }}>
-          CeView
-        </div>
-        <div>
-          <h1 className="heading-hero mb-3">Know the surge before it lands.</h1>
-          <p className="body-sm" style={{ color: 'var(--color-text-inverse-muted)' }}>
-            Demand forecasting and market-localized content for Cebu's tourism businesses.
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            ['21', 'category × market signals'],
-            ['3', 'tracked source markets'],
-            ['24/7', 'surge monitoring'],
-          ].map(([stat, label]) => (
-            <div
-              key={label}
-              className="rounded-md p-3"
-              style={{ background: 'var(--chrome-raised)', borderTop: '1px solid var(--chrome-line)' }}
-            >
-              <div className="heading-md num" style={{ color: 'var(--color-text-inverse)' }}>
-                {stat}
-              </div>
-              <div className="body-xs" style={{ color: 'var(--color-text-inverse-muted)' }}>
-                {label}
-              </div>
-            </div>
-          ))}
-        </div>
+    <AuthShell>
+      <h2 className="cv-auth-heading">{signin ? 'Welcome back' : 'Create your account'}</h2>
+      <p className="cv-auth-sub">
+        {signin ? 'Sign in to your CeView account' : 'Start seeing traveler demand for your Cebu business'}
+      </p>
+
+      <div className="cv-auth-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'signin'}
+          aria-pressed={mode === 'signin'}
+          onClick={() => setMode('signin')}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'signup'}
+          aria-pressed={mode === 'signup'}
+          onClick={() => setMode('signup')}
+        >
+          Create account
+        </button>
       </div>
 
-      {/* Form pane — pale mint canvas. */}
-      <div className="flex items-center justify-center p-10" style={{ background: 'var(--gradient-canvas)' }}>
-        <div className="w-full max-w-sm">
-          <div className="seg mb-6 w-full" role="tablist">
+      <form onSubmit={handleSubmit} className="cv-auth-form">
+        {mode === 'signup' && (
+          <div className="cv-auth-name-row">
+            <div className="cv-auth-field">
+              <label htmlFor="login-first-name">First name</label>
+              <div className="cv-auth-control">
+                <UserRound size={16} strokeWidth={1.75} aria-hidden="true" />
+                <input
+                  id="login-first-name"
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="cv-auth-field">
+              <label htmlFor="login-last-name">Last name</label>
+              <div className="cv-auth-control">
+                <UserRound size={16} strokeWidth={1.75} aria-hidden="true" />
+                <input
+                  id="login-last-name"
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+            </div>
+            <PhoneVerifyField id="login-contact-number" variant="auth" onChange={setPhone} />
+          </div>
+        )}
+        <div className="cv-auth-field">
+          <label htmlFor="login-email">Email</label>
+          <div className="cv-auth-control">
+            <Mail size={16} strokeWidth={1.75} aria-hidden="true" />
+            <input
+              id="login-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+        </div>
+        <div className="cv-auth-field">
+          <label htmlFor="login-password">Password</label>
+          <div className="cv-auth-control">
+            <Lock size={16} strokeWidth={1.75} aria-hidden="true" />
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete={signin ? 'current-password' : 'new-password'}
+              aria-describedby={signin ? undefined : 'login-password-hint'}
+            />
             <button
               type="button"
-              role="tab"
-              aria-selected={mode === 'signin'}
-              aria-pressed={mode === 'signin'}
-              onClick={() => setMode('signin')}
-              className="flex-1"
+              className="cv-auth-reveal"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
             >
-              Sign in
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'signup'}
-              aria-pressed={mode === 'signup'}
-              onClick={() => setMode('signup')}
-              className="flex-1"
-            >
-              Create account
+              {showPassword ? <EyeOff size={16} strokeWidth={1.75} aria-hidden="true" /> : <Eye size={16} strokeWidth={1.75} aria-hidden="true" />}
             </button>
           </div>
-
-          <h2 className="heading-lg mb-4">{mode === 'signin' ? 'Sign In' : 'Create Account'}</h2>
-
-          <form onSubmit={handleSubmit}>
-            {mode === 'signup' && (
-              <div className="field">
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <label className="field-label" htmlFor="login-first-name">
-                      First name
-                    </label>
-                    <input
-                      id="login-first-name"
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="input"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label" htmlFor="login-last-name">
-                      Last name
-                    </label>
-                    <input
-                      id="login-last-name"
-                      type="text"
-                      required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="input"
-                    />
-                  </div>
-                  <div>
-                    <label className="field-label" htmlFor="login-contact-number">
-                      Contact number
-                    </label>
-                    <input
-                      id="login-contact-number"
-                      type="tel"
-                      required
-                      value={contactNumber}
-                      onChange={(e) => setContactNumber(e.target.value)}
-                      className="input"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="field">
-              <label className="field-label" htmlFor="login-email">
-                Email
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div className="field">
-              <label className="field-label" htmlFor="login-password">
-                Password
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input"
-                placeholder="••••••••"
-              />
-            </div>
-            {error && (
-              <p className="body-xs mb-3" role="alert" style={{ color: 'var(--color-critical-text)' }}>
-                {error}
-              </p>
-            )}
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
-              {mode === 'signin' ? 'Sign in' : 'Create account'}
-            </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={handleGoogleClick}
-            disabled={googleSubmitting}
-            className="btn-outline mt-4 w-full"
-          >
-            {googleSubmitting ? 'Signing in…' : 'Continue with Google'}
-          </button>
+          {signin ? (
+            <Link to="/forgot-password" className="cv-auth-forgot">
+              Forgot password?
+            </Link>
+          ) : (
+            <p id="login-password-hint" className="cv-auth-hint">
+              {PASSWORD_HINT}
+            </p>
+          )}
         </div>
-      </div>
-    </div>
+        {error && (
+          <p className="cv-auth-error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" disabled={submitting || (!signin && !phone)} className="cv-auth-submit">
+          {signin ? 'Sign in' : 'Create account'}
+          <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+        </button>
+      </form>
+
+      <p className="cv-auth-divider">
+        <span>or continue with</span>
+      </p>
+
+      <button type="button" onClick={handleGoogleClick} disabled={googleSubmitting} className="cv-auth-google">
+        <GoogleMark />
+        {googleSubmitting ? 'Signing in…' : 'Continue with Google'}
+      </button>
+
+      <p className="cv-auth-switch">
+        {signin ? 'Don’t have an account?' : 'Already have an account?'}{' '}
+        <button type="button" onClick={() => setMode(signin ? 'signup' : 'signin')}>
+          {signin ? 'Create account' : 'Sign in'}
+        </button>
+      </p>
+    </AuthShell>
   );
 }

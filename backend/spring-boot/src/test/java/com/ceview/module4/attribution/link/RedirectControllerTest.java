@@ -110,6 +110,25 @@ class RedirectControllerTest {
                 .andExpect(status().isFound());
     }
 
+    @Test
+    void overTheRateLimitStillRedirectsTheTravellerButRecordsNoClick() throws Exception {
+        AttributionLink link = saveLink("limitabc", "https://example.com/book",
+                OffsetDateTime.now().minusDays(1), OffsetDateTime.now().plusDays(13));
+        String address = UUID.randomUUID().toString();
+
+        for (int i = 0; i < AttributionRateLimiter.REQUESTS_PER_MINUTE; i++) {
+            mvc.perform(get("/r/limitabc").with(req -> { req.setRemoteAddr(address); return req; }))
+                    .andExpect(status().isFound());
+        }
+        MvcResult over = mvc.perform(get("/r/limitabc").with(req -> { req.setRemoteAddr(address); return req; }))
+                .andExpect(status().isFound())
+                .andReturn();
+
+        // Repeats inside the limit reuse the first click's id; past it nothing is looked up or written.
+        assertThat(over.getResponse().getHeader("Location")).isEqualTo("https://example.com/book");
+        assertThat(clickRepo.findByLinkIdOrderByClickedAtDesc(link.getLinkId())).hasSize(1);
+    }
+
     private AttributionLink saveLink(String slug, String destination, OffsetDateTime start, OffsetDateTime end) {
         AttributionLink link = new AttributionLink();
         link.setBusinessProfileId(profileId);

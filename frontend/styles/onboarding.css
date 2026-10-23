@@ -1,0 +1,635 @@
+/* ============================================================
+   ONBOARDING WIZARD — visual layer (OnboardingWizard.tsx, /onboarding).
+   A full-bleed Cebu photo under a deep-teal wash, the logo centred above
+   one white card: step tracker on top, the active step beside a tip card,
+   Back / Continue footer. Rules are prefixed with .ob-wrap so they win
+   over the older .ob-* base rules in index.css (this file is imported
+   first) and stay scoped to the wizard.
+   Tokens: landing-foundation.css (--teal-*, --ink-*, --ff-display).
+   ============================================================ */
+
+@layer components {
+  /* ---------- page ---------- */
+  .ob-wrap[class] {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* The page is exactly one window tall and never scrolls; a step taller
+       than the card scrolls inside the card body instead. */
+    height: 100svh;
+    /* The space below the card equals the space above it (padding + logo +
+       gap), and the card stretches to fill what is left between them. */
+    --ob-pad: 22px;
+    --ob-logo: 40px;
+    --ob-gap: 18px;
+    padding: var(--ob-pad) clamp(16px, 4vw, 48px) calc(var(--ob-pad) + var(--ob-logo) + var(--ob-gap));
+    background: #0b3a3a;
+  }
+  .ob-wrap .ob-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+  }
+  .ob-wrap .ob-bg .cv-img {
+    object-position: 50% 45%;
+  }
+  .ob-wrap .ob-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(6, 52, 52, 0.42) 0%, rgba(6, 52, 52, 0.7) 75%),
+      linear-gradient(180deg, rgba(6, 52, 52, 0.35) 0%, rgba(6, 52, 52, 0.15) 100%);
+  }
+
+  /* Blurred palm shadows in two corners. */
+  .ob-wrap .ob-palm {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    fill: rgba(2, 30, 28, 0.62);
+    filter: blur(3px);
+  }
+  .ob-wrap .ob-palm--tl {
+    top: -90px;
+    left: -110px;
+    width: 480px;
+    transform: rotate(165deg);
+  }
+  .ob-wrap .ob-palm--br {
+    right: -90px;
+    bottom: -140px;
+    width: 540px;
+    transform: rotate(-24deg);
+  }
+
+  /* Decorative taglines in the side margins (wide screens only). */
+  .ob-wrap .ob-tagline,
+  .ob-wrap .ob-script {
+    display: none;
+  }
+  .ob-wrap .ob-tagline {
+    position: absolute;
+    top: 34px;
+    right: 44px;
+    font-family: var(--ff-ui);
+    font-size: 0.6875rem;
+    line-height: 2;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .ob-wrap .ob-tagline::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 2px;
+    margin-top: 12px;
+    border-radius: 2px;
+    background: var(--coral-btn);
+  }
+  .ob-wrap .ob-script {
+    position: absolute;
+    top: 50%;
+    left: 28px;
+    transform: translateY(-40%);
+  }
+  .ob-wrap .ob-script span {
+    display: block;
+    font-family: var(--ff-script);
+    font-size: 4.5rem;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.32);
+    transform: rotate(-8deg);
+  }
+  .ob-wrap .ob-script p {
+    margin: 14px 0 0 24px;
+    font-family: var(--ff-ui);
+    font-size: 0.625rem;
+    line-height: 2;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  @media (min-width: 1440px) {
+    .ob-wrap .ob-tagline,
+    .ob-wrap .ob-script {
+      display: block;
+    }
+  }
+
+  .ob-wrap .ob-top {
+    display: flex;
+    height: var(--ob-logo);
+    margin-bottom: var(--ob-gap);
+  }
+  .ob-wrap .ob-top .lp-brand-logo {
+    height: var(--ob-logo);
+  }
+
+  /* ---------- card ---------- */
+  .ob-wrap .ob-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    max-width: 1080px;
+    flex: 1 1 auto;
+    max-height: 860px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 40px 80px -30px rgba(0, 20, 20, 0.6);
+  }
+
+  /* Step tracker: dot + title/subtitle, joined by hairlines. */
+  .ob-wrap .ob-steps {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+    padding: 26px 64px;
+    list-style: none;
+    border-bottom: 1px solid #e6eeec;
+  }
+  .ob-wrap .ob-step {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 0;
+    border-left: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .ob-wrap .ob-step:last-child {
+    flex: none;
+  }
+  .ob-wrap .ob-step:not(:last-child)::after {
+    content: '';
+    flex: 1 1 auto;
+    min-width: 14px;
+    height: 1px;
+    margin-inline: 6px 14px;
+    background: #d6e2df;
+  }
+  .ob-wrap .ob-step[data-state='current'] {
+    background: none;
+  }
+  .ob-wrap .ob-dot {
+    width: 34px;
+    height: 34px;
+    border: 1.5px solid #c3d2cf;
+    background: var(--white);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink-700);
+  }
+  .ob-wrap .ob-step[data-state='current'] .ob-dot {
+    border-color: transparent;
+    background: var(--teal-900);
+    color: var(--white);
+  }
+  .ob-wrap .ob-step[data-state='done'] .ob-dot {
+    border-color: transparent;
+    background: #3fd9c2;
+    color: #073c39;
+  }
+  .ob-wrap .ob-step-text {
+    min-width: 0;
+  }
+  .ob-wrap .ob-step b,
+  .ob-wrap .ob-step[data-state='pending'] b {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-step span,
+  .ob-wrap .ob-step[data-state='current'] span {
+    margin-top: 1px;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+    color: var(--ink-500);
+  }
+
+  /* Body: the step on the left, the tip card on the right. */
+  .ob-wrap .ob-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #c3d2cf transparent;
+    align-content: start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 30px 64px 12px;
+  }
+  .ob-wrap .ob-panel {
+    container-type: inline-size;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    flex: none;
+  }
+  .ob-wrap .ob-note {
+    align-self: start;
+    display: flex;
+    gap: 14px;
+    margin-top: 64px;
+    padding: 18px;
+    border: 1px solid #d5eee8;
+    border-radius: 18px;
+    background: #effaf7;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--ink-700);
+  }
+  .ob-wrap .ob-note b {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.875rem;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-note p {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--ink-700);
+  }
+  .ob-wrap .ob-note-icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: #d6f1ea;
+    color: var(--teal-700);
+  }
+  .ob-wrap .ob-note svg {
+    margin: 0;
+    color: var(--teal-700);
+  }
+
+  /* Field grids lay a step's fields side by side; they respond to the
+     panel's own width, not the window's. */
+  .ob-wrap .ob-field-grid {
+    display: grid;
+    gap: 14px 20px;
+  }
+  .ob-wrap .ob-panel .ob-field-grid > .field {
+    margin-bottom: 0;
+  }
+  .ob-wrap .ob-field-grid--3 .field-row,
+  .ob-wrap .ob-field-grid--3 .field-row .input {
+    min-width: 0;
+  }
+  @container (min-width: 520px) {
+    .ob-wrap .ob-field-grid--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container (min-width: 600px) {
+    .ob-wrap .ob-field-grid--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .ob-wrap .ob-step-intro {
+    margin-bottom: 0;
+  }
+  .ob-wrap .ob-step-intro h2 {
+    margin-bottom: 6px;
+  }
+  .ob-wrap .upload-zone {
+    padding: 16px;
+  }
+
+  /* Step content: eyebrow, serif heading, muted intro. */
+  .ob-wrap .ob-step-eyebrow {
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    color: #0f8f7f;
+  }
+  .ob-wrap .ob-panel .heading-lg {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(2rem, 3vw, 2.875rem);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-panel .heading-lg + .body-sm {
+    max-width: 92ch !important;
+    margin-bottom: 30px !important;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #5a6b8c;
+  }
+
+  /* Fields: label above a soft white well. */
+  .ob-wrap .ob-panel .field {
+    margin-bottom: 18px;
+  }
+  .ob-wrap .ob-panel .field-label {
+    font-size: 0.875rem;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-panel .input {
+    padding: 11px 16px;
+    font-size: 0.9375rem;
+    border: 1px solid #e3ebe9;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px -12px rgba(11, 63, 60, 0.25);
+  }
+  /* Step 2's group labels and vibe chips (utility-classed in the step) take
+     the same label and chip look as the other steps. */
+  .ob-wrap .ob-panel .body-xs.font-semibold {
+    font-size: 0.875rem;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-panel [role='group'] > button {
+    padding: 6px 14px;
+    border-color: #d5e0de;
+    font-size: 0.875rem;
+    color: var(--ink-700);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+  }
+  .ob-wrap .ob-panel [role='group'] > button:hover {
+    border-color: #9fdccf;
+  }
+  .ob-wrap .ob-panel [role='group'] > button[aria-pressed='true'] {
+    border-color: #2bc9b0;
+    background: #e3f6f2;
+    color: #0b4f49;
+  }
+
+  /* Side-by-side textareas share one height (the description's inline
+     min-height would otherwise make the pair uneven). */
+  .ob-wrap .ob-panel .textarea {
+    padding: 12px 16px;
+    border: 1px solid #e3ebe9;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  .ob-wrap .ob-field-grid--2 .textarea {
+    min-height: 160px !important;
+  }
+  /* Inputs inside an icon row stay bare; the row is the surface. */
+  .ob-wrap .ob-panel .field-row .input,
+  .ob-wrap .ob-panel .field-row .input:hover:not(:disabled),
+  .ob-wrap .ob-panel .field-row .input:focus {
+    padding: 4px 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ob-wrap .ob-panel .field-row {
+    border: 1px solid #e3ebe9;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px -12px rgba(11, 63, 60, 0.25);
+  }
+  .ob-wrap .ob-panel .input:hover:not(:disabled) {
+    border-color: #9fdccf;
+  }
+  .ob-wrap .ob-panel .input:focus,
+  .ob-wrap .ob-panel .input:focus-visible {
+    border-color: #2bc9b0;
+    box-shadow: 0 0 0 4px rgba(43, 201, 176, 0.16);
+  }
+  /* "Industry (i) Primary tourism category" on one row. */
+  .ob-wrap .ob-label-hint > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ob-wrap .ob-label-hint svg {
+    color: var(--ink-500);
+  }
+  .ob-wrap .ob-panel .opt {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+
+  .ob-wrap .ob-demo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    font-weight: 600;
+    padding: 9px 18px;
+    border: 1.5px solid #b9c7d0;
+    border-radius: 999px;
+    background: var(--white);
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    color: var(--ink-900);
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+  }
+  .ob-wrap .ob-demo-btn svg {
+    color: #1fb89f;
+  }
+  .ob-wrap .ob-demo-btn:hover {
+    border-color: var(--teal-500);
+    background: #f4faf8;
+  }
+
+  /* Step 5's Compute button: the same coral pill as the sign-in button
+     (.cv-auth-submit in auth.css). */
+  .ob-wrap .ob-panel .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 28px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--coral-btn);
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--white);
+    box-shadow: 0 12px 24px -10px rgba(227, 113, 81, 0.6);
+    transition: background-color 0.18s ease;
+  }
+  .ob-wrap .ob-panel .btn-primary:hover:not(:disabled) {
+    background: var(--coral-btn-hover);
+    color: var(--white);
+  }
+  .ob-wrap .ob-panel .btn-primary:disabled {
+    opacity: 0.6;
+    background: var(--coral-btn);
+    color: var(--white);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .ob-wrap .ob-panel .btn-primary:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 3px;
+  }
+
+  /* ---------- footer: Back · Step n of 5 · Continue ---------- */
+  .ob-wrap .ob-foot {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #e5eceb;
+  }
+  .ob-wrap .ob-foot-count {
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .ob-wrap .ob-foot .btn-outline {
+    justify-self: start;
+    padding: 10px 22px;
+    font-size: 0.9375rem;
+    border-color: #b9c7d0;
+    color: var(--ink-900);
+  }
+  .ob-wrap .ob-foot .btn-cta {
+    justify-self: end;
+    padding: 11px 26px;
+    font-size: 0.9375rem;
+    background: var(--teal-900);
+    color: var(--white);
+    box-shadow: 0 12px 24px -12px rgba(11, 63, 60, 0.6);
+  }
+  .ob-wrap .ob-foot .btn-cta:hover:not(:disabled) {
+    background: #0f5652;
+    color: var(--white);
+  }
+  .ob-wrap .ob-foot .btn-cta:disabled {
+    background: #dfe7e5;
+    color: var(--ink-500);
+    box-shadow: none;
+  }
+
+  .ob-wrap .ob-card .ob-foot {
+    width: auto;
+    max-width: none;
+    margin: 20px 64px 0;
+    padding: 18px 0 30px;
+  }
+
+  /* Short desktop windows: tighten so the whole step fits without scrolling. */
+  @media (min-width: 1024px) and (max-height: 820px) {
+    .ob-wrap[class] {
+      --ob-pad: 14px;
+      --ob-logo: 32px;
+      --ob-gap: 12px;
+    }
+    .ob-wrap .ob-steps {
+      padding-block: 20px;
+    }
+    .ob-wrap .ob-dot {
+      width: 30px;
+      height: 30px;
+    }
+    .ob-wrap .ob-body {
+      padding-top: 22px;
+    }
+    .ob-wrap .ob-note {
+      margin-top: 48px;
+    }
+    .ob-wrap .ob-panel .heading-lg {
+      font-size: 2.125rem;
+    }
+    .ob-wrap .ob-panel .heading-lg + .body-sm {
+      margin-bottom: 24px !important;
+    }
+    .ob-wrap .ob-panel .field {
+      margin-bottom: 12px;
+    }
+    .ob-wrap .ob-panel .field-label {
+      margin-bottom: 6px;
+    }
+    .ob-wrap .ob-panel .input {
+      padding-block: 9px;
+    }
+    .ob-wrap .ob-field-grid--2 .textarea {
+      min-height: 140px !important;
+    }
+    .ob-wrap .ob-demo-btn {
+      padding: 7px 16px;
+    }
+    .ob-wrap .ob-card .ob-foot {
+      margin-top: 14px;
+      padding-block: 12px 24px;
+    }
+    .ob-wrap .ob-foot .btn-outline,
+    .ob-wrap .ob-foot .btn-cta {
+      padding-block: 9px;
+    }
+  }
+
+  /* Narrower screens: the tip card drops below the step; subtitles go. */
+  @media (max-width: 1099px) {
+    .ob-wrap .ob-body {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+    }
+    .ob-wrap .ob-note {
+      margin-top: 0;
+    }
+    .ob-wrap .ob-step span {
+      display: none;
+    }
+  }
+  /* Phones: only the current step keeps its title in the tracker. */
+  @media (max-width: 767px) {
+    .ob-wrap[class] {
+      --ob-pad: 12px;
+      --ob-logo: 30px;
+      --ob-gap: 10px;
+    }
+    .ob-wrap .ob-steps {
+      padding: 14px 18px;
+    }
+    .ob-wrap .ob-step-text {
+      display: none;
+    }
+    .ob-wrap .ob-step:not(:last-child)::after {
+      margin-inline: 6px;
+    }
+    .ob-wrap .ob-body {
+      padding: 18px 18px 0;
+    }
+    .ob-wrap .ob-card {
+      border-radius: 14px;
+    }
+    .ob-wrap .ob-card .ob-foot {
+      margin: 16px 18px 0;
+      padding-bottom: 18px;
+    }
+    .ob-wrap .ob-palm {
+      display: none;
+    }
+  }
+  @media (max-width: 639px) {
+    .ob-wrap .ob-foot {
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+    }
+    .ob-wrap .ob-foot-count {
+      font-size: 0.8125rem;
+      text-align: center;
+    }
+    .ob-wrap .ob-foot .btn-outline,
+    .ob-wrap .ob-foot .btn-cta {
+      padding-inline: 18px;
+    }
+  }
+}

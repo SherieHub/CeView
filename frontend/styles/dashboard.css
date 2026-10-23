@@ -1,0 +1,1605 @@
+/* ============================================================
+   APP SHELL + DASHBOARD — visual layer (layout/Sidebar.tsx,
+   layout/Topbar.tsx, components/module-2/2.1-dashboard/*).
+   A flat dark-teal rail, a white top bar, and a dashboard that opens
+   on a photo banner with the summary tiles overlapping its foot, then
+   the alert feed and the ranked markets in white panels.
+   Rules are prefixed (.app-wrap / .dash-screen) so they win over the
+   base rules in index.css, which this file is imported ahead of.
+   Tokens: landing-foundation.css (--teal-*, --ink-*, --coral-*, --ff-*).
+   ============================================================ */
+
+@layer components {
+  /* ================= sidebar ================= */
+  .app-wrap .sb-rail {
+    padding: 0 16px 20px;
+    border-radius: 0;
+    background: linear-gradient(180deg, #0d4a48 0%, #0b4140 55%, #093a39 100%);
+    background-size: auto;
+    box-shadow: none;
+  }
+  .app-wrap .sb-head {
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-inline: 8px 0;
+  }
+  .app-wrap .sb-brand .lp-brand-logo {
+    height: 30px;
+  }
+  .app-wrap .sb-toggle {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .app-wrap .sb-rail .sb-sec {
+    margin: 18px 0 6px;
+    padding-inline: 12px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .app-wrap .sb-rail .sb-sec:first-child {
+    margin-top: 4px;
+  }
+  .app-wrap .sb-rail .sb-nav {
+    gap: 4px;
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item,
+  .app-wrap .sb-rail .sb-nav .sb-item:hover,
+  .app-wrap .sb-rail .sb-nav .sb-item[aria-current='page'] {
+    width: 100%;
+    gap: 12px;
+    padding: 9px 12px;
+    border-left: 0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item::before,
+  .app-wrap .sb-rail .sb-nav .sb-item::after {
+    display: none;
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--white);
+  }
+  .app-wrap .sb-rail .sb-nav .sb-item[aria-current='page'] {
+    background: rgba(94, 214, 190, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(110, 231, 210, 0.16);
+    font-weight: 600;
+    color: var(--white);
+  }
+  .app-wrap .sb-rail .sb-item svg {
+    width: 18px;
+    height: 18px;
+  }
+  .app-wrap .sb-foot {
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .app-wrap .sb-who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding-inline: 4px;
+  }
+  .app-wrap .sb-avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .app-wrap .sb-foot b {
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+  .app-wrap .sb-rail .sb-signout {
+    gap: 10px;
+    margin-top: 0;
+    padding: 9px 14px;
+    border-color: rgba(255, 255, 255, 0.28);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  @media (min-width: 768px) {
+    .app-wrap[data-collapsed='true'] .sb-brand,
+    .app-wrap[data-collapsed='true'] .sb-who {
+      display: none;
+    }
+    .app-wrap[data-collapsed='true'] .sb-rail .sb-nav .sb-item {
+      justify-content: center;
+      padding-inline: 0;
+    }
+    .app-wrap[data-collapsed='true'] .sb-rail .sb-signout {
+      width: 40px;
+      padding: 10px;
+    }
+  }
+
+  /* ================= top bar ================= */
+  .app-wrap .app-topbar {
+    gap: 14px;
+  }
+  .app-wrap .app-topbar .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--ink-700);
+  }
+  .app-wrap .topbar-avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: #d9f3ec;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--teal-700);
+  }
+
+  /* The bar has no surface of its own on any screen: the controls float on
+     white discs over the page (on the dashboard, over its cover photo). */
+  .app-wrap .app-col .app-topbar {
+    background: transparent;
+    border-bottom: 0;
+    pointer-events: none;
+  }
+  .app-wrap .app-col .app-topbar > * {
+    pointer-events: auto;
+  }
+  .app-wrap .app-col .app-topbar .icon-btn,
+  .app-wrap .app-col .topbar-avatar {
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 6px 18px -6px rgba(9, 52, 51, 0.35);
+    opacity: 1;
+  }
+  .app-wrap .app-col .topbar-avatar {
+    background: #d9f3ec;
+    box-shadow: 0 0 0 2px var(--white), 0 6px 18px -6px rgba(9, 52, 51, 0.35);
+  }
+
+  /* ---------- shared popup menu (account, cover photo) ---------- */
+  .topbar-menu,
+  .cover-edit-menu {
+    position: absolute;
+    z-index: 40;
+    display: grid;
+    min-width: 220px;
+    padding: 6px;
+    border: 1px solid #e3ebe9;
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 18px 40px -16px rgba(9, 52, 51, 0.35);
+    font-family: var(--ff-ui);
+  }
+  .topbar-menu [role='menuitem'],
+  .cover-edit-menu [role='menuitem'] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .topbar-menu [role='menuitem']:hover,
+  .cover-edit-menu [role='menuitem']:hover {
+    background: #eef7f5;
+  }
+  .topbar-menu [role='menuitem']:focus-visible,
+  .cover-edit-menu [role='menuitem']:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: -2px;
+  }
+  .topbar-menu [role='menuitem'] svg,
+  .cover-edit-menu [role='menuitem'] svg {
+    color: var(--teal-700);
+  }
+
+  /* Account menu, under the profile circle. */
+  .app-wrap .topbar-account {
+    position: relative;
+  }
+  .app-wrap .topbar-avatar {
+    position: relative;
+    border: 0;
+    cursor: pointer;
+  }
+  /* Small dropdown badge on the circle's corner: says "this opens a menu". */
+  .app-wrap .topbar-avatar-caret {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--white);
+    box-shadow: 0 1px 4px rgba(9, 52, 51, 0.3);
+    color: var(--teal-700);
+    transition: transform 0.18s ease;
+  }
+  .app-wrap .topbar-avatar[aria-expanded='true'] .topbar-avatar-caret {
+    transform: rotate(180deg);
+  }
+  .app-wrap .topbar-avatar:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 3px;
+  }
+  .topbar-menu {
+    top: calc(100% + 10px);
+    right: 0;
+  }
+  .topbar-menu-who {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 4px;
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid #edf2f1;
+  }
+  .topbar-menu-who b {
+    font-size: 0.875rem;
+    color: var(--ink-900);
+  }
+  .topbar-menu-who span {
+    overflow: hidden;
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-500);
+  }
+
+  /* "Edit cover photo", bottom-right of the banner photo. */
+  .dash-screen .cover-edit {
+    position: absolute;
+    right: calc(var(--dash-pad, 24px) + 4px);
+    bottom: 82px;
+    z-index: 2;
+  }
+  .dash-screen .cover-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(9, 52, 51, 0.78);
+    font-family: var(--ff-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+  }
+  .dash-screen .cover-edit-btn:hover {
+    background: rgba(9, 52, 51, 0.92);
+  }
+  .dash-screen .cover-edit-btn:focus-visible {
+    outline: 2px solid var(--white);
+    outline-offset: 2px;
+  }
+  .cover-edit-menu {
+    right: 0;
+    bottom: calc(100% + 8px);
+  }
+  .cover-edit-credit {
+    margin-top: 4px;
+    padding: 8px 12px 6px;
+    border-top: 1px solid #edf2f1;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--ink-500);
+  }
+  .cover-edit-credit a {
+    color: var(--teal-700);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ================= market radar drawer ================= */
+  /* Wider, on a pale mint ground; each part sits in its own white block. */
+  .app-wrap .drawer {
+    width: min(980px, 94vw);
+    background: #f4faf8;
+    box-shadow: -24px 0 60px -20px rgba(4, 36, 35, 0.45);
+  }
+  .app-wrap .drawer-body {
+    padding: 24px 32px 28px;
+  }
+  .app-wrap .drawer-close {
+    top: 20px;
+    right: 22px;
+    z-index: 3;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--white);
+    box-shadow: 0 4px 14px -4px rgba(9, 52, 51, 0.35);
+    color: var(--ink-900);
+  }
+  .app-wrap .drawer-foot {
+    padding: 14px 32px 20px;
+    border-top: 1px solid #e3ecea;
+    background: #f4faf8;
+  }
+  .app-wrap .drawer .btn-cta {
+    height: 50px;
+    border-radius: 999px;
+    background: var(--teal-900);
+    font-size: 1rem;
+    color: var(--white);
+    box-shadow: 0 12px 24px -12px rgba(11, 63, 60, 0.6);
+  }
+  .app-wrap .drawer .btn-cta:hover:not(:disabled) {
+    background: #0f5652;
+    color: var(--white);
+  }
+
+  /* Header: market switcher with flags, rank + serif name, route. */
+  .app-wrap .drawer .radar-switch {
+    display: flex;
+    width: fit-content;
+    max-width: calc(100% - 56px);
+    gap: 4px;
+    margin: 0 56px 18px 0;
+    padding: 4px;
+    border: 1px solid #e3ecea;
+    border-radius: 12px;
+    background: var(--white);
+  }
+  .app-wrap .drawer .radar-switch button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 18px;
+    border: 0;
+    border-radius: 9px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ink-700);
+  }
+  .app-wrap .drawer .radar-switch button[aria-pressed='true'] {
+    background: #5fd6a6;
+    font-weight: 600;
+    color: var(--teal-900);
+  }
+  .app-wrap .drawer .radar-switch .mkt-flag {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 18px;
+  }
+  .app-wrap .drawer .radar-switch .mkt-flag img {
+    width: 24px;
+    height: 18px;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(14, 42, 59, 0.08);
+  }
+  /* Region switcher: a dropdown, since the list can grow. */
+  .app-wrap .drawer .radar-select {
+    position: relative;
+    width: fit-content;
+    margin: 0 56px 18px 0;
+    /* Same frame as the international switcher (.radar-switch). */
+    padding: 4px;
+    border: 1px solid #e3ecea;
+    border-radius: 12px;
+    background: var(--white);
+  }
+  /* The trigger is the switcher's selected pill, plus a chevron. */
+  .app-wrap .drawer .radar-select-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+    padding: 8px 14px 8px 18px;
+    border: 0;
+    border-radius: 9px;
+    background: #5fd6a6;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--teal-900);
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+  }
+  .app-wrap .drawer .radar-select-btn:hover,
+  .app-wrap .drawer .radar-select-btn[aria-expanded='true'] {
+    background: #4fcb98;
+  }
+  .app-wrap .drawer .radar-select-btn:focus-visible {
+    outline: 2px solid var(--teal-500);
+    outline-offset: 3px;
+  }
+  .app-wrap .drawer .radar-select-btn .region-map svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--teal-900);
+    stroke: var(--teal-900);
+  }
+  .app-wrap .drawer .radar-select-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-wrap .drawer .radar-select-caret {
+    flex: none;
+    color: var(--teal-900);
+    transition: transform 0.18s ease;
+  }
+  .app-wrap .drawer .radar-select-btn[aria-expanded='true'] .radar-select-caret {
+    transform: rotate(180deg);
+  }
+  .app-wrap .drawer .radar-select-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 5;
+    display: grid;
+    min-width: 100%;
+    width: max-content;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 6px;
+    border: 1px solid #e3ecea;
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 18px 40px -16px rgba(9, 52, 51, 0.35);
+  }
+  .app-wrap .drawer .radar-select-menu [role='menuitemradio'] {
+    display: grid;
+    grid-template-columns: 22px 28px minmax(0, 1fr) auto 16px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    text-align: left;
+    color: var(--ink-900);
+    cursor: pointer;
+  }
+  .app-wrap .drawer .radar-select-menu [role='menuitemradio']:hover,
+  .app-wrap .drawer .radar-select-menu [role='menuitemradio']:focus-visible {
+    background: #eef7f5;
+    outline: none;
+  }
+  .app-wrap .drawer .radar-select-menu [aria-checked='true'] {
+    background: #e3f6f2;
+    font-weight: 600;
+  }
+  .app-wrap .drawer .radar-select-menu [aria-checked='true'] > svg {
+    color: var(--teal-700);
+  }
+  .app-wrap .drawer .radar-select-rank {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #eef4f3;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-700);
+  }
+  .app-wrap .drawer .radar-select-score {
+    font-weight: 600;
+    color: var(--ink-500);
+  }
+  .app-wrap .drawer .radar-select .region-map svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .app-wrap .drawer .radar-head-top {
+    align-items: center;
+    gap: 14px;
+  }
+  .app-wrap .drawer .radar-head .rank-no {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: #d6f3ec;
+    font-weight: 600;
+    color: var(--teal-900);
+  }
+  .app-wrap .drawer .radar-head h2 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink-900);
+  }
+  .app-wrap .drawer .radar-head .text-meta {
+    font-size: 0.9375rem;
+    color: var(--ink-500);
+  }
+  .app-wrap .drawer .radar-head {
+    gap: 0;
+    padding-bottom: 20px;
+    border-bottom: 0;
+  }
+  .app-wrap .drawer .radar-route {
+    margin: 6px 0 0 48px;
+    font-size: 0.875rem;
+  }
+
+  /* Sections become white blocks with an uppercase titled header. */
+  .app-wrap .drawer .radar-section {
+    padding-top: 0;
+  }
+  .app-wrap .drawer .radar-section + .radar-section {
+    margin-top: 18px;
+    border-top: 0;
+  }
+  .app-wrap .drawer .radar-head + .radar-section {
+    margin-top: 22px;
+  }
+  .app-wrap .drawer .radar-block {
+    padding: 18px 20px 20px;
+    border: 1px solid #e3ecea;
+    border-radius: 16px;
+    background: var(--white);
+  }
+  .app-wrap .drawer .radar-block-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .app-wrap .drawer .radar-block-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-900);
+  }
+  .app-wrap .drawer .radar-block-head .radar-block-title {
+    margin: 0;
+  }
+  .app-wrap .drawer .radar-block-title svg {
+    flex: none;
+    color: var(--teal-700);
+  }
+
+  /* Info cards (surge status, directive, what this means, unvalidated):
+     a tinted glyph on the left; the label as a badge above the text. */
+  .app-wrap .drawer .info-card,
+  .app-wrap .drawer * + .info-card {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 8px;
+    align-content: start;
+    margin-top: 0;
+    padding: 18px;
+    border: 1px solid #e3ecea;
+    border-radius: 14px;
+    background: var(--white);
+  }
+  .app-wrap .drawer .info-card::before {
+    display: none;
+  }
+  .app-wrap .drawer .info-body {
+    display: contents;
+  }
+  .app-wrap .drawer .info-glyph {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+  .app-wrap .drawer .info-tab {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+  }
+  .app-wrap .drawer .info-card[data-tone='accent'] .info-tab {
+    padding: 0;
+    background: none;
+    font-size: 0.8125rem;
+    color: var(--ink-900);
+  }
+  .app-wrap .drawer .info-card[data-tone='calm'] .info-tab {
+    background: #5fd6a6;
+    color: var(--teal-900);
+  }
+  .app-wrap .drawer .info-card .body-sm {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--ink-700);
+  }
+  .app-wrap .drawer .info-card + *,
+  .app-wrap .drawer .info-card + .info-card {
+    margin-top: 0;
+  }
+  .app-wrap .drawer .radar-signals {
+    display: grid;
+    gap: 14px;
+  }
+  @media (min-width: 760px) {
+    .app-wrap .drawer .radar-signals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Demand forecast: a dark teal card. The chart reads its colours from
+     custom properties, so they are re-pointed for the dark ground here. */
+  .app-wrap .drawer .radar-forecast {
+    --color-text-body: rgba(255, 255, 255, 0.78);
+    --color-gray-light: rgba(255, 255, 255, 0.18);
+    --color-teal-accent: #7ee6d3;
+    --color-mint-primary: #5fd6a6;
+    --color-cyan-deep: #ffffff;
+    margin-top: 18px;
+    padding: 18px 20px 16px;
+    border-radius: 16px 16px 0 0;
+    background: linear-gradient(160deg, #0f504d 0%, #0b4140 100%);
+    color: var(--white);
+  }
+  .app-wrap .drawer .radar-forecast .feed-head {
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .app-wrap .drawer .radar-forecast .feed-head h3 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--ff-ui);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--white);
+  }
+  .app-wrap .drawer .radar-forecast .feed-head h3 svg {
+    color: #7ee6d3;
+  }
+  .app-wrap .drawer .radar-forecast .seg {
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .app-wrap .drawer .radar-forecast .seg button {
+    padding: 6px 22px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .app-wrap .drawer .radar-forecast .seg button[aria-pressed='true'] {
+    background: #5fd6a6;
+    color: var(--teal-900);
+  }
+  .app-wrap .drawer .radar-forecast .chart-frame {
+    padding: 4px 0 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .app-wrap .drawer .radar-forecast .text-meta,
+  .app-wrap .drawer .radar-forecast .recharts-legend-item-text {
+    color: rgba(255, 255, 255, 0.78) !important;
+  }
+  .app-wrap .drawer .radar-forecast .chart-frame + .radar-engine {
+    margin-top: -21px !important;
+    text-align: right;
+  }
+  .app-wrap .drawer .radar-forecast .info-card {
+    margin-bottom: 12px;
+  }
+  /* The "Unvalidated forecast" note inside the dark card: a lighter teal
+     panel with muted teal text, so it informs without outshining the chart. */
+  .app-wrap .drawer .radar-forecast .info-card {
+    border-color: rgba(126, 230, 211, 0.14);
+    background: #155e5a;
+  }
+  .app-wrap .drawer .radar-forecast .info-card .body-sm {
+    color: #b7dfd8;
+  }
+  .app-wrap .drawer .radar-forecast .info-card .info-tab {
+    background: rgba(126, 230, 211, 0.16);
+    color: #a8eadd;
+  }
+  .app-wrap .drawer .radar-forecast .info-card .info-glyph {
+    background: rgba(126, 230, 211, 0.12);
+    color: #a8eadd;
+  }
+
+  /* Chart tooltip: a white box inside the dark card, so its text goes dark
+     teal (the series colours are pale, set inline, hence !important). */
+  .app-wrap .drawer .radar-forecast .recharts-tooltip-wrapper p {
+    color: #0f504d !important;
+  }
+  .app-wrap .drawer .radar-forecast .recharts-tooltip-wrapper p:first-child {
+    color: var(--ink-900) !important;
+  }
+  .app-wrap .drawer .radar-forecast .recharts-tooltip-wrapper p + p {
+    font-weight: 600;
+  }
+
+  /* Preview-data notice under a region drawer's header. */
+  .app-wrap .drawer .radar-notice {
+    margin-top: 4px;
+  }
+  .app-wrap .drawer .radar-notice .info-card {
+    border-color: #f3d3c6;
+    background: #fff8f4;
+  }
+  .app-wrap .drawer .radar-notice .info-tab {
+    background: #fde3d8;
+    color: #a63f25;
+  }
+  .app-wrap .drawer .radar-notice .info-glyph {
+    background: #fde3d8;
+    color: #c24a2e;
+  }
+  .app-wrap .drawer .radar-target-note {
+    margin-top: 14px;
+    text-align: center;
+  }
+  .app-wrap .drawer .btn-cta:disabled {
+    background: #c9d8d5;
+    color: var(--ink-700);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* Zone key: a white strip joined to the bottom of the dark card. */
+  .app-wrap .drawer .zone-key {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 14px 20px;
+    border: 1px solid #e3ecea;
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    background: var(--white);
+  }
+  .app-wrap .drawer .zone-key li {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .app-wrap .drawer .zone-swatch {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    border-radius: 4px;
+  }
+  .app-wrap .drawer .zone-key b {
+    font-size: 0.875rem;
+  }
+
+  /* Market insights tabs. */
+  .app-wrap .drawer .radar-block .seg {
+    width: fit-content;
+    margin: 0;
+    padding: 3px;
+    border: 1px solid #e3ecea;
+    border-radius: 999px;
+    background: #f4faf8;
+  }
+  .app-wrap .drawer .radar-block [role='tablist'] button {
+    flex: none;
+    white-space: nowrap;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+  }
+  .app-wrap .drawer .radar-block [role='tablist'] button[aria-selected='true'] {
+    background: #5fd6a6;
+    color: var(--teal-900);
+  }
+  .app-wrap .drawer .radar-kpis .stat-tile {
+    border: 1px solid #e3ecea;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .app-wrap .drawer .radar-kpis .stat-icon {
+    background: #ddf3ee;
+    color: var(--teal-700);
+    box-shadow: none;
+  }
+  .app-wrap .drawer .radar-kpis .stat-value {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-weight: 600;
+  }
+  .app-wrap .drawer .radar-block .card {
+    border: 1px solid #e3ecea;
+    box-shadow: none;
+  }
+  .app-wrap .drawer .radar-block .chart-frame {
+    border: 1px solid #e3ecea;
+    box-shadow: none;
+  }
+  .app-wrap .drawer .radar-block [role='tabpanel'] > * + * {
+    margin-top: 16px;
+  }
+  .app-wrap .drawer .month-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .app-wrap .drawer .month-grid li {
+    padding: 8px 0;
+    border-radius: 8px;
+    background: #eef4f3;
+    font-size: 0.8125rem;
+    color: var(--ink-700);
+  }
+  .app-wrap .drawer .month-grid li[data-peak='true'] {
+    background: #5fd6a6;
+    font-weight: 600;
+    color: var(--teal-900);
+  }
+  /* Trend charts side by side, each framed in dark teal. */
+  .app-wrap .drawer .radar-trends {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .app-wrap .drawer .radar-trends .card,
+  .app-wrap .drawer .radar-block [role='tabpanel'] .chart-frame {
+    min-width: 0;
+    border: 1.5px solid #0f504d;
+    border-radius: 14px;
+    /* Soft mint halo around the dark-teal frame. */
+    box-shadow:
+      0 0 0 3px rgba(95, 214, 166, 0.16),
+      0 6px 18px -6px rgba(43, 201, 176, 0.35);
+  }
+  @media (max-width: 759px) {
+    .app-wrap .drawer .month-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .app-wrap .drawer .zone-key {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .app-wrap .drawer .radar-trends {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Route & carriers: carriers side by side. */
+  .app-wrap .drawer .radar-block > .card {
+    padding: 14px 16px;
+  }
+  @media (min-width: 760px) {
+    .app-wrap .drawer .carrier-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 24px;
+    }
+  }
+  .app-wrap .drawer .carrier-code {
+    border-radius: 8px;
+    background: #eef4f3;
+  }
+  .app-wrap .drawer .carrier-list .chip--success {
+    border: 0;
+    background: #d9f3ec;
+    color: var(--teal-700);
+  }
+
+  @media (max-width: 640px) {
+    .app-wrap .drawer {
+      width: 100vw;
+    }
+    .app-wrap .drawer-body {
+      padding: 18px 16px 20px;
+    }
+    .app-wrap .drawer-foot {
+      padding: 12px 16px 16px;
+    }
+    .app-wrap .drawer .radar-switch {
+      display: flex;
+      margin-right: 48px;
+      overflow-x: auto;
+    }
+    .app-wrap .drawer .radar-switch button {
+      padding: 8px 12px;
+    }
+    .app-wrap .drawer .radar-route {
+      margin-left: 0;
+    }
+  }
+
+  /* ================= dashboard ================= */
+  /* The dashboard's main column: a little less side padding, and a plain
+     canvas the banner photo can fade into. */
+  .app-wrap .app-main:has(.dash-screen) {
+    --dash-pad: 24px;
+    padding: 0 var(--dash-pad) 32px;
+  }
+  @media (min-width: 1024px) {
+    .app-wrap .app-main:has(.dash-screen) {
+      --dash-pad: 36px;
+    }
+  }
+
+  /* Banner: greeting and actions over a beach photo that fades into the
+     canvas on the left and at the foot. It bleeds to the column's edges. */
+  .dash-screen .dash-hero {
+    position: relative;
+    isolation: isolate;
+    margin: calc(var(--topbar-h) * -1) calc(var(--dash-pad, 24px) * -1) 0;
+    padding: calc(var(--topbar-h) + 18px) var(--dash-pad, 24px) 96px;
+  }
+  .dash-screen .dash-hero-photo {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: -1;
+    width: 74%;
+    -webkit-mask-image:
+      linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 30%, #000 55%),
+      linear-gradient(180deg, #000 60%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 30%, #000 55%),
+      linear-gradient(180deg, #000 60%, transparent 100%);
+    mask-composite: intersect;
+  }
+  .dash-screen .dash-hero-photo .cv-img {
+    object-position: 60% 62%;
+  }
+  .dash-screen .page-head {
+    align-items: flex-start;
+    margin-bottom: 0;
+  }
+  .dash-screen .page-head h1 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.75rem, 2.5vw, 2.375rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    color: var(--ink-900);
+  }
+  .dash-screen .page-head .body-sm {
+    margin-top: 10px;
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .page-head-actions {
+    gap: 10px;
+  }
+
+  /* Uniqueness: a coral-ringed disc on a soft coral capsule. */
+  .dash-screen .score-badge-disc {
+    border: 2.5px solid #f08a6a;
+    background: var(--white);
+    box-shadow: 0 0 0 3px rgba(240, 138, 106, 0.18);
+    font-size: 0.9375rem;
+    color: #c24a2e;
+  }
+  .dash-screen .score-badge {
+    --score-disc: 36px;
+  }
+  .dash-screen .score-badge-body {
+    height: 36px;
+    border-color: #f6c3b2;
+    background: #fde9e1;
+  }
+  .dash-screen .score-badge-label,
+  .dash-screen .score-badge-glyph {
+    color: #c24a2e;
+  }
+  .dash-screen .score-badge-label {
+    font-size: 0.6875rem;
+  }
+  /* How old the forecast is, beside Refresh; "Updating…" while it is refreshed in the background. */
+  .dash-screen .dash-fresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .dash-fresh[data-tone='warn'] {
+    color: #a63f25;
+    font-weight: 600;
+  }
+  .dash-screen .dash-fresh .spinner {
+    width: 12px;
+    height: 12px;
+  }
+  .dash-screen .page-head-actions .btn-outline {
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid #d5e0de;
+    background: var(--white);
+    font-size: 0.8125rem;
+    color: var(--ink-900);
+    box-shadow: 0 6px 16px -10px rgba(11, 63, 60, 0.35);
+  }
+
+  /* Summary tiles: overlap the banner's foot. Round tinted icon beside the
+     label and figure; a rule; the supporting line. */
+  .dash-screen .stat-row {
+    position: relative;
+    gap: 16px;
+    margin: -72px 0 20px;
+    padding-top: 0;
+  }
+  .dash-screen .stat-tile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+    padding: 16px 20px 0;
+    border: 1px solid #e6eeec;
+    border-radius: 16px;
+    box-shadow: 0 14px 34px -22px rgba(11, 63, 60, 0.35);
+  }
+  .dash-screen .stat-icon {
+    position: static;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: #ddf3ee;
+    color: var(--teal-700);
+    box-shadow: none;
+  }
+  .dash-screen .stat-tile[data-tone='coral'] .stat-icon {
+    background: #fde3d8;
+    color: #c24a2e;
+  }
+  .dash-screen .stat-head {
+    align-items: flex-start;
+    gap: 4px;
+    padding: 0;
+  }
+  .dash-screen .stat-label {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .stat-value {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--ink-900);
+  }
+  .dash-screen .stat-foot {
+    grid-column: 1 / -1;
+    margin-top: 14px;
+    padding: 10px 2px 12px;
+    border-top: 1px solid #e8eeed;
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .stat-go {
+    color: var(--teal-700);
+  }
+  @container (max-width: 300px) {
+    .dash-screen .stat-icon {
+      width: 40px;
+      height: 40px;
+    }
+    .dash-screen .stat-value {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* "Top market now" — the one clickable tile — is the dark-teal one. */
+  .dash-screen .stat-tile--action {
+    border-color: transparent;
+    background: linear-gradient(160deg, #0f504d 0%, #0b4140 100%);
+    box-shadow: 0 16px 34px -18px rgba(9, 52, 51, 0.6);
+  }
+  .dash-screen .stat-tile--action .stat-icon {
+    background: rgba(255, 255, 255, 0.14);
+    color: #7ee6d3;
+  }
+  .dash-screen .stat-tile--action .stat-label {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .dash-screen .stat-tile--action .stat-value {
+    color: var(--white);
+  }
+  .dash-screen .stat-tile--action .stat-foot {
+    border-top-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .dash-screen .stat-tile--action .stat-go {
+    color: var(--white);
+  }
+  .dash-screen .stat-tile--action:hover:not(:disabled) {
+    box-shadow: 0 20px 38px -16px rgba(9, 52, 51, 0.7);
+  }
+  .dash-screen .stat-tile--action:focus-visible {
+    outline: 2px solid #2bc9b0;
+    outline-offset: 3px;
+  }
+  .dash-screen .stat-tile--action .chip {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+  }
+
+  /* Feed and markets: two white panels. */
+  .dash-screen .dash-grid {
+    gap: 20px;
+  }
+  @media (min-width: 1280px) {
+    .dash-screen .dash-grid {
+      grid-template-columns: minmax(0, 1.4fr) minmax(380px, 1fr);
+    }
+  }
+  .dash-screen .dash-feed,
+  .dash-screen .dash-markets {
+    padding: 20px 22px 22px;
+    border: 1px solid #e6eeec;
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 14px 34px -24px rgba(11, 63, 60, 0.35);
+  }
+  .dash-screen .feed-head {
+    min-height: 0;
+    margin-bottom: 16px;
+  }
+  .dash-screen .feed-head h2,
+  .dash-screen .dash-feed > h2 {
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink-900);
+  }
+
+  /* All / Unread / Surges */
+  .dash-screen .seg {
+    padding: 4px;
+    border: 1px solid #e3ebe9;
+    border-radius: 999px;
+    background: var(--white);
+  }
+  .dash-screen .seg button {
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    color: var(--ink-700);
+  }
+  .dash-screen .seg button[aria-pressed='true'] {
+    border-color: #9fdccf;
+    background: #d8f3ec;
+    color: var(--teal-900);
+  }
+
+  /* One alert. */
+  .dash-screen .alert-card {
+    padding: 16px 20px;
+    border: 1px solid #e6eeec;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+  .dash-screen .alert-card:hover {
+    border-color: #bfe3dc;
+    box-shadow: 0 10px 24px -18px rgba(11, 63, 60, 0.4);
+  }
+  .dash-screen .alert-card[data-selected='true'] {
+    border-color: #2bc9b0;
+    box-shadow: 0 0 0 3px rgba(43, 201, 176, 0.14);
+  }
+  .dash-screen .alert-top .text-meta {
+    font-size: 0.8125rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .alert-dot {
+    width: 10px;
+    height: 10px;
+    background: #f0845f;
+  }
+  .dash-screen .alert-card .heading-sm {
+    margin-top: 2px;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink-900);
+  }
+  .dash-screen .alert-card .body-sm {
+    margin-top: 6px;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 0.875rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .alert-card .chip-row {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .dash-screen .alert-card .chip:not(.chip--critical) {
+    gap: 6px;
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #e4f6f1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-700);
+  }
+  .dash-screen .alert-card .chip:not(.chip--critical) svg {
+    color: var(--teal-700);
+  }
+  .dash-screen .alert-cta {
+    margin-top: 12px;
+    font-size: 0.875rem;
+    color: var(--teal-700);
+  }
+
+  /* Ranked markets: compact rows. */
+  .dash-screen .dash-markets .feed-head {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e8eeed;
+  }
+  .dash-screen .dash-markets .feed-head h2 {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 0;
+    border-bottom: 0;
+    white-space: nowrap;
+  }
+  .dash-screen .dash-markets .feed-head h2 svg {
+    flex: none;
+    color: var(--ink-500);
+  }
+  /* The category sits on its own line under the heading, right-aligned, in
+     both the international and the Philippine panels. */
+  .dash-screen .dash-markets .feed-head,
+  .dash-screen .dash-regions .feed-head {
+    flex-wrap: wrap;
+  }
+  .dash-screen .dash-markets .markets-note,
+  .dash-screen .dash-regions .markets-note {
+    flex-basis: 100%;
+  }
+  .dash-screen .markets-note {
+    margin-left: auto;
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    text-align: right;
+    color: var(--ink-500);
+  }
+  .dash-screen .rank-list {
+    display: grid;
+  }
+  .dash-screen .rank-card {
+    display: grid;
+    grid-template-columns: 26px 28px minmax(104px, 1fr) minmax(48px, 30%) 26px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #eef3f2;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .dash-screen .rank-card:hover {
+    background: #f5faf9;
+    box-shadow: none;
+    transform: none;
+  }
+  .dash-screen .rank-no {
+    width: 26px;
+    height: 26px;
+    background: #eef4f3;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ink-700);
+  }
+  .dash-screen .rank-no[data-lead='true'] {
+    background: #d6f3ec;
+    color: var(--teal-900);
+  }
+  .dash-screen .mkt-flag {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 22px;
+    color: var(--ink-500);
+  }
+  .dash-screen .mkt-flag img {
+    width: 28px;
+    height: 21px;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(14, 42, 59, 0.08);
+  }
+  .dash-screen .rank-name {
+    display: grid;
+    min-width: 0;
+  }
+  .dash-screen .rank-card .heading-sm {
+    overflow: hidden;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .dash-screen .rank-surge {
+    display: inline-flex;
+    white-space: nowrap;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #c24a2e;
+  }
+  .dash-screen .rank-surge svg {
+    width: 11px;
+    height: 11px;
+  }
+  .dash-screen .rank-card .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e8eeed;
+  }
+  .dash-screen .rank-card .bar > i {
+    border-radius: inherit;
+    background: #2bb59b;
+  }
+  .dash-screen .rank-pts {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink-700);
+  }
+
+  .dash-screen .dash-feed .card,
+  .dash-screen .dash-markets .card {
+    border: 1px solid #e6eeec;
+    box-shadow: none;
+  }
+  .dash-screen .dash-feed .empty {
+    padding-block: 28px;
+  }
+  .dash-screen .dash-feed .empty h3,
+  .dash-screen .dash-markets .empty h3 {
+    font-size: 1rem;
+  }
+  .dash-screen .dash-feed .empty p,
+  .dash-screen .dash-markets .empty p {
+    font-size: 0.8125rem;
+  }
+  .dash-screen .empty-glyph {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Top Philippine Regions: the same panel, header and rows as the
+     international markets, with region maps in the flag slot. */
+  .dash-screen .dash-regions {
+    padding: 20px 22px 22px;
+    border: 1px solid #e6eeec;
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 14px 34px -24px rgba(11, 63, 60, 0.35);
+  }
+  .dash-screen .dash-regions .feed-head {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 4px;
+    gap: 12px;
+    min-height: 0;
+    margin-bottom: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e8eeed;
+  }
+  .dash-screen .dash-regions .feed-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: clamp(1.25rem, 1.6vw, 1.5rem);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    white-space: nowrap;
+    color: var(--ink-900);
+  }
+  .dash-screen .region-info {
+    display: inline-grid;
+    place-items: center;
+    color: var(--ink-500);
+    cursor: help;
+  }
+  /* All 17 regions, about five rows visible; the list scrolls in place. */
+  .dash-screen .region-list {
+    /* The scroll box must also be the containing block: each row's
+       screen-reader label (.sr-only) is absolutely positioned, and without
+       this the labels of rows scrolled out of view escaped the clip and
+       stretched the page below the app — the sidebar then slid up with it. */
+    position: relative;
+    gap: 0;
+    max-height: 290px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: #c3d2cf transparent;
+  }
+  .region-map svg {
+    width: 26px;
+    height: 26px;
+    fill: var(--teal-700);
+    stroke: var(--teal-700);
+    stroke-width: 0.35;
+    stroke-linejoin: round;
+  }
+  .dash-screen .rank-card[data-lead='true'] .region-map svg {
+    fill: #0b8f7f;
+    stroke: #0b8f7f;
+  }
+
+
+  @media (max-width: 767px) {
+    .dash-screen .dash-hero {
+      padding-bottom: 96px;
+    }
+    .dash-screen .dash-hero-photo {
+      width: 100%;
+      opacity: 0.45;
+    }
+    .dash-screen .cover-edit {
+      bottom: 70px;
+    }
+    .dash-screen .markets-note {
+      flex-basis: 100%;
+      margin-left: 0;
+      text-align: left;
+    }
+    .dash-screen .dash-feed,
+    .dash-screen .dash-markets {
+      padding: 20px 18px;
+    }
+    .dash-screen .rank-card {
+      grid-template-columns: 26px 28px minmax(0, 1fr) 60px 26px;
+      gap: 10px;
+    }
+  }
+}
+
+/* Keep additional alerts inside the panel instead of lengthening the page. */
+@layer components {
+  .dash-screen .dash-feed {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: clamp(480px, 68vh, 760px);
+    min-height: 0;
+    overflow: hidden;
+  }
+  .dash-screen .dash-feed > .feed-head,
+  .dash-screen .dash-feed > h2 { flex: none; }
+  .dash-screen .dash-feed-scroll,
+  .dash-screen .dash-feed > .grid,
+  .dash-screen .dash-feed > .card {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #75bdb2 transparent;
+  }
+  .dash-screen .dash-feed-scroll { flex: 0 1 auto; padding: 4px; }
+  .dash-screen .dash-feed-scroll:focus-visible {
+    outline: 2px solid #168c7d;
+    outline-offset: -2px;
+    border-radius: 12px;
+  }
+  @media (max-width: 767px) {
+    .dash-screen .dash-feed { max-height: clamp(420px, 70svh, 620px); }
+  }
+}
+
+/* Recessed alert surface, capped by the independently sized markets column. */
+@layer components {
+  .dash-screen .dash-feed-scroll {
+    padding: 14px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .dash-screen .dash-feed-scroll .alert-card {
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(11, 63, 60, 0.09), 0 12px 24px -16px rgba(11, 63, 60, 0.2);
+  }
+  .dash-screen .dash-feed-scroll .alert-card[data-selected='true'] {
+    box-shadow: 0 0 0 2px #b8eee1, 0 6px 16px rgba(11, 63, 60, 0.12);
+  }
+  @media (min-width: 1024px) {
+    .dash-screen .dash-grid { align-items: start; }
+    .dash-screen .dash-feed {
+      height: auto;
+      max-height: var(--alert-panel-max-height, 68vh);
+      min-height: 0;
+    }
+    .dash-screen .dash-market-panels { align-content: start; align-self: start; }
+  }
+}
+
+@layer components {
+  .dash-business-trends { margin-top: 20px; padding: 20px; border: 1px solid #e2eeea; border-radius: 16px; background: white; box-shadow: 0 12px 30px -24px #0b3f3c55; min-width: 0; }
+  .dash-business-trends > .body-sm { margin-top: 6px; color: #63757c; }
+  .business-trends-scroll { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: #75bdb2 transparent; margin-top: 14px; padding-bottom: 8px; }
+  .business-trends-scroll:focus-visible { outline: 2px solid #168c7d; outline-offset: 3px; border-radius: 8px; }
+  .business-trends-scroll ol { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 8px; list-style: none; padding: 0; margin: 0; }
+  .business-trends-scroll li { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid #e0eae8; border-radius: 10px; background: linear-gradient(115deg, #fff, #fbfefd); min-width: 0; }
+  .business-trend-rank { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: #eaf1f2; font-size: .6875rem; font-weight: 700; color: #193d50; }
+  .business-trend-copy { min-width: 0; flex: 1; }
+  .business-trends-scroll h3 { font-size: .8125rem; line-height: 1.2; color: #152b48; font-weight: 600; margin-bottom: 4px; }
+  .business-trend-category { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 99px; font-size: .5rem; line-height: 1.2; white-space: nowrap; background: #e0f5f0; color: #086762; }
+  .business-trend-category svg { flex: none; }
+  .business-trend-category[data-tone='purple'] { background: #eee8ff; color: #6744ae; }
+  .business-trend-category[data-tone='coral'] { background: #ffebe1; color: #b84425; }
+  .business-trend-category[data-tone='blue'] { background: #e5f0ff; color: #2462a7; }
+  .business-trend-category[data-tone='gold'] { background: #fff1da; color: #99620b; }
+  .business-trend-spark { flex: 0 0 36px; width: 36px; height: 24px; color: #13b29c; }
+  .business-trend-score { display: grid; place-items: center; flex: none; min-width: 32px; height: 26px; padding: 0 5px; border-radius: 99px; background: #dcf4ee; color: #096663; font-size: .75rem; font-weight: 600; }
+  .business-trend-score[data-muted] { background: #eaf1f3; color: #526d7b; }
+}
+
+/* The business's profile photo, when one is set (Business Profile). */
+@layer components {
+  .app-wrap .topbar-avatar-img { width: 100%; height: 100%; border-radius: 999px; object-fit: cover; }
+}

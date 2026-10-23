@@ -7,7 +7,7 @@
  * the drawer shell; the shell owns the timeframe so switching insight tabs
  * cannot reset it.
  */
-import { AlertTriangle, CloudOff, Sparkles, Zap } from 'lucide-react';
+import { AlertTriangle, BarChart3, CloudOff, Crosshair, Sparkles, Zap } from 'lucide-react';
 import DemandForecastChart from './DemandForecastChart';
 import type { DrawerChartSlotProps, Timeframe } from './radarTypes';
 import { marketSurgeState } from '@/types';
@@ -48,6 +48,11 @@ export default function DrawerChartPanel({
 
   return (
     <section className="radar-section" aria-label="Demand forecast">
+      <div className="radar-block">
+      <p className="radar-block-title">
+        <Crosshair size={18} strokeWidth={1.75} aria-hidden="true" /> Planning signals
+      </p>
+      <div className="radar-signals">
       {/* Tabbed cards: the label straddles the top edge rather than leading the
           sentence, so the two states are told apart at a glance instead of by
           reading the first three words. */}
@@ -103,9 +108,17 @@ export default function DrawerChartPanel({
           <p className="body-sm">{market.directive}</p>
         </div>
       </div>
+      </div>
+      </div>
 
+      {/* The forecast sits on a dark card; the chart's colours are re-pointed
+          through CSS custom properties in that scope (see dashboard.css). */}
+      <div className="radar-forecast">
       <div className="feed-head">
-        <h3 className="heading-md">Demand Forecast</h3>
+        <h3 className="heading-md">
+          <BarChart3 size={20} strokeWidth={1.75} aria-hidden="true" />
+          Demand Forecast
+        </h3>
         <div className="seg" role="group" aria-label="Forecast timeframe">
           {TIMEFRAMES.map((t) => (
             <button
@@ -139,7 +152,8 @@ export default function DrawerChartPanel({
       )}
 
       <DemandForecastChart data={market.chartData} timeframe={timeframe} />
-      <p className="text-meta mt-1">Forecast engine: {engineLabel(market.forecastSource)}</p>
+      <p className="text-meta mt-1 radar-engine">Forecast engine: {engineLabel(market.forecastSource)}</p>
+      </div>
 
       <ul className="zone-key">
         {ZONES.map((z) => (

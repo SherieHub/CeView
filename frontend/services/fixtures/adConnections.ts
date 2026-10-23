@@ -12,7 +12,10 @@ import type {
   AdConnection,
   AdInsightSource,
   AdInsightSummary,
+  AdInterestOption,
+  AdMinimumBudget,
   AdProvider,
+  AdSpendLimits,
 } from '../../types';
 
 export const MOCK_AD_ACCOUNTS: AdAccountOption[] = [
@@ -108,6 +111,41 @@ export function mockConnections(): AdConnection[] {
 export function mockSetCampaign(provider: AdProvider, campaignId: string | null): AdConnection {
   scopeState[provider] = campaignId;
   return connectionFor(provider);
+}
+
+// ── paid-ad planning (spend limits, Meta's minimum budget, interest search) ───
+
+/** Starts unset, like a real business that has not visited Settings yet. */
+let limitsState: { maxDailyMinor: number; maxTotalMinor: number } | null = null;
+
+export function mockLimits(): AdSpendLimits {
+  const currency = BASE.meta.currency;
+  return limitsState
+    ? { configured: true, currency, ...limitsState, committedMinor: 0 }
+    : { configured: false, currency, maxDailyMinor: null, maxTotalMinor: null, committedMinor: 0 };
+}
+
+export function mockSaveLimits(maxDailyMinor: number, maxTotalMinor: number): AdSpendLimits {
+  limitsState = { maxDailyMinor, maxTotalMinor };
+  return mockLimits();
+}
+
+/** Meta's real floor for a Philippine ad account is of this order; the fixture only needs a plausible one. */
+export function mockMinimumBudget(objective: string): AdMinimumBudget {
+  return { currency: BASE.meta.currency, minDailyMinor: objective === 'OUTCOME_AWARENESS' ? 2150 : 6332 };
+}
+
+const MOCK_INTERESTS: AdInterestOption[] = [
+  { id: '6003020834693', name: 'Scuba diving', path: 'Interests › Sports and outdoors › Outdoor recreation' },
+  { id: '6003139266461', name: 'Snorkeling', path: 'Interests › Sports and outdoors › Outdoor recreation' },
+  { id: '6003107902433', name: 'Beach resort', path: 'Interests › Travel' },
+  { id: '6003195797498', name: 'Island hopping', path: 'Interests › Travel' },
+  { id: '6003349442621', name: 'Cafe', path: 'Interests › Food and drink' },
+];
+
+export function mockInterests(query: string): AdInterestOption[] {
+  const q = query.trim().toLowerCase();
+  return MOCK_INTERESTS.filter((i) => i.name.toLowerCase().includes(q) || i.path.toLowerCase().includes(q));
 }
 
 export function mockInsights(providers?: AdProvider[]): AdInsightSummary {

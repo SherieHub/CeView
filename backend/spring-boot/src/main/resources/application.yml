@@ -1,5 +1,9 @@
 server:
   port: 8080
+  # Behind Render's proxy request.getRemoteAddr() is the proxy, not the client; honouring
+  # X-Forwarded-For lets the per-IP rate limiters (auth email, attribution enquiries) tell
+  # clients apart instead of putting everyone in one bucket.
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -38,9 +42,48 @@ ceview:
     # see config/RequiredSecretsEnvironmentPostProcessor).
     secret: ${JWT_SECRET:}
     expiry-hours: 24
+  email:
+    # 'log' prints the code to the backend log and sends nothing (local dev, e2e, seeded
+    # @ceview.local operators). 'resend' sends through Resend's HTTPS API — SMTP is not an option
+    # on Render's free tier, which blocks outbound ports 25/465/587.
+    provider: ${EMAIL_PROVIDER:log}
+    # Must be an address on a domain verified in Resend, e.g. CeView <no-reply@yourdomain.com>.
+    from: ${EMAIL_FROM:}
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      base-url: https://api.resend.com
+  email-code:
+    ttl: 10m
+    max-attempts: 5
+    resend-cooldown: 60s
+    max-sends-per-hour: 5
+  # Per-IP cap on the auth endpoints that send email (protects Resend's 100/day free quota).
+  auth-rate-limit:
+    # Overridable because an e2e run registers far more than 10 accounts from one IP.
+    max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:10}
+    window: 15m
+  # Separate per-IP cap on register / complete-profile, the endpoints that carry phone
+  # verification (AuthRateLimiter). Takes the same e2e override as the email cap above.
+  auth:
+    rate-limit:
+      max-requests: ${CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS:20}
+      window-seconds: 900
+    # SMS phone verification (Firebase Phone Auth) needs the paid Blaze plan, so it is off by
+    # default; numbers are then stored unverified. Turn on together with the frontend's
+    # VITE_PHONE_VERIFICATION_ENABLED.
+    phone-verification:
+      enabled: ${PHONE_VERIFICATION_ENABLED:false}
+  test-support:
+    # E2E only: exposes /api/test-support/email-codes/latest. Never enable with a real provider.
+    enabled: ${CEVIEW_TEST_SUPPORT_ENABLED:false}
   attribution:
     # Public origin the redirect is served from. This string is embedded in live ads.
-    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:http://localhost:8080}
+    # Falls back to RENDER_EXTERNAL_URL, which Render injects into every web service, so a deploy that
+    # forgets the variable still gets working public links instead of localhost ones.
+    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
+    # Frontend origin that serves the hosted booking-enquiry form (/enquiry). Hosted tracked links
+    # redirect here; it is the frontend, not the API, so it follows FRONTEND_BASE_URL by default.
+    enquiry-base-url: ${CEVIEW_ENQUIRY_BASE_URL:${FRONTEND_BASE_URL:http://localhost:3001}}
     # Salt for hashing traveller IPs. Same rule as the JWT secret above.
     ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:}
   firebase:
@@ -66,9 +109,35 @@ ceview:
     meta:
       app-id: ${META_APP_ID:}
       app-secret: ${META_APP_SECRET:}
+      graph-base-url: ${META_GRAPH_BASE_URL:https://graph.facebook.com/v25.0}
+      dialog-url: ${META_DIALOG_URL:https://www.facebook.com/v25.0/dialog/oauth}
     tiktok:
       app-id: ${TIKTOK_APP_ID:}
       app-secret: ${TIKTOK_APP_SECRET:}
+  social:
+    dispatch-enabled: ${SOCIAL_DISPATCH_ENABLED:true}
+    dispatch-delay-ms: ${SOCIAL_DISPATCH_DELAY_MS:30000}
+    metrics-enabled: ${SOCIAL_METRICS_ENABLED:true}
+    metrics-cron: ${SOCIAL_METRICS_CRON:0 0 3 * * *}
+    tiktok:
+      # TikTok for Developers app (Login Kit + Content Posting API) — NOT the TikTok For Business
+      # ads app above. Blank = the TikTok publishing connection reports "not configured".
+      client-key: ${TIKTOK_CONTENT_CLIENT_KEY:}
+      client-secret: ${TIKTOK_CONTENT_CLIENT_SECRET:}
+  media:
+    # "s3" in production (compose sets it); "local" keeps uploads on disk for dev and tests.
+    storage: ${MEDIA_STORAGE:local}
+    # Origin that serves uploaded files. Platforms fetch media from here, so it must be
+    # public HTTPS in production (TikTok additionally verifies this URL prefix).
+    public-base-url: ${MEDIA_PUBLIC_BASE_URL:http://localhost:8080}
+    local-dir: ${MEDIA_LOCAL_DIR:./media-uploads}
+    s3:
+      bucket: ${MEDIA_BUCKET:}
+      region: ${MEDIA_AWS_REGION:ap-southeast-1}
+      # Blank = fall back to the SDK's default credential chain (env, ~/.aws).
+      access-key-id: ${MEDIA_AWS_ACCESS_KEY_ID:}
+      secret-access-key: ${MEDIA_AWS_SECRET_ACCESS_KEY:}
+      presign-minutes: ${MEDIA_PRESIGN_MINUTES:15}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3001,http://localhost:3002}
   external:

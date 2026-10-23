@@ -9,10 +9,15 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 
 | Method | Path | Frontend trigger | Returns |
 |---|---|---|---|
-| POST | `/api/auth/register` | Create Account form | `{ operatorId, token, profileCompleted }` |
-| POST | `/api/auth/login` | Sign In form | `{ operatorId, token, profileCompleted }` |
+| POST | `/api/auth/register` | Create Account form — body `{ firstName, lastName, email, password, contactNumber }`; password must be 8-72 bytes with a letter and a digit (400 `WEAK_PASSWORD`). Emails a 6-digit verification code | `{ operatorId, token, profileCompleted, emailVerified }`; 400 `EMAIL_TAKEN` if the email belongs to a verified, Google, or pre-verification account (an unverified sign-up made after verification shipped is replaced instead) |
+| POST | `/api/auth/login` | Sign In form | `{ operatorId, token, profileCompleted, emailVerified }` — an unverified account still gets a token, but see [Email verification](#email-verification--password-reset) |
 | POST | `/api/auth/google` | "Continue with Google" — body `{ idToken, intent }` (a Firebase ID token, and `"login"` or `"register"` matching the active tab) | `{ operatorId, token, profileCompleted }`, or 503 if Google sign-in isn't configured (no `FIREBASE_CREDENTIALS_JSON`), 401 on an invalid/expired token, 409 `google_account_already_registered` when `intent: "register"` targets an already-linked Google account, 404 `google_account_not_registered` when `intent: "login"` targets one that was never registered |
 | PATCH | `/api/auth/profile` | CompleteProfilePage — body `{ contactNumber }` | `{ profileCompleted: true }` |
+| POST | `/api/auth/email-verification/send` | VerifyEmailPage (on arrival, and "Resend code") — auth required | 202 `{ sentTo, resendAvailableInSeconds }`; 409 `ALREADY_VERIFIED`; 429 `RESEND_COOLDOWN` / `SEND_LIMIT` (+ `retryAfterSeconds`); 503 `EMAIL_SEND_FAILED` |
+| POST | `/api/auth/email-verification/verify` | VerifyEmailPage — body `{ code }`, auth required | `{ emailVerified: true }`; 400 `INVALID_CODE` (+ `attemptsRemaining`) / `CODE_EXPIRED` / `CODE_LOCKED` / `NO_ACTIVE_CODE` |
+| PATCH | `/api/auth/email` | VerifyEmailPage "Wrong email? Change it" — body `{ email }`, auth required, unverified accounts only | `{ email }` and a new code is mailed to it; 400 `EMAIL_TAKEN` / `SAME_EMAIL`; 409 `ALREADY_VERIFIED` |
+| POST | `/api/auth/password-reset/request` | ForgotPasswordPage step 1 — body `{ email }`, public | 202 `{ sentTo, resendAvailableInSeconds }`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` (no password to reset); same 429/503 codes as `send` |
+| POST | `/api/auth/password-reset/confirm` | ForgotPasswordPage step 2 — body `{ email, code, newPassword }`, public | `{ operatorId, token, profileCompleted, emailVerified: true }` (signs the user in); 400 `WEAK_PASSWORD` / `INVALID_CODE` / `CODE_EXPIRED` / `CODE_LOCKED` / `NO_ACTIVE_CODE`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` |
 | POST | `/api/classification/analyze` | UniquenessCalibrationForm "Analyze" | `{ categories: CategoryAllocation[] }` |
 | POST | `/api/classification/uniqueness` | Onboarding Step 5 "Compute uniqueness score" | `UniquenessResponse` — see [Uniqueness response](#uniqueness-response) |
 | GET  | `/api/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
@@ -20,20 +25,105 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/business-profile/keywords` | BusinessProfile "Recalibrate" | `string[]` (replaces `generateOptimizedKeywords`) |
 | GET  | `/api/notifications` | `DashboardView` initial feed | `{ notifications: NotificationDto[] }` |
 | GET  | `/api/forecasting/markets?category=` | `DashboardView` ranking and drawer | `{ markets: MarketDto[] }` |
-| POST | `/api/forecasting/ensure?maxAgeHours=` | `DashboardView` initial staleness gate | `204 No Content` or readiness error |
+| POST | `/api/forecasting/ensure?maxAgeHours=` | Forecast store (background, after login and when the cache is stale) | `{ refreshed: boolean, generatedAt: string or null }` — `refreshed` is true when the live pipeline just ran; `generatedAt` is when the profile's forecast was generated (ISO-8601). Cheap when the forecast is fresh: no market build. 409 `MOD22_PROFILE_NOT_READY` when onboarding is incomplete |
 | POST | `/api/forecasting/analyze` | `DashboardView` “Refresh forecast” | `{ markets: MarketDto[] }` |
 | GET  | `/api/forecasting/status` | `DashboardView` degraded-mode banner | `{ available: boolean }` |
-| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance) |
+| POST | `/api/content/generate` | ContentStudioView load | full `MOCK` shape (market, framework, captions, compliance). Each platform's `captions.<platform>` carries `options` (Korea/Japan captions are written entirely in Korean/Japanese) and a parallel `optionsEn` — a meaning-faithful English translation of each option (`""` = none, e.g. USA) |
+| POST | `/api/content/translate` | “Show English” toggle (edited captions and captions with no `optionsEn`) | req `{ caption, platform? }` → `{ captionEn, sourceLanguage, source }`. 400 `MOD31_TRANSLATION_VALIDATION` (blank / >8000 chars / bad platform); 503 `MOD31_TRANSLATION_UNAVAILABLE` / `MOD31_TRANSLATION_FAILED` |
+| POST | `/api/content/localize` | “Apply to Korean/Japanese” after editing the English | req `{ captionEn, targetLanguage: "ko"\|"ja", platform?, originalCaption? }` → `{ caption, captionEn, targetLanguage, source }`. Same error codes; 400 for any other `targetLanguage` |
+| GET  | `/api/content/drafts/auto?market=` | ContentStudioView restore on entering a market | the market's auto-saved draft `{ id, kind, name, market, demandAlertId, payload, createdAt, updatedAt }`, or `204` when there is none. `payload` is an opaque JSON object owned by the frontend |
+| PUT  | `/api/content/drafts/auto?market=&demandAlertId=` | ContentStudioView auto-save | req `{ payload }` → the draft. Upserts the one auto-saved draft per operator per market. 400 `MOD31_DRAFT_VALIDATION` (blank market, `payload` not an object); 413 `MOD31_DRAFT_TOO_LARGE` (> 512 KB) |
+| GET  | `/api/content/drafts?market=` | Drafts panel | `[{ id, kind, name, market, demandAlertId, captionPreview, hasMedia, mediaUrl, auditStatus, auditScore, updatedAt }]` — named drafts only, newest first, no payload. `hasMedia`: an uploaded image or video is saved with the draft; `mediaUrl`: the image's public URL for a thumbnail (null for a video or none); `auditStatus` (`Pass`/`Fail`/null) and `auditScore`: the compliance audit saved with it. A draft with media and a `Pass` can be published as it stands |
+| POST | `/api/content/drafts?market=&demandAlertId=` | Save draft / Drafts panel “Save” | req `{ name, payload }` → `201` the new draft with `existing: false`. If a named draft with identical content already exists for that market, nothing is created and it answers `200` with that draft and `existing: true`. 409 `MOD31_DRAFT_LIMIT` at 20 named drafts per market (an identical copy never counts against it) |
+| GET · PUT · DELETE | `/api/content/drafts/{id}` | Drafts panel open / rename / delete | the draft · req `{ name?, payload? }` → the draft · `204`. A draft that is not the caller's is `404 MOD31_DRAFT_NOT_FOUND`. There is no profile id in these routes: the caller's own profile comes from the JWT |
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
 | POST | `/api/compliance/evaluate` | Smart Optimization Audit (multipart) | same shape, accepts media upload |
-| GET  | `/api/analytics/metrics?start=&end=` | EngagementMetricsBoard | `{ metrics, funnel }` |
+| GET  | `/api/analytics/metrics?weeks=` | EngagementMetricsBoard | `{ metrics, funnel }` — `weeks` defaults to 4 |
 | POST | `/api/analytics/manual` | DataIngestionForm submit | `{ metrics, funnel }` (computed) |
 | GET  | `/api/analytics/pes/{campaignId}` | PESComputationBoard | `{ overallScore, label, breakdown }` |
+| GET  | `/api/analytics/cost-rates` | Content Studio → Promote as an ad (budget estimate) | `AdCostRates` — `{ periods, totalSpend, totalImpressions, totalClicks, costPerThousandImpressions, costPerClick }` from the operator's 12 most recent weeks with ad spend; rates are null with no such weeks |
 | POST | `/api/analytics/report` | AIActionPlanReport "Generate" | `{ executiveSummary, lowestMetric, lowestMetricMeaning, recommendations, otherAreasImprove, weakestStage, secondaryLeaks }` |
 | GET  | `/api/analytics/report/{id}/pdf` | "Download PDF" | application/pdf stream |
+| GET  | `/api/attribution/codes` | Performance → Code-redemption evidence; dashboard quick log | `AttributionCodeSummary[]` — each code with bookings split by capture kind (`ENQUIRY`, `BOOKING_PLATFORM`, `CLICK_MATCHED`, `CODE_LOGGED`), plus `reportedBookings` (null until a week in the window is submitted) and `trackedExceedsReported` |
+| GET  | `/api/attribution/tracked?periodStart=&periodEnd=` | IngestionForm Bookings hint (dates `YYYY-MM-DD`, inclusive, Asia/Manila) | `TrackedPeriodSummary` — tracked bookings by kind and tracked revenue; 400 when `periodEnd` precedes `periodStart` |
+| GET  | `/api/attribution/lift/{attributionCodeId}` | Performance → Statistical lift | `AttributionLift` — per-week bookings/revenue in the window vs. the 28 days before, `status` `OK`/`UPCOMING`/`NO_WINDOW_DATA`/`NO_BASELINE`; 404 for another operator's code |
+| POST | `/api/attribution/redemptions` | "Log a booking" — body `{ attributionCodeId?, clickId?, bookings?, revenue?, eventAt? }` | `201 AttributionRedemption`; 400 when neither id is sent or `eventAt` is in the future, 404 for another operator's code/click, 409 when the click already has a booking |
+| GET  | `/api/attribution/redemptions` | Code-redemption evidence "Recent bookings" | `AttributionRedemption[]`, newest first (max 50) |
+| DELETE | `/api/attribution/redemptions/{id}` | "Remove" on a recent booking | `204`; 409 for enquiry- or sync-sourced rows, which the operator did not author |
+| GET  | `/r/{slug}` | **Public, no JWT.** The tracked link an ad or post points at | `302`. Records a click, then sends the traveller to the link's own destination with `cv=<clickId>` appended, or, when the link has none (hosted), to the enquiry form at `{FRONTEND_BASE_URL}/enquiry?cv=<clickId>`. A repeat from the same address within 60 s reuses the first click's id instead of recording another. Crawlers and clients over the per-address rate limit are still redirected, but without a `cv`. `404` for an unknown slug |
+| GET  | `/api/public/attribution/enquiries/context?cv=` | **Public.** `/enquiry` page load | `{ businessName }`, `Cache-Control: no-store`. `400` when the click is unknown or already used (the page shows "expired"); `429` over the per-address limit. A click stays usable after its campaign window closes |
+| POST | `/api/public/attribution/enquiries` | **Public.** `/enquiry` form submit — body `{ clickId, contactName, contactValue, partySize?, requestedStart?, requestedEnd?, message? }` | `{ received: true }`. Records the enquiry and one `LINK` booking at ₱0 revenue. `400` (same body for every cause) for an unknown/used click or invalid fields; `429` over the limit |
+| GET  | `/api/attribution/enquiries` | Dashboard → Traveller enquiries | `OperatorEnquiry[]`, newest first, `no-store`: `{ enquiryId, contactName, contactValue, partySize, requestedStart, requestedEnd, message, createdAt, outcome, bookings, revenue, clickInWindow }`. `outcome` is `NEW`, `BOOKED` or `DECLINED`; `bookings`/`revenue` are what the enquiry currently contributes (0 once declined); `clickInWindow` is false for a lead that arrived after the campaign window |
+| PATCH | `/api/attribution/enquiries/{enquiryId}` | Inbox "Mark booked" / "Decline" — body `{ outcome: "BOOKED"\|"DECLINED", bookings?: 1–500, revenue?: ≥ 0 }` | The updated `OperatorEnquiry`. `BOOKED` sets the real figures on the enquiry's booking (restoring it after a decline); `DECLINED` removes that booking and keeps the enquiry. `400` for any other outcome or out-of-range figures; `404` for an unknown enquiry or another operator's (indistinguishable) |
+| GET  | `/api/attribution/links` | Content Studio → Ad URL; Performance | The operator's tracked links with their `urls` (`linkUrl`, `metaAdUrl`, `tiktokAdUrl`, built from `CEVIEW_ATTRIBUTION_BASE_URL`) and `hosted` flag |
+| PATCH | `/api/attribution/links/{linkId}` | Ad URL → "Where visitors go" | Sets the link's destination: the operator's own URL, or none to use CeView's hosted booking form |
+| GET  | `/api/attribution/links/{linkId}/creatives` | Performance → Link attribution | Clicks, conversions and revenue per ad creative, plus an untagged row |
+| GET  | `/api/attribution/clicks/unconverted?from=&to=` | "Log a booking" → match a click (range capped at 31 days) | Recorded clicks that have no booking attached yet |
+| GET · POST | `/api/attribution/vouchers`, `/api/attribution/vouchers/{codeId}/redeem` | CVLAUNCH voucher card (`redeem` body `{ grossRevenue }`) | Walk-in vouchers and their redemption counts; redeeming applies the discount and enforces the cap. Vouchers are flagged `voucher: true` in `/codes` and are not loggable through `/redemptions` |
 
-## New endpoints — UI/UX overhaul (specified, not yet implemented)
+## Social publishing endpoints
+
+All routes below require the authenticated operator's profile, except the two public OAuth redirect callbacks. Client-supplied operator/profile IDs never select the tenant. Credentials never appear in responses.
+
+| Method | Path | Contract |
+|---|---|---|
+| GET | `/api/social-connections` | Three `{platform, configured, status, handle, connectedAt}` rows; status is `DISCONNECTED`, `NEEDS_RECONNECT`, `NEEDS_PAGE`, `NO_LINKED_INSTAGRAM`, or `ACTIVE` |
+| POST | `/api/ad-connections/meta/authorize` | Shared Meta publishing/ads OAuth URL |
+| GET | `/api/ad-connections/{provider}/callback` | Public redirect only; forwards `ad_code`, `ad_provider`, `state` to Settings |
+| POST | `/api/ad-connections/{provider}/complete` | `{code,state}`; consumes state and binds it to the authenticated profile, then stores the grant; 204 |
+| POST | `/api/social-connections/tiktok/authorize` | TikTok creator OAuth URL (separate from TikTok Ads) |
+| GET | `/api/social-connections/tiktok/callback` | Public redirect only; forwards `tiktok_code`, `state` |
+| POST | `/api/social-connections/tiktok/complete` | `{code,state}`; authenticated state completion; fresh connection list |
+| GET | `/api/social-connections/meta/pages` | First 100 eligible Pages, including linked Instagram username |
+| PUT | `/api/social-connections/meta/page` | `{pageId}`; verifies membership before storing Page/Instagram grants |
+| DELETE | `/api/social-connections/{platform}` | Discards local publishing credentials; Facebook/Instagram disconnect together; ads connection is retained |
+| POST | `/api/media/uploads` | `{contentType,sizeBytes}` → `{mediaId,uploadUrl,publicUrl,kind}` |
+| POST | `/api/media/{id}/complete` | Verifies storage and marks the upload ready |
+| POST | `/api/posts/publish` | Approved captions, ready media, destinations and optional schedule/ad settings; returns persisted post views |
+| GET | `/api/posts?from=&to=&status=` | Tenant-owned post views, optionally filtered by date/status |
+| GET | `/api/posts/{id}` | One owned post view; foreign IDs return 404 |
+| DELETE | `/api/posts/{id}` | Cancels pending or native scheduled work; conflicts when already in flight, published, or accepted by TikTok |
+| GET | `/api/analytics/posts?platform=` | Delivered posts with available metric snapshots |
+| GET | `/api/analytics/posts/{id}` | One owned post plus nullable per-post metrics |
+
+`POST /api/posts/publish` accepts:
+
+```json
+{
+  "requestId": "UUID",
+  "platforms": ["instagram"],
+  "captionsByPlatform": {"instagram": "Approved caption"},
+  "mediaId": "UUID",
+  "contentId": null,
+  "market": "japan",
+  "visibility": "public",
+  "approved": true,
+  "scheduledFor": null,
+  "ad": null
+}
+```
+
+`requestId` deduplicates a tenant's complete request. Reusing it with different content returns 409. `contentId`, when supplied, must reference the tenant's approved generated content. Platforms are `facebook`, `instagram`, `tiktok`, `meta_ads`. A paid ad requires `ad: {objective, dailyBudgetMinor, startTime, durationDays, interests, advantageAudience, attributionLinkId, pinCampaign}` and a `market` (`korea`, `japan` or `usa`). Objectives are `OUTCOME_TRAFFIC`, `OUTCOME_AWARENESS` or `OUTCOME_ENGAGEMENT`; `dailyBudgetMinor` is integer minor units in the chosen ad account's currency; `interests` is up to 10 `{id, name}` Meta interests (from `GET /api/ad-connections/meta/interests`), optional; `advantageAudience` (default false) lets Meta widen the audience beyond them. **The client does not send countries or an end time:** the server derives the country from `market` (KR/JP/US), the language from the market (Korean for `korea`, Japanese for `japan`, none for `usa`), and the end as `startTime + durationDays`. No age or gender is sent. The attribution link must belong to the tenant. All remote ad objects remain PAUSED for review in Ads Manager.
+
+A paid ad is rejected with 400 and a specific message unless: the objective is one of the three; `market` is known; `startTime` is in the future; `durationDays` is a whole number of at least 1 (no other upper bound); interests are at most 10, numeric and distinct and not marked invalid by Meta; the daily budget is more than Meta's minimum for the objective (`minimum_budgets`, when Meta answers) and no more than the business's daily limit; and `dailyBudget × durationDays` plus what the business's other not-yet-ended, not-failed CeView ads already commit fits within the total limit. It is rejected with 409 until the business has saved spending limits in the ad account's current currency. A failed language lookup returns 502.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/ad-connections/meta/limits` | `{configured, currency, maxDailyMinor, maxTotalMinor, committedMinor}`; `configured` is false until limits exist in the ad account's current currency. 409 without a connected Meta ad account |
+| PUT | `/api/ad-connections/meta/limits` | `{maxDailyMinor, maxTotalMinor}`, both at least 1 and total at least daily; stored in the ad account's currency; returns the same view |
+| GET | `/api/ad-connections/meta/minimum-budget?objective=` | `{currency, minDailyMinor}`; `minDailyMinor` is null when Meta gave none or could not be reached. Remembered for an hour per account; failures are not remembered |
+| GET | `/api/ad-connections/meta/interests?q=` | Up to 10 `{id, name, path}` from Meta's interest search; `q` is 2–100 characters; 502 if Meta fails |
+
+When Meta rejects a delivery, the failed post's `errorMessage` is `The platform rejected delivery: <Meta's own explanation>` (Meta's `error_user_msg`, with links and token-like text removed). The generic text is used when Meta gives none, and a reconnect prompt always keeps its own message.
+
+Post views contain `id,date,platform,caption,status,deliveryStatus,mediaUrl,mediaType,scheduledFor,permalink,adsManagerUrl,errorMessage,metricsAvailable,reach,likes,comments,shares,engagementRate,series`. UI statuses are `processing`, `scheduled`, `published`, `inbox`, `failed`, `cancelled`, `draft` (PAUSED ad). Delivery statuses preserve the backend lifecycle. Metrics are nullable; absent information is unavailable, never a measured zero. Reach history contains up to seven UTC calendar-day samples, including null gaps.
+
+Facebook schedules use native platform scheduling (10 minutes to 6 months ahead); Instagram and TikTok execute through CeView's dispatcher. TikTok delivers a draft to the inbox: users finish publication and choose privacy in TikTok. Video drafts require copying the caption. Instagram images must be JPEG; TikTok photos JPEG or WEBP. Ready media is checked again in storage immediately before delivery. A platform timeout with an uncertain remote write outcome fails safely for operator inspection rather than reposting automatically. Definite rate limits retry up to three delivery attempts; processing polls preserve the remote identifier.
+
+Missing platform configuration returns 503, disconnected/changed accounts 409, foreign resources 404, malformed requests 400, and OAuth completion errors 400/403/502 as applicable. Local tests mock all platform calls. See [setup](../docs/SOCIAL_PUBLISHING_SETUP.md).
+
+## Remaining UI/UX overhaul endpoints
 
 The screens introduced by [`ui-ux-prototype.html`](../ui-ux-prototype.html) need endpoints that don't
 exist above. Full detail — request/response shape, entities, migrations — is in each linked doc; this
@@ -41,15 +131,6 @@ table is the flat index.
 
 | Method | Path | Frontend trigger | Doc |
 |---|---|---|---|
-| GET  | `/api/platform-connections?operatorId=` | Settings → Platforms load; Content Studio publish-gate check | [`docs/module-3/backend/PlatformConnectionController.md`](../docs/module-3/backend/PlatformConnectionController.md) |
-| POST | `/api/platform-connections/{platform}/connect` | Settings → Platforms "Connect" | same |
-| POST | `/api/platform-connections/{platform}/callback` | OAuth redirect callback | same |
-| DELETE | `/api/platform-connections/{platform}` | Settings → Platforms "Disconnect" | same |
-| GET  | `/api/posts?operatorId=&from=&to=` | Calendar load | [`docs/module-3/backend/PublishingController.md`](../docs/module-3/backend/PublishingController.md) |
-| GET  | `/api/posts?operatorId=&status=` | Content Studio content board | same |
-| POST | `/api/posts/publish` | Content Studio "Publish now" | same |
-| GET  | `/api/analytics/posts?operatorId=&platform=` | Performance "Previously published" | [`docs/module-4/backend/post-metrics.md`](../docs/module-4/backend/post-metrics.md) |
-| GET  | `/api/analytics/posts/{postId}` | Post analytics modal | same |
 | GET  | `/api/workspace/members?operatorId=` | Settings → Workspace load | [`docs/shared/workspace.md`](../docs/shared/workspace.md) |
 | POST | `/api/workspace/invites` | Settings → Workspace "Send invite" | same |
 | DELETE | `/api/workspace/members/{id}` | (gap — not in the prototype, needed for a real product) | same |
@@ -114,9 +195,23 @@ operator-scoped query; the uniqueness cohort is the only reader that wants them.
 `BusinessProfileRepository.findAllNonReference()` is the cross-operator read that enforces
 this — `findAll()` must not be used for tenant-facing work.
 
+## Email verification & password reset
+
+Every account must prove it owns its email with a 6-digit code before it can use the app.
+
+- **Gate.** An unverified operator can still sign in and receive a JWT, but `EmailVerificationFilter` answers every route outside `/api/auth/**`, `/actuator/**`, `/error` and the public attribution routes with `403 { error: "email not verified", code: "EMAIL_NOT_VERIFIED" }`. It runs before `ProfileCompletionFilter`. The frontend routes such a user to `/verify-email`.
+- **Verified means.** `email_verified_at` is set by a correct code, by a completed password reset, or by Google sign-in when Firebase reports `email_verified: true` (no code). Linking Google to an existing *unverified* password account verifies it and clears its password.
+- **Existing accounts.** The migration leaves `email_verified_at` NULL for everyone, seeded demo operators included, so each must verify once. It also sets `created_before_verification = TRUE` for them, which makes them ineligible for takeover (below).
+- **Codes.** 6 random digits, stored only as a BCrypt hash, valid 10 minutes, locked after 5 wrong guesses, one active code per account and purpose (a new code supersedes the old), 60 s between sends, at most 5 sends per hour per account and purpose. All values are `ceview.email-code.*` in `application.yml`. A code is only valid while it still matches the account's current email.
+- **Takeover.** `POST /register` for an email held by an account that is unverified, created after verification shipped, password-based and not linked to Google deletes that account and creates the new one (a fresh `operatorId`, so the old JWT 401s). Any other existing account returns `EMAIL_TAKEN`.
+- **Per-IP limit.** `register`, `email-verification/send`, `PATCH /email` and `password-reset/request` share a per-IP budget (default 10 per 15 minutes, `CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS`) to protect the email provider's free quota: `429 { code: "RATE_LIMITED", retryAfterSeconds }` with a `Retry-After` header.
+- **Error shape.** Failures in these flows are `{ error, code, ...details }` (`error` is a human sentence; clients switch on `code`).
+- **Delivery.** `EMAIL_PROVIDER=log` (default) writes the code to the backend log; `resend` sends through Resend's HTTPS API (Render's free tier blocks SMTP). See `RUNNING.md` and `docs/DEPLOY_RENDER.md`.
+- **E2E hook.** With `CEVIEW_TEST_SUPPORT_ENABLED=true`, `GET /api/test-support/email-codes/latest?email=` returns `{ code, subject }` for the last email sent to an address. The backend refuses to start with this on and `EMAIL_PROVIDER=resend`.
+
 ## Notes
 
-- **Auth is open in scaffolding**: `SecurityConfig` permits everything under `/api/**` so the existing frontend (which has no login flow yet) can hit endpoints. Lock this down once the React side has an auth screen.
+- **Auth**: every route except `/api/auth/**`, `/actuator/**`, `/error` and the public attribution routes (`/r/**`, `/api/public/attribution/**`, the ad-platform OAuth callback) requires a valid JWT, and — see above — a verified email. (An earlier revision of this file described auth as open; that is no longer true.)
 - **Notifications and markets are envelope-wrapped** (`{ notifications: [...] }`, `{ markets: [...] }`) — the frontend currently reads bare arrays from constants, so when `geminiService.ts` is swapped over, unwrap one level.
 - **PES is computed Spring-side** (no AI call) — pure formula per SDD §4.2.
 - **Metrics are computed Spring-side** — SDD §4.1 specifies the math, no model needed.

@@ -23,8 +23,8 @@
  * either state, and each control keeps a `title` for pointer users.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
-import ceviewLogo from '../components/CeView Logo.png';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from 'lucide-react';
+import { BrandMark } from '../components/landing/LandingNav';
 import { NAV } from './nav';
 import { useAuth } from '../services/auth';
 import { useUnreadAlerts } from '../services/unreadAlertsStore';
@@ -63,10 +63,10 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
       <div className="sb-head">
         {/* Identity block — shares .ob-rail-mark's rules so the wordmark is
             pixel-identical to the one an operator just saw in onboarding. */}
-        <img src={ceviewLogo} alt="CeView Logo" className="g" style={{ background: 'none' }} />
-        <div className="sb-head-text min-w-0">
-          <b className="block leading-tight">CeView</b>
-        </div>
+        {/* Full wordmark; collapsed, the rail shows only the toggle. */}
+        <span className="sb-brand">
+          <BrandMark tone="light" />
+        </span>
         <button
           type="button"
           className="sb-toggle"
@@ -124,7 +124,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
             fallback told the operator nothing they did not already know, and it
             was what rendered whenever the name had not loaded yet. */}
         {(user?.businessName ?? user?.email) && (
-          <b className="sb-label">{user.businessName ?? user.email}</b>
+          <span className="sb-who">
+            <span className="sb-avatar" aria-hidden="true">
+              <UserRound size={16} strokeWidth={1.75} />
+            </span>
+            <b className="sb-label">{user.businessName ?? user.email}</b>
+          </span>
         )}
         <button
           type="button"
@@ -132,10 +137,8 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
           className="sb-signout"
           title={collapsed ? 'Sign out' : undefined}
         >
+          <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
           <span className="sb-label">Sign out</span>
-          <span className="sb-signout-short" aria-hidden="true">
-            ⏻
-          </span>
         </button>
       </div>
     </nav>

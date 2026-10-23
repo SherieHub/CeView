@@ -1,192 +1,65 @@
-import type { ComponentProps } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
+import { slidesFromCaption } from './captionShots';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import { MOCK_CREATIVE_DIRECTION } from '../../../services/fixtures/creativeDirection';
+import { MOCK_CONTENT } from '../../../services/fixtures/content';
 
-function setup(open: boolean, onClose = vi.fn()) {
-  // Spreads the render result so cases can reach `container` as well as the
-  // spy — the ordering assertion below queries by class, which screen cannot do.
-  const view = render(
+const IG = MOCK_CONTENT.captions.instagram;
+const SLIDES = slidesFromCaption(IG.options[0], IG.guide, ['Sunset Cove Beach Resort']);
+
+function setup(props: Partial<Parameters<typeof CampaignBriefDrawer>[0]> = {}) {
+  const onClose = vi.fn();
+  render(
     <OverlayStackProvider>
-      <CampaignBriefDrawer
-        open={open}
-        onClose={onClose}
-        showWelcome={false}
-        direction={MOCK_CREATIVE_DIRECTION}
-      />
+      <CampaignBriefDrawer open onClose={onClose} showWelcome={false} marketName="South Korea" slides={SLIDES} platformGuide={IG.guide} {...props} />
     </OverlayStackProvider>,
   );
-  return { ...view, onClose };
+  return { onClose, drawer: screen.getByRole('dialog', { name: 'Visual Guide' }) };
 }
 
 describe('CampaignBriefDrawer', () => {
-  it('carries the visual direction and the shot list', () => {
-    const { container } = setup(true);
-
-    expect(screen.getByText('Visual direction')).toBeTruthy();
-    expect(screen.getByText('Shot list')).toBeTruthy();
-
-    // The title is split: an uppercase eyebrow for the kind of shot, and the
-    // subject beside it. They are separate elements so the eyebrow can carry
-    // its own type treatment without a nested span inside a heading.
-    expect(screen.getByText('Hero')).toBeTruthy();
-    expect(screen.getByText('Sardine Run, Mid-Shoal')).toBeTruthy();
-
-    // Directives, not a narrative paragraph — one labelled line each.
-    expect(screen.getAllByText('Placement')).toHaveLength(4);
-    expect(screen.getAllByText('Action')).toHaveLength(4);
-    expect(screen.getAllByText('Context')).toHaveLength(4);
-    expect(container.querySelectorAll('.shot-narrative')).toHaveLength(0);
-
-    // Lighting is an inset callout, one per shot.
-    expect(container.querySelectorAll('.shot-lighting')).toHaveLength(4);
-    expect(screen.getAllByText('Lighting constraint:')).toHaveLength(4);
-
-    // Rules between shots, not boxes around them.
-    expect(container.querySelectorAll('.shot')).toHaveLength(4);
-
-    const blocks = [...container.querySelectorAll('.studio-block')];
-    const headings = blocks.map((b) => b.querySelector('h3')?.textContent?.trim());
-    expect(headings).toEqual(['Visual direction', 'Shot list']);
-
-    // The rule that separates the shot list from the visual direction is drawn
-    // by `.studio-block + .studio-block`, so it lands on the SECOND block only
-    // — a border on every block would underline the panel header too.
-    expect(blocks[0].previousElementSibling?.classList.contains('studio-block')).toBe(false);
-    expect(blocks[1].previousElementSibling).toBe(blocks[0]);
+  it('lays out the caption’s shots, the market tips and the platform direction', () => {
+    const { drawer } = setup();
+    expect(within(drawer).getByRole('heading', { name: 'Visual Guide for South Korea' })).toBeInTheDocument();
+    expect(within(drawer).getByRole('heading', { name: 'Key tips for the South Korea market' })).toBeInTheDocument();
+    for (const s of SLIDES) expect(within(drawer).getByRole('heading', { name: s.title })).toBeInTheDocument();
+    expect(within(drawer).getByText(IG.guide[0])).toBeInTheDocument();
   });
 
-  // The FastAPI service still returns only label/description, so the structured
-  // fields are optional and the drawer has to render a live response too.
-  it('falls back to the narrative when the service sends no directives', () => {
-    const narrativeOnly = {
-      ...MOCK_CREATIVE_DIRECTION,
-      shots: [{
-        label: 'Hero — sardine run, mid-shoal',
-        description: 'Underwater, inside the bait ball rather than beside it.',
-        lighting: 'Ambient only.',
-      }],
-    };
-    const { container } = render(
-      <OverlayStackProvider>
-        <CampaignBriefDrawer open onClose={vi.fn()} showWelcome={false} direction={narrativeOnly} />
-      </OverlayStackProvider>,
-    );
-
-    expect(screen.getByText('Underwater, inside the bait ball rather than beside it.')).toBeTruthy();
-    expect(container.querySelectorAll('.shot-specs')).toHaveLength(0);
-    // No shotType, so the subject falls back to the raw label.
-    expect(screen.getByText('Hero — sardine run, mid-shoal')).toBeTruthy();
-    // The lighting callout still renders — it is not one of the optional fields.
-    expect(container.querySelectorAll('.shot-lighting')).toHaveLength(1);
+  // The AI shot list section (approve & generate) was removed: the four shots
+  // are where generated AI inspiration will appear.
+  it('has no approve step and no separate AI shot list', () => {
+    const { drawer } = setup();
+    expect(within(drawer).queryByRole('button', { name: /approve/i })).toBeNull();
+    expect(within(drawer).queryByText(/Your AI shot list/i)).toBeNull();
   });
 
-  // This panel is scoped to MEDIA guidance. It briefly carried the moodboard and
-  // the per-caption rationale too, which turned it into a catch-all the operator
-  // had to scroll through to reach the shot list. Asserting their ABSENCE keeps
-  // that scope from quietly creeping back.
+  // Media guidance only. The drawer once also carried a moodboard and the
+  // per-caption copywriting rationale; asserting their absence keeps that scope
+  // from creeping back.
   it('carries no moodboard and no copywriting rationale', () => {
-    setup(true);
+    setup();
     expect(screen.queryByText('Moodboard')).toBeNull();
     expect(screen.queryByText('Copywriting matrix')).toBeNull();
-    expect(screen.queryByText('Sea glass green')).toBeNull();
     expect(screen.queryByText('Business context')).toBeNull();
   });
 
+  it('asks for a caption when there are no shots yet', () => {
+    const { drawer } = setup({ slides: [] });
+    expect(within(drawer).getByText(/Choose a caption in Draft/)).toBeInTheDocument();
+  });
+
   it('shows the welcome note only when asked', () => {
-    render(
-      <OverlayStackProvider>
-        <CampaignBriefDrawer
-          open
-          onClose={vi.fn()}
-          showWelcome
-          direction={MOCK_CREATIVE_DIRECTION}
-        />
-      </OverlayStackProvider>,
-    );
+    setup({ showWelcome: true });
     expect(screen.getByTestId('brief-welcome')).toBeTruthy();
   });
 
-  // The backend only generates a direction once the operator has approved
-  // captions for the market — so an empty drawer must say what to do next
-  // rather than sit blank.
-  describe('before a guide exists', () => {
-    function renderState(props: Partial<ComponentProps<typeof CampaignBriefDrawer>>) {
-      const onApprove = vi.fn();
-      render(
-        <OverlayStackProvider>
-          <CampaignBriefDrawer
-            open
-            onClose={vi.fn()}
-            showWelcome={false}
-            direction={null}
-            marketName="United States"
-            onApprove={onApprove}
-            {...props}
-          />
-        </OverlayStackProvider>,
-      );
-      return onApprove;
-    }
-
-    it('asks for a caption first and keeps the approve button disabled', () => {
-      renderState({ status: 'idle', captionChosen: false });
-      expect(screen.getByText(/select a caption option first/i)).toBeTruthy();
-      expect(screen.getByRole('button', { name: /approve & get visual guide/i })).toBeDisabled();
-    });
-
-    it('approves once a caption is chosen', async () => {
-      const onApprove = renderState({ status: 'idle', captionChosen: true });
-      expect(screen.getByText(/united states/i)).toBeTruthy();
-      await userEvent.click(screen.getByRole('button', { name: /approve & get visual guide/i }));
-      expect(onApprove).toHaveBeenCalled();
-    });
-
-    it('shows progress while generating', () => {
-      renderState({ status: 'loading', captionChosen: true });
-      expect(screen.getByText(/generating your visual guide/i)).toBeTruthy();
-      expect(screen.queryByRole('button', { name: /approve & get visual guide/i })).toBeNull();
-    });
-
-    it('reports a failure and offers a retry', async () => {
-      const onApprove = renderState({ status: 'error', error: new Error('boom'), captionChosen: true });
-      await userEvent.click(screen.getByRole('button', { name: /try again/i }));
-      expect(onApprove).toHaveBeenCalled();
-    });
-
-    it('says so when the service returns an empty guide', () => {
-      renderState({
-        status: 'ready',
-        captionChosen: true,
-        direction: { visualGuide: [], shots: [], moodboard: { palette: '', references: [] } },
-      });
-      expect(screen.getByText(/came back empty/i)).toBeTruthy();
-      expect(screen.getByRole('button', { name: /try again/i })).toBeTruthy();
-    });
-  });
-
-  it('names the market the ready guide was generated for', () => {
-    render(
-      <OverlayStackProvider>
-        <CampaignBriefDrawer
-          open
-          onClose={vi.fn()}
-          showWelcome={false}
-          status="ready"
-          direction={MOCK_CREATIVE_DIRECTION}
-          marketName="United States"
-        />
-      </OverlayStackProvider>,
-    );
-    expect(screen.getByText(/for united states/i)).toBeTruthy();
-  });
-
   it('closes on the drawer control', async () => {
-    const { onClose } = setup(true);
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    const { onClose, drawer } = setup();
+    // The drawer's own Close — the shot viewer has one too once opened.
+    await userEvent.click(within(drawer).getAllByRole('button', { name: 'Close' })[0]);
     expect(onClose).toHaveBeenCalled();
   });
 });

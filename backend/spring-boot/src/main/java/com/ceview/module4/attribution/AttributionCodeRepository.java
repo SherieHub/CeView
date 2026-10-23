@@ -1,6 +1,8 @@
 package com.ceview.module4.attribution;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -26,6 +28,10 @@ public interface AttributionCodeRepository extends JpaRepository<AttributionCode
 
     /** Always paired with the profile id: a code id alone must never resolve cross-tenant. */
     Optional<AttributionCode> findByAttributionCodeIdAndBusinessProfileId(
+            UUID attributionCodeId, UUID businessProfileId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<AttributionCode> findLockedByAttributionCodeIdAndBusinessProfileId(
             UUID attributionCodeId, UUID businessProfileId);
 
     Optional<AttributionCode> findByBusinessProfileIdAndCode(UUID businessProfileId, String code);

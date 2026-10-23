@@ -36,6 +36,7 @@ class AuthControllerTest {
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final JwtService jwt = mock(JwtService.class);
     private final CurrentOperator currentOperator = new CurrentOperator(repo);
+    private final EmailCodeService emailCodes = mock(EmailCodeService.class);
 
     @AfterEach
     void clearContext() {
@@ -43,7 +44,8 @@ class AuthControllerTest {
     }
 
     private AuthController newController(Optional<FirebaseAuth> firebaseAuth) {
-        return new AuthController(repo, encoder, jwt, firebaseAuth, currentOperator);
+        return new AuthController(repo, encoder, jwt, firebaseAuth, currentOperator, emailCodes,
+            new PhoneVerificationService(firebaseAuth, true));
     }
 
     private void authenticateAs(UUID operatorId) {
@@ -65,7 +67,7 @@ class AuthControllerTest {
         AuthController controller = newController(Optional.empty());
 
         ResponseEntity<?> response = controller.register(
-            new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "pw", "0917"));
+            new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "0917", null, null));
 
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(Boolean.TRUE, body.get("profileCompleted"));
@@ -310,11 +312,148 @@ class AuthControllerTest {
         AuthController controller = newController(Optional.empty());
 
         ResponseEntity<?> response = controller.completeProfile(
-            new AuthController.CompleteProfileRequest("09171234567"));
+            new AuthController.CompleteProfileRequest("09171234567", null, null));
 
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals(Boolean.TRUE, body.get("profileCompleted"));
         assertEquals("09171234567", op.getContactNumber());
         verify(repo).save(op);
+    }
+
+    // ---- phone verification via Firebase ID token ----
+
+    private FirebaseAuth firebaseReturningPhone(String token, Object phoneClaim) throws FirebaseAuthException {
+        FirebaseAuth firebaseAuth = mock(FirebaseAuth.class);
+        FirebaseToken decoded = mock(FirebaseToken.class);
+        Map<String, Object> claims = phoneClaim == null ? Map.of() : Map.of("phone_number", phoneClaim);
+        when(decoded.getClaims()).thenReturn(claims);
+        when(firebaseAuth.verifyIdToken(token)).thenReturn(decoded);
+        return firebaseAuth;
+    }
+
+    @Test
+    void registerStoresVerifiedPhoneFromTokenAndIgnoresTypedNumber() throws FirebaseAuthException {
+        when(repo.findByEmail("a@b.com")).thenReturn(Optional.empty());
+        when(repo.save(any(MsmeOperator.class))).thenAnswer(inv -> {
+            MsmeOperator o = inv.getArgument(0);
+            o.setOperatorId(UUID.randomUUID());
+            return o;
+        });
+        when(jwt.issue(any(), any())).thenReturn("jwt-token");
+        AuthController controller = newController(Optional.of(firebaseReturningPhone("phone-token", "+639171234567")));
+
+        controller.register(new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "0999", "phone-token", null));
+
+        org.mockito.ArgumentCaptor<MsmeOperator> saved = org.mockito.ArgumentCaptor.forClass(MsmeOperator.class);
+        verify(repo).save(saved.capture());
+        assertEquals("+639171234567", saved.getValue().getContactNumber());
+        assertNotNull(saved.getValue().getPhoneVerifiedAt());
+    }
+
+    @Test
+    void registerRejectsMissingTokenWhenFirebaseConfigured() {
+        when(repo.findByEmail("a@b.com")).thenReturn(Optional.empty());
+        AuthController controller = newController(Optional.of(mock(FirebaseAuth.class)));
+
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            controller.register(new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "0917", null, null)));
+    }
+
+    @Test
+    void completeProfileRejectsTokenWithoutPhoneClaim() throws FirebaseAuthException {
+        UUID operatorId = UUID.randomUUID();
+        authenticateAs(operatorId);
+        MsmeOperator op = new MsmeOperator();
+        op.setOperatorId(operatorId);
+        when(repo.existsById(operatorId)).thenReturn(true);
+        when(repo.findById(operatorId)).thenReturn(Optional.of(op));
+        AuthController controller = newController(Optional.of(firebaseReturningPhone("t", null)));
+
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            controller.completeProfile(new AuthController.CompleteProfileRequest(null, "t", null)));
+    }
+
+    @Test
+    void completeProfileMarksPhoneVerifiedWhenTokenValid() throws FirebaseAuthException {
+        UUID operatorId = UUID.randomUUID();
+        authenticateAs(operatorId);
+        MsmeOperator op = new MsmeOperator();
+        op.setOperatorId(operatorId);
+        when(repo.existsById(operatorId)).thenReturn(true);
+        when(repo.findById(operatorId)).thenReturn(Optional.of(op));
+        when(repo.save(any(MsmeOperator.class))).thenAnswer(inv -> inv.getArgument(0));
+        AuthController controller = newController(Optional.of(firebaseReturningPhone("t", "+639171234567")));
+
+        controller.completeProfile(new AuthController.CompleteProfileRequest(null, "t", null));
+
+        assertEquals("+639171234567", op.getContactNumber());
+        assertNotNull(op.getPhoneVerifiedAt());
+    }
+
+    // ---- "Verify later" when SMS verification is unavailable ----
+
+    @Test
+    void registerAcceptsUnverifiedNumberWhenVerifyLaterAndFirebaseConfigured() {
+        when(repo.findByEmail("a@b.com")).thenReturn(Optional.empty());
+        when(repo.save(any(MsmeOperator.class))).thenAnswer(inv -> {
+            MsmeOperator o = inv.getArgument(0);
+            o.setOperatorId(UUID.randomUUID());
+            return o;
+        });
+        when(jwt.issue(any(), any())).thenReturn("jwt-token");
+        AuthController controller = newController(Optional.of(mock(FirebaseAuth.class)));
+
+        ResponseEntity<?> response = controller.register(
+            new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "+63 917 123 4567", null, true));
+
+        org.mockito.ArgumentCaptor<MsmeOperator> saved = org.mockito.ArgumentCaptor.forClass(MsmeOperator.class);
+        verify(repo).save(saved.capture());
+        assertEquals("+63 917 123 4567", saved.getValue().getContactNumber());
+        org.junit.jupiter.api.Assertions.assertNull(saved.getValue().getPhoneVerifiedAt());
+        assertEquals(Boolean.TRUE, ((Map<?, ?>) response.getBody()).get("profileCompleted"));
+    }
+
+    @Test
+    void registerRejectsVerifyLaterWithGarbageNumber() {
+        when(repo.findByEmail("a@b.com")).thenReturn(Optional.empty());
+        AuthController controller = newController(Optional.of(mock(FirebaseAuth.class)));
+
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            controller.register(new AuthController.RegisterRequest("Ana", "Cruz", "a@b.com", "Passw0rd1", "abc", null, true)));
+    }
+
+    // ---- getProfile(): feeds the settings "Contact number" section ----
+
+    @Test
+    void getProfileReportsNumberAndVerifiedFlag() {
+        UUID operatorId = UUID.randomUUID();
+        authenticateAs(operatorId);
+        MsmeOperator op = new MsmeOperator();
+        op.setOperatorId(operatorId);
+        op.setContactNumber("+639171234567");
+        op.setPhoneVerifiedAt(java.time.OffsetDateTime.now());
+        when(repo.existsById(operatorId)).thenReturn(true);
+        when(repo.findById(operatorId)).thenReturn(Optional.of(op));
+
+        Map<?, ?> body = (Map<?, ?>) newController(Optional.empty()).getProfile().getBody();
+
+        assertEquals("+639171234567", body.get("contactNumber"));
+        assertEquals(Boolean.TRUE, body.get("phoneVerified"));
+    }
+
+    @Test
+    void getProfileReportsUnverifiedWhenNoVerificationTimestamp() {
+        UUID operatorId = UUID.randomUUID();
+        authenticateAs(operatorId);
+        MsmeOperator op = new MsmeOperator();
+        op.setOperatorId(operatorId);
+        op.setContactNumber(null);
+        when(repo.existsById(operatorId)).thenReturn(true);
+        when(repo.findById(operatorId)).thenReturn(Optional.of(op));
+
+        Map<?, ?> body = (Map<?, ?>) newController(Optional.empty()).getProfile().getBody();
+
+        org.junit.jupiter.api.Assertions.assertNull(body.get("contactNumber"));
+        assertEquals(Boolean.FALSE, body.get("phoneVerified"));
     }
 }

@@ -2,10 +2,13 @@ import json
 import logging
 import os
 import re
+import time
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
+from app import errors
 from app.agents.omcs_agent.state import CeviewValidationState
 from app.services.profile_alignment import profile_alignment_score
+from app.unavailable import DEPENDENCY_DOWN, DependencyUnavailable
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -25,6 +28,50 @@ _llm = None
 # OMCS = weighted sum of the three node scores (each on a 0-100 scale).
 OMCS_WEIGHTS = {"profile": 0.35, "rubric": 0.45, "consistency": 0.20}
 OMCS_PASS_THRESHOLD = 70
+
+# Groq meters output tokens per minute and counts the max_tokens a request ASKS for, so a cap
+# above the account's limit is refused outright (the free tier's qwen limit is 1000/min, and
+# 2048 was rejected on every call). Each reply here is a short JSON object or a few sentences,
+# so a small cap loses nothing, and two calls then fit inside one minute's budget. Raise it with
+# OMCS_MAX_OUTPUT_TOKENS on a paid tier, or if replies are being cut off.
+OMCS_MAX_OUTPUT_TOKENS = int(os.environ.get("OMCS_MAX_OUTPUT_TOKENS", "450"))
+
+# On a rate limit, wait for the delay Groq asks for and retry ONCE — but never longer than this:
+# the gateway gives up after 90 s and an operator should not stare at a spinner for minutes.
+OMCS_RATE_LIMIT_MAX_WAIT_S = float(os.environ.get("OMCS_RATE_LIMIT_MAX_WAIT_S", "20"))
+# Used when Groq rate-limits us without saying for how long.
+_DEFAULT_RATE_LIMIT_WAIT_S = 5.0
+
+RUBRIC_KEYS = (
+    "visual_business_context_match",
+    "visual_intent_consistency",
+    "tone_visual_mood_alignment",
+    "psychological_strategy_support",
+    "target_audience_fit",
+    "platform_suitability",
+    "attribute_coverage_consistency",
+)
+
+
+def _normalize_rubric(data: dict) -> tuple[dict, int]:
+    """Whole-number percentages (0-100) for the rubric scores, and their mean.
+
+    The model's own ``total`` is ignored: it has come back as the *sum* of the
+    seven scores. A model that scores on 0-1 despite the prompt (every value
+    <= 1) is scaled up rather than read as seven near-zero percentages.
+    """
+    raw = (data or {}).get("scores")
+    values: dict = {}
+    for key in RUBRIC_KEYS:
+        try:
+            values[key] = float((raw or {})[key])
+        except (KeyError, TypeError, ValueError):
+            continue
+    if values and all(v <= 1.0 for v in values.values()):
+        values = {k: v * 100 for k, v in values.items()}
+    scores = {k: int(round(max(0.0, min(100.0, v)))) for k, v in values.items()}
+    total = int(round(sum(scores.values()) / len(scores))) if scores else 0
+    return scores, total
 
 
 def get_llm():
@@ -46,11 +93,81 @@ def get_llm():
             # rather than raising — a growing rubric or rationale field could
             # someday truncate the same way the caption matrix did in
             # AgentLLMModel before this was added there. Cheap to guard now.
-            _llm = ChatGroq(model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key, max_tokens=2048)
+            _llm = ChatGroq(
+                model=_VISION_MODEL, temperature=0.4, groq_api_key=api_key, max_tokens=OMCS_MAX_OUTPUT_TOKENS,
+            )
         except Exception as exc:  # pragma: no cover - import/config failure
             logger.error("omcs_agent: failed to init vision LLM (%s): %s", _VISION_MODEL, exc)
             return None
     return _llm
+
+
+def _rate_limit_wait(exc: Exception) -> float | None:
+    """Seconds Groq asks us to wait after a 429, or None when waiting would not help.
+
+    None for anything that is not a rate limit, and for "Request too large": that one is
+    about the size of the request (max_tokens above the account's limit), which a retry
+    repeats identically. Otherwise the wait comes from the Retry-After header, else from
+    the "try again in 2.5s" / "in 1m3s" wording of the message, else a short default.
+    """
+    if getattr(exc, "status_code", None) != 429:
+        return None
+    message = str(exc)
+    if "request too large" in message.lower():
+        return None
+
+    headers = getattr(getattr(exc, "response", None), "headers", None)
+    header = headers.get("retry-after") if headers is not None else None
+    try:
+        if header is not None:
+            return max(0.0, float(header))
+    except (TypeError, ValueError):
+        pass
+
+    match = re.search(r"try again in (?:(\d+)m)?\s*([\d.]+)s", message)
+    if match:
+        return int(match.group(1) or 0) * 60 + float(match.group(2))
+    return _DEFAULT_RATE_LIMIT_WAIT_S
+
+
+def _invoke(messages):
+    """``get_llm().invoke`` with one polite retry when Groq rate-limits the call.
+
+    Waits the delay Groq asked for (capped at OMCS_RATE_LIMIT_MAX_WAIT_S) and tries again once.
+    If it is still limited, or Groq asks for longer than the cap, raises DependencyUnavailable
+    naming the rate limit and how long to wait, so the operator sees "try again in about N
+    seconds" rather than a generic failure. Any other error propagates unchanged.
+    """
+    llm = get_llm()
+    try:
+        return llm.invoke(messages)
+    except Exception as exc:  # noqa: BLE001 - classified below; anything else is re-raised
+        wait = _rate_limit_wait(exc)
+        if wait is None:
+            raise
+        if wait > OMCS_RATE_LIMIT_MAX_WAIT_S:
+            raise _rate_limited(wait) from exc
+        logger.warning("omcs_agent: Groq rate limit; waiting %.1fs, then retrying once", wait)
+        time.sleep(wait + 0.25)  # a hair over, so the window has really reopened
+        try:
+            return llm.invoke(messages)
+        except Exception as retry_exc:  # noqa: BLE001
+            again = _rate_limit_wait(retry_exc)
+            if again is None:
+                raise
+            raise _rate_limited(again) from retry_exc
+
+
+def _rate_limited(wait_seconds: float) -> DependencyUnavailable:
+    seconds = max(1, int(round(wait_seconds)))
+    return DependencyUnavailable(
+        code=errors.MOD33_RATE_LIMITED,
+        message="The compliance model is rate-limited right now.",
+        dependency="groq",
+        cause=f"Groq's per-minute token limit was reached; try again in about {seconds} seconds",
+        stage="fastapi-sbert/omcs_agent",
+        status_code=DEPENDENCY_DOWN,
+    )
 
 
 def _extract_json(text: str) -> dict:
@@ -108,7 +225,10 @@ def _multimodal(text: str, image_url: str) -> HumanMessage:
 def node_profile_diff(state: CeviewValidationState) -> dict:
     return {
         "profile_semantic_score": profile_alignment_score(
-            state.get("business_profile") or {}, state["caption"]
+            state.get("business_profile") or {},
+            # The profile is English; a Korean/Japanese caption is compared via
+            # its English translation when the caller has one.
+            (state.get("caption_en") or "").strip() or state["caption"],
         )
     }
 
@@ -119,29 +239,32 @@ OUTPUT ONLY VALID JSON.
 Required Schema:
 {
   "scores": {
-      "visual_business_context_match": float,
-      "visual_intent_consistency": float,
-      "tone_visual_mood_alignment": float,
-      "psychological_strategy_support": float,
-      "target_audience_fit": float,
-      "platform_suitability": float,
-      "attribute_coverage_consistency": float
-  },
-  "total": float
+      "visual_business_context_match": int,
+      "visual_intent_consistency": int,
+      "tone_visual_mood_alignment": int,
+      "psychological_strategy_support": int,
+      "target_audience_fit": int,
+      "platform_suitability": int,
+      "attribute_coverage_consistency": int
+  }
 }
+Every score is a whole number from 0 to 100 (a percentage, e.g. 85 — never 0.85).
 """)
     recs_str = json.dumps(state['recommendations'], indent=2)
     human_text = f"Recommendations Context:\n{recs_str}\n\nEvaluate the image."
     message = _multimodal(human_text, state["image_url"])
 
-    response = get_llm().invoke([system_prompt, message])
+    response = _invoke([system_prompt, message])
     logger.debug("node_evaluate_rubric raw response: %s", response.content[:400])
 
     evaluation_data = _extract_json(response.content)
     if not evaluation_data or "scores" not in evaluation_data:
         logger.warning("node_evaluate_rubric: JSON extraction failed; raw=%s", response.content[:200])
         evaluation_data = {"error": "Parse failed", "raw": response.content}
-    total_score = float(evaluation_data.get("total", 0.0))
+        total_score = 0
+    else:
+        scores, total_score = _normalize_rubric(evaluation_data)
+        evaluation_data = {"scores": scores, "total": total_score}
 
     return {
         "rubric_evaluation_data": evaluation_data,
@@ -160,7 +283,7 @@ Schema:
 """)
     human_text = f"Caption: \"{state['caption']}\"\nAnalyze consistency."
     message = _multimodal(human_text, state["image_url"])
-    response = get_llm().invoke([system_prompt, message])
+    response = _invoke([system_prompt, message])
     logger.debug("node_check_consistency raw response: %s", response.content[:400])
 
     data = _extract_json(response.content)
@@ -180,14 +303,14 @@ Schema:
 def node_calculate_omcs(state: CeviewValidationState) -> dict:
     """Calculates OMCS and explicitly sets the pass/fail status here."""
     p_score = state.get('profile_semantic_score', 0)
-    r_score = state.get('recommendations_picture_score', 0) * 100
+    r_score = state.get('recommendations_picture_score', 0)
     c_score = state.get('pubmat_consistency_score', 0)
-    
-    OMCS = (
+
+    OMCS = max(0.0, min(100.0, (
         (OMCS_WEIGHTS["profile"] * p_score)
         + (OMCS_WEIGHTS["rubric"] * r_score)
         + (OMCS_WEIGHTS["consistency"] * c_score)
-    )
+    )))
 
     # Set the status immediately so it's available even if we skip the feedback node
     status = "Pass" if OMCS >= OMCS_PASS_THRESHOLD else "Fail"
@@ -216,7 +339,7 @@ OMCS Score: {score:.2f}/100
 
 Generate the failure diagnostic report.
 """
-    response = get_llm().invoke([SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)])
+    response = _invoke([SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)])
     
     return {"feedback": response.content}
 

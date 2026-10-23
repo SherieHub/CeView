@@ -1,95 +1,70 @@
 /**
- * Hero + market-coverage strip.
+ * Hero.
  *
- * Asymmetric: the promise on the left, the real product on the right — the
- * dashboard as it looks for a sample resort, with three floating cards whose
- * values are read straight off that screenshot (no invented metrics).
+ * A full-bleed photo of the Cebu coast (decorative: the copy carries the
+ * meaning) under a white wash, the promise and CTAs on the left, and an
+ * illustrative CeView dashboard card on the right (sample data, labelled).
+ * The photo's CC BY-SA credit is in the footer (LandingFooter).
+ *
+ * Styles: styles/landing-hero.css (.cv-hero-*, .cv-dash-*). The market strip
+ * that follows is MarketStrip.tsx.
  */
-import { CalendarClock, CircleCheck, Globe, Target, TrendingUp } from 'lucide-react';
-import dashboardShot from './assets/dashboard.webp';
-import { HERO, MARKETS, MARKET_STRIP } from './landingContent';
-import { BrowserFrame, CtaPair, RouteLines } from './landingParts';
+import { CircleCheck } from 'lucide-react';
+import { DEMO_ANCHOR, HERO, TOUR_ANCHOR } from '../../content/landing';
+import { Accent, Button, Eyebrow, LandingImage } from './ui';
+import HeroDashboard from './HeroDashboard';
 
-const FLOATER_ICON = { coral: TrendingUp, teal: Target, navy: CalendarClock } as const;
+/**
+ * The photo is wider than any hero box (≈2.56:1), so object-fit: cover sizes
+ * it by height. These widths are the rendered width at each layout, which is
+ * what the browser needs to pick the right file:
+ *   < 768px: a 4:3 band, 75vw tall → 75vw × 2.56 ≈ 192vw wide
+ *   ≥ 768px: min(88vh, 820px) tall, zoomed 1.32 → that × 3.4, at least the viewport
+ */
+const HERO_PHOTO_SIZES = '(max-width: 767px) 192vw, max(100vw, calc(min(88vh, 820px) * 3.4))';
 
 export default function LandingHero() {
   return (
-    <>
-      <section className="lp-hero" id="top" aria-labelledby="lp-hero-title">
-        <div className="lp-hero-bg" aria-hidden="true">
-          <span className="lp-orb lp-orb--cyan" />
-          <span className="lp-orb lp-orb--mint" />
-          <span className="lp-dotgrid" />
-        </div>
+    <section className="cv-hero" id="top" aria-labelledby="lp-hero-title">
+      <div className="cv-hero-media">
+        <LandingImage slot="hero-cebu-coast" fill priority decorative sizes={HERO_PHOTO_SIZES} className="cv-hero-photo" />
+        <span className="cv-hero-wash" aria-hidden="true" />
+      </div>
 
-        <div className="lp-wrap lp-hero-grid">
-          <div className="lp-hero-copy">
-            <p className="lp-eyebrow lp-rise" style={{ animationDelay: '40ms' }}>
-              <span className="lp-signal-dot" aria-hidden="true" />
-              {HERO.eyebrow}
-            </p>
-            <h1 id="lp-hero-title" className="lp-h1 lp-rise" style={{ animationDelay: '110ms' }}>
-              {HERO.titleLead} <span className="lp-accent-text">{HERO.titleAccent}</span>
-            </h1>
-            <p className="lp-hero-lede lp-rise" style={{ animationDelay: '180ms' }}>
-              {HERO.lede}
-            </p>
-            <div className="lp-rise" style={{ animationDelay: '250ms' }}>
-              <CtaPair />
-            </div>
-            <ul className="lp-hero-trust lp-rise" style={{ animationDelay: '320ms' }}>
-              {HERO.trust.map((t) => (
-                <li key={t}>
-                  <CircleCheck size={16} aria-hidden="true" />
-                  {t}
-                </li>
-              ))}
-            </ul>
+      <div className="cv-container cv-hero-grid">
+        <div className="cv-hero-copy">
+          <Eyebrow>{HERO.eyebrow}</Eyebrow>
+          <h1 id="lp-hero-title" className="cv-hero-title">
+            {HERO.titleLines.map((line, i) => (
+              <span key={i} className="cv-hero-title-line">
+                {'accent' in line && <Accent>{line.accent}</Accent>}
+                {line.text}{' '}
+              </span>
+            ))}
+          </h1>
+          <p className="cv-hero-lede">{HERO.lede}</p>
+          <div className="cv-hero-ctas">
+            <Button href={DEMO_ANCHOR} size="lg">
+              {HERO.primaryCta}
+            </Button>
+            <Button href={TOUR_ANCHOR} variant="secondary" size="lg" play>
+              {HERO.secondaryCta}
+            </Button>
           </div>
-
-          <div className="lp-hero-visual lp-rise" style={{ animationDelay: '200ms' }}>
-            <RouteLines className="lp-hero-routes" />
-            <span className="lp-hero-shape" aria-hidden="true" />
-            <BrowserFrame src={dashboardShot} alt={HERO.shotAlt} eager />
-            {HERO.floaters.map((f, i) => {
-              const Icon = FLOATER_ICON[f.tone];
-              return (
-                <div key={f.label} className="lp-floater" data-slot={i} data-tone={f.tone} aria-hidden="true">
-                  <span className="lp-floater-icon">
-                    <Icon size={16} />
-                  </span>
-                  <span className="lp-floater-text">
-                    <span className="lp-floater-label">{f.label}</span>
-                    <span className="lp-floater-value">{f.value}</span>
-                    <span className="lp-floater-note">{f.note}</span>
-                  </span>
-                </div>
-              );
-            })}
-            <p className="lp-shot-note">Real CeView dashboard · sample business and data</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="lp-markets" aria-label="Markets CeView monitors">
-        <div className="lp-wrap lp-markets-inner">
-          <p className="lp-markets-label">{MARKET_STRIP.label}</p>
-          <ul className="lp-markets-list">
-            {MARKETS.map((m) => (
-              <li key={m.code} className="lp-market">
-                <span className="lp-market-globe" aria-hidden="true">
-                  <Globe size={18} />
-                </span>
-                <span className="lp-market-name">{m.name}</span>
-                <span className="lp-market-code" aria-hidden="true">
-                  {m.code}
-                </span>
+          <ul className="cv-hero-trust">
+            {HERO.trust.map((t) => (
+              <li key={t}>
+                <CircleCheck size={18} strokeWidth={1.75} aria-hidden="true" />
+                {t}
               </li>
             ))}
           </ul>
-          <p className="lp-markets-note">{MARKET_STRIP.note}</p>
         </div>
-      </section>
-    </>
+
+        <div className="cv-hero-visual">
+          <HeroDashboard />
+        </div>
+      </div>
+    </section>
   );
 }

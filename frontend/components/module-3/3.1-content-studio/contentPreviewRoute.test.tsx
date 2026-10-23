@@ -37,6 +37,7 @@ import { buildContentResponse } from './testFixtures';
 // either out would fail this for the wrong reason and hide a real drift.
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     posts: { list: vi.fn(() => Promise.resolve([])) },
     connections: {
       list: vi.fn(() => Promise.resolve([])),
@@ -83,8 +84,8 @@ describe('/preview/content provider stack', () => {
   it('lands on the studio itself rather than the target picker', async () => {
     renderPreviewRoute();
 
-    expect(await screen.findByRole('heading', { level: 1, name: /Create content that fits the market/ }))
-      .toBeTruthy();
+    // The Draft stage's heading — rendered only once a target is seeded.
+    expect(await screen.findByRole('heading', { name: 'Caption Choices' })).toBeTruthy();
     // The picker's step 1 heading — present only when the seed is missing.
     expect(screen.queryByText(/pick a surge alert/i)).toBeNull();
   });

@@ -29,11 +29,11 @@ export default function EfficiencyTrendChart({ window }: Pick<TrendSlotProps, 'w
   return (
     <div className="card flex flex-col gap-4">
       <div>
-        <h3 className="heading-sm">Efficiency Trend</h3>
-        <p className="body-xs">ROAS, CTR and conversion rate over the selected window.</p>
+        <h3 className="heading-sm">Efficiency</h3>
+        <p className="body-xs">Return on ad spend (right axis, ×) against click-through and conversion rates (left axis, %).</p>
       </div>
 
-      <div data-testid="efficiency-trend-chart" data-point-count={data.length} className="h-[280px] w-full">
+      <div data-testid="efficiency-trend-chart" data-point-count={data.length} className="h-[340px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="4 4" stroke="var(--color-gray-light)" vertical={false} />
@@ -43,13 +43,15 @@ export default function EfficiencyTrendChart({ window }: Pick<TrendSlotProps, 'w
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
             />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+            <YAxis yAxisId="pct" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} unit="%" width={48} />
+            <YAxis yAxisId="x" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} unit="×" width={44} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 12, color: 'var(--color-text-muted)' }} />
             <Line
               type="monotone"
+              yAxisId="x"
               dataKey="roas"
-              name="ROAS"
+              name="ROAS (×)"
               stroke="var(--color-mint-primary)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
@@ -57,8 +59,9 @@ export default function EfficiencyTrendChart({ window }: Pick<TrendSlotProps, 'w
             />
             <Line
               type="monotone"
+              yAxisId="pct"
               dataKey="ctr"
-              name="CTR"
+              name="CTR (%)"
               stroke="var(--color-teal-accent)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
@@ -66,8 +69,9 @@ export default function EfficiencyTrendChart({ window }: Pick<TrendSlotProps, 'w
             />
             <Line
               type="monotone"
+              yAxisId="pct"
               dataKey="convRate"
-              name="Conversion rate"
+              name="Conversion rate (%)"
               stroke="var(--color-coral-cta)"
               strokeWidth={2.5}
               dot={{ r: 3 }}

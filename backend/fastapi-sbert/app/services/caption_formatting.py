@@ -29,7 +29,8 @@ def transform_captions(
     ContentResponseDto captions shape expected by Spring Boot.
 
     For instagram / tiktok / facebook: extract options, optionNames, optionMetadata
-    from the agent's 3-variation list.
+    from the agent's 3-variation list. ``optionsEn`` runs parallel to ``options``
+    (English meaning of each caption; "" when there is none, e.g. USA).
 
     Args:
         final_captions: { "facebook": [...], "instagram": [...], "tiktok": [...] }
@@ -43,6 +44,7 @@ def transform_captions(
     for platform in ("instagram", "tiktok", "facebook"):
         variations: list[dict] = final_captions.get(platform, [])
         options: list[str] = []
+        options_en: list[str] = []
         option_names: list[str] = []
         option_metadata: list[dict] = []
 
@@ -50,6 +52,8 @@ def transform_captions(
             if not isinstance(v, dict):
                 continue
             options.append(v.get("caption", ""))
+            en = v.get("caption_en")
+            options_en.append(en if isinstance(en, str) else "")
             option_names.append(DEMOGRAPHIC_OPTION_NAMES[i] if i < len(DEMOGRAPHIC_OPTION_NAMES) else f"Option {i + 1}")
             option_metadata.append({
                 "core_business_context":             v.get("core_business_context", ""),
@@ -61,6 +65,7 @@ def transform_captions(
 
         captions[platform] = {
             "options":        options,
+            "optionsEn":      options_en,
             "optionNames":    option_names,
             "optionMetadata": option_metadata,
             "guide":          guides.get(platform, []),

@@ -17,9 +17,9 @@ test.describe('Module 2 dashboard', () => {
     await page.goto('/preview/dashboard');
     await page.getByRole('button', { name: /Demand window — South Korea/ }).click();
 
-    await expect(page.getByRole('heading', { name: 'Top Target Markets' })).toBeVisible();
-    await expect(page.getByLabel('Top Target Markets').getByText('Accommodation & Staycation')).toBeVisible();
-    await expect(page.getByLabel('Top Target Markets').getByRole('button', { name: /South Korea/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Top International Market' })).toBeVisible();
+    await expect(page.getByLabel('Top International Market').getByText('Accommodation & Staycation')).toBeVisible();
+    await expect(page.getByLabel('Top International Market').getByRole('button', { name: /South Korea/ })).toBeVisible();
   });
 
   test('keeps cached alerts visible in AI-down mode', async ({ page }) => {

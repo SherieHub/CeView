@@ -8,6 +8,7 @@ import { ApiError } from '../../../services/apiError';
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     campaign: {
       history: vi.fn(() => Promise.resolve(MOCK_HISTORY)),
       report: vi.fn(() => Promise.resolve(MOCK_REPORT)),
@@ -26,6 +27,12 @@ vi.mock('../../../services/apiClient', () => ({
     attributionLinks: {
       list: vi.fn(() => Promise.resolve([])),
       performance: vi.fn(() => Promise.resolve(null)),
+    },
+    attribution: {
+      codes: vi.fn(() => Promise.resolve([])),
+      recentRedemptions: vi.fn(() => Promise.resolve([])),
+      tracked: vi.fn(() => Promise.resolve({ trackedBookings: 0 })),
+      lift: vi.fn(() => Promise.resolve(null)),
     },
   },
 }));
@@ -88,9 +95,9 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
 
-    // Check evidence section is rendered
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
-    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
+    // The live panels also have headings; identify the containing sections by role.
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Statistical lift' })).toBeInTheDocument();
 
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
@@ -127,10 +134,12 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.queryByText(/log campaign performance/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /new submission/i })).toBeInTheDocument();
-    
-    // Check evidence section is still rendered
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
-    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+
+    // Evidence lives on its own tab now — one panel at a time.
+    fireEvent.click(screen.getByRole('tab', { name: 'Attribution' }));
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Statistical lift' })).toBeInTheDocument();
   });
 
   it('shows the server-computed PES score/label in the gauge when the ingest response has one', async () => {
@@ -189,6 +198,9 @@ describe('CampaignAnalyticsView', () => {
       )
     );
 
+    // The shared toggle sits on the Trends tab.
+    fireEvent.click(screen.getByRole('tab', { name: 'Trends' }));
+
     // The shell passes only the pre-sliced `window` down to each chart — the
     // selected width itself is observable on the shared toggle, not on the
     // chart props.
@@ -222,7 +234,29 @@ describe('CampaignAnalyticsView', () => {
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
     
     // Check evidence section is still rendered
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+  });
+
+  it('shows one tab panel at a time and moves between tabs with the arrow keys', async () => {
+    renderView();
+    submitDefaultCampaign();
+    act(() => {
+      vi.advanceTimersByTime(1200);
+    });
+    vi.useRealTimers();
+    await screen.findByRole('tab', { name: 'Overview' });
+
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+    expect(screen.getByTestId('pes-score-value')).toBeInTheDocument();
+    expect(screen.queryByText('Customer Journey', { selector: 'h3' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Customer Journey' }));
+    expect(screen.getByText('Customer Journey', { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.queryByTestId('pes-score-value')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Customer Journey' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tab', { name: 'Trends' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Trends' })).toHaveFocus();
   });
 
   it('renders the error panel when the report call fails', async () => {

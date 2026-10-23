@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /content
+Disallow: /calendar
+Disallow: /performance
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /complete-profile

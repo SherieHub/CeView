@@ -12,9 +12,9 @@ export interface ClickMatchStepProps {
 }
 
 /**
- * Track 5's optional click-match step for the promo-code LogBookingAction.
- * The parent is not implemented in this checkout. Mount with the selected
- * campaign's link/window and submit a non-null value as the redemption clickId.
+ * Track 5's optional click-match step, mounted by LogBookingAction with the
+ * selected code's link and a lookback window ending at the booking time; a
+ * non-null value is submitted as the redemption's clickId.
  * Selecting “None of these” leaves the existing manual booking path unchanged.
  */
 export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatchStepProps) {
@@ -73,47 +73,54 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to, linkId]);
 
+  const clickTime = (iso: string) =>
+    new Date(iso).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'Asia/Manila',
+    });
+
+  // One row per option: radio, what it is, then platform and time pushed right.
+  const row = 'flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-[var(--color-mint-pale-alt)]';
+  const radio = 'shrink-0 accent-[var(--color-mint-primary)]';
+  const noneOption = (disabled: boolean) => (
+    <label className={row}>
+      <input
+        type="radio"
+        name={groupName}
+        value=""
+        checked={value === null}
+        onChange={() => onChange(null)}
+        disabled={disabled}
+        className={radio}
+      />
+      <span>None of these</span>
+    </label>
+  );
+
   return (
-    <fieldset className="card flex flex-col space-y-4">
-      <legend className="heading-sm float-left w-full">Was this from an ad click? (optional)</legend>
-      
+    <fieldset className="flex flex-col gap-2">
+      <legend className="field-label">Was this from an ad click? (optional)</legend>
+
       {error ? (
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col gap-2">
           <ApiErrorPanel error={error} onRetry={() => fetchCandidates(from, to, linkId)} />
-          <label className="flex items-center space-x-2">
-            <input
-              type="radio"
-              name={groupName}
-              value=""
-              checked={value === null}
-              onChange={() => onChange(null)}
-              className="accent-[var(--color-mint-primary)]"
-            />
-            <span>None of these</span>
-          </label>
+          <div className="overflow-hidden rounded-[var(--radius-sm)] border border-gray-light bg-white">
+            {noneOption(false)}
+          </div>
         </div>
       ) : (
-        <div className="flex flex-col space-y-3">
-          <label className="flex items-center space-x-2">
-            <input
-              type="radio"
-              name={groupName}
-              value=""
-              checked={value === null}
-              onChange={() => onChange(null)}
-              disabled={loading}
-              className="accent-[var(--color-mint-primary)]"
-            />
-            <span>None of these</span>
-          </label>
-          
+        <div className="max-h-56 divide-y divide-[var(--color-gray-light)] overflow-y-auto rounded-[var(--radius-sm)] border border-gray-light bg-white">
+          {noneOption(loading)}
           {loading ? (
-            <div className="body-sm py-4">Loading candidates...</div>
+            <p className="body-xs px-3 py-2 text-[var(--color-text-muted)]">Loading candidates...</p>
           ) : candidates.length === 0 ? (
-            <p className="body-sm">No unconverted clicks found for this time period.</p>
+            <p className="body-xs px-3 py-2 text-[var(--color-text-muted)]">No unconverted clicks found for this time period.</p>
           ) : (
             candidates.map(click => (
-              <label key={click.clickId} className="flex items-center space-x-2">
+              <label key={click.clickId} className={row}>
                 <input
                   type="radio"
                   name={groupName}
@@ -121,14 +128,18 @@ export function ClickMatchStep({ linkId, from, to, value, onChange }: ClickMatch
                   checked={value === click.clickId}
                   onChange={() => onChange(click.clickId)}
                   disabled={loading}
-                  className="accent-[var(--color-mint-primary)]"
+                  className={radio}
                 />
-                <div className="flex flex-col">
-                  <span>{click.untagged ? 'Organic / untagged' : click.adLabel || `Ad ${click.externalAdId}`}</span>
-                  <span className="body-xs text-[var(--color-text-muted)]">
-                    {click.platform} • {new Date(click.clickedAt).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}
+                {/* Side by side when there is room; on a phone the meta drops
+                    under the name rather than truncating it to "Ad a…". */}
+                <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <span className="min-w-0 sm:truncate">
+                    {click.untagged ? 'Organic / untagged' : click.adLabel || `Ad ${click.externalAdId}`}
                   </span>
-                </div>
+                  <span className="body-xs whitespace-nowrap text-[var(--color-text-muted)] sm:shrink-0">
+                    {click.platform} • {clickTime(click.clickedAt)}
+                  </span>
+                </span>
               </label>
             ))
           )}

@@ -39,7 +39,7 @@
  * via campaignMetrics.ts — only the PES headline is server-sourced now.
  */
 import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { BarChart3, Gauge, Loader2, RefreshCw, Sparkles, TrendingUp, Workflow } from 'lucide-react';
 import { apiClient } from '../../../services/apiClient';
 import { useAdConnections } from '../../../services/useAdConnections';
@@ -47,7 +47,7 @@ import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import DateRangePicker from './DateRangePicker';
 import { formatPeriod, lastCompleteWeek, weekToDate } from './dateRange';
 import type { Period } from './dateRange';
-import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
+import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes, TrackedPeriodSummary } from '@/types';
 
 /**
  * Which of the seven fields the ad platforms can actually fill.
@@ -111,7 +111,9 @@ export interface SubmissionContext {
  * (dates → what the ad platforms know → what only the operator knows) before
  * any label is read, which the flat single-card layout didn't.
  */
-function StepHead({ n, id, title, description }: { n: number; id: string; title: string; description: string }) {
+function StepHead({ n, id, title, description, aside }: {
+  n: number; id: string; title: string; description: string; aside?: ReactNode;
+}) {
   return (
     <>
       <span className="perf-step-num" aria-hidden="true">{n}</span>
@@ -119,6 +121,7 @@ function StepHead({ n, id, title, description }: { n: number; id: string; title:
         <h2 id={id} className="heading-sm">{title}</h2>
         <p className="body-xs mt-1">{description}</p>
       </div>
+      {aside && <div className="perf-step-aside">{aside}</div>}
     </>
   );
 }
@@ -150,6 +153,22 @@ export default function IngestionForm({
    * campaign record always describe the same dates.
    */
   const [period, setPeriod] = useState<Period>(() => lastCompleteWeek());
+
+  /**
+   * Bookings CeView already tracked in this period (CVW-42), shown under the
+   * Bookings field so the typed total includes them. Supplementary: if the
+   * fetch fails the form works exactly as before, with no hint.
+   */
+  const [tracked, setTracked] = useState<TrackedPeriodSummary | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setTracked(null);
+    apiClient.attribution
+      .tracked(period.periodStart, period.periodEnd)
+      .then((summary) => { if (!cancelled) setTracked(summary); })
+      .catch(() => { if (!cancelled) setTracked(null); });
+    return () => { cancelled = true; };
+  }, [period.periodStart, period.periodEnd]);
 
   const { connections, refresh: refreshConnections } = useAdConnections();
   const activeConnections = useMemo(
@@ -405,7 +424,25 @@ export default function IngestionForm({
           }}
         />
         <span className="field-hint">{hint}</span>
+        {key === 'bookings' && trackedHint()}
       </label>
+    );
+  }
+
+  /** "Flag, don't block": a total below what CeView tracked is warned about, never rejected. */
+  function trackedHint() {
+    if (!tracked || tracked.trackedBookings === 0) return null;
+    const n = tracked.trackedBookings;
+    const entered = values.bookings === '' ? NaN : Number(values.bookings);
+    const below = Number.isFinite(entered) && entered < n;
+    return (
+      <span className={`field-hint ${below ? 'text-[var(--color-critical-text)]' : 'text-[var(--color-success-text)]'}`}>
+        {below
+          ? `That's fewer than the ${n} booking${n === 1 ? '' : 's'} CeView tracked this period — check your total.`
+          : `CeView tracked ${n} booking${n === 1 ? '' : 's'} this period` +
+            (tracked.automaticBookings > 0 ? ` (${tracked.automaticBookings} automatic)` : '') +
+            '. Include them in your total.'}
+      </span>
     );
   }
 
@@ -436,10 +473,8 @@ export default function IngestionForm({
               id="perf-step-period"
               title="Reporting period"
               description="The dates this record covers. Syncing pulls figures for exactly these dates."
+              aside={<DateRangePicker value={period} onChange={changePeriod} disabled={syncing || submitting} />}
             />
-            <div className="perf-step-body" style={{ maxWidth: 360 }}>
-              <DateRangePicker value={period} onChange={changePeriod} disabled={syncing || submitting} />
-            </div>
           </section>
 
           <section className="perf-step" aria-labelledby="perf-step-ads">
@@ -455,10 +490,7 @@ export default function IngestionForm({
             />
             <div className="perf-step-body flex flex-col gap-5">
               {hasActive && (
-                <div
-                  className="flex flex-col gap-3 rounded-[var(--radius-md)] p-4"
-                  style={{ background: 'var(--color-mint-pale)' }}
-                >
+                <div className="perf-sync-band">
                   <div className="flex flex-wrap items-end gap-3">
                     {activeConnections.map((c) => (
                       <label key={c.provider} className="block min-w-[200px] flex-1">
@@ -553,7 +585,8 @@ export default function IngestionForm({
 
       <aside className="perf-aside" aria-label="About this form">
         {hasActive && (
-          <section className="card flex flex-col gap-4" aria-labelledby="perf-live-head">
+          <section className="card perf-live flex flex-col gap-4" aria-labelledby="perf-live-head">
+            <span className="perf-live-art" aria-hidden="true"><i /><i /><i /><i /></span>
             <div>
               <p className="eyebrow">In progress</p>
               <h2 id="perf-live-head" className="heading-sm mt-1">This week so far</h2>
@@ -597,7 +630,7 @@ export default function IngestionForm({
 
             <button
               type="button"
-              className="btn-outline btn-outline--sm self-start"
+              className="btn-outline btn-outline--sm perf-live-btn"
               onClick={syncLiveTotals}
               disabled={liveSyncing || included.length === 0}
             >
@@ -613,7 +646,7 @@ export default function IngestionForm({
           </section>
         )}
 
-        <section className="card flex flex-col gap-4" aria-labelledby="perf-outcomes-head">
+        <section className="card perf-outcomes flex flex-col gap-4" aria-labelledby="perf-outcomes-head">
           <h2 id="perf-outcomes-head" className="heading-sm">What you&rsquo;ll get</h2>
           <ul className="flex flex-col gap-4">
             {OUTCOMES.map(({ icon: Icon, title, text }) => (

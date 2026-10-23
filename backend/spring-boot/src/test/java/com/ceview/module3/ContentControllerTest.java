@@ -7,6 +7,9 @@ import com.ceview.module3.dto.ContentDtos.CaptionsDto;
 import com.ceview.module3.dto.ContentDtos.ContentResponseDto;
 import com.ceview.module3.dto.ContentDtos.ContentSource;
 import com.ceview.module3.dto.ContentDtos.MarketHeaderDto;
+import com.ceview.module3.dto.ContentDtos.CaptionLocalizationDto;
+import com.ceview.module3.dto.ContentDtos.CaptionTranslationDto;
+import com.ceview.module3.submodule31.CaptionTranslationService;
 import com.ceview.module3.submodule31.ContentApprovalService;
 import com.ceview.module3.submodule31.ContentGenerationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +53,7 @@ class ContentControllerTest {
     // here so these tests exercise only the ownership-resolution layer.
     @MockBean private ContentGenerationService generationService;
     @MockBean private ContentApprovalService approvalService;
+    @MockBean private CaptionTranslationService translationService;
 
     private UUID operatorA;
     private String tokenA;
@@ -82,8 +86,12 @@ class ContentControllerTest {
                 "framework",
                 new CaptionsDto(null, null, null),
                 ContentSource.GROQ);
-        when(generationService.generate(any(), anyString(), any(), any(), any(), any()))
+        when(generationService.generate(any(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(dummy);
+        when(translationService.translate(anyString(), anyString()))
+                .thenReturn(new CaptionTranslationDto("Healing trip", "ko", ContentSource.GROQ));
+        when(translationService.localize(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new CaptionLocalizationDto("세부 힐링", "Cebu healing", "ko", ContentSource.GROQ));
         when(approvalService.approveForMarket(any(), anyString()))
                 .thenReturn(List.of(UUID.randomUUID()));
     }
@@ -185,6 +193,54 @@ class ContentControllerTest {
             .andExpect(jsonPath("$.error").value("request_failed"))
             .andExpect(jsonPath("$.message").value(
                     "operator " + operatorWithoutProfile + " has no business profile yet"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions postJson(String path, Map<String, Object> body,
+                                                                         boolean authed) throws Exception {
+        var req = post(path).contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body));
+        if (authed) req = req.header("Authorization", "Bearer " + tokenA);
+        return mvc.perform(req);
+    }
+
+    @Test
+    void translateReturnsTheEnglishMeaning() throws Exception {
+        postJson("/api/content/translate", Map.of("caption", "세부 힐링여행", "platform", "tiktok"), true)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.captionEn").value("Healing trip"))
+            .andExpect(jsonPath("$.sourceLanguage").value("ko"))
+            .andExpect(jsonPath("$.source").value("groq"));
+    }
+
+    @Test
+    void translateRequiresAuthentication() throws Exception {
+        postJson("/api/content/translate", Map.of("caption", "세부"), false).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void translateRejectsBlankOversizedAndUnknownPlatform() throws Exception {
+        postJson("/api/content/translate", Map.of("caption", "  "), true).andExpect(status().isBadRequest());
+        postJson("/api/content/translate", Map.of("caption", "x".repeat(8001)), true)
+            .andExpect(status().isBadRequest());
+        postJson("/api/content/translate", Map.of("caption", "세부", "platform", "naver"), true)
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void localizeReturnsTheNativeCaption() throws Exception {
+        postJson("/api/content/localize",
+                Map.of("captionEn", "Cebu healing", "targetLanguage", "ko", "originalCaption", "세부"), true)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.caption").value("세부 힐링"))
+            .andExpect(jsonPath("$.targetLanguage").value("ko"));
+    }
+
+    @Test
+    void localizeRejectsBadTargetLanguageAndBlankEnglish() throws Exception {
+        postJson("/api/content/localize", Map.of("captionEn", "x", "targetLanguage", "en"), true)
+            .andExpect(status().isBadRequest());
+        postJson("/api/content/localize", Map.of("captionEn", " ", "targetLanguage", "ko"), true)
+            .andExpect(status().isBadRequest());
     }
 
     @Test

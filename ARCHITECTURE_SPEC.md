@@ -69,7 +69,7 @@ score                                     audit                    report
 
 | Sub-module | Feature | User flow / trigger | Output |
 |-----------|---------|---------------------|--------|
-| 2.1 | Dashboard demand alerts | `DashboardView` load → `POST /api/forecasting/ensure?maxAgeHours=12`, then `GET /api/notifications` | Tenant-scoped cards; persisted WARNING/CRITICAL records are active demand windows |
+| 2.1 | Dashboard demand alerts | Forecast store (kept across navigation, cached per profile in `localStorage`): `GET /api/notifications` + `GET /api/forecasting/markets` immediately, `POST /api/forecasting/ensure?maxAgeHours=12` in the background, re-reading when it reports `refreshed: true` | Tenant-scoped cards; persisted WARNING/CRITICAL records are active demand windows |
 | 2.1 | Scheduled ingestion | Cron / refresh → PyTrends + World Bank + forex fetch → `tbl_market_signal_record` | Enriched weekly signal records (rolling stats, spike, YoY) |
 | 2.2 | Market Radar | User selects an alert → `GET /api/forecasting/markets?category=` (DB read), then opens the drawer | Category-ranked cards + real-history/forecast chart + economic insights |
 | 2.2 | Refresh forecast | **Refresh forecast** → `POST /api/forecasting/analyze` | Fresh ingestion + active-engine batch forecast + re-ranked markets |
@@ -207,7 +207,7 @@ A **stateless** LangGraph DAG using a Groq **vision** model (`qwen/qwen3.8-27b`,
 
 ```
 node_profile_diff      → profile_semantic_score (0–100: E5 cosine similarity of saved profile vs caption, calibrated)
-node_evaluate_rubric   → 7-dimension vision rubric → recommendations_picture_score (rubric "total")
+node_evaluate_rubric   → 7-dimension vision rubric, each an integer 0–100 → recommendations_picture_score (0–100: their mean, computed in code, not the model's own "total")
 node_check_consistency → caption↔image consistency_score (0–100)
 node_calculate_omcs    → OMCS, status = Pass if OMCS >= 70 else Fail
 route_omcs_outcome     → PASS terminates; FAIL routes to node_generate_feedback
@@ -344,7 +344,7 @@ economic_viability = Σ weight(i) · feature_norm(i)          # linear fallback
 
 ```
 OMCS = 0.35 · profile_semantic_score
-     + 0.45 · (recommendations_picture_score × 100)   # rubric "total", scaled in node_calculate_omcs
+     + 0.45 · recommendations_picture_score           # rubric mean, already 0–100 (see §3.5)
      + 0.20 · pubmat_consistency_score
 status = Pass if OMCS >= 70 else Fail
 ```

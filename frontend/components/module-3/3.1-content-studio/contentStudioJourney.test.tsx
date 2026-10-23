@@ -50,8 +50,14 @@ vi.mock('../../../services/connectionsStore', () => ({
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
+    posts: { publish: vi.fn((req) => Promise.resolve(req.platforms.map((platform: string) => ({ id: `server-${platform}`, date: '2026-10-19', platform, caption: req.captionsByPlatform[platform], status: platform === 'tiktok' ? 'inbox' : 'published', metricsAvailable: false, reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] })))) },
     markets: { forCategory: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
-    content: { generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))) },
+    content: {
+      generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))),
+      // DEMO_DRAFT's caption carries Hangul, so the audit translates it first.
+      translate: vi.fn(() => Promise.resolve({ captionEn: 'Healing begins just like that.', sourceLanguage: 'ko', source: 'groq' })),
+    },
     creativeDirection: { generate: vi.fn(() => Promise.resolve({ visualGuide: [], shots: [], moodboard: { palette: '', references: [] } })) },
     compliance: { omcsAnalyze: vi.fn(() => Promise.resolve(MOCK_OMCS)) },
     attributionLinks: { list: vi.fn(() => Promise.resolve([])) },
@@ -63,7 +69,7 @@ beforeEach(() => localStorage.clear());
 function renderStudio() {
   return render(
     <OverlayStackProvider>
-      <ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={[]} />
+      <ContentStudioView initialDraft={{ ...DEMO_DRAFT, caption: 'A quiet morning in Cebu.', paidPartnership: false, visibility: 'public', mediaUpload: { status: 'ready', mediaId: 'uploaded-media', publicUrl: 'https://example.test/media.jpg' } }} initialPosts={[]} />
     </OverlayStackProvider>,
   );
 }
@@ -74,6 +80,9 @@ describe('Content Studio journey', () => {
     const { container } = renderStudio();
 
     await waitFor(() => expect(container.querySelectorAll('.cap-card').length).toBe(1), { timeout: 6000 });
+
+    // Quick Post shows one stage at a time; the audit is in Validate.
+    await user.click(screen.getByRole('button', { name: 'Validate' }));
 
     // The audit gate needs caption + media only — both seeded — so it is live.
     const run = screen.getByRole('button', { name: /Run Compliance Audit/ });
@@ -94,8 +103,9 @@ describe('Content Studio journey', () => {
     expect(confirm).not.toBeDisabled();
     await user.click(confirm);
 
-    // The modal closes and the board gains the published records.
+    // The modal closes and the Content Library gains the published records
+    // (it stays mounted while hidden, so its list is in the DOM).
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Publish' })).toBeNull());
-    await waitFor(() => expect(container.querySelectorAll('.post-grid .post-card').length).toBe(2));
+    await waitFor(() => expect(container.querySelectorAll('.lib-rows .lib-row').length).toBe(2));
   }, 40000);
 });

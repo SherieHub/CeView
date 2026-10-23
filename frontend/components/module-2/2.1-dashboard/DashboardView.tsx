@@ -14,24 +14,34 @@
  * between a one- and two-column layout on selection, which resized every card
  * and moved the one just clicked out from under the cursor.
  */
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Award, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
+import '@fontsource-variable/fraunces/opsz.css';
+import { LandingImage } from '../../landing/ui';
+import CoverPhotoMenu from './CoverPhotoMenu';
+import { useCoverPhoto } from './useCoverPhoto';
 import PageHead from '../../../layout/PageHead';
 import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
+import { isSurge } from '../../../types';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import { StaleDataBanner } from '../../shared/StaleDataBanner';
 import { useDashboardState } from './useDashboardState';
 import type { DashMode } from './useDashboardState';
 import AlertFeed from './AlertFeed';
+import TrendingBusinessTypes from './TrendingBusinessTypes';
 import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
+import ForecastFreshness from './ForecastFreshness';
 import SignalSummary from './SignalSummary';
+import PhilippineRegionsPanel from './PhilippineRegionsPanel';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
 import { useJustOnboardedTutorial } from './useJustOnboardedTutorial';
 import TutorialModal from '../../shared/TutorialModal';
 import EnquiryInbox from '../../module-4/enquiries/EnquiryInbox';
+import QuickLogBooking from '../../module-4/4.1-campaign-analytics/QuickLogBooking';
 
 interface DashboardViewProps {
   /** Dev-preview only — pins the state machine to one mode. */
@@ -39,12 +49,30 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ forceMode }: DashboardViewProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const marketPanelsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    const panels = marketPanelsRef.current;
+    if (!grid || !panels || typeof ResizeObserver === 'undefined') return;
+    const updateHeight = () => {
+      const height = panels.getBoundingClientRect().height;
+      if (height > 0) grid.style.setProperty('--alert-panel-max-height', `${height}px`);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(panels);
+    return () => observer.disconnect();
+  }, []);
   const { profile } = useProfile();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const state = useDashboardState({ forceMode });
   const { setTarget } = useTargetSelection();
   const tutorial = useJustOnboardedTutorial();
+  const cover = useCoverPhoto(profile.businessProfileId);
+  // Shared by the Philippine summary tile and the regions panel's rows.
+  const [activeRegion, setActiveRegion] = useState<string | null>(null);
 
   // The radar drawer reads ?market=<id>, so it is linkable and the browser back
   // button closes it. See 03-module-2.md's M2-F card.
@@ -70,8 +98,27 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
 
   return (
     <div className="dash-screen" data-radar-open={radarOpen}>
+      <div className="dash-hero">
+        <div className="dash-hero-photo" aria-hidden="true">
+          {cover.custom ? (
+            <img className="cv-img cv-img--fill" src={cover.custom} alt="" />
+          ) : (
+            <LandingImage slot="product-malapascua-beach" fill decorative sizes="70vw" />
+          )}
+        </div>
+        <CoverPhotoMenu isCustom={cover.custom != null} onPick={cover.setFromFile} onReset={cover.reset} />
       <PageHead
-        title={`Good morning${profile.businessName ? `, ${profile.businessName}` : ''}`}
+        title={
+          profile.businessName ? (
+            <>
+              Good morning,
+              <br />
+              {profile.businessName}
+            </>
+          ) : (
+            'Good morning'
+          )
+        }
         subtitle={subtitle}
         actions={
           <>
@@ -88,7 +135,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
                 <b className="score-badge-disc num">{Math.round(profile.uniquenessScore * 100)}</b>
                 <span className="score-badge-body">
                   <span className="score-badge-label">Uniqueness</span>
-                  <Award className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
+                  <Info className="score-badge-glyph" size={15} strokeWidth={1.75} aria-hidden="true" />
                 </span>
               </span>
             ) : (
@@ -101,9 +148,19 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
               degraded={degraded}
               onRefresh={state.refresh}
             />
+            {state.mode !== 'loading' && (
+              <ForecastFreshness
+                syncing={state.syncing}
+                isRefreshing={state.isRefreshing}
+                refreshError={state.refreshError}
+                generatedAt={state.generatedAt}
+                fetchedAt={state.fetchedAt}
+              />
+            )}
           </>
         }
       />
+      </div>
 
       {/* Step 17 (C-19/C-20): Retry re-runs only the initial load — never the
           forecast pipeline. Only the Refresh button above (state.refresh)
@@ -120,6 +177,7 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         surgeCount={state.surgeCount}
         surgeMarkets={state.surgeMarkets}
         topMarket={state.topMarket}
+        onOpenRegion={setActiveRegion}
         onOpenMarket={(marketId) => {
           // Step 18 (C-21/C-22/C-23): pin the category BEFORE navigating so
           // rankedMarkets loads it — otherwise the drawer looks marketId up in
@@ -152,23 +210,23 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         />
       )}
 
-      {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
-
-      <div className="dash-grid">
+      <div className="dash-grid" ref={gridRef}>
         <AlertFeed
           mode={state.mode}
-          alerts={state.visibleAlerts}
+          alerts={state.myAlerts}
+          hideFilters
           totalForProfile={state.myAlerts.length}
           categories={profile.categories}
           selectedAlertId={state.selectedAlertId}
           isRead={state.isRead}
           onSelect={state.selectAlert}
-          filter={state.feedFilter}
+          filter="all"
           onFilterChange={state.setFeedFilter}
           unreadCount={state.unreadCount}
           surgeCount={state.surgeCount}
         />
 
+        <div className="dash-market-panels" ref={marketPanelsRef}>
         {/* Hidden in the states where there is nothing to rank against. */}
         {state.mode !== 'loading' && state.mode !== 'empty' && state.myAlerts.length > 0 && (
           <MarketsRevealPanel
@@ -177,7 +235,20 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
             onOpenMarket={openMarket}
           />
         )}
+        <PhilippineRegionsPanel
+          selectedAlert={state.selectedAlert}
+          fallbackCategory={state.topMarket?.category ?? null}
+          activeRegionName={activeRegion}
+          onActiveRegionChange={setActiveRegion}
+        />
+        </div>
       </div>
+
+      {/* Staff land here, so the booking quick-log sits beside the enquiries it complements. */}
+      {profile.businessProfileId && <QuickLogBooking key={`log-${profile.businessProfileId}`} />}
+      {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
+
+      <TrendingBusinessTypes />
 
       {/* Overlay, not a route — see MarketRadarDrawer's header. It reads
           ?market= itself, so mounting it unconditionally is correct: with no
@@ -191,7 +262,21 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
           // here. Content Studio refuses to render without both (see
           // ContentStudioView), so an incomplete pick is never written.
           const market = state.rankedMarkets.find((m) => m.id === marketId);
-          if (state.selectedAlert && market) setTarget(state.selectedAlert, market);
+          // Opened from the Top International Market tile there is no selected
+          // alert, so the pick used to be dropped and Content Studio fell back
+          // to its picker. Use the operator's own alert for this category —
+          // this market's, then a surge, then any — so the click lands on
+          // Quick Post with the market already chosen. Never invents an alert:
+          // with none for the category, the picker still asks.
+          const category = state.selectedAlert?.category ?? state.topMarket?.category ?? null;
+          const inCategory = state.myAlerts.filter((a) => a.category === category);
+          const alert =
+            state.selectedAlert ??
+            inCategory.find((a) => a.marketId === marketId) ??
+            inCategory.find(isSurge) ??
+            inCategory[0] ??
+            null;
+          if (alert && market) setTarget(alert, market);
           navigate('/content');
         }}
       />

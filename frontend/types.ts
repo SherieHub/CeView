@@ -24,6 +24,23 @@ export interface AuthTokens {
    * provisioned Google sign-in). See services/auth.tsx's profileCompleted.
    */
   profileCompleted: boolean;
+  /**
+   * Whether the operator has proven they own their email (6-digit code, or
+   * Google). `false` sends them to /verify-email and the backend 403s every
+   * other route; absent on sessions stored before verification shipped, which
+   * is treated as "unknown" until the first EMAIL_NOT_VERIFIED response.
+   */
+  emailVerified?: boolean;
+  /** Persisted so the verify screen can name the address after a reload (no /me endpoint yet). */
+  email?: string;
+}
+
+/** What a successful login / register / google / password-reset call hands to AuthProvider. */
+export interface AuthSession {
+  accessToken: string;
+  profileCompleted: boolean;
+  emailVerified: boolean;
+  user: AuthUser;
 }
 
 export interface BusinessProfile {
@@ -120,9 +137,37 @@ export interface UniquenessResult {
  */
 export type PlatformId = 'instagram' | 'tiktok' | 'facebook';
 
+/** What the backend derives for a publishing platform (GET /api/social-connections). */
+export type SocialStatus =
+  | 'DISCONNECTED'
+  | 'NEEDS_RECONNECT'
+  | 'NEEDS_PAGE'
+  | 'NO_LINKED_INSTAGRAM'
+  | 'ACTIVE';
+
 export interface PlatformConnection {
   platform: PlatformId;
+  /** True only when status is ACTIVE — i.e. CeView can publish there. */
   connected: boolean;
+  handle: string | null;
+  connectedAt: string | null;
+  status: SocialStatus;
+  /** Whether THIS SERVER has credentials for the platform's app. */
+  configured?: boolean;
+}
+
+/** One Facebook Page the Meta login administers (GET /api/social-connections/meta/pages). */
+export interface MetaPageOption {
+  id: string;
+  name: string;
+  instagramUsername: string | null;
+}
+
+/** GET /api/social-connections row. */
+export interface SocialConnectionDto {
+  platform: PlatformId;
+  configured: boolean;
+  status: SocialStatus;
   handle: string | null;
   connectedAt: string | null;
 }
@@ -318,6 +363,13 @@ export interface Market {
   dataStaleCause: string | null;
 }
 
+/** POST /api/forecasting/ensure — whether the live pipeline just ran, and when the forecast was generated. */
+export interface EnsureForecastResult {
+  refreshed: boolean;
+  /** ISO-8601; null when the profile has no forecast yet. */
+  generatedAt: string | null;
+}
+
 export interface MarketsResponse { markets: Market[]; }
 
 export interface DemandAlert {
@@ -433,6 +485,11 @@ export interface CaptionMetadata {
 export interface PlatformCaptions {
   optionNames: string[];
   options: string[];
+  /**
+   * Meaning-faithful English of each option, parallel to `options`. `''` means there
+   * is none (English-market captions); absent on older responses and fixtures.
+   */
+  optionsEn?: string[];
   optionMetadata: CaptionMetadata[];
   guide: string[];
 }
@@ -461,6 +518,64 @@ export interface ContentResponse {
     tiktok: PlatformCaptions;
     facebook: PlatformCaptions;
   };
+}
+
+/** Languages a caption can be translated from / re-localised into. */
+export type CaptionLanguage = 'ko' | 'ja';
+
+/** POST /api/content/translate */
+export interface CaptionTranslation {
+  captionEn: string;
+  sourceLanguage: string;
+  source: ContentSource;
+}
+
+/** POST /api/content/localize */
+export interface CaptionLocalization {
+  caption: string;
+  captionEn: string;
+  targetLanguage: CaptionLanguage;
+  source: ContentSource;
+}
+
+/**
+ * A saved Content Studio draft (/api/content/drafts). `payload` is an opaque, versioned
+ * object the studio owns (see ContentDraftPayload in contentStudioTypes.ts); the backend
+ * stores it as-is.
+ */
+export interface ContentDraft {
+  id: string;
+  /** 'auto' is the one working draft per market; 'named' ones the operator saved on purpose. */
+  kind: 'auto' | 'named';
+  name: string;
+  market: string;
+  demandAlertId: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  /**
+   * True only on the answer to a request to save a NEW draft that found identical content already
+   * saved: nothing was created, and this is that existing draft.
+   */
+  existing?: boolean;
+}
+
+/** A row in the named-drafts list: no payload. */
+export interface ContentDraftSummary {
+  id: string;
+  kind: 'auto' | 'named';
+  name: string;
+  market: string;
+  demandAlertId: string | null;
+  captionPreview: string;
+  /** An uploaded image or video is saved with the draft. Absent from a backend that predates it. */
+  hasMedia?: boolean;
+  /** The saved image's public URL, for a thumbnail; null for a video or no media. */
+  mediaUrl?: string | null;
+  /** The compliance audit saved with the draft, if any. */
+  auditStatus?: 'Pass' | 'Fail' | null;
+  auditScore?: number | null;
+  updatedAt: string;
 }
 
 export interface OmcsAuditResult {
@@ -550,18 +665,89 @@ export interface WorkspaceMemberFixture {
   status?: 'active' | 'pending';
 }
 
+export type AdObjective = 'OUTCOME_TRAFFIC' | 'OUTCOME_AWARENESS' | 'OUTCOME_ENGAGEMENT';
+
+/** A Meta interest the operator picked from Meta's own search; the id is what targeting uses. */
+export interface AdInterest {
+  id: string;
+  name: string;
+}
+
+/**
+ * What the operator chooses for a paid Meta ad. The country and language are not here: the server
+ * derives them from the forecast market, and the end time from `startTime` + `durationDays`.
+ */
+export interface PublishAd {
+  objective: AdObjective;
+  dailyBudgetMinor: number;
+  startTime: string;
+  durationDays: number;
+  interests: AdInterest[];
+  /** True lets Meta widen the audience beyond the chosen interests (Advantage+ audience). */
+  advantageAudience: boolean;
+  attributionLinkId: string;
+  pinCampaign: boolean;
+}
+
+/** The business's own ceilings on CeView-created ads, in the ad account's currency (minor units). */
+export interface AdSpendLimits {
+  /** False until limits exist in the ad account's current currency; paid ads are blocked until then. */
+  configured: boolean;
+  currency: string;
+  maxDailyMinor: number | null;
+  maxTotalMinor: number | null;
+  /** What the business's active ads already commit to the total (daily budget × days). */
+  committedMinor: number;
+}
+
+/** Meta's floor for one ad set's daily budget; null when Meta could not say. */
+export interface AdMinimumBudget {
+  currency: string;
+  minDailyMinor: number | null;
+}
+
+export interface AdInterestOption {
+  id: string;
+  name: string;
+  /** Where Meta files the interest, e.g. "Interests › Sports and outdoors". */
+  path: string;
+}
+export interface PublishRequest {
+  requestId: string;
+  platforms: string[];
+  captionsByPlatform: Record<string, string>;
+  mediaId: string;
+  contentId?: string;
+  market?: string;
+  visibility: 'public' | 'private';
+  scheduledFor?: string;
+  approved: true;
+  ad?: PublishAd;
+}
 export interface PublishedPost {
   id: string;
   date: string;
-  platform: PlatformId;
+  platform: PlatformId | 'meta_ads';
   caption: string;
-  status: 'published' | 'draft';
-  reach: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  engagementRate: number;
-  series: number[];
+  /** English reading aid for a non-English caption. Never published. */
+  captionEn?: string | null;
+  status: 'published' | 'draft' | 'scheduled' | 'processing' | 'inbox' | 'failed' | 'cancelled';
+  deliveryStatus?: string;
+  mediaType?: 'image' | 'video';
+  permalink?: string | null;
+  adsManagerUrl?: string | null;
+  errorMessage?: string | null;
+  metricsAvailable?: boolean;
+  reach: number | null;
+  likes: number | null;
+  comments: number | null;
+  shares: number | null;
+  engagementRate: number | null;
+  series: (number | null)[];
+  /** The image it went out with, when the post was published from this session. */
+  mediaUrl?: string | null;
+  /** Local date-time (yyyy-mm-ddThh:mm) a scheduled post is set to go out. */
+  scheduledFor?: string | null;
 }
 
 /**
@@ -659,6 +845,117 @@ export interface LinkPerformance {
   creatives: CreativePerformance[];
 }
 
+/**
+ * Conversion capture (CVW-42) — docs/module-4/CONVERSION_CAPTURE_RESEARCH.md.
+ * How a booking reached CeView, most to least trustworthy: a traveller's
+ * hosted enquiry and a booking-platform sync are automatic; a click match is
+ * operator-confirmed against a click CeView recorded; a code log is the
+ * operator noting that a customer quoted the code.
+ */
+export type CaptureKind = 'ENQUIRY' | 'BOOKING_PLATFORM' | 'CLICK_MATCHED' | 'CODE_LOGGED';
+
+export interface CaptureKindTotal {
+  kind: CaptureKind;
+  bookings: number;
+  revenue: number;
+}
+
+/** A surge window's quotable code and what it has captured so far. */
+export interface AttributionCodeSummary {
+  attributionCodeId: string;
+  code: string;
+  category: string;
+  targetMarket: string;
+  windowStart: string;
+  windowEnd: string;
+  status: 'UPCOMING' | 'ACTIVE' | 'ENDED';
+  totalBookings: number;
+  totalRevenue: number;
+  byKind: CaptureKindTotal[];
+  /** Operator-reported bookings for the window's weeks; null until a week in it is submitted. */
+  reportedBookings: number | null;
+  /** More bookings were tracked in the window than the operator reported — a flag, not an error. */
+  trackedExceedsReported: boolean;
+  /** A walk-in voucher (carries a discount). Redeemed through the voucher card, not "Log a booking". */
+  voucher?: boolean;
+}
+
+/**
+ * What ads have actually cost this operator, from their own reported paid weeks
+ * (CVW-43). Rates are null when there is nothing to compute them from — the ad
+ * planner then gives no budget estimate rather than an invented one.
+ */
+export interface AdCostRates {
+  periods: number;
+  totalSpend: number;
+  totalImpressions: number;
+  totalClicks: number;
+  costPerThousandImpressions: number | null;
+  costPerClick: number | null;
+}
+
+/** Bookings CeView tracked in one reporting period, shown beside the weekly form's Bookings field. */
+export interface TrackedPeriodSummary {
+  periodStart: string;
+  periodEnd: string;
+  trackedBookings: number;
+  automaticBookings: number;
+  clickMatchedBookings: number;
+  codeLoggedBookings: number;
+  trackedRevenue: number;
+}
+
+export type LiftStatus = 'OK' | 'UPCOMING' | 'NO_WINDOW_DATA' | 'NO_BASELINE';
+
+/**
+ * A code's surge window compared with the four weeks before it, as per-week
+ * rates of the operator's reported results. Percentages are null unless
+ * `status` is OK and the baseline is non-zero.
+ */
+export interface AttributionLift {
+  attributionCodeId: string;
+  code: string;
+  windowStart: string;
+  windowEnd: string;
+  baselineStart: string;
+  status: LiftStatus;
+  windowPeriods: number;
+  baselinePeriods: number;
+  baselineWeeks: number;
+  /** Fewer than four weeks of history before the window. */
+  shortBaseline: boolean;
+  windowBookingsPerWeek: number | null;
+  baselineBookingsPerWeek: number | null;
+  bookingsLiftPct: number | null;
+  windowRevenuePerWeek: number | null;
+  baselineRevenuePerWeek: number | null;
+  revenueLiftPct: number | null;
+}
+
+/** One booking, logged against a code or attached to a recorded ad click. */
+export interface LogBookingInput {
+  attributionCodeId?: string;
+  clickId?: string;
+  bookings?: number;
+  revenue?: number;
+  /** ISO timestamp; omitted means now. */
+  eventAt?: string;
+}
+
+export interface AttributionRedemption {
+  redemptionId: string;
+  attributionCodeId: string;
+  code: string | null;
+  source: 'MANUAL' | 'FAREHARBOR' | 'LINK';
+  kind: CaptureKind;
+  bookings: number;
+  revenue: number;
+  eventAt: string | null;
+  clickId: string | null;
+  /** Only operator-created rows can be undone. */
+  deletable: boolean;
+}
+
 /** Traveller submission on the public enquiry page. `clickId` is the `cv=` value. */
 export interface AttributionEnquiryInput {
   clickId: string;
@@ -668,4 +965,45 @@ export interface AttributionEnquiryInput {
   requestedStart?: string;
   requestedEnd?: string;
   message?: string;
+}
+
+/** POST /api/media/uploads — where to PUT the file, and the public URL it will have. */
+export interface MediaUploadSlot {
+  mediaId: string;
+  /** Absolute (S3), relative to the API origin (local dev), or starting with '#' in fixture mode. */
+  uploadUrl: string;
+  publicUrl: string;
+  kind: 'image' | 'video';
+}
+
+/** POST /api/media/{id}/complete */
+export interface MediaAssetDto {
+  mediaId: string;
+  kind: 'image' | 'video';
+  contentType: string;
+  sizeBytes: number;
+  publicUrl: string;
+  status: 'PENDING' | 'READY';
+  width: number | null;
+  height: number | null;
+  durationSeconds: number | null;
+}
+
+/** A fixed-value, capacity-limited voucher attached to an attribution campaign. */
+export interface AttributionVoucher {
+  attributionCodeId: string;
+  code: string;
+  discountAmount: number;
+  redemptionLimit: number | null;
+  redemptionsUsed: number;
+  redemptionsRemaining: number;
+  voucherStatus: 'ACTIVE' | 'EXHAUSTED' | 'EXPIRED';
+}
+
+export interface VoucherRedemption {
+  code: string;
+  grossRevenue: number;
+  discountAmount: number;
+  netRevenue: number;
+  redemptionsRemaining: number;
 }

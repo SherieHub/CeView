@@ -29,9 +29,13 @@ export default function Modal({ open, onClose, title, variant = 'panel', label, 
   const inStack = isOpen('modal');
   const wasInStack = useRef(false);
 
+  // Only an OPEN modal touches the stack: it pushes on open and pops on close
+  // or unmount. A closed one used to pop on unmount too, and since the stack is
+  // keyed by kind, a closed modal unmounting elsewhere on the page (a carousel's
+  // viewer going away) dismissed whichever modal was actually open.
   useEffect(() => {
-    if (open) push('modal');
-    else pop('modal');
+    if (!open) return;
+    push('modal');
     return () => pop('modal');
   }, [open, push, pop]);
 

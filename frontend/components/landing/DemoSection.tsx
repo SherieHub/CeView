@@ -1,43 +1,85 @@
 /**
- * Demo request — the page's main conversion point. Split layout: what the
- * walkthrough covers (plus honest access/pricing status) beside the form.
+ * Request a demo (#demo) — the page's main conversion point. A pale-mint band:
+ * on the left the promise, what the walkthrough covers (icon list) and the
+ * Cebu pilot card (no "spots left" counter or other scarcity); on the right
+ * the form card (LeadForm). A wide Cebu beach photo closes the section.
+ *
+ * Styles: styles/landing-pricing.css (.cv-demo-*, .cv-form-*).
  */
-import { CircleCheck, KeyRound } from 'lucide-react';
-import { DEMO } from './landingContent';
-import { SectionHead } from './landingParts';
+import { ChartColumnIncreasing, Lightbulb, Map as MapIcon, Sprout, TrendingUp, type LucideIcon } from 'lucide-react';
+import { DEMO } from '../../content/landing';
+import { Eyebrow, LandingImage } from './ui';
 import LeadForm from './LeadForm';
+
+const SEE_ICONS: LucideIcon[] = [MapIcon, ChartColumnIncreasing, Lightbulb, TrendingUp];
 
 export default function DemoSection() {
   return (
-    <section className="lp-section lp-demo" id="request-demo" aria-labelledby="lp-demo-title">
-      <div className="lp-demo-bg" aria-hidden="true">
-        <span className="lp-orb lp-orb--cyan" />
-      </div>
-      <div className="lp-wrap lp-demo-grid">
-        <div className="lp-demo-copy">
-          <SectionHead id="lp-demo-title" eyebrow={DEMO.eyebrow} title={DEMO.title} lede={DEMO.lede} />
-          <div className="lp-demo-see">
-            <h3 className="lp-h3">{DEMO.seeTitle}</h3>
-            <ul>
-              {DEMO.see.map((s) => (
-                <li key={s}>
-                  <CircleCheck size={20} aria-hidden="true" />
-                  {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="lp-demo-access">
-            <span className="lp-demo-access-icon" aria-hidden="true">
-              <KeyRound size={18} />
-            </span>
-            <div>
-              <p className="lp-demo-access-title">{DEMO.accessTitle}</p>
-              <p className="lp-body">{DEMO.access}</p>
+    <section className="cv-section cv-demo" id="demo" aria-labelledby="cv-demo-title">
+      <div className="cv-container">
+        <div className="cv-demo-grid">
+          <div className="cv-demo-copy">
+            <Eyebrow>{DEMO.eyebrow}</Eyebrow>
+            <h2 id="cv-demo-title" className="cv-display-lg cv-demo-title">
+              {DEMO.title}
+            </h2>
+            <p className="cv-demo-lede">{DEMO.lede}</p>
+
+            <div className="cv-demo-details">
+              <div>
+                <h3 className="sr-only">{DEMO.seeTitle}</h3>
+                <ul className="cv-demo-see">
+                  {DEMO.see.map((s, i) => {
+                    const Icon = SEE_ICONS[i];
+                    return (
+                      <li key={s}>
+                        <span className="cv-demo-see-icon" aria-hidden="true">
+                          <Icon size={20} strokeWidth={1.75} />
+                        </span>
+                        {s}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <div className="cv-demo-pilot">
+                {/* A small rising trend line: what the pilot is about. Decorative. */}
+                <svg className="cv-demo-spark" viewBox="0 0 48 36" aria-hidden="true" focusable="false">
+                  <defs>
+                    <linearGradient id="cv-demo-spark-fill" x1="0" y1="1" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#0b4f49" />
+                      <stop offset="100%" stopColor="#2bb59b" />
+                    </linearGradient>
+                  </defs>
+                  <polyline points="5,31 17,18 26,26 43,8" />
+                  <polyline points="31,8 43,8 43,20" />
+                </svg>
+                <div className="cv-demo-pilot-head">
+                  <span className="cv-demo-see-icon" aria-hidden="true">
+                    <Sprout size={20} strokeWidth={1.75} />
+                  </span>
+                  <Eyebrow>{DEMO.pilot.eyebrow}</Eyebrow>
+                </div>
+                <p className="cv-demo-pilot-body">{DEMO.pilot.body}</p>
+              </div>
             </div>
           </div>
+
+          <div className="cv-demo-form">
+            <LeadForm />
+          </div>
         </div>
-        <LeadForm />
+
+        <div className="cv-demo-banner">
+          <LandingImage slot="demo-side" fill sizes="(min-width: 1024px) 90vw, 100vw" />
+          <p className="cv-demo-banner-word" aria-hidden="true">
+            Cebu
+            <svg viewBox="0 0 120 16" focusable="false">
+              <path d="M2 10 C 14 2, 22 14, 34 8 S 54 2, 66 8 S 90 14, 118 5" />
+            </svg>
+          </p>
+        </div>
       </div>
     </section>
   );

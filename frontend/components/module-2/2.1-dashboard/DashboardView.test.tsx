@@ -1,6 +1,6 @@
 /**
  * CARD — Foundation: Dashboard & Radar Shell
- * DoD (Step 18, C-21/C-22/C-23): "Top market now" must actually open a
+ * DoD (Step 18, C-21/C-22/C-23): "Top market for International" must actually open a
  * populated drawer from a cold dashboard (no alert ever selected) — the
  * regression this guards is the drawer looking marketId up in an empty
  * rankedMarkets list and silently staying closed.
@@ -8,11 +8,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { marketsForCategory, MOCK_MARKETS, CATEGORY_MARKET_SCORES } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
-import { TargetSelectionProvider } from '../../../services/targetSelectionStore';
+import { TargetSelectionProvider, useTargetSelection } from '../../../services/targetSelectionStore';
 import { ToastProvider } from '../../shared/Toast';
 
 const mockProfile = {
@@ -62,7 +62,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ensureMock.mockResolvedValue(undefined);
   // Cold dashboard: alerts exist (so mode isn't 'empty'), but nothing has ever
-  // been selected — the exact precondition the "Top market now" bug needs.
+  // been selected — the exact precondition the "Top market for International" bug needs.
   listMock.mockResolvedValue(MOCK_NOTIFICATIONS.map((a) => ({ ...a })));
   statusMock.mockResolvedValue({ available: true });
   keywordTrendsMock.mockResolvedValue([]);
@@ -71,13 +71,13 @@ beforeEach(() => {
   );
 });
 
-describe('DashboardView — Top market now (cold dashboard)', () => {
+describe('DashboardView — Top market for International (cold dashboard)', () => {
   it('opens a populated drawer without ever selecting an alert first', async () => {
     const user = userEvent.setup();
     renderDashboard();
 
     // Precondition: cold dashboard, drawer closed, no alert ever selected.
-    const topMarketTile = await screen.findByRole('button', { name: /Top market now/i });
+    const topMarketTile = await screen.findByRole('button', { name: /Top market for International/i });
     expect(drawer()).toHaveAttribute('data-open', 'false');
 
     await user.click(topMarketTile);
@@ -91,6 +91,37 @@ describe('DashboardView — Top market now (cold dashboard)', () => {
     // 'Accommodation & Staycation' — see CATEGORY_MARKET_SCORES.
     const expectedLeader = marketsForCategory('Adventure & Nature')[0];
     expect(screen.getByRole('heading', { name: expectedLeader.name })).toBeInTheDocument();
+  });
+
+  // "Target this market" from the tile used to drop the pick (no alert was
+  // selected), so Content Studio opened on its picker instead of Quick Post.
+  it('targets the market from the tile and lands on Content Studio with it chosen', async () => {
+    const user = userEvent.setup();
+    function Probe() {
+      const { target } = useTargetSelection();
+      return <p data-testid="probe">{target ? `${target.alert.id}:${target.market.id}` : 'none'}</p>;
+    }
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <ToastProvider>
+          <TargetSelectionProvider>
+            <OverlayStackProvider>
+              <Routes>
+                <Route path="/dashboard" element={<DashboardView />} />
+                <Route path="/content" element={<Probe />} />
+              </Routes>
+            </OverlayStackProvider>
+          </TargetSelectionProvider>
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /Top market for International/i }));
+    await waitFor(() => expect(drawer()).toHaveAttribute('data-open', 'true'));
+    await user.click(screen.getByRole('button', { name: /Target this market/ }));
+
+    // usa leads Adventure & Nature; n3 is the operator's own usa alert there.
+    expect(await screen.findByTestId('probe')).toHaveTextContent('n3:usa');
   });
 });
 
@@ -115,14 +146,14 @@ describe('DashboardView — stale banner (Step 18, C-21/C-22/C-23; H-11)', () =>
 
     renderDashboard();
 
-    await screen.findByRole('button', { name: /Top market now/i });
+    await screen.findByRole('button', { name: /Top market for International/i });
     expect(await screen.findByText(/Latest attempt failed/)).toBeInTheDocument();
     expect(screen.getByText(/connection refused/)).toBeInTheDocument();
   });
 
   it('shows no stale banner when nothing loaded is actually stale', async () => {
     renderDashboard();
-    await screen.findByRole('button', { name: /Top market now/i });
+    await screen.findByRole('button', { name: /Top market for International/i });
 
     expect(screen.queryByText(/Latest attempt failed/)).not.toBeInTheDocument();
     expect(screen.queryByText(/days old/)).not.toBeInTheDocument();

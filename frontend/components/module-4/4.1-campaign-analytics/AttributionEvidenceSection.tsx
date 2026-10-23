@@ -1,40 +1,79 @@
 import React from 'react';
+import { BarChart3, Ticket } from 'lucide-react';
 import LinkAttributionPanel from './LinkAttributionPanel';
+import CodeRedemptionPanel from './CodeRedemptionPanel';
+import StatisticalLiftPanel from './StatisticalLiftPanel';
+import CvLaunchVoucherCard from './CvLaunchVoucherCard';
 
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;
   liftEvidence?: React.ReactNode;
+  /** 'tab' is the results screen's Attribution tab: the table full width, the
+   * two unbuilt analyses as a compact note rather than cards of their own. */
+  layout?: 'entry' | 'tab';
+  /** The scored period, so the link panel can say when its window differs. */
+  period?: { periodStart: string; periodEnd: string };
 };
 
-export default function AttributionEvidenceSection({ codeEvidence, liftEvidence }: AttributionEvidenceSectionProps) {
+/** Decorative only: a rising bar chart for the not-yet-built lift panel. */
+function LiftArt() {
+  return (
+    <span className="perf-ev-art perf-ev-art--lift" aria-hidden="true">
+      <i /><i /><i /><i /><i />
+    </span>
+  );
+}
+
+export default function AttributionEvidenceSection({ codeEvidence, liftEvidence, layout = 'entry', period }: AttributionEvidenceSectionProps) {
+  if (layout === 'tab') {
+    return (
+      <div className="perf-attr">
+        <div className="perf-attr-head">
+          <h2 className="perf-tab-title">Attribution &amp; Evidence</h2>
+          <p className="perf-tab-sub">See which tracked content brought clicks, enquiries and recorded revenue.</p>
+        </div>
+        <LinkAttributionPanel period={period} />
+        <div className="perf-attr-more">
+          <section className="perf-attr-item" aria-labelledby="perf-attr-code">
+            <Ticket size={16} aria-hidden="true" />
+            <div>
+              <h3 id="perf-attr-code" className="perf-attr-item-title">Code-redemption evidence</h3>
+              {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
+            </div>
+          </section>
+          <section className="perf-attr-item" aria-labelledby="perf-attr-lift">
+            <BarChart3 size={16} aria-hidden="true" />
+            <div>
+              <h3 id="perf-attr-lift" className="perf-attr-item-title">Statistical lift</h3>
+              {liftEvidence ?? <StatisticalLiftPanel />}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     // The link table carries four columns, so it gets twice the width of each companion panel.
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="perf-ev-row">
       <div className="min-w-0">
         <LinkAttributionPanel />
       </div>
-      
-      <div className="min-w-0 flex flex-col space-y-4">
-        <h3 className="heading-sm">Code-redemption evidence</h3>
-        {codeEvidence ? (
-          codeEvidence
-        ) : (
-          <div className="card body-sm">
-            <p>Code-redemption evidence is not available in this build. It records operator-reported codes from Messenger, phone and walk-in bookings.</p>
-          </div>
-        )}
-      </div>
-      
-      <div className="min-w-0 flex flex-col space-y-4">
-        <h3 className="heading-sm">Statistical lift</h3>
-        {liftEvidence ? (
-          liftEvidence
-        ) : (
-          <div className="card body-sm">
-            <p>Statistical lift is not available in this build. It compares campaign results with the pre-campaign baseline.</p>
-          </div>
-        )}
-      </div>
+      <section className="card perf-ev" aria-labelledby="perf-ev-code-title">
+        <div className="perf-ev-head">
+          <span className="perf-ev-icon" aria-hidden="true"><Ticket size={18} /></span>
+          <h3 id="perf-ev-code-title" className="perf-ev-title">Code-redemption evidence</h3>
+        </div>
+        {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
+      </section>
+
+      <section className="card perf-ev" aria-labelledby="perf-ev-lift-title">
+        <div className="perf-ev-head">
+          <span className="perf-ev-icon" aria-hidden="true"><BarChart3 size={18} /></span>
+          <h3 id="perf-ev-lift-title" className="perf-ev-title">Statistical lift</h3>
+        </div>
+        {liftEvidence ?? <StatisticalLiftPanel />}
+      </section>
     </div>
   );
 }

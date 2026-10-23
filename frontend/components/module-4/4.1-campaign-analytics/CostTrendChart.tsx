@@ -29,11 +29,11 @@ export default function CostTrendChart({ window }: Pick<TrendSlotProps, 'window'
   return (
     <div className="card flex flex-col gap-4">
       <div>
-        <h3 className="heading-sm">Cost Trend</h3>
-        <p className="body-xs">Cost per click and customer acquisition cost over the selected window.</p>
+        <h3 className="heading-sm">Costs</h3>
+        <p className="body-xs">Cost per click (left axis) and cost per new customer (right axis), in pesos.</p>
       </div>
 
-      <div data-testid="cost-trend-chart" data-point-count={data.length} className="h-[280px] w-full">
+      <div data-testid="cost-trend-chart" data-point-count={data.length} className="h-[340px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="4 4" stroke="var(--color-gray-light)" vertical={false} />
@@ -43,13 +43,15 @@ export default function CostTrendChart({ window }: Pick<TrendSlotProps, 'window'
               tickLine={false}
               tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }}
             />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+            <YAxis yAxisId="cpc" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} unit="₱" width={52} />
+            <YAxis yAxisId="cac" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} unit="₱" width={60} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 12, color: 'var(--color-text-muted)' }} />
             <Line
               type="monotone"
+              yAxisId="cpc"
               dataKey="cpc"
-              name="CPC (₱)"
+              name="Cost per click (₱)"
               stroke="var(--color-navy-primary)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
@@ -57,8 +59,9 @@ export default function CostTrendChart({ window }: Pick<TrendSlotProps, 'window'
             />
             <Line
               type="monotone"
+              yAxisId="cac"
               dataKey="cac"
-              name="CAC (₱)"
+              name="Cost per new customer (₱)"
               stroke="var(--color-coral-cta)"
               strokeWidth={2.5}
               dot={{ r: 3 }}
