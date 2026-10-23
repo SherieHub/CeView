@@ -92,7 +92,11 @@ export default function AdUrlBlock({ link, onLinkChange }: AdUrlBlockProps) {
       </div>
 
       <p className="ad-url-instruction">
-        <strong>Paste this into your ad&apos;s URL parameters field in Ads Manager — not into the caption.</strong>
+        <strong>Paste the Meta or TikTok ad URL into your ad&apos;s Website URL field in Ads Manager — not into the caption.</strong>
+      </p>
+      <p className="body-sm">
+        Meta also has a separate &ldquo;URL parameters&rdquo; field; it takes only the part after the ?, not the whole link.
+        The Ad Planner shows the two pieces split for you.
       </p>
       <p className="body-sm ad-url-instagram">
         Instagram captions do not make links tappable. Use the ad&apos;s CTA button or put the bare link in your bio.

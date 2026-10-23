@@ -101,7 +101,9 @@ public final class AttributionDtos {
             BigDecimal totalRevenue,
             List<KindTotal> byKind,
             Long reportedBookings,
-            boolean trackedExceedsReported) {}
+            boolean trackedExceedsReported,
+            /** A walk-in voucher (carries a discount). Bookings against it go through voucher redemption, not "Log a booking". */
+            boolean voucher) {}
 
     /**
      * Bookings CeView tracked in one reporting period, shown beside the weekly

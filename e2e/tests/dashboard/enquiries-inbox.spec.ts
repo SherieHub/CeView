@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { api } from '../support/api';
-import { enquiryPath, listEnquiries, submitEnquiry } from '../support/builders';
+import { codesOf, enquiryPath, listEnquiries, submitEnquiry } from '../support/builders';
 import { requireBackend, requireTestSupport } from '../support/stack';
 import { test, expect } from '../support/fixtures';
 import { provisionOperator, type Operator } from '../support/operator';
@@ -181,5 +181,57 @@ test.describe('When the inbox cannot load', () => {
     await inbox(page).getByRole('button', { name: 'Retry enquiries' }).click();
     await expect(inbox(page).locator('li h3')).toHaveText(['Recovered']);
     await expect(inbox(page).getByRole('alert')).toHaveCount(0);
+  });
+});
+
+test.describe('Deciding what an enquiry became', () => {
+  const totals = async (op: Operator) => {
+    const [code] = await codesOf(op);
+    return { bookings: code.totalBookings, revenue: code.totalRevenue };
+  };
+
+  test('marking an enquiry booked puts its real bookings and revenue into the campaign evidence', async ({ page }) => {
+    const op = await provisionOperator('inbox-booked', { demandWindow: true });
+    await receiveEnquiry(op, { contactName: 'Will Book', contactValue: 'will@example.com' });
+    // The traveller's submit already counts as one booking at no revenue.
+    expect(await totals(op)).toEqual({ bookings: 1, revenue: 0 });
+
+    await openDashboard(page, op);
+    const card = inbox(page).locator('li').first();
+    await expect(card.getByText('New', { exact: true })).toBeVisible();
+    await card.getByRole('button', { name: 'Mark booked' }).click();
+    await card.getByLabel('Bookings').fill('2');
+    await card.getByLabel(/Revenue/).fill('2500');
+    await card.getByRole('button', { name: 'Save booking' }).click();
+
+    await expect(card.getByText(/Booked · 2 bookings/)).toBeVisible();
+    expect(await totals(op)).toEqual({ bookings: 2, revenue: 2500 });
+  });
+
+  test('declining an enquiry takes its booking back out but keeps the enquiry', async ({ page }) => {
+    const op = await provisionOperator('inbox-declined', { demandWindow: true });
+    await receiveEnquiry(op, { contactName: 'Wont Book', contactValue: 'wont@example.com' });
+    expect(await totals(op)).toEqual({ bookings: 1, revenue: 0 });
+
+    await openDashboard(page, op);
+    const card = inbox(page).locator('li').first();
+    await card.getByRole('button', { name: 'Decline' }).click();
+    await card.getByRole('button', { name: 'Yes, decline' }).click();
+
+    await expect(card.getByText('Declined', { exact: true })).toBeVisible();
+    expect(await totals(op)).toEqual({ bookings: 0, revenue: 0 });
+    expect(await listEnquiries(op)).toHaveLength(1);
+  });
+
+  test('the outcome endpoint needs a sign-in and will not touch another operator\'s enquiry', async () => {
+    const owner = await provisionOperator('inbox-decide-a', { demandWindow: true });
+    const other = await provisionOperator('inbox-decide-b', { demandWindow: true });
+    await receiveEnquiry(owner, { contactName: 'Owned', contactValue: 'owned@example.com' });
+    const [enquiry] = await listEnquiries(owner);
+
+    const body = { outcome: 'DECLINED' };
+    expect((await api().patch(`/api/attribution/enquiries/${enquiry.enquiryId}`, body)).status).toBe(401);
+    expect((await api(other.token).patch(`/api/attribution/enquiries/${enquiry.enquiryId}`, body)).status).toBe(404);
+    expect(await totals(owner)).toEqual({ bookings: 1, revenue: 0 });
   });
 });

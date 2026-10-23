@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
 @Service
 public class ClickTrackingService {
 
-    static final String HOSTED_ENQUIRY_PATH = "/attribution/enquiry";
+    /** The frontend route (frontend/App.tsx), served from the frontend origin, not the API's. */
+    static final String HOSTED_ENQUIRY_PATH = "/enquiry";
 
     private static final int MAX_EXTERNAL_ID_LENGTH = 128;
     private static final int MAX_HEADER_LENGTH = 2048;
@@ -31,18 +32,20 @@ public class ClickTrackingService {
     private final AttributionLinkRepository linkRepository;
     private final AttributionClickRepository clickRepository;
     private final BotFilter botFilter;
-    private final AdUrlBuilder adUrlBuilder;
+    private final String enquiryBaseUrl;
     private final String ipHashSalt;
 
     public ClickTrackingService(AttributionLinkRepository linkRepository,
                                 AttributionClickRepository clickRepository,
                                 BotFilter botFilter,
-                                AdUrlBuilder adUrlBuilder,
+                                @Value("${ceview.attribution.enquiry-base-url:http://localhost:3001}") String enquiryBaseUrl,
                                 @Value("${ceview.attribution.ip-hash-salt:dev-attribution-ip-hash-salt}") String ipHashSalt) {
         this.linkRepository = linkRepository;
         this.clickRepository = clickRepository;
         this.botFilter = botFilter;
-        this.adUrlBuilder = adUrlBuilder;
+        this.enquiryBaseUrl = enquiryBaseUrl != null && enquiryBaseUrl.endsWith("/")
+                ? enquiryBaseUrl.substring(0, enquiryBaseUrl.length() - 1)
+                : enquiryBaseUrl;
         this.ipHashSalt = ipHashSalt == null ? "" : ipHashSalt;
     }
 
@@ -56,8 +59,13 @@ public class ClickTrackingService {
         String ipHash = hashIp(request.ipAddress());
         String destination = destinationFor(link);
 
-        if (botFilter.shouldSuppress(link, request.userAgent(), ipHash, now)) {
+        if (botFilter.isDeniedUserAgent(request.userAgent())) {
             return new RedirectDecision(destination, null, false);
+        }
+        Optional<AttributionClick> duplicate = botFilter.recentDuplicate(link, ipHash, now);
+        if (duplicate.isPresent()) {
+            UUID existing = duplicate.get().getClickId();
+            return new RedirectDecision(appendClickId(destination, existing), existing, false);
         }
 
         AttributionClick click = new AttributionClick();
@@ -78,6 +86,15 @@ public class ClickTrackingService {
         return new RedirectDecision(appendClickId(destination, saved.getClickId()), saved.getClickId(), true);
     }
 
+    /**
+     * Where a link sends the traveller, with nothing looked up about the visitor and nothing written.
+     * Used when a client is over the rate limit: they are still redirected, just not counted.
+     */
+    @Transactional(readOnly = true)
+    public Optional<RedirectDecision> destinationOnly(String slug) {
+        return linkRepository.findBySlug(slug).map(link -> new RedirectDecision(destinationFor(link), null, false));
+    }
+
     String hashIp(String ipAddress) {
         if (ipAddress == null || ipAddress.isBlank()) return null;
         try {
@@ -91,7 +108,7 @@ public class ClickTrackingService {
 
     private String destinationFor(AttributionLink link) {
         if (!link.isHosted()) return link.getDestinationUrl();
-        return adUrlBuilder.baseUrl() + HOSTED_ENQUIRY_PATH;
+        return enquiryBaseUrl + HOSTED_ENQUIRY_PATH;
     }
 
     private String appendClickId(String destination, UUID clickId) {

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -40,8 +41,15 @@ public class BotFilter {
         this.clickRepository = clickRepository;
     }
 
-    public boolean shouldSuppress(AttributionLink link, String userAgent, String ipHash, OffsetDateTime now) {
-        return isDeniedUserAgent(userAgent) || isDebounced(link, ipHash, now);
+    /**
+     * The click a repeat from the same address should reuse, if one was recorded inside the debounce
+     * window. The repeat records nothing new, but still carries the earlier click's id so the
+     * traveller's enquiry form keeps working.
+     */
+    public Optional<AttributionClick> recentDuplicate(AttributionLink link, String ipHash, OffsetDateTime now) {
+        if (ipHash == null || ipHash.isBlank()) return Optional.empty();
+        return clickRepository.findFirstByLinkIdAndIpHashAndClickedAtGreaterThanEqualOrderByClickedAtDesc(
+                link.getLinkId(), ipHash, now.minus(SAME_LINK_IP_DEBOUNCE));
     }
 
     boolean isDeniedUserAgent(String userAgent) {
@@ -51,11 +59,5 @@ public class BotFilter {
             if (normalized.contains(denied)) return true;
         }
         return HEADLESS_SIGNATURES.matcher(userAgent).find();
-    }
-
-    private boolean isDebounced(AttributionLink link, String ipHash, OffsetDateTime now) {
-        if (ipHash == null || ipHash.isBlank()) return false;
-        OffsetDateTime since = now.minus(SAME_LINK_IP_DEBOUNCE);
-        return clickRepository.countRecentByLinkAndIp(link.getLinkId(), ipHash, since) > 0;
     }
 }

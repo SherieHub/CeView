@@ -72,9 +72,30 @@ Codes are the only thing that reaches Messenger, phone and walk-in bookings, whi
 cannot see.
 
 It does not send conversions back to the ad platforms, does not instrument external booking pages,
-and does not treat an enquiry as confirmed revenue. An enquiry counts as one conversion with ₱0
-revenue. Counts are a floor, not a census: in-app browsers and tracking prevention can strip the
-tracking parameters.
+and does not treat an enquiry as confirmed revenue until the operator says so. An enquiry starts as
+one conversion with ₱0 revenue; the operator then marks it **Booked** (with the real bookings and
+revenue) or **Declined** (which takes the booking back out) from the dashboard inbox. Counts are a
+floor, not a census: in-app browsers and tracking prevention can strip the tracking parameters.
+
+### Conversion path
+
+1. An ad or post carries the tracked link `{CEVIEW_ATTRIBUTION_BASE_URL}/r/{slug}` (copied from
+   Content Studio → Ad URL). That string is baked into live ads and must not change after go-live.
+2. `GET /r/{slug}` records the click and redirects. The link either has the operator's own booking
+   URL (the click id is appended as `cv`) or is **hosted**, in which case the traveller lands on
+   CeView's form at `{FRONTEND_BASE_URL}/enquiry?cv=<clickId>`. A repeat click from the same address
+   within a minute reuses the first click's id so the form still opens.
+3. The traveller submits the form (no login). It stays open after the campaign window ends; those
+   leads are tagged "After campaign window" and kept out of the per-creative rollup.
+4. The enquiry is recorded as a `LINK` booking against the window's code and appears in the
+   operator's inbox. Bookings taken on the operator's own site are not seen by CeView; the operator
+   logs them with **Log a booking** and attaches the recorded click.
+5. Both kinds feed Performance: the code-redemption evidence, the per-creative table and the booking
+   provenance passed to the AI report.
+
+Deployment needs two public origins set on the Spring Boot service: `CEVIEW_ATTRIBUTION_BASE_URL`
+(this API) and `FRONTEND_BASE_URL` (the form). Startup logs a warning when either still points at
+`localhost`. See [`DEPLOY_RENDER.md`](../DEPLOY_RENDER.md) for the smoke test.
 
 Design: [`docs/superpowers/specs/2026-09-20-link-attribution-design.md`](../superpowers/specs/2026-09-20-link-attribution-design.md).
 Screen: [`screens/link-attribution.md`](screens/link-attribution.md).

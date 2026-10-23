@@ -14,14 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 public class RedirectController {
 
     private final ClickTrackingService clickTrackingService;
+    private final AttributionRateLimiter rateLimiter;
 
-    public RedirectController(ClickTrackingService clickTrackingService) {
+    public RedirectController(ClickTrackingService clickTrackingService, AttributionRateLimiter rateLimiter) {
         this.clickTrackingService = clickTrackingService;
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping("/r/{slug}")
@@ -30,10 +33,17 @@ public class RedirectController {
                                          @RequestHeader(value = HttpHeaders.USER_AGENT, required = false) String userAgent,
                                          @RequestHeader(value = HttpHeaders.REFERER, required = false) String referrer,
                                          HttpServletRequest request) {
-        ClickTrackingService.ClickRequest clickRequest =
-                new ClickTrackingService.ClickRequest(firstValues(params), userAgent, referrer, clientIp(request));
+        // Same address the enquiry rate limiter uses. Behind a proxy, forward-headers-strategy decides what it
+        // is: `framework` takes the left-most X-Forwarded-For entry (works behind Render, but a client can
+        // spoof it); `native` only trusts proxies in Tomcat's internal range (AWS).
+        String ip = request.getRemoteAddr();
+        // Over the limit the traveller is still sent on their way; they are just not recorded as a click.
+        Optional<ClickTrackingService.RedirectDecision> redirect = rateLimiter.tryAcquire(ip)
+                ? clickTrackingService.capture(slug,
+                        new ClickTrackingService.ClickRequest(firstValues(params), userAgent, referrer, ip))
+                : clickTrackingService.destinationOnly(slug);
 
-        return clickTrackingService.capture(slug, clickRequest)
+        return redirect
                 .map(decision -> ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(decision.location()))
                         .<Void>build())
@@ -48,13 +58,5 @@ public class RedirectController {
             }
         });
         return first;
-    }
-
-    private static String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",", 2)[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }

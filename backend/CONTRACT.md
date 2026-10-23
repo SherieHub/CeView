@@ -39,7 +39,7 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/creative-direction/generate/{profileId}` | VisualDirectionBoard | `{ shotListRecommendations, visualRecommendations, lightingSuggestions, moodboardReferences }` |
 | POST | `/api/compliance/evaluate-json` | Smart Optimization Audit (JSON) | `{ score, aligned[], gaps[], ... }` |
 | POST | `/api/compliance/evaluate` | Smart Optimization Audit (multipart) | same shape, accepts media upload |
-| GET  | `/api/analytics/metrics?start=&end=` | EngagementMetricsBoard | `{ metrics, funnel }` |
+| GET  | `/api/analytics/metrics?weeks=` | EngagementMetricsBoard | `{ metrics, funnel }` — `weeks` defaults to 4 |
 | POST | `/api/analytics/manual` | DataIngestionForm submit | `{ metrics, funnel }` (computed) |
 | GET  | `/api/analytics/pes/{campaignId}` | PESComputationBoard | `{ overallScore, label, breakdown }` |
 | GET  | `/api/analytics/cost-rates` | Content Studio → Promote as an ad (budget estimate) | `AdCostRates` — `{ periods, totalSpend, totalImpressions, totalClicks, costPerThousandImpressions, costPerClick }` from the operator's 12 most recent weeks with ad spend; rates are null with no such weeks |
@@ -51,6 +51,16 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/attribution/redemptions` | "Log a booking" — body `{ attributionCodeId?, clickId?, bookings?, revenue?, eventAt? }` | `201 AttributionRedemption`; 400 when neither id is sent or `eventAt` is in the future, 404 for another operator's code/click, 409 when the click already has a booking |
 | GET  | `/api/attribution/redemptions` | Code-redemption evidence "Recent bookings" | `AttributionRedemption[]`, newest first (max 50) |
 | DELETE | `/api/attribution/redemptions/{id}` | "Remove" on a recent booking | `204`; 409 for enquiry- or sync-sourced rows, which the operator did not author |
+| GET  | `/r/{slug}` | **Public, no JWT.** The tracked link an ad or post points at | `302`. Records a click, then sends the traveller to the link's own destination with `cv=<clickId>` appended, or, when the link has none (hosted), to the enquiry form at `{FRONTEND_BASE_URL}/enquiry?cv=<clickId>`. A repeat from the same address within 60 s reuses the first click's id instead of recording another. Crawlers and clients over the per-address rate limit are still redirected, but without a `cv`. `404` for an unknown slug |
+| GET  | `/api/public/attribution/enquiries/context?cv=` | **Public.** `/enquiry` page load | `{ businessName }`, `Cache-Control: no-store`. `400` when the click is unknown or already used (the page shows "expired"); `429` over the per-address limit. A click stays usable after its campaign window closes |
+| POST | `/api/public/attribution/enquiries` | **Public.** `/enquiry` form submit — body `{ clickId, contactName, contactValue, partySize?, requestedStart?, requestedEnd?, message? }` | `{ received: true }`. Records the enquiry and one `LINK` booking at ₱0 revenue. `400` (same body for every cause) for an unknown/used click or invalid fields; `429` over the limit |
+| GET  | `/api/attribution/enquiries` | Dashboard → Traveller enquiries | `OperatorEnquiry[]`, newest first, `no-store`: `{ enquiryId, contactName, contactValue, partySize, requestedStart, requestedEnd, message, createdAt, outcome, bookings, revenue, clickInWindow }`. `outcome` is `NEW`, `BOOKED` or `DECLINED`; `bookings`/`revenue` are what the enquiry currently contributes (0 once declined); `clickInWindow` is false for a lead that arrived after the campaign window |
+| PATCH | `/api/attribution/enquiries/{enquiryId}` | Inbox "Mark booked" / "Decline" — body `{ outcome: "BOOKED"\|"DECLINED", bookings?: 1–500, revenue?: ≥ 0 }` | The updated `OperatorEnquiry`. `BOOKED` sets the real figures on the enquiry's booking (restoring it after a decline); `DECLINED` removes that booking and keeps the enquiry. `400` for any other outcome or out-of-range figures; `404` for an unknown enquiry or another operator's (indistinguishable) |
+| GET  | `/api/attribution/links` | Content Studio → Ad URL; Performance | The operator's tracked links with their `urls` (`linkUrl`, `metaAdUrl`, `tiktokAdUrl`, built from `CEVIEW_ATTRIBUTION_BASE_URL`) and `hosted` flag |
+| PATCH | `/api/attribution/links/{linkId}` | Ad URL → "Where visitors go" | Sets the link's destination: the operator's own URL, or none to use CeView's hosted booking form |
+| GET  | `/api/attribution/links/{linkId}/creatives` | Performance → Link attribution | Clicks, conversions and revenue per ad creative, plus an untagged row |
+| GET  | `/api/attribution/clicks/unconverted?from=&to=` | "Log a booking" → match a click (range capped at 31 days) | Recorded clicks that have no booking attached yet |
+| GET · POST | `/api/attribution/vouchers`, `/api/attribution/vouchers/{codeId}/redeem` | CVLAUNCH voucher card (`redeem` body `{ grossRevenue }`) | Walk-in vouchers and their redemption counts; redeeming applies the discount and enforces the cap. Vouchers are flagged `voucher: true` in `/codes` and are not loggable through `/redemptions` |
 
 ## Social publishing endpoints
 

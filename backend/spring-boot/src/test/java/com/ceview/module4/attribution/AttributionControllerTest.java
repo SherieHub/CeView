@@ -167,6 +167,18 @@ class AttributionControllerTest {
     }
 
     @Test
+    void codeSummariesFlagWalkInVouchersSoTheLogBookingPickerCanLeaveThemOut() throws Exception {
+        codeA.setDiscountAmount(new java.math.BigDecimal("50"));
+        codeRepo.saveAndFlush(codeA);
+
+        mvc.perform(get("/api/attribution/codes").header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].voucher").value(true));
+        mvc.perform(get("/api/attribution/codes").header("Authorization", "Bearer " + tokenB))
+                .andExpect(jsonPath("$[0].voucher").value(false));
+    }
+
+    @Test
     void operatorCanUndoTheirOwnLogButNotATravellersEnquiry() throws Exception {
         logBooking(tokenA, "{\"attributionCodeId\":\"" + codeA.getAttributionCodeId() + "\"}")
                 .andExpect(status().isCreated());

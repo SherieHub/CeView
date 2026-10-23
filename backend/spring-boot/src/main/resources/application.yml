@@ -73,7 +73,12 @@ ceview:
     enabled: ${CEVIEW_TEST_SUPPORT_ENABLED:false}
   attribution:
     # Public origin the redirect is served from. This string is embedded in live ads.
-    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:http://localhost:8080}
+    # Falls back to RENDER_EXTERNAL_URL, which Render injects into every web service, so a deploy that
+    # forgets the variable still gets working public links instead of localhost ones.
+    base-url: ${CEVIEW_ATTRIBUTION_BASE_URL:${RENDER_EXTERNAL_URL:http://localhost:8080}}
+    # Frontend origin that serves the hosted booking-enquiry form (/enquiry). Hosted tracked links
+    # redirect here; it is the frontend, not the API, so it follows FRONTEND_BASE_URL by default.
+    enquiry-base-url: ${CEVIEW_ENQUIRY_BASE_URL:${FRONTEND_BASE_URL:http://localhost:3001}}
     # Salt for hashing traveller IPs. Same rule as the JWT secret above.
     ip-hash-salt: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:}
   firebase:

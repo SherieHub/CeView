@@ -47,20 +47,21 @@ test.describe('Expired or invalid links', () => {
     await page.goto(`/enquiry?cv=${unknownClickId()}`);
     await expect(page.getByRole('heading', { name: EXPIRED })).toBeVisible();
   });
+});
 
-  test('a click on a link whose window has closed shows the expired page', async ({ page }) => {
-    // Window ended 20 days ago (windows last 14 days), but the click is recorded now, so it falls
-    // outside the window and the traveller is refused.
+test.describe('Sending an enquiry', () => {
+  test('a click after the campaign window has closed still shows the form', async ({ page }) => {
+    // Window ended 20 days ago (windows last 14 days), but ads keep running, so the click is
+    // recorded now as outside the window. The lead is kept rather than refused.
     const past = await seedDemandWindow(op.current, { market: 'japan', windowStart: daysFromNow(-20) });
     const click = await recordClick(past.slug);
     test.skip(!click.clickId, 'the tracker did not record a click outside the window');
     await reserveEnquiryCalls(1);
     await page.goto(`/enquiry?cv=${click.clickId}`);
-    await expect(page.getByRole('heading', { name: EXPIRED })).toBeVisible();
+    await expect(page.getByRole('heading', { name: `Enquire with ${op.current.businessName}` })).toBeVisible();
+    await expect(page.getByRole('heading', { name: EXPIRED })).toHaveCount(0);
   });
-});
 
-test.describe('Sending an enquiry', () => {
   test('shows the business name and the form fields for a valid link', async ({ page }) => {
     const { path } = await enquiryPath(op.current.window!);
     await reserveEnquiryCalls(1);
@@ -222,7 +223,7 @@ test.describe('The public endpoints', () => {
     expect(res.headers.get('cache-control')).toContain('no-store');
   });
 
-  test('a bot user agent and a repeat click from the same address are not recorded as clicks', async () => {
+  test('a bot gets no click id, and a repeat click from the same address reuses the first one', async () => {
     const win = op.current.window!;
     const ip = uniqueIp();
     const bot = await recordClick(win.slug, { ua: 'Mozilla/5.0 (compatible; Googlebot/2.1)', ip });
@@ -230,8 +231,9 @@ test.describe('The public endpoints', () => {
     const first = await recordClick(win.slug, { ua: DESKTOP_UA, ip });
     expect(first.clickId).not.toBeNull();
     const repeat = await recordClick(win.slug, { ua: DESKTOP_UA, ip });
-    expect(repeat.clickId).toBeNull();
+    // A repeat is not counted again, but it must still reach a working form: it reuses the first click.
     expect(repeat.status).toBe(302);
+    expect(repeat.clickId).toBe(first.clickId);
   });
 
   test('an unknown tracked-link slug is 404', async () => {
@@ -239,10 +241,11 @@ test.describe('The public endpoints', () => {
     expect(res.status).toBe(404);
   });
 
-  // KNOWN BUG: hosted links redirect to <attribution base>/attribution/enquiry, but the app's page
-  // lives at /enquiry (the deployment spec admits the former "serves nothing").
-  test.fail('a hosted tracked link redirects the traveller to the /enquiry page', async () => {
-    const { location } = await recordClick(op.current.window!.slug);
-    expect(new URL(location!).pathname).toBe('/enquiry');
+  test('a hosted tracked link redirects the traveller to the /enquiry page', async () => {
+    const { location, clickId } = await recordClick(op.current.window!.slug);
+    expect(clickId).not.toBeNull();
+    const url = new URL(location!);
+    expect(url.pathname).toBe('/enquiry');
+    expect(url.searchParams.get('cv')).toBe(clickId);
   });
 });

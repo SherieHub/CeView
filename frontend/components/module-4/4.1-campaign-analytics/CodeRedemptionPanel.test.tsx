@@ -77,6 +77,20 @@ describe('CodeRedemptionPanel', () => {
     expect(await screen.findByText(/No campaign codes yet/)).toBeInTheDocument();
   });
 
+  it('keeps walk-in vouchers out of the Log a booking picker but still lists them as evidence', async () => {
+    const [surge, other] = mockCodes();
+    api.attribution.codes.mockResolvedValue([surge, { ...other, voucher: true }]);
+    render(<CodeRedemptionPanel />);
+
+    const rows = await screen.findByRole('rowgroup', { name: 'Campaign codes' });
+    expect(within(rows).getByText('JP-DIVE-1102')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Log a booking' }));
+    const picker = screen.getByLabelText('Code the customer quoted');
+    expect(within(picker).getByRole('option', { name: /KR-ACCO-1019/ })).toBeInTheDocument();
+    expect(within(picker).queryByRole('option', { name: /JP-DIVE-1102/ })).not.toBeInTheDocument();
+  });
+
   it('logs a booking against the selected code and refreshes', async () => {
     render(<CodeRedemptionPanel />);
     fireEvent.click(await screen.findByRole('button', { name: 'Log a booking' }));

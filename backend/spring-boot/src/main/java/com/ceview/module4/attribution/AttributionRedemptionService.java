@@ -307,7 +307,8 @@ public class AttributionRedemptionService {
                 sumRevenue(rows),
                 totals,
                 reportedBookings,
-                reportedBookings != null && trackedInWindow > reportedBookings);
+                reportedBookings != null && trackedInWindow > reportedBookings,
+                code.getDiscountAmount() != null);
     }
 
     private static CaptureKind kindOf(AttributionRedemption r, Set<UUID> enquiryClicks) {

@@ -55,6 +55,20 @@ public class AttributionEnquiry {
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
+    /**
+     * What the operator decided: {@code NEW} until they act, then {@code BOOKED} or {@code DECLINED}.
+     * The traveller's submit records one booking at zero revenue; the outcome corrects that figure.
+     */
+    @Column(name = "outcome", nullable = false, length = 16)
+    private String outcome = OUTCOME_NEW;
+
+    @Column(name = "outcome_at")
+    private OffsetDateTime outcomeAt;
+
+    public static final String OUTCOME_NEW      = "NEW";
+    public static final String OUTCOME_BOOKED   = "BOOKED";
+    public static final String OUTCOME_DECLINED = "DECLINED";
+
     @PrePersist
     void onCreate() {
         if (enquiryId == null) enquiryId = UUID.randomUUID();

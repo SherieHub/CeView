@@ -93,7 +93,8 @@ export default function CodeRedemptionPanel() {
     }
   };
 
-  const loggable = (codes ?? []).filter((c) => c.status !== 'ENDED');
+  // Vouchers are redeemed through their own card (it applies the discount and enforces the cap).
+  const loggable = (codes ?? []).filter((c) => c.status !== 'ENDED' && !c.voucher);
   const totalBookings = (codes ?? []).reduce((sum, c) => sum + c.totalBookings, 0);
   const totalRevenue = (codes ?? []).reduce((sum, c) => sum + c.totalRevenue, 0);
 

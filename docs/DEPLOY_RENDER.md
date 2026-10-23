@@ -89,6 +89,8 @@ a pre-built jar the way the local `RUNNING.md` workflow historically did.
    | `JWT_SECRET` | any random 32+ char string |
    | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | any random string — the service refuses to start without it |
    | `CORS_ALLOWED_ORIGINS` | the frontend's Render URL, from step 6 (you'll circle back and fill this in once it exists) |
+   | `FRONTEND_BASE_URL` | the frontend's public Render URL, from step 6 (again, fill in once it exists). **Hosted tracked links send travellers to `{FRONTEND_BASE_URL}/enquiry`**, so if this is wrong, nobody can reach the booking form. |
+   | `CEVIEW_ATTRIBUTION_BASE_URL` | this service's own public `https://` URL (or a custom domain in front of it). Every tracked link `…/r/<slug>` an operator copies into an ad or post starts with this, so **set it before running real ads and never change it afterwards**. If left unset it falls back to Render's `RENDER_EXTERNAL_URL`. |
    | `EMAIL_PROVIDER` | `resend` — see [Email (Resend)](#email-resend) below; without it, codes are only written to the log and nobody can verify |
    | `RESEND_API_KEY` | your Resend API key |
    | `EMAIL_FROM` | e.g. `CeView <no-reply@yourdomain.com>`, on the domain you verified in Resend |
@@ -195,7 +197,9 @@ since it's just built assets served from a CDN.
 ## 7. Wire it together
 
 1. Go back to the Spring Boot service's environment variables and set
-   `CORS_ALLOWED_ORIGINS` to the frontend's URL from step 6, then redeploy it.
+   `CORS_ALLOWED_ORIGINS` and `FRONTEND_BASE_URL` to the frontend's URL from step 6, then redeploy it.
+   Check its startup log: a `WARN` naming `CEVIEW_ATTRIBUTION_BASE_URL` or `FRONTEND_BASE_URL` means a
+   tracked-link URL still points at `localhost`.
 2. Verify each piece is actually up, mirroring the smoke test in
    `RUNNING.md`:
    ```bash
@@ -209,6 +213,16 @@ since it's just built assets served from a CDN.
    deployed URLs instead of `localhost`.
 4. Remember the first request to any sleeping free service takes 30-60s to
    wake up — don't mistake a cold start for a broken deploy.
+5. **Booking-link smoke test** (do this before pointing any ad at CeView):
+   1. In Content Studio, copy the tracked link for a surge alert. It must start with the Spring Boot
+      service's public `https://` URL, not `localhost`.
+   2. Open it in a private window (or on a phone). It should land on
+      `<frontend>/enquiry?cv=…` and show "Enquire with" followed by the business name.
+   3. Submit the form, then sign in as that operator: the enquiry appears in the dashboard inbox.
+   4. Optionally `curl -I <tracked link>` — expect `302` with a `Location` on the frontend origin.
+6. **Cold starts and paid ads.** On the free plan the Spring Boot service sleeps, so the *first* click on
+   a tracked link can take about a minute and some travellers will give up. Use a paid instance (or an
+   uptime ping) for `ceview-spring-boot` before spending ad budget on it.
 
 ---
 

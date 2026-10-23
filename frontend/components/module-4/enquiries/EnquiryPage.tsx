@@ -2,9 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { attributionEnquiries } from '../../../services/attributionEnquiries';
+import { ApiError } from '../../../services/apiError';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FAILURE = 'We could not send your enquiry. Please try again later or contact the business directly.';
+const REFUSED = 'This enquiry was already sent or the link is no longer valid. Please contact the business directly.';
+
+/** The server answered that this click cannot be used (unknown or already used): a dead link, not an outage. */
+const isRefusal = (err: unknown) => err instanceof ApiError && err.status === 400;
 const fieldClass = 'w-full min-w-0 rounded-sm border border-gray-light bg-white p-3 text-base text-text-heading focus:outline-2 focus:outline-navy-primary';
 
 export default function EnquiryPage() {
@@ -17,6 +22,8 @@ function EnquiryForm({ clickId }: { clickId: string }) {
   const valid = UUID.test(clickId);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [expired, setExpired] = useState(!valid);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [sending, setSending] = useState(false);
   const [received, setReceived] = useState(false);
   const [error, setError] = useState('');
@@ -25,13 +32,18 @@ function EnquiryForm({ clickId }: { clickId: string }) {
   useEffect(() => {
     if (!valid) return;
     const controller = new AbortController();
+    setLoadFailed(false);
     attributionEnquiries.context(clickId, controller.signal).then((context) => {
       if (!controller.signal.aborted) setBusinessName(context.businessName);
-    }).catch(() => {
-      if (!controller.signal.aborted) setExpired(true);
+    }).catch((err: unknown) => {
+      if (controller.signal.aborted) return;
+      // Only a 400 means the link is dead. A network error, CORS failure or a 5xx (including a cold-starting
+      // free-tier server's 502) says nothing about the link, so the traveller gets a retry instead.
+      if (isRefusal(err)) setExpired(true);
+      else setLoadFailed(true);
     });
     return () => controller.abort();
-  }, [clickId, valid]);
+  }, [clickId, valid, attempt]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,8 +77,8 @@ function EnquiryForm({ clickId }: { clickId: string }) {
       });
       if (!ack.received) throw new Error('Not received');
       setReceived(true);
-    } catch {
-      setError(FAILURE);
+    } catch (err) {
+      setError(isRefusal(err) ? REFUSED : FAILURE);
     } finally {
       inFlight.current = false;
       setSending(false);
@@ -87,6 +99,12 @@ function EnquiryForm({ clickId }: { clickId: string }) {
             <p className="mt-3">The business has received your details and can contact you to discuss your visit.</p>
             <p className="mt-3">This is an enquiry, not a confirmed booking.</p>
           </div>
+        ) : loadFailed ? (
+          <>
+            <h1 className="heading-md">We&apos;re having trouble loading this form</h1>
+            <p className="mt-3">The first visit can take up to a minute while the service wakes up. Please try again, or contact the business directly.</p>
+            <button className="btn-cta mt-6 w-full" type="button" onClick={() => setAttempt((n) => n + 1)}>Try again</button>
+          </>
         ) : businessName === null ? (
           <p role="status">Loading enquiry form...</p>
         ) : (

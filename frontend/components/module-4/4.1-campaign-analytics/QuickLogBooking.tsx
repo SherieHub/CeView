@@ -23,7 +23,7 @@ export default function QuickLogBooking() {
     let live = true;
     apiClient.attribution
       .codes()
-      .then((data) => live && setCodes((data ?? []).filter((c) => c.status !== 'ENDED')))
+      .then((data) => live && setCodes((data ?? []).filter((c) => c.status !== 'ENDED' && !c.voucher)))
       .catch(() => live && setCodes([]));
     return () => {
       live = false;

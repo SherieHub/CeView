@@ -31,18 +31,11 @@ public interface AttributionClickRepository extends JpaRepository<AttributionCli
             UUID businessProfileId, OffsetDateTime from, OffsetDateTime to);
 
     /**
-     * Same-ip, same-link debounce for {@code BotFilter}. A crawler and a
-     * double-tapping traveller look identical here, and both should count once.
+     * Same-ip, same-link debounce for {@code BotFilter}: the click a repeat should reuse. A crawler and
+     * a double-tapping traveller look identical here, and both count once.
      */
-    @Query("""
-        select count(c) from AttributionClick c
-         where c.linkId = :linkId
-           and c.ipHash = :ipHash
-           and c.clickedAt >= :since
-        """)
-    long countRecentByLinkAndIp(@Param("linkId") UUID linkId,
-                                @Param("ipHash") String ipHash,
-                                @Param("since") OffsetDateTime since);
+    Optional<AttributionClick> findFirstByLinkIdAndIpHashAndClickedAtGreaterThanEqualOrderByClickedAtDesc(
+            UUID linkId, String ipHash, OffsetDateTime since);
 
     /**
      * Per-creative rollup. Groups by {@code externalAdId}, keeping the null key

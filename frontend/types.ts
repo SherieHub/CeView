@@ -876,6 +876,8 @@ export interface AttributionCodeSummary {
   reportedBookings: number | null;
   /** More bookings were tracked in the window than the operator reported — a flag, not an error. */
   trackedExceedsReported: boolean;
+  /** A walk-in voucher (carries a discount). Redeemed through the voucher card, not "Log a booking". */
+  voucher?: boolean;
 }
 
 /**

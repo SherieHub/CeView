@@ -107,18 +107,27 @@ class EnquiryControllerTest {
     }
 
     @Test
-    void unknownExpiredAndAlreadyUsedHaveIdenticalResponses() throws Exception {
+    void unknownAndAlreadyUsedHaveIdenticalResponses() throws Exception {
         String unknown = mvc.perform(request(body(UUID.randomUUID()))).andExpect(status().isBadRequest())
                 .andReturn().getResponse().getContentAsString();
-        link.setWindowEnd(OffsetDateTime.now().minusMinutes(1));
-        links.saveAndFlush(link);
-        mvc.perform(request(body(clickId))).andExpect(status().isBadRequest()).andExpect(content().string(unknown));
-        assertEquals(0, enquiries.count());
-        assertEquals(0, redemptions.count());
-        link.setWindowEnd(OffsetDateTime.now().plusDays(1));
-        links.saveAndFlush(link);
         mvc.perform(request(body(clickId))).andExpect(status().isOk());
         mvc.perform(request(body(clickId))).andExpect(status().isBadRequest()).andExpect(content().string(unknown));
+        assertEquals(1, enquiries.count());
+        assertEquals(1, redemptions.count());
+    }
+
+    @Test
+    void anEnquiryAfterTheCampaignWindowEndsIsStillAccepted() throws Exception {
+        // Ads and posts keep circulating after the surge window; the click already records
+        // inWindow=false, so analytics can separate it without losing the lead.
+        link.setWindowEnd(OffsetDateTime.now().minusMinutes(1));
+        links.saveAndFlush(link);
+
+        mvc.perform(get(PUBLIC + "/context").param("cv", clickId.toString()).with(req -> { req.setRemoteAddr(address); return req; }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.businessName").value("Kasa Beach Resort"));
+        mvc.perform(request(body(clickId))).andExpect(status().isOk())
+                .andExpect(content().json("{\"received\":true}", true));
         assertEquals(1, enquiries.count());
         assertEquals(1, redemptions.count());
     }

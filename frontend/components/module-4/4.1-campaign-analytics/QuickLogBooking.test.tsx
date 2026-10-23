@@ -40,6 +40,21 @@ describe('QuickLogBooking (dashboard)', () => {
     expect(screen.getByRole('link', { name: 'See campaign evidence' })).toHaveAttribute('href', '/performance');
   });
 
+  it('does not offer a walk-in voucher as a code to log against', async () => {
+    const [surge, other] = mockCodes();
+    api.attribution.codes.mockResolvedValue([surge, { ...other, voucher: true }]);
+    renderCard();
+    expect(await screen.findByText('KR-ACCO-1019')).toBeInTheDocument();
+    expect(screen.queryByText('JP-DIVE-1102')).not.toBeInTheDocument();
+  });
+
+  it('stays out of the way when only vouchers are live', async () => {
+    api.attribution.codes.mockResolvedValue(mockCodes().map((c) => ({ ...c, voucher: true })));
+    const { container } = renderCard();
+    await waitFor(() => expect(api.attribution.codes).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('stays out of the way when there is nothing to log against', async () => {
     api.attribution.codes.mockResolvedValue(mockCodes().map((c) => ({ ...c, status: 'ENDED' })));
     const { container } = renderCard();
