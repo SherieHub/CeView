@@ -1,5 +1,6 @@
 package com.ceview.module4.attribution.link;
 
+import com.ceview.module4.attribution.AttributionCode;
 import com.ceview.module4.attribution.AttributionWindow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,13 @@ public class AttributionLinkService {
     public Optional<AttributionLink> findForAlert(UUID demandAlertId) {
         if (demandAlertId == null) return Optional.empty();
         return linkRepo.findByDemandAlertId(demandAlertId);
+    }
+
+    /** The link minted alongside {@code code}: both are keyed on the same window tuple. */
+    @Transactional(readOnly = true)
+    public Optional<AttributionLink> findForCode(AttributionCode code) {
+        return linkRepo.findByBusinessProfileIdAndCategoryAndTargetMarketAndWindowStart(
+                code.getBusinessProfileId(), code.getCategory(), code.getTargetMarket(), code.getWindowStart());
     }
 
     @Transactional(readOnly = true)

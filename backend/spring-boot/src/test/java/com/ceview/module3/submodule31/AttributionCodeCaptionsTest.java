@@ -92,4 +92,38 @@ class AttributionCodeCaptionsTest {
         assertSame(original, AttributionCodeCaptions.stamp(original, "korea", null));
         assertSame(original, AttributionCodeCaptions.stamp(original, "korea", " "));
     }
+
+    private static final String TRACKED = "https://api.ceview.online/r/8ahg9vwk";
+
+    private static ContentResponseDto allPlatforms(String caption) {
+        PlatformContentDto platform = new PlatformContentDto(List.of(caption), List.of(caption), null, null, null);
+        return new ContentResponseDto(null, "AIDA", new CaptionsDto(platform, platform, platform), ContentSource.GROQ);
+    }
+
+    @Test
+    void facebookCaptionsGetTheTrackedLinkAboveTheCode() {
+        var stamped = AttributionCodeCaptions.stamp(allPlatforms("Sunset dives"), "usa", "US-COAS-1026",
+                new AttributionCodeCaptions.TrackedLink(TRACKED, null));
+
+        String cta = AttributionCodeCaptions.ctaFor("usa", "US-COAS-1026");
+        assertEquals(List.of("Sunset dives\n\n" + TRACKED + "\n\n" + cta), stamped.captions().facebook().options());
+        assertEquals(List.of("Sunset dives\n\n" + TRACKED + "\n\n" + cta), stamped.captions().facebook().optionsEn());
+        // Instagram and TikTok captions don't make links tappable: those go in the bio.
+        assertEquals(List.of("Sunset dives\n\n" + cta), stamped.captions().instagram().options());
+        assertEquals(List.of("Sunset dives\n\n" + cta), stamped.captions().tiktok().options());
+    }
+
+    @Test
+    void theLinksOwnDestinationIsSwappedForTheTrackedLinkOnEveryPlatform() {
+        var link = new AttributionCodeCaptions.TrackedLink(TRACKED, "https://palinabeachresort.com/book");
+        var stamped = AttributionCodeCaptions.stamp(
+                allPlatforms("Book now: https://palinabeachresort.com/book #CebuTravel"), "usa", "US-COAS-1026", link);
+
+        String cta = AttributionCodeCaptions.ctaFor("usa", "US-COAS-1026");
+        for (var platform : List.of(stamped.captions().instagram(), stamped.captions().tiktok(), stamped.captions().facebook())) {
+            // Already in the caption, so Facebook doesn't get a second copy appended.
+            assertEquals(List.of("Book now: " + TRACKED + " #CebuTravel\n\n" + cta), platform.options());
+        }
+        assertEquals(stamped, AttributionCodeCaptions.stamp(stamped, "usa", "US-COAS-1026", link));
+    }
 }
