@@ -46,8 +46,14 @@ the tracked link — and walks them through Ads Manager step by step with a copy
 value. The budget estimate comes only from the operator's own past ad costs
 (`GET /api/analytics/cost-rates`); with no history it says so instead of guessing.
 
-CeView does **not** create the ad on the platform itself yet. Research, and why that part is
-blocked: [`MSME_AD_SUPPORT_RESEARCH.md`](MSME_AD_SUPPORT_RESEARCH.md).
+The guide drawer does not create anything on the platform. Separately, the **Publish** window's
+**Run as Paid Ad** creates a **paused** Meta campaign, ad set and ad for the operator to review and
+launch in Ads Manager (never launched by CeView). It aims the ad at the forecast market's country and
+language, with optional Meta interests, and is held to the business's own daily and total spending
+limits and to Meta's minimum budget; see
+[`SOCIAL_PUBLISHING_SETUP.md`](../SOCIAL_PUBLISHING_SETUP.md) and
+[`backend/CONTRACT.md`](../../backend/CONTRACT.md). The research behind the guide, and why it stays
+copy-and-paste for TikTok: [`MSME_AD_SUPPORT_RESEARCH.md`](MSME_AD_SUPPORT_RESEARCH.md).
 
 ## Diagrams
 

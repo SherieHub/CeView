@@ -120,6 +120,9 @@ export default function PublishComposer({
   // else must not overwrite the newer state.
   const uploadSeq = useRef(0);
   const pending = useRef<{ file: File; dims: MediaDimensions } | null>(null);
+  // Whoever re-mounts the composer for different work (another market, a loaded draft) must not
+  // have an upload from this instance finish into it.
+  useEffect(() => () => { uploadSeq.current += 1; }, []);
 
   const readFileAsDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -229,11 +232,34 @@ export default function PublishComposer({
   const selectedVoucher = vouchers.find((item) => item.attributionCodeId === voucherId);
   const setVoucherOverlay = async (enabled: boolean) => {
     const original = sourceMedia ?? draft.mediaDataUrl;
-    if (!original || !selectedVoucher) return;
+    if (!original || !selectedVoucher || draft.mediaType === 'video') return;
+    const token = ++uploadSeq.current;
+    pending.current = null;
     setVoucherError(''); setSourceMedia(original);
-    if (!enabled) { setVoucherEnabled(false); onDraftChange({ mediaDataUrl: original, agreementChecked: false }); return; }
-    try { const composed = await composeVoucherOverlay(original, selectedVoucher); setVoucherEnabled(true); onDraftChange({ mediaDataUrl: composed, agreementChecked: false }); }
-    catch (error) { setVoucherEnabled(false); setVoucherError(error instanceof Error ? error.message : 'Voucher overlay could not be created.'); }
+    // Invalidate the old upload immediately: publishing must use the same pixels as the audit.
+    if (uploadToStorage) onDraftChange({ mediaUpload: { status: 'uploading' }, agreementChecked: false });
+    try {
+      const composed = enabled ? await composeVoucherOverlay(original, selectedVoucher) : original;
+      if (token !== uploadSeq.current) return;
+      let file: File | undefined;
+      if (uploadToStorage) {
+        const blob = await (await fetch(composed)).blob();
+        if (token !== uploadSeq.current) return;
+        if (blob.size > MEDIA_LIMITS.image) throw new Error('The composed image exceeds 8 MB. Use a smaller image.');
+        file = new File([blob], 'voucher-image', { type: blob.type });
+      }
+      setVoucherEnabled(enabled);
+      onDraftChange({ mediaDataUrl: composed, agreementChecked: false });
+      if (file) {
+        pending.current = { file, dims: {} };
+        await startUpload(file, token, {});
+      }
+    } catch (error) {
+      if (token !== uploadSeq.current) return;
+      const message = error instanceof Error ? error.message : 'Voucher overlay could not be created.';
+      setVoucherError(message);
+      if (uploadToStorage) onDraftChange({ mediaUpload: { status: 'failed', message } });
+    }
   };
   useEffect(() => { if (voucherEnabled) void setVoucherOverlay(true); }, [voucherId]);
 
@@ -333,7 +359,7 @@ export default function PublishComposer({
                 </button>
               </div>
             </div>
-              {vouchers.length > 0 && <div className="mt-3 space-y-2">
+              {vouchers.length > 0 && draft.mediaType !== 'video' && <div className="mt-3 space-y-2">
                 <label><input type="checkbox" checked={voucherEnabled} onChange={(event) => setVoucherOverlay(event.target.checked)} /> Add voucher to image</label>
                 {voucherEnabled && <label className="field-label">Voucher<select value={voucherId} onChange={(event) => setVoucherId(event.target.value)}><option value="">Choose voucher</option>{vouchers.map((voucher) => <option key={voucher.attributionCodeId} value={voucher.attributionCodeId}>{voucher.code} — PHP {voucher.discountAmount} off</option>)}</select></label>}
                 {voucherError && <p role="status" className="text-meta">{voucherError}</p>}

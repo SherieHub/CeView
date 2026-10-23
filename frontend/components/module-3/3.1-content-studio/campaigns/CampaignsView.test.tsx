@@ -16,6 +16,7 @@ const forCategory = vi.fn();
 const generate = vi.fn();
 vi.mock('../../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     markets: { forCategory: (...a: unknown[]) => forCategory(...a) },
     content: { generate: (...a: unknown[]) => generate(...a) },
   },

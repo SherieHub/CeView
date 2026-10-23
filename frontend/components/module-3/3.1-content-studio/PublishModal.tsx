@@ -48,7 +48,9 @@ import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import { useConnections } from '../../../services/connectionsStore';
 import { defaultSchedule, formatSchedule, isFuture, timeZoneName } from './schedule';
 import { apiClient } from '../../../services/apiClient';
-import type { AttributionLink } from '../../../types';
+import type { AdMinimumBudget, AdSpendLimits, AttributionLink, PublishAd } from '../../../types';
+import MetaAdFields from './MetaAdFields';
+import { adProblems, defaultAdStart } from './adRules';
 
 /**
  * Fitted frames stop just short of the canvas edge. A preview touching the
@@ -69,7 +71,12 @@ export interface PublishModalProps {
   busy?: boolean;
   error?: string | null;
   attributionLinkId?: string;
+  /** The forecast market the post is for; a paid ad is aimed at its country and language. */
   market?: string;
+  /** When the surge window opens: a paid ad starts then by default. */
+  windowOpenDate?: string | null;
+  /** The business's categories and services, which suggested ad interests are searched from. */
+  interestSeeds?: string[];
 }
 
 function PlatformMark({ platform }: { platform: StudioPlatformId }) {
@@ -92,24 +99,49 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
   );
 }
 
-export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName, busy = false, error, attributionLinkId, market }: PublishModalProps) {
+export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName, busy = false, error, attributionLinkId, market, windowOpenDate, interestSeeds }: PublishModalProps) {
   const [device, setDevice] = useState<PreviewDevice>('mobile');
   const [adCurrency, setAdCurrency] = useState<string | null>(null);
   const [adLinks, setAdLinks] = useState<AttributionLink[]>([]);
+  const [adLimits, setAdLimits] = useState<AdSpendLimits | null>(null);
+  const [adMinimum, setAdMinimum] = useState<AdMinimumBudget | null>(null);
   const [adSetupError, setAdSetupError] = useState<string | null>(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+  // Loaded whenever the window opens, not only once "Run as Paid Ad" is ticked: whether paid ads are
+  // allowed at all (an ad account and saved spending limits) decides if the tick can be made.
   useEffect(() => {
-    if (!open || !draft.paidPartnership) return;
+    if (!open) return;
     let cancelled = false;
-    Promise.resolve().then(() => Promise.all([apiClient.adConnections.list(), apiClient.attributionLinks.list()]))
-      .then(([accounts, links]) => {
-        if (cancelled) return;
-        const meta = accounts.find((a) => a.provider === 'meta' && a.status === 'ACTIVE');
-        setAdCurrency(meta?.currency ?? null);
-        setAdLinks(links);
-        setAdSetupError(meta?.currency ? null : 'Connect a Meta ad account in Settings before creating an ad.');
-      }).catch(() => { if (!cancelled) setAdSetupError('Could not load ad settings. Reopen this window to try again.'); });
+    Promise.resolve().then(() => Promise.all([
+      apiClient.adConnections.list(),
+      apiClient.attributionLinks.list(),
+      // Refused (409) when there is no ad account yet; that is "no limits", not a failure.
+      apiClient.adConnections.limits.get().catch(() => null),
+    ])).then(([accounts, links, limits]) => {
+      if (cancelled) return;
+      const meta = accounts.find((a) => a.provider === 'meta' && a.status === 'ACTIVE');
+      setAdCurrency(meta?.currency ?? null);
+      setAdLinks(links);
+      setAdLimits(limits);
+      setAdSetupError(null);
+      setAdLoaded(true);
+    }).catch(() => {
+      if (cancelled) return;
+      setAdSetupError('Could not load ad settings. Reopen this window to try again.');
+      setAdLoaded(true);
+    });
     return () => { cancelled = true; };
-  }, [open, draft.paidPartnership]);
+  }, [open]);
+  // Meta's own floor for the daily budget depends on the objective, so it is read again when that changes.
+  const adObjective = draft.ad?.objective;
+  useEffect(() => {
+    if (!open || !draft.paidPartnership || !adCurrency || !adObjective) return;
+    let cancelled = false;
+    apiClient.adConnections.minimumBudget(adObjective)
+      .then((minimum) => { if (!cancelled) setAdMinimum(minimum); })
+      .catch(() => { if (!cancelled) setAdMinimum(null); });
+    return () => { cancelled = true; };
+  }, [open, draft.paidPartnership, adCurrency, adObjective]);
   // A disconnected platform cannot be added to "Publish to" without first
   // connecting it (Settings -> Platforms). Read here rather than in
   // PublishComposer: that panel no longer owns destination choice, this does.
@@ -202,15 +234,17 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   const ad = draft.ad;
-  const budgetFactor = adCurrency ? 10 ** new Intl.NumberFormat('en', { style: 'currency', currency: adCurrency }).resolvedOptions().maximumFractionDigits! : 100;
-  const adValid = !draft.paidPartnership || Boolean(adCurrency && ad && ad.dailyBudgetMinor > 0 && Number.isInteger(ad.dailyBudgetMinor)
-    && ad.attributionLinkId && ad.countries.length && ad.countries.every((c) => /^[A-Z]{2}$/.test(c))
-    && Date.parse(ad.startTime) > Date.now() && Date.parse(ad.endTime) > Date.parse(ad.startTime));
+  const adProblemList = draft.paidPartnership && ad
+    ? adProblems(ad, { currency: adCurrency, limits: adLimits, minimum: adMinimum, market })
+    : [];
+  const adValid = !draft.paidPartnership || (Boolean(ad) && adProblemList.length === 0);
+  // A paid ad needs a connected ad account and saved spending limits; until then the tick is off.
+  const paidAllowed = Boolean(adCurrency && adLimits?.configured);
   const privateAllowed = false;
   const canConfirm = !busy && draft.agreementChecked && (draft.platforms.length > 0 || draft.paidPartnership)
     && scheduleValid && adValid && !overLimit && Boolean(draft.caption.trim())
     && (draft.visibility === 'public' || privateAllowed);
-  const updateAd = (patch: Partial<NonNullable<PublishDraftState['ad']>>) => onDraftChange({ ad: { ...ad!, ...patch } });
+  const updateAd = (patch: Partial<PublishAd>) => onDraftChange({ ad: { ...ad!, ...patch } });
   const label = (id: StudioPlatformId) => STUDIO_PLATFORMS.find((p) => p.id === id)?.label ?? id;
 
   return (
@@ -323,14 +357,16 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
               )}
             </fieldset>
 
-            <label className="pubx-paid">
+            <label className="pubx-paid" data-blocked={(!draft.paidPartnership && !paidAllowed) || undefined}>
               <input
                 type="checkbox"
                 checked={draft.paidPartnership}
+                // Already ticked (a restored draft) stays untickable; turning it on needs an ad account and limits.
+                disabled={!draft.paidPartnership && !paidAllowed}
                 onChange={(event) => onDraftChange({ paidPartnership: event.target.checked, visibility: 'public', ad: draft.ad ?? {
                   objective: 'OUTCOME_TRAFFIC', dailyBudgetMinor: 0,
-                  startTime: new Date(Date.now() + 3600000).toISOString(), endTime: new Date(Date.now() + 8 * 86400000).toISOString(),
-                  countries: [{ korea: 'KR', japan: 'JP', usa: 'US' }[market?.toLowerCase() ?? ''] ?? 'PH'],
+                  startTime: defaultAdStart(windowOpenDate), durationDays: 14,
+                  interests: [], advantageAudience: false,
                   attributionLinkId: attributionLinkId ?? '', pinCampaign: false,
                 } })}
               />
@@ -338,31 +374,33 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                 <span className="pubx-paid-title">
                   <Megaphone size={17} aria-hidden="true" /> Run as Paid Ad
                 </span>
-                <span className="pubx-paid-sub">Creates a paused Meta ad for review in Ads Manager.</span>
+                <span className="pubx-paid-sub">
+                  {paidAllowed || draft.paidPartnership
+                    ? 'Creates a paused Meta ad for review in Ads Manager.'
+                    : !adLoaded ? 'Checking your ad settings…'
+                    : adSetupError ?? (adCurrency
+                      ? 'Set your ad spending limits in Settings before running a paid ad.'
+                      : 'Connect a Meta ad account in Settings before running a paid ad.')}
+                  {!paidAllowed && !draft.paidPartnership && adLoaded && !adSetupError && (
+                    <> <a href="/settings/platforms">Open Settings</a></>
+                  )}
+                </span>
               </span>
             </label>
 
             {draft.paidPartnership && ad && (
-              <fieldset className="pubx-group">
-                <legend>Meta ad details</legend>
-                <label>Objective<select value={ad.objective} onChange={(e) => updateAd({ objective: e.target.value as typeof ad.objective })}>
-                  <option value="OUTCOME_TRAFFIC">Traffic</option><option value="OUTCOME_AWARENESS">Awareness</option>
-                </select></label>
-                {adSetupError && <p role="alert">{adSetupError}</p>}
-                <label>Daily budget{adCurrency ? ` (${adCurrency})` : ''}<input type="number" min={1 / budgetFactor} step={1 / budgetFactor} value={ad.dailyBudgetMinor ? ad.dailyBudgetMinor / budgetFactor : ''} onChange={(e) => updateAd({ dailyBudgetMinor: Math.round(Number(e.target.value) * budgetFactor) })} /></label>
-                {(['startTime', 'endTime'] as const).map((key) => <label key={key}>{key === 'startTime' ? 'Ad starts' : 'Ad ends'}<input type="datetime-local"
-                  value={new Date(Date.parse(ad[key]) - new Date(ad[key]).getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-                  onChange={(e) => e.target.value && updateAd({ [key]: new Date(e.target.value).toISOString() })} /></label>)}
-                <label>Countries (two-letter codes)<input value={ad.countries.join(', ')} onChange={(e) => updateAd({ countries: e.target.value.toUpperCase().split(',').map((c) => c.trim()) })} /></label>
-                <label>Campaign tracking link<select value={ad.attributionLinkId} onChange={(e) => updateAd({ attributionLinkId: e.target.value })}>
-                  <option value="">Choose a campaign</option>
-                  {ad.attributionLinkId && !adLinks.some((l) => l.linkId === ad.attributionLinkId) && <option value={ad.attributionLinkId}>Current market campaign</option>}
-                  {adLinks.map((link) => <option key={link.linkId} value={link.linkId}>{link.targetMarket} · {link.category} · {link.windowStart.slice(0, 10)}</option>)}
-                </select></label>
-                <p className="pubx-hint">Use the tracking link created in Content Studio. The ad remains paused until you launch it in Ads Manager.</p>
-                <label><input type="checkbox" checked={ad.pinCampaign} onChange={(e) => updateAd({ pinCampaign: e.target.checked })} /> Use this campaign in Performance reports</label>
-                {!adValid && <p role="alert">Enter a positive budget, valid countries, an attribution link, and future start and end dates.</p>}
-              </fieldset>
+              <MetaAdFields
+                ad={ad}
+                onChange={updateAd}
+                market={market}
+                currency={adCurrency}
+                limits={adLimits}
+                minimum={adMinimum}
+                links={adLinks}
+                interestSeeds={interestSeeds ?? []}
+                problems={adProblemList}
+                setupError={adSetupError}
+              />
             )}
             {draft.platforms.includes('tiktok') && <p className="pubx-note">TikTok receives a draft. Choose final privacy and finish publishing in the TikTok app.{draft.mediaType === 'video' && ' Video drafts do not include the caption; copy it from the post details.'}</p>}
 

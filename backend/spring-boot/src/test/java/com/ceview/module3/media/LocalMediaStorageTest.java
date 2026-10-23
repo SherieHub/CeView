@@ -73,6 +73,27 @@ class LocalMediaStorageTest {
     }
 
     @Test
+    void openReturnsTheStoredBytes() throws Exception {
+        LocalMediaStorage storage = new LocalMediaStorage(dir);
+        storage.write("media/p1/a.jpg", new ByteArrayInputStream(new byte[]{4, 5, 6}), 10);
+
+        try (var in = storage.open("media/p1/a.jpg").orElseThrow()) {
+            assertThat(in.readAllBytes()).containsExactly(4, 5, 6);
+        }
+    }
+
+    @Test
+    void openIsEmptyWhenNothingIsStoredUnderTheKey() {
+        assertThat(new LocalMediaStorage(dir).open("media/p1/missing.jpg")).isEmpty();
+    }
+
+    @Test
+    void openRefusesAKeyThatEscapesTheRoot() {
+        assertThatThrownBy(() -> new LocalMediaStorage(dir).open("../outside.jpg"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void refusesAKeyThatEscapesTheRoot() {
         LocalMediaStorage storage = new LocalMediaStorage(dir);
 

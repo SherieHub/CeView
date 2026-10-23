@@ -53,7 +53,12 @@ final class AttributionCodeCaptions {
         List<String> options = platform.options().stream()
                 .map(option -> withCta(option, code, cta))
                 .toList();
-        return new PlatformContentDto(options, platform.optionNames(), platform.optionMetadata(), platform.guide());
+        // Keep the English reading aid faithful to the stamped native caption.
+        // Null/blank entries mean no translation and must retain that meaning.
+        List<String> optionsEn = platform.optionsEn() == null ? null : platform.optionsEn().stream()
+                .map(option -> withCta(option, code, String.format(DEFAULT_CTA, code)))
+                .toList();
+        return new PlatformContentDto(options, optionsEn, platform.optionNames(), platform.optionMetadata(), platform.guide());
     }
 
     /** Idempotent: a caption that already quotes the code is left as it is. */

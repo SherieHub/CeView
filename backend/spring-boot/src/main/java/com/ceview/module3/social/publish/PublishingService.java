@@ -35,6 +35,7 @@ public class PublishingService {
     private final PlatformDeliveryClient delivery;
     private final TikTokDeliveryClient tiktok;
     private final TokenCipher cipher;
+    private final AdPolicy adPolicy;
     private final TransactionTemplate tx;
     private final ObjectMapper mapper;
 
@@ -42,10 +43,11 @@ public class PublishingService {
             PublishingAccountRepository accounts, SocialConnectionService connections,
             LocalizedPromotionalContentRepository content, AttributionLinkRepository links,
             AdPlatformConnectionRepository ads, PlatformDeliveryClient delivery, TikTokDeliveryClient tiktok,
-            TokenCipher cipher, PlatformTransactionManager tm, ObjectMapper mapper) {
+            TokenCipher cipher, AdPolicy adPolicy, PlatformTransactionManager tm, ObjectMapper mapper) {
         this.posts=posts; this.media=media; this.storage=storage; this.accounts=accounts;
         this.connections=connections; this.content=content; this.links=links; this.ads=ads;
-        this.delivery=delivery; this.tiktok=tiktok; this.cipher=cipher; this.tx=new TransactionTemplate(tm); this.mapper=mapper;
+        this.delivery=delivery; this.tiktok=tiktok; this.cipher=cipher; this.adPolicy=adPolicy;
+        this.tx=new TransactionTemplate(tm); this.mapper=mapper;
     }
 
     public List<SocialPost> publish(UUID profile, PublishRequest request) {
@@ -65,10 +67,10 @@ public class PublishingService {
         List<SocialPost> created = new ArrayList<>();
         String slug = null;
         String adAccountId = null;
+        AdPolicy.AdPlan adPlan = null;
         if (request.platforms().contains("meta_ads")) {
             AdOptions ad = request.ad();
             if (ad==null) throw error(HttpStatus.BAD_REQUEST,"Ad settings are required");
-            validateAd(ad);
             slug = links.findByLinkIdAndBusinessProfileId(ad.attributionLinkId(),profile)
                     .orElseThrow(() -> error(HttpStatus.NOT_FOUND,"Attribution link not found")).getSlug();
             var connection = ads.findByBusinessProfileIdAndProvider(profile,"meta")
@@ -77,6 +79,8 @@ public class PublishingService {
                     || !scopes(connection.getScopes()).contains("ads_management"))
                 throw error(HttpStatus.CONFLICT,"Choose a Meta ad account and grant ads management access");
             adAccountId=connection.getExternalAccountId().replaceFirst("^act_", "");
+            // Every ad rule, and the country/language/end the ad is created with, come from the policy.
+            adPlan = adPolicy.plan(profile,connection,ad,request.market());
         }
         for (String platform: request.platforms()) {
             String accountPlatform = platform.equals("meta_ads") ? "facebook" : platform;
@@ -97,8 +101,10 @@ public class PublishingService {
                     ? OffsetDateTime.now() : request.scheduledFor());
             if (platform.equals("meta_ads")) {
                 AdOptions ad=request.ad(); post.setAdObjective(ad.objective()); post.setAdDailyBudgetMinor(ad.dailyBudgetMinor());
-                post.setAdStartTime(ad.startTime()); post.setAdEndTime(ad.endTime());
-                post.setAdCountries(String.join(",",ad.countries())); post.setAttributionSlug(slug); post.setPinCampaign(ad.pinCampaign());
+                post.setAdStartTime(ad.startTime()); post.setAdEndTime(adPlan.endTime());
+                post.setAdCountries(adPlan.countries()); post.setAdLocales(adPlan.locales());
+                post.setAdInterestsJson(adPlan.interestsJson()); post.setAdAdvantageAudience(ad.advantageAudience());
+                post.setAttributionSlug(slug); post.setPinCampaign(ad.pinCampaign());
                 post.setAdAccountExternalId(adAccountId);
             }
             created.add(post);
@@ -157,7 +163,7 @@ public class PublishingService {
                 markReconnect(post);
             }
             if (e.isRetryable() && post.getAttempts()<3) retry(post,e.getMessage(),60L*post.getAttempts());
-            else fail(post,e.getMessage());
+            else fail(post,explained(e));
         } catch (ResponseStatusException e) { fail(post,e.getReason()); }
         catch (Exception e) {
             // An unknown outcome must not automatically repeat an external write.
@@ -172,6 +178,11 @@ public class PublishingService {
     private void retry(SocialPost post,String message,long seconds) {
         post.setStatus("PENDING"); post.setClaimedAt(null); post.setErrorMessage(message);
         post.setNextAttemptAt(OffsetDateTime.now().plusSeconds(seconds)); checkpoint(post);
+    }
+    /** What the operator is shown: the platform's own reason when it gave one, except for a reconnect prompt. */
+    private static String explained(DeliveryException e) {
+        if (e.isAuthFailure() || e.getPlatformDetail()==null) return e.getMessage();
+        return "The platform rejected delivery: "+e.getPlatformDetail();
     }
     private void fail(SocialPost post,String message) {
         post.setStatus("FAILED"); post.setClaimedAt(null); post.setErrorMessage(message); checkpoint(post);
@@ -330,13 +341,6 @@ public class PublishingService {
             throw error(HttpStatus.BAD_REQUEST,"Instagram images must be JPEG. Upload a JPEG version.");
         if ("tiktok".equals(platform) && !Set.of("image/jpeg","image/webp").contains(media.getContentType()))
             throw error(HttpStatus.BAD_REQUEST,"TikTok photos must be JPEG or WEBP.");
-    }
-    static void validateAd(AdOptions ad) {
-        if (!Set.of("OUTCOME_TRAFFIC","OUTCOME_AWARENESS").contains(ad.objective()) || ad.dailyBudgetMinor()<1
-                || ad.startTime()==null || ad.endTime()==null || !ad.endTime().isAfter(ad.startTime())
-                || !ad.endTime().isAfter(OffsetDateTime.now()) || ad.countries()==null || ad.countries().isEmpty()
-                || ad.countries().stream().anyMatch(c -> c==null || !Set.of(Locale.getISOCountries()).contains(c)))
-            throw error(HttpStatus.BAD_REQUEST,"Invalid ad objective, budget, dates or countries");
     }
     private String fingerprint(PublishRequest r) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(mapper.copy()

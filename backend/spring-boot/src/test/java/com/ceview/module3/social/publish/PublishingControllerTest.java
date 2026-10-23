@@ -54,6 +54,15 @@ class PublishingControllerTest {
              "visibility":"public","approved":true,"scheduledFor":"%s"}
             """.formatted(requestId,mediaId,OffsetDateTime.now().plusHours(3));
     }
+    @Test void postMediaUrlFollowsTheCurrentPublicBaseUrlNotTheOneStoredAtUpload() throws Exception {
+        // setup() stored https://media.example/image.jpg; the test profile's base URL is http://localhost:8080.
+        UUID requestId=UUID.randomUUID();
+        mvc.perform(post("/api/posts/publish").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON).content(request(requestId)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].mediaUrl").value("http://localhost:8080/test-"+owner));
+        UUID id=posts.findByBusinessProfileIdAndRequestId(owner,requestId).get(0).getId();
+        mvc.perform(get("/api/posts/"+id).header("Authorization","Bearer "+token))
+                .andExpect(jsonPath("$.mediaUrl").value("http://localhost:8080/test-"+owner));
+    }
     @Test void anonymousCannotUseAnyPostRoute() throws Exception {
         mvc.perform(get("/api/posts")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/posts/publish").contentType(MediaType.APPLICATION_JSON).content(request(UUID.randomUUID()))).andExpect(status().isUnauthorized());

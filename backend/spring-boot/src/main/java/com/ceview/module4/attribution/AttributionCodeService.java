@@ -139,6 +139,7 @@ public class AttributionCodeService {
             // Content Studio lets the operator pick a different market than the
             // alert's own, so the alert's code only applies when its market matches.
             Optional<AttributionCode> byAlert = codeRepo.findByDemandAlertId(demandAlertId)
+                    .filter(c -> c.getDiscountAmount() == null)
                     .filter(c -> c.getBusinessProfileId().equals(businessProfileId))
                     .filter(c -> market != null && market.equalsIgnoreCase(c.getTargetMarket()));
             if (byAlert.isPresent()) return byAlert;
@@ -147,6 +148,7 @@ public class AttributionCodeService {
 
         OffsetDateTime now = OffsetDateTime.now();
         return codeRepo.findByBusinessProfileIdOrderByWindowStartDesc(businessProfileId).stream()
+                .filter(c -> c.getDiscountAmount() == null)
                 .filter(c -> market.equalsIgnoreCase(c.getTargetMarket()))
                 .filter(c -> !c.getWindowEnd().isBefore(now))
                 .min(java.util.Comparator

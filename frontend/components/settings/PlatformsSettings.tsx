@@ -24,6 +24,7 @@ import { useToast } from '../shared/Toast';
 import { useConnections } from '../../services/connectionsStore';
 import { apiClient } from '../../services/apiClient';
 import AdAccountsSection from './AdAccountsSection';
+import AdSpendLimitsSection from './AdSpendLimitsSection';
 import AdAccountPickerModal from './AdAccountPickerModal';
 import PagePickerModal from './PagePickerModal';
 import { PlatformLogo } from './PlatformLogo';
@@ -349,6 +350,7 @@ export default function PlatformsSettings() {
           </section>
 
           <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} onLoaded={setAdConnections} />
+          <AdSpendLimitsSection key={adRefreshKey} meta={adConnections?.find((c) => c.provider === 'meta') ?? null} />
         </div>
       </div>
 

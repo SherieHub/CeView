@@ -121,6 +121,10 @@ public class AttributionRedemptionService {
                     .orElseThrow(() -> notFound("attribution code"));
             redemption.setSource(AttributionRedemption.SOURCE_MANUAL);
         }
+        if (code.getDiscountAmount() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Use voucher redemption to apply the discount and enforce the redemption limit");
+        }
         redemption.setAttributionCodeId(code.getAttributionCodeId());
 
         AttributionRedemption saved = redemptions.saveAndFlush(redemption);
@@ -142,7 +146,12 @@ public class AttributionRedemptionService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "only bookings logged by the operator can be removed");
         }
+        AttributionCode code = codes.findLockedByAttributionCodeIdAndBusinessProfileId(
+                redemption.getAttributionCodeId(), profileId).orElseThrow(() -> notFound("attribution code"));
         redemptions.delete(redemption);
+        if (code.getDiscountAmount() != null && "EXHAUSTED".equals(code.getVoucherStatus())) {
+            code.setVoucherStatus("ACTIVE");
+        }
     }
 
     // ─── read ────────────────────────────────────────────────────────────────

@@ -180,13 +180,20 @@ public class ForecastingController {
         }
     }
 
-    /** JWT-derived counterpart of {@link #ensure(UUID, long)}. */
+    /**
+     * JWT-derived counterpart of {@link #ensure(UUID, long)}. Unlike it, this answers with just
+     * {@code { refreshed, generatedAt }}: the dashboard reads the markets itself, so rebuilding and
+     * returning them here was wasted work.
+     */
     @PostMapping("/ensure")
     public ResponseEntity<?> ensure(@RequestParam(defaultValue = "12") long maxAgeHours) {
         UUID resolvedProfileId = currentBusinessProfile.resolveOrValidate(null);
         try {
-            MarketsResponse result = forecastingService.ensureFreshForecast(resolvedProfileId, maxAgeHours);
-            return ResponseEntity.ok(result);
+            ForecastingService.EnsureResult result = forecastingService.ensureFresh(resolvedProfileId, maxAgeHours);
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("refreshed", result.refreshed());
+            body.put("generatedAt", result.generatedAt() == null ? null : result.generatedAt().toString());
+            return ResponseEntity.ok(body);
         } catch (ResponseStatusException rse) {
             return structuredError(rse, "MOD22_FORECAST_FAILED");
         } catch (IllegalArgumentException iae) {

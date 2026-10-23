@@ -34,6 +34,7 @@ import TrendingBusinessTypes from './TrendingBusinessTypes';
 import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
+import ForecastFreshness from './ForecastFreshness';
 import SignalSummary from './SignalSummary';
 import PhilippineRegionsPanel from './PhilippineRegionsPanel';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
@@ -147,6 +148,15 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
               degraded={degraded}
               onRefresh={state.refresh}
             />
+            {state.mode !== 'loading' && (
+              <ForecastFreshness
+                syncing={state.syncing}
+                isRefreshing={state.isRefreshing}
+                refreshError={state.refreshError}
+                generatedAt={state.generatedAt}
+                fetchedAt={state.fetchedAt}
+              />
+            )}
           </>
         }
       />

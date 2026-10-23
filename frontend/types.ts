@@ -363,6 +363,13 @@ export interface Market {
   dataStaleCause: string | null;
 }
 
+/** POST /api/forecasting/ensure — whether the live pipeline just ran, and when the forecast was generated. */
+export interface EnsureForecastResult {
+  refreshed: boolean;
+  /** ISO-8601; null when the profile has no forecast yet. */
+  generatedAt: string | null;
+}
+
 export interface MarketsResponse { markets: Market[]; }
 
 export interface DemandAlert {
@@ -531,6 +538,46 @@ export interface CaptionLocalization {
   source: ContentSource;
 }
 
+/**
+ * A saved Content Studio draft (/api/content/drafts). `payload` is an opaque, versioned
+ * object the studio owns (see ContentDraftPayload in contentStudioTypes.ts); the backend
+ * stores it as-is.
+ */
+export interface ContentDraft {
+  id: string;
+  /** 'auto' is the one working draft per market; 'named' ones the operator saved on purpose. */
+  kind: 'auto' | 'named';
+  name: string;
+  market: string;
+  demandAlertId: string | null;
+  payload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  /**
+   * True only on the answer to a request to save a NEW draft that found identical content already
+   * saved: nothing was created, and this is that existing draft.
+   */
+  existing?: boolean;
+}
+
+/** A row in the named-drafts list: no payload. */
+export interface ContentDraftSummary {
+  id: string;
+  kind: 'auto' | 'named';
+  name: string;
+  market: string;
+  demandAlertId: string | null;
+  captionPreview: string;
+  /** An uploaded image or video is saved with the draft. Absent from a backend that predates it. */
+  hasMedia?: boolean;
+  /** The saved image's public URL, for a thumbnail; null for a video or no media. */
+  mediaUrl?: string | null;
+  /** The compliance audit saved with the draft, if any. */
+  auditStatus?: 'Pass' | 'Fail' | null;
+  auditScore?: number | null;
+  updatedAt: string;
+}
+
 export interface OmcsAuditResult {
   profileSemanticScore: number;
   /**
@@ -618,14 +665,52 @@ export interface WorkspaceMemberFixture {
   status?: 'active' | 'pending';
 }
 
+export type AdObjective = 'OUTCOME_TRAFFIC' | 'OUTCOME_AWARENESS' | 'OUTCOME_ENGAGEMENT';
+
+/** A Meta interest the operator picked from Meta's own search; the id is what targeting uses. */
+export interface AdInterest {
+  id: string;
+  name: string;
+}
+
+/**
+ * What the operator chooses for a paid Meta ad. The country and language are not here: the server
+ * derives them from the forecast market, and the end time from `startTime` + `durationDays`.
+ */
 export interface PublishAd {
-  objective: 'OUTCOME_TRAFFIC' | 'OUTCOME_AWARENESS';
+  objective: AdObjective;
   dailyBudgetMinor: number;
   startTime: string;
-  endTime: string;
-  countries: string[];
+  durationDays: number;
+  interests: AdInterest[];
+  /** True lets Meta widen the audience beyond the chosen interests (Advantage+ audience). */
+  advantageAudience: boolean;
   attributionLinkId: string;
   pinCampaign: boolean;
+}
+
+/** The business's own ceilings on CeView-created ads, in the ad account's currency (minor units). */
+export interface AdSpendLimits {
+  /** False until limits exist in the ad account's current currency; paid ads are blocked until then. */
+  configured: boolean;
+  currency: string;
+  maxDailyMinor: number | null;
+  maxTotalMinor: number | null;
+  /** What the business's active ads already commit to the total (daily budget × days). */
+  committedMinor: number;
+}
+
+/** Meta's floor for one ad set's daily budget; null when Meta could not say. */
+export interface AdMinimumBudget {
+  currency: string;
+  minDailyMinor: number | null;
+}
+
+export interface AdInterestOption {
+  id: string;
+  name: string;
+  /** Where Meta files the interest, e.g. "Interests › Sports and outdoors". */
+  path: string;
 }
 export interface PublishRequest {
   requestId: string;

@@ -50,9 +50,22 @@ public class MediaService {
         asset.setContentType(contentType.trim().toLowerCase(Locale.ROOT));
         asset.setSizeBytes(sizeBytes);
         asset.setStorageKey(key);
-        asset.setPublicUrl(publicBaseUrl + "/" + key);
+        asset.setPublicUrl(publicUrlFor(key));
         asset.setStatus(MediaAsset.STATUS_PENDING);
         return repo.save(asset);
+    }
+
+    /**
+     * Where the outside world (the social platforms, a browser) reads this asset right now. Built
+     * from the current base URL rather than the {@code public_url} saved at upload time, so a
+     * draft's media keeps publishing after {@code MEDIA_PUBLIC_BASE_URL} changes.
+     */
+    public String publicUrlOf(MediaAsset asset) {
+        return publicUrlFor(asset.getStorageKey());
+    }
+
+    private String publicUrlFor(String storageKey) {
+        return publicBaseUrl + "/" + storageKey;
     }
 
     /**
@@ -94,5 +107,24 @@ public class MediaService {
         asset.setDurationSeconds(durationSeconds);
         asset.setStatus(MediaAsset.STATUS_READY);
         return repo.save(asset);
+    }
+
+    /**
+     * The tenant's own finished image, for reading its bytes back through the API. Anyone else's
+     * id is "not found". Videos are not streamed through the API server (they can be 250 MB and
+     * are served from storage directly), so they are refused rather than silently proxied.
+     */
+    @Transactional(readOnly = true)
+    public MediaAsset readableImage(UUID businessProfileId, UUID mediaId) {
+        MediaAsset asset = repo.findByMediaIdAndBusinessProfileId(mediaId, businessProfileId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "media not found"));
+        if (!MediaAsset.STATUS_READY.equals(asset.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "the upload has not finished");
+        }
+        if (!"image".equals(asset.getKind())) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "only images can be read back through the API");
+        }
+        return asset;
     }
 }

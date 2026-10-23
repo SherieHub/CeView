@@ -1,6 +1,7 @@
 package com.ceview.module3.social.publish;
 
 import com.ceview.module3.media.MediaAssetRepository;
+import com.ceview.module3.media.MediaService;
 import com.ceview.module3.social.publish.PublishingDtos.PostView;
 import com.ceview.module4.postmetrics.PostMetricRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,10 +13,11 @@ import java.util.*;
 @Service
 public class PostViewService {
     private final MediaAssetRepository media;
+    private final MediaService mediaService;
     private final PostMetricRepository metrics;
     private final ObjectMapper mapper;
-    public PostViewService(MediaAssetRepository media,PostMetricRepository metrics,ObjectMapper mapper) {
-        this.media=media; this.metrics=metrics; this.mapper=mapper;
+    public PostViewService(MediaAssetRepository media,MediaService mediaService,PostMetricRepository metrics,ObjectMapper mapper) {
+        this.media=media; this.mediaService=mediaService; this.metrics=metrics; this.mapper=mapper;
     }
     public PostView view(SocialPost post) {
         var asset=media.findByMediaIdAndBusinessProfileId(post.getMediaAssetId(),post.getBusinessProfileId());
@@ -36,7 +38,7 @@ public class PostViewService {
         };
         var date=post.getScheduledFor()!=null ? post.getScheduledFor() : post.getCreatedAt();
         return new PostView(post.getId(),date.toLocalDate().toString(),post.getPlatform(),post.getCaption(),status,
-                post.getStatus(),asset.map(a -> a.getPublicUrl()).orElse(null),asset.map(a -> a.getKind()).orElse(null),
+                post.getStatus(),asset.map(mediaService::publicUrlOf).orElse(null),asset.map(a -> a.getKind()).orElse(null),
                 post.getScheduledFor(),post.getPermalink(),post.getAdsManagerUrl(),post.getErrorMessage(),metric.isPresent(),
                 metric.map(m -> m.getReach()).orElse(null),metric.map(m -> m.getLikes()).orElse(null),
                 metric.map(m -> m.getComments()).orElse(null),metric.map(m -> m.getShares()).orElse(null),

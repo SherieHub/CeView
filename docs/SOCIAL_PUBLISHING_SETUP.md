@@ -114,6 +114,19 @@ Facebook uses native scheduling; Instagram and TikTok use the dispatcher. `SOCIA
 
 Instagram images must be JPEG. TikTok photos must be JPEG or WEBP. Video goes through platform processing before delivery is reported. TikTok receives inbox drafts, not direct posts; users choose final privacy in TikTok. Video inbox drafts do not carry captions, so copy the caption from CeView's post detail. Metrics remain unavailable until the platform exposes a public post ID and returns the relevant fields.
 
-Meta ads are created PAUSED at every stage. The Publish window uses the connected ad account's currency, dates, countries and a tenant-owned campaign tracking link. Successful campaign/ad-set/media/creative stages survive retries. Changing the selected ad account or Page prevents resuming work against a different account. Review and launch in Ads Manager; CeView never launches the ad.
+Meta ads are created PAUSED at every stage. The Publish window uses the connected ad account's currency, the surge window's dates and a tenant-owned campaign tracking link. Successful campaign/ad-set/media/creative stages survive retries. Changing the selected ad account or Page prevents resuming work against a different account. Review and launch in Ads Manager; CeView never launches the ad.
+
+**Targeting.** The audience follows the forecast market: its country (Korea → KR, Japan → JP, USA → US) and, for Korea and Japan, its language (Korean, Japanese; the USA has none). The server derives these, so a client cannot aim an ad elsewhere. The operator adds up to 10 optional interests, searched live from Meta, and may let Meta widen the audience (Advantage+ audience, off by default). No age or gender is sent, because the forecast has no demographic data.
+
+**Spending limits.** A paid ad is blocked until the business saves a daily and a total limit under Settings → Platforms → Ad spending limits (in the ad account's currency). The total counts every not-yet-ended, not-failed CeView ad, so several ads cannot add up past it. A daily budget at or below Meta's own minimum for the objective (read from `minimum_budgets`) is refused before anything is sent to Meta.
+
+**Verify live (not confirmed against a real account).**
+
+- `minimum_budgets` amounts are documented as int32 in the account currency but not whether they are minor units. They are treated as minor units; the first live read for a Philippine account should be near `6332` (PHP 63.32), which Meta quoted when it rejected a ₱10 budget.
+- The Advantage+ field `targeting_automation.advantage_audience` (0/1) is taken from secondary sources, not Meta's own reference.
+- Engagement uses ad set `optimization_goal=POST_ENGAGEMENT` and `promoted_object: {page_id}` (the connected Facebook Page); without the Page Meta refused the final `/ads` call ("Your campaign must include an ad set with a selected object to promote"). With only the Page attached Meta refused the ad set ("Performance goal isn't available", subcode 2490408), so `destination_type: ON_POST` is also sent; that combination is a best guess and not yet confirmed against a live account (Meta's reference calls the `ON_*` destinations a limited beta and gives no goal mapping). Traffic and Awareness send no promoted object or destination type.
+- `adinterestvalid` is used to drop interests Meta has retired; an interest missing from its answer is not blocked, since Meta rejects it itself at ad set creation.
+
+When Meta rejects an ad, the rejection (status, code, subcode, message, trace id and path; never the token or query string) is logged as `Platform rejected a delivery call`, and Meta's own explanation is shown on the failed post. Both are the first place to look when an ad fails.
 
 Local verification uses MockWebServer, MockMvc, Vitest, Playwright route fixtures and isolated Postgres. It does not validate actual consent screens, production callbacks, App Review, verified media prefixes or live delivery. Those require the tester-account refinement pass agreed with the user. Do not use real platform credentials in automated tests.

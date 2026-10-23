@@ -6,11 +6,14 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
+import java.io.InputStream;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
 
@@ -57,6 +60,15 @@ public class S3MediaStorage implements MediaStorage, AutoCloseable {
         } catch (S3Exception e) {
             if (e.statusCode() == 404) return OptionalLong.empty();
             throw e;
+        }
+    }
+
+    @Override
+    public Optional<InputStream> open(String key) {
+        try {
+            return Optional.of(s3.getObject(r -> r.bucket(bucket).key(key)));
+        } catch (NoSuchKeyException e) {
+            return Optional.empty();
         }
     }
 

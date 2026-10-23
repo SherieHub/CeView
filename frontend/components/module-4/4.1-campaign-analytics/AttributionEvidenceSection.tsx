@@ -3,6 +3,7 @@ import { BarChart3, Ticket } from 'lucide-react';
 import LinkAttributionPanel from './LinkAttributionPanel';
 import CodeRedemptionPanel from './CodeRedemptionPanel';
 import StatisticalLiftPanel from './StatisticalLiftPanel';
+import CvLaunchVoucherCard from './CvLaunchVoucherCard';
 
 type AttributionEvidenceSectionProps = {
   codeEvidence?: React.ReactNode;
@@ -37,18 +38,14 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
             <Ticket size={16} aria-hidden="true" />
             <div>
               <h3 id="perf-attr-code" className="perf-attr-item-title">Code-redemption evidence</h3>
-              {codeEvidence ?? (
-                <p>Not available in this build. It will record codes customers mention on Messenger, by phone or at walk-in.</p>
-              )}
+              {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
             </div>
           </section>
           <section className="perf-attr-item" aria-labelledby="perf-attr-lift">
             <BarChart3 size={16} aria-hidden="true" />
             <div>
               <h3 id="perf-attr-lift" className="perf-attr-item-title">Statistical lift</h3>
-              {liftEvidence ?? (
-                <p>Statistical lift analysis is not available in this build. It will compare results with the period before the campaign.</p>
-              )}
+              {liftEvidence ?? <StatisticalLiftPanel />}
             </div>
           </section>
         </div>
@@ -67,7 +64,7 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
           <span className="perf-ev-icon" aria-hidden="true"><Ticket size={18} /></span>
           <h3 id="perf-ev-code-title" className="perf-ev-title">Code-redemption evidence</h3>
         </div>
-        {codeEvidence ?? <CvLaunchVoucherCard />}
+        {codeEvidence ?? <><CodeRedemptionPanel /><CvLaunchVoucherCard /></>}
       </section>
 
       <section className="card perf-ev" aria-labelledby="perf-ev-lift-title">
@@ -75,12 +72,7 @@ export default function AttributionEvidenceSection({ codeEvidence, liftEvidence,
           <span className="perf-ev-icon" aria-hidden="true"><BarChart3 size={18} /></span>
           <h3 id="perf-ev-lift-title" className="perf-ev-title">Statistical lift</h3>
         </div>
-        {liftEvidence ?? (
-          <>
-            <p className="perf-ev-text">Statistical lift is not available in this build. It compares campaign results with the pre-campaign baseline.</p>
-            <LiftArt />
-          </>
-        )}
+        {liftEvidence ?? <StatisticalLiftPanel />}
       </section>
     </div>
   );

@@ -19,7 +19,7 @@
  * AppShell already owns the page's single main landmark.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Send } from 'lucide-react';
+import { ChevronDown, Megaphone, Send } from 'lucide-react';
 import MarketFlagIcon from '../../module-2/2.1-dashboard/MarketFlagIcon';
 import PageHead from '../../../layout/PageHead';
 import AIContentMatrixPanel from './AIContentMatrixPanel';
@@ -30,6 +30,12 @@ import ValidateStage from './ValidateStage';
 import { MOCK_GENERATION_MS, slidesFromCaption } from './captionShots';
 import type { ShotsState } from './captionShots';
 import CampaignBriefDrawer from './CampaignBriefDrawer';
+import DraftsBar from './DraftsBar';
+import { quickDraftName, useQuickSaveDraft } from './SaveDraftButton';
+import type { SaveMode, SaveOutcome } from './SaveDraftButton';
+import { useCooldown } from './useCooldown';
+import { AUDIT_STEP_COUNT } from './CompliancePanel';
+import DraftsPanel from './DraftsPanel';
 import ContentBoard from './ContentBoard';
 import ContentTargetPicker from './ContentTargetPicker';
 import PublishComposer from './PublishComposer';
@@ -43,6 +49,9 @@ import CampaignsView from './campaigns/CampaignsView';
 import type { CampaignMode } from './campaigns/CampaignsView';
 import { useCampaignDrafts } from './campaigns/campaignTypes';
 import { useFirstRunDrawer } from './useFirstRunDrawer';
+import { useContentDrafts } from './useContentDrafts';
+import { buildPayload, composerFromSaved, isStale, profileFingerprint } from './contentDraftPayload';
+import type { ContentDraftPayload } from './contentDraftPayload';
 import type { AuditState, PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import type { AttributionLink, ContentResponse, Market, PublishedPost } from '../../../types';
 // Publishing has no backend yet — GET /api/posts is deferred to a later spec
@@ -50,12 +59,29 @@ import type { AttributionLink, ContentResponse, Market, PublishedPost } from '..
 // §Non-goals). The board therefore starts empty and only shows fixture posts when
 // the app runs in fixture mode, where apiClient.posts.list() serves them.
 import { apiClient } from '../../../services/apiClient';
+import { loadStoredImage } from '../../../services/mediaUpload';
+import { ApiError, isMissingDependency } from '../../../services/apiError';
 import { seedFromContent } from './captionTranslationStore';
 import { useConnections } from '../../../services/connectionsStore';
 import { useOptionalPosts } from '../../../services/postStore';
 import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
+
+/**
+ * Breathing room between caption generations. It is the heaviest model call in the app (the model
+ * may spend thousands of tokens on one run) and its host meters tokens per minute, so generations
+ * fired back to back are what trips the limit. 60 s is one metering window; after a refusal 30 s
+ * is added on top of whatever the model's own retry window is.
+ */
+export const CAPTION_COOLDOWN_AFTER_RUN_MS = 60_000;
+export const CAPTION_COOLDOWN_AFTER_FAILURE_MS = 30_000;
+const CAPTION_COOLDOWN_KEY = 'ceview.cooldown.captionGeneration';
+
+/** The model said no (rate limit, or unavailable) — as opposed to, say, the network dropping. */
+function isModelRefusal(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 429 || error.status === 503 || isMissingDependency(error));
+}
 
 const EMPTY_DRAFT: PublishDraftState = {
   caption: '', mediaDataUrl: null, platforms: [], visibility: 'public',
@@ -137,6 +163,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // irreversible action here, and the destinations and authorisation it needs
   // are decisions worth making beside a live preview of the result.
   const [publishOpen, setPublishOpen] = useState(false);
+  const [adPlannerOpen, setAdPlannerOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const requestId = useRef<string | null>(null);
@@ -181,10 +208,113 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // live signal for "is this market surging right now".
   const marketTrend = target ? (target.market.spikeIndicator ? 'surging' : 'steady') : 'steady';
 
+  // Saved drafts (server-side, per market). Off for the dev-preview props, which
+  // seed their own composer and have no signed-in operator behind them.
+  const draftsEnabled = !initialDraft;
+  const marketId = target?.market.id ?? null;
+  const drafts = useContentDrafts(marketId, draftsEnabled);
+  const { scheduleSave } = drafts;
+  const captionCooldown = useCooldown(CAPTION_COOLDOWN_KEY);
+  const startCaptionCooldown = captionCooldown.start;
+  const [draftsOpen, setDraftsOpen] = useState(false);
+  // The saved draft the work on screen IS, once it has been saved or opened — so saving again
+  // updates it instead of adding a copy. `snapshot` is the payload as last saved, to tell whether
+  // anything has changed since; null means "take the next payload built as the snapshot" (right
+  // after opening a draft, so a restored draft that is unchanged does not look edited).
+  const [linked, setLinked] = useState<{ id: string; name: string; snapshot: string | null } | null>(null);
+  const [staleDraft, setStaleDraft] = useState(false);
+  const [regenCount, setRegenCount] = useState(0);
+  const handledRegen = useRef(0);
+  // Which `${market}|${alert}` the captions on screen belong to. The ref is what the
+  // generate effect reads (changing it must not restart a request in flight); the state
+  // mirrors it for the auto-save effect.
+  const contentKeyRef = useRef<string | null>(null);
+  const [contentKey, setContentKeyState] = useState<string | null>(null);
+  const markContent = (key: string | null) => { contentKeyRef.current = key; setContentKeyState(key); };
+  const fingerprint = profileFingerprint(profile, marketTrend);
+
+  // A different market is a different piece of work: never leave the previous
+  // market's captions or caption under it while the new ones load.
+  const previousMarket = useRef<string | null>(null);
+  // Changes whenever the work on screen is replaced (another market, a loaded draft), so the
+  // composers re-mount and drop what they remember about the previous image.
+  const [composerSession, setComposerSession] = useState(0);
+  useEffect(() => {
+    if (previousMarket.current !== null && marketId !== null && marketId !== previousMarket.current) {
+      markContent(null);
+      setContent(null);
+      setComposerSession((n) => n + 1);
+      setDraft(EMPTY_DRAFT);
+      setSelectedOption(null);
+      setAudit(IDLE_AUDIT);
+      setQpStep('draft');
+      setStaleDraft(false);
+      setLinked(null);
+    }
+    // Remembered across "Change target market", when the pick is briefly null: clearing and then
+    // choosing a different market must still count as a change of market.
+    if (marketId !== null) previousMarket.current = marketId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketId]);
+
+  /**
+   * Reads a restored draft's picture back as a data URL — what a freshly picked one is, so the
+   * preview, the voucher overlay, the publish modal and the audit all treat it the same. Written
+   * with setDraft, not patchDraft, so the audit that came with the draft is not reset. Ignored
+   * if the draft's image has changed since. If the file cannot be read, the saved public URL is
+   * the fallback: it shows the picture wherever that URL is reachable.
+   */
+  const restoreImage = (mediaId: string, publicUrl: string) => {
+    const isStillThisImage = (d: PublishDraftState) =>
+      d.mediaUpload?.status === 'ready' && d.mediaUpload.mediaId === mediaId;
+    loadStoredImage(mediaId)
+      .then((dataUrl) => setDraft((d) => (isStillThisImage(d) ? { ...d, mediaDataUrl: dataUrl } : d)))
+      .catch(() => setDraft((d) => (isStillThisImage(d) && !d.mediaDataUrl ? { ...d, mediaDataUrl: publicUrl } : d)));
+  };
+
+  // Puts a saved draft's captions, direction and edits back on screen.
+  const skipSelectionReset = useRef(false);
+  const applyPayload = (saved: ContentDraftPayload) => {
+    setComposerSession((n) => n + 1);
+    seedFromContent(saved.content);
+    setContent(saved.content);
+    // The effect that clears the highlighted option on a platform change must not
+    // clear the one being restored.
+    if (saved.activePlatform !== activePlatform) skipSelectionReset.current = true;
+    setActivePlatform(saved.activePlatform);
+    setSelectedOption(saved.selectedOption);
+    // The attached image and its audit come back with the draft, so it can be published as is.
+    // Set directly rather than through patchDraft, which would reset the audit on a media change.
+    const restored = composerFromSaved(saved.draft, saved.media);
+    const image = saved.media?.kind === 'image' ? saved.media : null;
+    // An image's public URL is for outsiders (the social platforms) and may not load from here, so
+    // the picture is read back through the API instead; until it arrives there is no preview
+    // rather than a broken one.
+    setDraft(image ? { ...restored, mediaDataUrl: null } : restored);
+    if (image) restoreImage(image.mediaId, image.publicUrl);
+    setAudit(saved.audit ? { status: 'complete', step: AUDIT_STEP_COUNT, result: saved.audit } : IDLE_AUDIT);
+    setQpStep(saved.qpStep);
+  };
+
   useEffect(() => {
     // The backend 400s on a blank market and needs the profile fields, so don't
     // fire until both are present.
     if (!target || !profile.businessName) return;
+    // Hold off while the market's saved draft is being looked up: if there is one,
+    // its captions are used and nothing is generated.
+    if (draftsEnabled && drafts.restoring) return;
+
+    const key = `${target.market.id}|${target.alert.id}`;
+    const forced = regenCount !== handledRegen.current;
+    if (!forced && contentKeyRef.current === key) return;
+
+    const sameMarket = contentKeyRef.current?.startsWith(`${target.market.id}|`) ?? false;
+    if (!forced && !sameMarket && draftsEnabled && drafts.restored) {
+      applyPayload(drafts.restored);
+      markContent(key);
+      setStaleDraft(isStale(drafts.restored, target.alert.id, fingerprint));
+      return;
+    }
 
     let cancelled = false;
     setContentLoading(true);
@@ -203,14 +333,26 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       })
       .then((c) => {
         if (cancelled) return;
+        handledRegen.current = regenCount;
+        startCaptionCooldown(CAPTION_COOLDOWN_AFTER_RUN_MS);
         seedFromContent(c);
         setContent(c);
+        // Fresh options replace whatever was highlighted from the old ones.
+        if (forced) setSelectedOption(null);
+        setStaleDraft(false);
+        markContent(key);
       })
-      .catch((e) => { if (!cancelled) setContentError(e); })
+      .catch((e) => {
+        if (cancelled) return;
+        setContentError(e);
+        // Only a refusal earns a wait; a dropped connection should be retryable at once.
+        if (isModelRefusal(e)) startCaptionCooldown(CAPTION_COOLDOWN_AFTER_FAILURE_MS);
+      })
       .finally(() => { if (!cancelled) setContentLoading(false); });
 
     return () => { cancelled = true; };
-  }, [target, profile, marketTrend]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, profile, marketTrend, drafts.restoring, drafts.restored, regenCount]);
 
   useEffect(() => {
     const category = target?.alert.category;
@@ -238,7 +380,111 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
 
   // A different platform has a different option set, so a stale index would
   // highlight the wrong card.
-  useEffect(() => { setSelectedOption(null); }, [activePlatform]);
+  useEffect(() => {
+    if (skipSelectionReset.current) { skipSelectionReset.current = false; return; }
+    setSelectedOption(null);
+  }, [activePlatform]);
+
+  // Auto-save: whenever the captions, the chosen option or the operator's edits change.
+  // Held back until the captions on screen are this target's (not a previous market's).
+  useEffect(() => {
+    if (!draftsEnabled || !target || !content) return;
+    if (contentKey !== `${target.market.id}|${target.alert.id}`) return;
+    scheduleSave(
+      target.market.id,
+      target.alert.id,
+      buildPayload({
+        content, activePlatform, selectedOption, qpStep, draft, audit,
+        alertId: target.alert.id,
+        windowOpenDate: target.alert.windowOpenDate,
+        fingerprint,
+      }),
+    );
+  }, [draftsEnabled, target, content, contentKey, activePlatform, selectedOption, qpStep, draft, audit, fingerprint, scheduleSave]);
+
+  const currentPayload = (): ContentDraftPayload | null =>
+    target && content
+      ? buildPayload({
+          content, activePlatform, selectedOption, qpStep, draft, audit,
+          alertId: target.alert.id,
+          windowOpenDate: target.alert.windowOpenDate,
+          fingerprint,
+        })
+      : null;
+
+  // The payload as it stands, as JSON: what "has anything changed since it was saved" compares.
+  const payloadJson = useMemo(
+    () => (target && content
+      ? JSON.stringify(buildPayload({
+          content, activePlatform, selectedOption, qpStep, draft, audit,
+          alertId: target.alert.id,
+          windowOpenDate: target.alert.windowOpenDate,
+          fingerprint,
+        }))
+      : null),
+    [target, content, activePlatform, selectedOption, qpStep, draft, audit, fingerprint],
+  );
+  useEffect(() => {
+    if (linked && linked.snapshot === null && payloadJson) setLinked({ ...linked, snapshot: payloadJson });
+  }, [linked, payloadJson]);
+  const saveMode: SaveMode = !linked ? 'new' : linked.snapshot !== null && linked.snapshot === payloadJson ? 'clean' : 'update';
+
+  /** Saves the work as a NEW draft and links to it. If identical work is already saved, the server
+   *  creates nothing and answers with that draft, which is what we link to. */
+  const createDraft = async (name: string, payload: ContentDraftPayload): Promise<SaveOutcome> => {
+    if (!target) throw new Error('nothing to save');
+    const saved = await drafts.saveAs(name, target.alert.id, payload);
+    if (!saved) throw new Error('could not save the draft');
+    setLinked({ id: saved.id, name: saved.name, snapshot: JSON.stringify(payload) });
+    return { kind: saved.existing ? 'existing' : 'created', name: saved.name };
+  };
+
+  // The Save draft button: updates the draft this work already is, else saves a new one.
+  const saveCurrent = async (): Promise<SaveOutcome> => {
+    const payload = currentPayload();
+    if (!payload || !target) throw new Error('nothing to save');
+    if (linked) {
+      try {
+        await drafts.update(linked.id, payload);
+        setLinked({ ...linked, snapshot: JSON.stringify(payload) });
+        return { kind: 'updated', name: linked.name };
+      } catch (err) {
+        // The draft was deleted elsewhere (another tab); save a fresh one rather than fail.
+        if (!(err instanceof ApiError && err.status === 404)) throw err;
+        setLinked(null);
+      }
+    }
+    return createDraft(quickDraftName(target.market.name), payload);
+  };
+  const quickSave = useQuickSaveDraft(saveCurrent);
+
+  // The drawer's "Save current as…": an explicit separate copy under a name the operator chose.
+  const saveDraftAs = async (name: string) => {
+    const payload = currentPayload();
+    if (!payload) return;
+    const outcome = await createDraft(name, payload);
+    return outcome.kind === 'existing' ? { alreadySavedAs: outcome.name } : undefined;
+  };
+
+  const renameDraft = async (id: string, name: string) => {
+    await drafts.rename(id, name);
+    setLinked((current) => (current?.id === id ? { ...current, name } : current));
+  };
+
+  const removeDraft = async (id: string) => {
+    await drafts.remove(id);
+    setLinked((current) => (current?.id === id ? null : current));
+  };
+
+  const openSavedDraft = async (id: string) => {
+    const saved = await drafts.open(id);
+    if (!saved || !target) throw new Error('unreadable draft');
+    applyPayload(saved);
+    markContent(`${target.market.id}|${target.alert.id}`);
+    setStaleDraft(isStale(saved, target.alert.id, fingerprint));
+    // What is on screen is now this saved draft: saving updates it rather than copying it.
+    setLinked({ id, name: drafts.named.find((d) => d.id === id)?.name ?? 'this draft', snapshot: null });
+  };
 
   const patchDraft = (patch: Partial<PublishDraftState>) => {
     if (publishing) return;
@@ -300,7 +546,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // the modal's job now, so they gate "Confirm & Publish" in there rather than
   // the button that opens it.
   const mediaUploadSettled = draft.mediaUpload?.status !== 'uploading' && draft.mediaUpload?.status !== 'failed';
-  const canPublish = Boolean(draft.caption.trim() && draft.mediaDataUrl && mediaUploadSettled && audit.result?.status === 'Pass');
+  // A restored video may have no poster image (one too large to be saved with the draft is
+  // dropped); it is still attached once its upload is ready, and its audit came back with it.
+  const hasMedia = Boolean(draft.mediaDataUrl)
+    || (draft.mediaType === 'video' && draft.mediaUpload?.status === 'ready');
+  const canPublish = Boolean(draft.caption.trim() && hasMedia && mediaUploadSettled && audit.result?.status === 'Pass');
 
   // The library's open post, and the ones just published (flagged in its list).
   const [openPostId, setOpenPostId] = useState<string | null>(null);
@@ -341,7 +591,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       setView('library');
       if (!created.some((p) => p.status === 'failed')) {
         if (draft.localVideoUrl) URL.revokeObjectURL(draft.localVideoUrl);
-        setDraft(EMPTY_DRAFT); setAudit(IDLE_AUDIT); setSelectedOption(null); setQpStep('draft');
+        setDraft(EMPTY_DRAFT); setAudit(IDLE_AUDIT); setSelectedOption(null); setQpStep('draft'); setLinked(null);
         requestId.current = null;
       }
     } catch (err) { setPublishError(err instanceof Error ? err.message : 'Publishing failed. Please retry.'); }
@@ -386,6 +636,30 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
       {marketsError != null && <div className="mb-4"><ApiErrorPanel error={marketsError} label="Markets" /></div>}
       {contentError != null && <div className="mb-4"><ApiErrorPanel error={contentError} label="Content Studio" /></div>}
 
+      {draftsEnabled && (
+        <DraftsBar
+          status={drafts.status}
+          savedAt={drafts.savedAt}
+          namedCount={drafts.named.length}
+          stale={staleDraft}
+          hasWork={Boolean(draft.caption.trim())}
+          regenerating={contentLoading}
+          showRegenerate={qpStep === 'draft'}
+          cooldownSeconds={captionCooldown.secondsLeft}
+          quickSave={{
+            state: quickSave.state,
+            mode: saveMode,
+            outcome: quickSave.outcome,
+            linkedName: linked?.name,
+            onSave: () => { void quickSave.run(); },
+            canSave: content !== null,
+          }}
+          onOpenDrafts={() => setDraftsOpen(true)}
+          onRegenerate={() => { setLinked(null); setRegenCount((c) => c + 1); }}
+          onRetry={() => { void drafts.retry(); }}
+        />
+      )}
+
       <QuickPostWorkspace
         step={qpStep}
         onStepChange={setQpStep}
@@ -402,10 +676,11 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
               onSelectCaption={stageCaption}
               selectedOption={selectedOption}
               content={content}
-              loading={contentLoading}
+              loading={contentLoading || (draftsEnabled && drafts.restoring)}
             />
             <div className="qp-editor">
               <PublishComposer
+                key={composerSession}
                 draft={draft}
                 onDraftChange={patchDraft}
                 audit={audit}
@@ -421,6 +696,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         }
         attachStage={
           <AttachStage
+            key={composerSession}
             draft={draft}
             onDraftChange={patchDraft}
             audit={audit}
@@ -449,20 +725,26 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
         // Publish appears only after a passing audit (same rule as before); it
         // opens the modal, whose Confirm is what actually publishes.
         finish={
-          canPublish ? (
-            <button type="button" className="btn-cta qp-publish-btn" onClick={() => setPublishOpen(true)}>
-              <Send size={16} aria-hidden="true" />
-              Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
+          <div className="qp-finish">
+            <button type="button" className="btn-outline qp-ad-btn" onClick={() => setAdPlannerOpen(true)}>
+              <Megaphone size={16} aria-hidden="true" />
+              Promote as an ad
             </button>
-          ) : (
-            <p className="qp-finish-hint">
-              {draft.mediaUpload?.status === 'uploading'
-                ? 'Uploading your media… Publish unlocks when it finishes.'
-                : draft.mediaUpload?.status === 'failed'
-                  ? 'Media upload failed — go back to Attach to retry.'
-                  : 'Run the audit — Publish unlocks when your post passes.'}
-            </p>
-          )
+            {canPublish ? (
+              <button type="button" className="btn-cta qp-publish-btn" onClick={() => setPublishOpen(true)}>
+                <Send size={16} aria-hidden="true" />
+                Publish{draft.platforms.length ? ` to ${draft.platforms.length} platform${draft.platforms.length === 1 ? '' : 's'}` : ''}
+              </button>
+            ) : (
+              <p className="qp-finish-hint">
+                {draft.mediaUpload?.status === 'uploading'
+                  ? 'Uploading your media… Publish unlocks when it finishes.'
+                  : draft.mediaUpload?.status === 'failed'
+                    ? 'Media upload failed — go back to Attach to retry.'
+                    : 'Run the audit — Publish unlocks when your post passes.'}
+              </p>
+            )}
+          </div>
         }
       />
     </>
@@ -515,6 +797,31 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           link beside the upload control. Not on Draft either — choosing a
           caption is its own job, and the shot list is media guidance, so a
           first-run auto-open waits until Attach. */}
+      {draftsEnabled && target && (
+        <DraftsPanel
+          open={draftsOpen}
+          onClose={() => setDraftsOpen(false)}
+          marketName={target.market.name}
+          drafts={drafts.named}
+          loadFailed={drafts.namedError}
+          hasWork={Boolean(draft.caption.trim())}
+          canSave={content !== null}
+          currentDraftId={linked?.id ?? null}
+          onSave={saveDraftAs}
+          onOpen={openSavedDraft}
+          onRename={renameDraft}
+          onRemove={removeDraft}
+        />
+      )}
+      {target && view === 'quick' && adPlannerOpen && <AdPlannerDrawer
+        open={view === 'quick' && adPlannerOpen}
+        onClose={() => setAdPlannerOpen(false)}
+        alert={target.alert}
+        market={target.market}
+        caption={draft.caption}
+        mediaDataUrl={draft.mediaDataUrl}
+        link={attributionLink}
+      />}
       {target && (
         <CampaignBriefDrawer
           open={view === 'quick' && brief.open && !onDraft}
@@ -540,6 +847,8 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
           error={publishError}
           attributionLinkId={attributionLink?.linkId}
           market={target.market.id}
+          windowOpenDate={target.alert.windowOpenDate}
+          interestSeeds={[...profile.categories, ...profile.coreServices]}
           accountName={profile.businessName || undefined}
         />
       )}

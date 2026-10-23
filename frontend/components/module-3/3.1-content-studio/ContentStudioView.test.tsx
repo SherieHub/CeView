@@ -21,6 +21,7 @@ import { ApiError } from '../../../services/apiError';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import type { AttributionLink, BusinessProfile, DemandAlert, Market, PlatformId } from '../../../types';
 import type { PublishDraftState } from './contentStudioTypes';
+import { buildPayload, profileFingerprint } from './contentDraftPayload';
 
 const BASE_PROFILE: BusinessProfile = {
   businessProfileId: 'bp-1',
@@ -79,9 +80,22 @@ const notificationsListMock = vi.fn();
 const marketsForCategoryMock = vi.fn();
 const omcsAnalyzeMock = vi.fn();
 const attributionLinksListMock = vi.fn();
+const getAutoDraftMock = vi.fn();
+const saveAutoDraftMock = vi.fn();
+const listDraftsMock = vi.fn();
+const createDraftMock = vi.fn();
+const updateDraftMock = vi.fn();
+const getDraftMock = vi.fn();
+const mediaContentMock = vi.fn();
+
+vi.mock('./AdPlannerDrawer', () => ({
+  default: ({ open, caption }: { open: boolean; caption: string }) => open
+    ? <div role="dialog" aria-label="Ad planner">{caption}</div> : null,
+}));
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     notifications: { list: (...args: unknown[]) => notificationsListMock(...args) },
     markets: { forCategory: (...args: unknown[]) => marketsForCategoryMock(...args) },
     content: {
@@ -95,6 +109,16 @@ vi.mock('../../../services/apiClient', () => ({
     posts: { list: () => Promise.resolve([]), publish: vi.fn((req) => Promise.resolve(req.platforms.map((platform: string) => ({ id: `server-${platform}`, date: '2026-10-19', platform, caption: req.captionsByPlatform[platform], status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] })))) },
     attributionLinks: {
       list: (...args: unknown[]) => attributionLinksListMock(...args),
+    },
+    media: { content: (...args: unknown[]) => mediaContentMock(...args) },
+    contentDrafts: {
+      getAuto: (...args: unknown[]) => getAutoDraftMock(...args),
+      saveAuto: (...args: unknown[]) => saveAutoDraftMock(...args),
+      list: (...args: unknown[]) => listDraftsMock(...args),
+      get: (...args: unknown[]) => getDraftMock(...args),
+      create: (...args: unknown[]) => createDraftMock(...args),
+      update: (...args: unknown[]) => updateDraftMock(...args),
+      remove: vi.fn(),
     },
   },
 }));
@@ -144,6 +168,15 @@ beforeEach(() => {
   marketsForCategoryMock.mockReset().mockResolvedValue(MOCK_MARKETS);
   omcsAnalyzeMock.mockReset().mockResolvedValue(MOCK_OMCS);
   attributionLinksListMock.mockReset().mockResolvedValue([]);
+  // No saved draft by default, so every case generates exactly as it did before drafts existed.
+  getAutoDraftMock.mockReset().mockResolvedValue(null);
+  saveAutoDraftMock.mockReset().mockResolvedValue({});
+  listDraftsMock.mockReset().mockResolvedValue([]);
+  createDraftMock.mockReset().mockResolvedValue({ id: 'd-1', name: 'Japan · Oct 23, 6:05 AM', existing: false });
+  updateDraftMock.mockReset().mockResolvedValue({});
+  getDraftMock.mockReset();
+  // No stored file by default: a restored image falls back to its public URL.
+  mediaContentMock.mockReset().mockRejectedValue(new Error('no stored file'));
   // Explicit per-case rather than inherited: `mockTarget` is module-level, and
   // leaving it set by whichever case ran last made every assertion below
   // depend on file order. Cases that want the picker set it back to null.
@@ -459,6 +492,18 @@ describe('ContentStudioView — Settings -> Platforms disconnect rule', () => {
   }, 30000);
 });
 
+describe('ContentStudioView — ad planner entry', () => {
+  it('opens the planner from the selected campaign', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    renderStudio();
+    // The entry sits in the Validate step's footer, beside Publish — not on Draft.
+    expect(screen.queryByRole('button', { name: 'Promote as an ad' })).toBeNull();
+    await userEvent.click(await screen.findByRole('button', { name: 'Validate' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Promote as an ad' }));
+    expect(screen.getByRole('dialog', { name: /Ad planner|Promote as an ad/ })).toBeInTheDocument();
+  });
+});
+
 describe('ContentStudioView — after publishing', () => {
   const STAGED: PublishDraftState = {
     caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
@@ -486,4 +531,502 @@ describe('ContentStudioView — after publishing', () => {
     expect(screen.getByText('Just published')).toBeTruthy();
     // Six real 420ms audit steps come first.
   }, 30000);
+});
+
+
+describe('ContentStudioView — saved drafts', () => {
+  const savedDraft = (caption: string, over: Record<string, unknown> = {}) => ({
+    id: 'draft-auto', kind: 'auto', name: 'Auto-saved draft', market: MARKET.id,
+    demandAlertId: ALERT.id, createdAt: '2026-10-22T00:00:00Z', updatedAt: '2026-10-22T00:00:00Z',
+    payload: {
+      ...buildPayload({
+        content: buildContentResponse('groq'),
+        activePlatform: 'instagram',
+        selectedOption: 0,
+        qpStep: 'draft',
+        draft: { caption, mediaDataUrl: null, platforms: [], visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false },
+        alertId: ALERT.id,
+        windowOpenDate: ALERT.windowOpenDate,
+        fingerprint: profileFingerprint(BASE_PROFILE, MARKET.spikeIndicator ? 'surging' : 'steady'),
+      }),
+      ...over,
+    },
+  });
+
+  it('restores the saved captions and edits on re-entry without generating again', async () => {
+    getAutoDraftMock.mockResolvedValue(savedDraft('My saved caption'));
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+
+    await waitFor(
+      () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('My saved caption'),
+      SLOW,
+    );
+    expect(getAutoDraftMock).toHaveBeenCalledWith(MARKET.id);
+    expect(generateMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/earlier surge window/i)).toBeNull();
+  });
+
+  it('keeps editing a restored draft whose surge window has moved on, with a notice', async () => {
+    const stale = savedDraft('Old window caption');
+    stale.payload.meta = { ...stale.payload.meta, alertId: 'some-earlier-alert' };
+    getAutoDraftMock.mockResolvedValue(stale);
+
+    renderStudio();
+
+    await waitFor(
+      () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('Old window caption'),
+      SLOW,
+    );
+    expect(screen.getByText(/earlier surge window/i)).toBeInTheDocument();
+    expect(generateMock).not.toHaveBeenCalled();
+  });
+
+  it('generates as before when the saved draft is unreadable', async () => {
+    getAutoDraftMock.mockResolvedValue({ ...savedDraft('x'), payload: { schemaVersion: 99 } });
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1), SLOW);
+  });
+
+  it('generates as before when the saved draft cannot be loaded', async () => {
+    getAutoDraftMock.mockRejectedValue(new Error('network'));
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1), SLOW);
+  });
+
+  it('auto-saves the chosen option for the market once the operator picks one', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+    const select = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+    await userEvent.click(select[0]);
+
+    await waitFor(() => expect(saveAutoDraftMock).toHaveBeenCalled(), { timeout: 5000 });
+    const [market, alertId, payload] = saveAutoDraftMock.mock.calls.at(-1)!;
+    expect(market).toBe(MARKET.id);
+    expect(alertId).toBe(ALERT.id);
+    expect(payload).toMatchObject({ schemaVersion: 1, selectedOption: 0, draft: { caption: 'Instagram caption text' } });
+    expect(payload.draft).not.toHaveProperty('mediaDataUrl');
+  }, 15000);
+
+  it('regenerates on request, after confirming that it replaces the current captions', async () => {
+    getAutoDraftMock.mockResolvedValue(savedDraft('My saved caption'));
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+    await waitFor(
+      () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('My saved caption'),
+      SLOW,
+    );
+    expect(generateMock).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: /Regenerate captions/ }));
+    expect(generateMock).not.toHaveBeenCalled();
+    await userEvent.click(within(screen.getByRole('group', { name: 'Confirm regenerate' })).getByRole('button', { name: 'Regenerate' }));
+
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1), SLOW);
+  });
+
+  it('restores the attached image and its passing audit, so the draft can be published as it stands', async () => {
+    const ready = savedDraft('Ready to go');
+    ready.payload = {
+      ...buildPayload({
+        content: buildContentResponse('groq'),
+        activePlatform: 'instagram',
+        selectedOption: 0,
+        qpStep: 'validate',
+        draft: {
+          caption: 'Ready to go', mediaDataUrl: 'data:image/png;base64,AAAA', mediaType: 'image',
+          mediaUpload: { status: 'ready', mediaId: 'm1', publicUrl: 'https://cdn.example/m1.png' },
+          platforms: ['instagram'], visibility: 'public', commentsEnabled: true, paidPartnership: false,
+          agreementChecked: true,
+        },
+        audit: { status: 'complete', step: 6, result: MOCK_OMCS },
+        alertId: ALERT.id,
+        windowOpenDate: ALERT.windowOpenDate,
+        fingerprint: profileFingerprint(BASE_PROFILE, MARKET.spikeIndicator ? 'surging' : 'steady'),
+      }),
+    };
+    getAutoDraftMock.mockResolvedValue(ready);
+
+    renderStudio();
+
+    // Publish is offered at once: no upload and no audit to redo.
+    expect(await screen.findByRole('button', { name: /^Publish/ }, SLOW)).toBeEnabled();
+    expect(generateMock).not.toHaveBeenCalled();
+    expect(omcsAnalyzeMock).not.toHaveBeenCalled();
+    expect(screen.getAllByAltText('Attached media')[0]).toHaveAttribute('src', 'https://cdn.example/m1.png');
+    expect(screen.getByText(String(Math.round(MOCK_OMCS.omcsScore)))).toBeInTheDocument();
+  });
+
+  it('reads a restored image back through the API, not from its public URL', async () => {
+    const withImage = savedDraft('Ready to go');
+    withImage.payload = {
+      ...buildPayload({
+        content: buildContentResponse('groq'),
+        activePlatform: 'instagram',
+        selectedOption: 0,
+        qpStep: 'validate',
+        draft: {
+          caption: 'Ready to go', mediaDataUrl: 'data:image/png;base64,AAAA', mediaType: 'image',
+          mediaUpload: { status: 'ready', mediaId: 'm1', publicUrl: 'https://unreachable.example/m1.png' },
+          platforms: ['instagram'], visibility: 'public', commentsEnabled: true, paidPartnership: false,
+          agreementChecked: true,
+        },
+        audit: { status: 'complete', step: 6, result: MOCK_OMCS },
+        alertId: ALERT.id,
+        windowOpenDate: ALERT.windowOpenDate,
+        fingerprint: profileFingerprint(BASE_PROFILE, MARKET.spikeIndicator ? 'surging' : 'steady'),
+      }),
+    };
+    getAutoDraftMock.mockResolvedValue(withImage);
+    mediaContentMock.mockResolvedValue(new Blob(['pixels'], { type: 'image/png' }));
+
+    renderStudio();
+
+    await waitFor(
+      () => expect(screen.getAllByAltText('Attached media')[0].getAttribute('src') ?? '').toMatch(/^data:image\/png;base64,/),
+      SLOW,
+    );
+    expect(mediaContentMock).toHaveBeenCalledWith('m1');
+    // The audit that came with the draft was not reset by the picture arriving.
+    expect(screen.getByRole('button', { name: /^Publish/ })).toBeEnabled();
+    expect(omcsAnalyzeMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the saved public URL when the stored image cannot be read', async () => {
+    const withImage = savedDraft('Ready to go');
+    withImage.payload = {
+      ...buildPayload({
+        content: buildContentResponse('groq'),
+        activePlatform: 'instagram',
+        selectedOption: 0,
+        qpStep: 'validate',
+        draft: {
+          caption: 'Ready to go', mediaDataUrl: 'data:image/png;base64,AAAA', mediaType: 'image',
+          mediaUpload: { status: 'ready', mediaId: 'm1', publicUrl: 'https://cdn.example/m1.png' },
+          platforms: ['instagram'], visibility: 'public', commentsEnabled: true, paidPartnership: false,
+          agreementChecked: true,
+        },
+        audit: { status: 'complete', step: 6, result: MOCK_OMCS },
+        alertId: ALERT.id,
+        windowOpenDate: ALERT.windowOpenDate,
+        fingerprint: profileFingerprint(BASE_PROFILE, MARKET.spikeIndicator ? 'surging' : 'steady'),
+      }),
+    };
+    getAutoDraftMock.mockResolvedValue(withImage); // media.content rejects by default
+
+    renderStudio();
+
+    await waitFor(
+      () => expect(screen.getAllByAltText('Attached media')[0]).toHaveAttribute('src', 'https://cdn.example/m1.png'),
+      SLOW,
+    );
+    expect(screen.getByRole('button', { name: /^Publish/ })).toBeEnabled();
+  });
+
+  /** A draft with an uploaded, audited attachment — ready to publish as it stands. */
+  const draftWithMedia = (kind: 'image' | 'video') => {
+    const d = savedDraft('Ready to go');
+    d.payload = {
+      ...buildPayload({
+        content: buildContentResponse('groq'),
+        activePlatform: 'instagram',
+        selectedOption: 0,
+        qpStep: 'validate',
+        draft: {
+          caption: 'Ready to go', mediaDataUrl: kind === 'image' ? 'data:image/png;base64,AAAA' : null, mediaType: kind,
+          mediaUpload: { status: 'ready', mediaId: 'm1', publicUrl: `https://cdn.example/m1.${kind === 'image' ? 'png' : 'mp4'}` },
+          platforms: ['instagram'], visibility: 'public', commentsEnabled: true, paidPartnership: false,
+          agreementChecked: true,
+        },
+        audit: { status: 'complete', step: 6, result: MOCK_OMCS },
+        alertId: ALERT.id,
+        windowOpenDate: ALERT.windowOpenDate,
+        fingerprint: profileFingerprint(BASE_PROFILE, MARKET.spikeIndicator ? 'surging' : 'steady'),
+      }),
+    };
+    return d;
+  };
+  const studioElement = () => (
+    <OverlayStackProvider>
+      <ContentStudioView />
+    </OverlayStackProvider>
+  );
+  const OTHER_MARKET: Market = MOCK_MARKETS[1];
+
+  it('can publish a restored video even though its poster was too large to be saved', async () => {
+    getAutoDraftMock.mockResolvedValue(draftWithMedia('video'));
+
+    renderStudio();
+
+    expect(await screen.findByRole('button', { name: /^Publish/ }, SLOW)).toBeEnabled();
+    expect(omcsAnalyzeMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it('does not carry one market\'s attachment and audit into another picked after clearing the target', async () => {
+    getAutoDraftMock.mockImplementation((market: string) =>
+      Promise.resolve(market === MARKET.id ? draftWithMedia('image') : null));
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    const { rerender } = renderStudio();
+    expect(await screen.findByRole('button', { name: /^Publish/ }, SLOW)).toBeEnabled();
+
+    // "Change target market" clears the pick, then a different market is chosen.
+    mockTarget = null;
+    rerender(studioElement());
+    mockTarget = { alert: ALERT, market: OTHER_MARKET };
+    rerender(studioElement());
+
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1), SLOW);
+    await waitFor(() => expect(screen.queryAllByAltText('Attached media')).toHaveLength(0), SLOW);
+    expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull();
+    // And nothing of market A's attachment is auto-saved under market B.
+    for (const [market, , payload] of saveAutoDraftMock.mock.calls) {
+      if (market === OTHER_MARKET.id) expect(payload.media).toBeNull();
+    }
+  }, 30000);
+
+  it('keeps the draft when the same market is picked again after clearing the target', async () => {
+    getAutoDraftMock.mockResolvedValue(draftWithMedia('image'));
+
+    const { rerender } = renderStudio();
+    expect(await screen.findByRole('button', { name: /^Publish/ }, SLOW)).toBeEnabled();
+
+    mockTarget = null;
+    rerender(studioElement());
+    mockTarget = { alert: ALERT, market: MARKET };
+    rerender(studioElement());
+
+    expect(await screen.findByRole('button', { name: /^Publish/ }, SLOW)).toBeEnabled();
+    expect(screen.getAllByAltText('Attached media').length).toBeGreaterThan(0);
+  }, 30000);
+
+  it('keeps Publish locked for a draft saved before its image was attached', async () => {
+    getAutoDraftMock.mockResolvedValue(savedDraft('Caption only'));
+
+    renderStudio();
+    await waitFor(
+      () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('Caption only'),
+      SLOW,
+    );
+
+    expect(screen.queryByRole('button', { name: /^Publish/ })).toBeNull();
+  });
+
+  it('saves a named draft in one click, with the market and time as its name', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+    const selects = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+    await userEvent.click(selects[0]);
+
+    // One button, top right of the Quick Post strip beside Drafts.
+    const saveButtons = screen.getAllByRole('button', { name: 'Save draft' });
+    expect(saveButtons).toHaveLength(1);
+    await userEvent.click(saveButtons[0]);
+
+    await waitFor(() => expect(createDraftMock).toHaveBeenCalledTimes(1));
+    const [market, alertId, name, payload] = createDraftMock.mock.calls[0];
+    expect(market).toBe(MARKET.id);
+    expect(alertId).toBe(ALERT.id);
+    expect(name).toContain(MARKET.name);
+    expect(payload).toMatchObject({ schemaVersion: 1, draft: { caption: 'Instagram caption text' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument());
+  });
+
+  describe('saving the same work again', () => {
+    const stageCaptionAndSave = async () => {
+      generateMock.mockResolvedValue(buildContentResponse('groq'));
+      renderStudio();
+      const selects = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+      await userEvent.click(selects[0]);
+      await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+      await waitFor(() => expect(createDraftMock).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument());
+    };
+
+    it('cannot be saved again while nothing has changed', async () => {
+      await stageCaptionAndSave();
+
+      const saved = screen.getByRole('button', { name: 'Saved' });
+      expect(saved).toBeDisabled();
+      await userEvent.click(saved);
+      expect(createDraftMock).toHaveBeenCalledTimes(1);
+      expect(updateDraftMock).not.toHaveBeenCalled();
+    });
+
+    it('updates the saved draft in place once the work has been edited, never adding a copy', async () => {
+      await stageCaptionAndSave();
+
+      await userEvent.type(screen.getByLabelText('Your caption'), ' and more');
+      const save = await screen.findByRole('button', { name: 'Save changes' });
+      await userEvent.click(save);
+
+      await waitFor(() => expect(updateDraftMock).toHaveBeenCalledTimes(1));
+      expect(updateDraftMock.mock.calls[0][0]).toBe('d-1');
+      expect(updateDraftMock.mock.calls[0][1]).toMatchObject({ payload: { draft: { caption: expect.stringContaining('and more') } } });
+      expect(createDraftMock).toHaveBeenCalledTimes(1);
+      expect(await screen.findByText(/Updated “Japan · Oct 23, 6:05 AM”/)).toBeInTheDocument();
+    });
+
+    it('saves a fresh draft if the linked one was deleted elsewhere', async () => {
+      await stageCaptionAndSave();
+      updateDraftMock.mockRejectedValue(new ApiError({ status: 404, method: 'PUT', path: '/api/content/drafts/d-1', body: {} }));
+      createDraftMock.mockResolvedValue({ id: 'd-2', name: 'Japan · Oct 23, 6:09 AM', existing: false });
+
+      await userEvent.type(screen.getByLabelText('Your caption'), ' edited');
+      await userEvent.click(await screen.findByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(createDraftMock).toHaveBeenCalledTimes(2));
+      expect(updateDraftMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('links to the existing draft when the server finds identical work already saved', async () => {
+      generateMock.mockResolvedValue(buildContentResponse('groq'));
+      createDraftMock.mockResolvedValue({ id: 'd-9', name: 'Earlier save', existing: true });
+      renderStudio();
+      const selects = await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+      await userEvent.click(selects[0]);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+
+      expect(await screen.findByText('Already saved as “Earlier save”')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled();
+    });
+
+    it('starts a new draft after the captions are regenerated', async () => {
+      getAutoDraftMock.mockResolvedValue(savedDraft('My saved caption'));
+      generateMock.mockResolvedValue(buildContentResponse('groq'));
+      renderStudio();
+      await waitFor(
+        () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('My saved caption'),
+        SLOW,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled());
+
+      await userEvent.click(screen.getByRole('button', { name: 'Regenerate captions' }));
+      await userEvent.click(within(screen.getByRole('group', { name: 'Confirm regenerate' })).getByRole('button', { name: 'Regenerate' }));
+
+      // The new captions are new work, not the draft that was saved.
+      expect(await screen.findByRole('button', { name: 'Save draft' }, SLOW)).toBeEnabled();
+    });
+
+    it('saves changes to a draft that was opened from the Drafts drawer', async () => {
+      generateMock.mockResolvedValue(buildContentResponse('groq'));
+      listDraftsMock.mockResolvedValue([{
+        id: 'd-7', kind: 'named', name: 'Reef wall', market: MARKET.id, demandAlertId: null, captionPreview: '',
+        hasMedia: false, mediaUrl: null, auditStatus: null, auditScore: null, updatedAt: '2026-10-22T08:00:00Z',
+      }]);
+      getDraftMock.mockResolvedValue(savedDraft('Opened caption'));
+      renderStudio();
+      await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+
+      await userEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Open Reef wall' }));
+      await waitFor(
+        () => expect((screen.getByLabelText('Your caption') as HTMLTextAreaElement).value).toBe('Opened caption'),
+        SLOW,
+      );
+
+      // Straight after opening it nothing has changed: there is nothing to save.
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled());
+
+      await userEvent.type(screen.getByLabelText('Your caption'), ' plus');
+      await userEvent.click(await screen.findByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(updateDraftMock).toHaveBeenCalledTimes(1));
+      expect(updateDraftMock.mock.calls[0][0]).toBe('d-7');
+      expect(createDraftMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('says so on the button when the draft limit has been reached', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    createDraftMock.mockRejectedValue(new ApiError({
+      status: 409, method: 'POST', path: '/api/content/drafts',
+      body: { code: 'MOD31_DRAFT_LIMIT', message: 'limit' },
+    }));
+
+    renderStudio();
+    await screen.findAllByRole('button', { name: 'Select' }, SLOW);
+    await userEvent.click(screen.getAllByRole('button', { name: 'Save draft' })[0]);
+
+    expect((await screen.findAllByText(/Draft limit reached/))[0]).toBeInTheDocument();
+  });
+
+  it('waits before captions can be regenerated once they have been generated', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+
+    renderStudio();
+
+    const regenerate = await screen.findByRole('button', { name: /Regenerate captions \(\d+s\)/ }, SLOW);
+    expect(regenerate).toBeDisabled();
+    expect(Number(/\((\d+)s\)/.exec(regenerate.textContent ?? '')?.[1])).toBeGreaterThan(30);
+    // The wait is kept, so leaving and coming back does not skip it.
+    expect(Number(localStorage.getItem('ceview.cooldown.captionGeneration'))).toBeGreaterThan(Date.now());
+  });
+
+  it('does not make a restored draft wait: restoring makes no model call', async () => {
+    getAutoDraftMock.mockResolvedValue(savedDraft('My saved caption'));
+
+    renderStudio();
+
+    expect(await screen.findByRole('button', { name: 'Regenerate captions' }, SLOW)).toBeEnabled();
+    expect(generateMock).not.toHaveBeenCalled();
+  });
+
+  it('starts the shorter wait when the model refuses, and none when the connection drops', async () => {
+    generateMock.mockRejectedValue(new ApiError({
+      status: 503, method: 'POST', path: '/api/content/generate',
+      body: { code: 'MOD3_CONTENT_RATE_LIMITED', dependency: 'groq', cause: 'rate limit' },
+    }));
+    const refused = renderStudio();
+
+    const waiting = await screen.findByRole('button', { name: /Regenerate captions \(\d+s\)/ }, SLOW);
+    expect(Number(/\((\d+)s\)/.exec(waiting.textContent ?? '')?.[1])).toBeLessThanOrEqual(30);
+    refused.unmount();
+
+    localStorage.clear();
+    generateMock.mockReset().mockRejectedValue(new TypeError('Failed to fetch'));
+    renderStudio();
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    expect(await screen.findByRole('button', { name: 'Regenerate captions' }, SLOW)).toBeEnabled();
+  });
+
+  it('offers Regenerate only on the caption step, while Drafts and Save draft stay on every step', async () => {
+    getAutoDraftMock.mockResolvedValue(savedDraft('My saved caption'));
+
+    renderStudio();
+    await screen.findByRole('button', { name: 'Regenerate captions' }, SLOW);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Attach' }));
+    expect(screen.queryByRole('button', { name: /Regenerate captions/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Drafts/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Draft' }));
+    expect(screen.getByRole('button', { name: 'Regenerate captions' })).toBeInTheDocument();
+  });
+
+  it('does not touch saved drafts for the dev-preview composer', async () => {
+    generateMock.mockResolvedValue(buildContentResponse('groq'));
+    render(
+      <OverlayStackProvider>
+        <ContentStudioView initialDraft={{ caption: 'seeded', mediaDataUrl: null, platforms: [], visibility: 'public', commentsEnabled: true, paidPartnership: false, agreementChecked: false }} />
+      </OverlayStackProvider>,
+    );
+
+    await waitFor(() => expect(generateMock).toHaveBeenCalled(), SLOW);
+    expect(getAutoDraftMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /^Drafts/ })).toBeNull();
+  });
 });

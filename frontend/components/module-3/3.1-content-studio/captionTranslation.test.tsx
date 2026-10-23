@@ -24,6 +24,7 @@ const translate = vi.fn();
 const localize = vi.fn();
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     content: {
       translate: (...args: unknown[]) => translate(...args),
       localize: (...args: unknown[]) => localize(...args),

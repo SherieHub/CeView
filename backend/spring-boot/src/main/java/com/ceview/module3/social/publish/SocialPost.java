@@ -38,6 +38,12 @@ public class SocialPost {
     private OffsetDateTime adStartTime;
     private OffsetDateTime adEndTime;
     private String adCountries;
+    /** Meta locale keys, comma-separated, from the forecast market's language. Null = no language limit. */
+    private String adLocales;
+    /** JSON array of {id,name} Meta interests chosen for the audience. Null = none. */
+    @Column(columnDefinition="TEXT") private String adInterestsJson;
+    /** True lets Meta widen the audience beyond the chosen interests (Advantage+ audience). */
+    private boolean adAdvantageAudience;
     private String attributionSlug;
     private boolean pinCampaign;
     private OffsetDateTime scheduledFor;

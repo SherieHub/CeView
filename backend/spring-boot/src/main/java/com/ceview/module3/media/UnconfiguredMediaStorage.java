@@ -3,6 +3,8 @@ package com.ceview.module3.media;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.InputStream;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
 
@@ -25,6 +27,11 @@ public class UnconfiguredMediaStorage implements MediaStorage {
 
     @Override
     public OptionalLong sizeOf(String key) {
+        throw unavailable();
+    }
+
+    @Override
+    public Optional<InputStream> open(String key) {
         throw unavailable();
     }
 

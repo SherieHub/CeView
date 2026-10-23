@@ -4,7 +4,9 @@ import type { AttributionVoucher } from '../../../types';
 export function composeVoucherOverlay(source: string, voucher: AttributionVoucher): Promise<string> {
   return new Promise((resolve, reject) => {
     const image = new Image();
+    image.crossOrigin = 'anonymous';
     image.onload = () => {
+      try {
       const canvas = document.createElement('canvas');
       canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
       const ctx = canvas.getContext('2d');
@@ -20,6 +22,9 @@ export function composeVoucherOverlay(source: string, voucher: AttributionVouche
       ctx.font = `600 ${Math.round(font * .6)}px sans-serif`; ctx.fillText(`Use code: ${voucher.code}`, x + font, y + font * 2.25);
       ctx.fillText(voucher.redemptionsRemaining === -1 ? 'Limited offer' : `${voucher.redemptionsRemaining} bookings remaining`, x + font, y + font * 3.05);
       resolve(canvas.toDataURL('image/png'));
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error('The voucher image could not be exported.'));
+      }
     };
     image.onerror = () => reject(new Error('The selected image cannot be prepared for the voucher overlay.'));
     image.src = source;

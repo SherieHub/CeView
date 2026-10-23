@@ -92,7 +92,6 @@ export default function CaptionOptionGrid({ captions, platform, selectedIndex, o
                 <span className="badge badge--teal">Option {index + 1}</span>
                 <span className="cap-length">{text.length} characters</span>
                 <div className="cap-head-act">
-                  <CaptionTranslationToggle state={translation.stateAt(index)} label={optionName(index)} />
                   {isSelected && (
                     <span className="chip chip--success">
                       <Check aria-hidden="true" /> Staged
@@ -125,6 +124,10 @@ export default function CaptionOptionGrid({ captions, platform, selectedIndex, o
               >
                 {translation.displayAt(index)}
               </p>
+
+              <div className="cap-card-foot">
+                <CaptionTranslationToggle state={translation.stateAt(index)} label={optionName(index)} />
+              </div>
 
               <div className="cap-actions">
                 <button

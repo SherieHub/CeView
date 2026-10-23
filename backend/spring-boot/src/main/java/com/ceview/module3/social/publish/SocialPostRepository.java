@@ -19,4 +19,8 @@ public interface SocialPostRepository extends JpaRepository<SocialPost, UUID> {
     List<SocialPost> claimDue(OffsetDateTime now);
     List<SocialPost> findByStatusAndClaimedAtBefore(String status, OffsetDateTime before);
     List<SocialPost> findByStatusIn(Collection<String> statuses);
+    /** Ads still counting against the total spend limit: not failed or cancelled, and not yet ended. */
+    @Query("select p from SocialPost p where p.businessProfileId = :profileId and p.platform = 'meta_ads' "
+            + "and p.status not in ('FAILED','CANCELLED') and p.adEndTime > :now")
+    List<SocialPost> findActiveAds(UUID profileId, OffsetDateTime now);
 }

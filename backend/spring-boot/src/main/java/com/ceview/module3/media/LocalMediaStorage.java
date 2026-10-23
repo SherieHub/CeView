@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
 
@@ -74,6 +75,16 @@ public class LocalMediaStorage implements MediaStorage {
         try {
             Path file = resolve(key);
             return Files.isRegularFile(file) ? OptionalLong.of(Files.size(file)) : OptionalLong.empty();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Override
+    public Optional<InputStream> open(String key) {
+        try {
+            Path file = resolve(key);
+            return Files.isRegularFile(file) ? Optional.of(Files.newInputStream(file)) : Optional.empty();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

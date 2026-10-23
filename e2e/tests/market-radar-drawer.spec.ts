@@ -15,7 +15,9 @@ test.describe('Module 2 Market Radar drawer', () => {
     await page.getByRole('tab', { name: 'Seasonal Patterns' }).click();
     await expect(page.getByText('Seasonality index')).toBeVisible();
     await page.getByRole('tab', { name: 'Purchasing Power' }).click();
-    await expect(page.getByText('Fare reference: reference')).toBeVisible();
+    await expect(page.getByRole('tabpanel', { name: 'Purchasing Power' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Route and carriers' })
+      .getByText('Route & fare figures: reference · valid from 2026-08-24')).toBeVisible();
   });
 
   test('hands the selected market to Module 3', async ({ page }) => {

@@ -1499,11 +1499,14 @@
     color: #577293;
     white-space: nowrap;
   }
-  .app-wrap .studio-screen #studio-step-draft .cap-head-act {
-    position: absolute;
-    right: 5px;
-    bottom: 3px;
+  .app-wrap .studio-screen #studio-step-draft .cap-card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
   }
+  .app-wrap .studio-screen #studio-step-draft .cap-card-foot:empty { display: none; }
   .app-wrap .studio-screen #studio-step-draft .cap-head-act .chip { display: none; }
   .app-wrap .studio-screen #studio-step-draft .cap-zoom { width: 24px; height: 24px; background: #fff; }
   .app-wrap .studio-screen #studio-step-draft .cap-body { padding-right: 8px; white-space: normal; }
@@ -2913,6 +2916,8 @@
   /* ---------- Footer: Publish ---------- */
   .qp-publish-btn { display: inline-flex; align-items: center; gap: 8px; }
   .qp-finish-hint { margin: 0; font-size: .8125rem; color: #647887; }
+  .qp-finish { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; margin-left: auto; }
+  .qp-ad-btn { display: inline-flex; align-items: center; gap: 8px; }
 
   @media (max-width: 767px) {
     .audit-summary { grid-template-columns: minmax(0, 1fr); justify-items: center; }
@@ -3439,9 +3444,10 @@
     border-radius: 12px;
     background: #f8fbfa;
   }
-  .pubx-when-field { display: grid; gap: 5px; min-width: 0; }
-  .pubx-when-field > span { font-size: .75rem; font-weight: 600; color: #4a5f70; }
-  .pubx-when-field input {
+  .pubx-when-field, .pubx-field { display: grid; gap: 5px; min-width: 0; }
+  .pubx-when-field > span, .pubx-field > span { font-size: .75rem; font-weight: 600; color: #4a5f70; }
+  .pubx-when-field input,
+  .pubx-field :is(input, select) {
     width: 100%;
     min-width: 0;
     height: 40px;
@@ -3453,7 +3459,76 @@
     font-size: .875rem;
     color: #102f40;
   }
-  .pubx-when-field input:focus { border-color: #12877f; outline: none; box-shadow: 0 0 0 3px rgba(18, 135, 127, .16); }
+  .pubx-field select {
+    padding-right: 30px;
+    appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23577293' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center;
+    cursor: pointer;
+  }
+  .pubx-when-field input:focus,
+  .pubx-field :is(input, select):focus { border-color: #12877f; outline: none; box-shadow: 0 0 0 3px rgba(18, 135, 127, .16); }
+  /* Meta ad details — the same panel and field scale as the schedule above. */
+  .pubx-ad {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e1ece9;
+    border-radius: 12px;
+    background: #f8fbfa;
+  }
+  .pubx-ad .pubx-field--wide { grid-column: 1 / -1; }
+  .pubx-ad .pubx-hint[data-error] { color: #a63f25; font-weight: 600; }
+  .pubx-ad-callout {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid #f0d9a8;
+    border-radius: 10px;
+    background: #fff8e8;
+    font-size: .8125rem;
+    line-height: 1.45;
+    color: #7a5200;
+  }
+  .pubx-check { display: flex; align-items: center; gap: 10px; font-size: .8125rem; color: #2d4657; cursor: pointer; }
+  .pubx-check input { width: 16px; height: 16px; flex: none; margin: 0; accent-color: #0b4541; }
+  .pubx-sub { font-size: .75rem; line-height: 1.45; font-weight: 400; color: #647887; }
+  .pubx-sub[data-error] { color: #a63f25; font-weight: 600; }
+  .pubx-problems { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  /* Audience: what the forecast fixes (country, language), then what the operator adds (interests). */
+  .pubx-audience { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid #e1ece9; border-radius: 10px; background: #fff; }
+  .pubx-audience-title { margin: 0; font-size: .75rem; font-weight: 600; color: #4a5f70; }
+  .pubx-audience-line { display: flex; justify-content: space-between; gap: 12px; margin: 0; font-size: .8125rem; color: #4a5f70; }
+  .pubx-audience-line strong { font-weight: 600; color: #102f40; text-align: right; }
+  .pubx-interests { display: grid; gap: 8px; }
+  .pubx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .pubx-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid #cfe2de;
+    border-radius: 999px; background: #eaf5f2; font: inherit; font-size: .75rem; font-weight: 600; color: #0b4541;
+  }
+  .pubx-chip button { display: grid; place-items: center; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+  .pubx-chip--add { border-style: dashed; background: #fff; cursor: pointer; }
+  .pubx-chip--add:hover { background: #eaf5f2; }
+  .pubx-suggest { display: grid; gap: 6px; }
+  .pubx-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border: 1px solid #d5e0de; border-radius: 10px; background: #fff; color: #647887; }
+  .pubx-search:focus-within { border-color: #12877f; box-shadow: 0 0 0 3px rgba(18, 135, 127, .16); }
+  .pubx-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font: inherit; font-size: .8125rem; color: #102f40; outline: none; }
+  .pubx-results { display: grid; gap: 2px; max-height: 180px; margin: 0; padding: 4px; overflow-y: auto; list-style: none; border: 1px solid #e1ece9; border-radius: 10px; background: #fff; }
+  .pubx-results button { display: grid; width: 100%; gap: 1px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: .8125rem; text-align: left; color: #102f40; cursor: pointer; }
+  .pubx-results button:hover { background: #f0f7f5; }
+  .pubx-results small { font-size: .6875rem; color: #647887; }
+  /* How long the ad runs: quick picks plus any whole number of days. */
+  .pubx-length { display: grid; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+  .pubx-length legend { padding: 0; margin-bottom: 5px; font-size: .75rem; font-weight: 600; color: #4a5f70; }
+  .pubx-length-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .pubx-pill-radio { position: relative; display: inline-flex; cursor: pointer; }
+  .pubx-pill-radio input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .pubx-pill-radio span { padding: 6px 14px; border: 1px solid #d5e0de; border-radius: 999px; background: #fff; font-size: .8125rem; font-weight: 600; color: #2d4657; }
+  .pubx-pill-radio input:checked + span { border-color: #0b4541; background: #0b4541; color: #fff; }
+  .pubx-pill-radio input:focus-visible + span { box-shadow: 0 0 0 3px rgba(18, 135, 127, .3); }
+  .pubx-days { width: 88px; height: 34px; padding: 0 10px; border: 1px solid #d5e0de; border-radius: 10px; font: inherit; font-size: .8125rem; color: #102f40; }
+  @media (max-width: 420px) {
+    .pubx-ad { grid-template-columns: minmax(0, 1fr); }
+  }
   .pubx-when-note { grid-column: 1 / -1; align-items: flex-start; font-size: .75rem; line-height: 1.45; }
   .pubx-when-note[data-error] { color: #a63f25; font-weight: 600; }
 }
@@ -3490,7 +3565,8 @@
   .pubx-seg--when button { padding: 7px 8px; font-size: .75rem; }
   .pubx-hint { gap: 6px; font-size: .75rem; }
   .pubx-when { gap: 8px; padding: 10px; }
-  .pubx-when-field input { height: 34px; font-size: .8125rem; }
+  .pubx-when-field input,
+  .pubx-field :is(input, select) { height: 34px; font-size: .8125rem; }
   /* Same side inset as the confirmation box below, so the two checkboxes share
      one left edge. */
   .pubx-paid { gap: 10px; padding: 14px 12px 0; }
@@ -3886,12 +3962,32 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: none;
-    border: 0;
-    padding: 0;
-    font-size: 0.8125rem;
+    padding: 3px 10px;
+    border: 1px solid var(--studio-line, rgba(27, 58, 92, 0.14));
+    border-radius: 999px;
+    background: var(--color-white, #fff);
+    color: var(--color-cyan-deep);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .cap-lang-toggle:hover:not(:disabled) {
+    border-color: #9fdccf;
+    background: #eefaf7;
+  }
+  .cap-lang-toggle:focus-visible {
+    outline: 2px solid var(--color-cyan-deep);
+    outline-offset: 2px;
+  }
+  .cap-lang-toggle:disabled {
+    opacity: 0.7;
+    cursor: progress;
   }
   .cap-lang-toggle[aria-pressed='true'] {
+    border-color: #9fdccf;
+    background: #d3f5ed;
     color: var(--color-navy-primary);
   }
   .cap-lang-toggle .spinner {
@@ -3921,5 +4017,281 @@
     gap: var(--space-xs);
     margin-top: var(--space-xs);
     font-size: 0.875rem;
+  }
+}
+
+/* Saved drafts: the strip above Quick Post (DraftsBar) and the Drafts drawer
+   (DraftsPanel). Fields reuse .pubx-field; buttons the shared outline/primary scale. */
+@layer components {
+  .ds-wrap { display: grid; gap: 8px; margin-bottom: 12px; }
+  .ds-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+  .ds-status { margin: 0; font-size: .8125rem; color: #647887; }
+  .ds-status[data-status='error'] { color: #a63f25; font-weight: 600; }
+  .ds-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .ds-actions .btn-outline { display: inline-flex; align-items: center; gap: 6px; }
+  .ds-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .8125rem; color: #2d4657; }
+  .ds-stale {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #f0d9a8;
+    border-radius: 10px;
+    background: #fff8e8;
+    font-size: .8125rem;
+    line-height: 1.45;
+    color: #7a5200;
+  }
+
+  .ds-panel { display: flex; flex-direction: column; gap: 16px; }
+  .ds-save { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+  .ds-error { margin: 0; font-size: .8125rem; font-weight: 600; color: #a63f25; }
+  .ds-empty { color: #647887; }
+  .ds-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .ds-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e1ece9;
+    border-radius: 12px;
+    background: #f8fbfa;
+  }
+  .ds-item-main { min-width: 0; flex: 1 1 200px; }
+  .ds-item-name { margin: 0; font-size: .9375rem; font-weight: 700; color: #102f40; overflow-wrap: anywhere; }
+  .ds-item-meta { margin: 2px 0 0; font-size: .75rem; color: #647887; }
+  .ds-item-preview {
+    margin: 6px 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: .8125rem;
+    line-height: 1.45;
+    color: #2d4657;
+  }
+  .ds-item-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .ds-rename { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+  .ds-rename input {
+    flex: 1 1 160px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #d5e0de;
+    border-radius: 10px;
+    font-family: var(--ff-ui);
+    font-size: .8125rem;
+  }
+  .ds-rename input:focus { border-color: #12877f; outline: none; box-shadow: 0 0 0 3px rgba(18, 135, 127, .16); }
+}
+
+/* Compliance audit, while it runs: a header with progress, then a connected step list whose last
+   step keeps animating until the results replace the whole block. */
+@layer components {
+  .audit-run {
+    display: grid;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #d5e8e2;
+    border-radius: 14px;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #e2f5ef 0%, rgba(226, 245, 239, 0) 60%),
+      #fff;
+  }
+  .audit-run-head { display: flex; align-items: center; gap: 14px; }
+  .audit-run-glyph {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: #0b4541;
+    color: #5ad4ad;
+    box-shadow: 0 12px 26px -14px rgba(11, 69, 65, .8);
+  }
+  /* A ring that keeps expanding and fading: the audit is alive, not stuck. */
+  .audit-run-glyph::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid rgba(90, 212, 173, .5);
+    border-radius: 17px;
+    animation: audit-ring 1.8s ease-out infinite;
+  }
+  .audit-run-text { min-width: 0; flex: 1; }
+  .audit-run-title { margin: 0; font-size: 1rem; font-weight: 700; color: #102f40; }
+  .audit-run-sub { margin: 2px 0 0; font-size: .8125rem; line-height: 1.45; color: #647887; }
+  .audit-run-count {
+    flex: none;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #e2f5ef;
+    font-size: .75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #0b4541;
+  }
+
+  .audit-run-bar { height: 6px; overflow: hidden; border-radius: 999px; background: #e3efec; }
+  .audit-run-bar > i {
+    display: block;
+    width: var(--audit-pct, 0%);
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #3fc9a4, #12877f);
+    transition: width .35s ease;
+  }
+  /* Once the timed steps have run out the bar cannot know how far along the model is, so it
+     stops claiming progress and shimmers until the answer arrives. */
+  .audit-run-bar[data-waiting='true'] > i {
+    background: linear-gradient(90deg, #3fc9a4 0%, #a6ecd6 45%, #3fc9a4 90%);
+    background-size: 220% 100%;
+    animation: audit-sweep 1.4s linear infinite;
+  }
+
+  .audit-run .audit-steps { display: grid; gap: 0; }
+  .audit-run .audit-step {
+    position: relative;
+    min-height: 44px;
+    gap: 12px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    color: #8a99a5;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  /* The line joining this step's marker to the previous one. */
+  .audit-run .audit-step:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 21px;
+    width: 2px;
+    height: 100%;
+    background: #d5e8e2;
+  }
+  .audit-run .audit-step:is([data-state='done'], [data-state='active']):not(:first-child)::before { background: #3fc9a4; }
+  .audit-run .audit-step-no {
+    position: relative;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+    background: #eaf3f0;
+    color: #8a99a5;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  .audit-run .audit-step[data-state='done'] { color: #2d4657; }
+  .audit-run .audit-step[data-state='done'] .audit-step-no { background: #3fc9a4; color: #0b4541; }
+  .audit-run .audit-step[data-state='active'] {
+    background: linear-gradient(90deg, rgba(90, 212, 173, .16), rgba(90, 212, 173, 0));
+    font-weight: 600;
+    color: #102f40;
+  }
+  .audit-run .audit-step[data-state='active'] .audit-step-no {
+    background: #0b4541;
+    color: #5ad4ad;
+    animation: audit-marker 1.6s ease-in-out infinite;
+  }
+  .audit-step-label { min-width: 0; flex: 1; }
+  .audit-step-note {
+    flex: none;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #12877f;
+    animation: audit-breathe 1.6s ease-in-out infinite;
+  }
+
+  @keyframes audit-ring {
+    0% { transform: scale(.92); opacity: .9; }
+    100% { transform: scale(1.22); opacity: 0; }
+  }
+  @keyframes audit-sweep {
+    from { background-position: 100% 0; }
+    to { background-position: -120% 0; }
+  }
+  @keyframes audit-marker {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(18, 135, 127, .45); }
+    50% { box-shadow: 0 0 0 6px rgba(18, 135, 127, 0); }
+  }
+  @keyframes audit-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .35; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .audit-run-glyph::after,
+    .audit-run-bar[data-waiting='true'] > i,
+    .audit-run .audit-step[data-state='active'] .audit-step-no,
+    .audit-step-note { animation: none; }
+    .audit-run-bar > i { transition: none; }
+  }
+  @media (max-width: 480px) {
+    .audit-run { padding: 14px; }
+    .audit-run-count { display: none; }
+  }
+}
+
+/* Save draft: a filled primary button with its confirmation beside it; and the Drafts list's
+   thumbnails and "ready to publish" badges. */
+@layer components {
+  .sd-wrap { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .sd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: .875rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .sd-btn[data-state='saved'] { background: #12877f; }
+  .sd-btn[data-state='error'] { background: #a63f25; }
+  .sd-btn:disabled { cursor: not-allowed; opacity: .55; }
+  .sd-note { font-size: .75rem; font-weight: 600; color: #647887; }
+  .sd-note[data-tone='ok'] { color: #12877f; }
+  .sd-note[data-tone='warn'] { color: #a63f25; }
+
+  .ds-item-thumb {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #e3efec;
+  }
+  .ds-ready { margin: 4px 0 0; font-size: .75rem; font-weight: 700; color: #8a99a5; }
+  .ds-ready[data-ready='true'] {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #d3f5ed;
+    color: #0b4541;
+  }
+}
+
+/* Drafts drawer: the draft the work on screen is, and the "already saved" message. */
+@layer components {
+  .ds-current {
+    margin-left: 8px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #0b4541;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    vertical-align: middle;
+    color: #fff;
+  }
+  .ds-notice {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: #e2f5ef;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: #0b4541;
   }
 }

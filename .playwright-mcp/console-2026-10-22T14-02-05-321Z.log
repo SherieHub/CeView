@@ -1,0 +1,5 @@
+[     681ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=1309b7a0:20102
+[     841ms] [ERROR] Failed to load resource: the server responded with a status of 401 () @ http://localhost:8080/api/business-profile:0
+[     842ms] [ERROR] businessProfile.load failed ApiError: GET /api/business-profile failed with 401
+    at request (http://localhost:3001/services/apiClient.ts:83:19) @ http://localhost:3001/services/profileContext.tsx:55
+[    4240ms] [WARNING] The resource http://localhost:3001/images/landing/hero-cebu-coast-2400.avif was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3001/onboarding:0

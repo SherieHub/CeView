@@ -13,6 +13,7 @@ import { ApiError } from './apiError';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
 import { MOCK_NOTIFICATIONS } from './fixtures/notifications';
 import { MOCK_CONTENT, fixtureTranslation } from './fixtures/content';
+import { fixtureDrafts } from './fixtures/contentDrafts';
 import { MOCK_OMCS } from './fixtures/omcs';
 import { MOCK_CREATIVE_DIRECTION } from './fixtures/creativeDirection';
 import { MOCK_HISTORY, MOCK_REPORT } from './fixtures/campaign';
@@ -25,6 +26,10 @@ import {
   mockCampaignsFor,
   mockConnections,
   mockInsights,
+  mockInterests,
+  mockLimits,
+  mockMinimumBudget,
+  mockSaveLimits,
   mockSetCampaign,
 } from './fixtures/adConnections';
 import { mockCodes, mockLift, mockRedemptions, mockTracked } from './fixtures/attributionCodes';
@@ -34,6 +39,10 @@ import {
   mockUnconvertedClicks,
 } from './fixtures/attributionLinks';
 import type {
+  AdInterestOption,
+  AdMinimumBudget,
+  AdObjective,
+  AdSpendLimits,
   PublishedPost,
   PublishRequest,
   WorkspaceMemberFixture,
@@ -52,6 +61,9 @@ import type {
   ManualIngestResponse,
   PrescriptiveReport,
   ContentResponse,
+  EnsureForecastResult,
+  ContentDraft,
+  ContentDraftSummary,
   CaptionLanguage,
   CaptionLocalization,
   CaptionTranslation,
@@ -70,6 +82,12 @@ import type {
   MediaAssetDto,
   AttributionVoucher,
   VoucherRedemption,
+  AdCostRates,
+  AttributionCodeSummary,
+  AttributionRedemption,
+  LogBookingInput,
+  TrackedPeriodSummary,
+  AttributionLift,
 } from '../types';
 
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === 'true';
@@ -174,6 +192,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** A GET whose answer is a file, not JSON — with the same auth and error shape as request(). */
+async function requestBlob(path: string): Promise<Blob> {
+  const tokens = loadTokens();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {},
+  });
+  if (!res.ok) throw new ApiError({ status: res.status, method: 'GET', path });
+  return res.blob();
 }
 
 const EMPTY_BUSINESS_PROFILE_DTO: BusinessProfileDto = {
@@ -320,11 +348,17 @@ export const apiClient = {
      * (MOD22_PROFILE_NOT_READY) means onboarding isn't complete; the caller
      * is expected to route that through isProfileNotReady(), same as any
      * other screen's ApiErrorPanel.
+     *
+     * Answers `{ refreshed, generatedAt }`: whether the live pipeline just ran,
+     * and when the forecast was generated. An older backend sends something
+     * else (or nothing), which callers must treat as "unknown".
      */
     ensure: (maxAgeHours = 12) =>
       USE_FIXTURES
-        ? delay(undefined)
-        : request(`/api/forecasting/ensure?maxAgeHours=${maxAgeHours}`, { method: 'POST' }),
+        ? delay<EnsureForecastResult>({ refreshed: false, generatedAt: new Date().toISOString() })
+        : request<EnsureForecastResult | undefined>(`/api/forecasting/ensure?maxAgeHours=${maxAgeHours}`, {
+            method: 'POST',
+          }),
   },
   content: {
     /**
@@ -387,6 +421,49 @@ export const apiClient = {
             '/api/content/approve',
             { method: 'POST', body: JSON.stringify({ market }) },
           ),
+  },
+  /** Saved Content Studio drafts. The profile is the caller's own, from the JWT — no id is sent. */
+  contentDrafts: {
+    /** The market's auto-saved working draft, or null when there is none. */
+    getAuto: (market: string) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.getAuto(market))
+        : request<ContentDraft | undefined>(`/api/content/drafts/auto?market=${encodeURIComponent(market)}`).then(
+            (draft) => draft ?? null,
+          ),
+    saveAuto: (market: string, demandAlertId: string | null, payload: Record<string, unknown>) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.saveAuto(market, demandAlertId, payload))
+        : request<ContentDraft>(
+            `/api/content/drafts/auto?market=${encodeURIComponent(market)}${
+              demandAlertId ? `&demandAlertId=${encodeURIComponent(demandAlertId)}` : ''
+            }`,
+            { method: 'PUT', body: JSON.stringify({ payload }) },
+          ),
+    /** Named drafts for a market, newest first. */
+    list: (market: string) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.list(market))
+        : request<ContentDraftSummary[]>(`/api/content/drafts?market=${encodeURIComponent(market)}`),
+    get: (id: string) =>
+      USE_FIXTURES ? delay(fixtureDrafts.get(id)) : request<ContentDraft>(`/api/content/drafts/${id}`),
+    create: (market: string, demandAlertId: string | null, name: string, payload: Record<string, unknown>) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.create(market, demandAlertId, name, payload))
+        : request<ContentDraft>(
+            `/api/content/drafts?market=${encodeURIComponent(market)}${
+              demandAlertId ? `&demandAlertId=${encodeURIComponent(demandAlertId)}` : ''
+            }`,
+            { method: 'POST', body: JSON.stringify({ name, payload }) },
+          ),
+    update: (id: string, changes: { name?: string; payload?: Record<string, unknown> }) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.update(id, changes))
+        : request<ContentDraft>(`/api/content/drafts/${id}`, { method: 'PUT', body: JSON.stringify(changes) }),
+    remove: (id: string) =>
+      USE_FIXTURES
+        ? delay(fixtureDrafts.remove(id))
+        : request<void>(`/api/content/drafts/${id}`, { method: 'DELETE' }),
   },
   compliance: {
     /**
@@ -566,6 +643,16 @@ export const apiClient = {
             method: 'POST',
             body: JSON.stringify(dims),
           }),
+
+    /**
+     * The stored image's bytes, read through the API. A saved draft restores its picture from
+     * here: the asset's public URL is for outsiders (the social platforms) and may not be
+     * reachable from the browser at all. Images only; fixtures mode has no stored file.
+     */
+    content: (mediaId: string) =>
+      USE_FIXTURES
+        ? Promise.reject(new Error('no stored file in fixture mode'))
+        : requestBlob(`/api/media/${mediaId}/content`),
   },
 
   /**
@@ -629,6 +716,33 @@ export const apiClient = {
       USE_FIXTURES
         ? delay({ ok: true })
         : request(`/api/ad-connections/${provider}`, { method: 'DELETE' }),
+
+    /** The business's own daily and total ceilings for CeView-created Meta ads. */
+    limits: {
+      get: () =>
+        USE_FIXTURES
+          ? delay<AdSpendLimits>(mockLimits())
+          : request<AdSpendLimits>('/api/ad-connections/meta/limits'),
+      save: (maxDailyMinor: number, maxTotalMinor: number) =>
+        USE_FIXTURES
+          ? delay<AdSpendLimits>(mockSaveLimits(maxDailyMinor, maxTotalMinor))
+          : request<AdSpendLimits>('/api/ad-connections/meta/limits', {
+              method: 'PUT',
+              body: JSON.stringify({ maxDailyMinor, maxTotalMinor }),
+            }),
+    },
+
+    /** Meta's floor for one ad set's daily budget on the connected ad account (null when unknown). */
+    minimumBudget: (objective: AdObjective) =>
+      USE_FIXTURES
+        ? delay<AdMinimumBudget>(mockMinimumBudget(objective))
+        : request<AdMinimumBudget>(`/api/ad-connections/meta/minimum-budget?objective=${encodeURIComponent(objective)}`),
+
+    /** Searches Meta's own interest catalogue; the ids are what ad targeting uses. */
+    searchInterests: (query: string) =>
+      USE_FIXTURES
+        ? delay<AdInterestOption[]>(mockInterests(query), 150)
+        : request<AdInterestOption[]>(`/api/ad-connections/meta/interests?q=${encodeURIComponent(query)}`),
 
     /**
      * Pulls the period's metrics from every connected ad account. Synchronous
@@ -758,6 +872,17 @@ export const apiClient = {
       USE_FIXTURES
         ? delay<AttributionLift>(mockLift(attributionCodeId))
         : request<AttributionLift>(`/api/attribution/lift/${attributionCodeId}`),
+  },
+
+  vouchers: {
+    list: () => USE_FIXTURES
+      ? delay<AttributionVoucher[]>([])
+      : request<AttributionVoucher[]>('/api/attribution/vouchers'),
+    redeem: (codeId: string, grossRevenue: number) => USE_FIXTURES
+      ? Promise.reject(new Error('No voucher is available in fixture mode.'))
+      : request<VoucherRedemption>(`/api/attribution/vouchers/${encodeURIComponent(codeId)}/redeem`, {
+          method: 'POST', body: JSON.stringify({ grossRevenue }),
+        }),
   },
 
   workspace: {

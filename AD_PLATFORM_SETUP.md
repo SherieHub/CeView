@@ -69,14 +69,37 @@ amount of **real ad spend**.
 1. Go to [developers.facebook.com/apps](https://developers.facebook.com/apps/) →
    **Create App** → choose the **Business** app type → attach it to your
    Business Portfolio.
-2. In the app dashboard, **Add Product** → find **Marketing API** → add it.
-   This is the product that exposes ad account read access.
-3. Under App Review → Permissions and Features, request **`ads_read`**.
-   Until App Review approves it, only Business Portfolio
-   admins/testers/developers can grant this scope when connecting.
-4. **App ID** and **App Secret** are shown on the app dashboard's
+2. In the app dashboard, open **Use cases** → **Add use cases**. Meta apps
+   created since about 2024 no longer use "Add Product"; a permission is only
+   valid for login once a use case that includes it has been added. Add all
+   three of these (the app needs them together because CeView uses **one Meta
+   login for both ads reporting and publishing**):
+   - **Create & manage ads with Marketing API** — `ads_read`, `ads_management`,
+     `business_management`.
+   - **Manage everything on your Page** — `pages_show_list`,
+     `pages_read_engagement`, `pages_manage_posts`, `read_insights`.
+   - **Manage messaging & content on Instagram** (the **Facebook Login**
+     variant, not "Instagram Login") — `instagram_basic`,
+     `instagram_content_publish`, `instagram_manage_insights`.
+
+   For each use case, click **Customize** and confirm every permission above
+   is added under **Permissions and features**; adding the use case alone may
+   not enable each scope. Console labels change — follow the intent if a name
+   differs. The Threads and WhatsApp use cases are not needed.
+3. **Invalid Scopes error?** If the Meta consent screen says
+   `Invalid Scopes: pages_manage_posts, read_insights, instagram_basic, …`,
+   the scope names in `MetaAdsClient.java` are fine — the use cases in step 2
+   are missing from the app. See §11.
+4. **Use Development mode while testing.** Under **Publish** in the sidebar,
+   keep the app unpublished. Then **App roles → Roles**: add every account that
+   will connect as a **Tester** or **Developer**, and have each one accept the
+   invite (developers.facebook.com/requests). In Development mode, role-holders
+   can grant these permissions without App Review. A **Published** (Live) app
+   needs Advanced Access via App Review for the permissions above, and people
+   without a role cannot grant them.
+5. **App ID** and **App Secret** are shown on the app dashboard's
    **Settings → Basic** page. You'll put both into the backend's environment
-   in §7.
+   in §6.
 
 The original integration used v21.0; social publishing now defaults to **Graph API v25.0**
 (`https://graph.facebook.com/v25.0`). Meta versions its Graph API roughly
@@ -124,37 +147,71 @@ Both platforms redirect the browser back to a **public HTTPS URL** after
 consent — `localhost:8080` is not reachable from Meta's or TikTok's servers,
 so local development needs a tunnel in front of the backend.
 
-**This project uses a native, quick/ephemeral tunnel — run in its own
-terminal, not Docker.** cloudflared's *named*-tunnel mode (a stable hostname
-that survives restarts) needs a domain registered in a Cloudflare account,
-which costs money and isn't worth it for local dev; the quick-tunnel mode
-below is entirely free and needs nothing beyond the `cloudflared` CLI (or
-ngrok, if you prefer it) already being installed.
+**Recommended: an ngrok static domain.** It is free, permanent, and means you
+register the redirect URIs and set `OAUTH_REDIRECT_BASE_URL` **once**, instead
+of after every restart. (A cloudflared *named* tunnel also gives a stable
+hostname, but it needs a domain whose DNS is on Cloudflare — the tunnel itself
+is free, the domain is the cost. `ceview.online`'s DNS is on Route 53, so don't
+move it just for local dev.)
+
+One-time setup:
+
+1. Create an account at ngrok.com (free plan).
+2. Install and update the agent: `winget install ngrok.ngrok`, then
+   `ngrok update`. **Free accounts require agent 3.20.0 or newer** — an older
+   agent fails with `ERR_NGROK_121` ("agent version … is too old"). Check with
+   `ngrok version`.
+3. Add your authtoken (dashboard → Getting Started → Your Authtoken):
+   `ngrok config add-authtoken <token>`
+4. In the dashboard, go to **Domains** and create your free static domain. Copy
+   it exactly as shown — it looks like `<name>.ngrok-free.dev` (some accounts
+   get `.ngrok-free.app`). Don't append a second suffix.
+
+Each session, in its own terminal (not Docker):
+
+```powershell
+ngrok http --url=https://<your-domain>.ngrok-free.dev 8080
+```
+
+On agents older than 3.20 the flag is `--domain=<your-domain>.ngrok-free.dev`
+(hostname only, no `https://`); on current agents both `--url` and `--domain`
+work. Leave it running for the
+session. Your redirect base is then `https://<your-domain>.ngrok-free.dev`
+permanently — register it in §5 and set it in §6 once.
+
+**Alternative: a quick cloudflared tunnel** (free, no account, but the URL is
+random):
 
 ```powershell
 cloudflared tunnel --url http://localhost:8080
-# or, equivalently:
-ngrok http 8080
 ```
 
-Leave this running in its own terminal window for the duration of your
-session. It prints an HTTPS forwarding URL, e.g.
-`https://a1b2-c3d4.trycloudflare.com`. Copy it — you need it in §5 and §6.
+It prints an HTTPS URL such as `https://a1b2-c3d4.trycloudflare.com`.
 
-**⚠️ This URL is random and changes every time you restart the tunnel.** New
-day, laptop slept, terminal closed, tunnel dropped — any of those gives you a
-**new** URL, and you must:
+**⚠️ A quick tunnel's URL changes every time you restart it.** New day, laptop
+slept, terminal closed, tunnel dropped — any of those gives you a **new** URL,
+and you must:
 
 1. Re-register it as the redirect URI with Meta/TikTok (§5)
 2. Update `OAUTH_REDIRECT_BASE_URL` in `backend/.env` (§6)
 3. `docker compose up -d spring-boot` so the backend picks up the new value
    (env vars are only read at container start, not live)
 
-This is the single most common reason the walkthrough in §7 breaks between
-sessions — if OAuth suddenly stops working after previously working, this
-mismatch is the first thing to check: confirm what URL the tunnel is
+If OAuth suddenly stops working after previously working on a quick tunnel,
+this mismatch is the first thing to check: confirm what URL the tunnel is
 *currently* printing matches both what's registered with the platform and
-what `docker exec ceview-spring env | grep OAUTH_REDIRECT_BASE_URL` shows.
+what `docker exec ceview-spring env | grep OAUTH_REDIRECT_BASE_URL` shows. A
+static ngrok domain avoids the whole problem.
+
+**Meta only — `localhost` without any tunnel (unverified).** The OAuth
+redirect is performed by your browser, not by Meta's servers, and Meta has
+allowed `http://localhost` redirect URIs for apps in Development mode. If the
+dashboard accepts `http://localhost:8080/api/ad-connections/meta/callback`,
+you can set `OAUTH_REDIRECT_BASE_URL=http://localhost:8080` and skip the tunnel
+for connecting a Meta account. This has not been confirmed against this app and
+stops working once the app is Live. It does **not** cover TikTok, which
+requires HTTPS redirect URIs, and it does not make uploaded media reachable by
+Meta/Instagram/TikTok for publishing (see `MEDIA_PUBLIC_BASE_URL` in §6).
 
 ---
 
@@ -166,12 +223,21 @@ substituting your tunnel URL from §4 for `<tunnel>`:
 ```text
 https://<tunnel>/api/ad-connections/meta/callback
 https://<tunnel>/api/ad-connections/tiktok/callback
+https://<tunnel>/api/social-connections/tiktok/callback
 ```
 
 - Meta: App Dashboard → your app → **Facebook Login for Business** or
-  **Marketing API** settings → **Valid OAuth Redirect URIs**.
-- TikTok: Developer Portal → your app → **Basic Information** →
-  **Redirect URI** (sometimes called Callback URL).
+  **Marketing API** settings → **Valid OAuth Redirect URIs**. One Meta URI
+  serves both ads and publishing.
+- TikTok ads app: Developer Portal → your app → **Basic Information** →
+  **Redirect URI** (sometimes called Callback URL) → the `ad-connections`
+  URI.
+- TikTok publishing app (TikTok for Developers, separate from the ads app —
+  see `docs/SOCIAL_PUBLISHING_SETUP.md` §C): the `social-connections` URI.
+
+Both platforms accept several redirect URIs, so keep the production
+`https://api.ceview.online/...` entries alongside the tunnel ones — they don't
+conflict.
 
 **⚠️ A trailing slash or an `http://` scheme breaks this silently.** Both
 platforms compare the redirect URI **byte-for-byte** against what's
@@ -198,7 +264,8 @@ native). See `RUNNING.md` §5 for how those two paths differ.
 | `META_APP_SECRET` | Required to use Meta | `spring-boot` | Bound to `ceview.adplatform.meta.app-secret`. Same failure mode as `META_APP_ID` — both must be set together; Meta is considered "configured" only when neither is blank. |
 | `TIKTOK_APP_ID` | Required to use TikTok | `spring-boot` | Bound to `ceview.adplatform.tiktok.app-id`. Unset, TikTok's `/api/ad-connections/tiktok/*` endpoints return `503 AD_PROVIDER_NOT_CONFIGURED`, independently of Meta's configuration. |
 | `TIKTOK_APP_SECRET` | Required to use TikTok | `spring-boot` | Bound to `ceview.adplatform.tiktok.app-secret`. Same failure mode as `TIKTOK_APP_ID`. |
-| `OAUTH_REDIRECT_BASE_URL` | Required to use either provider | `spring-boot` | Bound to `ceview.adplatform.redirect-base-url`. This is your tunnel URL from §4 (no trailing slash) — it's prepended to `/api/ad-connections/{provider}/callback` to build the exact redirect URI both the authorize call and each platform's registered URI must match. Unset, the built redirect URI is malformed and the platform rejects the authorize request. |
+| `OAUTH_REDIRECT_BASE_URL` | Required to use either provider | `spring-boot` | Bound to `ceview.adplatform.redirect-base-url`. This is your tunnel URL from §4 (no trailing slash, **and no trailing space** — a trailing slash is stripped, but trailing whitespace is not, and Meta compares the URI byte-for-byte) — it's prepended to `/api/ad-connections/{provider}/callback` to build the exact redirect URI both the authorize call and each platform's registered URI must match. Unset, the built redirect URI is malformed and the platform rejects the authorize request. |
+| `MEDIA_PUBLIC_BASE_URL` | Needed for publishing | `spring-boot` | Origin used to build the public URL of every uploaded image/video. Meta ad delivery downloads ad images from it, and Instagram/TikTok fetch media from it. With `MEDIA_STORAGE=local` the files live on your machine, so this **must be your tunnel URL** (e.g. `https://<your-domain>.ngrok-free.dev`, no trailing slash) — leaving it on `https://ceview.online/` makes every upload point at a production URL where the file doesn't exist (broken image previews, failed delivery). Re-upload after changing it; existing uploads keep the URL stored at upload time. |
 | `FRONTEND_BASE_URL` | Has a default | `spring-boot` | Bound to `ceview.adplatform.frontend-base-url`; Spring's own internal default is `http://localhost:5173`, but this repo's `docker-compose.yml` overrides that to `http://localhost:3001` — the port `RUNNING.md` §4 actually runs the frontend on. Where the callback 302-redirects the browser back to (`/settings/platforms`) after storing or failing to store the grant. If you run the frontend on a different port, override this to match or the browser lands on a dead port after connecting. |
 | `TOKEN_ENCRYPTION_KEY` | Required before any token can be stored | `spring-boot` | Bound to `ceview.security.token-encryption-key`. Unset, the app **starts fine** and the OAuth authorize/consent screen still works, but the token-exchange step in the callback throws and the connection ends in a `token_exchange_failed` redirect — nothing is ever stored unencrypted. Generate a value with the command below. |
 
@@ -231,7 +298,9 @@ bytes — the command above always produces that; don't hand-edit the output.
 ## 7. Manual test walkthrough
 
 With the tunnel (§4), redirect URIs (§5), and env vars (§6) all in place,
-and the backend + frontend running (`RUNNING.md` §3–§4):
+and the backend + frontend running (`RUNNING.md` §3–§4). Social connections
+(Facebook Page / Instagram) need the Postgres path (Path A); the native H2
+path doesn't create their tables:
 
 1. **Open Settings → Platforms** in the frontend and click **Connect** next
    to Meta or TikTok. You're sent to the platform's OAuth consent screen.
@@ -415,7 +484,10 @@ include the rest of the API, add ad-connections to it too.
 
 | Symptom | Fix |
 |---|---|
-| Meta shows "URL blocked" / TikTok rejects the redirect with a generic invalid-redirect error | The registered redirect URI doesn't byte-for-byte match what the backend sent — almost always because the tunnel URL changed since you last registered it (§4). Copy the tunnel's current URL and re-register both callback URLs in §5. |
+| Meta shows "URL blocked" / TikTok rejects the redirect with a generic invalid-redirect error | The registered redirect URI doesn't byte-for-byte match what the backend sent — almost always because the tunnel URL changed since you last registered it (§4), or `OAUTH_REDIRECT_BASE_URL` has a trailing space or slash. Copy the tunnel's current URL, fix `.env`, and re-register the callback URLs in §5. |
+| Meta consent screen: `Invalid Scopes: pages_manage_posts, read_insights, instagram_basic, instagram_content_publish, instagram_manage_insights` | The Meta app is missing the Page and Instagram use cases (or their permissions aren't added under **Customize**). Add them per §2 step 2, and use Development mode with your account as a Tester (§2 step 4). The scope names in code are correct. |
+| `ngrok` fails with `unknown flag: --url`, or `ERR_NGROK_121` / "agent version is too old" | The installed agent is older than 3.20.0. Run `ngrok update` (or `winget upgrade ngrok.ngrok`, or reinstall from ngrok.com/download). Until then use `--domain=` instead of `--url=`. Also check the domain isn't doubled (`….ngrok-free.dev.ngrok-free.app`). |
+| A published post shows **Failed** with "The platform rejected delivery. Check the media and account permissions." | That text is generic: `DeliveryHttp.java` maps every Meta error that isn't an auth error (`190`, `102`) or rate limit (`4`, `17`, `32`) to it, and the real Meta error is not logged. First rule out the media URL — a broken image preview in the post detail means `MEDIA_PUBLIC_BASE_URL` is wrong (§6). Then retry with a **new** post after reconnecting Meta with the full permission set; a Failed post is not retried. Check that the chosen ad account is one the connected user administers and is in good standing. |
 | `invalid_state` in the `adconnect_error` query param on return | Either the 10-minute state TTL expired before you finished the consent screen, or the authorize link was opened twice (state tokens are single-use). Go back to Settings → Platforms and click Connect again from scratch. |
 | `503 AD_PROVIDER_NOT_CONFIGURED` from any `/api/ad-connections/{provider}/*` route | That provider's app id or secret is unset (or blank) in the backend's environment — see §6. Check with `echo $env:META_APP_ID` (or `TIKTOK_APP_ID`) in the same shell the backend was started from. |
 | The account picker (step 3 in §7) comes back empty | The OAuth grant succeeded but the connected user/business has no ad accounts visible to it. Create one in Meta Ads Manager or TikTok Ads Manager, then retry `GET /{provider}/accounts` (no need to redo the OAuth consent). |

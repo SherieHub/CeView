@@ -8,6 +8,7 @@ import { ApiError } from '../../../services/apiError';
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     campaign: {
       history: vi.fn(() => Promise.resolve(MOCK_HISTORY)),
       report: vi.fn(() => Promise.resolve(MOCK_REPORT)),
@@ -94,9 +95,9 @@ describe('CampaignAnalyticsView', () => {
 
     expect(screen.getByText(/log campaign performance/i)).toBeInTheDocument();
 
-    // Check evidence section is rendered
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
-    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
+    // The live panels also have headings; identify the containing sections by role.
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Statistical lift' })).toBeInTheDocument();
 
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
   });
@@ -137,8 +138,8 @@ describe('CampaignAnalyticsView', () => {
 
     // Evidence lives on its own tab now — one panel at a time.
     fireEvent.click(screen.getByRole('tab', { name: 'Attribution' }));
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
-    expect(screen.getByText('Statistical lift')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Statistical lift' })).toBeInTheDocument();
   });
 
   it('shows the server-computed PES score/label in the gauge when the ingest response has one', async () => {
@@ -233,7 +234,7 @@ describe('CampaignAnalyticsView', () => {
     expect(screen.queryByTestId('pes-trend-probe')).not.toBeInTheDocument();
     
     // Check evidence section is still rendered
-    expect(screen.getByText('Code-redemption evidence')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Code-redemption evidence' })).toBeInTheDocument();
   });
 
   it('shows one tab panel at a time and moves between tabs with the arrow keys', async () => {

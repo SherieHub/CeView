@@ -38,7 +38,8 @@ public class VoucherController {
     }
     private VoucherResponse response(AttributionCode c) { long used=redemptions.countByAttributionCodeIdAndSource(c.getAttributionCodeId(), AttributionRedemption.SOURCE_MANUAL);
         long remaining=c.getRedemptionLimit()==null ? -1 : Math.max(0,c.getRedemptionLimit()-used);
-        return new VoucherResponse(c.getAttributionCodeId(),c.getCode(),c.getDiscountAmount(),c.getRedemptionLimit(),used,remaining,c.getVoucherStatus()); }
+        String status = OffsetDateTime.now().isAfter(c.getWindowEnd()) ? "EXPIRED" : c.getVoucherStatus();
+        return new VoucherResponse(c.getAttributionCodeId(),c.getCode(),c.getDiscountAmount(),c.getRedemptionLimit(),used,remaining,status); }
     public record RedeemRequest(@NotNull BigDecimal grossRevenue, OffsetDateTime eventAt) { }
     public record CvLaunchRequest(@NotNull String category, @NotNull String targetMarket, @NotNull OffsetDateTime windowStart, @NotNull OffsetDateTime windowEnd) { }
     public record CreateVoucherRequest(@NotNull String code, @NotNull BigDecimal discountAmount, @NotNull Long redemptionLimit,

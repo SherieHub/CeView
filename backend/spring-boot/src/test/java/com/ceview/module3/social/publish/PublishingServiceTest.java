@@ -32,13 +32,14 @@ class PublishingServiceTest {
     final PlatformDeliveryClient delivery=mock(PlatformDeliveryClient.class);
     final TikTokDeliveryClient tiktok=mock(TikTokDeliveryClient.class);
     final TokenCipher cipher=mock(TokenCipher.class);
+    final AdPolicy adPolicy=mock(AdPolicy.class);
     final PlatformTransactionManager tm=mock(PlatformTransactionManager.class);
     PublishingService service;
     MediaAsset asset;
     PublishingAccount account;
     @BeforeEach void setup() {
         when(tm.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
-        service=new PublishingService(posts,media,storage,accounts,connections,content,links,ads,delivery,tiktok,cipher,tm,new ObjectMapper().findAndRegisterModules());
+        service=new PublishingService(posts,media,storage,accounts,connections,content,links,ads,delivery,tiktok,cipher,adPolicy,tm,new ObjectMapper().findAndRegisterModules());
         asset=new MediaAsset(); asset.setMediaId(mediaId); asset.setBusinessProfileId(profile); asset.setKind("image");
         asset.setContentType("image/jpeg"); asset.setStatus("READY"); asset.setStorageKey("owned.jpg"); asset.setSizeBytes(42);
         when(media.findByMediaIdAndBusinessProfileId(mediaId,profile)).thenReturn(Optional.of(asset));
@@ -110,6 +111,61 @@ class PublishingServiceTest {
     @Test void ambiguousFailureNeverRetriesAndNeverLeaksToken() {
         SocialPost p=post(); when(delivery.deliver(eq(p),any(),any(),any(),any())).thenThrow(new IllegalStateException("secret URL access_token=secret"));
         service.deliverClaimed(p); assertThat(p.getStatus()).isEqualTo("FAILED"); assertThat(p.getErrorMessage()).doesNotContain("secret");
+    }
+    /** A connected Facebook Page and an ACTIVE Meta ad account with ad permission, for the paid-ad path. */
+    void arrangePaidAd(AdOptions ad,AdPolicy.AdPlan plan) {
+        PublishingAccount page=new PublishingAccount(); page.setAccountId(UUID.randomUUID()); page.setBusinessProfileId(profile);
+        page.setPlatform("facebook"); page.setExternalId("page-1"); page.setStatus("ACTIVE"); page.setAccessTokenEncrypted("ciphertext");
+        when(accounts.findByBusinessProfileIdAndPlatform(profile,"facebook")).thenReturn(Optional.of(page));
+        when(connections.list(profile)).thenReturn(List.of(new SocialDtos.SocialConnectionView("facebook",true,"ACTIVE","Page",null)));
+        var link=new com.ceview.module4.attribution.link.AttributionLink(); link.setSlug("kr-slug");
+        when(links.findByLinkIdAndBusinessProfileId(ad.attributionLinkId(),profile)).thenReturn(Optional.of(link));
+        var connection=new com.ceview.module4.adconnections.AdPlatformConnection(); connection.setStatus("ACTIVE");
+        connection.setExternalAccountId("act_123"); connection.setScopes("ads_management,ads_read");
+        when(ads.findByBusinessProfileIdAndProvider(profile,"meta")).thenReturn(Optional.of(connection));
+        when(adPolicy.plan(eq(profile),eq(connection),eq(ad),any())).thenReturn(plan);
+    }
+    PublishRequest adRequest(AdOptions ad,String market) {
+        return new PublishRequest(UUID.randomUUID(),List.of("meta_ads"),Map.of("meta_ads","Ad caption"),mediaId,null,market,"public",null,true,ad);
+    }
+    @Test void paidAdIsStoredWithTheTargetingThePolicyDerivedNotWhatTheClientCouldSend() {
+        AdOptions ad=new AdOptions("OUTCOME_ENGAGEMENT",10_000,OffsetDateTime.now().plusHours(2),14,
+                List.of(new AdInterest("6003020834693","Scuba diving")),true,UUID.randomUUID(),true);
+        OffsetDateTime end=ad.startTime().plusDays(14);
+        arrangePaidAd(ad,new AdPolicy.AdPlan("KR","26","[{\"id\":\"6003020834693\",\"name\":\"Scuba diving\"}]",end));
+
+        service.publish(profile,adRequest(ad,"korea"));
+
+        var saved=org.mockito.ArgumentCaptor.forClass(List.class); verify(posts).saveAllAndFlush(saved.capture());
+        SocialPost post=(SocialPost)saved.getValue().get(0);
+        assertThat(post.getPlatform()).isEqualTo("meta_ads"); assertThat(post.getAdObjective()).isEqualTo("OUTCOME_ENGAGEMENT");
+        assertThat(post.getAdDailyBudgetMinor()).isEqualTo(10_000L); assertThat(post.getAdStartTime()).isEqualTo(ad.startTime());
+        assertThat(post.getAdEndTime()).isEqualTo(end); assertThat(post.getAdCountries()).isEqualTo("KR");
+        assertThat(post.getAdLocales()).isEqualTo("26"); assertThat(post.getAdInterestsJson()).contains("Scuba diving");
+        assertThat(post.isAdAdvantageAudience()).isTrue(); assertThat(post.getAttributionSlug()).isEqualTo("kr-slug");
+        assertThat(post.getAdAccountExternalId()).isEqualTo("123"); assertThat(post.isPinCampaign()).isTrue();
+    }
+    @Test void aPolicyRejectionStopsPublishingBeforeAnyPostIsCreated() {
+        AdOptions ad=new AdOptions("OUTCOME_TRAFFIC",10,OffsetDateTime.now().plusHours(2),14,List.of(),false,UUID.randomUUID(),false);
+        arrangePaidAd(ad,null);
+        when(adPolicy.plan(eq(profile),any(),eq(ad),any())).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,"Daily budget must be more than PHP 63.32"));
+
+        assertThatThrownBy(() -> service.publish(profile,adRequest(ad,"korea")))
+                .isInstanceOfSatisfying(ResponseStatusException.class,e -> assertThat(e.getReason()).contains("PHP 63.32"));
+        verify(posts,never()).saveAllAndFlush(any()); verifyNoInteractions(delivery);
+    }
+    @Test void platformExplanationIsStoredOnAFailedPostSoTheOperatorCanActOnIt() {
+        SocialPost p=post(); when(delivery.deliver(eq(p),any(),any(),any(),any()))
+                .thenThrow(new DeliveryException("The platform rejected delivery. Check the media and account permissions.",false,false,"Your ad set budget must be more than PHP63.32"));
+        service.deliverClaimed(p);
+        assertThat(p.getStatus()).isEqualTo("FAILED");
+        assertThat(p.getErrorMessage()).isEqualTo("The platform rejected delivery: Your ad set budget must be more than PHP63.32");
+    }
+    @Test void authFailureKeepsItsReconnectMessageEvenWithAPlatformExplanation() {
+        SocialPost p=post(); when(delivery.deliver(eq(p),any(),any(),any(),any()))
+                .thenThrow(new DeliveryException("Reconnect this platform account to publish.",true,false,"Session expired"));
+        service.deliverClaimed(p);
+        assertThat(p.getErrorMessage()).isEqualTo("Reconnect this platform account to publish.");
     }
     @Test void authFailureMarksAccountReconnect() {
         SocialPost p=post(); when(delivery.deliver(eq(p),any(),any(),any(),any())).thenThrow(new DeliveryException("Reconnect",true,false));

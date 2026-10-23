@@ -1,9 +1,44 @@
-import { render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PublishModal, { PREVIEW_FIT_MARGIN } from './PublishModal';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
+import type { AdConnection, AdInterestOption, AdMinimumBudget, AdSpendLimits, AttributionLink, PublishAd } from '../../../types';
+
+// The paid-ad panel reads the ad account, spending limits, Meta's minimum budget and interest search.
+// Defaults describe a business that is fully set up; the paid-ad cases change one thing at a time.
+const adListMock = vi.fn();
+const limitsGetMock = vi.fn();
+const minimumMock = vi.fn();
+const interestsMock = vi.fn();
+const linksListMock = vi.fn();
+vi.mock('../../../services/apiClient', () => ({
+  apiClient: {
+    adConnections: {
+      list: () => adListMock(),
+      limits: { get: () => limitsGetMock() },
+      minimumBudget: (...args: unknown[]) => minimumMock(...args),
+      searchInterests: (...args: unknown[]) => interestsMock(...args),
+    },
+    attributionLinks: { list: () => linksListMock() },
+  },
+}));
+
+const META: AdConnection = {
+  provider: 'meta', configured: true, status: 'ACTIVE', accountName: 'Cebu Dive Ads', currency: 'PHP',
+  campaignId: null, campaignName: null, connectedAt: null, lastSyncedAt: null,
+};
+const LIMITS: AdSpendLimits = { configured: true, currency: 'PHP', maxDailyMinor: 50_000, maxTotalMinor: 1_000_000, committedMinor: 0 };
+const MINIMUM: AdMinimumBudget = { currency: 'PHP', minDailyMinor: 6332 };
+const LINK = { linkId: 'link-1', targetMarket: 'korea', category: 'Diving', windowStart: '2026-11-01T00:00:00Z' } as AttributionLink;
+const SCUBA: AdInterestOption = { id: '6003020834693', name: 'Scuba diving', path: 'Interests › Sports' };
+const SNORKEL: AdInterestOption = { id: '6003139266461', name: 'Snorkeling', path: 'Interests › Sports' };
+const PAID_AD: PublishAd = {
+  objective: 'OUTCOME_TRAFFIC', dailyBudgetMinor: 10_000, startTime: new Date(Date.now() + 2 * 3_600_000).toISOString(), durationDays: 14,
+  interests: [], advantageAudience: false, attributionLinkId: 'link-1', pinCampaign: false,
+};
 
 const DRAFT: PublishDraftState = {
   caption: 'A staged caption', mediaDataUrl: 'data:image/png;base64,x', platforms: ['instagram'],
@@ -24,9 +59,17 @@ vi.mock('../../../services/connectionsStore', () => ({
 
 beforeEach(() => {
   mockIsConnected = () => true;
+  adListMock.mockReset().mockResolvedValue([META]);
+  limitsGetMock.mockReset().mockResolvedValue(LIMITS);
+  minimumMock.mockReset().mockResolvedValue(MINIMUM);
+  interestsMock.mockReset().mockResolvedValue([]);
+  linksListMock.mockReset().mockResolvedValue([LINK]);
 });
 
-function setup(over: Partial<PublishDraftState> = {}, onConfirm = vi.fn(), onDraftChange = vi.fn()) {
+function setup(
+  over: Partial<PublishDraftState> = {}, onConfirm = vi.fn(), onDraftChange = vi.fn(),
+  extra: { market?: string; windowOpenDate?: string | null; interestSeeds?: string[] } = {},
+) {
   // Spreads the render result so cases can reach `container` as well as the
   // spies — the DOM assertions below query by class, which screen cannot do.
   const view = render(
@@ -37,11 +80,27 @@ function setup(over: Partial<PublishDraftState> = {}, onConfirm = vi.fn(), onDra
         onDraftChange={onDraftChange}
         onClose={vi.fn()}
         onConfirm={onConfirm}
+        {...extra}
       />
     </OverlayStackProvider>,
   );
   return { ...view, onConfirm, onDraftChange };
 }
+
+/** Keeps the draft in state, so a change made in the panel shows up in it (the real parent does this). */
+function Harness({ ad, market = 'korea', seeds = [] }: { ad: PublishAd; market?: string; seeds?: string[] }) {
+  const [draft, setDraft] = useState<PublishDraftState>({ ...DRAFT, agreementChecked: true, paidPartnership: true, ad });
+  return (
+    <OverlayStackProvider>
+      <PublishModal
+        open draft={draft} onDraftChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+        onClose={vi.fn()} onConfirm={vi.fn()} market={market} interestSeeds={seeds}
+      />
+      <output data-testid="ad">{JSON.stringify(draft.ad)}</output>
+    </OverlayStackProvider>
+  );
+}
+const savedAd = (): PublishAd => JSON.parse(screen.getByTestId('ad').textContent ?? '{}');
 
 describe('PublishModal', () => {
   // Three steps, left to right: the options, their consequence, the sign-off.
@@ -162,7 +221,9 @@ describe('PublishModal', () => {
     await userEvent.click(screen.getByRole('radio', { name: 'private' }));
     expect(screen.getByRole('radio', { name: 'private' })).toBeDisabled();
 
-    await userEvent.click(screen.getByRole('checkbox', { name: /Run as Paid Ad/ }));
+    const paid = screen.getByRole('checkbox', { name: /Run as Paid Ad/ });
+    await waitFor(() => expect(paid).toBeEnabled());
+    await userEvent.click(paid);
     expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({ paidPartnership: true, visibility: 'public', ad: expect.objectContaining({ objective: 'OUTCOME_TRAFFIC' }) }));
   });
 
@@ -363,13 +424,251 @@ describe('publishing validation', () => {
     setup({ platforms: ['facebook'] });
     expect(screen.getByRole('radio', { name: 'private' })).toBeDisabled();
   });
-  it('blocks a paid ad without complete budget and attribution details', () => {
-    setup({ agreementChecked: true, paidPartnership: true, ad: { objective: 'OUTCOME_TRAFFIC', dailyBudgetMinor: 0, startTime: new Date(Date.now() + 3600000).toISOString(), endTime: new Date(Date.now() + 86400000).toISOString(), countries: ['PH'], attributionLinkId: '', pinCampaign: false } });
+  it('blocks a paid ad without complete budget and attribution details', async () => {
+    setup({ agreementChecked: true, paidPartnership: true, ad: { ...PAID_AD, dailyBudgetMinor: 0, attributionLinkId: '' } }, vi.fn(), vi.fn(), { market: 'korea' });
     expect(screen.getByRole('button', { name: 'Confirm & Publish' })).toBeDisabled();
-    expect(screen.getByText(/Enter a positive budget/)).toBeInTheDocument();
+    expect(await screen.findByText(/Enter a daily budget above zero/)).toBeInTheDocument();
+    expect(screen.getByText(/Choose a campaign tracking link/)).toBeInTheDocument();
   });
   it('explains the TikTok video inbox handoff', () => {
     setup({ platforms: ['tiktok'], mediaType: 'video' });
     expect(screen.getByText(/Video drafts do not include the caption/)).toBeInTheDocument();
   });
 });
+
+describe('paid Meta ad: who may run one', () => {
+  it('blocks the paid tick until the business has saved its spending limits, and points to Settings', async () => {
+    limitsGetMock.mockResolvedValue({ ...LIMITS, configured: false, maxDailyMinor: null, maxTotalMinor: null });
+    setup();
+    expect(await screen.findByText(/set your ad spending limits/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Run as Paid Ad/ })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Open Settings' })).toHaveAttribute('href', '/settings/platforms');
+  });
+
+  it('blocks the paid tick without a connected Meta ad account', async () => {
+    adListMock.mockResolvedValue([]);
+    limitsGetMock.mockRejectedValue(new Error('409'));
+    setup();
+    expect(await screen.findByText(/connect a meta ad account in settings/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Run as Paid Ad/ })).toBeDisabled();
+  });
+
+  it('starts the ad at the surge window, for 14 days, with no interests and no widening', async () => {
+    const { onDraftChange } = setup({}, vi.fn(), vi.fn(), { windowOpenDate: '2099-01-01T00:00:00Z', market: 'korea' });
+    const paid = screen.getByRole('checkbox', { name: /Run as Paid Ad/ });
+    await waitFor(() => expect(paid).toBeEnabled());
+    await userEvent.click(paid);
+    expect(onDraftChange).toHaveBeenCalledWith(expect.objectContaining({
+      paidPartnership: true,
+      ad: expect.objectContaining({
+        objective: 'OUTCOME_TRAFFIC', startTime: '2099-01-01T00:00:00.000Z', durationDays: 14,
+        interests: [], advantageAudience: false, pinCampaign: false,
+      }),
+    }));
+  });
+
+  it('lets an already-ticked draft be unticked even if the limits have since gone', async () => {
+    limitsGetMock.mockResolvedValue({ ...LIMITS, configured: false, maxDailyMinor: null, maxTotalMinor: null });
+    setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'korea' });
+    expect(screen.getByRole('checkbox', { name: /Run as Paid Ad/ })).toBeEnabled();
+    expect(await screen.findByText(/set your ad spending limits/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirm & Publish' })).toBeDisabled();
+  });
+});
+
+describe('paid Meta ad: the fields', () => {
+  it('shows the audience the forecast fixes, with no country box to type into', async () => {
+    const { container } = setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'korea' });
+    const panel = container.querySelector('.pubx-ad') as HTMLElement;
+    const audience = within(panel).getByRole('group', { name: 'Audience' });
+    expect(audience).toHaveTextContent('South Korea');
+    expect(audience).toHaveTextContent('People using Facebook in Korean');
+    expect(within(panel).queryByLabelText(/^Countries/)).toBeNull();
+    expect(within(panel).queryByLabelText(/Ad ends/)).toBeNull();
+    for (const name of [/^Objective/, /^Daily budget/, /^Ad starts/, /^Campaign tracking link/]) {
+      expect(within(panel).getByLabelText(name)).toBeTruthy();
+    }
+    expect(within(panel).getByRole('checkbox', { name: /Performance reports/ })).toBeTruthy();
+    expect(within(panel).getByRole('checkbox', { name: /Advantage\+ audience/ })).not.toBeChecked();
+  });
+
+  it('offers Traffic, Awareness and Engagement', () => {
+    setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'korea' });
+    const options = within(screen.getByLabelText(/^Objective/)).getAllByRole('option').map((o) => o.textContent);
+    expect(options).toEqual(['Traffic', 'Awareness', 'Engagement']);
+  });
+
+  it('says the USA has no language limit and Japan is Japanese', () => {
+    const { unmount } = setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'usa' });
+    expect(screen.getByRole('group', { name: 'Audience' })).toHaveTextContent('No language limit');
+    unmount();
+    setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'japan' });
+    expect(screen.getByRole('group', { name: 'Audience' })).toHaveTextContent('People using Facebook in Japanese');
+  });
+
+  it('shows Meta\'s minimum and the daily limit beside the budget once they are known', async () => {
+    setup({ paidPartnership: true, ad: PAID_AD }, vi.fn(), vi.fn(), { market: 'korea' });
+    expect(await screen.findByText(/Meta's minimum: more than .*63\.32/)).toBeInTheDocument();
+    expect(screen.getByText(/Your daily limit: .*500\.00/)).toBeInTheDocument();
+    expect(minimumMock).toHaveBeenCalledWith('OUTCOME_TRAFFIC');
+  });
+
+  it('asks Meta for the new minimum when the objective changes', async () => {
+    render(<Harness ad={PAID_AD} />);
+    await waitFor(() => expect(minimumMock).toHaveBeenCalledWith('OUTCOME_TRAFFIC'));
+    await userEvent.selectOptions(screen.getByLabelText(/^Objective/), 'OUTCOME_AWARENESS');
+    await waitFor(() => expect(minimumMock).toHaveBeenCalledWith('OUTCOME_AWARENESS'));
+    expect(savedAd().objective).toBe('OUTCOME_AWARENESS');
+  });
+});
+
+describe('paid Meta ad: constraints stop invalid input', () => {
+  const alerts = () => screen.getByRole('alert');
+  const confirm = () => screen.getByRole('button', { name: 'Confirm & Publish' });
+  // The budget hint appears once Meta's minimum has loaded (the alert below it can quote it too).
+  const settled = async () => { await screen.findByText(/Meta's minimum: more than/); };
+
+  it('lets a valid ad through', async () => {
+    render(<Harness ad={PAID_AD} />);
+    await settled();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(confirm()).toBeEnabled();
+  });
+
+  it('refuses a budget at or below Meta\'s minimum, the ₱10 that Meta rejected before', async () => {
+    render(<Harness ad={{ ...PAID_AD, dailyBudgetMinor: 1000 }} />);
+    await settled();
+    expect(alerts()).toHaveTextContent(/more than .*63\.32/);
+    expect(confirm()).toBeDisabled();
+  });
+
+  it('refuses a daily budget above the business\'s daily limit', async () => {
+    render(<Harness ad={{ ...PAID_AD, dailyBudgetMinor: 50_001, durationDays: 1 }} />);
+    await settled();
+    expect(alerts()).toHaveTextContent(/daily limit of .*500\.00/);
+    expect(confirm()).toBeDisabled();
+  });
+
+  it('refuses a total above what is left of the total limit, counting ads already running', async () => {
+    limitsGetMock.mockResolvedValue({ ...LIMITS, committedMinor: 900_000 });
+    render(<Harness ad={{ ...PAID_AD, dailyBudgetMinor: 10_000, durationDays: 14 }} />); // 140,000 > 100,000 left
+    await settled();
+    expect(alerts()).toHaveTextContent(/total limit/);
+    expect(confirm()).toBeDisabled();
+  });
+
+  it('refuses a start that is not in the future', async () => {
+    render(<Harness ad={{ ...PAID_AD, startTime: new Date(Date.now() - 60_000).toISOString() }} />);
+    await settled();
+    expect(alerts()).toHaveTextContent(/must start in the future/);
+    expect(confirm()).toBeDisabled();
+  });
+
+  it('refuses a market CeView has no forecast for', async () => {
+    render(<Harness ad={PAID_AD} market="philippines" />);
+    await settled();
+    expect(alerts()).toHaveTextContent(/forecast market/);
+    expect(confirm()).toBeDisabled();
+  });
+});
+
+describe('paid Meta ad: how long it runs', () => {
+  const confirm = () => screen.getByRole('button', { name: 'Confirm & Publish' });
+
+  it('picks 14, 30 or 90 days and shows the end date and the total', async () => {
+    render(<Harness ad={PAID_AD} />);
+    await screen.findByText(/Meta's minimum: more than/);
+    expect(screen.getByRole('radio', { name: '14 days' })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: '30 days' }));
+    expect(savedAd().durationDays).toBe(30);
+    expect(screen.getByText(/Ends .* about .*3,000\.00 in total/i)).toBeInTheDocument();
+  });
+
+  it('accepts any whole number of days from a custom box', async () => {
+    render(<Harness ad={PAID_AD} />);
+    await screen.findByText(/Meta's minimum: more than/);
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    const days = screen.getByRole('spinbutton', { name: 'Number of days' });
+    await userEvent.clear(days);
+    await userEvent.type(days, '7');
+    expect(savedAd().durationDays).toBe(7);
+    expect(confirm()).toBeEnabled();
+  });
+
+  it('refuses an empty, zero or fractional number of days', async () => {
+    render(<Harness ad={PAID_AD} />);
+    await screen.findByText(/Meta's minimum: more than/);
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    const days = screen.getByRole('spinbutton', { name: 'Number of days' });
+    for (const bad of ['', '0', '2.5']) {
+      await userEvent.clear(days);
+      if (bad) await userEvent.type(days, bad);
+      expect(screen.getByRole('alert')).toHaveTextContent(/number of days/i);
+      expect(confirm()).toBeDisabled();
+    }
+  });
+
+  it('starts on Custom when the saved draft has an unusual length', () => {
+    render(<Harness ad={{ ...PAID_AD, durationDays: 45 }} />);
+    expect(screen.getByRole('radio', { name: 'Custom' })).toBeChecked();
+    expect(screen.getByRole('spinbutton', { name: 'Number of days' })).toHaveValue(45);
+  });
+});
+
+describe('paid Meta ad: interests', () => {
+  it('suggests interests drawn from the business, and adds one on a click', async () => {
+    interestsMock.mockResolvedValue([SCUBA]);
+    render(<Harness ad={PAID_AD} seeds={['Scuba Diving']} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: '+ Scuba diving' }));
+
+    expect(savedAd().interests).toEqual([{ id: SCUBA.id, name: 'Scuba diving' }]);
+    expect(within(screen.getByRole('list', { name: 'Chosen interests' })).getByText('Scuba diving')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '+ Scuba diving' })).toBeNull();
+  });
+
+  it('removes a chosen interest', async () => {
+    render(<Harness ad={{ ...PAID_AD, interests: [{ id: SCUBA.id, name: 'Scuba diving' }] }} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Scuba diving' }));
+    expect(savedAd().interests).toEqual([]);
+  });
+
+  it('searches Meta\'s catalogue as the operator types, and adds a result', async () => {
+    interestsMock.mockImplementation(async (q: string) => (q === 'snorkel' ? [SNORKEL] : []));
+    render(<Harness ad={PAID_AD} />);
+
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search Meta interests' }), 'snorkel');
+    await userEvent.click(await screen.findByRole('button', { name: 'Add Snorkeling' }));
+
+    expect(interestsMock).toHaveBeenCalledWith('snorkel');
+    expect(savedAd().interests).toEqual([{ id: SNORKEL.id, name: 'Snorkeling' }]);
+  });
+
+  it('says when the search finds nothing and when it fails', async () => {
+    render(<Harness ad={PAID_AD} />);
+    const box = screen.getByRole('searchbox', { name: 'Search Meta interests' });
+    await userEvent.type(box, 'zzzz');
+    expect(await screen.findByText('No interests found.')).toBeInTheDocument();
+
+    interestsMock.mockRejectedValue(new Error('502'));
+    await userEvent.clear(box);
+    await userEvent.type(box, 'diving');
+    expect(await screen.findByText(/could not search meta interests/i)).toBeInTheDocument();
+  });
+
+  it('stops at ten interests', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => ({ id: String(6000 + i), name: `Interest ${i}` }));
+    render(<Harness ad={{ ...PAID_AD, interests: ten }} />);
+    expect(screen.getByRole('searchbox', { name: 'Search Meta interests' })).toBeDisabled();
+    expect(screen.getByText(/most Meta allows \(10\)/)).toBeInTheDocument();
+  });
+
+  it('lets Meta widen the audience only when the operator ticks Advantage+', async () => {
+    render(<Harness ad={PAID_AD} />);
+    const box = screen.getByRole('checkbox', { name: /Advantage\+ audience/ });
+    expect(box).not.toBeChecked();
+    await userEvent.click(box);
+    expect(savedAd().advantageAudience).toBe(true);
+  });
+});
+

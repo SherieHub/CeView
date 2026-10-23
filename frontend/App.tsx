@@ -11,6 +11,8 @@ import { ObDraftProvider, DEMO_OB_DRAFT } from './components/module-1/onboarding
 import { PostStoreProvider } from './services/postStore';
 import { ConnectionsStoreProvider } from './services/connectionsStore';
 import { TargetSelectionProvider } from './services/targetSelectionStore';
+import { UnreadAlertsProvider } from './services/unreadAlertsStore';
+import { ForecastStoreProvider } from './services/forecastStore';
 import { DEMO_PROFILE } from './services/fixtures/profile';
 import type { DashMode } from './components/module-2/2.1-dashboard/useDashboardState';
 import { DEMO_DRAFT, DEMO_BOARD_POSTS, DEMO_TARGET } from './components/module-3/3.1-content-studio/previewFixtures';
@@ -224,13 +226,20 @@ const router = createBrowserRouter([
               },
               {
                 element: (
-                  <PostStoreProvider>
-                    <ConnectionsStoreProvider>
-                      <TargetSelectionProvider>
-                        <AppShell />
-                      </TargetSelectionProvider>
-                    </ConnectionsStoreProvider>
-                  </PostStoreProvider>
+                  <UnreadAlertsProvider>
+                    <PostStoreProvider>
+                      <ConnectionsStoreProvider>
+                        <TargetSelectionProvider>
+                          {/* Loads the forecast as soon as the operator is in the app (right
+                              after login) and keeps it across navigation; AuthGate unmounts it
+                              on logout. Also publishes the sidebar's unread badge. */}
+                          <ForecastStoreProvider>
+                            <AppShell />
+                          </ForecastStoreProvider>
+                        </TargetSelectionProvider>
+                      </ConnectionsStoreProvider>
+                    </PostStoreProvider>
+                  </UnreadAlertsProvider>
                 ),
                 // No `{ index: true, ... }` route here on purpose. AuthGate,
                 // ProfileCompletionGate, ProfileGate and this providers-wrapper

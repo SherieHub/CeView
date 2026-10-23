@@ -66,3 +66,19 @@ export async function uploadMedia(file: File, dims: MediaDimensions = {}): Promi
     throw new Error(GENERIC_FAILURE);
   }
 }
+
+/**
+ * A previously uploaded image as a data URL — the form a freshly picked picture is held in, so a
+ * restored one behaves identically everywhere (preview, voucher overlay, publish, the audit).
+ * Read through the API rather than the asset's public URL, which the browser may not be able to
+ * load. Rejects if the file cannot be read.
+ */
+export async function loadStoredImage(mediaId: string): Promise<string> {
+  const blob = await apiClient.media.content(mediaId);
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}

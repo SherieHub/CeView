@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AttributionCaptureServiceTest {
 
     @Autowired private AttributionCodeService codeService;
+    @Autowired private VoucherRedemptionService voucherService;
     @Autowired private AttributionRedemptionService redemptionService;
     @Autowired private AttributionCodeRepository codeRepo;
     @Autowired private AttributionRedemptionRepository redemptionRepo;
@@ -35,6 +36,34 @@ class AttributionCaptureServiceTest {
     @Autowired private AttributionClickRepository clickRepo;
     @Autowired private AttributionLinkRepository linkRepo;
     @Autowired private BusinessProfileRepository profileRepo;
+
+    @Test
+    void vouchersCannotBypassLimitsThroughGenericBookingCapture() {
+        var voucher = codeService.createCvLaunch(profileId, "Diving", "korea", now.minusDays(1), now.plusDays(1));
+        var error = org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> redemptionService.logBooking(profileId, new LogBookingRequest(
+                        voucher.getAttributionCodeId(), null, 1, java.math.BigDecimal.TEN, null)));
+        assertEquals(409, error.getStatusCode().value());
+        assertEquals(0, redemptionRepo.count());
+    }
+
+    @Test
+    void undoingTheLastVoucherRedemptionRestoresCapacity() {
+        var voucher = codeService.createVoucher(profileId, "ONE", java.math.BigDecimal.TEN,
+                1L, "Diving", "korea", now.minusDays(1), now.plusDays(1));
+        voucherService.redeem(profileId, voucher.getAttributionCodeId(), java.math.BigDecimal.TEN, null);
+        assertEquals("EXHAUSTED", codeRepo.findById(voucher.getAttributionCodeId()).orElseThrow().getVoucherStatus());
+        redemptionService.delete(profileId, redemptionService.recent(profileId).get(0).redemptionId());
+        assertEquals("ACTIVE", codeRepo.findById(voucher.getAttributionCodeId()).orElseThrow().getVoucherStatus());
+        assertEquals(0, voucherService.redeem(profileId, voucher.getAttributionCodeId(), java.math.BigDecimal.TEN, null).redemptionsRemaining());
+    }
+
+    @Test
+    void voucherDoesNotReplaceTheSurgeTrackingCodeInGeneratedCaptions() {
+        codeService.createCvLaunch(profileId, "Diving", "korea", now.minusDays(1), now.plusDays(1));
+        assertTrue(codeService.findForContent(profileId, "korea", "Diving", null).isEmpty());
+    }
 
     private UUID profileId;
     private final OffsetDateTime now = OffsetDateTime.now();

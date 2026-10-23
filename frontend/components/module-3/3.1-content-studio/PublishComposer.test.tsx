@@ -209,6 +209,24 @@ describe('PublishComposer — media upload', () => {
     ));
   });
 
+  it('does not report a finished upload once the composer has gone', async () => {
+    // The studio re-mounts the composer for another market or draft; an upload still in flight
+    // from the old one must not land its media on the new work.
+    let finish!: (value: unknown) => void;
+    uploadMediaMock.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    const { input, onDraftChange, unmount } = renderMediaComposer();
+
+    await userEvent.upload(input, new File([new Uint8Array([1, 2, 3])], 'a.png', { type: 'image/png' }));
+    await waitFor(() => expect(onDraftChange).toHaveBeenCalledWith({ mediaUpload: { status: 'uploading' } }));
+    unmount();
+    finish({ mediaId: 'm1', publicUrl: 'https://cdn/m1.jpg', kind: 'image' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onDraftChange).not.toHaveBeenCalledWith(
+      { mediaUpload: { status: 'ready', mediaId: 'm1', publicUrl: 'https://cdn/m1.jpg' } },
+    );
+  });
+
   it('stages a video as a poster frame plus a playback URL and passes its dimensions to the upload', async () => {
     uploadMediaMock.mockResolvedValue({ mediaId: 'v1', publicUrl: 'https://cdn/v1.mp4', kind: 'video' });
     const { input, onDraftChange } = renderMediaComposer();

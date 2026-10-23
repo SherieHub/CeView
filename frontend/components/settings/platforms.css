@@ -117,6 +117,18 @@
   .pf-note { margin: 0 0 12px; padding: 12px 14px; border: 1px solid #e3ecea; border-radius: 12px; background: #f6faf9; font-size: .8125rem; color: #4a5f70; }
   .pf-note--error { border-color: #f3d2cb; background: #fdf3f1; color: #a63d27; }
 
+  .pf-limits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 12px; }
+  .pf-limit-field { display: grid; gap: 5px; min-width: 0; }
+  .pf-limit-field > span { font-size: .75rem; font-weight: 600; color: #4a5f70; }
+  .pf-limit-field > small { font-size: .75rem; color: #647887; }
+  .pf-limit-field input {
+    height: 40px; padding: 0 12px; border: 1px solid #d5dfdd; border-radius: 10px; background: #fff;
+    font: inherit; font-size: .875rem; color: #102f40;
+  }
+  .pf-limit-field input:focus { border-color: #12877f; outline: none; box-shadow: 0 0 0 3px rgba(18, 135, 127, .16); }
+  .pf-limit-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+  @media (max-width: 560px) { .pf-limits { grid-template-columns: minmax(0, 1fr); } }
+
   .pf-rows { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
   .pf-row {
     display: flex;

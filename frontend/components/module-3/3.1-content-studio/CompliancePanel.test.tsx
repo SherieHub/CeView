@@ -1,8 +1,9 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import CompliancePanel from './CompliancePanel';
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
+import { ApiError } from '../../../services/apiError';
 import type { PublishDraftState } from './contentStudioTypes';
 
 vi.mock('../../../services/apiClient', () => ({
@@ -194,5 +195,137 @@ describe('CompliancePanel', () => {
     // Each bar's fill is the metric's own value, not a shared constant.
     const first = container.querySelector('.omcs-rubric .bar > i') as HTMLElement;
     expect(first.style.width).toBe('88%');
+  });
+
+  it('shows rubric values as whole percentages whatever precision arrives', () => {
+    const result = {
+      ...MOCK_OMCS,
+      rubricEvaluationData: { scores: { visual_business_context_match: 84.6, platform_suitability: 130 }, total: 85 },
+    };
+    const { container } = render(
+      <CompliancePanel
+        draft={READY}
+        audit={{ status: 'complete', step: 6, result }}
+        onAuditChange={vi.fn()}
+        recommendations={RECS}
+      />,
+    );
+    const rows = container.querySelectorAll('.omcs-rubric > div');
+    expect(rows[0].querySelector('.num')?.textContent).toBe('85%');
+    expect((rows[0].querySelector('.bar > i') as HTMLElement).style.width).toBe('85%');
+    expect(rows[1].querySelector('.num')?.textContent).toBe('100%');
+  });
+});
+
+describe('CompliancePanel — spacing audits out', () => {
+  const IDLE = { status: 'idle' as const, step: 0, result: null };
+  const COMPLETE = { status: 'complete' as const, step: 6, result: MOCK_OMCS };
+
+  /** Runs one audit to the point the panel has been told it finished, and returns the re-renderer. */
+  async function finishOneAudit(outcome: () => Promise<unknown>) {
+    const { apiClient } = await import('../../../services/apiClient');
+    vi.mocked(apiClient.compliance.omcsAnalyze).mockImplementationOnce(outcome as never);
+    const onAuditChange = vi.fn();
+    const view = render(
+      <CompliancePanel draft={READY} audit={{ status: 'running', step: 6, result: null }} onAuditChange={onAuditChange} recommendations={RECS} />,
+    );
+    await waitFor(() => expect(onAuditChange).toHaveBeenCalled());
+    const show = (audit: Parameters<typeof CompliancePanel>[0]['audit']) =>
+      view.rerender(<CompliancePanel draft={READY} audit={audit} onAuditChange={onAuditChange} recommendations={RECS} />);
+    return { show, onAuditChange };
+  }
+
+  it('makes Re-run wait, with a countdown, after a completed audit', async () => {
+    const { show } = await finishOneAudit(() => Promise.resolve(MOCK_OMCS));
+    show(COMPLETE);
+
+    const rerun = screen.getByRole('button', { name: /Re-run audit \(\d+s\)/ });
+    expect(rerun).toBeDisabled();
+  });
+
+  it('cannot be skipped by editing the caption, which resets the audit to idle', async () => {
+    const { show } = await finishOneAudit(() => Promise.resolve(MOCK_OMCS));
+    show(IDLE);
+
+    expect(screen.getByRole('button', { name: /Run Compliance Audit \(\d+s\)/ })).toBeDisabled();
+    expect(screen.getByText(/spaced out/i)).toBeInTheDocument();
+  });
+
+  it('is available again once the wait is over', async () => {
+    const { show } = await finishOneAudit(() => Promise.resolve(MOCK_OMCS));
+    show(IDLE);
+    expect(screen.getByRole('button', { name: /Run Compliance Audit/ })).toBeDisabled();
+
+    // A minute passes; the panel's own one-second tick notices and lifts the wait.
+    const later = Date.now() + 61_000;
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(later);
+    try {
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Run Compliance Audit' })).toBeEnabled(), { timeout: 3000 });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it('asks for a shorter wait after a rate-limit refusal', async () => {
+    const limited = new ApiError({
+      status: 503, method: 'POST', path: '/api/compliance/omcs-analyze',
+      body: { code: 'MOD33_RATE_LIMITED', dependency: 'groq', cause: 'try again in about 20 seconds' },
+    });
+    const { show } = await finishOneAudit(() => Promise.reject(limited));
+    show({ status: 'error', step: 0, result: null, error: limited });
+
+    expect(screen.getByRole('button', { name: /Re-run audit \(\d+s\)/ })).toBeDisabled();
+  });
+
+  it('lets any other failure be retried at once', async () => {
+    const offline = new ApiError({ status: 502, method: 'POST', path: '/api/compliance/omcs-analyze', body: {} });
+    const { show } = await finishOneAudit(() => Promise.reject(offline));
+    show({ status: 'error', step: 0, result: null, error: offline });
+
+    expect(screen.getByRole('button', { name: 'Re-run audit' })).toBeEnabled();
+  });
+});
+
+describe('CompliancePanel — while the audit runs', () => {
+  const states = (container: HTMLElement) =>
+    [...container.querySelectorAll('.audit-step')].map((el) => el.getAttribute('data-state'));
+
+  it('walks the steps in order, one active at a time', () => {
+    const { container } = render(
+      <CompliancePanel draft={READY} audit={{ status: 'running', step: 2, result: null }} onAuditChange={vi.fn()} recommendations={RECS} />,
+    );
+    expect(states(container)).toEqual(['done', 'done', 'active', 'pending', 'pending', 'pending']);
+    expect(screen.getByRole('progressbar', { name: 'Audit progress' })).toHaveAttribute('aria-valuenow', '2');
+    expect(container.querySelector('.audit-run-bar')).toHaveAttribute('data-waiting', 'false');
+  });
+
+  it('keeps the last step active and spinning while the model is still working', async () => {
+    const { apiClient } = await import('../../../services/apiClient');
+    vi.mocked(apiClient.compliance.omcsAnalyze).mockImplementationOnce(() => new Promise(() => {}));
+    const { container } = render(
+      <CompliancePanel draft={READY} audit={{ status: 'running', step: 6, result: null }} onAuditChange={vi.fn()} recommendations={RECS} />,
+    );
+
+    // Every timed step has run, but the answer has not arrived: the last one must not look finished.
+    expect(states(container)).toEqual(['done', 'done', 'done', 'done', 'done', 'active']);
+    const last = container.querySelectorAll('.audit-step')[5];
+    expect(last.querySelector('.animate-spin')).not.toBeNull();
+    expect(last).toHaveTextContent('Working…');
+    expect(screen.getByRole('progressbar', { name: 'Audit progress' })).toHaveAttribute('aria-valuenow', '5');
+    expect(container.querySelector('.audit-run-bar')).toHaveAttribute('data-waiting', 'true');
+    expect(screen.getByText(/Waiting for the AI model/)).toBeInTheDocument();
+  });
+
+  it('is replaced by the results when they arrive', () => {
+    const view = render(
+      <CompliancePanel draft={READY} audit={{ status: 'running', step: 6, result: null }} onAuditChange={vi.fn()} recommendations={RECS} />,
+    );
+    expect(view.container.querySelector('.audit-run')).not.toBeNull();
+
+    view.rerender(
+      <CompliancePanel draft={READY} audit={{ status: 'complete', step: 6, result: MOCK_OMCS }} onAuditChange={vi.fn()} recommendations={RECS} />,
+    );
+    expect(view.container.querySelector('.audit-run')).toBeNull();
+    expect(view.container.querySelector('.omcs-dial')).not.toBeNull();
   });
 });

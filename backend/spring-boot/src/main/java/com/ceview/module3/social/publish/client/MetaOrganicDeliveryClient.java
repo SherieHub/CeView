@@ -1,6 +1,7 @@
 package com.ceview.module3.social.publish.client;
 
 import com.ceview.module3.media.MediaAsset;
+import com.ceview.module3.media.MediaService;
 import com.ceview.module3.social.PublishingAccount;
 import com.ceview.module3.social.publish.SocialPost;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +14,11 @@ import java.util.function.Consumer;
 @Component
 public class MetaOrganicDeliveryClient {
     private final String base;
+    private final MediaService mediaService;
     private final DeliveryHttp http = new DeliveryHttp();
-    public MetaOrganicDeliveryClient(@Value("${ceview.adplatform.meta.graph-base-url:https://graph.facebook.com/v25.0}") String base) {
-        this.base = base.replaceAll("/$", "");
+    public MetaOrganicDeliveryClient(@Value("${ceview.adplatform.meta.graph-base-url:https://graph.facebook.com/v25.0}") String base,
+            MediaService mediaService) {
+        this.base = base.replaceAll("/$", ""); this.mediaService = mediaService;
     }
     public void cancel(SocialPost post, String token) {
         String remoteId = post.getExternalId() != null ? post.getExternalId() : post.getContainerId();
@@ -49,7 +52,7 @@ public class MetaOrganicDeliveryClient {
                 if (post.getContainerId() == null) {
                     var values = new LinkedHashMap<String, Object>();
                     values.put("caption", post.getCaption());
-                    values.put(video ? "video_url" : "image_url", media.getPublicUrl());
+                    values.put(video ? "video_url" : "image_url", mediaService.publicUrlOf(media));
                     if (video) values.put("media_type", "REELS");
                     post.setContainerId(DeliveryHttp.id(http.form(base + "/" + account.getExternalId() + "/media", token, values), "id"));
                     checkpoint.accept(post);
@@ -62,7 +65,7 @@ public class MetaOrganicDeliveryClient {
             } else {
                 if (post.getContainerId() == null) {
                     var values = new LinkedHashMap<String, Object>();
-                    values.put(video ? "file_url" : "url", media.getPublicUrl());
+                    values.put(video ? "file_url" : "url", mediaService.publicUrlOf(media));
                     values.put(video ? "description" : "caption", post.getCaption());
                     if (scheduled) { values.put("published", false); values.put("scheduled_publish_time", post.getScheduledFor().toEpochSecond()); }
                     var result = http.form(base + "/" + account.getExternalId() + (video ? "/videos" : "/photos"), token, values);

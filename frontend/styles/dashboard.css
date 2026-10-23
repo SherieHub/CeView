@@ -1032,6 +1032,23 @@
   .dash-screen .score-badge-label {
     font-size: 0.6875rem;
   }
+  /* How old the forecast is, beside Refresh; "Updating…" while it is refreshed in the background. */
+  .dash-screen .dash-fresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--ink-500);
+  }
+  .dash-screen .dash-fresh[data-tone='warn'] {
+    color: #a63f25;
+    font-weight: 600;
+  }
+  .dash-screen .dash-fresh .spinner {
+    width: 12px;
+    height: 12px;
+  }
   .dash-screen .page-head-actions .btn-outline {
     height: 36px;
     padding: 0 16px;
