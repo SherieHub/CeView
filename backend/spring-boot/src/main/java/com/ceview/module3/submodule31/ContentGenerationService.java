@@ -11,6 +11,7 @@ import com.ceview.module3.Module3ErrorCodes;
 import com.ceview.module3.dto.ContentDtos.*;
 import com.ceview.module4.attribution.AttributionCode;
 import com.ceview.module4.attribution.AttributionCodeService;
+import com.ceview.module4.attribution.link.AttributionLinkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ public class ContentGenerationService {
     private final ContentGenerationLogRepository logRepo;
     private final ObjectMapper mapper;
     private final AttributionCodeService attributionCodes;
+    private final AttributionLinkService attributionLinks;
 
     public ContentGenerationService(AIInferenceGatewayService ai,
                                     BusinessProfileRepository profileRepo,
@@ -54,7 +56,8 @@ public class ContentGenerationService {
                                     LocalizedPromotionalContentRepository contentRepo,
                                     ContentGenerationLogRepository logRepo,
                                     ObjectMapper mapper,
-                                    AttributionCodeService attributionCodes) {
+                                    AttributionCodeService attributionCodes,
+                                    AttributionLinkService attributionLinks) {
         this.ai          = ai;
         this.profileRepo = profileRepo;
         this.forecastRepo = forecastRepo;
@@ -63,6 +66,7 @@ public class ContentGenerationService {
         this.logRepo     = logRepo;
         this.mapper      = mapper;
         this.attributionCodes = attributionCodes;
+        this.attributionLinks = attributionLinks;
     }
 
     /**
@@ -155,7 +159,13 @@ public class ContentGenerationService {
             Optional<AttributionCode> code = attributionCodes.findForContent(
                     profileId, market, marketCategory, demandAlertId);
             if (code.isPresent()) {
-                dto = AttributionCodeCaptions.stamp(dto, market, code.get().getCode());
+                // The link is minted with the code for the same window, so clicks
+                // from the caption count as link-attributed evidence too.
+                AttributionCodeCaptions.TrackedLink link = attributionLinks.findForCode(code.get())
+                        .map(l -> new AttributionCodeCaptions.TrackedLink(
+                                attributionLinks.urlsFor(l).linkUrl(), l.getDestinationUrl()))
+                        .orElse(null);
+                dto = AttributionCodeCaptions.stamp(dto, market, code.get().getCode(), link);
             }
         }
 
