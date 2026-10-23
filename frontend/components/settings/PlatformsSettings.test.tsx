@@ -337,6 +337,15 @@ describe('PlatformsSettings', () => {
     expect(await screen.findByText('Ad accounts')).toBeInTheDocument();
   });
 
+  it('keeps a single ad accounts section after the ad list is refreshed', async () => {
+    window.history.replaceState({}, '', '/settings/platforms?ad_code=C1&ad_provider=meta&state=S1');
+    renderSettings();
+    expect(await screen.findByText('Choose a Facebook Page')).toBeInTheDocument(); // refresh has happened
+
+    expect(screen.getAllByRole('heading', { name: 'Ad accounts' })).toHaveLength(1);
+    expect(screen.getAllByRole('heading', { name: 'Ad spending limits' })).toHaveLength(1);
+  });
+
   describe('post-redirect handling', () => {
     afterEach(() => {
       window.history.replaceState({}, '', '/settings/platforms');
