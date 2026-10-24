@@ -10,10 +10,19 @@
  * It is extracted here because the hook is the testable surface named in that
  * card's Definition of Done, and keeping it separate lets DashboardView stay
  * purely presentational.
+ *
+ * The forecast DATA (alerts, keyword trends, per-category markets, AI health, read state) no
+ * longer lives here: it is held by the forecast store (services/forecastStore.tsx) so it survives
+ * navigating away and back. This hook keeps the screen's own state — the selected alert, the feed
+ * filter, the pinned category — and derives everything the view renders from the store's snapshot.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '../../../services/apiClient';
-import { isProfileNotReady } from '../../../services/apiError';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  alertsForCategories,
+  mergeAlerts,
+  useForecastEngine,
+  useOptionalForecastStore,
+} from '../../../services/forecastStore';
 import { useProfile } from '../../../services/profileContext';
 import { useUnreadAlerts } from '../../../services/unreadAlertsStore';
 import { isSurge } from '@/types';
@@ -49,7 +58,15 @@ export interface DashboardState {
   } | null;
   feedFilter: FeedFilter;
   isRefreshing: boolean;
-  /** Non-null when the initial load failed; render <ApiErrorPanel error={error} />. */
+  /** A background sync is running while data is already on screen. */
+  syncing: boolean;
+  /** When the forecast was generated (ISO-8601, from the backend); null when not known. */
+  generatedAt: string | null;
+  /** When the data on screen was last read from the server (ms since epoch); null before any read. */
+  fetchedAt: number | null;
+  /** The last sync failed but the data on screen is still good. */
+  refreshError: unknown | null;
+  /** Non-null when there is nothing to show; render <ApiErrorPanel error={error} />. */
   error: unknown | null;
   selectAlert: (id: string) => void;
   /** Loads rankedMarkets for this category with no alert selected — what
@@ -62,7 +79,7 @@ export interface DashboardState {
    *  `error` and returns null on failure rather than throwing, so a caller
    *  never mistakes a failed run for a successful zero-market one. */
   refresh: () => Promise<MarketsResponse | null>;
-  /** Re-runs only the initial load (ensure + alerts + health) — never the
+  /** Re-runs only the initial load (alerts + health + markets) — never the
    *  forecast pipeline. What ApiErrorPanel's Retry action calls. */
   retry: () => Promise<void>;
 }
@@ -76,7 +93,7 @@ interface Options {
   forceMode?: DashMode;
 }
 
-function matchesFilter(alert: DemandAlert, filter: FeedFilter, read: Set<string>): boolean {
+function matchesFilter(alert: DemandAlert, filter: FeedFilter, read: { has: (id: string) => boolean }): boolean {
   if (filter === 'unread') return !read.has(alert.id);
   if (filter === 'surge') return isSurge(alert);
   return true;
@@ -85,139 +102,31 @@ function matchesFilter(alert: DemandAlert, filter: FeedFilter, read: Set<string>
 export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const { profile } = useProfile();
 
-  const [status, setStatus] = useState<'loading' | 'ready'>('loading');
-  const [alerts, setAlerts] = useState<DemandAlert[]>([]);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
-  const [aiServiceDown, setAiServiceDown] = useState(false);
+  // The forecast data lives in the shared store (kept across navigation, cached per profile). A
+  // screen rendered without the provider — unit tests, the dev preview routes — runs its own
+  // un-persisted engine through the same hook, so both paths behave identically.
+  const shared = useOptionalForecastStore();
+  const local = useForecastEngine({ persist: false, disabled: shared !== null });
+  const engine = shared ?? local;
+  const { snapshot, status, isRead, markRead, loadCategory } = engine;
 
-  // Shared cancellation guard: every imperative loader below (mount effects
-  // AND refresh()/retry()'s explicit reloads) checks this before writing
-  // state, so an unmount mid-request never produces a React warning or a
-  // stale write — one mechanism instead of a per-effect `cancelled` local.
-  const mountedRef = useRef(true);
-  useEffect(
-    () => () => {
-      mountedRef.current = false;
-    },
-    [],
-  );
+  // Coming back to the dashboard shows what is cached at once; this only refreshes it quietly
+  // when it has gone stale. (A sync that is already running is never started twice.)
+  const revalidate = shared?.revalidateIfStale;
+  useEffect(() => {
+    revalidate?.();
+  }, [revalidate]);
+
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>('all');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<unknown | null>(null);
 
-  /**
-   * The initial load: ensure a fresh forecast, then read alerts + health.
-   * Shared by the mount effect and `retry` (Step 17, C-19/C-20) — Retry must
-   * re-run exactly this, never the forecast pipeline (that's `refresh`, the
-   * Refresh button's job, below).
-   */
-  const loadDashboard = useCallback(async () => {
-    // Step 16 (C-07/C-08/C-09): ensure a fresh forecast BEFORE reading
-    // alerts, so a new or stale-data operator sees real alerts on this very
-    // load instead of an empty feed until they press Refresh. Cheap when
-    // data is already fresh (ForecastingService.ensureFreshForecast is a DB
-    // read in that case) and this call's own failure must never block the
-    // fallback read below — the only outcome that changes this screen's
-    // flow is "onboarding incomplete", which ApiErrorPanel already renders
-    // as its own dedicated panel via isProfileNotReady().
-    try {
-      await apiClient.forecast.ensure();
-    } catch (err) {
-      if (!mountedRef.current) return;
-      if (isProfileNotReady(err)) {
-        setError(err);
-        setStatus('ready');
-        return;
-      }
-      // AI down, no market data yet, etc. — not fatal here; the health
-      // probe below already drives the ai-down state, and whatever alerts
-      // are already persisted are still worth showing.
-    }
-    if (!mountedRef.current) return;
-
-    // allSettled, not all: a health-check failure must never be able to
-    // discard a successfully-fetched alert list. See Task 12.
-    const [listResult, healthResult] = await Promise.allSettled([
-      apiClient.notifications.list() as Promise<DemandAlert[]>,
-      apiClient.forecast.status() as Promise<{ available: boolean }>,
-    ]);
-    if (!mountedRef.current) return;
-
-    if (listResult.status === 'fulfilled') {
-      setAlerts(listResult.value);
-      // Seed read state from the server's view once, then own it locally.
-      setReadIds(new Set(listResult.value.filter((a) => a.isRead).map((a) => a.id)));
-      // A successful retry after a previous failure must clear that failure —
-      // otherwise ApiErrorPanel would keep showing a stale error over data
-      // that just loaded fine.
-      setError(null);
-    } else {
-      // A failed alert load IS worth surfacing — unlike the health probe,
-      // there is no honest degraded fallback for "we don't know what your
-      // alerts are".
-      setError(listResult.reason);
-    }
-
-    // A failed health probe means "assume degraded", never "assume no
-    // alerts" — that would silently blank a successful alert load above.
-    setAiServiceDown(healthResult.status !== 'fulfilled' || !healthResult.value.available);
-
-    setStatus('ready');
-  }, []);
-
-  useEffect(() => {
-    // Note the fetch runs even under forceMode: the `normal` and `ai-down`
-    // previews need real fixture alerts to render. forceMode only overrides the
-    // derived `mode` below, and `loading`/`empty` render their own states
-    // regardless of what was loaded.
-    void loadDashboard();
-  }, [loadDashboard]);
-
-  /** ApiErrorPanel's Retry action. Re-runs the initial load only — see
-   *  loadDashboard's doc comment for why this must never call refresh(). */
-  const retry = useCallback(async () => {
-    await loadDashboard();
-  }, [loadDashboard]);
-
-  /**
-   * Keyword-trend alerts are held in their OWN state rather than merged into
-   * `alerts`, because both loads are independent effects that would otherwise
-   * race on one setter: if this resolved first, the primary load's
-   * `setAlerts(listResult.value)` would overwrite it.
-   *
-   * Both are now DB reads, but they remain separate because the scheduled
-   * keyword producer may update its rows independently of demand alerts.
-   */
-  const [keywordAlerts, setKeywordAlerts] = useState<DemandAlert[]>([]);
-
-  /** Shared by the mount effect and refresh() (Step 17) — a pipeline run can
-   *  change which keyword trends are current, so refresh must reload this
-   *  explicitly rather than lean on an incidental re-render. */
-  const loadKeywordAlerts = useCallback(async () => {
-    try {
-      const extra = await apiClient.notifications.keywordTrends();
-      if (mountedRef.current) setKeywordAlerts(extra);
-    } catch {
-      // A slow or failing keyword-trend fetch must never blank the feed or
-      // surface as a dashboard error — the demand alerts are the primary data.
-      // This is a deliberate swallow, not the silent-catch bug fixed elsewhere:
-      // nothing the operator would otherwise see is lost.
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadKeywordAlerts();
-  }, [loadKeywordAlerts]);
+  const aiServiceDown = snapshot?.aiServiceDown ?? false;
 
   /** Primary alerts plus keyword trends, de-duplicated by id. */
-  const allAlerts = useMemo(() => {
-    if (keywordAlerts.length === 0) return alerts;
-    const seen = new Set(alerts.map((a) => a.id));
-    return [...alerts, ...keywordAlerts.filter((a) => !seen.has(a.id))];
-  }, [alerts, keywordAlerts]);
-
-  const isRead = useCallback((id: string) => readIds.has(id), [readIds]);
+  const allAlerts = useMemo(
+    () => mergeAlerts(snapshot?.alerts ?? [], snapshot?.keywordAlerts ?? []),
+    [snapshot?.alerts, snapshot?.keywordAlerts],
+  );
 
   // The category scoping IS Module 2's (category, market) signal grid — there
   // is no undifferentiated "all alerts" feed in the real system either.
@@ -225,28 +134,26 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const myAlerts = useMemo(
     // Legacy alerts can have no category. Keep them visible rather than
     // silently treating an incomplete historical row as another tenant's data.
-    () => allAlerts.filter((a) => a.category === null || profile.categories.includes(a.category)),
+    () => alertsForCategories(allAlerts, profile.categories),
     [allAlerts, profile.categories],
   );
 
-  const unreadCount = useMemo(
-    () => myAlerts.filter((a) => !readIds.has(a.id)).length,
-    [myAlerts, readIds],
-  );
+  const unreadCount = useMemo(() => myAlerts.filter((a) => !isRead(a.id)).length, [myAlerts, isRead]);
 
   const surgeCount = useMemo(() => myAlerts.filter(isSurge).length, [myAlerts]);
 
-  // The sidebar's Dashboard badge shows this same figure. Published rather than
-  // re-fetched so independently refreshed keyword rows cannot create conflicting
-  // client-side counts. Null while loading avoids a stale or invented badge.
+  // The sidebar's Dashboard badge shows this same figure. With the shared store mounted, the store
+  // publishes it (so the badge is right on every route); a standalone screen publishes its own.
+  // Null while loading avoids a stale or invented badge.
   const { setUnreadCount } = useUnreadAlerts();
   useEffect(() => {
+    if (shared) return;
     setUnreadCount(status === 'loading' ? null : unreadCount);
-  }, [status, unreadCount, setUnreadCount]);
+  }, [shared, status, unreadCount, setUnreadCount]);
 
   const visibleAlerts = useMemo(
-    () => myAlerts.filter((a) => matchesFilter(a, feedFilter, readIds)),
-    [myAlerts, feedFilter, readIds],
+    () => myAlerts.filter((a) => matchesFilter(a, feedFilter, { has: isRead })),
+    [myAlerts, feedFilter, isRead],
   );
 
   // Resolved against myAlerts, never alerts: if the operator's categories
@@ -256,8 +163,6 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     () => (selectedAlertId ? myAlerts.find((a) => a.id === selectedAlertId) ?? null : null),
     [selectedAlertId, myAlerts],
   );
-
-  const [rankedMarkets, setRankedMarkets] = useState<Market[]>([]);
 
   /**
    * Step 18 (C-21/C-22/C-23): "Top market now" opened `?market=<id>` but the
@@ -274,24 +179,16 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
   const [pinnedCategory, setPinnedCategory] = useState<string | null>(null);
   const activeCategory = selectedAlert?.category ?? pinnedCategory;
 
-  /** Shared by the active-category effect and refresh() (Step 17/18) — a
-   *  pipeline run can change the ranking for whichever category is active. */
-  const loadRankedMarketsForCategory = useCallback(async (category: string | null) => {
-    if (!category) {
-      setRankedMarkets([]);
-      return;
-    }
-    try {
-      const list = await apiClient.markets.forCategory(category);
-      if (mountedRef.current) setRankedMarkets(list as Market[]);
-    } catch (e) {
-      if (mountedRef.current) setError(e);
-    }
-  }, []);
-
+  // The store already holds the ranking for each of the operator's categories, so this is
+  // instant; it only fetches for a category it has not read (a no-op otherwise).
   useEffect(() => {
-    void loadRankedMarketsForCategory(activeCategory);
-  }, [activeCategory, loadRankedMarketsForCategory]);
+    if (activeCategory) void loadCategory(activeCategory);
+  }, [activeCategory, loadCategory]);
+
+  const rankedMarkets = useMemo<Market[]>(
+    () => (activeCategory ? snapshot?.marketsByCategory[activeCategory] ?? [] : []),
+    [activeCategory, snapshot?.marketsByCategory],
+  );
 
   /** "Top market now" pins its category so rankedMarkets loads for it even
    *  with no alert selected — see the trade-off note above pinnedCategory. */
@@ -309,54 +206,13 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
    * The single best-scoring market across every category the operator covers.
    * Answers "where should I be pointing right now" without first picking an
    * alert — the question the prototype's dashboard could not answer at a glance.
+   * Read from the cached per-category rankings: one category missing (still loading, or it
+   * failed) never blanks a leader the others did return.
    */
-  const [topMarket, setTopMarket] = useState<{
-    id: string;
-    name: string;
-    matchScore: number;
-    category: string;
-    dataStale: boolean;
-    dataAsOf: string | null;
-    dataStaleCause: string | null;
-  } | null>(null);
-
-  /** Shared by the mount-scoped effect and refresh() (Step 17) — a pipeline
-   *  run can change which market leads each category, so refresh must reload
-   *  this explicitly rather than lean on an incidental re-render. */
-  const loadTopMarket = useCallback(async () => {
-    if (profile.categories.length === 0) {
-      if (mountedRef.current) setTopMarket(null);
-      return;
-    }
-    // allSettled, not all: these are N independent per-category requests, and
-    // one failing category must not blank a leader the others did return.
-    // Same reasoning as the alert/health decoupling above.
-    const results = await Promise.allSettled(
-      profile.categories.map((category) =>
-        apiClient.markets
-          .forCategory(category)
-          .then((list) => ({ category, leader: (list as Market[])[0] ?? null })),
-      ),
-    );
-    if (!mountedRef.current) return;
-
-    let best: {
-      id: string;
-      name: string;
-      matchScore: number;
-      category: string;
-      dataStale: boolean;
-      dataAsOf: string | null;
-      dataStaleCause: string | null;
-    } | null = null;
-    let firstFailure: unknown = null;
-
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        firstFailure ??= result.reason;
-        continue;
-      }
-      const { category, leader } = result.value;
+  const topMarket = useMemo<DashboardState['topMarket']>(() => {
+    let best: DashboardState['topMarket'] = null;
+    for (const category of profile.categories) {
+      const leader = snapshot?.marketsByCategory[category]?.[0];
       if (leader && (!best || leader.matchScore > best.matchScore)) {
         best = {
           id: leader.id,
@@ -372,19 +228,13 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
         };
       }
     }
-
-    setTopMarket(best);
-    // Surface a failure only when it cost us the answer entirely — a partial
-    // result is still a usable top market, not an error state.
-    if (best === null && firstFailure !== null) setError(firstFailure);
-  }, [profile.categories]);
-
-  useEffect(() => {
-    void loadTopMarket();
-  }, [loadTopMarket]);
+    return best;
+  }, [profile.categories, snapshot?.marketsByCategory]);
 
   const mode: DashMode = useMemo(() => {
     if (forceMode) return forceMode;
+    // Only while there is nothing at all to show: a cached or already-loaded snapshot goes
+    // straight to its real state, however long the background refresh takes.
     if (status === 'loading') return 'loading';
     // Degraded is checked BEFORE empty, and the order matters: a failed load
     // also leaves `alerts` empty, so checking empty first would tell an
@@ -414,52 +264,11 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
         return;
       }
       setSelectedAlertId(id);
-      setReadIds((prev) => {
-        if (prev.has(id)) return prev;
-        // Viewing an alert's forecast is what marks it read — not a separate
-        // action. Optimistic; a failed write is not worth surfacing.
-        void apiClient.notifications.markRead(id).catch(() => {});
-        return new Set(prev).add(id);
-      });
+      // Viewing an alert's forecast is what marks it read — not a separate action.
+      markRead(id);
     },
-    [selectedAlertId],
+    [selectedAlertId, markRead],
   );
-
-  /**
-   * Runs the full forecast pipeline (the Refresh button's job — never what
-   * ApiErrorPanel's Retry calls, see `retry` above). Step 17 (C-19/C-20):
-   * previously had no catch at all, so a failed analyze() call was an
-   * unhandled rejection with no toast and no error UI; now it routes the
-   * structured error body into `error` (ApiErrorPanel) and always clears
-   * `isRefreshing`, success or failure.
-   *
-   * Reloads topMarket, keyword alerts and rankedMarkets explicitly on success
-   * rather than relying on the incidental re-render a new `selectedAlert`
-   * object reference used to produce — a pipeline run can change any of the
-   * three, and nothing about calling analyze() naturally re-triggers them.
-   */
-  const refresh = useCallback(async (): Promise<MarketsResponse | null> => {
-    setIsRefreshing(true);
-    try {
-      const result = (await apiClient.forecast.analyze()) as MarketsResponse;
-      const list = (await apiClient.notifications.list()) as DemandAlert[];
-      if (mountedRef.current) {
-        setAlerts(list);
-        setError(null);
-      }
-      await Promise.allSettled([
-        loadTopMarket(),
-        loadKeywordAlerts(),
-        loadRankedMarketsForCategory(activeCategory),
-      ]);
-      return result;
-    } catch (err) {
-      if (mountedRef.current) setError(err);
-      return null;
-    } finally {
-      if (mountedRef.current) setIsRefreshing(false);
-    }
-  }, [loadTopMarket, loadKeywordAlerts, loadRankedMarketsForCategory, activeCategory]);
 
   return {
     mode,
@@ -475,12 +284,20 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     surgeMarkets,
     topMarket,
     feedFilter,
-    isRefreshing,
-    error,
+    isRefreshing: engine.isRefreshing,
+    syncing: engine.syncing,
+    generatedAt: snapshot?.generatedAt ?? null,
+    fetchedAt: snapshot && snapshot.fetchedAt > 0 ? snapshot.fetchedAt : null,
+    refreshError: engine.refreshError,
+    error: engine.error,
     selectAlert,
     pinCategory,
     setFeedFilter,
-    refresh,
-    retry,
+    // Runs the full forecast pipeline (the Refresh button's job — never what the error panel's
+    // Retry calls). On failure it sets `error` and returns null rather than throwing, so a caller
+    // never mistakes a failed run for a successful zero-market one.
+    refresh: engine.refreshForecast,
+    // Re-runs only the load — never the forecast pipeline.
+    retry: engine.reload,
   };
 }

@@ -38,7 +38,7 @@ const TABS: { value: Filter; label: string }[] = [
   { value: 'facebook', label: 'Facebook' },
 ];
 
-const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', meta_ads: 'Meta Ads' };
 
 const prettyDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -50,7 +50,9 @@ export default function PreviouslyPublished() {
 
   // Newest first, so the latest post is the first one compared.
   const published = (posts ?? [])
-    .filter((p) => p.status === 'published' && (filter === 'all' || p.platform === filter))
+    .filter((p) => (p.status === 'published' || (p.status === 'inbox' && p.metricsAvailable === true)
+      || (p.platform === 'meta_ads' && p.metricsAvailable === true && (p.reach ?? 0) > 0))
+      && (filter === 'all' || p.platform === filter))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -84,7 +86,7 @@ export default function PreviouslyPublished() {
             <li key={post.id}>
               <button type="button" className="pp-card" onClick={() => setOpenPostId(post.id)}>
                 <span className="pp-thumb" aria-hidden="true">
-                  {post.mediaUrl ? <img src={post.mediaUrl} alt="" loading="lazy" /> : <ImageOff size={20} />}
+                  {post.mediaUrl ? (post.mediaType === 'video' ? <video src={post.mediaUrl} muted playsInline preload="metadata" /> : <img src={post.mediaUrl} alt="" loading="lazy" />) : <ImageOff size={20} />}
                 </span>
                 <span className="pp-body">
                   <span className="pp-meta">
@@ -94,8 +96,8 @@ export default function PreviouslyPublished() {
                   </span>
                   <span className="pp-caption">{post.caption}</span>
                   <span className="pp-stats">
-                    <span><b className="num">{post.reach ? post.reach.toLocaleString() : '—'}</b> reach</span>
-                    <span><b className="num">{post.reach ? `${post.engagementRate.toFixed(1)}%` : '—'}</b> engagement</span>
+                    <span><b className="num">{post.reach != null ? post.reach.toLocaleString() : '—'}</b> reach</span>
+                    <span><b className="num">{post.engagementRate != null ? `${post.engagementRate.toFixed(1)}%` : '—'}</b> engagement</span>
                     <span className="pp-view">View</span>
                   </span>
                 </span>

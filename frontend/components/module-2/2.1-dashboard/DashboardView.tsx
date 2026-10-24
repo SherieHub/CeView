@@ -35,12 +35,14 @@ import TrendingBusinessTypes from './TrendingBusinessTypes';
 import AiStatusBanner from './AiStatusBanner';
 import MarketsRevealPanel from './MarketsRevealPanel';
 import RefreshForecastButton from './RefreshForecastButton';
+import ForecastFreshness from './ForecastFreshness';
 import SignalSummary from './SignalSummary';
 import PhilippineRegionsPanel from './PhilippineRegionsPanel';
 import MarketRadarDrawer from '../2.2-market-radar/MarketRadarDrawer';
 import { useJustOnboardedTutorial } from './useJustOnboardedTutorial';
 import TutorialModal from '../../shared/TutorialModal';
 import EnquiryInbox from '../../module-4/enquiries/EnquiryInbox';
+import QuickLogBooking from '../../module-4/4.1-campaign-analytics/QuickLogBooking';
 
 interface DashboardViewProps {
   /** Dev-preview only — pins the state machine to one mode. */
@@ -148,6 +150,15 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
               degraded={degraded}
               onRefresh={state.refresh}
             />
+            {state.mode !== 'loading' && (
+              <ForecastFreshness
+                syncing={state.syncing}
+                isRefreshing={state.isRefreshing}
+                refreshError={state.refreshError}
+                generatedAt={state.generatedAt}
+                fetchedAt={state.fetchedAt}
+              />
+            )}
           </>
         }
       />
@@ -235,6 +246,8 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
         </div>
       </div>
 
+      {/* Staff land here, so the booking quick-log sits beside the enquiries it complements. */}
+      {profile.businessProfileId && <QuickLogBooking key={`log-${profile.businessProfileId}`} />}
       {profile.businessProfileId && <EnquiryInbox key={profile.businessProfileId} />}
 
       <TrendingBusinessTypes />

@@ -166,4 +166,83 @@ class EnsureFreshForecastTest {
         // not merely serving the (now-stale) rows already in the DB.
         org.mockito.Mockito.verify(ai).runForecastInferenceBatch(any());
     }
+
+    @Test
+    void ensureFreshReportsFreshDataWithoutBuildingMarketsOrRunningThePipeline() {
+        OffsetDateTime generated = OffsetDateTime.now().minusHours(1);
+        for (String market : List.of("korea", "japan", "usa")) {
+            ForecastResult fr = new ForecastResult();
+            fr.setBusinessProfileId(profileId);
+            fr.setTargetMarket(market);
+            fr.setCategory("Coastal & Island");
+            fr.setPredictedDemand(60.0);
+            fr.setForecastConfidence(0.8);
+            fr.setMapeScore(8.0);
+            fr.setForecastHorizonWeeks(4);
+            fr.setSource("stub-v1");
+            fr.setGeneratedAt(generated);
+            forecastRepo.save(fr);
+        }
+
+        ForecastingService.EnsureResult result = forecastingService.ensureFresh(profileId, 12L);
+
+        assertThat(result.refreshed()).isFalse();
+        assertThat(result.generatedAt()).isNotNull();
+        assertThat(result.generatedAt().toInstant())
+                .isBetween(generated.toInstant().minusSeconds(5), generated.toInstant().plusSeconds(5));
+        // No AI call and, unlike ensureFreshForecast, no market build: not even the
+        // route-reference lookup that building a market DTO makes.
+        verifyNoInteractions(ai);
+        verifyNoInteractions(externalClient);
+    }
+
+    @Test
+    void ensureFreshRunsThePipelineWhenThereIsNoForecastYet() {
+        for (String market : List.of("korea", "japan", "usa")) {
+            for (int i = 0; i < 12; i++) {
+                MarketSignalRecord r = new MarketSignalRecord();
+                r.setBusinessProfileId(profileId);
+                r.setTargetMarket(market);
+                r.setTrendIndex(55.0 + i);
+                r.setForexRate(23.5);
+                r.setGdpGrowth(2.2);
+                r.setSeasonalityScore(0.6);
+                r.setSpikeIndicator(false);
+                r.setSource("pytrends");
+                r.setAggregatedAt(OffsetDateTime.now().minusWeeks(11 - i));
+                signalRepo.save(r);
+            }
+        }
+        when(externalClient.fetchGdpTrend(anyString())).thenReturn(
+                new ExternalMarketDataClient.GdpTrendDto("KR",
+                        List.of(new ExternalMarketDataClient.GdpTrendPoint(2024, 2.2)),
+                        2.2, OffsetDateTime.now()));
+        when(externalClient.fetchForexTrend(anyString())).thenReturn(
+                new ExternalMarketDataClient.ForexTrendDto("KRW",
+                        List.of(new ExternalMarketDataClient.ForexTrendPoint("2026-08", 23.5)),
+                        23.5, OffsetDateTime.now()));
+        Map<String, Object> completeForecast = Map.of(
+                "predicted_demand_4w", 65.0, "predicted_demand_12w", 60.0,
+                "weekly_forecasts", List.of(61.0, 62.0, 63.0, 64.0, 65.0, 65.0, 64.0, 64.0, 63.0, 63.0, 62.0, 62.0),
+                "mape", 8.0, "mae", 4.0, "rmse", 6.0, "confidence", 0.8, "source", "stub-v1");
+        when(ai.runForecastInferenceBatch(any())).thenReturn(Map.of(
+                "korea::Coastal & Island", completeForecast,
+                "japan::Coastal & Island", completeForecast,
+                "usa::Coastal & Island",   completeForecast));
+        when(ai.runMarketScoring(any())).thenReturn(
+                Map.of("market_score", 0.7, "scorer", "linear", "economic_viability_score", 0.6, "components", Map.of()));
+
+        ForecastingService.EnsureResult result = forecastingService.ensureFresh(profileId, 12L);
+
+        assertThat(result.refreshed()).isTrue();
+        assertThat(result.generatedAt()).isNotNull();
+        org.mockito.Mockito.verify(ai).runForecastInferenceBatch(any());
+    }
+
+    @Test
+    void ensureFreshRejectsAnUnknownProfile() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> forecastingService.ensureFresh(UUID.randomUUID(), 12L))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(ai);
+    }
 }

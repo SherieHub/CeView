@@ -86,7 +86,7 @@ class ContentControllerTest {
                 "framework",
                 new CaptionsDto(null, null, null),
                 ContentSource.GROQ);
-        when(generationService.generate(any(), anyString(), any(), any(), any(), any()))
+        when(generationService.generate(any(), anyString(), any(), any(), any(), any(), any()))
                 .thenReturn(dummy);
         when(translationService.translate(anyString(), anyString()))
                 .thenReturn(new CaptionTranslationDto("Healing trip", "ko", ContentSource.GROQ));

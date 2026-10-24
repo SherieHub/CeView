@@ -35,6 +35,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { TikTokGlyph } from '../../shared/PlatformGlyphs';
 import Modal from '../../shared/Modal';
+import { apiClient } from '../../../services/apiClient';
+import { useOptionalPosts } from '../../../services/postStore';
 import { useDismiss } from '../../shared/useDismiss';
 import { formatSchedule } from './schedule';
 import type { PublishedPost } from '@/types';
@@ -42,16 +44,16 @@ import { CaptionTranslationToggle } from './CaptionTranslationToggle';
 import { useCaptionTranslation } from './useCaptionTranslation';
 import type { BoardSlotProps } from './contentStudioTypes';
 
-type Filter = 'all' | 'draft' | 'scheduled' | 'published';
-const FILTERS: Filter[] = ['all', 'draft', 'scheduled', 'published'];
+type Filter = 'all' | PublishedPost['status'];
+const FILTERS: Filter[] = ['all', 'draft', 'scheduled', 'published', 'processing', 'inbox', 'failed', 'cancelled'];
 
 const STATUS_CHIP: Record<PublishedPost['status'], string> = {
   published: 'chip--success',
   scheduled: 'chip--scheduled',
-  draft: 'chip--muted',
+  draft: 'chip--muted', processing: 'chip--muted', inbox: 'chip--scheduled', failed: 'chip--muted', cancelled: 'chip--muted',
 };
 
-const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', meta_ads: 'Meta Ads' };
 
 export function PlatformIcon({ platform }: { platform: string }) {
   const Icon = platform === 'instagram' ? Instagram : platform === 'facebook' ? Facebook : null;
@@ -66,7 +68,7 @@ export function PlatformIcon({ platform }: { platform: string }) {
 export function BrandMark({ platform }: { platform: string }) {
   return (
     <span className="lib-brand" data-platform={platform} aria-hidden="true">
-      {platform === 'instagram' ? <Instagram size={15} /> : platform === 'facebook' ? <Facebook size={15} /> : <TikTokGlyph size={13} />}
+      {platform === 'instagram' ? <Instagram size={15} /> : platform === 'tiktok' ? <TikTokGlyph size={13} /> : <Facebook size={15} />}
     </span>
   );
 }
@@ -119,11 +121,12 @@ function RowMenu({ post, onOpen }: { post: PublishedPost; onOpen: () => void }) 
 }
 
 function Performance({ post }: { post: PublishedPost }) {
+  if (post.metricsAvailable === false) return <p className="lib-perf-note">Metrics unavailable</p>;
   if (post.status === 'published') {
     return (
       <div className="lib-perf">
-        <span><b className="num">{post.reach.toLocaleString()}</b><em>reach</em></span>
-        <span><b className="num">{post.likes.toLocaleString()}</b><em>likes</em></span>
+        <span><b className="num">{post.reach?.toLocaleString() ?? 'Unavailable'}</b><em>reach</em></span>
+        <span><b className="num">{post.likes?.toLocaleString() ?? 'Unavailable'}</b><em>likes</em></span>
       </div>
     );
   }
@@ -140,12 +143,12 @@ function Performance({ post }: { post: PublishedPost }) {
 const STATUS_LABEL: Record<PublishedPost['status'], string> = {
   published: 'Published',
   scheduled: 'Scheduled',
-  draft: 'Draft',
+  draft: 'Draft', processing: 'Processing', inbox: 'Finish in TikTok', failed: 'Failed', cancelled: 'Cancelled',
 };
 
 function PostRow({ post, isNew, onOpen }: { post: PublishedPost; isNew: boolean; onOpen: () => void }) {
   const name = PLATFORM_NAMES[post.platform] ?? post.platform;
-  const translation = useCaptionTranslation(post.caption, { knownEnglish: post.captionEn, platform: post.platform });
+  const translation = useCaptionTranslation(post.caption, { knownEnglish: post.captionEn, platform: post.platform === 'meta_ads' ? 'facebook' : post.platform });
   return (
     // The whole row opens the post — a pointer convenience; the View button is
     // the keyboard and screen-reader control.
@@ -160,7 +163,7 @@ function PostRow({ post, isNew, onOpen }: { post: PublishedPost; isNew: boolean;
       <div className="lib-cell lib-cell--content">
         <BrandMark platform={post.platform} />
         <span className="lib-thumb">
-          {post.mediaUrl ? <img src={post.mediaUrl} alt="" loading="lazy" /> : <ImageIcon size={18} aria-hidden="true" />}
+          {post.mediaUrl ? (post.mediaType === 'video' ? <video src={post.mediaUrl} muted playsInline preload="metadata" /> : <img src={post.mediaUrl} alt="" loading="lazy" />) : <ImageIcon size={18} aria-hidden="true" />}
         </span>
         <div className="lib-text">
           <p className="lib-meta">
@@ -177,7 +180,7 @@ function PostRow({ post, isNew, onOpen }: { post: PublishedPost; isNew: boolean;
       <div className="lib-cell lib-cell--status">
         {isNew && (
           <span className="lib-badge lib-badge--new">
-            <Sparkles size={11} aria-hidden="true" /> {post.status === 'scheduled' ? 'Just scheduled' : 'Just published'}
+            <Sparkles size={11} aria-hidden="true" /> {post.status === 'published' ? 'Just published' : 'Just submitted'}
           </span>
         )}
         <span className="lib-badge" data-status={post.status}>{STATUS_LABEL[post.status]}</span>
@@ -213,24 +216,34 @@ const METRICS: { key: keyof PublishedPost; label: string; suffix?: string }[] = 
 ];
 
 function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | null; siblings: PublishedPost[]; isNew: boolean; onClose: () => void }) {
+  const store = useOptionalPosts();
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const cancel = async () => {
+    if (!post || cancelling) return;
+    setCancelling(true); setCancelError(null);
+    try { await apiClient.posts.cancel(post.id); await store?.refresh(); onClose(); }
+    catch (err) { setCancelError(err instanceof Error ? err.message : 'Cancellation failed'); }
+    finally { setCancelling(false); }
+  };
   const name = post ? PLATFORM_NAMES[post.platform] ?? post.platform : '';
   const published = post?.status === 'published';
   const scheduled = post?.status === 'scheduled';
-  const others = siblings.map((s) => PLATFORM_NAMES[s.platform] ?? s.platform).join(' and ');
-  const hasResults = Boolean(post && published && post.reach > 0);
+  const others = siblings.filter((s) => s.status === post?.status).map((s) => PLATFORM_NAMES[s.platform] ?? s.platform).join(' and ');
+  const hasResults = Boolean(post && published && post.metricsAvailable !== false && (post.metricsAvailable || (post.reach ?? 0) > 0));
   const translation = useCaptionTranslation(post?.caption ?? '', {
     knownEnglish: post?.captionEn,
-    platform: post?.platform,
+    platform: post?.platform === 'meta_ads' ? 'facebook' : post?.platform,
   });
   return (
     <Modal
       open={post != null}
       onClose={onClose}
-      title={post ? (published ? `Published to ${name}` : scheduled ? `Scheduled for ${name}` : `${name} draft`) : 'Post'}
+      title={post ? (published ? `Published to ${name}` : scheduled ? `Scheduled for ${name}` : `${name} · ${STATUS_LABEL[post.status]}`) : 'Post'}
     >
       {post && (
         <div className="post-detail">
-          {isNew && (
+          {isNew && (published || scheduled) && (
             <p className="post-detail-banner" role="status" data-tone={scheduled ? 'scheduled' : undefined}>
               {scheduled ? <CalendarClock size={18} aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}
               <span>
@@ -244,7 +257,7 @@ function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | 
           <div className="post-detail-grid">
             <div className="post-detail-media">
               {post.mediaUrl ? (
-                <img src={post.mediaUrl} alt={`The image published to ${name}`} />
+                post.mediaType === 'video' ? <video src={post.mediaUrl} controls /> : <img src={post.mediaUrl} alt={`The image published to ${name}`} />
               ) : (
                 <span className="post-detail-media-empty">
                   <ImageIcon size={22} aria-hidden="true" /> No image on record
@@ -266,6 +279,13 @@ function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | 
                 {translation.showing === 'english' ? translation.english : post.caption}
               </p>
 
+              {scheduled && <button type="button" disabled={cancelling} onClick={cancel}>{cancelling ? 'Cancelling…' : 'Cancel scheduled post'}</button>}
+              {cancelError && <p role="alert">{cancelError}</p>}
+              {post.errorMessage && <p role="alert">{post.errorMessage}</p>}
+              {post.status === 'inbox' && <p role="status">Draft sent to your TikTok inbox. Open TikTok to finish publishing.{post.mediaType === 'video' && ' Copy the caption below and paste it in TikTok.'}</p>}
+              {post.status === 'inbox' && <button type="button" onClick={() => navigator.clipboard.writeText(post.caption).catch(() => {})}>Copy caption</button>}
+              {post.permalink && <a href={post.permalink} target="_blank" rel="noopener noreferrer">Open published post</a>}
+              {post.adsManagerUrl && <a href={post.adsManagerUrl} target="_blank" rel="noopener noreferrer">Review paused ad in Ads Manager</a>}
               <p className="post-detail-label">Results</p>
               {hasResults ? (
                 <dl className="post-detail-metrics">
@@ -273,15 +293,15 @@ function PostDetail({ post, siblings, isNew, onClose }: { post: PublishedPost | 
                     <div key={key}>
                       <dt>{label}</dt>
                       <dd className="num">
-                        {(post[key] as number).toLocaleString()}
-                        {suffix}
+                        {(post[key] as number | null)?.toLocaleString() ?? 'Unavailable'}
+                        {post[key] != null ? suffix : ''}
                       </dd>
                     </div>
                   ))}
                 </dl>
               ) : (
                 <p className="post-detail-none">
-                  {published
+                  {post.metricsAvailable === false ? 'Metrics unavailable — the platform has not supplied metrics for this post.' : published
                     ? 'No results yet — reach and engagement appear here once the platform reports them.'
                     : scheduled
                       ? 'Results appear after the post goes out.'

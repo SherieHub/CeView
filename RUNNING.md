@@ -257,6 +257,7 @@ the file at start-up, so restart `npm run dev` after editing it.
 | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | **Required** except Path B (H2) | `spring-boot` | Salt for hashing traveller IPs from tracked links; any random string (e.g. `openssl rand -hex 16`). Same rule as `JWT_SECRET`: only the `h2` profile has a dev value. |
 | `CORS_ALLOWED_ORIGINS` | Has a default | `spring-boot` | Comma-separated list of origins allowed to call the API. Default covers `localhost:3001`/`5173`. Add your frontend's actual origin if it differs. |
 | `CEVIEW_ATTRIBUTION_BASE_URL` | Has a default | `spring-boot` | Public origin the `/r/{slug}` redirect is served from; bound to `ceview.attribution.base-url`, defaults to `http://localhost:8080`. This string ends up inside live paid ads, so changing it after ads are running breaks every link already in market. |
+| `FRONTEND_BASE_URL` / `CEVIEW_ENQUIRY_BASE_URL` | Has a default | `spring-boot` | Frontend origin that serves the hosted booking form. Tracked links with no operator destination redirect to `{this}/enquiry?cv=…`. `CEVIEW_ENQUIRY_BASE_URL` (bound to `ceview.attribution.enquiry-base-url`) wins if set; otherwise `FRONTEND_BASE_URL`, default `http://localhost:3001` (the Vite dev server; Docker Compose sets the same). Must be the origin travellers' browsers can reach, not the API's. |
 | `CEVIEW_ATTRIBUTION_IP_HASH_SALT` | Has a dev default | `spring-boot` | Salt for hashing traveller IPs before they are stored for click debounce. Rotating it resets the debounce because existing `ip_hash` values stop matching new ones. |
 | `FIREBASE_CREDENTIALS_JSON` | Optional | `spring-boot` | Full Firebase service-account JSON (as a single-line string), used to verify Google Sign-In ID tokens. Unset by default — `POST /api/auth/google` returns 503 until it's set. See §6 below for how to obtain it. |
 | `EMAIL_PROVIDER` | Has a default (`log`) | `spring-boot` | How verification and password-reset codes are delivered. `log` prints the code to the spring-boot log and sends nothing (see §5b); `resend` sends through Resend's API and needs the next two variables. |
@@ -435,12 +436,18 @@ account instead of creating a duplicate.
 
 ### Phone (SMS OTP) verification setup (optional)
 
-Signup and `/complete-profile` verify the contact number with Firebase Phone
-Auth, reusing the same Firebase project and env vars as Google Sign-In. With
-Firebase configured, the backend only accepts a number that comes from a
-verified Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`.
-Without Firebase env vars, the form falls back to a plain unverified number
-input, so local dev, CI and e2e keep working.
+Signup and `/complete-profile` can verify the contact number with Firebase Phone
+Auth, reusing the same Firebase project and env vars as Google Sign-In.
+
+**It is switched off by default**, because SMS needs Firebase's paid Blaze plan.
+Two switches must match: `VITE_PHONE_VERIFICATION_ENABLED=true` (frontend,
+build time) and `PHONE_VERIFICATION_ENABLED=true` (spring-boot,
+`ceview.auth.phone-verification.enabled`). With them on and Firebase
+configured, the backend only accepts a number that comes from a verified
+Firebase ID token (`phoneIdToken`) and stamps `phone_verified_at`. With them
+off, or without Firebase env vars, the form is a plain unverified number input,
+so local dev, CI, e2e and Google sign-in all keep working. The steps below are
+only needed to turn it on.
 
 1. Firebase Console → Authentication → Sign-in method → enable **Phone**.
 2. Phone Auth needs the **Blaze** plan (billing account). The first 10 real

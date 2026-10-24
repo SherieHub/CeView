@@ -50,6 +50,8 @@ vi.mock('../../../services/connectionsStore', () => ({
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
+    posts: { publish: vi.fn((req) => Promise.resolve(req.platforms.map((platform: string) => ({ id: `server-${platform}`, date: '2026-10-19', platform, caption: req.captionsByPlatform[platform], status: platform === 'tiktok' ? 'inbox' : 'published', metricsAvailable: false, reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [] })))) },
     markets: { forCategory: vi.fn(() => Promise.resolve(MOCK_MARKETS)) },
     content: {
       generate: vi.fn(() => Promise.resolve(buildContentResponse('groq'))),
@@ -67,7 +69,7 @@ beforeEach(() => localStorage.clear());
 function renderStudio() {
   return render(
     <OverlayStackProvider>
-      <ContentStudioView initialDraft={DEMO_DRAFT} initialPosts={[]} />
+      <ContentStudioView initialDraft={{ ...DEMO_DRAFT, caption: 'A quiet morning in Cebu.', paidPartnership: false, visibility: 'public', mediaUpload: { status: 'ready', mediaId: 'uploaded-media', publicUrl: 'https://example.test/media.jpg' } }} initialPosts={[]} />
     </OverlayStackProvider>,
   );
 }

@@ -8,6 +8,9 @@ credits cover that for several months (see A2).
 - **Part A** explains what gets built and why: architecture, cost, security and Data Privacy Act (DPA)
   notes, risks, rollback and restore.
 - **Part B** is the click-through runbook, in order.
+- **Part C** redeploys a server that's already running. Start there if `ceview-prod-1` exists; it
+  covers the October 2026 release (social publishing, email verification, booking capture).
+- **Part D** explains how to change or move the AI models. The current release changes none of them.
 
 The design rationale is in
 [`docs/superpowers/specs/2026-10-01-aws-deployment-design.md`](superpowers/specs/2026-10-01-aws-deployment-design.md).
@@ -52,6 +55,7 @@ Fixed names this guide uses (use them exactly; the scripts expect them):
 
 ```
 Browser ─HTTPS─> CloudFront (<domain>, www.<domain>) ──> S3 bucket (built React app)
+   │                                    └─ /media/* ──> S3 media bucket (uploaded images and videos)
    │
    └─HTTPS─> api.<domain> ──> Lightsail instance "ceview-prod-1" (4GB RAM, Ubuntu 24.04)
                Firewall: 443 + 80 open, 22 only from your IP and Lightsail browser SSH
@@ -149,7 +153,9 @@ For 10 users most of these can stay on free plans. **SerpApi is the one that can
 | **Groq** (captions, English translations, compliance audit) | Free tier with rate limits | Fine for 10 users. Spread the load across models: the English translation can run on a second model with its own limit by setting `GROQ_TRANSLATION_MODEL` (B9). Expect an occasional `429`; the app shows a clear error and the user retries. |
 | **Resend** (verification and password-reset emails) | 3,000/month and **100/day** | Fine. The backend rate-limits each account and IP. |
 | **Hugging Face Space** (`FORECAST_ENGINE=bilstm`) | Free Spaces sleep when idle | Free. The first forecast after a quiet period is slow and may time out once. |
-| **Firebase** (Google sign-in) | Free | Free. |
+| **Firebase** (Google sign-in; phone verification if switched on) | Google sign-in free; phone codes need the **Blaze** plan, 10 SMS/day free | Free: phone verification ships switched off (C2.4). If you turn it on, each SMS beyond 10 a day is billed. |
+| **Meta, TikTok** (connections, publishing, ads handoff) | Free | Free. CeView never spends ad budget: it creates Meta ads paused. |
+| **S3 media bucket** | Pennies | Cents per GB-month at pilot scale. CloudFront serves the files inside its free 1TB. |
 
 #### Keeping SerpApi inside the free plan
 
@@ -178,7 +184,11 @@ For 10 users most of these can stay on free plans. **SerpApi is the one that can
 | Business profiles, including uploaded images (stored inline as base64 text) | `tbl_business_profile` |
 | Meta ad-account OAuth tokens, AES-encrypted with `TOKEN_ENCRYPTION_KEY` | `tbl_ad_platform_connection` |
 | Traveller click data: salted SHA-256 of the IP (never the raw IP), user agent, referrer | `tbl_attribution_click` |
-| Traveller enquiries submitted through `/enquiry` | `tbl_attribution_enquiry` |
+| Traveller enquiries submitted through `/enquiry`, and the operator's outcome (booked with revenue, or declined) | `tbl_attribution_enquiry` |
+| Email verification and password-reset codes (hashed, expire after 10 minutes); when the email and phone were verified | `tbl_email_code`, `tbl_msme_operator` |
+| Facebook Page, Instagram and TikTok publishing tokens, AES-encrypted with `TOKEN_ENCRYPTION_KEY` | `tbl_publishing_account` |
+| Posts, their captions and platform metrics; saved Content Studio drafts | `tbl_social_post`, `tbl_post_metric`, `tbl_content_studio_draft` |
+| Uploaded images and videos | S3 media bucket `ceview-prod-media-<account-id>` (Singapore, private, SSE-S3), served through CloudFront `/media/*`. Public URLs are unguessable but **not secret**, because the platforms must fetch them. **Not** in the nightly dump. |
 
 **Controls in place:**
 
@@ -195,8 +205,12 @@ For 10 users most of these can stay on free plans. **SerpApi is the one that can
 **Third-party processors (disclose these in the privacy notice).** Business descriptions, images and
 generated captions are sent to **Groq** (US) for AI generation and analysis. Forecast inputs go to
 **Hugging Face** (the `JamJamzz/*` Spaces). Search terms go to **SerpApi**. Operators' email addresses and first names go to **Resend** (US) to deliver verification and password-reset emails. Google sign-in goes through
-**Firebase/Google**. Ad metrics come from **Meta**. The landing page and Meta's app settings both need a
-privacy policy URL (`VITE_PRIVACY_URL`), and **a privacy notice must exist before go-live.**
+**Firebase/Google**, and so does the phone number an operator verifies by SMS. Ad metrics come from
+**Meta** and **TikTok**. When an operator publishes, the caption and media go to **Meta**
+(Facebook/Instagram) or **TikTok**, which fetch the media from its CloudFront URL. The privacy notice
+and terms are pages in the app (`https://<domain>/privacy`, `/terms`; content in
+`frontend/content/legal.ts`). Meta's and TikTok's app settings point at the privacy page, and **its
+processor list must be reviewed before go-live.**
 
 ## A4. Known risks and limits
 
@@ -389,7 +403,13 @@ problems.
 
 Don't create `/ceview/prod/release-sha`; the first release creates it.
 
-**Optional parameters** (plain `String` or `SecureString`; the defaults are fine if you skip them):
+**Media and publishing parameters.** `MEDIA_BUCKET`, `MEDIA_AWS_ACCESS_KEY_ID` and
+`MEDIA_AWS_SECRET_ACCESS_KEY` come from C2.2. `TIKTOK_CONTENT_CLIENT_KEY`, `TIKTOK_CONTENT_CLIENT_SECRET`
+and optionally `TIKTOK_APP_ID`/`TIKTOK_APP_SECRET` come from C2.3. On a fresh build, do C2.2 and C2.3
+alongside this step. Without them the app still starts; uploads answer `503` and TikTok shows "not configured".
+
+**Optional parameters** (plain `String` or `SecureString`; the defaults are fine if you skip them).
+C2.5 also lists the social-publishing job switches:
 
 | Name | Value | Why |
 |---|---|---|
@@ -440,7 +460,8 @@ Committing them to the private repo is fine.
 2. Fill in **`deploy/aws/frontend.production.env`**:
    - `VITE_API_BASE_URL=https://api.<domain>`
    - the four `VITE_FIREBASE_*` values (RUNNING.md §6 step 2)
-   - `VITE_PRIVACY_URL` and `VITE_TERMS_URL` (required, see A3)
+   - `VITE_PRIVACY_URL` and `VITE_TERMS_URL` are **no longer read**. The terms and privacy notice are
+     in-app pages at `/terms` and `/privacy` (A3). Leaving the lines in the file is harmless.
    - optionally `VITE_CONTACT_EMAIL` / `VITE_LEAD_FORM_ENDPOINT` / `VITE_WALKTHROUGH_URL`
    - **Never** set `VITE_USE_FIXTURES=true`; the production build refuses it.
 3. Open a PR to `main`, get it reviewed, and merge it.
@@ -557,9 +578,15 @@ Then confirm a demo login fails, for example `ramon.delacruz@ceview.local` on `h
 **Meta Ads.** In the Meta app from [`AD_PLATFORM_SETUP.md`](../AD_PLATFORM_SETUP.md) §2 and §5:
 - **Valid OAuth Redirect URIs:** `https://api.<domain>/api/ad-connections/meta/callback`. It must match
   exactly: no trailing slash. This replaces the tunnel URL used in local dev, and it never changes.
-- **App Domains:** `<domain>`. **Privacy Policy URL:** your `VITE_PRIVACY_URL`.
+- **App Domains:** `<domain>`. **Privacy Policy URL:** `https://<domain>/privacy`.
 - Until the app passes App Review and Business Verification for ads access, add each pilot MSME's
   Facebook account under *App Roles → Testers*. Only those accounts can connect.
+- Publishing needs more permissions and products in the same app (C2.3).
+
+**TikTok** (publishing, and optionally TikTok ad accounts). Two separate apps, each with its own
+redirect URI and parameters (C2.3).
+
+**Firebase phone verification.** Off by default. Only needed if you switch it on (C2.4).
 
 **SerpApi, Groq and the HF Space**
 - **Hugging Face:** open <https://huggingface.co/spaces/JamJamzz/ceview-demand-prediction-model> and
@@ -669,13 +696,22 @@ Tick every item before inviting MSMEs:
 - [ ] Connect a Meta ad account with a tester account. The callback returns to the app.
 - [ ] Create an attribution link. Opening `https://api.<domain>/r/<slug>` redirects to
       `https://<domain>/enquiry?cv=…`, and submitting the enquiry records it.
+- [ ] *(Oct 2026)* Opening the same link twice within a minute still shows the form. A phone on mobile
+      data gets its own form (C4 step 5). Marking the enquiry **Booked** with revenue shows in
+      *Performance → Code-redemption evidence*.
+- [ ] *(Oct 2026)* An existing operator is asked for an emailed code at sign-in. A new sign-up takes a
+      contact number with no SMS step, since phone verification is switched off (C2.4).
+- [ ] *(Oct 2026)* An image uploaded in Content Studio opens at `https://<domain>/media/…` with `200`.
+      A tester's Meta login lists their Page, and one test post publishes.
+- [ ] *(Oct 2026)* Content Studio "Show English" returns a translation.
 - [ ] Demo logins (`*@ceview.local`) fail.
 - [ ] `POST https://api.<domain>/api/admin/ingestion/trigger` with a valid operator token → `404`.
 - [ ] `curl http://<static-ip>:8000/healthz` and `:5432` both time out, so the internal ports aren't
       exposed.
 - [ ] A backup object exists, and the restore drill was done and dated.
 - [ ] A test alarm email arrived. The budget alert is set.
-- [ ] The privacy notice is published at `VITE_PRIVACY_URL` and names the third-party processors (A3).
+- [ ] `https://<domain>/privacy` and `/terms` load, and the privacy notice names the third-party
+      processors (A3).
 - [ ] SerpApi and Groq quotas are confirmed adequate (A2).
 
 ## B18. Day-2 operations
@@ -687,6 +723,8 @@ Tick every item before inviting MSMEs:
 | **Logs** | `sudo ceview-compose logs -f --tail=200 spring-boot`, or *CloudWatch → Log groups → /ceview/prod*. |
 | **Change a secret** | Edit it in Parameter Store, then on the server: `sudo /opt/ceview/current/scripts/fetch-secrets.sh && sudo ceview-compose up -d`. |
 | **Rotate the server key** (quarterly) | IAM → `ceview-box` → create a second access key. Then `sudo aws configure` on the server with the new key, `sudo systemctl restart docker amazon-cloudwatch-agent`, check the next deploy-timer run in `deploy.log`, and delete the old key. |
+| **Rotate the media key** (quarterly, with the server key) | IAM → `ceview-media` → create a second access key. Update `/ceview/prod/MEDIA_AWS_ACCESS_KEY_ID` and `/ceview/prod/MEDIA_AWS_SECRET_ACCESS_KEY`, run the "Change a secret" steps, upload a test image, then delete the old key. |
+| **Change an AI model** | Part D. |
 | **Emergency backend rollback** | See A5. |
 | **Resize to 8GB** | Lightsail → Snapshots → create a snapshot → *Create new instance* from it with the 8GB plan (delete that snapshot once the new server is verified; snapshots are billed). Detach `ceview-prod-data` from the old instance and attach it to the new one. Move the static IP. Delete the old instance after verifying. |
 | **Replace a lost server** | Create an instance as in B11, attach `ceview-prod-data` (or a disk restored from its snapshot), move the static IP, run B12. If the data disk is lost, restore the newest dump (B16). |
@@ -702,20 +740,425 @@ Lightsail instance is still charged, and so are disks, snapshots and an unattach
    keep it. Delete it when that period ends.
 2. **Lightsail:** delete `ceview-prod-1`, then the disk `ceview-prod-data`, then **every snapshot**
    (instance and disk), then the static IP `ceview-prod-ip`.
-3. **S3:** empty both buckets (*Empty*), then delete them.
-4. **CloudFront:** *Disable* the distribution, wait until it finishes deploying, then delete it. Delete
-   the `ceview-spa-rewrite` function.
+3. **S3:** empty all three buckets (site, ops and `ceview-prod-media-<account-id>`) with *Empty*, then
+   delete them. The media bucket holds operators' uploaded images and videos.
+4. **CloudFront:** *Disable* the distribution, wait until it finishes deploying, then delete it. This
+   also removes the `/media/*` origin. Delete the `ceview-spa-rewrite` function.
 5. **Route 53:** delete every record except `NS` and `SOA`, then delete the hosted zone ($0.50/month
    until you do). In *Registered domains* turn **auto-renew off**; the domain itself stays yours until it
    expires.
 6. **ECR:** delete the three repositories.
 7. **CloudWatch:** delete the log group `/ceview/prod` and the alarms.
 8. **Parameter Store:** delete the `/ceview/prod/*` parameters.
-9. **IAM:** delete the `ceview-box` user and its access keys. Delete the `ceview-github-deploy` role and
-   the GitHub OIDC provider if nothing else uses them.
-10. **Elsewhere:** cancel or downgrade the paid SerpApi plan, and remove the domain from Firebase's
-    authorised domains and Meta's app settings.
+9. **IAM:** delete the `ceview-box` and `ceview-media` users and their access keys. Delete the
+   `ceview-github-deploy` role and the GitHub OIDC provider if nothing else uses them.
+10. **Elsewhere:**
+    - Cancel or downgrade the paid SerpApi plan.
+    - Remove the domain from Firebase's authorised domains, and move the Firebase project back to the
+      Spark plan.
+    - Remove the redirect URIs from the Meta app and both TikTok apps, and the TikTok URL-prefix
+      verification.
 11. Next day, open *Billing and Cost Management → Bills* and confirm no AWS service still shows usage.
+
+---
+
+# Part C — Redeploying an existing server
+
+Use this part when `ceview-prod-1` is already running and you're shipping a newer release. Part B
+builds a server from nothing; you don't repeat it.
+
+It's written for the **October 2026 release**: the `merge` branch, 46 commits on top of `3cd2d753`
+(`main` on 14 October 2026, the release the server was first built from). That release adds social
+publishing, email verification (phone verification ships switched off), caption translation, conversion capture and the booking-form
+fixes. Each one-time step below starts with a **Check**. If the check already passes, skip the step.
+
+## C1. What this release changes
+
+| Area | What changed | What you do |
+|---|---|---|
+| **Email verification, password reset** | Every account confirms a 6-digit emailed code before using the app, and "Forgot password?" works. Migration `V45` marks **every existing account** unverified. Spring refuses to start without the email settings. | **Required before the push:** C2.1 |
+| **Phone verification** | SMS verification of the contact number (Firebase Phone Auth), behind a switch that ships **off**, because SMS needs Firebase's paid Blaze plan. Numbers are saved unverified. `V46`. | Nothing for now. To turn it on later, see C2.4. |
+| **Caption translation** | Content Studio "Show English". `V47`. | Optional: `GROQ_TRANSLATION_MODEL` (C2.5) |
+| **Media uploads** | Images and videos go to a new private S3 bucket, served by the existing CloudFront distribution under `/media/*`. `V48`. | C2.2. Without it, upload endpoints answer `503` and the rest of the app works. |
+| **Social publishing** | Connect a Facebook Page, Instagram and TikTok; schedule and publish posts; hand paid ads to Meta (created **paused**); collect post metrics nightly. Spring runs two new background jobs. `V49`–`V52`, `V55`. | Meta and TikTok app setup: C2.3 |
+| **TikTok ad accounts** | A TikTok For Business connection beside Meta. | Optional: C2.3 |
+| **Ad planner and spending limits** | A paid ad is blocked until the business saves a daily and a total limit. `V55`. | Tell operators: C2.6 |
+| **Content Studio drafts** | Named, saved drafts. `V54`. | Nothing |
+| **Conversion capture** | Campaign codes in captions, "Log a booking", statistical lift, and the CVLAUNCH walk-in voucher. `V53`. | Optional, per operator: create the voucher (C4 step 6) |
+| **Booking form** | Hosted tracked links now land on `https://<domain>/enquiry` (before, they redirected to a page that didn't exist). A repeat click keeps its form, the form stays open after the campaign window, and operators mark each enquiry **Booked** (with revenue) or **Declined**. `/r/*` is rate-limited per address; over the limit the traveller is still redirected but not counted. `V56`. | Nothing to set: `FRONTEND_BASE_URL` and `CEVIEW_ATTRIBUTION_BASE_URL` already come from `DOMAIN`. Verified in C4. |
+| **Legal pages** | The terms and privacy notice are now pages in the app at `/terms` and `/privacy`. `VITE_PRIVACY_URL` and `VITE_TERMS_URL` are no longer read. | Point Meta's and TikTok's privacy-policy URL at `https://<domain>/privacy` (C2.3). |
+| **Forecast ingestion** | `INGESTION_ENABLED` is now read from Parameter Store (it was hard-coded on). `MODULE2_MARKETS` was removed; nothing read it. | Optional (A2). A leftover `MODULE2_MARKETS` parameter is harmless. |
+| **UI redesign** | Landing page, sign-in, onboarding, dashboard, Content Studio, Performance and Settings. | Nothing |
+
+**Not changed:**
+- the deploy workflow, `deploy.env`, Caddy, the CloudFront function, and the bootstrap, deploy, backup and init scripts;
+- the `ceview-box` policy;
+- the three image names and the Python dependencies;
+- the AI models (Part D).
+
+Don't re-run `init-data.sh`.
+
+**Database.** Twelve Flyway migrations, `V45`–`V56`, run automatically the first time the new
+spring-boot starts. All are additive: new tables, new columns with defaults or nullable, and one
+widened CHECK constraint (`V49`). The only change to existing rows is `V45`'s verification flag. None
+insert seed rows, so A4's "no demo rows" rule holds.
+
+## C2. Before you push
+
+Work in **Singapore** unless a step says otherwise. Run the **Check** commands in CloudShell. C2.1 must
+be done before C3, or the release rolls itself back. The other steps only switch their own features
+on, but do them first anyway so the post-release checks in C4 can pass in one go.
+
+### C2.1 Email delivery (required)
+
+**Check:**
+
+```bash
+aws ssm get-parameters --names /ceview/prod/EMAIL_PROVIDER /ceview/prod/RESEND_API_KEY \
+  /ceview/prod/EMAIL_FROM --query InvalidParameters
+# [] means all three exist
+aws ssm get-parameter --name /ceview/prod/CEVIEW_TEST_SUPPORT_ENABLED 2>&1 | grep -q ParameterNotFound \
+  && echo "ok: test-support hook absent"
+```
+
+1. If any of the three is missing, do B9 "Email delivery (Resend)" steps 1–4. Wait until Resend shows
+   the domain **Verified**.
+2. If `CEVIEW_TEST_SUPPORT_ENABLED` exists, delete it. Spring refuses to start with it alongside Resend.
+
+### C2.2 Media storage (S3 bucket, CloudFront `/media/*`, IAM user)
+
+The two policy files already contain this deployment's values, `ceview.online` and `410133709862`. If
+your `<domain>` or `<account-id>` differ, edit them first.
+
+**Check:** `aws ssm get-parameters --names /ceview/prod/MEDIA_BUCKET /ceview/prod/MEDIA_AWS_ACCESS_KEY_ID /ceview/prod/MEDIA_AWS_SECRET_ACCESS_KEY --query InvalidParameters`
+prints `[]`, and `curl -sI https://<domain>/media/check` does **not** answer `200` with
+`content-type: text/html`. (That would be the SPA's `index.html`, meaning the `/media/*` behavior is missing.)
+
+1. **Bucket.** *S3 → Create bucket*: `ceview-prod-media-<account-id>`. Keep **Block all public access**
+   on, SSE-S3 encryption, and versioning off.
+2. **CORS.** The browser uploads straight to the bucket. Go to *Bucket → Permissions → Cross-origin
+   resource sharing* and paste `deploy/aws/s3/media-bucket-cors.json`. `AllowedOrigins` must be
+   exactly `https://<domain>`.
+3. **CloudFront origin.** *CloudFront → your distribution → Origins → Create origin*:
+   1. Choose the media bucket.
+   2. Set Origin access to **Origin access control** (create new, defaults).
+   3. Use the **Copy policy** banner, then paste the policy into the media bucket's *Permissions → Bucket policy*.
+4. **CloudFront behavior.** *Behaviors → Create behavior*:
+   - Path pattern `/media/*`, origin the media bucket.
+   - Redirect HTTP to HTTPS, allowed methods GET and HEAD, cache policy CachingOptimized.
+   - **No function association.** `ceview-spa-rewrite` stays on the default behavior only. Attached
+     here, it would turn media URLs into `index.html`.
+
+   Wait until the distribution shows *Deployed*.
+5. **IAM user.** *IAM → Users → Create user* `ceview-media`, with no console access.
+   1. Attach a new policy built from `deploy/aws/iam/media-user-policy.json`. It allows object read,
+      write and delete under `media/`, plus list on the bucket.
+   2. *Security credentials → Create access key*, use case "Application running outside AWS".
+   3. Save the key pair in your password manager.
+
+   The app signs upload URLs with this key, not with `ceview-box`.
+6. **Parameter Store** (SecureString): `/ceview/prod/MEDIA_BUCKET` = `ceview-prod-media-<account-id>`,
+   `/ceview/prod/MEDIA_AWS_ACCESS_KEY_ID`, `/ceview/prod/MEDIA_AWS_SECRET_ACCESS_KEY`.
+
+You don't need any other media settings. The compose file sets `MEDIA_STORAGE=s3`, the region, and
+`MEDIA_PUBLIC_BASE_URL=https://<domain>`. Details and limits: [`SOCIAL_PUBLISHING_SETUP.md`](SOCIAL_PUBLISHING_SETUP.md)
+part A.
+
+### C2.3 Meta and TikTok apps
+
+**Facebook and Instagram come first; TikTok can wait.** Settings → Platforms shows both TikTok rows
+(publishing and ads) as **In development**, with no Connect button, until the TikTok setup below is done
+and `tiktok` is removed from `frontend/components/settings/platformAvailability.ts`.
+
+Register three callback URLs in total, each **byte for byte**, with no trailing slash:
+
+| App | Callback URL | New? |
+|---|---|---|
+| Meta app (ads and publishing share one login) | `https://api.<domain>/api/ad-connections/meta/callback` | No, already registered (B14) |
+| TikTok For Business (ads), optional | `https://api.<domain>/api/ad-connections/tiktok/callback` | Yes |
+| TikTok for Developers (publishing) | `https://api.<domain>/api/social-connections/tiktok/callback` | Yes |
+
+**Meta** (the existing app, `META_APP_ID`):
+1. Add the Pages API and the Instagram/Marketing API products the dashboard offers. The login now
+   requests:
+   - `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `read_insights`
+   - `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`
+   - `ads_management`, `ads_read`, `business_management`
+2. Set the **Privacy Policy URL** to `https://<domain>/privacy`.
+3. The app stays in Development mode. Under *App roles → Testers*, add every pilot operator's Facebook
+   account. Each operator's Instagram must be a **Business or Creator** account linked to a Page they
+   administer.
+
+**TikTok for Developers (publishing).** This is a separate app from the ads one.
+1. Products **Login Kit** and **Content Posting API**, with scopes `user.info.basic`, `video.upload`
+   and `video.list`.
+2. Redirect URI as in the table. Use **Sandbox**, and add each pilot TikTok account as a target user.
+3. Verify the URL prefix `https://<domain>/media/` (needs C2.2). If the portal gives you a file, upload
+   it to the media bucket under `media/`.
+4. Parameter Store: `/ceview/prod/TIKTOK_CONTENT_CLIENT_KEY` and `/ceview/prod/TIKTOK_CONTENT_CLIENT_SECRET`.
+
+**TikTok For Business (ads), optional.** Register the redirect URI, then create
+`/ceview/prod/TIKTOK_APP_ID` and `/ceview/prod/TIKTOK_APP_SECRET`. See
+[`AD_PLATFORM_SETUP.md`](../AD_PLATFORM_SETUP.md).
+
+Without the TikTok parameters, the matching connection shows "not configured". Every Meta call now
+uses Graph API **v25.0**. The production compose file doesn't pass `META_GRAPH_BASE_URL` or
+`META_DIALOG_URL`, so changing the version means adding both to `spring-boot`'s environment in a release.
+
+### C2.4 Firebase phone verification (off for now, skip)
+
+**SMS phone verification ships switched off**, because Firebase Phone Auth needs the paid **Blaze**
+plan. Google sign-in keeps working on the free plan.
+
+With it off:
+- the contact number is a plain field, with no "Send code";
+- the number is saved unverified;
+- *Settings → Business profile* shows the number without a "Not verified" warning or a "Verify number"
+  button.
+
+There's nothing to do for this release.
+
+**To turn it on later** (both switches must match, and the frontend one needs a release):
+1. In the Firebase console:
+   1. *Authentication → Sign-in method*: enable **Phone**.
+   2. Move the project to **Blaze** and set a budget alert on the Google Cloud billing account. The
+      first 10 real SMS a day are free; after that each SMS is billed.
+   3. *Authentication → Settings → SMS region policy*: allow only `+63`. This blocks SMS-pumping fraud.
+   4. *Sign-in method → Phone → Phone numbers for testing*: add a fictional number for demos. Test
+      numbers never send an SMS.
+2. Add `VITE_PHONE_VERIFICATION_ENABLED=true` to `deploy/aws/frontend.production.env` and merge it.
+3. Create `/ceview/prod/PHONE_VERIFICATION_ENABLED` = `true` in Parameter Store.
+4. Release (C3).
+
+Details: [`RUNNING.md`](../RUNNING.md) §6.
+
+### C2.5 Optional parameters
+
+All optional. The defaults are what the release runs with if you skip them.
+
+| Parameter | Default | Set it when |
+|---|---|---|
+| `/ceview/prod/GROQ_TRANSLATION_MODEL` | `GROQ_MODEL` | You want "Show English" on a second Groq model, so it has its own rate limit (Part D). |
+| `/ceview/prod/INGESTION_ENABLED` | `true` | `false` stops the nightly SerpApi sweep (A2). |
+| `/ceview/prod/SOCIAL_DISPATCH_ENABLED` | `true` | `false` pauses Instagram and TikTok delivery. Posts wait as pending. Facebook uses Meta's own scheduler. |
+| `/ceview/prod/SOCIAL_DISPATCH_DELAY_MS` | `30000` | You want the dispatcher to poll less often. |
+| `/ceview/prod/SOCIAL_METRICS_ENABLED`, `/ceview/prod/SOCIAL_METRICS_CRON` | `true`, `0 0 3 * * *` (03:00 UTC) | You want to stop or move the nightly post-metrics job. |
+
+**Never** create `CEVIEW_TEST_SUPPORT_ENABLED` in production.
+
+### C2.6 Tell the operators (a day ahead)
+
+- At their next sign-in each operator is asked for a code emailed to them; tell them to check spam.
+  "Continue with Google" with the same, Google-verified address also verifies them. **If they do that
+  on a password account they haven't verified yet, the password is removed** and they sign in with
+  Google from then on.
+- Meta connections made before this release only have ads access. To publish, reconnect under
+  *Settings → Platforms* and pick a Page.
+- Paid ads need a daily and a total limit under *Settings → Platforms → Ad spending limits* first.
+  CeView creates Meta ads **paused**; the operator launches them in Ads Manager.
+- Release outside business hours (A4): the API is down for 30–90 seconds while spring-boot restarts
+  and runs the migrations.
+
+## C3. Release
+
+1. Open a PR from `merge` to `main`, get it reviewed, and merge it. Wait for CI to pass on `main`.
+2. Push the deploy branch. It must be a fast-forward:
+   ```bash
+   git fetch origin
+   git push origin origin/main:release
+   ```
+3. Watch *GitHub → Actions → deploy-aws*: three images, the release bundle, then the frontend. The
+   frontend can go live about 2 minutes before the backend (A4). Until the server switches over, new
+   screens may briefly show errors.
+4. On the server (Lightsail browser SSH):
+   ```bash
+   sudo tail -f /var/log/ceview/deploy.log      # wait for "DEPLOY_OK sha=<new sha>"
+   ```
+   The health gate allows 10 minutes. If spring-boot isn't healthy by then, the server switches back to
+   the previous release by itself and logs `DEPLOY_FAILED`, which emails you (B15). Find the cause in
+   `sudo ceview-compose logs --tail=200 spring-boot` before trying again. The usual one is
+   `Refusing to start:` followed by the missing email setting (C2.1).
+
+## C4. Verify
+
+On the server:
+
+1. Migrations ran, and the schema is at version 56:
+   ```bash
+   sudo ceview-compose logs spring-boot | grep -E "Successfully applied|Refusing to start"
+   # Successfully applied 12 migrations to schema "public", now at version v56
+   sudo ceview-compose exec -T postgres psql -U ceview -d ceview -tAc \
+     "SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;"   # 56
+   ```
+2. No public URL still points at `localhost`. This should print nothing; the new startup check warns if
+   either URL is still local:
+   ```bash
+   sudo ceview-compose logs spring-boot | grep -E "WARN.*(CEVIEW_ATTRIBUTION_BASE_URL|FRONTEND_BASE_URL)"
+   ```
+3. Memory has headroom with the new background jobs. Run `sudo docker stats --no-stream`: spring-boot
+   should stay well under its 900 MB limit. If the memory alarm starts firing, see B18 "Resize to 8GB".
+
+In the browser, at `https://<domain>`:
+
+4. **Accounts.** Sign in as an existing operator: you're asked for an emailed code, and it arrives.
+   Register a new operator: the contact number is a plain field with no "Send code", and sign-up
+   completes.
+5. **Booking form.** This is the path paid ads depend on.
+   1. *Content Studio → Ad URL*: the bare link starts with `https://api.<domain>/r/`.
+   2. Open it in a private window. It redirects to `https://<domain>/enquiry?cv=…` and shows "Enquire
+      with" followed by the business name. From CloudShell,
+      `curl -sI https://api.<domain>/r/<slug>` shows `302` and that `location`.
+   3. Open the link a second time within a minute. The form still loads.
+   4. Submit, then on the dashboard mark the enquiry **Booked** with a revenue figure. *Performance →
+      Code-redemption evidence* shows it.
+   5. **Real client IPs.** Open the same link on a phone using mobile data within a minute of the laptop.
+      It must get its own working form. If it says the enquiry was already sent, Spring sees Caddy's
+      address for everyone: check that `SERVER_FORWARD_HEADERS_STRATEGY: native` is in the
+      running compose file.
+6. **CVLAUNCH voucher (optional, per operator).** Nothing creates the voucher yet, so the Performance
+   card says "No CVLAUNCH voucher is active". With that operator's token, call:
+   ```bash
+   curl -s -X POST https://api.<domain>/api/attribution/vouchers/cvlaunch \
+     -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+     -d '{"category":"<category>","targetMarket":"<market>","windowStart":"2026-11-01T00:00:01+08:00","windowEnd":"2026-12-31T23:59:59+08:00"}'
+   ```
+   A voucher shares a unique key (business, category, market, window start) with that business's surge
+   codes. Give it a start time no surge window uses; the `:01` second above is enough.
+7. **Media and publishing.**
+   - Upload an image in Content Studio, then open its `https://<domain>/media/…` URL: `200` from CloudFront.
+   - The curl round trip in [`SOCIAL_PUBLISHING_SETUP.md`](SOCIAL_PUBLISHING_SETUP.md) part A checks the same thing.
+   - Connect Meta with a tester account (Pages listed) and TikTok with a sandbox account.
+   - Publish one test post to a test Page.
+8. **The rest.** Content Studio "Show English" returns a translation, and `/terms` and `/privacy` load.
+   Then work through B17 again; the items it gained for this release are marked there.
+
+## C5. Roll back this release
+
+| Situation | Action |
+|---|---|
+| The release fails its health check | Automatic: the server returns to `3cd2d753`. |
+| The release is healthy but broken | In CloudShell: `aws ssm put-parameter --name /ceview/prod/release-sha --value 3cd2d753d48faa2fb23f725d487cce66a134ebda --overwrite`. The server switches within 2 minutes. Then `git revert` on `main` so the next push doesn't bring it back. |
+
+**The schema stays at `V56` after a rollback, and that's fine.** Every change is additive. The old
+release's Flyway ignores migrations it doesn't know, and Hibernate's `validate` only checks the
+columns it maps. **Don't drop the new tables.** When the fix is ready, roll forward again. While rolled
+back:
+- nobody is asked to verify email or phone;
+- scheduled Instagram and TikTok posts aren't delivered (Facebook posts already handed to Meta still
+  go out on Meta's schedule);
+- the publishing screens and enquiry outcomes are hidden.
+
+Uploaded media, publishing tokens, outcomes and verification state are all kept for the roll-forward.
+The new parameters are harmless to the old release.
+
+## C6. Optional: cost cuts added to this guide since the first build
+
+The server was built from the earlier edition of Part B, so it may still carry three costs that the
+current edition removes:
+
+1. **Instance snapshots.**
+   1. Lightsail → `ceview-prod-1` → *Snapshots*: turn **off** automatic snapshots.
+   2. Delete the existing instance snapshots.
+   3. Keep the **disk** (`ceview-prod-data`) snapshots on.
+
+   This saves about $2–4/month (A2).
+2. **Route 53 health check.**
+   1. Replace it with a free external monitor (B15 step 4).
+   2. Delete the health check, its alarm, and the `us-east-1` `ceview-alerts` SNS topic.
+
+   This saves about $0.50–0.75/month.
+3. **Budgets.** Lower the monthly budget to $30, add the zero-spend budget, and note the credit expiry
+   dates (B1 steps 5–6).
+
+---
+
+# Part D — Migrating the models
+
+**This release changes no model.** It only adds `GROQ_TRANSLATION_MODEL`, which defaults to the
+existing `GROQ_MODEL`. Use this part when you later want to swap a model or move them all onto AWS.
+
+## D1. What runs today
+
+| Job | Model | Runs on | Set by |
+|---|---|---|---|
+| Captions, creative direction, AI report and PES analysis | `openai/gpt-oss-120b` | Groq | `GROQ_MODEL` |
+| Content Studio "Show English" | same as `GROQ_MODEL` | Groq | `GROQ_TRANSLATION_MODEL` |
+| Compliance audit (reads images) | `qwen/qwen3.8-27b` | Groq | `OMCS_VISION_MODEL` |
+| Business classification | `JamJamzz/ceview_sbert` | Hugging Face Space | `HF_SPACE_ID` |
+| Demand forecast | `JamJamzz/ceview-demand-prediction-model` | Hugging Face Space | `FORECAST_ENGINE: bilstm`, hard-coded in `docker-compose.prod.yml`; the Space id is the code default `HF_DEMAND_SPACE` |
+| Uniqueness and profile-alignment embeddings | `intfloat/multilingual-e5-base` (768 dimensions) | In `fastapi-sbert`, cached on `/data/hf-cache` | Code constant (`BertModel.py`) |
+| Market scoring | XGBoost `xgboost_market.json` | In `fastapi-transformer` | Baked into the image |
+
+## D2. Swap a model by configuration (no release)
+
+The first four rows read Parameter Store, so a swap is a secret change:
+
+1. Confirm the new model is available on your Groq key and note its rate limits. Groq models are listed
+   at console.groq.com. `OMCS_VISION_MODEL` must accept images.
+2. Create or edit the parameter, for example `/ceview/prod/GROQ_TRANSLATION_MODEL` = `<model id>`.
+3. On the server: `sudo /opt/ceview/current/scripts/fetch-secrets.sh && sudo ceview-compose up -d`.
+   This recreates `fastapi-sbert`, which reloads E5 from its cache. Give it a few minutes.
+4. Test the job the model serves: a caption, "Show English", or a compliance audit.
+5. **To undo,** delete the parameter and repeat step 3.
+
+Notes:
+- `GROQ_MODEL` is shared by both FastAPI services. `fastapi-transformer` only uses it when
+  `FORECAST_ENGINE=groq`.
+- Groq's limits are **per model**, so a second model for translation spreads the free-tier load.
+- After switching the audit model, compare a few audit scores with the old ones before trusting them.
+
+**These need a release, not just a parameter:**
+- `FORECAST_ENGINE` and `HF_DEMAND_SPACE`, plus `OMCS_MAX_OUTPUT_TOKENS` (default 450) and
+  `OMCS_RATE_LIMIT_MAX_WAIT_S` (default 20). The code reads them, but the production compose file
+  doesn't pass them, so add them to the service's `environment` in `docker-compose.prod.yml`.
+- **The embedding model.** Every stored vector is tagged `intfloat/multilingual-e5-base+e5prefix` and
+  the column is `vector(768)`.
+- **XGBoost.** It's a file in the image.
+
+Changing the embedding model means:
+- new code;
+- a migration if the dimension changes;
+- regenerating `deploy/aws/sql/uniqueness-corpus.sql` and re-importing it;
+- re-embedding every business.
+
+Until then, uniqueness scores mix vectors from two models and mean nothing.
+
+## D3. Move the models onto AWS (planned, not built)
+
+The target is that pilot users never hit a third-party rate limit: Hugging Face Spaces sleeping,
+Groq's free tier, or Hub downloads. The full runbook and code spec is
+[`AWS_MODEL_MIGRATION.md`](https://github.com/SherieHub/CeView/blob/model-migration/docs/AWS_MODEL_MIGRATION.md),
+on the `model-migration` branch until it's merged (then it lives at `docs/AWS_MODEL_MIGRATION.md`).
+In short:
+
+| Model | Today | After |
+|---|---|---|
+| `ceview_sbert` classifier, demand forecaster | Hugging Face Spaces | In-process in each FastAPI service, weights synced from `s3://ceview-prod-ops-<account-id>/models/<model>/<version>/` to `/data/models` |
+| E5 embeddings | Downloaded from the Hub on first use | Same model, loaded from `/data/models` with `HF_HUB_OFFLINE=1` (no re-embedding) |
+| Text LLM | Groq `openai/gpt-oss-120b` | Bedrock `openai.gpt-oss-120b-1:0`, with Groq as fallback |
+| Vision LLM | Groq `qwen/qwen3.8-27b` | Bedrock Nova 2 Lite (`global.amazon.nova-2-lite-v1:0`), with Groq as fallback |
+
+It adds:
+- Bedrock and `models/*` S3 permissions to `ceview-box`;
+- the server's AWS credentials mounted read-only into the FastAPI containers;
+- a `models/` sync in `deploy.sh`;
+- per-user daily AI quotas in Spring.
+
+Cut over in this order. Each step can be reversed on its own:
+1. Upload the weights, then pass a Bedrock smoke test from the server.
+2. Ship the in-process loaders with `CLASSIFIER_BACKEND=hf_space` and `FORECAST_ENGINE=bilstm` still
+   set. Flip each to `local` once its outputs match the saved Space outputs.
+3. Ship Bedrock with the Groq fallback.
+4. Ship the quotas.
+5. Measure memory and resize to 8GB if needed (B18).
+
+Before starting, update these facts in that document:
+- **Migration number.** This release ends at `V56`, so the quota table is `V57`, not the `V45` it names.
+- **Bedrock lifecycle.** gpt-oss-120b's listed end-of-life date has passed; confirm it's still
+  **Active** in the Bedrock console.
+- **Credits.** Check whether your credits cover Bedrock at all.
+- **Data routing.** Nova 2 Lite runs only on a Global profile, so audit images may be processed outside
+  Singapore. Add that to A3 if you accept it.
 
 ---
 
@@ -731,3 +1174,11 @@ Lightsail instance is still charged, and so are disks, snapshots and an unattach
 | Meta connect fails with "URL blocked" | The redirect URI in Meta doesn't exactly match `https://api.<domain>/api/ad-connections/meta/callback`. |
 | Market Radar says forecasts are unavailable part-way through the month | SerpApi's monthly quota is used up (A2). Check the SerpApi dashboard, then B9's `INGESTION_ENABLED` or a paid plan. |
 | AI features return 503 "dependency unavailable" | The Groq, SerpApi or HF key is missing or out of quota. Check Parameter Store, then run the "change a secret" steps. |
+| A release rolls back and `spring-boot` logs `Refusing to start:` | An email setting is missing (`RESEND_API_KEY` or `EMAIL_FROM` with `EMAIL_PROVIDER=resend`), or `CEVIEW_TEST_SUPPORT_ENABLED` is set. If `EMAIL_PROVIDER` itself is missing, compose stops before Spring starts. See C2.1. |
+| Media uploads answer `503` | One of the media parameters is missing (C2.2 step 6). Re-run `fetch-secrets.sh` and `ceview-compose up -d` after adding it. |
+| The browser's upload to S3 fails with a CORS error | The media bucket's CORS `AllowedOrigins` isn't exactly `https://<domain>` (C2.2 step 2). |
+| `https://<domain>/media/…` shows the app instead of the file | The `/media/*` behavior is missing, or `ceview-spa-rewrite` is attached to it (C2.2 step 4). |
+| TikTok rejects a post because of the media URL | The `https://<domain>/media/` prefix isn't verified in the TikTok developer portal (C2.3). |
+| After switching phone verification on, operators only ever see "Verify later" | Phone sign-in isn't enabled, the Firebase project isn't on Blaze, or the number is outside the SMS region policy (C2.4). |
+| Sign-up or profile completion fails with "phone verification required" | The two switches don't match: `/ceview/prod/PHONE_VERIFICATION_ENABLED` is `true` but the frontend was built without `VITE_PHONE_VERIFICATION_ENABLED=true`. Turn both on or both off (C2.4). |
+| A second device opening the same tracked link within a minute is told the enquiry was already sent | Spring sees Caddy's address for every visitor. Check that `SERVER_FORWARD_HEADERS_STRATEGY: native` is in the running compose file (C4 step 5). |

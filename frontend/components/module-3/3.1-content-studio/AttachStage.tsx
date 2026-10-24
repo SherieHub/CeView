@@ -26,9 +26,9 @@ interface AttachStageProps {
 }
 
 const REQUIREMENTS = [
-  'PNG, JPG, or WEBP format',
+  'PNG, JPG or WEBP image, or MP4 / MOV video',
   'High resolution (recommended)',
-  'Maximum file size: 20 MB',
+  'Maximum file size: 8 MB for images, 250 MB for video',
   'Clear and relevant to your caption',
 ];
 

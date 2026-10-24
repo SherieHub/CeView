@@ -52,14 +52,23 @@ export async function requireTestSupport() {
   }
 }
 
-/** Registers an account through the API (it starts unverified) and returns its session token. */
-export async function registerViaApi(email: string, password = E2E_PASSWORD): Promise<string> {
+/**
+ * Registers an account through the API (it starts unverified) and returns its session token.
+ * `verifyLater` is the same path the sign-up form takes when no SMS provider is configured; a
+ * backend with Firebase credentials 400s a registration that sends neither it nor a phone token.
+ */
+export async function registerViaApi(
+  email: string,
+  password = E2E_PASSWORD,
+  names: { firstName?: string; lastName?: string } = {},
+): Promise<string> {
   const { status, body } = await postJson('/api/auth/register', {
-    firstName: 'E2E',
-    lastName: 'Tester',
+    firstName: names.firstName ?? 'E2E',
+    lastName: names.lastName ?? 'Tester',
     email,
     password,
     contactNumber: '+63 917 000 0000',
+    verifyLater: true,
   });
   if (status !== 200) throw new Error(`register ${email} failed: HTTP ${status}`);
   return body.token as string;

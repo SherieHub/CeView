@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 import { apiClient, type PhoneProof } from './apiClient';
 import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
 import { clearTokens, loadTokens, saveTokens } from './authStorage';
+import { clearForecastCache } from './forecastCache';
 import type { AuthSession, AuthUser } from '../types';
 
 interface AuthContextValue {
@@ -124,6 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearTokens();
+    // The cached forecast is the previous operator's data; never leave it for the next login.
+    clearForecastCache();
     setUser(null);
     setProfileCompleted(null);
     setEmailVerified(null);

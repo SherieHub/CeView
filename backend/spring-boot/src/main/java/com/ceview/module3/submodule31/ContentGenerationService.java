@@ -9,6 +9,9 @@ import com.ceview.module2.submodule22.MarketScore;
 import com.ceview.module2.submodule22.MarketScoreRepository;
 import com.ceview.module3.Module3ErrorCodes;
 import com.ceview.module3.dto.ContentDtos.*;
+import com.ceview.module4.attribution.AttributionCode;
+import com.ceview.module4.attribution.AttributionCodeService;
+import com.ceview.module4.attribution.link.AttributionLinkService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,8 @@ public class ContentGenerationService {
     private final LocalizedPromotionalContentRepository contentRepo;
     private final ContentGenerationLogRepository logRepo;
     private final ObjectMapper mapper;
+    private final AttributionCodeService attributionCodes;
+    private final AttributionLinkService attributionLinks;
 
     public ContentGenerationService(AIInferenceGatewayService ai,
                                     BusinessProfileRepository profileRepo,
@@ -50,7 +55,9 @@ public class ContentGenerationService {
                                     MarketScoreRepository scoreRepo,
                                     LocalizedPromotionalContentRepository contentRepo,
                                     ContentGenerationLogRepository logRepo,
-                                    ObjectMapper mapper) {
+                                    ObjectMapper mapper,
+                                    AttributionCodeService attributionCodes,
+                                    AttributionLinkService attributionLinks) {
         this.ai          = ai;
         this.profileRepo = profileRepo;
         this.forecastRepo = forecastRepo;
@@ -58,6 +65,8 @@ public class ContentGenerationService {
         this.contentRepo = contentRepo;
         this.logRepo     = logRepo;
         this.mapper      = mapper;
+        this.attributionCodes = attributionCodes;
+        this.attributionLinks = attributionLinks;
     }
 
     /**
@@ -71,6 +80,20 @@ public class ContentGenerationService {
     public ContentResponseDto generate(UUID profileId, String market,
                                        String businessName, String description,
                                        List<String> categories, String trend) {
+        return generate(profileId, market, businessName, description, categories, trend, null);
+    }
+
+    /**
+     * @param demandAlertId optional; the alert the operator opened Content Studio
+     *                      from. Pins which surge window's attribution code the
+     *                      captions carry. Without it the market's live-or-upcoming
+     *                      window is used, and with no window at all captions are
+     *                      generated untagged, as before.
+     */
+    public ContentResponseDto generate(UUID profileId, String market,
+                                       String businessName, String description,
+                                       List<String> categories, String trend,
+                                       UUID demandAlertId) {
         // FR3.1 — retrieve validated business attributes from DB when profileId is provided
         BusinessProfile profile = profileId != null
                 ? profileRepo.findById(profileId).orElse(null)
@@ -128,6 +151,22 @@ public class ContentGenerationService {
             log.warn("content.generate deserialize failed for market={}", market, e);
             MDC.remove("code");
             throw e;
+        }
+
+        // CVW-42 — every caption carries the surge window's attribution code, so a
+        // booking the caption produced can be traced back to it.
+        if (profileId != null) {
+            Optional<AttributionCode> code = attributionCodes.findForContent(
+                    profileId, market, marketCategory, demandAlertId);
+            if (code.isPresent()) {
+                // The link is minted with the code for the same window, so clicks
+                // from the caption count as link-attributed evidence too.
+                AttributionCodeCaptions.TrackedLink link = attributionLinks.findForCode(code.get())
+                        .map(l -> new AttributionCodeCaptions.TrackedLink(
+                                attributionLinks.urlsFor(l).linkUrl(), l.getDestinationUrl()))
+                        .orElse(null);
+                dto = AttributionCodeCaptions.stamp(dto, market, code.get().getCode(), link);
+            }
         }
 
         // FR3.10 — persist generated content per platform

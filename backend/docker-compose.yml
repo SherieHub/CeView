@@ -117,6 +117,19 @@ services:
       META_APP_SECRET: ${META_APP_SECRET:-}
       TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
       TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TIKTOK_CONTENT_CLIENT_KEY: ${TIKTOK_CONTENT_CLIENT_KEY:-}
+      TIKTOK_CONTENT_CLIENT_SECRET: ${TIKTOK_CONTENT_CLIENT_SECRET:-}
+      MEDIA_STORAGE: ${MEDIA_STORAGE:-local}
+      MEDIA_LOCAL_DIR: /app/media-uploads
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:8080}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-}
+      MEDIA_AWS_REGION: ${MEDIA_AWS_REGION:-ap-southeast-1}
+      MEDIA_AWS_ACCESS_KEY_ID: ${MEDIA_AWS_ACCESS_KEY_ID:-}
+      MEDIA_AWS_SECRET_ACCESS_KEY: ${MEDIA_AWS_SECRET_ACCESS_KEY:-}
+      SOCIAL_DISPATCH_ENABLED: ${SOCIAL_DISPATCH_ENABLED:-true}
+      SOCIAL_DISPATCH_DELAY_MS: ${SOCIAL_DISPATCH_DELAY_MS:-30000}
+      SOCIAL_METRICS_ENABLED: ${SOCIAL_METRICS_ENABLED:-true}
+      SOCIAL_METRICS_CRON: ${SOCIAL_METRICS_CRON:-0 0 3 * * *}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       # Public HTTPS origin the platforms redirect back to. In local dev this
       # is a native `cloudflared tunnel --url http://localhost:8080` (or
@@ -126,6 +139,8 @@ services:
       # (§5) each session.
       OAUTH_REDIRECT_BASE_URL: ${OAUTH_REDIRECT_BASE_URL:-}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3001}
+    volumes:
+      - ceview-media-uploads:/app/media-uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,3 +154,4 @@ services:
 volumes:
   ceview-pgdata:
   ceview-hf-cache:
+  ceview-media-uploads:

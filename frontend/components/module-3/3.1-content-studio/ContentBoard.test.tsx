@@ -32,6 +32,17 @@ describe('ContentBoard publish disclosure', () => {
 });
 
 describe('ContentBoard post detail', () => {
+  it('does not describe a failed sibling delivery as published', () => {
+    const common = { date: '2026-10-20', caption: 'Mixed outcome', reach: null, likes: null, comments: null, shares: null, engagementRate: null, series: [], metricsAvailable: false };
+    const posts: PublishedPost[] = [
+      { ...common, id: 'confirmed', platform: 'instagram', status: 'published' },
+      { ...common, id: 'rejected', platform: 'facebook', status: 'failed', errorMessage: 'Reconnect' },
+    ];
+    renderBoard(<ContentBoard draft={DRAFT} posts={posts} canPublish={false} onPublished={vi.fn()} openPostId="confirmed" onOpenPost={vi.fn()} justPublished={['confirmed', 'rejected']} />);
+    const dialog = screen.getByRole('dialog', { name: 'Published to Instagram' });
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Published to Instagram just now.');
+    expect(within(dialog).getByRole('status')).not.toHaveTextContent('Facebook');
+  });
   const NEW: PublishedPost[] = [
     { id: 'n1', date: '2026-10-17', platform: 'instagram', caption: 'Fresh post', status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [], mediaUrl: 'data:image/png;base64,x' },
     { id: 'n2', date: '2026-10-17', platform: 'facebook', caption: 'Fresh post', status: 'published', reach: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, series: [], mediaUrl: 'data:image/png;base64,x' },

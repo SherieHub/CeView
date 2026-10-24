@@ -16,27 +16,21 @@
  * Named .tsx (not .ts, despite the card text) since PostStoreProvider
  * renders JSX — same reasoning as obDraft.tsx in Module 1.
  */
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { PlatformId, PublishedPost } from '../types';
+import type { PublishRequest, PublishedPost } from '../types';
 import { apiClient } from './apiClient';
 
-export interface PublishDraft {
-  caption: string;
-  mediaDataUrl: string | null;
-  platforms: PlatformId[];
-}
+export type PublishDraft = PublishRequest;
 
 export interface PostStore {
   posts: PublishedPost[] | null;
-  publish(draft: PublishDraft): PublishedPost[];
+  publish(draft: PublishDraft): Promise<PublishedPost[]>;
+  error: string | null;
+  refresh(): Promise<void>;
   /** Adds posts a screen built itself (Quick Post's publish or schedule). */
   add(created: PublishedPost[]): void;
   metricsFor(postId: string): PublishedPost | null;
-}
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const PostStoreContext = createContext<PostStore | null>(null);
@@ -45,33 +39,40 @@ export function PostStoreProvider({ children, initial }: { children: ReactNode; 
   // `initial` seeds the dev preview with its demo board instead of fetching.
   const [posts, setPosts] = useState<PublishedPost[] | null>(initial ?? null);
 
+  const [error, setError] = useState<string | null>(null);
+  const requestSeq = useRef(0);
+  async function refresh() {
+    const seq = ++requestSeq.current;
+    try {
+      const list = await apiClient.posts.list();
+      if (seq !== requestSeq.current) return;
+      setPosts(list); setError(null);
+    } catch (err) {
+      if (seq !== requestSeq.current) return;
+      setPosts((current) => current ?? []);
+      setError(err instanceof Error ? err.message : 'Unable to load posts');
+    }
+  }
   useEffect(() => {
     if (initial) return;
-    apiClient.posts
-      .list()
-      .then((list) => setPosts(list as PublishedPost[]))
-      .catch(() => setPosts([]));
+    void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (initial) return;
+    const timer = window.setInterval(() => { void refresh(); }, 30000);
+    return () => window.clearInterval(timer);
+  }, [initial]);
+
   function add(created: PublishedPost[]) {
-    setPosts((prev) => [...created, ...(prev ?? [])]);
+    requestSeq.current += 1; // A pre-publication read must not erase the confirmed write.
+    setError(null);
+    setPosts((prev) => [...created, ...(prev ?? []).filter((p) => !created.some((n) => n.id === p.id))]);
   }
 
-  function publish(draft: PublishDraft): PublishedPost[] {
-    const created: PublishedPost[] = draft.platforms.map((platform) => ({
-      id: `p-${Date.now()}-${platform}`,
-      date: todayISO(),
-      platform,
-      caption: draft.caption,
-      status: 'published',
-      reach: 0,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      engagementRate: 0,
-      series: [],
-    }));
+  async function publish(draft: PublishDraft): Promise<PublishedPost[]> {
+    const created = await apiClient.posts.publish(draft);
     add(created);
     return created;
   }
@@ -81,9 +82,9 @@ export function PostStoreProvider({ children, initial }: { children: ReactNode; 
   }
 
   const value = useMemo<PostStore>(
-    () => ({ posts, publish, add, metricsFor }),
+    () => ({ posts, publish, add, metricsFor, error, refresh }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [posts]
+    [posts, error]
   );
 
   return <PostStoreContext.Provider value={value}>{children}</PostStoreContext.Provider>;

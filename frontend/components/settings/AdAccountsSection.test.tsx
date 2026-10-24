@@ -3,7 +3,7 @@
  * server has no credentials, operator hasn't connected, operator connected but
  * hasn't picked an account, and fully active.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AdAccountsSection from './AdAccountsSection';
 import { ToastProvider } from '../shared/Toast';
@@ -66,6 +66,28 @@ describe('AdAccountsSection', () => {
     renderSection();
     expect(await screen.findByText('Meta Ads')).toBeInTheDocument();
     expect(screen.getByText('TikTok Ads')).toBeInTheDocument();
+  });
+
+  it('shows TikTok Ads as in development, with no Connect button, even when configured', async () => {
+    listMock.mockResolvedValue([
+      connection({ provider: 'meta' }),
+      connection({ provider: 'tiktok', configured: true }),
+    ]);
+    renderSection();
+    const row = (await screen.findByText('TikTok Ads')).closest('li') as HTMLElement;
+    expect(within(row).getByText('In development')).toBeInTheDocument();
+    expect(within(row).getByText(/coming soon/i)).toBeInTheDocument();
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+    // Meta is unaffected.
+    const metaRow = screen.getByText('Meta Ads').closest('li') as HTMLElement;
+    expect(within(metaRow).getByRole('button', { name: /connect/i })).toBeEnabled();
+  });
+
+  it('still lets an already-connected TikTok ad account disconnect', async () => {
+    listMock.mockResolvedValue([connection({ provider: 'tiktok', status: 'ACTIVE', accountName: 'TT Ads' })]);
+    renderSection();
+    fireEvent.click(await screen.findByRole('button', { name: /disconnect/i }));
+    await waitFor(() => expect(disconnectMock).toHaveBeenCalledWith('tiktok'));
   });
 
   it('says so when the server has no credentials for a provider', async () => {

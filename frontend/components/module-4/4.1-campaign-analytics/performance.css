@@ -162,7 +162,7 @@
   }
   .perf-ev-titles .perf-ev-title { padding-top: 0; }
   .perf-ev-sub { margin: 2px 0 0; font-size: .75rem; line-height: 1.45; color: #647887; }
-  .perf-ev-pick { display: grid; flex: 0 1 240px; gap: 4px; min-width: 0; }
+  .perf-ev-pick { display: grid; flex: 0 1 400px; gap: 4px; min-width: 0; }
   .perf-ev-pick .field-label { margin: 0; font-size: .75rem; font-weight: 600; color: #102f40; }
   .perf-ev-pick .input { height: 38px; padding: 0 10px; border: 1px solid #dfe9e6; border-radius: 10px; box-shadow: none; font-size: .8125rem; }
   .perf-ev-text { margin: 0; font-size: .8125rem; line-height: 1.55; color: #4a5f70; }
@@ -517,10 +517,10 @@
   .perf-ev-how > div { margin-top: 6px !important; }
   .perf-attr-more { display: grid; gap: 10px; }
   @media (min-width: 900px) { .perf-attr-more { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .perf-attr-item { display: flex; gap: 10px; padding: 12px 14px; border: 1px dashed #d5e3df; border-radius: 12px; background: #fafcfc; color: #7b8c99; }
-  .perf-attr-item > svg { flex: none; margin-top: 2px; }
-  .perf-attr-item-title { margin: 0; font-size: .8125rem; font-weight: 700; color: #4a5f70; }
-  .perf-attr-item p { margin: 2px 0 0; font-size: .75rem; line-height: 1.5; }
+  .perf-attr-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .perf-attr-col > .card { padding: 18px; }
+  /* Same title treatment as the link panel's card above. */
+  .perf-attr-col .card .heading-sm { font-family: var(--ff-display); font-optical-sizing: auto; font-size: 1.0625rem; font-weight: 600; color: #102f40; }
 
   /* ---------- published posts ---------- */
   .pp { display: grid; gap: 14px; padding: 20px; }

@@ -1,0 +1,2 @@
+[     214ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5199/node_modules/.vite/deps/react-dom_client.js?v=1309b7a0:20102
+[    3907ms] [WARNING] The resource http://localhost:5199/images/landing/hero-cebu-coast-2400.avif was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:5199/onboarding:0

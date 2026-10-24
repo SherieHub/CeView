@@ -27,7 +27,7 @@ type Filter = 'all' | CalStatus;
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const PLATFORM_NAMES: Record<string, string> = { instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
-const STATUS_LABEL: Record<CalStatus, string> = { scheduled: 'Scheduled', published: 'Published', draft: 'Draft' };
+const STATUS_LABEL: Record<CalStatus, string> = { scheduled: 'Scheduled', published: 'Published', draft: 'Draft', processing: 'Processing', inbox: 'Finish in TikTok', failed: 'Failed', cancelled: 'Cancelled' };
 const FILTERS: Array<{ id: Filter; label: string }> = [
   { id: 'all', label: 'All' },
   { id: 'scheduled', label: 'Scheduled' },
@@ -39,12 +39,12 @@ const MAX_CHIPS = 3;
 const monthLabel = (y: number, m: number) => new Date(y, m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 const longDay = (day: string) => dayFromIso(day).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 const shortDay = (day: string) => dayFromIso(day).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-const compact = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
+const compact = (n: number | null) => n == null ? 'Unavailable' : (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
 
 function Thumb({ post }: { post: PublishedPost }) {
   return (
     <span className="cal-thumb" aria-hidden="true">
-      {post.mediaUrl ? <img src={post.mediaUrl} alt="" /> : <CalendarDays size={18} />}
+      {post.mediaUrl ? (post.mediaType === 'video' ? <video src={post.mediaUrl} muted playsInline preload="metadata" /> : <img src={post.mediaUrl} alt="" />) : <CalendarDays size={18} />}
     </span>
   );
 }
@@ -66,11 +66,11 @@ function PostLine({ entry }: { entry: CalEntry }) {
           )}
         </div>
         <p className="cal-line-caption">{post.caption}</p>
-        {post.status === 'published' && post.reach > 0 && (
+        {post.status === 'published' && post.metricsAvailable !== false && (
           <p className="cal-line-metrics">
             <span><Eye size={13} aria-hidden="true" /> {compact(post.reach)} reach</span>
             <span><Heart size={13} aria-hidden="true" /> {compact(post.likes)} likes</span>
-            <span><TrendingUp size={13} aria-hidden="true" /> {post.engagementRate}% engagement</span>
+            <span><TrendingUp size={13} aria-hidden="true" /> {post.engagementRate == null ? 'Unavailable' : `${post.engagementRate}%`} engagement</span>
           </p>
         )}
       </div>

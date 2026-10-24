@@ -47,7 +47,9 @@ describe('AdUrlBlock', () => {
     expect(navigator.clipboard.writeText).toHaveBeenNthCalledWith(1, LINK.urls.linkUrl);
     expect(navigator.clipboard.writeText).toHaveBeenNthCalledWith(2, LINK.urls.metaAdUrl);
     expect(navigator.clipboard.writeText).toHaveBeenNthCalledWith(3, LINK.urls.tiktokAdUrl);
-    expect(screen.getByText(/Paste this into your ad's URL parameters field in Ads Manager/i)).toBeInTheDocument();
+    expect(screen.getByText(/Paste the Meta or TikTok ad URL into your ad's Website URL field in Ads Manager/i)).toBeInTheDocument();
+    // Meta's separate "URL parameters" field takes only the part after the "?", never the whole link.
+    expect(screen.getByText(/only the part after the \?/i)).toBeInTheDocument();
     expect(screen.getByText(/Instagram captions do not make links tappable/i)).toBeInTheDocument();
   });
 

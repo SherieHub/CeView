@@ -28,7 +28,9 @@ class MetaAdsClientAuthorizeUrlTest {
         assertTrue(decoded.startsWith("https://www.facebook.com/v21.0/dialog/oauth?"), decoded);
         assertTrue(decoded.contains("client_id=APP123"), decoded);
         assertTrue(decoded.contains("state=state-token-abc"), decoded);
-        assertTrue(decoded.contains("scope=ads_read"), decoded);
+        assertTrue(decoded.contains("scope=" + String.join(",", MetaAdsClient.REQUESTED_SCOPES)), decoded);
+        assertTrue(MetaAdsClient.REQUESTED_SCOPES.containsAll(MetaAdsClient.PUBLISH_SCOPES));
+        assertTrue(MetaAdsClient.REQUESTED_SCOPES.contains("ads_read"));
         assertTrue(decoded.contains(
                 "redirect_uri=https://tunnel.example.com/api/ad-connections/meta/callback"), decoded);
     }

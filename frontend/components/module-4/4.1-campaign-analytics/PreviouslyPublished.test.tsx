@@ -16,7 +16,7 @@ const POSTS: PublishedPost[] = [
 
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
-    posts: { list: vi.fn(() => Promise.resolve(POSTS)) },
+    posts: { metrics: vi.fn(() => Promise.resolve(null)), list: vi.fn(() => Promise.resolve(POSTS)) },
   },
 }));
 
@@ -40,6 +40,28 @@ beforeEach(() => {
 });
 
 describe('PreviouslyPublished', () => {
+  it('shows Meta ads in Performance after the platform reports actual reach', async () => {
+    const base = { ...POSTS[0], platform: 'meta_ads' as const, status: 'draft' as const, metricsAvailable: true };
+    vi.mocked((await import('../../../services/apiClient')).apiClient.posts.list).mockResolvedValueOnce([
+      ...POSTS,
+      { ...base, id: 'live-ad', caption: 'Ad with reported delivery', reach: 100 },
+      { ...base, id: 'paused-ad', caption: 'Paused ad without delivery', reach: 0 },
+    ]);
+    await ready();
+    expect(screen.getByText('Ad with reported delivery')).toBeInTheDocument();
+    expect(screen.queryByText('Paused ad without delivery')).not.toBeInTheDocument();
+  });
+  it('includes TikTok drafts only after the platform supplies public-post metrics', async () => {
+    const base = { ...POSTS[1], status: 'inbox' as const, reach: null, engagementRate: null };
+    vi.mocked((await import('../../../services/apiClient')).apiClient.posts.list).mockResolvedValueOnce([
+      ...POSTS,
+      { ...base, id: 'confirmed', caption: 'Public TikTok metrics', metricsAvailable: true },
+      { ...base, id: 'inbox-only', caption: 'Unfinished TikTok draft', metricsAvailable: false },
+    ]);
+    await ready();
+    expect(screen.getByText('Public TikTok metrics')).toBeInTheDocument();
+    expect(screen.queryByText('Unfinished TikTok draft')).not.toBeInTheDocument();
+  });
   it('shows exactly the filter tabs All / TikTok / Instagram / Facebook', async () => {
     await ready();
 

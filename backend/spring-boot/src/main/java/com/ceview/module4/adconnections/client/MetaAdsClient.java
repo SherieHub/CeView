@@ -43,8 +43,20 @@ public class MetaAdsClient implements AdPlatformClient {
     /** Hard stop on cursor-following, independent of row counts — see {@link #listAccounts}. */
     private static final int MAX_PAGES = 10;
 
-    /** Read-only access to ad account performance data. Nothing more is needed. */
-    private static final String SCOPE = "ads_read";
+    /**
+     * Everything the single Meta login asks for: ad reporting (Module 4), Page and
+     * Instagram publishing (Module 3), ad creation, and post insights. Which of these the
+     * operator actually grants is read back from /me/permissions after the exchange.
+     */
+    public static final List<String> REQUESTED_SCOPES = List.of(
+            "ads_read", "ads_management", "business_management",
+            "pages_show_list", "pages_read_engagement", "pages_manage_posts", "read_insights",
+            "instagram_basic", "instagram_content_publish", "instagram_manage_insights");
+
+    /** The subset a connection must hold before CeView will publish to a Page / Instagram account. */
+    public static final Set<String> PUBLISH_SCOPES = Set.of(
+            "pages_show_list", "pages_read_engagement", "pages_manage_posts",
+            "instagram_basic", "instagram_content_publish");
 
     /**
      * Which of Meta's {@code actions} entries count as a conversion.
@@ -71,9 +83,9 @@ public class MetaAdsClient implements AdPlatformClient {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public MetaAdsClient(AdProviderProperties props,
-                         @Value("${ceview.adplatform.meta.graph-base-url:https://graph.facebook.com/v21.0}")
+                         @Value("${ceview.adplatform.meta.graph-base-url:https://graph.facebook.com/v25.0}")
                          String graphBaseUrl,
-                         @Value("${ceview.adplatform.meta.dialog-url:https://www.facebook.com/v21.0/dialog/oauth}")
+                         @Value("${ceview.adplatform.meta.dialog-url:https://www.facebook.com/v25.0/dialog/oauth}")
                          String dialogUrl) {
         this.props = props;
         this.graphBaseUrl = graphBaseUrl;
@@ -97,7 +109,7 @@ public class MetaAdsClient implements AdPlatformClient {
                 .queryParam("client_id", encode(props.getMeta().getAppId()))
                 .queryParam("redirect_uri", encode(props.callbackUrl(AdProvider.META)))
                 .queryParam("state", encode(state))
-                .queryParam("scope", encode(SCOPE))
+                .queryParam("scope", encode(String.join(",", REQUESTED_SCOPES)))
                 .queryParam("response_type", encode("code"))
                 .build(true)
                 .toUriString();
@@ -155,8 +167,25 @@ public class MetaAdsClient implements AdPlatformClient {
             expiresAt = OffsetDateTime.now().plusSeconds(seconds);
         }
 
-        log.info("[Module4] Meta token exchanged, expires_at={}", expiresAt);
-        return new TokenGrant(longToken, null, expiresAt, SCOPE);
+        String granted = grantedScopes(longToken);
+        log.info("[Module4] Meta token exchanged, expires_at={}, granted={}", expiresAt, granted);
+        return new TokenGrant(longToken, null, expiresAt, granted);
+    }
+
+    /** The permissions the operator actually granted (they can untick some on Meta's dialog). */
+    private String grantedScopes(String accessToken) {
+        JsonNode response = getJson("/me/permissions", uri -> uri
+                .queryParam("access_token", encode(accessToken)));
+        List<String> granted = new ArrayList<>();
+        JsonNode data = response.get("data");
+        if (data != null && data.isArray()) {
+            for (JsonNode p : data) {
+                if ("granted".equals(text(p, "status")) && text(p, "permission") != null) {
+                    granted.add(text(p, "permission"));
+                }
+            }
+        }
+        return String.join(",", granted);
     }
 
     /**

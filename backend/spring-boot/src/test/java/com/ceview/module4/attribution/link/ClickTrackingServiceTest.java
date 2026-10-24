@@ -14,7 +14,11 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "ceview.attribution.ip-hash-salt=test-click-salt")
+@SpringBootTest(properties = {
+        "ceview.attribution.ip-hash-salt=test-click-salt",
+        "ceview.attribution.base-url=https://api.example.com",
+        "ceview.attribution.enquiry-base-url=https://app.example.com/"
+})
 @Transactional
 class ClickTrackingServiceTest {
 
@@ -116,6 +120,43 @@ class ClickTrackingServiceTest {
     }
 
     @Test
+    void repeatClickInsideDebounceWindowReusesTheFirstClickIdSoTheFormStillLoads() {
+        ClickTrackingService.RedirectDecision first = service.capture(link.getSlug(),
+                request(Map.of("ad", "120214"), "203.0.113.20", "Mozilla/5.0")).orElseThrow();
+        ClickTrackingService.RedirectDecision repeat = service.capture(link.getSlug(),
+                request(Map.of("ad", "120214"), "203.0.113.20", "Mozilla/5.0")).orElseThrow();
+
+        assertThat(first.clickRecorded()).isTrue();
+        assertThat(repeat.clickRecorded()).isFalse();
+        assertThat(repeat.clickId()).isEqualTo(first.clickId());
+        assertThat(repeat.location()).isEqualTo(first.location()).contains("cv=" + first.clickId());
+        assertThat(clickRepo.findByLinkIdOrderByClickedAtDesc(link.getLinkId())).hasSize(1);
+    }
+
+    @Test
+    void repeatClickOnAHostedLinkStillReachesTheEnquiryForm() {
+        AttributionLink hosted = saveLink("rep" + UUID.randomUUID().toString().replace("-", "").substring(0, 8),
+                null, OffsetDateTime.now().minusDays(4), OffsetDateTime.now().plusDays(13));
+
+        ClickTrackingService.RedirectDecision first = service.capture(hosted.getSlug(),
+                request(Map.of(), "203.0.113.21", "Mozilla/5.0")).orElseThrow();
+        ClickTrackingService.RedirectDecision repeat = service.capture(hosted.getSlug(),
+                request(Map.of(), "203.0.113.21", "Mozilla/5.0")).orElseThrow();
+
+        assertThat(repeat.location()).startsWith("https://app.example.com/enquiry?cv=" + first.clickId());
+    }
+
+    @Test
+    void botUserAgentGetsTheDestinationWithoutAClickId() {
+        ClickTrackingService.RedirectDecision decision = service.capture(link.getSlug(),
+                request(Map.of(), "203.0.113.22", "facebookexternalhit/1.1")).orElseThrow();
+
+        assertThat(decision.clickRecorded()).isFalse();
+        assertThat(decision.clickId()).isNull();
+        assertThat(decision.location()).doesNotContain("cv=");
+    }
+
+    @Test
     void botUserAgentWritesNoRow() {
         service.capture(link.getSlug(), request(Map.of("ad", "120214"), "203.0.113.17", "facebookexternalhit/1.1"));
 
@@ -133,6 +174,18 @@ class ClickTrackingServiceTest {
         AttributionClick click = onlyClick(closed);
         assertThat(decision.location()).contains("cv=" + click.getClickId());
         assertThat(click.isInWindow()).isFalse();
+    }
+
+    @Test
+    void hostedLinkRedirectsToTheFrontendEnquiryPageNotTheApiOrigin() {
+        AttributionLink hosted = saveLink("host" + UUID.randomUUID().toString().replace("-", "").substring(0, 8),
+                null, OffsetDateTime.now().minusDays(3), OffsetDateTime.now().plusDays(13));
+
+        ClickTrackingService.RedirectDecision decision = service.capture(hosted.getSlug(),
+                request(Map.of(), "203.0.113.19", "Mozilla/5.0")).orElseThrow();
+
+        AttributionClick click = onlyClick(hosted);
+        assertThat(decision.location()).isEqualTo("https://app.example.com/enquiry?cv=" + click.getClickId());
     }
 
     private ClickTrackingService.ClickRequest request(Map<String, String> params, String ip, String userAgent) {

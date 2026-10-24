@@ -1,5 +1,6 @@
 package com.ceview.module4.adconnections;
 
+import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -38,6 +39,8 @@ public final class AdConnectionDtos {
 
     /** POST /api/ad-connections/{provider}/authorize response. */
     public record AuthorizeUrlResponse(String authorizeUrl) {}
+
+    public record CompleteRequest(@NotBlank String code, @NotBlank String state) {}
 
     /** One selectable ad account, from GET /{provider}/accounts. */
     public record AdAccountOption(String id, String name, String currency) {}

@@ -53,6 +53,15 @@ services:
         generateValue: true
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      # Public origin of the frontend (e.g. https://ceview-frontend.onrender.com). Hosted tracked
+      # links redirect travellers to {FRONTEND_BASE_URL}/enquiry, and ad-platform OAuth returns here.
+      - key: FRONTEND_BASE_URL
+        sync: false
+      # Public origin tracked links (/r/<slug>) are served from — this service's own https URL, or a
+      # custom domain in front of it. It is copied into live ads: set it BEFORE running ads and never
+      # change it afterwards. Defaults to Render's RENDER_EXTERNAL_URL when left unset.
+      - key: CEVIEW_ATTRIBUTION_BASE_URL
+        sync: false
       # Email verification / password reset. Free web services on Render block outbound SMTP
       # (ports 25/465/587), so mail goes out over Resend's HTTPS API. Set the key and a sender on
       # a domain verified in Resend (docs/DEPLOY_RENDER.md, "Email (Resend)").

@@ -10,3 +10,6 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+
+# Local-dev media uploads (MEDIA_STORAGE=local)
+backend/spring-boot/media-uploads/

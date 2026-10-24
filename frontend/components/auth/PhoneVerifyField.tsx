@@ -9,8 +9,9 @@
  * "Verify later": if SMS can't be sent (cap reached, quota/region/outage/captcha errors) the
  * user may continue with an unverified number; the backend records it as unverified.
  *
- * When Firebase isn't configured (local dev without VITE_FIREBASE_*), it degrades to a
- * plain tel input that reports the raw number — mirroring the backend's fallback.
+ * When SMS verification is off (VITE_PHONE_VERIFICATION_ENABLED unset, or Firebase not
+ * configured), it degrades to a plain tel input that reports the raw number — mirroring the
+ * backend's fallback.
  *
  * `variant="auth"` uses the LoginPage field styles (.cv-auth-*); `variant="card"` uses
  * the shared .field/.input styles from CompleteProfilePage.
@@ -18,7 +19,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ConfirmationResult } from 'firebase/auth';
 import { Phone } from 'lucide-react';
-import { confirmPhoneCode, isFirebaseConfigured, sendPhoneCode, toE164PH } from '../../services/firebase';
+import { confirmPhoneCode, isPhoneVerificationEnabled, sendPhoneCode, toE164PH } from '../../services/firebase';
 
 export interface VerifiedPhone {
   contactNumber: string;
@@ -84,7 +85,7 @@ function friendlyError(err: unknown): string {
 }
 
 export default function PhoneVerifyField({ id, variant, onChange, initialNumber = '', allowLater = true }: Props) {
-  const firebaseOn = isFirebaseConfigured();
+  const firebaseOn = isPhoneVerificationEnabled();
   const [number, setNumber] = useState(initialNumber);
   const [code, setCode] = useState('');
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);

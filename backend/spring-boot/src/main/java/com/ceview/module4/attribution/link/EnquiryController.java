@@ -38,6 +38,20 @@ public class EnquiryController {
                 .body(service.list(currentProfile.resolveProfileId()));
     }
 
+    // The operator decides what an enquiry became; the enquiry is looked up within their own business only.
+    @PatchMapping("/api/attribution/enquiries/{enquiryId}")
+    public ResponseEntity<EnquiryService.OperatorEnquiry> decide(
+            @PathVariable UUID enquiryId, @Valid @RequestBody AttributionLinkDtos.EnquiryOutcomeRequest request) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(service.decide(currentProfile.resolveProfileId(), enquiryId, request));
+    }
+
+    @ExceptionHandler(EnquiryService.EnquiryNotFoundException.class)
+    public ResponseEntity<Map<String, String>> enquiryNotFound() {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND).cacheControl(CacheControl.noStore())
+                .body(Map.of("error", "Enquiry not found."));
+    }
+
     @ExceptionHandler({EnquiryService.InvalidEnquiryException.class,
             org.springframework.web.bind.MethodArgumentNotValidException.class,
             org.springframework.http.converter.HttpMessageNotReadableException.class,

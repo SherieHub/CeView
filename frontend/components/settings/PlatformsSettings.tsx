@@ -10,23 +10,26 @@
  * state lives in ConnectionsStoreProvider (mounted above AppShell), not here,
  * so Connect/Disconnect here are visible in Content Studio without a reload.
  *
- * Connect is a two-step modal (redirecting -> scope grant) per the screen doc.
- * The doc is explicit that this is UI scaffolding with no real OAuth
- * round-trip yet — production wiring is a backend concern
- * (docs/module-3/backend/PlatformConnectionController.md).
+ * Connect runs real OAuth: Facebook and Instagram share one Meta login (the same
+ * one the ads connection uses), TikTok has its own. After Meta, the operator
+ * picks the Facebook Page to publish to; TikTok's redirect brings a code back
+ * here, which is completed through an authenticated call.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  BarChart3, ChevronRight, Eye, FileEdit, Layers, Plus, Send, Share2, ShieldCheck, Zap,
+  BarChart3, ChevronRight, Layers, Plus, Send, Share2, Zap,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import Modal from '../shared/Modal';
 import { useToast } from '../shared/Toast';
 import { useConnections } from '../../services/connectionsStore';
+import { apiClient } from '../../services/apiClient';
 import AdAccountsSection from './AdAccountsSection';
+import AdSpendLimitsSection from './AdSpendLimitsSection';
 import AdAccountPickerModal from './AdAccountPickerModal';
+import PagePickerModal from './PagePickerModal';
 import { PlatformLogo } from './PlatformLogo';
-import type { AdConnection, AdProvider, PlatformId } from '../../types';
+import { IN_DEVELOPMENT_LABEL, IN_DEVELOPMENT_SUBTITLE, isInDevelopment } from './platformAvailability';
+import type { AdConnection, AdProvider, PlatformId, SocialStatus } from '../../types';
 import './platforms.css';
 
 const PLATFORM_LABELS: Record<PlatformId, string> = {
@@ -35,18 +38,16 @@ const PLATFORM_LABELS: Record<PlatformId, string> = {
   facebook: 'Facebook',
 };
 
-const SCOPES = [
-  { icon: FileEdit, label: 'Read page and profile metadata' },
-  { icon: ShieldCheck, label: 'Publish posts on your behalf' },
-  { icon: Eye, label: 'Read post insights' },
-];
-
-// Fake OAuth-redirect latency, matching the prototype's own timing
-// (ui-ux-prototype.html connectPlatform ~1.3s) — replaced by a real redirect
-// once the backend OAuth flow (PlatformConnectionController) exists.
-const REDIRECT_DELAY_MS = 1300;
-
-type ModalStep = 'redirecting' | 'scope' | null;
+function rowSubtitle(status: SocialStatus, handle: string | null | undefined, notSetUp: boolean): string {
+  if (notSetUp && status === 'DISCONNECTED') return 'Not available on this server yet';
+  switch (status) {
+    case 'ACTIVE': return handle || 'Connected';
+    case 'NEEDS_PAGE': return 'Choose which Facebook Page to publish to';
+    case 'NEEDS_RECONNECT': return 'Permissions changed — reconnect to keep publishing';
+    case 'NO_LINKED_INSTAGRAM': return 'Link an Instagram business account to your Page, then check again';
+    default: return 'Not connected';
+  }
+}
 
 const WHY = [
   { icon: BarChart3, title: 'Automatically pull performance data', body: 'Ad accounts bring impressions, clicks and spend into Performance.' },
@@ -80,14 +81,23 @@ const AD_CONNECT_ERROR_MESSAGES: Record<string, string> = {
   missing_code_or_state: 'Your session expired mid-connection — try again.',
   invalid_state: 'Your session expired mid-connection — try again.',
   token_exchange_failed: "Couldn't connect to that platform — try again.",
+  // TikTok's own OAuth error codes, passed through by SocialConnectionController.
+  server_error: 'TikTok had a problem — try again in a moment.',
+  temporarily_unavailable: 'TikTok had a problem — try again in a moment.',
+  invalid_scope: 'TikTok did not allow the requested permissions.',
 };
 
 export default function PlatformsSettings() {
-  const { connections, available, isConnected, connect, disconnect } = useConnections();
+  const { connections, available, isConnected, statusOf, connect, disconnect, refresh } = useConnections();
   const { showToast } = useToast();
 
   const [connectingPlatform, setConnectingPlatform] = useState<PlatformId | null>(null);
-  const [modalStep, setModalStep] = useState<ModalStep>(null);
+  const [pageOpen, setPageOpen] = useState(false);
+  // True between landing back from Meta and the connection list arriving.
+  const [metaReturn, setMetaReturn] = useState(false);
+  // Guards the one-shot TikTok code exchange against StrictMode's double-invoked effect.
+  const tiktokCompleteStarted = useRef(false);
+  const adCompleteStarted = useRef(false);
 
   /**
    * The provider whose account picker is open. Set either by returning from the
@@ -98,61 +108,122 @@ export default function PlatformsSettings() {
   // Reported up by AdAccountsSection, for the summary on the left.
   const [adConnections, setAdConnections] = useState<AdConnection[] | null>(null);
 
-  // The backend's callback redirects here with ?adconnect=<provider> on success
-  // or ?adconnect_error=<code> on failure. Read them once, then strip them so a
-  // refresh doesn't reopen the picker.
+  // Ads callbacks bring ad_code/ad_provider/state for authenticated completion;
+  // legacy ?adconnect=<provider> redirects still open their selection UI.
+  // ?tiktok_code=<code>&state=<state> (TikTok consent), or ?adconnect_error / ?social_error
+  // =<code> on failure. Read them once, then strip them so a refresh doesn't replay them.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const connected = params.get('adconnect');
-    const failed = params.get('adconnect_error');
+    const adConnected = params.get('adconnect');
+    const adCode = params.get('ad_code');
+    const adProvider = params.get('ad_provider');
+    const adFailed = params.get('adconnect_error');
+    const socialFailed = params.get('social_error');
+    const tiktokCode = params.get('tiktok_code');
+    const tiktokState = params.get('state');
 
-    if (connected === 'meta' || connected === 'tiktok') {
-      setPickerProvider(connected);
-    } else if (failed) {
+    if (adConnected === 'meta') {
+      setMetaReturn(true); // decided once the connection list has loaded (below)
+    } else if (adConnected === 'tiktok') {
+      setPickerProvider('tiktok');
+    }
+
+    const failed = adFailed ?? socialFailed;
+    if (failed) {
       showToast(
         AD_CONNECT_ERROR_MESSAGES[failed] ?? 'Could not complete the connection. Try again.',
       );
     }
 
-    if (connected || failed) {
+    const hasTikTokCode = !!tiktokCode;
+    const hasTikTokReturn = hasTikTokCode && !!tiktokState;
+    if (adConnected || adFailed || socialFailed || hasTikTokCode || adCode) {
+      // Strip first: the one-time code must not linger in the address bar or history.
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [showToast]);
 
-  function startConnect(platform: PlatformId) {
-    setConnectingPlatform(platform);
-    setModalStep('redirecting');
-  }
+    if (adCode && !adCompleteStarted.current && !failed) {
+      adCompleteStarted.current = true;
+      if (!tiktokState || (adProvider !== 'meta' && adProvider !== 'tiktok')) {
+        showToast('Could not complete the connection. Try again.');
+      } else {
+        apiClient.adConnections.complete(adProvider, adCode, tiktokState)
+          .then(async () => {
+            await refresh();
+            setAdRefreshKey((key) => key + 1);
+            // A fresh Meta grant invalidates the old Page selection.
+            if (adProvider === 'meta') setPageOpen(true);
+            else setPickerProvider('tiktok');
+          })
+          .catch(() => {
+            showToast('Could not complete the connection. Try again.');
+            void refresh();
+          });
+      }
+    }
 
+    if (hasTikTokCode && !tiktokState && !failed) {
+      // A code without its state can't be exchanged (and is unverifiable) — don't try.
+      showToast("Couldn't finish connecting TikTok — try again.");
+    }
+
+    if (hasTikTokReturn && !tiktokCompleteStarted.current) {
+      tiktokCompleteStarted.current = true;
+      apiClient.connections
+        .tiktokComplete(tiktokCode, tiktokState)
+        .then(() => {
+          showToast('Connected to TikTok');
+          void refresh();
+        })
+        .catch(() => {
+          showToast("Couldn't finish connecting TikTok — try again.");
+          // A 409 means a concurrent finish already succeeded, so re-read the truth.
+          void refresh();
+        });
+    }
+  }, [showToast, refresh]);
+
+  // Back from Meta's login: pick the Page first if publishing still needs one, otherwise the ad account.
   useEffect(() => {
-    if (modalStep !== 'redirecting') return;
-    const timer = setTimeout(() => setModalStep('scope'), REDIRECT_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [modalStep]);
+    if (!metaReturn || connections === null) return;
+    setMetaReturn(false);
+    if (statusOf('facebook') === 'NEEDS_PAGE') setPageOpen(true);
+    else setPickerProvider('meta');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metaReturn, connections]);
 
-  function closeModal() {
-    setModalStep(null);
-    setConnectingPlatform(null);
-  }
+  // Facebook and Instagram share one Meta login, so while any connect is starting
+  // every Connect/Reconnect is locked (two clicks would mint two OAuth states).
+  const connectLocked = connectingPlatform !== null;
 
-  async function grantScope() {
-    if (!connectingPlatform) return;
-    const platform = connectingPlatform;
-    // No real OAuth round-trip yet (see header comment) — there is no handle
-    // to read back, so the connection shows as verified without one.
-    await connect(platform, '');
-    closeModal();
-    showToast(`Connected to ${PLATFORM_LABELS[platform]}`);
+  async function startConnect(platform: PlatformId) {
+    setConnectingPlatform(platform);
+    try {
+      await connect(platform); // navigates away to the consent screen
+    } catch {
+      showToast(`Could not start the ${PLATFORM_LABELS[platform]} connection. Try again.`);
+      setConnectingPlatform(null);
+    }
+    // On success the browser is navigating away: keep every Connect button disabled.
   }
 
   async function handleDisconnect(platform: PlatformId) {
-    await disconnect(platform);
-    showToast(`Disconnected from ${PLATFORM_LABELS[platform]}`);
+    try {
+      await disconnect(platform);
+      // Facebook and Instagram are one Meta grant: disconnecting either drops both.
+      showToast(platform === 'tiktok' ? 'Disconnected from TikTok' : 'Disconnected Facebook and Instagram');
+    } catch {
+      showToast('Could not disconnect. Try again.');
+    }
   }
 
   const platforms = Object.keys(PLATFORM_LABELS) as PlatformId[];
-  const connectedCount = platforms.filter((p) => isConnected(p)).length;
-  const adActive = adConnections?.filter((c) => c.status === 'ACTIVE').length ?? 0;
+  // A platform still in development only counts once it's somehow connected; otherwise
+  // "1 of 3" would read as unfinished setup the operator can't actually finish.
+  const countable = platforms.filter((p) => !isInDevelopment(p) || isConnected(p));
+  const connectedCount = countable.filter((p) => isConnected(p)).length;
+  const adCountable = adConnections?.filter((c) => !isInDevelopment(c.provider) || c.status === 'ACTIVE');
+  const adActive = adCountable?.filter((c) => c.status === 'ACTIVE').length ?? 0;
 
   return (
     <div className="pf">
@@ -167,21 +238,21 @@ export default function PlatformsSettings() {
           <section className="pf-card pf-status" aria-labelledby="pf-status-title">
             <h2 id="pf-status-title" className="pf-side-title">Connection status</h2>
             <p className="pf-side-sub">
-              {connections === null ? 'Checking your platforms…' : `${connectedCount} of ${platforms.length} platforms connected`}
+              {connections === null ? 'Checking your platforms…' : `${connectedCount} of ${countable.length} platforms connected`}
             </p>
             <div className="pf-bar" aria-hidden="true">
-              <i style={{ width: `${(connectedCount / platforms.length) * 100}%` }} />
+              <i style={{ width: `${countable.length ? (connectedCount / countable.length) * 100 : 0}%` }} />
             </div>
             <StatusTile
               href="#pf-ads"
               icon={<Layers size={20} />}
-              value={adConnections ? `${adActive} of ${adConnections.length}` : '—'}
+              value={adCountable ? `${adActive} of ${adCountable.length}` : '—'}
               label="Ad accounts connected"
             />
             <StatusTile
               href="#pf-publishing"
               icon={<Share2 size={20} />}
-              value={`${connectedCount} of ${platforms.length}`}
+              value={`${connectedCount} of ${countable.length}`}
               label="Platforms connected"
             />
           </section>
@@ -230,16 +301,22 @@ export default function PlatformsSettings() {
                   )}
                   <ul className="pf-rows">
                     {platforms.map((platform) => {
-                      const connected = isConnected(platform);
-                      const handle = connections.find((c) => c.platform === platform)?.handle;
+                      const status = statusOf(platform);
+                      const conn = connections.find((c) => c.platform === platform);
+                      const notSetUp = conn?.configured === false;
+                      // Still being built: no way to start (or restart) a connection, but an
+                      // existing one keeps its Disconnect so nobody is stuck with it.
+                      const inDevelopment = isInDevelopment(platform) && status !== 'ACTIVE';
                       return (
-                        <li key={platform} className="pf-row">
+                        <li key={platform} className="pf-row" data-muted={inDevelopment || undefined}>
                           <PlatformLogo platform={platform} />
                           <div className="pf-row-text">
                             <p className="pf-row-name">{PLATFORM_LABELS[platform]}</p>
-                            <p className="pf-row-sub">{connected ? handle || 'Connected' : 'Not connected'}</p>
+                            <p className="pf-row-sub">
+                              {inDevelopment ? IN_DEVELOPMENT_SUBTITLE : rowSubtitle(status, conn?.handle, notSetUp)}
+                            </p>
                           </div>
-                          {connected ? (
+                          {status === 'ACTIVE' ? (
                             <div className="pf-row-actions">
                               <span className="pf-pill">Verified</span>
                               <span className="pf-divider" aria-hidden="true" />
@@ -247,9 +324,32 @@ export default function PlatformsSettings() {
                                 Disconnect
                               </button>
                             </div>
+                          ) : inDevelopment ? (
+                            <span className="pf-pill pf-pill--dev">{IN_DEVELOPMENT_LABEL}</span>
+                          ) : status === 'NEEDS_PAGE' ? (
+                            <button type="button" className="pf-connect" onClick={() => setPageOpen(true)}>
+                              Choose Page
+                            </button>
+                          ) : status === 'NO_LINKED_INSTAGRAM' ? (
+                            <div className="pf-row-actions">
+                              <button type="button" className="pf-connect" onClick={() => setPageOpen(true)}>
+                                Check again
+                              </button>
+                              <span className="pf-divider" aria-hidden="true" />
+                              <button type="button" className="pf-text-btn" onClick={() => handleDisconnect(platform)}>
+                                Disconnect
+                              </button>
+                            </div>
                           ) : (
-                            <button type="button" className="pf-connect" disabled={!available} onClick={() => startConnect(platform)}>
-                              <Plus size={16} aria-hidden="true" />Connect
+                            <button
+                              type="button"
+                              className="pf-connect"
+                              disabled={!available || notSetUp || connectLocked}
+                              aria-label={`${status === 'NEEDS_RECONNECT' ? 'Reconnect' : 'Connect'} ${PLATFORM_LABELS[platform]}`}
+                              title={notSetUp ? 'This server has no credentials for this platform yet' : undefined}
+                              onClick={() => startConnect(platform)}
+                            >
+                              {status === 'NEEDS_RECONNECT' ? 'Reconnect' : (<><Plus size={16} aria-hidden="true" />Connect</>)}
                             </button>
                           )}
                         </li>
@@ -261,46 +361,29 @@ export default function PlatformsSettings() {
             </div>
           </section>
 
-          <AdAccountsSection key={adRefreshKey} onConnected={setPickerProvider} onLoaded={setAdConnections} />
+          {/* Sibling keys must differ, or React leaves the old AdAccountsSection mounted on each refresh. */}
+          <AdAccountsSection key={`ads-${adRefreshKey}`} onConnected={setPickerProvider} onLoaded={setAdConnections} />
+          <AdSpendLimitsSection key={`limits-${adRefreshKey}`} meta={adConnections?.find((c) => c.provider === 'meta') ?? null} />
         </div>
       </div>
 
-      <Modal
-        open={modalStep != null}
-        onClose={closeModal}
-        title={connectingPlatform ? `Connect ${PLATFORM_LABELS[connectingPlatform]}` : undefined}
-      >
-        {modalStep === 'redirecting' && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
-            <span className="spinner" aria-hidden="true" />
-            <p className="body-sm">
-              Redirecting to {connectingPlatform && PLATFORM_LABELS[connectingPlatform]}… Establishing
-              a secure authorization session.
-            </p>
-          </div>
-        )}
-
-        {modalStep === 'scope' && (
-          <div>
-            <p className="body-sm mb-4">This app is requesting permission to:</p>
-            <ul className="mb-5 flex flex-col gap-3">
-              {SCOPES.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-2 body-sm">
-                  <Icon size={16} aria-hidden="true" /> {label}
-                </li>
-              ))}
-            </ul>
-            <div className="flex justify-end gap-3">
-              <button type="button" className="btn-outline" onClick={closeModal}>
-                Cancel
-              </button>
-              <button type="button" className="btn-primary" onClick={grantScope}>
-                Grant scope
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {pageOpen && (
+        <PagePickerModal
+          onClose={() => {
+            setPageOpen(false);
+            // The save may have landed after a mid-save cancel — re-read the truth.
+            void refresh();
+          }}
+          onSelected={() => {
+            setPageOpen(false);
+            void refresh();
+            // Back from Meta with the ad account still unchosen: carry on to that picker.
+            if (adConnections?.some((c) => c.provider === 'meta' && c.status === 'PENDING_ACCOUNT_SELECTION')) {
+              setPickerProvider('meta');
+            }
+          }}
+        />
+      )}
 
       {pickerProvider && (
         <AdAccountPickerModal

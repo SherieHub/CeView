@@ -1,6 +1,9 @@
 package com.ceview.module4.attribution.link;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -135,4 +138,16 @@ public final class AttributionLinkDtos {
             return new EnquiryAck(true);
         }
     }
+
+    /** What the operator decided an enquiry became. {@code NEW} is the starting state, not a decision. */
+    public enum EnquiryDecision { BOOKED, DECLINED }
+
+    /**
+     * Operator's decision on one enquiry. The figures only matter for {@code BOOKED}; left out, they keep
+     * whatever the enquiry already recorded (one booking, no revenue).
+     */
+    public record EnquiryOutcomeRequest(
+            @NotNull EnquiryDecision outcome,
+            @Min(1) @Max(500) Integer bookings,
+            @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal revenue) {}
 }

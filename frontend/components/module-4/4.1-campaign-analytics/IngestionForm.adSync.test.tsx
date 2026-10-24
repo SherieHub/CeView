@@ -22,6 +22,8 @@ vi.mock('../../../services/apiClient', () => ({
       selectCampaign: (...a: unknown[]) => selectCampaignMock(...a),
     },
     campaign: { ingest: (...a: unknown[]) => ingestMock(...a) },
+    // The tracked-bookings hint under Bookings; nothing tracked keeps it hidden.
+    attribution: { tracked: () => Promise.resolve({ trackedBookings: 0 }) },
   },
 }));
 

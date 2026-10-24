@@ -1,0 +1,36 @@
+# Playwright e2e overrides — layered on top of docker-compose.yml so backend/.env stays
+# dev-friendly:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
+#
+# Everything here only matters to an e2e run (see e2e/README section in RUNNING.md §8).
+services:
+  spring-boot:
+    environment:
+      # /api/test-support/** (email codes, demand-window / post-metrics seeding).
+      CEVIEW_TEST_SUPPORT_ENABLED: "true"
+      CEVIEW_AUTH_RATE_LIMIT_MAX_REQUESTS: "1000"
+      EMAIL_PROVIDER: log
+      # The Playwright webServers: :3012 (main) and :3013 (lead form unconfigured).
+      CORS_ALLOWED_ORIGINS: http://localhost:3012,http://127.0.0.1:3012,http://localhost:3013,http://127.0.0.1:3013
+      FRONTEND_BASE_URL: http://localhost:3012
+      # Blank = sign-up takes the "verify later" path; the e2e frontend has no Firebase keys either.
+      FIREBASE_CREDENTIALS_JSON: ""
+      # No nightly ingestion: tests seed demand windows through the hook instead.
+      INGESTION_ENABLED: "false"
+      SOCIAL_DISPATCH_DELAY_MS: "2000"
+      MEDIA_PUBLIC_BASE_URL: http://localhost:8080
+      # Meta is played by e2e/tests/support/fakeMeta.ts, started by Playwright's global setup on
+      # :4510. The backend reaches it through the Docker host; the browser through localhost.
+      META_APP_ID: e2e-meta-app
+      META_APP_SECRET: e2e-meta-secret
+      META_GRAPH_BASE_URL: http://host.docker.internal:4510/v25.0
+      META_DIALOG_URL: http://localhost:4510/v25.0/dialog/oauth
+      OAUTH_REDIRECT_BASE_URL: http://localhost:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  fastapi-transformer:
+    environment:
+      # No SerpApi quota spent by an e2e run (a stale forecast's live refresh fails fast instead).
+      SERPAPI_KEY: ""

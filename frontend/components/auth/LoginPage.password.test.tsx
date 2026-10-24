@@ -10,6 +10,7 @@ import { callsTo, json, stubBackend } from './authTestUtils';
 vi.mock('../../services/firebase', () => ({
   signInWithGooglePopup: vi.fn(),
   isFirebaseConfigured: () => false,
+  isPhoneVerificationEnabled: () => false,
 }));
 
 vi.stubEnv('VITE_USE_FIXTURES', 'false');

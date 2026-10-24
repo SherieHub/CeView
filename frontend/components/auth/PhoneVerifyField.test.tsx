@@ -6,9 +6,11 @@ import PhoneVerifyField, { MAX_SENDS } from './PhoneVerifyField';
 const mockSend = vi.fn();
 const mockConfirm = vi.fn();
 let configured = true;
+let phoneOn = true;
 
 vi.mock('../../services/firebase', () => ({
   isFirebaseConfigured: () => configured,
+  isPhoneVerificationEnabled: () => configured && phoneOn,
   sendPhoneCode: (...args: unknown[]) => mockSend(...args),
   confirmPhoneCode: (...args: unknown[]) => mockConfirm(...args),
   toE164PH: (s: string) => (s.startsWith('0') ? `+63${s.slice(1)}` : s),
@@ -19,6 +21,19 @@ describe('PhoneVerifyField', () => {
     vi.clearAllMocks();
     localStorage.clear();
     configured = true;
+    phoneOn = true;
+  });
+
+  it('is a plain number field when SMS verification is switched off, even with Firebase configured', () => {
+    phoneOn = false;
+    const onChange = vi.fn();
+    render(<PhoneVerifyField id="p" variant="card" onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText(/contact number/i), { target: { value: '09171234567' } });
+
+    expect(screen.queryByRole('button', { name: /send code/i })).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith({ contactNumber: '09171234567' });
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it('sends a code, verifies it, and reports the verified phone with its ID token', async () => {

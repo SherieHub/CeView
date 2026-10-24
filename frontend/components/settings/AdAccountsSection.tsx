@@ -14,6 +14,7 @@ import { useToast } from '../shared/Toast';
 import { useAdConnections } from '../../services/useAdConnections';
 import { apiClient } from '../../services/apiClient';
 import { PlatformLogo } from './PlatformLogo';
+import { IN_DEVELOPMENT_LABEL, IN_DEVELOPMENT_SUBTITLE, isInDevelopment } from './platformAvailability';
 import type { AdConnection, AdProvider } from '../../types';
 
 const PROVIDER_LABELS: Record<AdProvider, string> = {
@@ -129,18 +130,21 @@ function AdConnectionRow({
   const { provider, configured, status, accountName, currency } = connection;
   const isActive = status === 'ACTIVE';
   const isPending = status === 'PENDING_ACCOUNT_SELECTION';
+  // Still being built: no Connect, but an existing grant can still be disconnected.
+  const inDevelopment = isInDevelopment(provider) && !isActive && !isPending;
 
   return (
-    <li className="pf-row" data-muted={!configured || undefined}>
+    <li className="pf-row" data-muted={!configured || inDevelopment || undefined}>
       <PlatformLogo platform={provider} />
       <div className="pf-row-text">
         <p className="pf-row-name">{PROVIDER_LABELS[provider]}</p>
-        <p className="pf-row-sub">{statusLine(connection)}</p>
+        <p className="pf-row-sub">{inDevelopment ? IN_DEVELOPMENT_SUBTITLE : statusLine(connection)}</p>
       </div>
 
       <div className="pf-row-actions">
         {busy && <Loader2 className="animate-spin pf-busy" size={16} aria-hidden="true" />}
         {isActive && <span className="pf-pill">Connected</span>}
+        {inDevelopment && <span className="pf-pill pf-pill--dev">{IN_DEVELOPMENT_LABEL}</span>}
 
         {isPending && (
           <button type="button" className="pf-connect" onClick={onChooseAccount}>
@@ -148,7 +152,7 @@ function AdConnectionRow({
           </button>
         )}
 
-        {isActive || isPending ? (
+        {inDevelopment ? null : isActive || isPending ? (
           <>
             <span className="pf-divider" aria-hidden="true" />
             <button type="button" className="pf-text-btn" onClick={onDisconnect} disabled={busy}>

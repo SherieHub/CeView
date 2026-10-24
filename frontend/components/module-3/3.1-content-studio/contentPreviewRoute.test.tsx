@@ -37,6 +37,7 @@ import { buildContentResponse } from './testFixtures';
 // either out would fail this for the wrong reason and hide a real drift.
 vi.mock('../../../services/apiClient', () => ({
   apiClient: {
+    vouchers: { list: vi.fn(() => Promise.resolve([])) },
     posts: { list: vi.fn(() => Promise.resolve([])) },
     connections: {
       list: vi.fn(() => Promise.resolve([])),

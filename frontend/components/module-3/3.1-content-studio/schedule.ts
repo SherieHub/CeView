@@ -19,6 +19,11 @@ export function defaultSchedule(now = new Date()): string {
 }
 
 export function parseLocal(value: string): Date | null {
+  // API timestamps include an explicit offset; datetime-local drafts do not.
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) {
+    const instant = new Date(value);
+    return Number.isNaN(instant.getTime()) ? null : instant;
+  }
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
   if (!m) return null;
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));

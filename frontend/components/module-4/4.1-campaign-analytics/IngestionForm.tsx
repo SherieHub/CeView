@@ -47,7 +47,7 @@ import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
 import DateRangePicker from './DateRangePicker';
 import { formatPeriod, lastCompleteWeek, weekToDate } from './dateRange';
 import type { Period } from './dateRange';
-import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes } from '@/types';
+import type { AdCampaignOption, AdInsightSummary, AdProvider, CampaignInput, ManualIngestPes, TrackedPeriodSummary } from '@/types';
 
 /**
  * Which of the seven fields the ad platforms can actually fill.
@@ -153,6 +153,22 @@ export default function IngestionForm({
    * campaign record always describe the same dates.
    */
   const [period, setPeriod] = useState<Period>(() => lastCompleteWeek());
+
+  /**
+   * Bookings CeView already tracked in this period (CVW-42), shown under the
+   * Bookings field so the typed total includes them. Supplementary: if the
+   * fetch fails the form works exactly as before, with no hint.
+   */
+  const [tracked, setTracked] = useState<TrackedPeriodSummary | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setTracked(null);
+    apiClient.attribution
+      .tracked(period.periodStart, period.periodEnd)
+      .then((summary) => { if (!cancelled) setTracked(summary); })
+      .catch(() => { if (!cancelled) setTracked(null); });
+    return () => { cancelled = true; };
+  }, [period.periodStart, period.periodEnd]);
 
   const { connections, refresh: refreshConnections } = useAdConnections();
   const activeConnections = useMemo(
@@ -408,7 +424,25 @@ export default function IngestionForm({
           }}
         />
         <span className="field-hint">{hint}</span>
+        {key === 'bookings' && trackedHint()}
       </label>
+    );
+  }
+
+  /** "Flag, don't block": a total below what CeView tracked is warned about, never rejected. */
+  function trackedHint() {
+    if (!tracked || tracked.trackedBookings === 0) return null;
+    const n = tracked.trackedBookings;
+    const entered = values.bookings === '' ? NaN : Number(values.bookings);
+    const below = Number.isFinite(entered) && entered < n;
+    return (
+      <span className={`field-hint ${below ? 'text-[var(--color-critical-text)]' : 'text-[var(--color-success-text)]'}`}>
+        {below
+          ? `That's fewer than the ${n} booking${n === 1 ? '' : 's'} CeView tracked this period — check your total.`
+          : `CeView tracked ${n} booking${n === 1 ? '' : 's'} this period` +
+            (tracked.automaticBookings > 0 ? ` (${tracked.automaticBookings} automatic)` : '') +
+            '. Include them in your total.'}
+      </span>
     );
   }
 

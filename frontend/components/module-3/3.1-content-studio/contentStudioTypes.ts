@@ -1,4 +1,4 @@
-import type { PlatformId, OmcsAuditResult, PublishedPost } from '../../../types';
+import type { PublishAd, PlatformId, OmcsAuditResult, PublishedPost } from '../../../types';
 
 /**
  * The platforms the Content Studio offers.
@@ -17,6 +17,14 @@ export const STUDIO_PLATFORMS: Array<{ id: StudioPlatformId; label: string }> = 
 ];
 
 
+export type MediaType = 'image' | 'video';
+
+/** Where the background upload of the staged media stands. */
+export type MediaUploadState =
+  | { status: 'uploading' }
+  | { status: 'ready'; mediaId: string; publicUrl: string }
+  | { status: 'failed'; message: string };
+
 export interface PublishDraftState {
   /** Set when the post is scheduled rather than published now — local yyyy-mm-ddThh:mm. */
   scheduledFor?: string | null;
@@ -27,10 +35,19 @@ export interface PublishDraftState {
    */
   captionEn?: string | null;
   mediaDataUrl: string | null;
+  /**
+   * For a video, `mediaDataUrl` is a poster frame (so the compliance audit and
+   * thumbnails read it like any image) and this is the playback object URL.
+   */
+  localVideoUrl?: string | null;
+  mediaType?: MediaType;
+  /** Absent for drafts that never uploaded (fixtures, restored drafts). */
+  mediaUpload?: MediaUploadState | null;
   platforms: PlatformId[];
   visibility: 'public' | 'private';
   commentsEnabled: boolean;
   paidPartnership: boolean;
+  ad?: PublishAd;
   agreementChecked: boolean;
 }
 

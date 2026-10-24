@@ -48,6 +48,10 @@ import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import { useConnections } from '../../../services/connectionsStore';
 import { defaultSchedule, formatSchedule, isFuture, timeZoneName } from './schedule';
 import { useShellMode } from '../../../layout/shellContext';
+import { apiClient } from '../../../services/apiClient';
+import type { AdMinimumBudget, AdSpendLimits, AttributionLink, PublishAd } from '../../../types';
+import MetaAdFields from './MetaAdFields';
+import { adProblems, defaultAdStart } from './adRules';
 
 /**
  * Fitted frames stop just short of the canvas edge. A preview touching the
@@ -65,6 +69,15 @@ export interface PublishModalProps {
   onConfirm: () => void;
   /** The account name the preview shows the post under. */
   accountName?: string;
+  busy?: boolean;
+  error?: string | null;
+  attributionLinkId?: string;
+  /** The forecast market the post is for; a paid ad is aimed at its country and language. */
+  market?: string;
+  /** When the surge window opens: a paid ad starts then by default. */
+  windowOpenDate?: string | null;
+  /** The business's categories and services, which suggested ad interests are searched from. */
+  interestSeeds?: string[];
 }
 
 function PlatformMark({ platform }: { platform: StudioPlatformId }) {
@@ -87,9 +100,50 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
   );
 }
 
-export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName }: PublishModalProps) {
+export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName, busy = false, error, attributionLinkId, market, windowOpenDate, interestSeeds }: PublishModalProps) {
   const [device, setDevice] = useState<PreviewDevice>('mobile');
   const { demo } = useShellMode();
+  const [adCurrency, setAdCurrency] = useState<string | null>(null);
+  const [adLinks, setAdLinks] = useState<AttributionLink[]>([]);
+  const [adLimits, setAdLimits] = useState<AdSpendLimits | null>(null);
+  const [adMinimum, setAdMinimum] = useState<AdMinimumBudget | null>(null);
+  const [adSetupError, setAdSetupError] = useState<string | null>(null);
+  const [adLoaded, setAdLoaded] = useState(false);
+  // Loaded whenever the window opens, not only once "Run as Paid Ad" is ticked: whether paid ads are
+  // allowed at all (an ad account and saved spending limits) decides if the tick can be made.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    Promise.resolve().then(() => Promise.all([
+      apiClient.adConnections.list(),
+      apiClient.attributionLinks.list(),
+      // Refused (409) when there is no ad account yet; that is "no limits", not a failure.
+      apiClient.adConnections.limits.get().catch(() => null),
+    ])).then(([accounts, links, limits]) => {
+      if (cancelled) return;
+      const meta = accounts.find((a) => a.provider === 'meta' && a.status === 'ACTIVE');
+      setAdCurrency(meta?.currency ?? null);
+      setAdLinks(links);
+      setAdLimits(limits);
+      setAdSetupError(null);
+      setAdLoaded(true);
+    }).catch(() => {
+      if (cancelled) return;
+      setAdSetupError('Could not load ad settings. Reopen this window to try again.');
+      setAdLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, [open]);
+  // Meta's own floor for the daily budget depends on the objective, so it is read again when that changes.
+  const adObjective = draft.ad?.objective;
+  useEffect(() => {
+    if (!open || !draft.paidPartnership || !adCurrency || !adObjective) return;
+    let cancelled = false;
+    apiClient.adConnections.minimumBudget(adObjective)
+      .then((minimum) => { if (!cancelled) setAdMinimum(minimum); })
+      .catch(() => { if (!cancelled) setAdMinimum(null); });
+    return () => { cancelled = true; };
+  }, [open, draft.paidPartnership, adCurrency, adObjective]);
   // A disconnected platform cannot be added to "Publish to" without first
   // connecting it (Settings -> Platforms). Read here rather than in
   // PublishComposer: that panel no longer owns destination choice, this does.
@@ -181,7 +235,18 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
   const today = new Date();
   const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  const canConfirm = draft.agreementChecked && draft.platforms.length > 0 && scheduleValid;
+  const ad = draft.ad;
+  const adProblemList = draft.paidPartnership && ad
+    ? adProblems(ad, { currency: adCurrency, limits: adLimits, minimum: adMinimum, market })
+    : [];
+  const adValid = !draft.paidPartnership || (Boolean(ad) && adProblemList.length === 0);
+  // A paid ad needs a connected ad account and saved spending limits; until then the tick is off.
+  const paidAllowed = Boolean(adCurrency && adLimits?.configured);
+  const privateAllowed = false;
+  const canConfirm = !busy && draft.agreementChecked && (draft.platforms.length > 0 || draft.paidPartnership)
+    && scheduleValid && adValid && !overLimit && Boolean(draft.caption.trim())
+    && (draft.visibility === 'public' || privateAllowed);
+  const updateAd = (patch: Partial<PublishAd>) => onDraftChange({ ad: { ...ad!, ...patch } });
   const label = (id: StudioPlatformId) => STUDIO_PLATFORMS.find((p) => p.id === id)?.label ?? id;
 
   return (
@@ -232,6 +297,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                     key={value}
                     type="button"
                     role="radio"
+                    disabled={value === 'private' && !privateAllowed}
                     aria-checked={draft.visibility === value}
                     onClick={() => onDraftChange({ visibility: value })}
                   >
@@ -286,26 +352,59 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                   </label>
                   <p className="pubx-hint pubx-when-note" data-error={!scheduleValid || undefined} role={!scheduleValid ? 'alert' : undefined}>
                     {scheduleValid
-                      ? `${timeZoneName()} time. Automatic posting isn’t connected yet — the post is kept as scheduled in your Content Library.`
+                      ? `${timeZoneName()} time. CeView sends your post at the selected time. Finish TikTok drafts in the app.`
                       : 'Pick a date and time in the future.'}
                   </p>
                 </div>
               )}
             </fieldset>
 
-            <label className="pubx-paid">
+            <label className="pubx-paid" data-blocked={(!draft.paidPartnership && !paidAllowed) || undefined}>
               <input
                 type="checkbox"
                 checked={draft.paidPartnership}
-                onChange={(event) => onDraftChange({ paidPartnership: event.target.checked })}
+                // Already ticked (a restored draft) stays untickable; turning it on needs an ad account and limits.
+                disabled={!draft.paidPartnership && !paidAllowed}
+                onChange={(event) => onDraftChange({ paidPartnership: event.target.checked, visibility: 'public', ad: draft.ad ?? {
+                  objective: 'OUTCOME_TRAFFIC', dailyBudgetMinor: 0,
+                  startTime: defaultAdStart(windowOpenDate), durationDays: 14,
+                  interests: [], advantageAudience: false,
+                  attributionLinkId: attributionLinkId ?? '', pinCampaign: false,
+                } })}
               />
               <span>
                 <span className="pubx-paid-title">
                   <Megaphone size={17} aria-hidden="true" /> Run as Paid Ad
                 </span>
-                <span className="pubx-paid-sub">Marks this post to run as a paid ad.</span>
+                <span className="pubx-paid-sub">
+                  {paidAllowed || draft.paidPartnership
+                    ? 'Creates a paused Meta ad for review in Ads Manager.'
+                    : !adLoaded ? 'Checking your ad settings…'
+                    : adSetupError ?? (adCurrency
+                      ? 'Set your ad spending limits in Settings before running a paid ad.'
+                      : 'Connect a Meta ad account in Settings before running a paid ad.')}
+                  {!paidAllowed && !draft.paidPartnership && adLoaded && !adSetupError && (
+                    <> <a href="/settings/platforms">Open Settings</a></>
+                  )}
+                </span>
               </span>
             </label>
+
+            {draft.paidPartnership && ad && (
+              <MetaAdFields
+                ad={ad}
+                onChange={updateAd}
+                market={market}
+                currency={adCurrency}
+                limits={adLimits}
+                minimum={adMinimum}
+                links={adLinks}
+                interestSeeds={interestSeeds ?? []}
+                problems={adProblemList}
+                setupError={adSetupError}
+              />
+            )}
+            {draft.platforms.includes('tiktok') && <p className="pubx-note">TikTok receives a draft. Choose final privacy and finish publishing in the TikTok app.{draft.mediaType === 'video' && ' Video drafts do not include the caption; copy it from the post details.'}</p>}
 
             {/* The sign-off closes the options: last thing decided before Confirm. */}
             <label className="pubx-agree">
@@ -349,6 +448,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
                   platform={previewPlatform}
                   caption={viewingEnglish ? translation.englishDraft : draft.caption}
                   mediaDataUrl={draft.mediaDataUrl}
+                  videoSrc={draft.localVideoUrl}
                   device={device}
                   accountName={accountName}
                 />
@@ -457,6 +557,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
           </section>
         </div>
 
+        {error && <p role="alert" className="pubx-note">{error}</p>}
         <footer className="pubx-foot">
           <button type="button" className="pubx-cancel" onClick={onClose}>
             Cancel
@@ -468,7 +569,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
             )}
             {!canConfirm && (
               <span className="pubx-foot-hint">
-                {draft.platforms.length === 0
+                {overLimit ? 'Shorten the caption for the selected platforms.' : !adValid ? 'Complete the Meta ad details.' : draft.platforms.length === 0 && !draft.paidPartnership
                   ? 'Choose where to publish.'
                   : !scheduleValid
                     ? 'Pick a future date and time.'
@@ -477,7 +578,7 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
             )}
             <button type="button" className="pubx-confirm" disabled={!canConfirm} onClick={onConfirm}>
               {scheduled ? <CalendarClock size={17} aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}
-              {scheduled ? 'Confirm & Schedule' : 'Confirm & Publish'}
+              {busy ? 'Submitting...' : scheduled ? 'Confirm & Schedule' : 'Confirm & Publish'}
             </button>
           </div>
         </footer>

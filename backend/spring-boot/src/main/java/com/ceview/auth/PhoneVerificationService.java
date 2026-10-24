@@ -3,6 +3,7 @@ package com.ceview.auth;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,6 +15,12 @@ import java.util.Optional;
  * must come from the {@code phone_number} claim of a Firebase ID token (i.e. Google already
  * SMS-verified it) — a client-typed number is never trusted. When Firebase is not configured
  * (local H2, CI, e2e) the raw number is accepted as before, unverified.
+ *
+ * <p>SMS verification also has its own switch, {@code ceview.auth.phone-verification.enabled}
+ * (env {@code PHONE_VERIFICATION_ENABLED}, default off): Firebase Phone Auth needs the paid Blaze
+ * plan, while Google sign-in keeps Firebase configured. Switched off, numbers are accepted
+ * unverified exactly as if Firebase were absent. The frontend's
+ * {@code VITE_PHONE_VERIFICATION_ENABLED} must match.
  */
 @Service
 public class PhoneVerificationService {
@@ -22,9 +29,12 @@ public class PhoneVerificationService {
     public record Resolved(String contactNumber, boolean verified) {}
 
     private final Optional<FirebaseAuth> firebaseAuth;
+    private final boolean enabled;
 
-    public PhoneVerificationService(Optional<FirebaseAuth> firebaseAuth) {
+    public PhoneVerificationService(Optional<FirebaseAuth> firebaseAuth,
+                                    @Value("${ceview.auth.phone-verification.enabled:false}") boolean enabled) {
         this.firebaseAuth = firebaseAuth;
+        this.enabled = enabled;
     }
 
     /** Loose sanity check for unverified numbers: 7-20 chars of digits and common separators. */
@@ -36,7 +46,7 @@ public class PhoneVerificationService {
      *                    Ignored when a {@code phoneIdToken} is supplied.
      */
     public Resolved resolve(String phoneIdToken, String rawContactNumber, boolean verifyLater) {
-        if (firebaseAuth.isEmpty()) {
+        if (firebaseAuth.isEmpty() || !enabled) {
             if (rawContactNumber == null || rawContactNumber.isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "contactNumber is required");
             }
