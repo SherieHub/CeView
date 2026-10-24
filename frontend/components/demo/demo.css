@@ -1,0 +1,176 @@
+/* The public interactive demo (components/demo). Loaded with the /demo chunk
+   only. The app's own screens bring their own styles; this covers the demo
+   strip, the guided tour, and the locked sidebar destinations. */
+@layer components {
+  /* ---------- the "sample data" strip ---------- */
+  .dm-bar {
+    position: relative;
+    z-index: 15;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 8px 24px;
+    background: #0b3f3c;
+    color: rgba(255, 255, 255, .88);
+    font-family: var(--ff-ui);
+  }
+  .dm-bar-badge {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(90, 212, 173, .16);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: #8be6c7;
+  }
+  .dm-bar-note { flex: 1; min-width: 200px; margin: 0; font-size: .8125rem; color: rgba(255, 255, 255, .8); }
+  .dm-bar-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, .28);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--ff-ui);
+    font-size: .8125rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dm-bar-btn:hover { border-color: #fff; background: rgba(255, 255, 255, .08); }
+  .dm-bar-btn[aria-pressed='true'] { border-color: #5ad4ad; background: rgba(90, 212, 173, .18); }
+  .dm-bar-btn--cta { border-color: #5ad4ad; background: #5ad4ad; color: #06302d; }
+  .dm-bar-btn--cta:hover { border-color: #7ee2c0; background: #7ee2c0; }
+  .dm-bar-cta-short { display: none; }
+  .dm-bar :is(a, button):focus-visible { outline: 2px solid #8be6c7; outline-offset: 2px; }
+
+  /* Phones: two rows — what this is with the icon controls, then the note
+     beside a shorter request button. */
+  @media (max-width: 760px) {
+    .dm-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
+      grid-template-areas: 'badge tour reset exit' 'note cta cta cta';
+      gap: 8px 6px;
+      padding: 8px 14px 10px;
+    }
+    .dm-bar-badge { grid-area: badge; justify-self: start; }
+    .dm-bar-note { grid-area: note; min-width: 0; font-size: .75rem; line-height: 1.4; }
+    .dm-bar-tour { grid-area: tour; }
+    .dm-bar-reset { grid-area: reset; }
+    .dm-bar-exit { grid-area: exit; }
+    .dm-bar-btn--cta { grid-area: cta; align-self: center; justify-self: end; }
+    .dm-bar-btn { width: 34px; height: 34px; justify-content: center; padding: 0; }
+    .dm-bar-btn--cta { width: auto; padding: 0 12px; }
+    .dm-bar-cta-long { display: none; }
+    .dm-bar-cta-short { display: inline; }
+    /* Icon-only controls keep their accessible names. */
+    .dm-bar-tour > span, .dm-bar-reset > span, .dm-bar-exit > span {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+    }
+  }
+
+  /* ---------- locked destinations in the sidebar ---------- */
+  .app-wrap .sb-item[data-locked] { opacity: .5; cursor: not-allowed; }
+  .app-wrap .sb-item[data-locked]:hover { background: none; }
+  .app-wrap .sb-lock { display: inline-flex; margin-left: auto; color: rgba(255, 255, 255, .7); }
+  .app-wrap[data-collapsed='true'] .sb-lock { display: none; }
+
+  .dm-loading { margin: 24px 0; font-family: var(--ff-ui); font-size: .875rem; color: #647887; }
+
+  /* ---------- guided tour ---------- */
+  .dm-spot {
+    position: fixed;
+    z-index: 60;
+    border: 2px solid #12877f;
+    border-radius: 18px;
+    box-shadow: 0 0 0 6px rgba(90, 212, 173, .25), 0 18px 40px -20px rgba(11, 69, 65, .55);
+    pointer-events: none;
+    transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+  }
+  .dm-tour {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 70;
+    display: grid;
+    gap: 10px;
+    width: min(380px, calc(100vw - 32px));
+    padding: 18px 18px 16px;
+    border: 1px solid #cdeee4;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 28px 60px -24px rgba(9, 52, 51, .55), 0 2px 6px rgba(9, 52, 51, .08);
+    font-family: var(--ff-ui);
+    color: #102f40;
+    animation: dm-rise .25s ease;
+  }
+  @keyframes dm-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .dm-tour-top { display: flex; align-items: center; gap: 8px; }
+  .dm-tour-stage { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #12877f; }
+  .dm-tour-count { margin-left: auto; font-size: .75rem; color: #7b8c99; }
+  .dm-tour-x { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 999px; background: none; color: #4a5f70; cursor: pointer; }
+  .dm-tour-x:hover { background: #eef5f3; }
+  .dm-tour-bar { height: 4px; overflow: hidden; border-radius: 999px; background: #e7efed; }
+  .dm-tour-bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #2fb5a5, #5ad4ad); transition: width .25s ease; }
+  .dm-tour-title {
+    margin: 2px 0 0;
+    font-family: var(--ff-display);
+    font-optical-sizing: auto;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #102f40;
+    outline: none;
+  }
+  .dm-tour-body { margin: 6px 0 0; font-size: .875rem; line-height: 1.6; color: #4a5f70; }
+  .dm-tour-nav { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .dm-tour-nav .dm-action--primary { margin-left: auto; }
+  .dm-tour-skip { padding: 0 6px; border: 0; background: none; font-family: var(--ff-ui); font-size: .8125rem; font-weight: 600; color: #647887; cursor: pointer; }
+  .dm-tour-skip:hover { color: #102f40; text-decoration: underline; text-underline-offset: 3px; }
+  .dm-tour-end { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .dm-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--btn-sm-h, 34px);
+    padding: 0 16px;
+    border: 1px solid #c9d6d4;
+    border-radius: 999px;
+    background: #fff;
+    font-family: var(--ff-ui);
+    font-size: .875rem;
+    font-weight: 600;
+    color: #102f40;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .dm-action:hover:not(:disabled) { border-color: #0b4541; background: #f0faf7; }
+  .dm-action:disabled { color: #9aabb6; border-color: #e3ecea; cursor: default; }
+  .dm-action--primary { border-color: #0b4541; background: #0b4541; color: #fff; }
+  .dm-action--primary:hover:not(:disabled) { background: #0f5a55; color: #fff; }
+  .dm-tour :is(a, button):focus-visible { outline: 2px solid #12877f; outline-offset: 2px; }
+  /* The title takes focus programmatically so screen readers announce each stop; no ring for that. */
+  .dm-tour .dm-tour-title:focus { outline: none; }
+  .dm-intro-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e3f5ef; color: #12877f; }
+
+  @media (max-width: 640px) {
+    .dm-tour { right: 8px; bottom: 8px; left: 8px; width: auto; padding: 14px; border-radius: 16px; }
+    .dm-tour-title { font-size: 1.0625rem; }
+    .dm-tour-body { font-size: .8125rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dm-tour, .dm-spot, .dm-tour-bar > i { animation: none; transition: none; }
+  }
+}

@@ -28,6 +28,8 @@ export const SITE = {
 
 export const DEMO_ANCHOR = '#demo';
 export const TOUR_ANCHOR = '#product';
+/** The public interactive demo (sample business, no account): the header CTA and the showcase's button. */
+export const TRY_DEMO = { label: 'Try Interactive Demo', to: '/demo' } as const;
 
 /**
  * The secondary CTA. With a walkthrough video configured it opens it; without
@@ -52,7 +54,7 @@ export const NAV_LINKS = [
 
 export const HEADER = {
   signIn: { label: 'Sign In', to: '/login' },
-  cta: 'Request a Demo',
+  cta: TRY_DEMO,
   menuOpen: 'Open menu',
   menuClose: 'Close menu',
   homeLabel: 'CeView — back to top',
@@ -249,10 +251,28 @@ export const PRODUCT = {
 
 export type TourId = 'radar' | 'studio' | 'review' | 'performance';
 
+/** A point of interest on a screenshot, in percent of its width and height. */
+export interface ShowcaseBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface ShowcaseStep {
+  title: string;
+  body: string;
+  /** Where on the screenshot this step is about — measured from the app itself. */
+  box: ShowcaseBox;
+}
+
 /**
- * Product section part B: the real screens. A dark stage shows the selected
- * screenshot in a browser frame; four cards below act as the tabs. `status`
- * is the pill over each screen and describes what that screenshot shows.
+ * Product section part B: a guided look at the real screens. Each tab is one
+ * screenshot (captured from the /demo sandbox with the sample business) and a
+ * few numbered steps; a step zooms the view onto the part it describes.
+ * `status` is the pill over each screen and describes what it shows. Box
+ * positions come from the elements' measured positions in the capture, so
+ * re-measure them whenever a screenshot is replaced.
  */
 export const SCREENS = {
   eyebrow: 'See CeView in action',
@@ -263,9 +283,11 @@ export const SCREENS = {
   intro: 'Demand signals, market priorities, content guidance and performance context, inside one workflow.',
   realBadge: 'Real CeView screen · sample data',
   shownLabel: 'Showing now',
-  caption: 'Real CeView screens, shown with a sample business and sample data.',
-  ctaLead: 'Want to see the complete workflow?',
-  ctaLink: 'Request a demo',
+  overviewHint: 'Select a numbered point, or press Next for a short walk-through.',
+  caption: 'Explore CeView with a sample business and sample data — no account needed.',
+  tryDemo: TRY_DEMO.label,
+  tryDemoHref: TRY_DEMO.to,
+  requestDemo: 'Request a Demo',
   tabs: [
     {
       id: 'radar',
@@ -274,6 +296,23 @@ export const SCREENS = {
       body: 'See when interest may be rising, and which market deserves attention.',
       status: 'Surge alert · South Korea · +24% vs baseline',
       alt: 'CeView dashboard showing a surge alert for South Korea and the markets ranked by potential for that alert’s category.',
+      steps: [
+        {
+          title: 'A surge alert',
+          body: 'Searches from South Korea for stays like this one are 24% above their usual level — early enough to plan for.',
+          box: { x: 22.4, y: 49.3, w: 38.6, h: 27.2 },
+        },
+        {
+          title: 'Markets ranked for that alert',
+          body: 'For accommodation and staycation, South Korea ranks first at 87 out of 100, ahead of Japan and the United States.',
+          box: { x: 65.7, y: 40.3, w: 31.8, h: 31.9 },
+        },
+        {
+          title: 'A top market for every category',
+          body: 'Each tile names the market ranked highest for one of the business’s categories, so nothing is missed.',
+          box: { x: 59.2, y: 22.7, w: 18.6, h: 15.4 },
+        },
+      ],
     },
     {
       id: 'studio',
@@ -282,6 +321,23 @@ export const SCREENS = {
       body: 'Turn the opportunity into posts written for the market you’re targeting.',
       status: 'Three caption options · written for South Korea',
       alt: 'CeView Content Studio showing three caption options for Instagram written for travelers from South Korea.',
+      steps: [
+        {
+          title: 'Captions written for the market',
+          body: 'Three options for each platform, written for travellers from South Korea — witty, informative or story-led.',
+          box: { x: 20.6, y: 36.4, w: 34.2, h: 63.6 },
+        },
+        {
+          title: 'The brief stays in view',
+          body: 'The platform and target market sit beside the caption, so the post stays on brief while it’s edited.',
+          box: { x: 57.3, y: 46.6, w: 37, h: 11.2 },
+        },
+        {
+          title: 'Make it your own',
+          body: 'Edit the chosen caption freely — formatting, emoji and links included — before adding the photo.',
+          box: { x: 57.3, y: 60.5, w: 37, h: 31.5 },
+        },
+      ],
     },
     {
       id: 'review',
@@ -290,17 +346,51 @@ export const SCREENS = {
       body: 'Check a caption and image against your campaign direction first.',
       status: 'Review score 84 · passes the mark of 70',
       alt: 'CeView content review showing an overall score of 84, a pass result, sub-scores and a written explanation.',
+      steps: [
+        {
+          title: 'One review score',
+          body: 'The caption and photo are scored together against the campaign direction: 84, above the pass mark of 70.',
+          box: { x: 59.9, y: 21.3, w: 32.7, h: 30.7 },
+        },
+        {
+          title: 'Checked criterion by criterion',
+          body: 'Seven checks — from audience fit to platform suitability — show where the post is strong and where it drifts.',
+          box: { x: 59.9, y: 55.3, w: 32.8, h: 27.8 },
+        },
+        {
+          title: 'The post as one piece',
+          body: 'Words and picture are read as one post. Here the review notes the sardine run the caption promises isn’t in the photo.',
+          box: { x: 23.6, y: 21.5, w: 30.7, h: 31.1 },
+        },
+      ],
     },
     {
       id: 'performance',
       label: 'Performance',
       tone: 'coral',
       body: 'Bring results back into the workflow, so the next decision has context.',
-      status: 'Effectiveness score 0.63 · good performance',
-      alt: 'CeView performance screen showing an overall performance score and the ad metrics that drove it.',
+      status: 'Performance score 0.67 · good performance',
+      alt: 'CeView performance screen showing an overall performance score of 0.67 and the five ad results that drove it.',
+      steps: [
+        {
+          title: 'One score for the campaign',
+          body: 'Ad results and the business’s own bookings become a single 0–1 score — 0.67 here, rated good.',
+          box: { x: 20.6, y: 24.8, w: 23.6, h: 34.5 },
+        },
+        {
+          title: 'The five numbers behind it',
+          body: 'Return on ad spend, conversion rate and costs, each explained in plain words.',
+          box: { x: 45.1, y: 24.8, w: 51.5, h: 34.5 },
+        },
+        {
+          title: 'What to do next',
+          body: 'Each report ends with the change most likely to help — here, matching the landing page to the ad.',
+          box: { x: 59.1, y: 60.8, w: 37.6, h: 28.2 },
+        },
+      ],
     },
-  ] as const,
-};
+  ],
+} as const;
 
 /** How it works (#how-it-works): the one place the workflow is explained. */
 export const HOW = {

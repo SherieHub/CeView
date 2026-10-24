@@ -3,6 +3,7 @@
  * authenticated, post-onboarding route (see App.tsx's router tree).
  */
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -19,7 +20,10 @@ function readCollapsed(): boolean {
   }
 }
 
-export default function AppShell() {
+export default function AppShell({ banner }: {
+  /** A strip above the top bar — the public demo's "sample data" bar. */
+  banner?: ReactNode;
+} = {}) {
   const { scrimVisible, dismissTop, stack } = useOverlayStack();
   // Drawers overlay the full-width page. Give their backdrop a translucent
   // dark teal tint; stacked modals retain the shared neutral backdrop.
@@ -67,6 +71,7 @@ export default function AppShell() {
         onClick={() => setSidebarOpen(false)}
       />
       <div className="app-col">
+        {banner}
         <Topbar onToggleSidebar={() => setSidebarOpen((o) => !o)} sidebarOpen={sidebarOpen} />
         <main className="content app-main">
           {/* key={pathname}, not a plain prop — see ErrorBoundary's own comment on

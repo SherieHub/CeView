@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import ceviewLogo from './assets/ceview-logo.webp';
 import ceviewLogoLight from './assets/ceview-logo-light.webp';
-import { DEMO_ANCHOR, HEADER, NAV_LINKS } from '../../content/landing';
+import { HEADER, NAV_LINKS } from '../../content/landing';
 import { Button } from './ui';
 
 /** Matches the CSS breakpoint where the full nav appears. */
@@ -157,8 +157,8 @@ export default function LandingNav() {
             <Link to={HEADER.signIn.to} className="cv-header-signin">
               {HEADER.signIn.label}
             </Link>
-            <Button href={DEMO_ANCHOR} className="cv-header-cta">
-              {HEADER.cta}
+            <Button to={HEADER.cta.to} className="cv-header-cta">
+              {HEADER.cta.label}
             </Button>
             <button
               ref={toggleRef}
@@ -214,8 +214,8 @@ export default function LandingNav() {
               </ul>
             </nav>
             <div className="cv-sheet-actions">
-              <Button href={DEMO_ANCHOR} size="lg" block onClick={close}>
-                {HEADER.cta}
+              <Button to={HEADER.cta.to} size="lg" block onClick={close}>
+                {HEADER.cta.label}
               </Button>
               <Button to={HEADER.signIn.to} variant="link" className="cv-sheet-signin" onClick={close}>
                 {HEADER.signIn.label}

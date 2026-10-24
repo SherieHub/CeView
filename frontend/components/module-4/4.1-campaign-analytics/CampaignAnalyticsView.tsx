@@ -111,10 +111,13 @@ function ResultsTabs({ active, onChange }: { active: ResultsTab; onChange: (tab:
   );
 }
 
-export default function CampaignAnalyticsView() {
-  const [campaign, setCampaign] = useState<CampaignInput | null>(null);
+export default function CampaignAnalyticsView({ initialSubmission }: {
+  /** Opens on these results — the public demo starts on a sample week. */
+  initialSubmission?: { input: CampaignInput; context: SubmissionContext };
+} = {}) {
+  const [campaign, setCampaign] = useState<CampaignInput | null>(initialSubmission?.input ?? null);
   const [serverPes, setServerPes] = useState<ManualIngestPes | null>(null);
-  const [context, setContext] = useState<SubmissionContext | null>(null);
+  const [context, setContext] = useState<SubmissionContext | null>(initialSubmission?.context ?? null);
   const [weeks, setWeeks] = useState<4 | 8>(4);
   const [history, setHistory] = useState<CampaignHistoryEntry[] | null>(null);
   const [report, setReport] = useState<PrescriptiveReport | null>(null);

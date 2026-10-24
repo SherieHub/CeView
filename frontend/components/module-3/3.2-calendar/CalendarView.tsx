@@ -20,6 +20,7 @@ import { useOptionalPosts } from '../../../services/postStore';
 import type { PublishedPost } from '../../../types';
 import { byWhen, dayFromIso, isUpcoming, isoDay, monthWeeks, toEntry } from './calendarModel';
 import type { CalEntry, CalStatus } from './calendarModel';
+import { useAppPath } from '../../../layout/shellContext';
 import './calendar.css';
 
 type Filter = 'all' | CalStatus;
@@ -169,7 +170,8 @@ export default function CalendarView({ posts: injected, now: fixedNow }: { posts
   const now = useMemo(() => fixedNow ?? new Date(), [fixedNow]);
   const today = isoDay(now);
   const { pathname } = useLocation();
-  const studioPath = pathname.startsWith('/preview') ? '/preview/content' : '/content';
+  const appPath = useAppPath();
+  const studioPath = pathname.startsWith('/preview') ? '/preview/content' : appPath('/content');
 
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [view, setView] = useState<'month' | 'list'>('month');

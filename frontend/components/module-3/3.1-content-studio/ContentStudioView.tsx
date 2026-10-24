@@ -98,9 +98,11 @@ interface ContentStudioViewProps {
   initialDraft?: PublishDraftState;
   /** Dev-preview only — a fuller board than MOCK_POSTS, to judge the grid. */
   initialPosts?: PublishedPost[];
+  /** The Quick Post step to open on — the public demo's guided tour uses it. */
+  initialStep?: StudioStepId;
 }
 
-export default function ContentStudioView({ initialDraft, initialPosts }: ContentStudioViewProps = {}) {
+export default function ContentStudioView({ initialDraft, initialPosts, initialStep }: ContentStudioViewProps = {}) {
   const { profile } = useProfile();
   const [activePlatform, setActivePlatform] = useState<StudioPlatformId>('instagram');
   const [draft, setDraft] = useState<PublishDraftState>(initialDraft ?? EMPTY_DRAFT);
@@ -171,7 +173,7 @@ export default function ContentStudioView({ initialDraft, initialPosts }: Conten
   // Navigation only — which view and Quick Post stage are showing. Changing
   // either never touches the draft, audit or generated content above.
   const [view, setView] = useState<StudioView>('quick');
-  const [qpStep, setQpStep] = useState<StudioStepId>('draft');
+  const [qpStep, setQpStep] = useState<StudioStepId>(initialStep ?? 'draft');
   const onDraft = view === 'quick' && qpStep === 'draft';
 
   // Campaigns (frontend-only, this session — see campaigns/campaignTypes.ts).

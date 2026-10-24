@@ -23,11 +23,12 @@
  * either state, and each control keeps a `title` for pointer users.
  */
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from 'lucide-react';
+import { Lock, LogOut, PanelLeftClose, PanelLeftOpen, UserRound } from 'lucide-react';
 import { BrandMark } from '../components/landing/LandingNav';
 import { NAV } from './nav';
 import { useAuth } from '../services/auth';
 import { useUnreadAlerts } from '../services/unreadAlertsStore';
+import { isInDemo, toShellPath, useShellMode } from './shellContext';
 
 /** One size and weight for every glyph in the rail, including the toggle. */
 const ICON = { size: 18, strokeWidth: 1.75 } as const;
@@ -45,16 +46,22 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
   const { unreadCount } = useUnreadAlerts();
   const { pathname: rawPath } = useLocation();
   const navigate = useNavigate();
+  const { demo } = useShellMode();
 
   // The dev preview routes mount real screens under /preview/<route> (see
   // App.tsx). Without this the rail would show nothing as active while
   // reviewing a screen, which is exactly the chrome the preview exists to
   // show. import.meta.env.DEV is statically false in a production build, so
   // this collapses to `rawPath` there.
+  //
+  // The public demo mounts the same screens under /demo (its dashboard at
+  // /demo itself), so its paths map back the same way.
   const pathname =
     import.meta.env.DEV && rawPath.startsWith('/preview/')
       ? rawPath.slice('/preview'.length)
-      : rawPath;
+      : demo
+        ? rawPath === '/demo' || rawPath === '/demo/' ? '/dashboard' : rawPath.replace(/^\/demo/, '')
+        : rawPath;
 
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
@@ -95,18 +102,29 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
           // Nothing to say when the count is unknown (null) or zero: an empty
           // inbox is not news, and a badge is a claim about live data.
           const badge = entry.id === 'dashboard' && unreadCount ? unreadCount : null;
+          // In the demo, account-only destinations stay visible but locked, so
+          // the product's shape is honest without a button that leads nowhere.
+          const locked = demo && !isInDemo(entry.path);
 
           return (
             <li key={entry.id}>
               <button
                 type="button"
-                onClick={() => navigate(entry.path)}
+                onClick={() => navigate(toShellPath(entry.path, demo))}
                 className="sb-item"
                 aria-current={isActive ? 'page' : undefined}
-                title={collapsed ? entry.label : undefined}
+                disabled={locked}
+                data-locked={locked || undefined}
+                title={locked ? `${entry.label} needs a real CeView account` : collapsed ? entry.label : undefined}
               >
                 <Icon {...ICON} aria-hidden="true" />
                 <span className="sb-label">{entry.label}</span>
+                {locked && (
+                  <span className="sb-lock">
+                    <Lock size={12} strokeWidth={2} aria-hidden="true" />
+                    <span className="sr"> — needs a real account</span>
+                  </span>
+                )}
                 {badge != null && (
                   <span className="sb-badge">
                     {badge}
@@ -123,7 +141,7 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
         {/* Only when there is a real identity to show. The old 'Signed in'
             fallback told the operator nothing they did not already know, and it
             was what rendered whenever the name had not loaded yet. */}
-        {(user?.businessName ?? user?.email) && (
+        {!demo && (user?.businessName ?? user?.email) && (
           <span className="sb-who">
             <span className="sb-avatar" aria-hidden="true">
               <UserRound size={16} strokeWidth={1.75} />
@@ -133,12 +151,12 @@ export default function Sidebar({ collapsed = false, onToggleCollapsed }: Sideba
         )}
         <button
           type="button"
-          onClick={logout}
+          onClick={demo ? () => navigate('/') : logout}
           className="sb-signout"
-          title={collapsed ? 'Sign out' : undefined}
+          title={collapsed ? (demo ? 'Exit demo' : 'Sign out') : undefined}
         >
           <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
-          <span className="sb-label">Sign out</span>
+          <span className="sb-label">{demo ? 'Exit demo' : 'Sign out'}</span>
         </button>
       </div>
     </nav>

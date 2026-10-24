@@ -43,7 +43,35 @@ function renderAllSections() {
 
 export default function LandingPage() {
   useEffect(() => {
-    if (window.location.hash) renderAllSections();
+    if (window.location.hash) {
+      renderAllSections();
+      // Arriving from another screen (the demo's "Request a demo", a legal
+      // page) is an in-app navigation, and browsers only scroll to the hash
+      // on a full page load — so go there once the sections have rendered.
+      // Sections and images above it lay out as they load, moving the target;
+      // keep re-aiming until it has held still for a few frames, for at most
+      // two seconds, and never once the visitor starts scrolling themselves.
+      const id = decodeURIComponent(window.location.hash.slice(1));
+      const startedAt = performance.now();
+      let lastTop = Number.NaN;
+      let still = 0;
+      let stopped = false;
+      const stop = () => { stopped = true; };
+      const settle = () => {
+        const el = document.getElementById(id);
+        if (stopped || !el) return;
+        // Instant: the site's smooth scrolling would restart on every re-aim.
+        el.scrollIntoView({ behavior: 'instant' });
+        const top = Math.round(el.getBoundingClientRect().top);
+        still = Math.abs(top - lastTop) < 2 ? still + 1 : 0;
+        lastTop = top;
+        if (still < 8 && performance.now() - startedAt < 2000) requestAnimationFrame(settle);
+      };
+      for (const type of ['wheel', 'touchstart', 'keydown'] as const) {
+        window.addEventListener(type, stop, { once: true, passive: true });
+      }
+      requestAnimationFrame(settle);
+    }
     // Capture phase: runs before the browser's own scroll to the anchor.
     const onClick = (e: MouseEvent) => {
       const link = (e.target as Element | null)?.closest?.('a[href^="#"]');

@@ -47,6 +47,7 @@ import { STUDIO_PLATFORMS } from './contentStudioTypes';
 import type { PublishDraftState, StudioPlatformId } from './contentStudioTypes';
 import { useConnections } from '../../../services/connectionsStore';
 import { defaultSchedule, formatSchedule, isFuture, timeZoneName } from './schedule';
+import { useShellMode } from '../../../layout/shellContext';
 import { apiClient } from '../../../services/apiClient';
 import type { AdMinimumBudget, AdSpendLimits, AttributionLink, PublishAd } from '../../../types';
 import MetaAdFields from './MetaAdFields';
@@ -101,6 +102,7 @@ function StepHead({ n, title, sub }: { n: number; title: string; sub: string }) 
 
 export default function PublishModal({ open, draft, onDraftChange, onClose, onConfirm, accountName, busy = false, error, attributionLinkId, market, windowOpenDate, interestSeeds }: PublishModalProps) {
   const [device, setDevice] = useState<PreviewDevice>('mobile');
+  const { demo } = useShellMode();
   const [adCurrency, setAdCurrency] = useState<string | null>(null);
   const [adLinks, setAdLinks] = useState<AttributionLink[]>([]);
   const [adLimits, setAdLimits] = useState<AdSpendLimits | null>(null);
@@ -562,6 +564,9 @@ export default function PublishModal({ open, draft, onDraftChange, onClose, onCo
           </button>
           <div className="pubx-foot-end">
             {/* Says what is still missing, so a disabled Confirm is never a mystery. */}
+            {demo && canConfirm && (
+              <span className="pubx-foot-hint">Demo: nothing is posted to your accounts.</span>
+            )}
             {!canConfirm && (
               <span className="pubx-foot-hint">
                 {overLimit ? 'Shorten the caption for the selected platforms.' : !adValid ? 'Complete the Meta ad details.' : draft.platforms.length === 0 && !draft.paidPartnership

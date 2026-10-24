@@ -19,6 +19,7 @@ import type { FormEvent } from 'react';
 import { CircleAlert, CircleCheck, LoaderCircle, Mail } from 'lucide-react';
 import { DEMO, PARTNER_HELP, PRICING, SITE } from '../../content/landing';
 import { Button } from './ui';
+import { track } from '../../services/analytics';
 
 type Status = 'idle' | 'sending' | 'sent' | 'mailto' | 'error' | 'unavailable';
 
@@ -127,6 +128,8 @@ export default function LeadForm() {
         });
         if (!res.ok) throw new Error(String(res.status));
         setStatus('sent');
+        // Only once the endpoint has accepted the request.
+        track('request_demo_submitted');
         setFields(EMPTY);
       } catch {
         setStatus('error');

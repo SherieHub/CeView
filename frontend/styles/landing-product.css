@@ -787,3 +787,145 @@
     }
   }
 }
+
+/* Guided showcase (ScreenTabs): the zoom layer over each screenshot, its
+   numbered points, the focus outline, and the step panel under the frame. */
+@layer components {
+  .cv-shot { position: relative; aspect-ratio: 16 / 10; background: var(--sand-50); }
+  .cv-shot-layer {
+    --s: var(--s-d, 1);
+    position: absolute;
+    inset: 0;
+    transform: scale(var(--s)) translate(var(--tx-d, 0), var(--ty-d, 0));
+    transform-origin: 50% 50%;
+    transition: transform 560ms var(--cv-ease);
+    will-change: transform;
+  }
+  .cv-shot-layer img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+
+  /* The part being explained, with the rest of the screen gently dimmed. */
+  .cv-shot-focus {
+    position: absolute;
+    border: calc(2px / var(--s)) solid var(--coral-500);
+    border-radius: calc(10px / var(--s));
+    box-shadow: 0 0 0 9999px rgba(8, 36, 34, 0.32);
+    pointer-events: none;
+    animation: cv-shot-in 300ms var(--cv-ease);
+  }
+  @keyframes cv-shot-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Numbered points sit on the corner of what they describe. They are
+     counter-scaled, so they stay the same size however far the view zooms. */
+  .cv-shot-point {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 2px solid var(--white);
+    border-radius: 999px;
+    background: var(--coral-500);
+    box-shadow: 0 4px 12px rgba(14, 42, 59, 0.35), 0 0 0 4px rgba(232, 112, 79, 0.25);
+    font-family: var(--ff-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--white);
+    cursor: pointer;
+    transform: translate(-40%, -40%) scale(calc(1 / var(--s)));
+    transform-origin: 0 0;
+    transition: opacity 200ms var(--cv-ease), background-color 150ms ease;
+  }
+  .cv-shot-point:hover { background: #d65d3c; }
+  .cv-shot-point[aria-pressed='true'] { background: var(--teal-900); box-shadow: 0 4px 12px rgba(14, 42, 59, 0.35), 0 0 0 4px rgba(90, 212, 173, 0.45); }
+  .cv-shot-point:focus-visible { outline: 3px solid var(--white); outline-offset: 2px; }
+
+  /* The step panel: what the current point is, and Back / Next. */
+  .cv-walk {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    /* The stage's full width: tying it to the frame's height-based width
+       left wide empty margins and squeezed the text on shorter screens. */
+    width: 100%;
+    align-self: stretch;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    color: var(--white);
+  }
+  /* Below ~280px of room the buttons wrap under the text instead of squeezing it. */
+  .cv-walk-text { flex: 1 1 280px; min-width: 0; min-height: 66px; }
+  .cv-walk-count { margin: 0; font-family: var(--ff-ui); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8be6c7; }
+  .cv-screens .cv-walk-title { color: var(--white); }
+  .cv-walk-title { margin: 2px 0 0; font-family: var(--ff-display); font-optical-sizing: auto; font-size: 1.125rem; font-weight: 600; line-height: 1.25; }
+  .cv-walk-body { margin: 2px 0 0; font-family: var(--ff-ui); font-size: 0.875rem; line-height: 1.5; color: rgba(255, 255, 255, 0.84); }
+  .cv-walk-nav { display: flex; flex: none; align-items: center; gap: 10px; margin-left: auto; }
+  .cv-walk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--ff-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--white);
+    cursor: pointer;
+  }
+  .cv-walk-btn:hover:not(:disabled) { border-color: var(--white); background: rgba(255, 255, 255, 0.1); }
+  .cv-walk-btn:disabled { opacity: 0.4; cursor: default; }
+  .cv-walk-btn--next { padding: 0 14px; border-color: #5ad4ad; background: #5ad4ad; color: #06302d; }
+  .cv-walk-btn--next:hover:not(:disabled) { border-color: #7ee2c0; background: #7ee2c0; }
+  .cv-walk-btn:focus-visible { outline: 2px solid var(--white); outline-offset: 2px; }
+  .cv-walk-dots { display: inline-flex; align-items: center; }
+  /* A 24px target around each small dot. */
+  .cv-walk-dots button { display: grid; place-items: center; width: 18px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .cv-walk-dots button::before { width: 6px; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.4); transition: width 200ms var(--cv-ease); content: ''; }
+  .cv-walk-dots button:hover::before { background: rgba(255, 255, 255, 0.75); }
+  .cv-walk-dots button[aria-current]::before { width: 14px; background: #5ad4ad; }
+  .cv-walk-dots button:focus-visible { outline: 2px solid var(--white); outline-offset: 0; border-radius: 6px; }
+
+  .cv-screens-links { align-items: center; }
+
+  @media (min-width: 1024px) {
+    /* Room for the step panel under the frame, still on one screen — but
+       never so small on a short window that the screenshot can't be read. */
+    .cv-screens-frame {
+      width: min(100%, max(600px, calc((100svh - var(--cv-header-h) - 400px) / 0.625 + 20px)));
+    }
+  }
+  @media (max-width: 1023px) {
+    .cv-shot-layer {
+      --s: var(--s-m, 1);
+      transform: scale(var(--s)) translate(var(--tx-m, 0), var(--ty-m, 0));
+    }
+  }
+  @media (max-width: 639px) {
+    .cv-walk { flex-direction: column; align-items: stretch; padding: 12px 14px; }
+    /* Stacked, the 280px basis would apply to height. */
+    .cv-walk-text { flex: none; min-height: 0; }
+    .cv-walk-nav { justify-content: space-between; margin-left: 0; }
+    .cv-walk-title { font-size: 1rem; }
+    .cv-walk-body { font-size: 0.8125rem; }
+    .cv-shot-point { width: 26px; height: 26px; font-size: 0.75rem; }
+    /* Zoomed this far the point would sit on the frame's edge; the outline
+       and the step text already say which part this is. */
+    .cv-shot[data-zoomed] .cv-shot-point { display: none; }
+    .cv-screens-links { width: 100%; }
+    .cv-screens-links .cv-btn { flex: 1 1 auto; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cv-shot-layer, .cv-shot-point, .cv-walk-dots button::before { transition: none; }
+    .cv-shot-focus { animation: none; }
+  }
+}

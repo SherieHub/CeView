@@ -9,7 +9,7 @@
  * does not have.
  */
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { AppLink } from '../../../../layout/shellContext';
 import {
   ArrowLeft,
   ArrowRight,
@@ -315,7 +315,7 @@ export default function CampaignWorkspace({ campaign: c, content, onBack, onEdit
             </ul>
             <p className="cb-note">
               These are planned dates, not automatic schedules. Campaign posts aren&rsquo;t added to your publishing
-              Calendar yet. <Link to="/calendar" className="link-inline">Open Calendar</Link>
+              Calendar yet. <AppLink to="/calendar" className="link-inline">Open Calendar</AppLink>
             </p>
             {total === 0 ? (
               <p className="cw-empty-line">No dates planned yet.</p>
@@ -349,7 +349,7 @@ export default function CampaignWorkspace({ campaign: c, content, onBack, onEdit
               Campaign posts aren&rsquo;t published from here yet, so there&rsquo;s nothing to measure. Results for posts
               you&rsquo;ve published and your ad campaigns are in Performance.
             </p>
-            <Link to="/performance" className="btn-outline btn-outline--sm mt-3">Go to Performance</Link>
+            <AppLink to="/performance" className="btn-outline btn-outline--sm mt-3">Go to Performance</AppLink>
           </div>
         )}
       </section>

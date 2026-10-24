@@ -31,6 +31,14 @@ const OnboardingWizard = lazy(() => import('./components/module-1/onboarding/Onb
 const AssetsLinksStep = lazy(() => import('./components/module-1/onboarding/steps/AssetsLinksStep'));
 const CampaignAnalyticsView = lazy(() => import('./components/module-4/4.1-campaign-analytics/CampaignAnalyticsView'));
 const EnquiryPage = lazy(() => import('./components/module-4/enquiries/EnquiryPage'));
+// The public interactive demo — its own chunk, loaded only when a visitor opens it.
+const loadDemo = () => import('./components/demo/DemoRoot');
+const DemoRoot = lazy(loadDemo);
+const DemoDashboard = lazy(() => loadDemo().then((m) => ({ default: m.DemoDashboard })));
+const DemoContentStudio = lazy(() => loadDemo().then((m) => ({ default: m.DemoContentStudio })));
+const DemoCalendar = lazy(() => loadDemo().then((m) => ({ default: m.DemoCalendar })));
+const DemoPerformance = lazy(() => loadDemo().then((m) => ({ default: m.DemoPerformance })));
+const DemoBusinessProfile = lazy(() => loadDemo().then((m) => ({ default: m.DemoBusinessProfile })));
 // Terms of Use and Privacy Notice — public, readable signed in or out.
 const TermsPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.TermsPage })));
 const PrivacyPage = lazy(() => import('./components/legal/LegalPage').then((m) => ({ default: m.PrivacyPage })));
@@ -198,6 +206,20 @@ const router = createBrowserRouter([
   ...devPreviewRoutes,
   { path: '/', element: <RedirectIfAuthenticated><LandingPage /></RedirectIfAuthenticated> },
   { path: '/enquiry', element: page(<EnquiryPage />) },
+  {
+    // Public interactive demo: the real screens on sample data, no account.
+    // Outside every auth gate; never talks to the backend (services/demoMode.ts).
+    path: '/demo',
+    element: page(<DemoRoot />),
+    children: [
+      { index: true, element: page(<DemoDashboard />) },
+      { path: 'content', element: page(<DemoContentStudio />) },
+      { path: 'calendar', element: page(<DemoCalendar />) },
+      { path: 'performance', element: page(<DemoPerformance />) },
+      { path: 'settings/profile', element: page(<DemoBusinessProfile />) },
+      { path: '*', element: <Navigate to="/demo" replace /> },
+    ],
+  },
   { path: '/terms', element: page(<TermsPage />) },
   { path: '/privacy', element: page(<PrivacyPage />) },
   { path: '/login', element: <RedirectIfAuthenticated>{page(<LoginPage />)}</RedirectIfAuthenticated> },

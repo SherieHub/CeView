@@ -7,7 +7,7 @@
  */
 import './campaign-entry.css';
 import '@fontsource/caveat/500.css';
-import { Link } from 'react-router-dom';
+import { AppLink } from '../../../../layout/shellContext';
 import { ArrowLeft, ArrowRight, Building2, Check, ChevronDown, CircleAlert, FileText, PenLine, Sparkles, Store, Tag, Waves } from 'lucide-react';
 import type { BusinessProfile, Market } from '@/types';
 import { ApiErrorPanel } from '../../../shared/ApiErrorPanel';
@@ -106,13 +106,13 @@ export default function CampaignGenerate({
             <p>
               <b>CeView needs a little more about your business first:</b> {missing.join(', ')}.
             </p>
-            <Link to="/settings/profile" className="btn-outline btn-outline--sm">Complete your Business Profile</Link>
+            <AppLink to="/settings/profile" className="btn-outline btn-outline--sm">Complete your Business Profile</AppLink>
           </div>
         )}
         {missing.length === 0 && limited.length > 0 && (
           <p className="cp-hint">
             Your profile doesn&rsquo;t include {limited.join(' or ').toLowerCase()} yet, so some recommendations will be
-            more general. <Link to="/settings/profile" className="link-inline">Add them</Link>
+            more general. <AppLink to="/settings/profile" className="link-inline">Add them</AppLink>
           </p>
         )}
 
