@@ -12,7 +12,7 @@ function renderNav() {
 }
 
 describe('LandingNav', () => {
-  it('links every section, Sign In and the demo form from the header', () => {
+  it('links every section, Sign In and the interactive demo from the header', () => {
     renderNav();
     const header = screen.getByRole('banner');
     const nav = within(header).getByRole('navigation', { name: 'Page sections' });
@@ -26,7 +26,8 @@ describe('LandingNav', () => {
       ['FAQ', '#faq'],
     ]);
     expect(within(header).getByRole('link', { name: 'Sign In' })).toHaveAttribute('href', '/login');
-    expect(within(header).getByRole('link', { name: /Request a Demo/ })).toHaveAttribute('href', '#demo');
+    expect(within(header).getByRole('link', { name: /Try Interactive Demo/ })).toHaveAttribute('href', '/demo');
+    expect(within(header).queryByRole('link', { name: /Request a Demo/ })).not.toBeInTheDocument();
   });
 
   it('opens the menu sheet, locks page scroll and moves focus into it', () => {
@@ -36,7 +37,7 @@ describe('LandingNav', () => {
     expect(sheet).toHaveAttribute('aria-modal', 'true');
     expect(sheet).toContainElement(document.activeElement as HTMLElement);
     expect(document.body.style.overflow).toBe('hidden');
-    expect(within(sheet).getByRole('link', { name: /Request a Demo/ })).toHaveAttribute('href', '#demo');
+    expect(within(sheet).getByRole('link', { name: /Try Interactive Demo/ })).toHaveAttribute('href', '/demo');
     expect(within(sheet).getByRole('link', { name: 'Sign In' })).toHaveAttribute('href', '/login');
   });
 

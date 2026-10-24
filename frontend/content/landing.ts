@@ -28,6 +28,8 @@ export const SITE = {
 
 export const DEMO_ANCHOR = '#demo';
 export const TOUR_ANCHOR = '#product';
+/** The public interactive demo (sample business, no account): the header CTA and the showcase's button. */
+export const TRY_DEMO = { label: 'Try Interactive Demo', to: '/demo' } as const;
 
 /**
  * The secondary CTA. With a walkthrough video configured it opens it; without
@@ -52,7 +54,7 @@ export const NAV_LINKS = [
 
 export const HEADER = {
   signIn: { label: 'Sign In', to: '/login' },
-  cta: 'Request a Demo',
+  cta: TRY_DEMO,
   menuOpen: 'Open menu',
   menuClose: 'Close menu',
   homeLabel: 'CeView — back to top',
@@ -283,8 +285,8 @@ export const SCREENS = {
   shownLabel: 'Showing now',
   overviewHint: 'Select a numbered point, or press Next for a short walk-through.',
   caption: 'Explore CeView with a sample business and sample data — no account needed.',
-  tryDemo: 'Try Interactive Demo',
-  tryDemoHref: '/demo',
+  tryDemo: TRY_DEMO.label,
+  tryDemoHref: TRY_DEMO.to,
   requestDemo: 'Request a Demo',
   tabs: [
     {
