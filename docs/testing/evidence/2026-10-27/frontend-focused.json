@@ -1,0 +1,470 @@
+{
+  "runner": "Vitest",
+  "total": 85,
+  "passed": 76,
+  "failed": 9,
+  "skipped": 0,
+  "files": [
+    {
+      "file": "frontend/services/forecastStore.test.tsx",
+      "status": "failed",
+      "cases": [
+        {
+          "name": "forecast store — cached first paint is ready on the very first render when a snapshot was cached",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — cached first paint starts in loading when there is nothing cached",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — cached first paint ignores a snapshot cached for other categories",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — cached first paint keeps the cached data on screen while the refresh runs, then replaces it",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:104:50\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — cached first paint writes what it reads back to the cache, keyed by profile",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:113:55\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — sync reads alerts, health and markets without waiting on ensure",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:123:50\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — sync reads once when the forecast was already fresh, and records when it was generated",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — sync reads again once, after ensure reports that the pipeline ran",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — sync reports an unfinished profile as the error",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — sync does not treat any other ensure failure as an error",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:165:50\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — sync starts a sync only once for concurrent callers",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — sync syncs again when the operator’s categories change, keeping what is on screen",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — failures never blank the screen keeps the snapshot and says it is stale when a later refresh fails",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:205:50\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — failures never blank the screen shows the error panel when there is nothing to fall back on",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — failures never blank the screen clears the failure once a later read succeeds",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — read state and revalidation does not forget an alert opened since the last read",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — read state and revalidation does not refresh a snapshot that is still fresh, and does once it is stale",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — read state and revalidation runs the pipeline for a Refresh, then reads again",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "forecast store — read state and revalidation reports a failed Refresh without throwing, and keeps the data",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected [ { id: 'n1', …(11) }, …(7) ] to have a length of 5 but got 8\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1389:20)\n    at Proxy.<anonymous> (file://frontend/node_modules/@vitest/expect/dist/index.js:1156:15)\n    at Proxy.methodWrapper (file://frontend/node_modules/chai/index.js:1700:25)\n    at frontend/services/forecastStore.test.tsx:291:50\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "forecast store — navigating in and out of the dashboard shows the dashboard from the store at once on return, without reading again",
+          "status": "passed",
+          "failures": []
+        }
+      ]
+    },
+    {
+      "file": "frontend/components/module-3/3.1-content-studio/ContentStudioView.test.tsx",
+      "status": "failed",
+      "cases": [
+        {
+          "name": "ContentStudioView — gating does not call generate() and shows the picker when no target is picked",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — gating shows the empty-alerts state instead of a picker when the operator has no surges",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request shows the Ad URL block only for the matching alert window tuple",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request builds the generate request from profile + the picked target market",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request offers only the markets for the picked alert’s category",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request switches market through the shared store, keeping the same alert",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request renders ApiErrorPanel naming the dependency when generate() is rejected as a missing dependency",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request stages a selected option into the composer",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request opens the visual guide from the link beside the upload control",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request generates the caption’s shots on request, with the why-box, and approves nothing",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request shows no eyebrow above the page title",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request has no floating visual-guide trigger, and no guide on Draft",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request keeps Publish hidden before the audit has run",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — generate request explains why Publish is locked while media uploads or after the upload fails",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — Settings -> Platforms disconnect rule withdraws a passed audit when a selected platform is disconnected elsewhere",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — ad planner entry opens the planner from the selected campaign",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — after publishing lands on the Content Library with the published post open",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts restores the saved captions and edits on re-entry without generating again",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts keeps editing a restored draft whose surge window has moved on, with a notice",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts generates as before when the saved draft is unreadable",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts generates as before when the saved draft cannot be loaded",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts auto-saves the chosen option for the market once the operator picks one",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts regenerates on request, after confirming that it replaces the current captions",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts restores the attached image and its passing audit, so the draft can be published as it stands",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts reads a restored image back through the API, not from its public URL",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts falls back to the saved public URL when the stored image cannot be read",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts can publish a restored video even though its poster was too large to be saved",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts does not carry one market's attachment and audit into another picked after clearing the target",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts keeps the draft when the same market is picked again after clearing the target",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts keeps Publish locked for a draft saved before its image was attached",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts saves a named draft in one click, with the market and time as its name",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again cannot be saved again while nothing has changed",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again updates the saved draft in place once the work has been edited, never adding a copy",
+          "status": "failed",
+          "failures": [
+            "Error: Unable to find role=\"button\" and name \"Save changes\"\n\nIgnored nodes: comments, script, style\n<body\n  style=\"\"\n>\n  <div>\n    <section\n      aria-label=\"Content Studio\"\n      class=\"studio-screen\"\n    >\n      <div\n        class=\"page-head\"\n      >\n        <div\n          class=\"min-w-0\"\n        >\n          <h1\n            class=\"heading-lg\"\n          >\n            Content Studio\n          </h1>\n          <p\n            class=\"body-sm mt-1\"\n          >\n            Create, plan, and review content for your target markets.\n          </p>\n        </div>\n        <div\n          class=\"page-head-actions\"\n        >\n          <label\n            class=\"studio-market\"\n          >\n            <span\n              class=\"studio-market-label\"\n            >\n              Target market\n            </span>\n            <span\n              class=\"studio-select-wrap\"\n            >\n              <span\n                aria-hidden=\"true\"\n                class=\"mkt-flag\"\n              >\n                <img\n                  alt=\"\"\n                  height=\"21\"\n                  src=\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20id='flag-icons-kr'%20viewBox='0%200%20640%20480'%3e%3cdefs%3e%3cclipPath%20id='kr-a'%3e%3cpath%20fill-opacity='.7'%20d='M-95.8-.4h682.7v512H-95.8z'/%3e%3c/clipPath%3e%3c/defs%3e%3cg%20fill-rule='evenodd'%20clip-path='url(%23kr-a)'%20transform='translate(89.8%20.4)scale(.9375)'%3e%3cpath%20fill='%23fff'%20d='M-95.8-.4H587v512H-95.8Z'/%3e%3cg%20transform='rotate(-56.3%20361.6%20-101.3)scale(10.66667)'%3e%3cg%20id='kr-c'%3e%3cpath%20id='kr-b'%20fill='%23000001'%20d='M-6-26H6v2H-6Zm0%203H6v2H-6Zm0%203H6v2H-6Z'/%3e%3cuse%20xlink:href='%23kr-b'%20width='100%25'%20height='100%25'%20y='44'/%3e%3c/g%3e%3cpath%20stroke='%23fff'%20d='M0%2017v10'/%3e%3cpath%20fill='%23cd2e3a'%20d='M0-12a12%2012%200%200%201%200%2024Z'/%3e%3cpath%20fill='%230047a0'%20d='M0-12a12%2012%200%200%200%200%2024A6%206%200%200%200%200%200Z'/%3e%3ccircle%20cy='-6'%20r='6'%20fill='%23cd2e3a'/%3e%3c/g%3e%3cg%20transform='rotate(-123.7%20191.2%2062.2)scale(10.66667)'%3e%3cuse%20xlink:href='%23kr-c'%20width='100%25'%20height='100%25'/%3e%3cpath%20stroke='%23fff'%20d='M0-23.5v3M0%2017v3.5m0%203v3'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e\"\n                  width=\"28\"\n                />\n              </span>\n              <select\n                class=\"studio-select\"\n              >\n                <option\n                  value=\"korea\"\n                >\n                  South Korea\n                </option>\n                <option\n                  value=\"japan\"\n                >\n                  Japan\n                </option>\n                <option\n                  value=\"usa\"\n                >\n                  United States\n                </option>\n              </select>\n              <svg\n                aria-hidden=\"true\"\n                class=\"lucide lucide-chevron-down studio-select-caret\"\n                fill=\"none\"\n                height=\"18\"\n                stroke=\"currentColor\"\n                stroke-linecap=\"round\"\n                stroke-linejoin=\"round\"\n                stroke-width=\"2\"\n                viewBox=\"0 0 24 24\"\n                width=\"18\"\n                xmlns=\"http://www.w3.org/2000/svg\"\n              >\n                <path\n                  d=\"m6 9 6 6 6-6\"\n                />\n              </svg>\n            </span>\n          </label>\n        </div>\n      </div>\n      <div\n        aria-label=\"Content Studio sections\"\n        class=\"studio-tabs\"\n        role=\"tablist\"\n      >\n        <button\n          aria-controls=\"studio-panel-quick\"\n          aria-selected=\"true\"\n          id=\"studio-tab-quick\"\n          role=\"tab\"\n          tabindex=\"0\"\n          type=\"button\"\n        >\n          <svg\n            aria-hidden=\"true\"\n            class=\"lucide lucide-pen-line\"\n            fill=\"none\"\n            height=\"16\"\n            stroke=\"currentColor\"\n            stroke-linecap=\"round\"\n            stroke-linejoin=\"round\"\n            stroke-width=\"1.75\"\n            viewBox=\"0 0 24 24\"\n            width=\"16\"\n            xmlns=\"http://www.w3.org/2000/svg\"\n          >\n            <path\n              d=\"M13 21h8\"\n            />\n            <path\n              d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"\n            />\n          </svg>\n          Quick Post\n        </button>\n        <button\n          aria-controls=\"studio-panel-campaigns\"\n          aria-selected=\"false\"\n          id=\"studio-tab-campaigns\"\n          role=\"tab\"\n          tabindex=\"-1\"\n          type=\"button\"\n        >\n          <svg\n            aria-hidden=\"true\"\n            class=\"lucide lucide-folder-kanban\"\n            fill=\"none\"\n            height=\"16\"\n            stroke=\"currentColor\"\n            stroke-linecap=\"round\"\n            stroke-linejoin=\"round\"\n            stroke-width=\"1.75\"\n            viewBox=\"0 0 24 ...\n    at waitForWrapper (frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)\n    at frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33\n    at frontend/components/module-3/3.1-content-studio/ContentStudioView.test.tsx:870:33\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again saves a fresh draft if the linked one was deleted elsewhere",
+          "status": "failed",
+          "failures": [
+            "Error: Unable to find role=\"button\" and name \"Save changes\"\n\nIgnored nodes: comments, script, style\n<body\n  style=\"\"\n>\n  <div>\n    <section\n      aria-label=\"Content Studio\"\n      class=\"studio-screen\"\n    >\n      <div\n        class=\"page-head\"\n      >\n        <div\n          class=\"min-w-0\"\n        >\n          <h1\n            class=\"heading-lg\"\n          >\n            Content Studio\n          </h1>\n          <p\n            class=\"body-sm mt-1\"\n          >\n            Create, plan, and review content for your target markets.\n          </p>\n        </div>\n        <div\n          class=\"page-head-actions\"\n        >\n          <label\n            class=\"studio-market\"\n          >\n            <span\n              class=\"studio-market-label\"\n            >\n              Target market\n            </span>\n            <span\n              class=\"studio-select-wrap\"\n            >\n              <span\n                aria-hidden=\"true\"\n                class=\"mkt-flag\"\n              >\n                <img\n                  alt=\"\"\n                  height=\"21\"\n                  src=\"data:image/svg+xml,%3csvg%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20id='flag-icons-kr'%20viewBox='0%200%20640%20480'%3e%3cdefs%3e%3cclipPath%20id='kr-a'%3e%3cpath%20fill-opacity='.7'%20d='M-95.8-.4h682.7v512H-95.8z'/%3e%3c/clipPath%3e%3c/defs%3e%3cg%20fill-rule='evenodd'%20clip-path='url(%23kr-a)'%20transform='translate(89.8%20.4)scale(.9375)'%3e%3cpath%20fill='%23fff'%20d='M-95.8-.4H587v512H-95.8Z'/%3e%3cg%20transform='rotate(-56.3%20361.6%20-101.3)scale(10.66667)'%3e%3cg%20id='kr-c'%3e%3cpath%20id='kr-b'%20fill='%23000001'%20d='M-6-26H6v2H-6Zm0%203H6v2H-6Zm0%203H6v2H-6Z'/%3e%3cuse%20xlink:href='%23kr-b'%20width='100%25'%20height='100%25'%20y='44'/%3e%3c/g%3e%3cpath%20stroke='%23fff'%20d='M0%2017v10'/%3e%3cpath%20fill='%23cd2e3a'%20d='M0-12a12%2012%200%200%201%200%2024Z'/%3e%3cpath%20fill='%230047a0'%20d='M0-12a12%2012%200%200%200%200%2024A6%206%200%200%200%200%200Z'/%3e%3ccircle%20cy='-6'%20r='6'%20fill='%23cd2e3a'/%3e%3c/g%3e%3cg%20transform='rotate(-123.7%20191.2%2062.2)scale(10.66667)'%3e%3cuse%20xlink:href='%23kr-c'%20width='100%25'%20height='100%25'/%3e%3cpath%20stroke='%23fff'%20d='M0-23.5v3M0%2017v3.5m0%203v3'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e\"\n                  width=\"28\"\n                />\n              </span>\n              <select\n                class=\"studio-select\"\n              >\n                <option\n                  value=\"korea\"\n                >\n                  South Korea\n                </option>\n                <option\n                  value=\"japan\"\n                >\n                  Japan\n                </option>\n                <option\n                  value=\"usa\"\n                >\n                  United States\n                </option>\n              </select>\n              <svg\n                aria-hidden=\"true\"\n                class=\"lucide lucide-chevron-down studio-select-caret\"\n                fill=\"none\"\n                height=\"18\"\n                stroke=\"currentColor\"\n                stroke-linecap=\"round\"\n                stroke-linejoin=\"round\"\n                stroke-width=\"2\"\n                viewBox=\"0 0 24 24\"\n                width=\"18\"\n                xmlns=\"http://www.w3.org/2000/svg\"\n              >\n                <path\n                  d=\"m6 9 6 6 6-6\"\n                />\n              </svg>\n            </span>\n          </label>\n        </div>\n      </div>\n      <div\n        aria-label=\"Content Studio sections\"\n        class=\"studio-tabs\"\n        role=\"tablist\"\n      >\n        <button\n          aria-controls=\"studio-panel-quick\"\n          aria-selected=\"true\"\n          id=\"studio-tab-quick\"\n          role=\"tab\"\n          tabindex=\"0\"\n          type=\"button\"\n        >\n          <svg\n            aria-hidden=\"true\"\n            class=\"lucide lucide-pen-line\"\n            fill=\"none\"\n            height=\"16\"\n            stroke=\"currentColor\"\n            stroke-linecap=\"round\"\n            stroke-linejoin=\"round\"\n            stroke-width=\"1.75\"\n            viewBox=\"0 0 24 24\"\n            width=\"16\"\n            xmlns=\"http://www.w3.org/2000/svg\"\n          >\n            <path\n              d=\"M13 21h8\"\n            />\n            <path\n              d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"\n            />\n          </svg>\n          Quick Post\n        </button>\n        <button\n          aria-controls=\"studio-panel-campaigns\"\n          aria-selected=\"false\"\n          id=\"studio-tab-campaigns\"\n          role=\"tab\"\n          tabindex=\"-1\"\n          type=\"button\"\n        >\n          <svg\n            aria-hidden=\"true\"\n            class=\"lucide lucide-folder-kanban\"\n            fill=\"none\"\n            height=\"16\"\n            stroke=\"currentColor\"\n            stroke-linecap=\"round\"\n            stroke-linejoin=\"round\"\n            stroke-width=\"1.75\"\n            viewBox=\"0 0 24 ...\n    at waitForWrapper (frontend/node_modules/@testing-library/dom/dist/wait-for.js:163:27)\n    at frontend/node_modules/@testing-library/dom/dist/query-helpers.js:86:33\n    at frontend/components/module-3/3.1-content-studio/ContentStudioView.test.tsx:886:42\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again links to the existing draft when the server finds identical work already saved",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again starts a new draft after the captions are regenerated",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts saving the same work again saves changes to a draft that was opened from the Drafts drawer",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts says so on the button when the draft limit has been reached",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts waits before captions can be regenerated once they have been generated",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts does not make a restored draft wait: restoring makes no model call",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts starts the shorter wait when the model refuses, and none when the connection drops",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts offers Regenerate only on the caption step, while Drafts and Save draft stay on every step",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "ContentStudioView — saved drafts does not touch saved drafts for the dev-preview composer",
+          "status": "passed",
+          "failures": []
+        }
+      ]
+    },
+    {
+      "file": "frontend/components/module-3/3.1-content-studio/contentDraftPayload.test.ts",
+      "status": "failed",
+      "cases": [
+        {
+          "name": "contentDraftPayload saves the captions, direction and edits but never media or the authorisation tick",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload restores a composer with no media and an unticked authorisation",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload the paid-ad settings keeps the ad, with its interests and duration, through a save and restore",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload the paid-ad settings brings a draft saved with the old ad shape (end time and countries) up to date",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload the paid-ad settings restores no ad when none was saved",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload never resumes on Validate, which needs media and a passing audit that are not saved",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload round-trips through JSON",
+          "status": "failed",
+          "failures": [
+            "AssertionError: expected { schemaVersion: 1, …(8) } to deeply equal { schemaVersion: 1, …(8) }\n    at frontend/components/module-3/3.1-content-studio/contentDraftPayload.test.ts:87:65\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file://frontend/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+          ]
+        },
+        {
+          "name": "contentDraftPayload treats a payload from another schema version, or a damaged one, as no draft",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload is stale for another surge window or a changed profile, and fresh otherwise",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload fingerprints the profile fields and trend that feed generation, ignoring category order",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit saves the attached image as a reference to the stored copy, never its bytes",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit saves the finished audit with it, and resumes on Validate",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit saves no media while it is still uploading, and no audit without media",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit does not save an audit that has not finished",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit keeps a video poster frame only while it is small enough",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit restores an image as its stored copy, ready to publish, with the authorisation unticked",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit restores a video playing from its stored copy, with its poster when it was kept",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit restores no media for a draft saved without any",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit round-trips media and audit through JSON",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit still loads a draft saved before media was included",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit drops a damaged media or audit rather than the whole draft",
+          "status": "passed",
+          "failures": []
+        },
+        {
+          "name": "contentDraftPayload — media and audit never resumes on Validate from a payload that lacks what Validate needs",
+          "status": "passed",
+          "failures": []
+        }
+      ]
+    }
+  ]
+}

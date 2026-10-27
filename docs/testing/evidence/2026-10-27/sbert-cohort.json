@@ -1,0 +1,77 @@
+{
+  "counts": {
+    "passed": 10
+  },
+  "cases": [
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_returns_only_that_categorys_seeded_count",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_excludes_the_callers_own_row",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_returns_a_different_count_for_a_different_category",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_empty_categories_preserves_the_old_unfiltered_behaviour",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_reference_rows_are_included_in_the_cohort",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_reports_the_seeded_size",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_excludes_the_callers_own_row_from_the_size",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_dense_category",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_sparse_category",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_moderate_category",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    }
+  ]
+}

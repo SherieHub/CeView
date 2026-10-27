@@ -1,0 +1,774 @@
+{
+  "stats": {
+    "startTime": "2026-10-27T06:09:11.195Z",
+    "duration": 36598.441,
+    "expected": 60,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "file": "public/landing.spec.ts",
+      "name": "shows the headline, the eyebrow and the two calls to action",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the Sign In link opens the login page",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the header lists the six sections and each one exists on the page",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"Why CeView\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"How It Works\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"Features\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"Who It’s For\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"Pricing\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "\"FAQ\" scrolls to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the header gains its scrolled style after scrolling",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the market strip names every tracked market",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "every dashboard sample on the page is labelled as sample data",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the first question starts open and the others closed",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "opening a question closes the previous one; clicking it again closes it",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "a closed answer is not reachable (inert)",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "monthly billing is the default and shows the four plans",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "switching to annual billing changes the prices and the periods",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "a plan button pre-selects that plan in the demo form",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the partner plan button pre-fills the help field",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "shows four tabs with the first selected, and switching changes the panel",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "arrow keys, Home and End move between tabs, wrapping around",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "links to the legal pages and back to sign in",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the photo credits dialog opens and closes",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "the copyright line is shown",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile the header shows a menu button instead of the links",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile the menu sheet opens, locks scrolling and lists the sections",
+      "project": "chromium-mobile",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "errors": [
+            "Error: expect(locator).toBeVisible() failed\n\nLocator: getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Request a Demo' })\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" with timeout 10000ms\n  - waiting for getByRole('dialog', { name: 'Menu' }).getByRole('link', { name: 'Request a Demo' })\n\n\n  228 |     await expect(sheet(page)).toBeVisible();\n  229 |     for (const s of SECTIONS) await expect(sheet(page).getByRole('link', { name: s.link })).toBeVisible();\n> 230 |     await expect(sheet(page).getByRole('link', { name: 'Request a Demo' })).toBeVisible();\n      |                                                                             ^\n  231 |     expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden');\n  232 |   });\n  233 |\n    at e2e/tests/public/landing.spec.ts:230:77"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile Escape closes the sheet, returns focus to the button and restores scrolling",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile the close button closes the sheet",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile choosing a section closes the sheet and scrolls there",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile Tab stays inside the open sheet",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/landing.spec.ts",
+      "name": "@mobile the page does not scroll sideways",
+      "project": "chromium-mobile",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "shows the heading, the fields and the consent line",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "submitting empty shows all four errors, focuses the first and announces the count",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "a malformed email gets the format error",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "whitespace-only answers count as empty",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "editing a field clears just its own error",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "a valid submission posts the answers as JSON and shows the thank-you state",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "the chosen plan travels with the request",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "a provider error shows the retry notice with the contact email and keeps the answers",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "a network failure is reported the same way",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "the button is busy while sending and only one request goes out",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "after success the form is replaced and the answers are cleared",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/lead-form.spec.ts",
+      "name": "@alt-env with no endpoint and no contact email, nothing is sent and the visitor is told",
+      "project": "chromium-alt-env",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "renders its title, effective date, summary and numbered sections",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "marks itself current in the document switcher and links to the other one",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "a table-of-contents link jumps to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "shows the contact card and a card linking to the other document",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "\"Back to CeView\" returns to the landing page",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "\"Print or save as PDF\" calls the browser print",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "the footer is present with the same legal links",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "renders its title, effective date, summary and numbered sections",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "marks itself current in the document switcher and links to the other one",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "a table-of-contents link jumps to its section",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "shows the contact card and a card linking to the other document",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "\"Back to CeView\" returns to the landing page",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "\"Print or save as PDF\" calls the browser print",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "public/legal.spec.ts",
+      "name": "the footer is present with the same legal links",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "persists and displays scheduled result",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "persists and displays failed result",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "persists and displays inbox result",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "requires valid Meta ad budget and attribution link",
+      "project": "chromium",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "errors": [
+            "TimeoutError: locator.check: Timeout 15000ms exceeded.\nCall log:\n  - waiting for getByRole('dialog', { name: 'Publish', exact: true }).getByRole('checkbox', { name: /Run as Paid Ad/ })\n    - locator resolved to <input disabled type=\"checkbox\"/>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    29 × waiting for element to be visible, enabled and stable\n       - element is not enabled\n     - retrying click action\n       - waiting 500ms\n\n\n  58 | test('requires valid Meta ad budget and attribution link', async ({ page }) => {\n  59 |   const modal = await openComposer(page);\n> 60 |   await modal.getByRole('checkbox', { name: /Run as Paid Ad/ }).check();\n     |                                                                 ^\n  61 |   await expect(modal.getByRole('button', { name: 'Confirm & Publish' })).toBeDisabled();\n  62 |   await modal.getByLabel('Daily budget (PHP)').fill('100');\n  63 |   await modal.getByLabel('Campaign tracking link').selectOption('00000000-0000-0000-0000-000000000002');\n    at e2e/tests/social-publishing.spec.ts:60:65"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "selects a Page and refreshes linked Instagram connection states",
+      "project": "chromium",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "social-publishing.spec.ts",
+      "name": "shows reconnect requirements and disabled unconfigured providers",
+      "project": "chromium",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "errors": [
+            "Error: expect(locator).toBeDisabled() failed\n\nLocator: getByRole('button', { name: 'Connect TikTok', exact: true })\nExpected: disabled\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeDisabled\" with timeout 10000ms\n  - waiting for getByRole('button', { name: 'Connect TikTok', exact: true })\n\n\n  110 |   await expect(page.getByRole('button', { name: 'Reconnect Facebook', exact: true })).toBeEnabled();\n  111 |   await expect(page.getByRole('button', { name: 'Reconnect Instagram', exact: true })).toBeEnabled();\n> 112 |   await expect(page.getByRole('button', { name: 'Connect TikTok', exact: true })).toBeDisabled();\n      |                                                                                   ^\n  113 |   await page.screenshot({ path: testInfo.outputPath('reconnect-required.png'), fullPage: true });\n  114 | });\n  115 |\n    at e2e/tests/social-publishing.spec.ts:112:83"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "counts": {
+    "passed": 3,
+    "failure": 1
+  },
+  "cases": [
+    {
+      "class": "com.ceview.module2.ForecastingControllerJwtVariantTest",
+      "name": "ensureWithoutPathVariableResolvesProfileFromJwt",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "com.ceview.module2.ForecastingControllerJwtVariantTest",
+      "name": "ensureForAnIncompleteProfileIsA409NotAServerError",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "com.ceview.module2.ForecastingControllerJwtVariantTest",
+      "name": "ensureReportsThatThePipelineRan",
+      "status": "failure",
+      "message": "\nexpected: {\"generatedAt\"=\"2026-10-22T07:00:00Z\", \"refreshed\"=true}\n but was: {\"generatedAt\"=\"2026-10-22T07:00Z\", \"refreshed\"=true}",
+      "detail": "org.opentest4j.AssertionFailedError: \n\nexpected: {\"generatedAt\"=\"2026-10-22T07:00:00Z\", \"refreshed\"=true}\n but was: {\"generatedAt\"=\"2026-10-22T07:00Z\", \"refreshed\"=true}\n\tat java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62)\n\tat java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502)\n\tat com.ceview.module2.ForecastingControllerJwtVariantTest.ensureReportsThatThePipelineRan(ForecastingControllerJwtVariantTest.java:66)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:580)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1596)\n\tat java.base/java.util.ArrayList.forEach(ArrayList.java:1596)\n"
+    },
+    {
+      "class": "com.ceview.module2.ForecastingControllerJwtVariantTest",
+      "name": "analyzeWithoutPathVariableResolvesProfileFromJwt",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    }
+  ]
+}

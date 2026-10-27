@@ -1,0 +1,1135 @@
+{
+  "counts": {
+    "skipped": 10,
+    "passed": 151
+  },
+  "cases": [
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_returns_only_that_categorys_seeded_count",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:44: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_excludes_the_callers_own_row",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:52: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_category_filter_returns_a_different_count_for_a_different_category",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:62: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_empty_categories_preserves_the_old_unfiltered_behaviour",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:70: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_reference_rows_are_included_in_the_cohort",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:81: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_reports_the_seeded_size",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:98: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_excludes_the_callers_own_row_from_the_size",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:106: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_dense_category",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:116: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_sparse_category",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:125: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_embedding_store_cohort",
+      "name": "test_cohort_stats_flags_a_moderate_category",
+      "status": "skipped",
+      "message": "DATABASE_URL not set — needs a live Postgres with the seeded corpus imported",
+      "detail": "backend/fastapi-sbert/tests/integration/test_embedding_store_cohort.py:134: DATABASE_URL not set — needs a live Postgres with the seeded corpus imported"
+    },
+    {
+      "class": "tests.integration.test_healthz",
+      "name": "test_healthz_returns_ok_with_the_encoder_load_stubbed",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_agent_llm_model",
+      "name": "test_unset_api_key_is_reported_as_the_cause",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_agent_llm_model",
+      "name": "test_initialisation_failure_is_reported_as_the_cause",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_agent_llm_model",
+      "name": "test_last_error_is_cleared_once_a_model_initialises",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_agent_llm_model",
+      "name": "test_max_tokens_is_configured",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_agent_llm_model",
+      "name": "test_long_exception_message_is_truncated",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_agent_no_fallback",
+      "name": "test_raises_with_the_wrappers_reason",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_agent_no_fallback",
+      "name": "test_fallback_helper_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_agent_no_fallback",
+      "name": "test_no_dangling_reference_to_deleted_mock_captions",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_research_and_omcs_input",
+      "name": "test_blank_research_context_is_filled_for_the_target_market",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_research_and_omcs_input",
+      "name": "test_a_supplied_research_context_is_kept_and_research_is_skipped",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_research_and_omcs_input",
+      "name": "test_the_duplicate_content_route_is_gone",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_research_and_omcs_input",
+      "name": "test_omcs_without_recommendations_is_424_and_never_runs_the_graph",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_research_and_omcs_input",
+      "name": "test_omcs_endpoint_returns_424_for_empty_recommendations",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_translate_returns_english_and_source_language",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_translate_without_model_is_503_with_cause",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_translate_blank_output_is_failed",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_localize_happy_path",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_localize_rejects_unknown_language",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_localize_output_in_wrong_language_is_failed",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_translation_model_precedence",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_script_detection",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_transform_captions_options_en_aligned",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_prompts_format_without_brace_errors",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_generation_node_defaults_missing_caption_en",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_caption_translation",
+      "name": "test_profile_diff_prefers_english_translation",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_example_unit",
+      "name": "test_compute_pes_returns_excellent_for_strong_metrics",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_example_unit",
+      "name": "test_compute_base_metrics_flags_zero_denominators",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_predict_categories_calls_the_documented_space_endpoint",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_predict_categories_rejects_mismatched_space_output",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_predict_categories_uses_selected_category_scores_from_full_space_output",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_selects_two_categories_when_two_scores_are_balanced",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_selects_three_categories_when_each_has_at_least_twenty_percent",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_selects_one_category_when_all_other_scores_are_zero",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_keeps_only_top_three_categories_when_scores_are_balanced",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_out_of_scope_overrides_categories_when_its_raw_score_exceeds_threshold",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_out_of_scope_at_threshold_does_not_override_categories",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_falls_back_to_the_highest_category_when_none_reach_twenty_percent",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_hf_space_classifier",
+      "name": "test_category_score_uses_the_selected_space_categories",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_ml_classifier_text",
+      "name": "test_build_text_carries_the_e5_prefix",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_ml_classifier_text",
+      "name": "test_build_text_preserves_field_order_and_content",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_ml_classifier_text",
+      "name": "test_build_text_handles_empty_services",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_ml_classifier_text",
+      "name": "test_prefix_preserves_the_ordering_of_business_pairs",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_ml_classifier_text",
+      "name": "test_same_domain_distances_are_compressed_far_below_the_old_threshold",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_caption_fallback",
+      "name": "test_raises_when_gemini_is_disabled",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_caption_fallback",
+      "name": "test_raises_when_the_model_call_explodes",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_caption_fallback",
+      "name": "test_raises_when_the_model_returns_nothing_usable",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_caption_fallback",
+      "name": "test_mock_captions_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_caption_fallback",
+      "name": "test_the_schema_example_carries_no_prose_captions",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_creative_fallback",
+      "name": "test_raises_when_disabled",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_creative_fallback",
+      "name": "test_creative_fallback_helper_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_invented_services",
+      "name": "test_empty_services_is_a_424_not_an_invention",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_invented_services",
+      "name": "test_fallback_services_constant_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_naver",
+      "name": "test_hardcoded_naver_captions_are_gone",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_naver",
+      "name": "test_platform_guides_no_longer_offer_naver",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_naver",
+      "name": "test_the_caption_prompt_does_not_ask_for_naver",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_no_naver",
+      "name": "test_the_schema_example_has_three_platforms",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_reads_the_retry_after_header",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_reads_the_delay_from_the_message_when_there_is_no_header",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_reads_minutes_and_seconds",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_falls_back_to_a_short_default_when_groq_gives_no_hint",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_a_request_that_is_too_large_is_never_worth_waiting_for",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestRateLimitWait",
+      "name": "test_other_errors_are_not_rate_limits",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_a_successful_call_is_returned_untouched",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_waits_what_groq_asked_then_retries_once",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_reports_the_rate_limit_when_the_retry_is_limited_too",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_does_not_wait_when_groq_asks_for_longer_than_the_cap",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_does_not_retry_a_request_that_is_too_large",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit.TestInvoke",
+      "name": "test_other_failures_propagate_without_a_retry",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rate_limit",
+      "name": "test_the_output_cap_fits_inside_groqs_per_minute_limit",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_zero_to_one_scores_are_scaled_to_integer_percentages",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_percentage_scores_pass_through",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_models_own_total_is_ignored",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_out_of_range_values_are_clamped",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_missing_and_non_numeric_keys_are_skipped",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_no_scores_gives_zero_total",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_omcs_never_exceeds_100",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_omcs_uses_rubric_on_its_own_scale",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_omcs_rubric_scoring",
+      "name": "test_pass_threshold_boundary",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_analysis_no_fallback",
+      "name": "test_empty_metrics_is_a_424",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_analysis_no_fallback",
+      "name": "test_agent_failure_is_a_503_naming_the_reason",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_analysis_no_fallback",
+      "name": "test_fallback_payload_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_generate_raises_instead_of_returning_a_canned_report",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_evaluate_raises_instead_of_returning_a_canned_evaluation",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_route_retries_until_pass_or_max_retries[85-True-1-finalize_response]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_route_retries_until_pass_or_max_retries[84-True-1-generate_report]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_route_retries_until_pass_or_max_retries[85-False-1-generate_report]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_route_retries_until_pass_or_max_retries[0-False-3-finalize_response]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_report_released_after_max_retries_is_flagged_for_human_review",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_pes_report_agent_no_fallback",
+      "name": "test_no_fallback_constants_survive",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_rescale_maps_floor_to_zero_and_ceiling_to_hundred",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_rescale_clamps_outside_the_calibrated_range",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_score_follows_cosine_and_is_not_a_constant",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_both_sides_carry_the_e5_query_prefix",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_core_services_may_arrive_as_a_comma_separated_string",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_profile_without_text_raises_instead_of_inventing_a_score[None]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_profile_without_text_raises_instead_of_inventing_a_score[profile1]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_profile_without_text_raises_instead_of_inventing_a_score[profile2]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_profile_without_text_raises_instead_of_inventing_a_score[profile3]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_missing_encoder_raises_instead_of_inventing_a_score",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_node_uses_the_computed_score",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_node_with_no_business_profile_key_raises",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_omcs_calculation_keeps_the_specific_503_code",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_endpoint_returns_503_with_the_profile_code_when_no_profile_is_sent",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_profile_alignment",
+      "name": "test_calibration_separates_on_brand_from_off_brand_and_unrelated",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_booking_provenance",
+      "name": "test_router_forwards_provenance_to_the_llm",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_booking_provenance",
+      "name": "test_missing_provenance_is_forwarded_as_unknown",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_booking_provenance",
+      "name": "test_prompt_states_the_tracked_split_and_requires_a_confidence_caveat",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_booking_provenance",
+      "name": "test_prompt_is_unchanged_without_provenance",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_short_funnel_is_424_and_never_reaches_the_llm[0]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_short_funnel_is_424_and_never_reaches_the_llm[1]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_short_funnel_is_424_and_never_reaches_the_llm[2]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_complete_funnel_reaches_the_llm_with_exactly_the_measured_values",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_extra_transitions_are_trimmed_to_three",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_funnel_input",
+      "name": "test_invented_defaults_are_gone",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_no_fallback",
+      "name": "test_llm_offline_is_a_503_and_no_report_is_built",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_no_fallback",
+      "name": "test_fallback_report_helper_no_longer_exists",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_no_fallback",
+      "name": "test_an_empty_model_answer_is_a_503_not_a_200_with_an_empty_report",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_no_fallback",
+      "name": "test_a_partial_model_answer_is_a_503_naming_what_is_missing",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_report_no_fallback",
+      "name": "test_a_complete_model_answer_is_returned_unchanged",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_returns_none_below_the_cohort_floor",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_candidate_further_than_every_cohort_member_scores_near_100",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_candidate_at_the_cohort_median_scores_near_50",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_near_duplicate_of_the_cohort_scores_near_0",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_full_0_to_100_range_is_reachable",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_semantics_score_is_retained_for_continuity",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_semantic_uniqueness",
+      "name": "test_cohort_scores_has_one_entry_per_cohort_member",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_source_is_closed",
+      "name": "test_content_source_rejects_fallback",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_source_is_closed",
+      "name": "test_content_source_accepts_groq",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_source_is_closed",
+      "name": "test_creative_source_rejects_fallback",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_source_is_closed",
+      "name": "test_source_has_no_default",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_renders_the_full_wire_shape",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_missing_upstream_input_is_424_not_503",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_cause_is_required",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_non_ascii_cause_survives_the_wire",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_handler_logs_a_warning",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_overall_score_is_unaffected_by_how_many_categories_are_selected",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_overall_score_equals_the_semantic_percentile_not_an_average",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_insufficient_cohort_returns_explicit_state_not_a_silent_100",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_feedback_fields_are_populated_and_differ_by_outcome",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[1-1st]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[2-2nd]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[3-3rd]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[4-4th]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[11-11th]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[12-12th]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[13-13th]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[21-21st]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[92-92nd]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_description_feedback_uses_correct_ordinal_suffixes[100-100th]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_uniqueness_router",
+      "name": "test_raises_when_the_embedding_model_is_unavailable",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    }
+  ]
+}
