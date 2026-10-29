@@ -2,6 +2,9 @@
 
 **Route:** `/onboarding` · **Module:** 1 (Business Classification & Uniqueness Scoring) · **Access:**
 authenticated, only while `profile.uniquenessScore == null`; redirects to `/dashboard` once complete.
+Signed-out visitors are redirected to the landing page (`/`). A saved session rejected by the
+backend with HTTP 401 is cleared and returns the visitor to `/`, rather than treating a failed
+profile load as a new business that needs onboarding.
 
 **Prototype reference:** [`ui-ux-prototype.html:961–996`](../../../ui-ux-prototype.html#L961) (shell
 markup), [`:1894–2339`](../../../ui-ux-prototype.html#L1894) (step logic), driven from

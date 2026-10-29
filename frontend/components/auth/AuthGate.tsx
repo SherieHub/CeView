@@ -1,6 +1,6 @@
 /**
  * Route guards backed by services/auth.tsx: AuthGate redirects unauthenticated
- * visitors to /login; RedirectIfAuthenticated keeps a logged-in user off the
+ * visitors to /; RedirectIfAuthenticated keeps a logged-in user off the
  * public login page.
  */
 import { Navigate, Outlet } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { useAuth } from '../../services/auth';
 
 export default function AuthGate() {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 

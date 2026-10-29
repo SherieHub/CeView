@@ -282,14 +282,14 @@ test.describe('Changing the address', () => {
 });
 
 test.describe('Leaving', () => {
-  test('Sign out clears the session and returns to /login', async ({ page }) => {
+  test('Sign out clears the session and returns to the landing page', async ({ page }) => {
     const op = await unverified('signout');
     await openVerify(page, op);
     await page.getByRole('button', { name: 'Sign out' }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     expect(await page.evaluate(() => localStorage.getItem('ceview.auth'))).toBeNull();
     await page.goto('/verify-email');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('a verified operator is taken off /verify-email', async ({ page }) => {

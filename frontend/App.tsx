@@ -180,7 +180,7 @@ function DashboardPreviewScreen() {
 /**
  * Route tree:
  *   /login, /forgot-password     - public (redirect to the app when already signed in)
- *   (AuthGate: redirects to /login when unauthenticated)
+ *   (AuthGate: redirects to / when unauthenticated)
  *     /verify-email              - enter the emailed 6-digit code; deliberately OUTSIDE
  *                                  EmailVerificationGate, which redirects here
  *     (EmailVerificationGate: redirects to /verify-email until the email is verified)
@@ -270,7 +270,7 @@ const router = createBrowserRouter([
                 // `{ path: '/', element: <RedirectIfAuthenticated><LandingPage />... }`
                 // route above and winning the match. That used to send every
                 // unauthenticated visit to "/" straight through AuthGate's own
-                // redirect to /login, so the landing page was never reachable.
+                // redirect (previously /login), so the landing page was never reachable.
                 // RedirectIfAuthenticated on the "/" route already sends a
                 // logged-in visitor to /dashboard, so nothing here needs to.
                 children: [

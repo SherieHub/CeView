@@ -23,10 +23,10 @@ test.beforeEach(async () => {
 
 test.describe('Signed out', () => {
   for (const route of [...GATED_ROUTES, '/verify-email', '/no-such-page']) {
-    test(`${route} redirects to /login`, async ({ page }) => {
+    test(`${route} redirects to the landing page`, async ({ page }) => {
       await page.goto(route);
-      await expect(page).toHaveURL(/\/login$/);
-      await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.getByRole('heading', { name: /traveler demand/i }).first()).toBeVisible();
     });
   }
 
@@ -139,12 +139,11 @@ test.describe('Signed in and onboarded', () => {
 });
 
 test.describe('Session expiry', () => {
-  // KNOWN GAP: apiClient has no 401 handling (only 403 EMAIL_NOT_VERIFIED is wired to the session),
-  // so a token the backend rejects — expired, or its operator deleted — leaves the user inside a
-  // shell whose every request fails instead of signing them out.
-  test.fail('a rejected (401) token signs the user out to /login', async ({ page }) => {
+  test('a rejected (401) token signs the user out to the landing page', async ({ page }) => {
     const op = await provisionOperator('rg-401', { stage: 'verified' });
     await signIn(page, { ...op, token: 'not-a-valid-token' }, '/dashboard');
-    await expect(page).toHaveURL(/\/login$/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/$/, { timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /traveler demand/i }).first()).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('ceview.auth'))).toBeNull();
   });
 });

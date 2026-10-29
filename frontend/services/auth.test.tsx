@@ -2,7 +2,8 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from './auth';
-import { loadTokens } from './authStorage';
+import { loadTokens, saveTokens } from './authStorage';
+import { SESSION_REJECTED_EVENT } from './authEvents';
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>;
@@ -71,5 +72,24 @@ describe('AuthProvider — Google sign-in / profile completion', () => {
     });
 
     expect(result.current.profileCompleted).toBe(true);
+  });
+
+  it('ignores a rejected request from an older session after a new login', async () => {
+    saveTokens({ accessToken: 'old-token' });
+    (fetch as ReturnType<typeof vi.fn>).mockReturnValue(
+      jsonResponse({ token: 'new-token', operatorId: 'op-new', profileCompleted: true }),
+    );
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await result.current.login('new@example.com', 'pw');
+    });
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(SESSION_REJECTED_EVENT, { detail: 'old-token' }));
+    });
+
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.user?.id).toBe('op-new');
+    expect(loadTokens()?.accessToken).toBe('new-token');
   });
 });
