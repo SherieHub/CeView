@@ -56,7 +56,7 @@ test.describe('Account menu', () => {
     await openAs(page);
     await avatar(page).click();
     await menu(page).getByRole('menuitem', { name: 'Sign out' }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     expect(await page.evaluate(() => localStorage.getItem('ceview.auth'))).toBeNull();
   });
 

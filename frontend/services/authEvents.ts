@@ -5,3 +5,6 @@
  * test that mocks that module.
  */
 export const EMAIL_NOT_VERIFIED_EVENT = 'ceview:email-not-verified';
+
+/** Carries the rejected access token so an older request cannot end a newer session. */
+export const SESSION_REJECTED_EVENT = 'ceview:session-rejected';

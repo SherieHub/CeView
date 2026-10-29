@@ -98,16 +98,16 @@ test.describe('Collapsing the sidebar', () => {
 });
 
 test.describe('Signing out from the sidebar', () => {
-  test('clears the session and returns to /login, and a reload stays signed out', async ({ page }) => {
+  test('clears the session and returns to the landing page, and a reload stays signed out', async ({ page }) => {
     await signInViaUi(page, op.current.email, op.current.password);
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 30_000 });
     await nav(page).getByRole('button', { name: 'Sign out' }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     expect(await page.evaluate(() => localStorage.getItem('ceview.auth'))).toBeNull();
     await page.reload();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 });
 

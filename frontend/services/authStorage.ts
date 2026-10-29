@@ -11,7 +11,9 @@ export function loadTokens(): AuthTokens | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AuthTokens;
+    const tokens = JSON.parse(raw) as AuthTokens | null;
+    if (!tokens || typeof tokens.accessToken !== 'string' || !tokens.accessToken.trim()) return null;
+    return tokens;
   } catch {
     return null;
   }

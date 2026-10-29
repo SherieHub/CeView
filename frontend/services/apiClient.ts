@@ -8,7 +8,7 @@
  * Real endpoints are added as each screen card wires its backend.
  */
 import { loadTokens } from './authStorage';
-import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
+import { EMAIL_NOT_VERIFIED_EVENT, SESSION_REJECTED_EVENT } from './authEvents';
 import { ApiError } from './apiError';
 import { guardForDemo, isDemoActive } from './demoMode';
 import { MOCK_MARKETS, marketsForCategory } from './fixtures/markets';
@@ -163,6 +163,17 @@ export interface PhoneProof {
   verifyLater?: boolean;
 }
 
+function rejectSession(status: number, path: string, accessToken?: string) {
+  // Public auth endpoints can reject submitted credentials without rejecting the saved session.
+  const publicAuthPaths = [
+    '/api/auth/login', '/api/auth/register', '/api/auth/google',
+    '/api/auth/password-reset/request', '/api/auth/password-reset/confirm',
+  ];
+  if (status === 401 && accessToken && !publicAuthPaths.includes(path)) {
+    window.dispatchEvent(new CustomEvent(SESSION_REJECTED_EVENT, { detail: accessToken }));
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Second line of defence for the public demo: nothing reaches the network
   // while it runs, and never with the visitor's token.
@@ -180,6 +191,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    rejectSession(res.status, path, tokens?.accessToken);
     // Parse the body for Spring's { code, message }; a non-JSON error body
     // (proxy HTML, empty 502) must not mask the real status.
     let body: unknown;
@@ -206,7 +218,10 @@ async function requestBlob(path: string): Promise<Blob> {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {},
   });
-  if (!res.ok) throw new ApiError({ status: res.status, method: 'GET', path });
+  if (!res.ok) {
+    rejectSession(res.status, path, tokens?.accessToken);
+    throw new ApiError({ status: res.status, method: 'GET', path });
+  }
   return res.blob();
 }
 

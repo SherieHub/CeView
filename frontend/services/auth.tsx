@@ -8,7 +8,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { apiClient, type PhoneProof } from './apiClient';
-import { EMAIL_NOT_VERIFIED_EVENT } from './authEvents';
+import { EMAIL_NOT_VERIFIED_EVENT, SESSION_REJECTED_EVENT } from './authEvents';
 import { clearTokens, loadTokens, saveTokens } from './authStorage';
 import { clearForecastCache } from './forecastCache';
 import type { AuthSession, AuthUser } from '../types';
@@ -39,7 +39,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 // synchronously, via lazy useState initializers so isAuthenticated is
 // correct on the very first render — a full page load (any direct route
 // visit) must not flash through "unauthenticated" for even one render, since
-// AuthGate/RedirectIfAuthenticated would otherwise bounce it through /login
+// AuthGate/RedirectIfAuthenticated would otherwise bounce it through /
 // and lose the originally-requested route.
 function hydrateUser(): AuthUser | null {
   const tokens = loadTokens();
@@ -131,6 +131,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfileCompleted(null);
     setEmailVerified(null);
   }, []);
+
+  useEffect(() => {
+    const onSessionRejected = (event: Event) => {
+      const rejectedToken = (event as CustomEvent<string>).detail;
+      if (loadTokens()?.accessToken === rejectedToken) logout();
+    };
+    window.addEventListener(SESSION_REJECTED_EVENT, onSessionRejected);
+    return () => window.removeEventListener(SESSION_REJECTED_EVENT, onSessionRejected);
+  }, [logout]);
 
   // apiClient dispatches this when the backend answers 403 EMAIL_NOT_VERIFIED, e.g. for a
   // session stored before verification shipped. Flip the flag so EmailVerificationGate

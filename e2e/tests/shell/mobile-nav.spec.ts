@@ -41,11 +41,11 @@ test.describe('Mobile navigation', () => {
     await expect(wrap(page)).toHaveAttribute('data-sidebar-open', 'false');
   });
 
-  test('@mobile signing out from the rail returns to /login', async ({ page }) => {
+  test('@mobile signing out from the rail returns to the landing page', async ({ page }) => {
     await signIn(page, op.current, '/dashboard');
     await burger(page).click();
     await rail(page).getByRole('button', { name: 'Sign out' }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   for (const route of ['/dashboard', '/content', '/calendar', '/performance', '/settings/profile', '/settings/platforms', '/settings/workspace']) {
