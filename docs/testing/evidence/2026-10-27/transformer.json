@@ -1,0 +1,574 @@
+{
+  "counts": {
+    "passed": 81
+  },
+  "cases": [
+    {
+      "class": "tests.integration.test_healthz",
+      "name": "test_healthz_returns_ok",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_seasonality_series_endpoint",
+      "name": "test_series_endpoint_returns_one_point_per_input_week",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_seasonality_series_endpoint",
+      "name": "test_series_endpoint_accepts_imputed_flags",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_seasonality_series_endpoint",
+      "name": "test_empty_series_returns_no_points_not_an_error",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.integration.test_seasonality_series_endpoint",
+      "name": "test_single_point_endpoint_still_reports_stats_window_weeks",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_tensor_has_52_rows_of_3_columns",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_trend_is_always_divided_by_100",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_week_encoding_is_a_unit_circle_and_ordered_oldest_first",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_only_the_trailing_52_weeks_are_used",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_short_history_raises_instead_of_padding[0]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_short_history_raises_instead_of_padding[1]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_short_history_raises_instead_of_padding[12]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_short_history_raises_instead_of_padding[51]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[korea-KR]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[Korea-KR]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[KR-KR]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[japan-JP]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[JP-JP]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[usa-US]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_market_normalization[United States-US]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Accommodation & Staycation-accommodation_staycation]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Adventure & Nature-adventure_nature]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Coastal & Island-coastal_island]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Culinary & Gastronomy-culinary_gastronomy]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Cultural & Heritage-cultural_heritage]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Theme Parks / Entertainment-theme_parks_entertainment]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_all_seven_categories_normalize[Urban & City-urban_city]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_unknown_market_and_category_raise_rather_than_defaulting",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_adapts_model_output_into_the_forecast_response_contract",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_provisional_status_reports_low_confidence",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_validated_status_reports_normal_confidence",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_weekly_forecasts_are_ordered_by_week_ahead",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_sends_normalized_market_and_category_to_the_space",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_malformed_model_responses_raise[<lambda>-missing 4w mean]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_malformed_model_responses_raise[<lambda>-NaN mean]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_malformed_model_responses_raise[<lambda>-11 weeks]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_malformed_model_responses_raise[<lambda>-out of 0-100 range]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_malformed_model_responses_raise[<lambda>-null value]",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_space_failure_surfaces_as_bilstm_unavailable",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_bilstm_forecaster",
+      "name": "test_batch_keys_by_market_and_category_with_independent_results",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_example_unit",
+      "name": "test_validate_passes_below_threshold",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_example_unit",
+      "name": "test_validate_fails_above_threshold",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_sequence_schema_rejects_a_null_feature_with_its_field_path",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_sequence_schema_rejects_non_increasing_iso_weeks",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_batch_stub_receives_sequence_and_returns_contract_response",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_single_inference_endpoint_is_removed_so_all_calls_use_batch_contract",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_engine_selection_and_unknown_value_fail_fast",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_forecasting_contract",
+      "name": "test_health_endpoints_boot_without_groq_key",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonal_shift_imputed",
+      "name": "test_a_real_current_week_can_confirm_a_spike",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonal_shift_imputed",
+      "name": "test_an_imputed_current_week_can_never_confirm_a_spike",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonal_shift_imputed",
+      "name": "test_no_flags_behaves_exactly_as_before_the_gap_policy",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonal_shift_imputed",
+      "name": "test_an_imputed_interior_week_still_counts_toward_rolling_stats",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_stats_window_weeks_grows_with_the_prefix_no_look_ahead",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_each_point_matches_calling_compute_on_its_own_prefix",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_a_short_series_has_a_genuinely_truncated_window_not_a_full_one",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_no_row_is_left_at_the_old_placeholder_values",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_yoy_ratio_is_null_below_fifty_nine_weeks_and_present_at_it",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_empty_series_returns_no_points",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_seasonality_series",
+      "name": "test_imputed_flags_prevent_an_interior_prefixs_own_current_week_from_spiking",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_contract_shape_and_mean_invariants",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_is_deterministic_and_clamps_extreme_projection",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_honest_backtest_scores_known_constant_series",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_too_short_history_returns_null_metrics_and_low_confidence",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_batch_returns_each_market",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_stub_forecaster",
+      "name": "test_batch_keys_by_market_and_category_not_market_alone",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_trend_service_no_stub",
+      "name": "test_raises_when_serpapi_key_is_not_set",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_trend_service_no_stub",
+      "name": "test_raises_with_the_upstream_reason_on_a_fetch_failure",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_trend_service_no_stub",
+      "name": "test_fetch_and_process_raises_when_serpapi_key_missing",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_trend_service_no_stub",
+      "name": "test_fetch_trend_history_raises_when_serpapi_key_missing",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_trend_service_no_stub",
+      "name": "test_no_stub_symbols_survive",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_renders_the_full_wire_shape",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_service_constant_names_this_service",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_unavailable",
+      "name": "test_cause_is_required",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_usd_no_longer_scores_near_zero",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_krw_produces_a_sane_non_degenerate_component",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_jpy_produces_a_sane_non_degenerate_component",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_all_three_markets_rank_in_the_direction_of_the_canonical_rate",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_market_score_is_finite_and_bounded_for_every_currency",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_score_identifies_the_scorer_that_actually_ran",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_zero_or_negative_forex_is_never_inverted_into_a_fabricated_score",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    },
+    {
+      "class": "tests.unit.test_xgboost_scorer_forex",
+      "name": "test_feature_vector_places_forex_norm_second",
+      "status": "passed",
+      "message": "",
+      "detail": ""
+    }
+  ]
+}

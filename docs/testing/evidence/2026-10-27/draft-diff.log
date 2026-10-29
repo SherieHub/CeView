@@ -1,0 +1,64 @@
+
+ RUN  v4.1.11 frontend
+
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > saves the captions, direction and edits but never media or the authorisation tick
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > restores a composer with no media and an unticked authorisation
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > the paid-ad settings > keeps the ad, with its interests and duration, through a save and restore
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > the paid-ad settings > brings a draft saved with the old ad shape (end time and countries) up to date
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > the paid-ad settings > restores no ad when none was saved
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > never resumes on Validate, which needs media and a passing audit that are not saved
+ × components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > round-trips through JSON 4ms
+   → expected { schemaVersion: 1, …(8) } to deeply equal { schemaVersion: 1, …(8) }
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > treats a payload from another schema version, or a damaged one, as no draft
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > is stale for another surge window or a changed profile, and fresh otherwise
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > fingerprints the profile fields and trend that feed generation, ignoring category order
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > saves the attached image as a reference to the stored copy, never its bytes
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > saves the finished audit with it, and resumes on Validate
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > saves no media while it is still uploading, and no audit without media
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > does not save an audit that has not finished
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > keeps a video poster frame only while it is small enough
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > restores an image as its stored copy, ready to publish, with the authorisation unticked
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > restores a video playing from its stored copy, with its poster when it was kept
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > restores no media for a draft saved without any
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > round-trips media and audit through JSON
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > still loads a draft saved before media was included
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > drops a damaged media or audit rather than the whole draft
+ ↓ components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload — media and audit > never resumes on Validate from a payload that lacks what Validate needs
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  components/module-3/3.1-content-studio/contentDraftPayload.test.ts > contentDraftPayload > round-trips through JSON
+AssertionError: expected { schemaVersion: 1, …(8) } to deeply equal { schemaVersion: 1, …(8) }
+
+- Expected
++ Received
+
+@@ -84,10 +84,11 @@
+      "visibility": "private",
+    },
+    "media": {
+      "kind": "image",
+      "mediaId": "m1",
++     "posterDataUrl": null,
+      "publicUrl": "https://cdn/x.png",
+    },
+    "meta": {
+      "alertId": "alert-1",
+      "profileFingerprint": "fp",
+
+ ❯ components/module-3/3.1-content-studio/contentDraftPayload.test.ts:87:65
+     85|
+     86|   it('round-trips through JSON', () => {
+     87|     expect(parsePayload(JSON.parse(JSON.stringify(payload())))).toEqua…
+       |                                                                 ^
+     88|   });
+     89|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 21 skipped (22)
+   Start at  19:13:22
+   Duration  597ms (transform 35ms, setup 66ms, import 29ms, tests 5ms, environment 431ms)
+
