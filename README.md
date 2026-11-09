@@ -6,6 +6,8 @@ CeView helps Cebu-based micro, small, and medium enterprises (MSMEs)—such as d
 
 An operator describes their business, explores demand signals from South Korea, Japan, and the United States, prepares localized content, and tracks the resulting engagement and bookings.
 
+**Live deployment:** <https://ceview.online> (web app) · <https://api.ceview.online/actuator/health> (API health) — hosted on AWS, Singapore region (`ap-southeast-1`). A sample-data demo that needs no account is at <https://ceview.online/demo>.
+
 **Developing or contributing? Start with the [Developer README](DEVELOPER_README.md)** for setup, backend/frontend instructions, testing, and contribution guidance.
 
 ## The product
@@ -51,6 +53,47 @@ Current boundaries and remaining work:
 The browser calls Spring Boot, which coordinates persistence, the two Python services, and platform integrations. Authenticated operator workflows use tenant-scoped data; authentication, traveler-facing attribution, and OAuth callbacks have dedicated public routes.
 
 The active web application lives in `frontend/`. The earlier `ceview/` application is frozen legacy code.
+
+## Setup
+
+Prerequisites: Git, Docker Desktop 4.30+, Node.js 20+, and API keys for Groq and SerpApi (the app starts without them; the features that need them report which key is missing). Full guide, including running without Docker: [RUNNING.md](RUNNING.md).
+
+```bash
+# 1. Get the code and create the backend settings file (never commit .env)
+git clone https://github.com/SherieHub/CeView.git
+cd CeView/backend
+cp .env.example .env        # Windows: copy .env.example .env
+#    then set JWT_SECRET (openssl rand -hex 32), CEVIEW_ATTRIBUTION_IP_HASH_SALT (openssl rand -hex 16),
+#    GROQ_API_KEY and SERPAPI_KEY in backend/.env
+
+# 2. Start PostgreSQL + pgvector, Spring Boot and both FastAPI services
+docker-compose up --build
+
+# 3. Once, after spring-boot is up: import the uniqueness reference corpus
+docker exec -i ceview-postgres psql -U ceview -d ceview < spring-boot/src/main/resources/db/dump/uniqueness-corpus.sql
+
+# 4. In a second terminal, from the CeView folder, start the web app and open http://localhost:3001
+cd frontend
+npm install
+npm run dev
+```
+
+Health checks: `http://localhost:8080/actuator/health`, `http://localhost:8000/healthz`, `http://localhost:8001/healthz`. Locally, email verification codes are printed in the Spring Boot log (`EMAIL_PROVIDER=log`). Production deployment: [docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md).
+
+## Environment variables (names only)
+
+Values are never committed: `backend/.env` and `frontend/.env` are gitignored, and the `.env.example` files list the names. In production the values come from AWS Systems Manager Parameter Store.
+
+| Component | Variables |
+|---|---|
+| Spring Boot API | `JWT_SECRET`, `CEVIEW_ATTRIBUTION_IP_HASH_SALT`, `SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `CORS_ALLOWED_ORIGINS`, `FRONTEND_BASE_URL`, `CEVIEW_ATTRIBUTION_BASE_URL`, `FASTAPI_SBERT_BASE_URL`, `FASTAPI_TRANSFORMER_BASE_URL` |
+| Email | `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` |
+| Google sign-in | `FIREBASE_CREDENTIALS_JSON` |
+| Social and ad platforms | `META_APP_ID`, `META_APP_SECRET`, `TIKTOK_APP_ID`, `TIKTOK_APP_SECRET`, `TOKEN_ENCRYPTION_KEY`, `OAUTH_REDIRECT_BASE_URL` |
+| Media storage | `MEDIA_STORAGE`, `MEDIA_PUBLIC_BASE_URL`, `MEDIA_LOCAL_DIR` |
+| AI services (FastAPI) | `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_TRANSLATION_MODEL`, `HF_TOKEN`, `HF_SPACE_ID`, `SERPAPI_KEY`, `FORECAST_ENGINE`, `DATABASE_URL` |
+| Testing only | `CEVIEW_TEST_SUPPORT_ENABLED` |
+| Web app (public `VITE_` values) | `VITE_API_BASE_URL`, `VITE_USE_FIXTURES`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`, `VITE_WALKTHROUGH_URL`, `VITE_LEAD_FORM_ENDPOINT`, `VITE_CONTACT_EMAIL`, `VITE_PRIVACY_URL`, `VITE_TERMS_URL` |
 
 ## Explore the repository
 
