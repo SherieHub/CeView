@@ -40,6 +40,7 @@ export interface ObDraft {
    * "has a score been computed", not as the value that gets saved.
    */
   categories: string[];
+  classificationRunId?: string | null;
   uniquenessScore: number | null;
   /**
    * True when the API answered `sufficientCohort: false` — too few comparable

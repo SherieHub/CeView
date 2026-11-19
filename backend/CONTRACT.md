@@ -18,7 +18,8 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | PATCH | `/api/auth/email` | VerifyEmailPage "Wrong email? Change it" — body `{ email }`, auth required, unverified accounts only | `{ email }` and a new code is mailed to it; 400 `EMAIL_TAKEN` / `SAME_EMAIL`; 409 `ALREADY_VERIFIED` |
 | POST | `/api/auth/password-reset/request` | ForgotPasswordPage step 1 — body `{ email }`, public | 202 `{ sentTo, resendAvailableInSeconds }`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` (no password to reset); same 429/503 codes as `send` |
 | POST | `/api/auth/password-reset/confirm` | ForgotPasswordPage step 2 — body `{ email, code, newPassword }`, public | `{ operatorId, token, profileCompleted, emailVerified: true }` (signs the user in); 400 `WEAK_PASSWORD` / `INVALID_CODE` / `CODE_EXPIRED` / `CODE_LOCKED` / `NO_ACTIVE_CODE`; 404 `ACCOUNT_NOT_FOUND`; 409 `GOOGLE_ACCOUNT` |
-| POST | `/api/classification/analyze` | UniquenessCalibrationForm "Analyze" | `{ categories: CategoryAllocation[] }` |
+| POST | `/api/classification/analyze` | Onboarding analysis | `{ categories: CategoryAllocation[], runId: UUID }` |
+| GET | `/api/admin/model-performance` | Allowlisted administrator, existing Bearer JWT | Aggregate `summary`, model/purpose `breakdown`, and `topCategoryDistribution`; optional `from`, `to`, `modelVersion`; see [performance contract](../docs/module-1/backend/model-performance.md) |
 | POST | `/api/classification/uniqueness` | Onboarding Step 5 "Compute uniqueness score" | `UniquenessResponse` — see [Uniqueness response](#uniqueness-response) |
 | GET  | `/api/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
 | PUT  | `/api/business-profile?operatorId=` | BusinessProfile save | `BusinessProfileDto` |

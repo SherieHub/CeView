@@ -68,6 +68,7 @@ services:
       OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
       HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
+      MODEL_VERSION: ${MODEL_VERSION:-JamJamzz/ceview_sbert:v1.0.0}
       SERPAPI_KEY: ${SERPAPI_KEY:-}
       DATABASE_URL: postgresql://ceview:${DB_APP_PASSWORD}@postgres:5432/ceview
       ENABLE_WANDB: "false"
@@ -111,6 +112,7 @@ services:
       FASTAPI_SBERT_BASE_URL: http://fastapi-sbert:8000
       FASTAPI_TRANSFORMER_BASE_URL: http://fastapi-transformer:8001
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET missing from Parameter Store}
+      CEVIEW_MODEL_PERFORMANCE_ADMIN_IDS: ${CEVIEW_MODEL_PERFORMANCE_ADMIN_IDS:-}
       CEVIEW_ATTRIBUTION_IP_HASH_SALT: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:?CEVIEW_ATTRIBUTION_IP_HASH_SALT missing from Parameter Store}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}

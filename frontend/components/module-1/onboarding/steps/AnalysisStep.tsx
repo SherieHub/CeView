@@ -90,6 +90,7 @@ export default function AnalysisStep({ onGoToStep }: Props) {
     let cancelled = false;
     setPhase('analyzing');
     setError(null);
+    setDraft({ ...draft, classificationRunId: null, uniquenessScore: null, cohortInsufficient: false });
 
     apiClient.classification
       .analyze({
@@ -98,8 +99,9 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         coreServices: draft.coreServices,
         uvp: draft.uvp,
       })
-      .then((allocations) => {
+      .then(({ categories: allocations, runId }) => {
         if (cancelled) return;
+        setDraft({ ...draft, classificationRunId: runId, uniquenessScore: null, cohortInsufficient: false });
         // analyze() returns every category including zero-percentage ones —
         // only ones the model actually found evidence for are worth showing.
         const found = allocations

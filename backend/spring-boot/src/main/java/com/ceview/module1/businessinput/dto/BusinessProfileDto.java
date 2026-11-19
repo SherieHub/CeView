@@ -15,5 +15,13 @@ public record BusinessProfileDto(
     String description,
     String uvp,
     String imagePreview,
-    Float uniquenessScore
-) {}
+    Float uniquenessScore,
+    UUID classificationRunId
+) {
+    public BusinessProfileDto(UUID businessProfileId, String businessName, List<String> categories,
+                              List<String> coreServices, String description, String uvp,
+                              String imagePreview, Float uniquenessScore) {
+        this(businessProfileId, businessName, categories, coreServices, description, uvp,
+             imagePreview, uniquenessScore, null);
+    }
+}

@@ -21,12 +21,14 @@ public class BusinessProfileController {
     private final BusinessProfileRepository repo;
     private final AIInferenceGatewayService ai;
     private final CurrentOperator currentOperator;
+    private final ClassificationRunService runs;
 
     public BusinessProfileController(BusinessProfileRepository repo, AIInferenceGatewayService ai,
-                                      CurrentOperator currentOperator) {
+                                      CurrentOperator currentOperator, ClassificationRunService runs) {
         this.repo = repo;
         this.ai = ai;
         this.currentOperator = currentOperator;
+        this.runs = runs;
     }
 
     /** GET the authenticated operator's own profile, resolved server-side from the JWT. */
@@ -41,9 +43,10 @@ public class BusinessProfileController {
 
     /** PUT upsert profile (frontend BusinessProfile "Save"). */
     @PutMapping
+    @org.springframework.transaction.annotation.Transactional
     public BusinessProfileDto save(@RequestBody BusinessProfileDto in) {
         UUID operatorId = currentOperator.resolve();
-        var existing = in.businessProfileId() != null ? repo.findById(in.businessProfileId()) : Optional.<BusinessProfile>empty();
+        var existing = in.businessProfileId() != null ? repo.findById(in.businessProfileId()) : repo.findFirstByUserId(operatorId);
         // Reject silent ownership takeover: a client could otherwise pass another
         // operator's businessProfileId and overwrite it via this upsert.
         existing.ifPresent(p -> {
@@ -75,6 +78,7 @@ public class BusinessProfileController {
         p.setCategoriesList(in.categories() == null ? List.of() : in.categories());
         p.setUniquenessScore(in.uniquenessScore());
         repo.save(p);
+        runs.confirm(operatorId, p, in);
 
         // Fire-and-forget: generate + persist the 768-dim E5 embedding so this
         // profile joins the uniqueness comparison corpus for all future scorings.
@@ -84,12 +88,17 @@ public class BusinessProfileController {
         embedPayload.put("coreServices", in.coreServices() != null ? in.coreServices() : java.util.List.of());
         embedPayload.put("description", in.description() != null ? in.description() : "");
         embedPayload.put("uvp", in.uvp() != null ? in.uvp() : "");
-        try {
-            ai.embedBusinessProfile(embedPayload);
-        } catch (Exception e) {
-            log.warn("embed call failed for profile {} — uniqueness corpus will be stale: {}",
-                     p.getBusinessProfileId(), e.getMessage());
-        }
+        // FastAPI writes an embedding with a profile FK, so it must see the committed profile.
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override public void afterCommit() {
+                    try {
+                        ai.embedBusinessProfile(embedPayload);
+                    } catch (Exception e) {
+                        log.warn("embed call failed for profile {}: {}", p.getBusinessProfileId(), e.getMessage());
+                    }
+                }
+            });
 
         return toDto(p);
     }

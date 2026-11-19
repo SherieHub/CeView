@@ -13,11 +13,20 @@ import java.util.*;
 public class UniquenessScoringController {
 
     private final AIInferenceGatewayService ai;
+    private final com.ceview.module1.businessinput.ClassificationRunService runs;
+    private final com.ceview.auth.CurrentOperator currentOperator;
 
-    public UniquenessScoringController(AIInferenceGatewayService ai) { this.ai = ai; }
+    public UniquenessScoringController(AIInferenceGatewayService ai,
+            com.ceview.module1.businessinput.ClassificationRunService runs,
+            com.ceview.auth.CurrentOperator currentOperator) {
+        this.ai = ai;
+        this.runs = runs;
+        this.currentOperator = currentOperator;
+    }
 
     @PostMapping("/uniqueness")
     public UniquenessResponse uniqueness(@RequestBody UniquenessRequest req) {
+        var operatorId = currentOperator.resolve();
         var payload = new HashMap<String, Object>();
         payload.put("businessProfileId", req.businessProfileId() != null ? req.businessProfileId() : "");
         payload.put("businessName", req.businessName());
@@ -27,7 +36,7 @@ public class UniquenessScoringController {
         payload.put("uvp", req.uvp());
 
         var r = ai.computeUniqueness(payload);
-        return new UniquenessResponse(
+        var response = new UniquenessResponse(
             requireInt(r, "overallScore"),
             requireInt(r, "semanticsScore"),
             requireInt(r, "categoryScore"),
@@ -43,6 +52,14 @@ public class UniquenessScoringController {
             String.valueOf(r.getOrDefault("descriptionFeedback", "")),
             String.valueOf(r.getOrDefault("categoryFeedback", ""))
         );
+        // No selected categories means FastAPI skips the classifier entirely.
+        if (req.categories() != null && !req.categories().isEmpty()) {
+            runs.recordUniqueness(operatorId,
+                new com.ceview.module1.businessinput.dto.AnalyzeDtos.AnalyzeRequest(
+                    req.businessName(), req.coreServices(), req.description(), req.uvp()),
+                r.get("classification"));
+        }
+        return response;
     }
 
     /**

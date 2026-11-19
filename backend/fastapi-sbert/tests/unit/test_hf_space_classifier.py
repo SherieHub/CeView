@@ -6,6 +6,51 @@ from app.services import hf_space_classifier
 from app.unavailable import DependencyUnavailable
 
 
+def full_scores():
+    return {name: (0.9999988079071045 if index == 0 else 0.005)
+            for index, name in enumerate(hf_space_classifier.CATEGORY_NAMES)} | {"OUT_OF_SCOPE": 4.786e-5}
+
+
+def test_details_preserve_raw_scores_and_version_with_one_hosted_call():
+    scores = full_scores()
+    client = Mock()
+    client.predict.return_value = ("Coastal & Island", "\n".join(f"{k}: {v}" for k, v in scores.items()))
+    with patch.object(hf_space_classifier, "Client", return_value=client), \
+         patch.object(hf_space_classifier, "perf_counter", side_effect=[10.0, 10.125]), \
+         patch.object(hf_space_classifier, "MODEL_VERSION", "test:v2"):
+        result = hf_space_classifier.predict_with_details(" exact description ", "uvp", ["A", "B"])
+    assert result["inference"]["categoryScores"] == scores
+    assert result["inference"]["topConfidence"] == scores["Coastal & Island"]
+    assert result["inference"]["predictedCategories"] == {"Coastal & Island": scores["Coastal & Island"]}
+    assert result["inference"]["modelVersion"] == "test:v2"
+    assert result["inference"]["inferenceLatencyMs"] == 125.0
+    assert result["categories"] == [{"name": "Coastal & Island", "percentage": 100}]
+    client.predict.assert_called_once_with(description=" exact description ", uvp="uvp", services="A, B", api_name="/predict_gradio")
+
+
+@pytest.mark.parametrize("bad_scores", [
+    {"Coastal & Island": 0.9},
+    full_scores() | {"Coastal & Island": 1.2},
+    full_scores() | {"Coastal & Island": float("inf")},
+])
+def test_details_reject_missing_or_invalid_raw_probabilities(bad_scores):
+    client = Mock()
+    client.predict.return_value = ("Coastal & Island", "\n".join(f"{k}: {v}" for k, v in bad_scores.items()))
+    with patch.object(hf_space_classifier, "Client", return_value=client), pytest.raises(DependencyUnavailable):
+        hf_space_classifier.predict_with_details("d", "u", [])
+
+
+def test_uniqueness_category_score_captures_the_same_inference_without_a_second_call():
+    details = {"categories": [{"name": "Coastal & Island", "percentage": 100}],
+               "inference": {"categoryScores": full_scores()}}
+    captured = {}
+    with patch.object(hf_space_classifier, "predict_with_details", return_value=details) as predict:
+        score = hf_space_classifier.category_score("d", "u", ["Diving"], ["Coastal & Island"], inference=captured)
+    assert score == 100
+    assert captured == details
+    predict.assert_called_once_with("d", "u", ["Diving"])
+
+
 def test_predict_categories_calls_the_documented_space_endpoint(monkeypatch):
     client = Mock()
     client.predict.return_value = (

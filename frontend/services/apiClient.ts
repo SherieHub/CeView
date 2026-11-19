@@ -53,7 +53,7 @@ import type {
   PostMetric,
   AuthSession,
   BusinessProfileDto,
-  CategoryAllocation,
+  ClassificationResult,
   UniquenessResult,
   DemandAlert,
   Market,
@@ -262,11 +262,11 @@ const rawClient = {
       uvp: string;
     }) =>
       USE_FIXTURES
-        ? delay([{ name: 'Coastal & Island', percentage: 100 }] as CategoryAllocation[])
-        : request<{ categories: CategoryAllocation[] }>('/api/classification/analyze', {
+        ? delay({ categories: [{ name: 'Coastal & Island', percentage: 100 }], runId: null } as ClassificationResult)
+        : request<ClassificationResult>('/api/classification/analyze', {
             method: 'POST',
             body: JSON.stringify(input),
-          }).then((r) => r.categories),
+          }),
     /** Scores differentiation against the local cohort. Requires the categories from analyze(). */
     uniqueness: (input: {
       businessName: string;

@@ -95,6 +95,7 @@ export default function OnboardingWizard() {
     try {
       const saved = await apiClient.businessProfile.save({
         businessProfileId: profile.businessProfileId,
+        classificationRunId: draft.classificationRunId,
         businessName: draft.businessName,
         categories: draft.categories,
         coreServices: draft.coreServices,

@@ -72,7 +72,12 @@ export interface BusinessProfile {
 export type BusinessProfileDto = Pick<
   BusinessProfile,
   'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
->;
+> & { classificationRunId?: string | null };
+
+export interface ClassificationResult {
+  categories: CategoryAllocation[];
+  runId: string | null;
+}
 
 /** One category and its share of the classification — POST /api/classification/analyze. */
 export interface CategoryAllocation {

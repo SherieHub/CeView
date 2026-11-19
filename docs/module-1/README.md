@@ -30,6 +30,8 @@ Theme Parks / Entertainment · Urban & City · Culinary & Gastronomy · Accommod
 | `ClassificationAnalyzeController` | [`backend/ClassificationAnalyzeController.md`](backend/ClassificationAnalyzeController.md) |
 | `UniquenessScoringController` | [`backend/UniquenessScoringController.md`](backend/UniquenessScoringController.md) |
 | Schema delta (fields the new wizard needs) | [`backend/schema-delta.md`](backend/schema-delta.md) |
+| Classification run history and user feedback | [`backend/classification-run-history.md`](backend/classification-run-history.md) |
+| Administrator model performance report | [`backend/model-performance.md`](backend/model-performance.md) |
 
 Shared services, entities, and Flyway migrations (`AIInferenceGatewayService`, `BusinessProfile`
 entity/repository, `V1__init_schema.sql`, `V2__module1_profile_multi_category.sql`) are documented in

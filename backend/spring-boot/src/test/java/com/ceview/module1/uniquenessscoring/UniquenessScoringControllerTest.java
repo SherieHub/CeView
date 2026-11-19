@@ -39,8 +39,10 @@ class UniquenessScoringControllerTest {
     @Autowired private MockMvc mvc;
     @Autowired private JwtService jwtService;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private com.ceview.testsupport.TestOperators operators;
 
     @MockBean private AIInferenceGatewayService ai;
+    @MockBean private com.ceview.module1.businessinput.ClassificationRunService runs;
 
     private String token;
 
@@ -57,7 +59,9 @@ class UniquenessScoringControllerTest {
 
     @BeforeEach
     void setUp() {
-        token = jwtService.issue(UUID.randomUUID(), "operator@example.com");
+        var operatorId = UUID.randomUUID();
+        operators.create(operatorId);
+        token = jwtService.issue(operatorId, "operator@example.com");
     }
 
     /** A complete FastAPI uniqueness result — every key the frozen contract lists. */

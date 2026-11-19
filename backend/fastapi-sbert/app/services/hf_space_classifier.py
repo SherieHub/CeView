@@ -5,6 +5,8 @@ from __future__ import annotations
 import ast
 import os
 import re
+import math
+from time import perf_counter
 from collections.abc import Sequence
 
 from gradio_client import Client
@@ -13,6 +15,12 @@ from app.unavailable import DependencyUnavailable
 
 
 SPACE_ID = os.getenv("HF_SPACE_ID", "JamJamzz/ceview_sbert")
+MODEL_VERSION = os.getenv("MODEL_VERSION", "JamJamzz/ceview_sbert:v1.0.0")
+CATEGORY_NAMES = (
+    "Coastal & Island", "Adventure & Nature", "Cultural & Heritage",
+    "Theme Parks / Entertainment", "Urban & City", "Culinary & Gastronomy",
+    "Accommodation & Staycation",
+)
 _NUMBER = re.compile(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?")
 _OUT_OF_SCOPE = "OUT_OF_SCOPE"
 _OUT_OF_SCOPE_THRESHOLD = 0.75
@@ -25,8 +33,41 @@ def predict_categories(
     uvp: str,
     core_services: list[str],
 ) -> list[dict[str, int]]:
-    """Call the Space and adapt its two text fields to CeView allocations."""
+    """Return the existing display allocations."""
+    categories, confidences, _ = _predict(description, uvp, core_services)
+    return _to_allocations(categories, confidences)
+
+
+def predict_with_details(description: str, uvp: str, core_services: list[str]) -> dict:
+    """Preserve raw independent probabilities before display normalization."""
+    categories, confidences, latency = _predict(description, uvp, core_services)
+    scores = _parse_named_scores(confidences)
+    if not set(CATEGORY_NAMES).issubset(scores) or any(
+        not math.isfinite(score) or not 0 <= score <= 1 for score in scores.values()
+    ):
+        raise _invalid_response("expected all seven named category probabilities in [0, 1]")
+    allocations = _to_allocations(categories, confidences)
+    top = max(scores, key=scores.get)
+    predicted = _parse_names(categories)
+    if not predicted or any(name not in scores for name in predicted):
+        raise _invalid_response("predicted categories must have corresponding raw scores")
+    return {
+        "categories": allocations,
+        "inference": {
+            "topCategory": top,
+            "topConfidence": scores[top],
+            "predictedCategories": {name: scores[name] for name in predicted},
+            "categoryScores": scores,
+            "modelVersion": MODEL_VERSION,
+            "inferenceLatencyMs": latency,
+        },
+    }
+
+
+def _predict(description: str, uvp: str, core_services: list[str]) -> tuple:
+    """Time the hosted request, including client setup, network and queue time."""
     try:
+        started = perf_counter()
         client = Client(SPACE_ID, token=os.getenv("HF_TOKEN") or None, verbose=False)
         categories, confidences = client.predict(
             description=description,
@@ -34,7 +75,7 @@ def predict_categories(
             services=", ".join(core_services),
             api_name="/predict_gradio",
         )
-        return _to_allocations(categories, confidences)
+        return categories, confidences, (perf_counter() - started) * 1000
     except DependencyUnavailable:
         raise
     except Exception as exc:
@@ -52,13 +93,19 @@ def category_score(
     uvp: str,
     core_services: list[str],
     selected_categories: list[str],
+    inference: dict | None = None,
 ) -> float:
     """Return the average Space confidence for the categories the operator kept."""
     if not selected_categories:
         return 0.0
+    if inference is not None:
+        inference.update(predict_with_details(description, uvp, core_services))
+        allocations = inference["categories"]
+    else:
+        allocations = predict_categories(description, uvp, core_services)
     scores = {
         item["name"]: item["percentage"]
-        for item in predict_categories(description, uvp, core_services)
+        for item in allocations
     }
     return round(
         sum(scores.get(category, 0) for category in selected_categories)

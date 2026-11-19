@@ -12,11 +12,24 @@ import java.util.*;
 public class ClassificationAnalyzeController {
 
     private final AIInferenceGatewayService ai;
+    private final ClassificationRunService runs;
+    private final com.ceview.auth.CurrentOperator currentOperator;
 
-    public ClassificationAnalyzeController(AIInferenceGatewayService ai) { this.ai = ai; }
+    public ClassificationAnalyzeController(AIInferenceGatewayService ai, ClassificationRunService runs,
+                                           com.ceview.auth.CurrentOperator currentOperator) {
+        this.ai = ai;
+        this.runs = runs;
+        this.currentOperator = currentOperator;
+    }
 
     @PostMapping("/analyze")
     public AnalyzeResponse analyze(@RequestBody AnalyzeRequest req) {
+        var operatorId = currentOperator.resolve();
+        if (req.description() == null || req.uvp() == null || req.coreServices() == null
+                || req.coreServices().stream().anyMatch(Objects::isNull)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "Description, UVP and services are required");
+        }
         var payload = new HashMap<String, Object>();
         payload.put("businessName", req.businessName());
         payload.put("coreServices", req.coreServices());
@@ -31,6 +44,7 @@ public class ClassificationAnalyzeController {
                 String.valueOf(m.get("name")),
                 ((Number) m.getOrDefault("percentage", 0)).intValue()))
             .toList();
-        return new AnalyzeResponse(allocs);
+        var runId = runs.record(operatorId, req, allocs, resp.get("inference"), "ANALYZE");
+        return new AnalyzeResponse(allocs, runId);
     }
 }

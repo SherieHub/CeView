@@ -1,0 +1,1 @@
+CREATE INDEX idx_classification_run_time_version ON tbl_classification_run(created_at, model_version);

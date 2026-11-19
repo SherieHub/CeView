@@ -196,7 +196,7 @@ describe('OnboardingWizard', () => {
   });
 
   it('persists with the 0-1 scale conversion and navigates to /dashboard on Finish', async () => {
-    analyzeMock.mockResolvedValue([{ name: 'Coastal & Island', percentage: 90 }]);
+    analyzeMock.mockResolvedValue({ categories: [{ name: 'Coastal & Island', percentage: 90 }], runId: 'run-123' });
     // Must carry the cohort fields: AnalysisStep writes no score when
     // `sufficientCohort` is falsy, so a partial fixture silently produces a
     // draft with uniquenessScore: null and this assertion fails on the DTO.
@@ -242,6 +242,7 @@ describe('OnboardingWizard', () => {
     expect(saveMock).toHaveBeenCalledWith(
       expect.objectContaining({
         categories: ['Coastal & Island'],
+        classificationRunId: 'run-123',
         // 100x-wrong-scale guard: the API's 72 (0-100) must land as 0.72 (0-1).
         uniquenessScore: 0.72,
       })

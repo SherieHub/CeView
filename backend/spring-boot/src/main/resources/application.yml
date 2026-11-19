@@ -24,6 +24,8 @@ spring:
     baseline-on-migrate: true
 
 ceview:
+  model-performance:
+    admin-operator-ids: ${CEVIEW_MODEL_PERFORMANCE_ADMIN_IDS:}
   module2:
     markets: ${MODULE2_MARKETS:korea,japan,usa}
   fastapi:

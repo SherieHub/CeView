@@ -24,9 +24,9 @@ class AnalyzeRequest(BaseModel):
 @router.post("/analyze")
 def analyze(req: AnalyzeRequest) -> dict:
     """Return category allocations from the hosted CeView Hugging Face Space."""
-    return {"categories": hf_space_classifier.predict_categories(
+    return hf_space_classifier.predict_with_details(
         req.description, req.uvp, req.coreServices
-    )}
+    )
 
 
 # ── /uniqueness ───────────────────────────────────────────────────────────────
@@ -95,8 +95,9 @@ def uniqueness(req: UniquenessRequest) -> dict:
     )
     result = ml_classifier.compute_semantic_uniqueness(candidate_embedding, other_embeddings)
 
+    classification = {}
     category_score = hf_space_classifier.category_score(
-        req.description, req.uvp, req.coreServices, req.categories
+        req.description, req.uvp, req.coreServices, req.categories, inference=classification
     )
 
     stats = embedding_store.fetch_cohort_stats(req.categories, req.businessProfileId)
@@ -106,6 +107,7 @@ def uniqueness(req: UniquenessRequest) -> dict:
         # here is meaningful, so none is fabricated; sufficientCohort is the
         # signal the caller must act on (Task 10).
         return {
+            "classification": classification or None,
             "overallScore":        0,
             "semanticsScore":      0,
             "categoryScore":       category_score,
@@ -122,6 +124,7 @@ def uniqueness(req: UniquenessRequest) -> dict:
     cohort_median_score = round(median(result.cohort_scores)) if result.cohort_scores else 0
 
     return {
+        "classification": classification or None,
         "overallScore":        result.percentile,
         "semanticsScore":      round(result.semantics_score),
         "categoryScore":       category_score,

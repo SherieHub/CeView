@@ -51,7 +51,7 @@ function DashboardStub() {
 
 beforeEach(() => {
   consumeJustOnboarded(); // drain any flag left set by a prior test
-  analyzeMock.mockReset().mockResolvedValue([{ name: 'Coastal & Island', percentage: 90 }]);
+  analyzeMock.mockReset().mockResolvedValue({ categories: [{ name: 'Coastal & Island', percentage: 90 }], runId: 'run-123' });
   uniquenessMock.mockReset().mockResolvedValue({
     overallScore: 72,
     semanticsScore: 70,

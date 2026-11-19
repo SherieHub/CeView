@@ -14,6 +14,6 @@ public class AnalyzeDtos {
 
     public record CategoryAllocation(String name, int percentage) {}
 
-    public record AnalyzeResponse(List<CategoryAllocation> categories) {}
+    public record AnalyzeResponse(List<CategoryAllocation> categories, java.util.UUID runId) {}
 
 }

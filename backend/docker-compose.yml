@@ -29,6 +29,7 @@ services:
       OMCS_VISION_MODEL: ${OMCS_VISION_MODEL:-qwen/qwen3.8-27b}
       HF_TOKEN: ${HF_TOKEN:-}
       HF_SPACE_ID: ${HF_SPACE_ID:-JamJamzz/ceview_sbert}
+      MODEL_VERSION: ${MODEL_VERSION:-JamJamzz/ceview_sbert:v1.0.0}
       # Direct DB access for tbl_business_embedding reads/writes (Module 1 corpus)
       DATABASE_URL: postgresql://ceview:ceview@postgres:5432/ceview
     volumes:
@@ -86,6 +87,7 @@ services:
       # Both required, no default: this stack runs the Postgres profile, which
       # refuses to start without real values (issue #51). Set them in backend/.env.
       JWT_SECRET: ${JWT_SECRET:-}
+      CEVIEW_MODEL_PERFORMANCE_ADMIN_IDS: ${CEVIEW_MODEL_PERFORMANCE_ADMIN_IDS:-}
       CEVIEW_ATTRIBUTION_IP_HASH_SALT: ${CEVIEW_ATTRIBUTION_IP_HASH_SALT:-}
       # :3012 is the dedicated port e2e/playwright.config.ts's webServer boots
       # the frontend on, specifically so an e2e run never shares a developer's

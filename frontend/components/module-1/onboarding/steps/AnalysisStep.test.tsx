@@ -105,7 +105,7 @@ async function reachCategories(allocations = [
   { name: 'Adventure & Nature', percentage: 60 },
   { name: 'Culinary & Gastronomy', percentage: 0 },
 ]) {
-  analyzeMock.mockResolvedValue(allocations);
+  analyzeMock.mockResolvedValue({ categories: allocations, runId: 'run-123' });
   renderStep();
   await waitFor(() => expect(screen.getByText(/Compute uniqueness score/)).toBeInTheDocument());
 }
@@ -140,6 +140,7 @@ describe('AnalysisStep', () => {
     // Raw 0-100 API scale written into the draft — NOT the 0-1 persisted scale.
     await waitFor(() => expect(latestDraft?.uniquenessScore).toBe(72));
     expect(latestDraft?.categories).toEqual(['Coastal & Island', 'Adventure & Nature']);
+    expect(latestDraft?.classificationRunId).toBe('run-123');
   });
 
   it('blocks deselecting the last remaining category with a toast, selection unchanged', async () => {
