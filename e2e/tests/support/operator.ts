@@ -38,18 +38,32 @@ export interface ProvisionOptions {
   demandWindow?: boolean | DemandWindowOptions;
 }
 
-/** 60 words — clears the onboarding / settings 50-word description floor. */
+/**
+ * Free-text description seeded through the test-support hook — the shape of a profile from before
+ * structured inputs. Onboarding now composes the description from PROFILE_ANSWERS instead.
+ */
 export const PROFILE_DESCRIPTION =
   'Family-run dive shop on Panagsama Beach in Moalboal offering guided reef dives, sardine run snorkel ' +
   'trips and open water courses for small groups. Our instructors are local and have dived these walls ' +
   'for over fifteen years, so every trip is planned around tides, currents and the turtles that rest ' +
   'along the house reef each morning before the boats arrive from town.';
 
-/** 40 words — clears the 30-word UVP floor. */
+/** Free-text UVP seeded alongside PROFILE_DESCRIPTION. */
 export const PROFILE_UVP =
   'The only Moalboal shop that caps every boat at four divers and pairs each group with a marine ' +
   'biologist guide, so guests learn to read the reef, spot frogfish and nudibranchs, and leave with ' +
   'their own logged species list.';
+
+/** Onboarding step 3's structured answers (structured-profile/profileTemplates.ts). */
+export const PROFILE_ANSWERS = {
+  storyBusinessType: 'family-run dive shop',
+  storyLocation: 'Panagsama Beach, Moalboal',
+  storyExperience: 'dive the house reef with local instructors who plan every trip around the tides and currents',
+  storyFacilities: 'small-group boats, open water courses, and a shore entry onto the house reef',
+  uvpDistinguisher: 'We cap every boat at four divers.',
+  uvpSupportingFact: 'Each group is paired with a marine biologist guide.',
+  uvpGuestBenefit: 'Guests learn to read the reef and leave with their own logged species list.',
+};
 
 let counter = 0;
 

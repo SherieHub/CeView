@@ -43,6 +43,7 @@ public class BusinessProfileController {
     @PutMapping
     public BusinessProfileDto save(@RequestBody BusinessProfileDto in) {
         UUID operatorId = currentOperator.resolve();
+        StructuredInputs.validate(in);
         var existing = in.businessProfileId() != null ? repo.findById(in.businessProfileId()) : Optional.<BusinessProfile>empty();
         // Reject silent ownership takeover: a client could otherwise pass another
         // operator's businessProfileId and overwrite it via this upsert.
@@ -70,6 +71,17 @@ public class BusinessProfileController {
         p.setBusinessName(in.businessName());
         p.setBusinessDescription(in.description());
         p.setUvp(in.uvp());
+        p.setStoryBusinessType(in.storyBusinessType());
+        p.setStoryLocation(in.storyLocation());
+        p.setStoryExperience(in.storyExperience());
+        p.setStoryFacilities(in.storyFacilities());
+        p.setUvpDistinguisher(in.uvpDistinguisher());
+        p.setUvpSupportingFact(in.uvpSupportingFact());
+        p.setUvpGuestBenefit(in.uvpGuestBenefit());
+        p.setDescriptionEdited(StructuredInputs.edited(in.descriptionEdited(), in.description(),
+            in.storyBusinessType(), in.storyLocation(), in.storyExperience(), in.storyFacilities()));
+        p.setUvpEdited(StructuredInputs.edited(in.uvpEdited(), in.uvp(),
+            in.uvpDistinguisher(), in.uvpSupportingFact(), in.uvpGuestBenefit()));
         p.setCoreServicesList(in.coreServices() == null ? List.of() : in.coreServices());
         p.setImageUrl(in.imagePreview());
         p.setCategoriesList(in.categories() == null ? List.of() : in.categories());
@@ -103,11 +115,21 @@ public class BusinessProfileController {
             p.getBusinessDescription(),
             p.getUvp(),
             p.getImageUrl(),
-            p.getUniquenessScore()
+            p.getUniquenessScore(),
+            p.getStoryBusinessType(),
+            p.getStoryLocation(),
+            p.getStoryExperience(),
+            p.getStoryFacilities(),
+            p.getUvpDistinguisher(),
+            p.getUvpSupportingFact(),
+            p.getUvpGuestBenefit(),
+            p.isDescriptionEdited(),
+            p.isUvpEdited()
         );
     }
 
     private BusinessProfileDto emptyDto() {
-        return new BusinessProfileDto(null, "", List.of(), List.of(), "", "", null, null);
+        return new BusinessProfileDto(null, "", List.of(), List.of(), "", "", null, null,
+            "", "", "", "", "", "", "", false, false);
     }
 }

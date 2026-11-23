@@ -22,8 +22,10 @@ import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import type { AttributionLink, BusinessProfile, DemandAlert, Market, PlatformId } from '../../../types';
 import type { PublishDraftState } from './contentStudioTypes';
 import { buildPayload, profileFingerprint } from './contentDraftPayload';
+import { EMPTY_STRUCTURED } from '../../module-1/structured-profile/profileTemplates';
 
 const BASE_PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1',
   businessName: 'Sunset Cove Beach Resort',
   categories: ['Coastal & Island'],

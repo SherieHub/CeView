@@ -43,7 +43,7 @@ score                                     audit                    report
 
 | Capability | Minimum requirement | Why it is in the MVP |
 |-----------|---------------------|----------------------|
-| Business profiling | Persist a profile (name, services, description, UVP, categories) | All downstream modules key off `business_profile_id`; nothing runs without it |
+| Business profiling | Persist a profile (name, services, description, UVP, categories); description and UVP are composed from structured answers via fixed templates | All downstream modules key off `business_profile_id`; nothing runs without it |
 | Category & uniqueness | Auto-classify into 7 categories + produce a 0–100 uniqueness score | The product's differentiation thesis; first tangible "insight" the user sees |
 | Demand forecasting | 12-week per-market demand trajectory for Korea/Japan/USA, ranked | The core market-intelligence value proposition |
 | Demand alerting | Surface "demand window" notifications on the Home view | Converts forecast data into a time-sensitive call to action |

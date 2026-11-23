@@ -56,6 +56,10 @@ build plan: [`docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/`](../su
   sub-components (`InferredCategoryBoard`, `OverallScoreCard`, etc.) are reused, not rewritten.
 - The wizard collects several fields (`slogan`, `industry`, `vibes`, `website`, `logo`, `socials`)
   that don't exist in the schema today — see [`backend/schema-delta.md`](backend/schema-delta.md).
+- The description and UVP are no longer free text: onboarding step 3 and Settings collect short
+  structured answers and compose them into template paragraphs, which are what the AI services
+  receive. See [onboarding-wizard.md](screens/onboarding-wizard.md) and
+  [`backend/CONTRACT.md`](../../backend/CONTRACT.md#business-profile-structured-inputs).
 - A known gap carried over from the prototype: Settings → Business Profile's Save does not
   recompute the uniqueness score after an edit. See
   [settings-business-profile.md](screens/settings-business-profile.md) for the two resolution options.

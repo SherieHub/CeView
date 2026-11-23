@@ -20,6 +20,7 @@ vi.mock('./apiClient', async (importOriginal) => {
 });
 
 import { apiClient } from './apiClient';
+import { EMPTY_STRUCTURED } from '../components/module-1/structured-profile/profileTemplates';
 
 const mockLoad = apiClient.businessProfile.load as unknown as ReturnType<typeof vi.fn>;
 
@@ -60,6 +61,7 @@ describe('ProfileProvider — real backend fetch', () => {
     render(
       <AuthProvider>
         <ProfileProvider initial={{
+          ...EMPTY_STRUCTURED,
           businessProfileId: 'bp-demo', businessName: 'Sunset Cove', categories: ['Coastal & Island'],
           coreServices: [], description: '', uvp: '', imagePreview: null, uniquenessScore: 0.82,
           slogan: '', industry: '', vibes: [], website: '', logo: null, socials: {},

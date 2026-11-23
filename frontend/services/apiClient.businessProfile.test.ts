@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BusinessProfileDto } from '../types';
+import { EMPTY_STRUCTURED } from '../components/module-1/structured-profile/profileTemplates';
 
 // Real-fetch mode (not fixtures) — covers apiClient.businessProfile.save against
 // the actual Spring Boot endpoint (PUT /api/business-profile).
@@ -10,6 +11,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 const SAMPLE_DTO: BusinessProfileDto = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1',
   businessName: 'Moalboal FreeDive Cebu',
   categories: ['Coastal & Island'],

@@ -24,8 +24,10 @@ import type { ObDraft } from './obDraft';
 import { ToastProvider } from '../../shared/Toast';
 import { consumeJustOnboarded } from '../../../services/justOnboardedFlag';
 import type { BusinessProfile, BusinessProfileDto } from '../../../types';
+import { EMPTY_STRUCTURED } from '../structured-profile/profileTemplates';
 
 const BASE_PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: null,
   businessName: '',
   categories: [],
@@ -118,11 +120,16 @@ describe('stepValid', () => {
     );
   });
 
-  it('gates step 3 on the 50-word description and 30-word UVP thresholds', () => {
-    const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i}`).join(' ');
-    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(49), uvp: words(30) }, 2)).toBe(false);
-    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(50), uvp: words(29) }, 2)).toBe(false);
-    expect(stepValid({ ...EMPTY_OB_DRAFT, description: words(50), uvp: words(30) }, 2)).toBe(true);
+  it('gates step 3 on every structured answer meeting its minimum and both paragraphs having text', () => {
+    // DEMO_OB_DRAFT carries complete answers and their composed paragraphs.
+    expect(stepValid(DEMO_OB_DRAFT, 2)).toBe(true);
+    expect(stepValid(EMPTY_OB_DRAFT, 2)).toBe(false);
+    expect(stepValid({ ...DEMO_OB_DRAFT, storyLocation: 'Ce' }, 2)).toBe(false);
+    expect(stepValid({ ...DEMO_OB_DRAFT, uvpGuestBenefit: 'x'.repeat(19) }, 2)).toBe(false);
+    expect(stepValid({ ...DEMO_OB_DRAFT, coreServices: [] }, 2)).toBe(false);
+    // A hand-edited paragraph may differ from the template, but not be empty.
+    expect(stepValid({ ...DEMO_OB_DRAFT, description: 'Mine.', descriptionEdited: true }, 2)).toBe(true);
+    expect(stepValid({ ...DEMO_OB_DRAFT, uvp: '   ', uvpEdited: true }, 2)).toBe(false);
   });
 
   it('never gates step 4 — every Assets & Links field is optional', () => {
@@ -244,6 +251,19 @@ describe('OnboardingWizard', () => {
         categories: ['Coastal & Island'],
         // 100x-wrong-scale guard: the API's 72 (0-100) must land as 0.72 (0-1).
         uniquenessScore: 0.72,
+        // The structured answers and edited flags are persisted alongside
+        // the composed paragraphs.
+        description: DEMO_OB_DRAFT.description,
+        uvp: DEMO_OB_DRAFT.uvp,
+        storyBusinessType: 'beachfront resort',
+        storyLocation: 'Moalboal, Cebu',
+        storyExperience: DEMO_OB_DRAFT.storyExperience,
+        storyFacilities: DEMO_OB_DRAFT.storyFacilities,
+        uvpDistinguisher: DEMO_OB_DRAFT.uvpDistinguisher,
+        uvpSupportingFact: DEMO_OB_DRAFT.uvpSupportingFact,
+        uvpGuestBenefit: DEMO_OB_DRAFT.uvpGuestBenefit,
+        descriptionEdited: false,
+        uvpEdited: false,
       })
     );
   });

@@ -15,9 +15,18 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { PlatformId } from "../../../types";
+import {
+  EMPTY_STRUCTURED, pickStory, pickUvp, storyComplete, uvpComplete,
+} from '../structured-profile/profileTemplates';
+import type { StoryInputs, UvpInputs } from '../structured-profile/profileTemplates';
 
 
-export interface ObDraft {
+/**
+ * Step 3's structured answers (StoryInputs/UvpInputs) sit flat on the draft,
+ * named exactly as BusinessProfileDto names them, so Finish can pass them
+ * straight through. `description`/`uvp` hold the composed paragraphs.
+ */
+export interface ObDraft extends StoryInputs, UvpInputs {
   /** Step 1 — Basic Info (Card 4) */
   businessName: string;
   industry: string;
@@ -25,9 +34,11 @@ export interface ObDraft {
   /** Step 2 — Brand Identity (Card 5) */
   vibes: string[];
   coreServices: string[];
-  /** Step 3 — Structured Inputs (Card 6) */
+  /** Step 3 — Structured Inputs: the composed paragraphs and whether each was hand-edited */
   description: string;
   uvp: string;
+  descriptionEdited: boolean;
+  uvpEdited: boolean;
   /** Step 4 — Assets & Links (this card) */
   socials: Record<PlatformId, string>;
   logo: string | null;
@@ -63,6 +74,7 @@ export const EMPTY_OB_DRAFT: ObDraft = {
   coreServices: [],
   description: '',
   uvp: '',
+  ...EMPTY_STRUCTURED,
   socials: { instagram: '', tiktok: '', facebook: '' },
   logo: null,
   website: '',
@@ -108,28 +120,10 @@ export function useObDraft(): ObDraftValue {
 export const OB_STEPS = [
   { key: 'basic', title: 'Basic Info', sub: 'Name, industry, slogan' },
   { key: 'brand', title: 'Brand Identity', sub: 'Vibe and core services' },
-  { key: 'structured', title: 'Structured Inputs', sub: 'Description and UVP' },
+  { key: 'structured', title: 'Structured Inputs', sub: 'Business Story and UVP' },
   { key: 'assets', title: 'Assets & Links', sub: 'Socials, logo, website' },
   { key: 'analysis', title: 'Analysis', sub: 'Categories and uniqueness' },
 ] as const;
-
-/**
- * Step 3 — Structured Inputs (Card 6) word-count thresholds. Exported (not
- * kept private) since StructuredInputsStep.tsx imports these same constants
- * for its live word-count hints, and stepValid's case 2 below needs them too
- * — single source of truth rather than two independent copies.
- */
-export type StructuredField = 'description' | 'uvp';
-
-export const MIN_WORDS: Record<StructuredField, number> = {
-  description: 50,
-  uvp: 30,
-};
-
-export function wordCount(text: string): number {
-  const trimmed = String(text ?? '').trim();
-  return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
-}
 
 /**
  * Per-step Continue gate — ports obValid() (ui-ux-prototype.html:1931-1939).
@@ -154,8 +148,12 @@ export function stepValid(draft: ObDraft, index: number): boolean {
     case 1:
       return draft.vibes.length > 0 && draft.coreServices.length > 0;
     case 2:
-      return wordCount(draft.description) >= MIN_WORDS.description
-          && wordCount(draft.uvp) >= MIN_WORDS.uvp; // Card 6 — Structured Inputs
+      // Structured Inputs: every answer meets its minimum, and both composed
+      // (possibly hand-edited) paragraphs have text in them.
+      return storyComplete(pickStory(draft), draft.coreServices)
+          && uvpComplete(pickUvp(draft))
+          && draft.description.trim() !== ''
+          && draft.uvp.trim() !== '';
     case 3:
       return true; // Assets & Links — every field optional
     case 4:

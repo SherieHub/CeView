@@ -9,7 +9,7 @@ export interface OnboardingStepInfo {
 export const ONBOARDING_STEPS: OnboardingStepInfo[] = [
   { id: 'basic', title: 'Basic Info', sub: 'Name, industry, slogan' },
   { id: 'brand', title: 'Brand Identity', sub: 'Vibe and core services' },
-  { id: 'structured', title: 'Structured Inputs', sub: 'Description and UVP' },
+  { id: 'structured', title: 'Structured Inputs', sub: 'Business Story and UVP' },
   { id: 'assets', title: 'Assets & Links', sub: 'Socials, logo, website' },
   { id: 'analysis', title: 'Analysis', sub: 'Categories and uniqueness' },
 ];

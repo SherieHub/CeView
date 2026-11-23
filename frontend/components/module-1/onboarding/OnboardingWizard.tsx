@@ -53,6 +53,7 @@ import { useToast } from '../../shared/Toast';
 import { LandingImage } from '../../landing/ui';
 import { BrandMark } from '../../landing/LandingNav';
 import { FROND } from '../../landing/ui/palmFrond';
+import { pickStory, pickUvp } from '../structured-profile/profileTemplates';
 
 interface StepPanelProps {
   onGoToStep?: (index: number) => void;
@@ -100,6 +101,10 @@ export default function OnboardingWizard() {
         coreServices: draft.coreServices,
         description: draft.description,
         uvp: draft.uvp,
+        ...pickStory(draft),
+        ...pickUvp(draft),
+        descriptionEdited: draft.descriptionEdited,
+        uvpEdited: draft.uvpEdited,
         imagePreview: draft.logo ?? null,
         // The database stays canonical at 0-1; draft.uniquenessScore holds
         // the raw 0-100 API scale until this exact conversion point.

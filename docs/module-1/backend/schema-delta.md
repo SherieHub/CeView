@@ -9,6 +9,15 @@ not yet implemented — flagged so a future backend plan can act on it.
 `business_name`, `description`, `uvp`, `core_services` (comma-joined), `categories` (comma-joined),
 `uniqueness_score`, `semantics_score`, `category_score`, `image_preview`.
 
+## Implemented: structured Business Story / UVP (V57)
+
+`story_business_type`, `story_location`, `story_experience`, `story_facilities`,
+`uvp_distinguisher`, `uvp_supporting_fact`, `uvp_guest_benefit` (nullable `TEXT`) and
+`description_edited`, `uvp_edited` (`BOOLEAN NOT NULL DEFAULT FALSE`) — the answers the composed
+`business_description`/`uvp` are built from, and whether each paragraph was hand-edited. Existing
+non-blank paragraphs are marked edited by the migration. See
+[`backend/CONTRACT.md`](../../../backend/CONTRACT.md#business-profile-structured-inputs).
+
 ## New columns required
 
 | Column | Type | Source step | Notes |

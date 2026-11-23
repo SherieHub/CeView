@@ -11,6 +11,7 @@ import { OverlayStackProvider } from '../../../shared/useOverlayStack';
 import { MOCK_MARKETS } from '../../../../services/fixtures/markets';
 import { MOCK_CONTENT } from '../../../../services/fixtures/content';
 import { MOCK_POSTS } from '../../../../services/fixtures/posts';
+import { EMPTY_STRUCTURED } from '../../../module-1/structured-profile/profileTemplates';
 
 const forCategory = vi.fn();
 const generate = vi.fn();
@@ -23,6 +24,7 @@ vi.mock('../../../../services/apiClient', () => ({
 }));
 
 const PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1',
   businessName: 'Sunset Cove',
   categories: ['Coastal & Island'],

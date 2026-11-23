@@ -66,11 +66,23 @@ services (tag input — type + Enter to add, ✕ to remove).
 **Gate:** ≥1 vibe AND ≥1 core service.
 
 ### 3 — Structured Inputs (`steps/StructuredInputsStep.tsx`)
-Fields: full description (textarea, live word count), unique value proposition (textarea, live word
-count). These two fields are what gets embedded into the 768-dim vector Module 1.2 scores against the
-Cebu MSME corpus — say so in the copy, the prototype does (line 2081).
-**Gate:** description ≥50 words AND UVP ≥30 words. Word count updates on every keystroke; a green
-check replaces the counter once the threshold is met, red/amber below it.
+Short answers instead of free prose, composed into two template paragraphs
+(`components/module-1/structured-profile/`, shared with Settings):
+
+- **Business Story** — business name (read-only, from step 1), business type, location, the core
+  services from step 2 (shown, not re-asked), what guests experience, facilities. Composed as
+  "{name} is a/an {type} located in {location}. We offer {services}, where guests can {experience}.
+  Our facilities and services include {facilities}."
+- **Unique Value Proposition** — what distinguishes the business, the fact that supports it, the
+  guest benefit; one sentence each.
+
+Each paragraph appears under its form ("Generated Business Story" / "Combined UVP") with a Copy
+button. It is locked behind a placeholder until its answers are complete, then follows the answers.
+Once the operator edits it by hand it stops following them, and "Regenerate from fields" hands it
+back to the template. The paragraphs are what gets saved as `description`/`uvp` and embedded by
+Module 1.2 — the AI services are unchanged.
+**Gate:** type and location ≥3 characters, every other answer ≥20 characters (trimmed), ≥1 core
+service, and both paragraphs non-empty. Each answer shows a live character hint.
 
 ### 4 — Assets & Links (`steps/AssetsLinksStep.tsx`)
 Fields: four social handle inputs (Instagram/Facebook/TikTok/Naver — plain text, no OAuth here),

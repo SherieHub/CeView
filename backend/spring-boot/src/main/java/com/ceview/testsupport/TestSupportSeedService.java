@@ -5,6 +5,7 @@ import com.ceview.auth.EmailCodeRepository;
 import com.ceview.auth.MsmeOperator;
 import com.ceview.auth.MsmeOperatorRepository;
 import com.ceview.module1.businessinput.BusinessProfile;
+import com.ceview.module1.businessinput.StructuredInputs;
 import com.ceview.module1.businessinput.BusinessProfileRepository;
 import com.ceview.module2.MarketCatalog;
 import com.ceview.module2.submodule21.MarketSignalRecord;
@@ -213,6 +214,10 @@ public class TestSupportSeedService {
         p.setBusinessName(req.businessName());
         p.setBusinessDescription(req.description());
         p.setUvp(req.uvp());
+        // Seeded prose has no structured answers behind it, so it counts as hand-edited — the same
+        // rule PUT /api/business-profile applies (StructuredInputs.edited).
+        p.setDescriptionEdited(StructuredInputs.edited(null, req.description()));
+        p.setUvpEdited(StructuredInputs.edited(null, req.uvp()));
         p.setCoreServicesList(req.coreServices() == null ? List.of() : req.coreServices());
         p.setCategoriesList(req.categories() == null ? List.of() : req.categories());
         p.setImageUrl(req.imagePreview());

@@ -2,9 +2,9 @@ import type { Page } from '@playwright/test';
 import { api } from '../support/api';
 import { E2E_PASSWORD, latestEmailCode, requireBackend, requireTestSupport } from '../support/stack';
 import { test, expect, AI_WAIT } from '../support/fixtures';
-import { PROFILE_DESCRIPTION, PROFILE_UVP, provisionOperator, signIn, uniqueEmail } from '../support/operator';
+import { PROFILE_ANSWERS, provisionOperator, signIn, uniqueEmail } from '../support/operator';
 import { pngFile } from '../support/files';
-import { OB, back, categoryChips, fillBasicInfo, fillBrandIdentity, fillStructuredInputs, finish, next, reachAnalysis } from '../support/onboarding';
+import { EXPECTED_UVP, OB, back, categoryChips, expectedStory, fillBasicInfo, fillBrandIdentity, fillStructuredInputs, finish, next, reachAnalysis } from '../support/onboarding';
 
 // The whole onboarding flow end to end, plus behaviours that span steps.
 test.beforeEach(async () => {
@@ -59,8 +59,10 @@ test.describe('Onboarding journey', () => {
     expect(saved.businessName).toBe('E2E Reef Expeditions');
     expect(saved.categories).toEqual(names);
     expect(saved.coreServices).toEqual(['Guided reef dives', 'Sardine run snorkelling']);
-    expect(saved.description).toBe(PROFILE_DESCRIPTION);
-    expect(saved.uvp).toBe(PROFILE_UVP);
+    // The composed template paragraphs, and the answers behind them.
+    expect(saved.description).toBe(expectedStory('Guided reef dives and Sardine run snorkelling'));
+    expect(saved.uvp).toBe(EXPECTED_UVP);
+    expect(saved).toMatchObject({ ...PROFILE_ANSWERS, descriptionEdited: false, uvpEdited: false });
     expect(saved.imagePreview).toMatch(/^data:image\/png;base64,/);
     expect(saved.uniquenessScore).toBeGreaterThanOrEqual(0);
     expect(saved.uniquenessScore).toBeLessThanOrEqual(1);

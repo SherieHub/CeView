@@ -18,10 +18,12 @@ import {
   recommendTiming,
 } from './campaignRecommendations';
 import { EMPTY_PREFERENCES } from './campaignTypes';
+import { EMPTY_STRUCTURED } from '../../../module-1/structured-profile/profileTemplates';
 
 const TODAY = '2026-10-16';
 
 const PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1',
   businessName: 'Sunset Cove',
   categories: ['Coastal & Island'],

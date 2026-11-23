@@ -18,12 +18,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
 
 /**
  * Verifies BusinessProfileController resolves the operator server-side from the JWT
@@ -47,6 +49,43 @@ class BusinessProfileControllerTest {
     private UUID operatorB;
     private String tokenA;
     private String tokenB;
+
+    /** The pre-structured-inputs request shape: no answers, no edited flags. */
+    private static BusinessProfileDto legacyDto(UUID id, String name, List<String> categories,
+                                                List<String> services, String description, String uvp,
+                                                String imagePreview, Float score) {
+        return new BusinessProfileDto(id, name, categories, services, description, uvp, imagePreview, score,
+            null, null, null, null, null, null, null, null, null);
+    }
+
+    private static final String STORY = "Sunset Cove is a beachfront resort located in Moalboal, Cebu. ...";
+    private static final String UVP = "Our diving activities are guided by local Moalboal residents. ...";
+
+    /** A full set of answers that meet every minimum, with untouched composed paragraphs. */
+    private static BusinessProfileDto structuredDto(String type, String location, String experience,
+                                                    String facilities, String distinguisher, String fact,
+                                                    String benefit, String description, String uvp) {
+        return new BusinessProfileDto(null, "Sunset Cove", List.of("Coastal & Island"), List.of("Scuba diving"),
+            description, uvp, null, null,
+            type, location, experience, facilities, distinguisher, fact, benefit, false, false);
+    }
+
+    private static BusinessProfileDto validStructuredDto() {
+        return structuredDto("beachfront resort", "Moalboal, Cebu",
+            "stay near the sardine run and explore the reef",
+            "twelve villas, a dive shop, and a kitchen",
+            "Our diving activities are guided by locals.",
+            "Our house reef is thirty metres from the villas.",
+            "Guests reach the reef easily and learn from locals.",
+            STORY, UVP);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions putAs(String token, BusinessProfileDto dto) throws Exception {
+        return mvc.perform(put("/api/business-profile")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(dto)));
+    }
 
     @BeforeEach
     void setUp() {
@@ -82,7 +121,7 @@ class BusinessProfileControllerTest {
 
     @Test
     void putCreatesProfileOwnedByTheAuthenticatedOperatorNotAClientSuppliedId() throws Exception {
-        var dto = new BusinessProfileDto(null, "New Business", List.of("Retail"),
+        var dto = legacyDto(null, "New Business", List.of("Retail"),
             List.of("Service A"), "desc", "uvp", null, null);
 
         mvc.perform(put("/api/business-profile")
@@ -104,7 +143,7 @@ class BusinessProfileControllerTest {
         existing.setBusinessName("Old Name");
         profileRepo.save(existing);
 
-        var dto = new BusinessProfileDto(existing.getBusinessProfileId(), "Updated Name", List.of(),
+        var dto = legacyDto(existing.getBusinessProfileId(), "Updated Name", List.of(),
             List.of(), "desc", "uvp", null, null);
 
         mvc.perform(put("/api/business-profile")
@@ -126,7 +165,7 @@ class BusinessProfileControllerTest {
         ownedByB.setBusinessName("Operator B's Business");
         profileRepo.save(ownedByB);
 
-        var dto = new BusinessProfileDto(ownedByB.getBusinessProfileId(), "Hijacked Name", List.of(),
+        var dto = legacyDto(ownedByB.getBusinessProfileId(), "Hijacked Name", List.of(),
             List.of(), "desc", "uvp", null, null);
 
         // Operator A attempts to overwrite operator B's profile by id.
@@ -155,7 +194,7 @@ class BusinessProfileControllerTest {
         reference.setBusinessName("Reference Corpus Row");
         profileRepo.save(reference);
 
-        var dto = new BusinessProfileDto(reference.getBusinessProfileId(), "Hijacked Name", List.of(),
+        var dto = legacyDto(reference.getBusinessProfileId(), "Hijacked Name", List.of(),
             List.of(), "desc", "uvp", null, null);
 
         mvc.perform(put("/api/business-profile")
@@ -180,7 +219,7 @@ class BusinessProfileControllerTest {
         ownerless.setBusinessName("Ownerless Business");
         profileRepo.save(ownerless);
 
-        var dto = new BusinessProfileDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
+        var dto = legacyDto(ownerless.getBusinessProfileId(), "Adopted Business", List.of(),
             List.of(), "desc", "uvp", null, null);
 
         mvc.perform(put("/api/business-profile")
@@ -192,5 +231,82 @@ class BusinessProfileControllerTest {
 
         BusinessProfile reloaded = profileRepo.findById(ownerless.getBusinessProfileId()).orElseThrow();
         assertEquals(operatorA, reloaded.getUserId(), "ownerless profile should now belong to the saving operator");
+    }
+
+    // ── Structured Business Story / UVP answers ─────────────────────────────
+
+    @Test
+    void putPersistsAndReturnsTheStructuredAnswersAndEditedFlags() throws Exception {
+        putAs(tokenA, validStructuredDto())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.storyLocation").value("Moalboal, Cebu"))
+            .andExpect(jsonPath("$.uvpGuestBenefit").value("Guests reach the reef easily and learn from locals."))
+            .andExpect(jsonPath("$.descriptionEdited").value(false));
+
+        BusinessProfile saved = profileRepo.findFirstByUserId(operatorA).orElseThrow();
+        assertEquals("beachfront resort", saved.getStoryBusinessType());
+        assertEquals("twelve villas, a dive shop, and a kitchen", saved.getStoryFacilities());
+        assertEquals("Our house reef is thirty metres from the villas.", saved.getUvpSupportingFact());
+        assertEquals(STORY, saved.getBusinessDescription());
+        assertFalse(saved.isDescriptionEdited());
+        assertFalse(saved.isUvpEdited());
+
+        mvc.perform(get("/api/business-profile").header("Authorization", "Bearer " + tokenA))
+            .andExpect(jsonPath("$.storyBusinessType").value("beachfront resort"))
+            .andExpect(jsonPath("$.uvpDistinguisher").value("Our diving activities are guided by locals."))
+            .andExpect(jsonPath("$.uvpEdited").value(false));
+    }
+
+    @Test
+    void putAcceptsAllBlankAnswersAndKeepsLegacyProseAsHandEdited() throws Exception {
+        putAs(tokenA, legacyDto(null, "Legacy Resort", List.of("Coastal & Island"), List.of("Diving"),
+                "Prose written before structured inputs.", "A prose UVP.", null, null))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.descriptionEdited").value(true))
+            .andExpect(jsonPath("$.uvpEdited").value(true));
+
+        BusinessProfile saved = profileRepo.findFirstByUserId(operatorA).orElseThrow();
+        assertEquals("Prose written before structured inputs.", saved.getBusinessDescription());
+        assertNull(saved.getStoryLocation());
+    }
+
+    @Test
+    void putRejectsPartiallyFilledAnswers() throws Exception {
+        var partial = structuredDto("beachfront resort", "Moalboal, Cebu", "", "", "", "", "", STORY, UVP);
+        putAs(tokenA, partial)
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(containsString("storyExperience")));
+        assertTrue(profileRepo.findFirstByUserId(operatorA).isEmpty(), "nothing may be saved");
+    }
+
+    @Test
+    void putRejectsAShortAnswerAtTheMinimumBoundary() throws Exception {
+        var v = validStructuredDto();
+        var shortLocation = structuredDto(v.storyBusinessType(), "Ce", v.storyExperience(), v.storyFacilities(),
+            v.uvpDistinguisher(), v.uvpSupportingFact(), v.uvpGuestBenefit(), STORY, UVP);
+        putAs(tokenA, shortLocation)
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(containsString("storyLocation must be at least 3 characters")));
+
+        var shortBenefit = structuredDto(v.storyBusinessType(), v.storyLocation(), v.storyExperience(),
+            v.storyFacilities(), v.uvpDistinguisher(), v.uvpSupportingFact(), "x".repeat(19), STORY, UVP);
+        putAs(tokenA, shortBenefit)
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(containsString("uvpGuestBenefit must be at least 20 characters")));
+
+        // Exactly at the minimum, counted after trimming, passes.
+        var atMinimum = structuredDto(v.storyBusinessType(), "  Ceb  ", v.storyExperience(), v.storyFacilities(),
+            v.uvpDistinguisher(), v.uvpSupportingFact(), "x".repeat(20), STORY, UVP);
+        putAs(tokenA, atMinimum).andExpect(status().isOk());
+    }
+
+    @Test
+    void putRejectsABlankParagraphWhenAnswersAreGiven() throws Exception {
+        var v = validStructuredDto();
+        var blankUvp = structuredDto(v.storyBusinessType(), v.storyLocation(), v.storyExperience(),
+            v.storyFacilities(), v.uvpDistinguisher(), v.uvpSupportingFact(), v.uvpGuestBenefit(), STORY, "  ");
+        putAs(tokenA, blankUvp)
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value(containsString("uvp")));
     }
 }

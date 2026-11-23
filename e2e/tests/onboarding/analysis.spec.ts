@@ -2,10 +2,10 @@ import type { Page } from '@playwright/test';
 import { api } from '../support/api';
 import { requireBackend, requireTestSupport } from '../support/stack';
 import { test, expect, AI_WAIT } from '../support/fixtures';
-import { PROFILE_DESCRIPTION, PROFILE_UVP, provisionOperator, signIn, type Operator } from '../support/operator';
+import { PROFILE_ANSWERS, provisionOperator, signIn, type Operator } from '../support/operator';
 import { expectInRange, expectNoJunk } from '../support/ai';
 import { toast } from '../support/ui';
-import { OB, back, categoryChips, finish, next, reachAnalysis, stepCounter } from '../support/onboarding';
+import { EXPECTED_UVP, SI, back, categoryChips, expectedStory, finish, next, reachAnalysis, stepCounter } from '../support/onboarding';
 
 // Onboarding step 5 — Analysis. Classification and uniqueness scoring run on the real Hugging Face
 // Space (ZeroGPU, a limited daily quota), so the real-AI scenarios are kept few and share a page:
@@ -17,10 +17,10 @@ test.beforeEach(async () => {
   await requireTestSupport();
 });
 
-const SPECIFIC_UVP =
+/** Replaces the first UVP answer; the untouched Combined UVP recomposes from it. */
+const SPECIFIC_DISTINGUISHER =
   'We are the only PADI five-star centre in Moalboal with a resident marine biologist on staff, ' +
-  'running dawn sardine-run dives from a private shore entry thirty metres from the reef wall, ' +
-  'with every dive logged against a twelve-year record of shoal movement along this coast.';
+  'running dawn sardine-run dives from a private shore entry thirty metres from the reef wall.';
 
 const compute = (page: Page) => page.getByRole('button', { name: /^(Compute uniqueness score|Recompute score)$/ });
 const primary = (page: Page) => page.getByTestId('score-primary');
@@ -172,8 +172,9 @@ test.describe('Step 5 — Analysis', () => {
     expect(saved.businessName).toBe('E2E Reef Expeditions');
     expect(saved.categories).toEqual(selected);
     expect(saved.coreServices).toEqual(['Guided reef dives']);
-    expect(saved.description).toBe(PROFILE_DESCRIPTION);
-    expect(saved.uvp).toBe(PROFILE_UVP);
+    expect(saved.description).toBe(expectedStory('Guided reef dives'));
+    expect(saved.uvp).toBe(EXPECTED_UVP);
+    expect(saved).toMatchObject(PROFILE_ANSWERS);
     if (shown !== null) expect(Math.abs(saved.uniquenessScore * 100 - shown)).toBeLessThanOrEqual(0.51);
     else expect(saved.uniquenessScore).toBe(0); // no number for a too-small cohort; 0 only unlocks the app
   });
@@ -192,7 +193,7 @@ test.describe('Step 5 — uniqueness responds to the UVP', () => {
 
     await back(page).click(); // Assets & Links
     await back(page).click(); // Structured Inputs
-    await page.getByPlaceholder(OB.uvp).fill(SPECIFIC_UVP);
+    await page.getByLabel(SI.uvpDistinguisher, { exact: true }).fill(SPECIFIC_DISTINGUISHER);
     await next(page).click();
     await next(page).click();
     await waitForCategories(page);
