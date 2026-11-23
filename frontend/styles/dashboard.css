@@ -1067,6 +1067,14 @@
     margin: -72px 0 20px;
     padding-top: 0;
   }
+  /* The tiles tuck 72px up into the hero. With a notice in between they would
+     cover its last lines instead, so they sit in normal flow below it. */
+  .dash-screen .dash-notice {
+    margin-bottom: 20px;
+  }
+  .dash-screen .dash-notice ~ .stat-row {
+    margin-top: 0;
+  }
   .dash-screen .stat-tile {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

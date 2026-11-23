@@ -24,6 +24,7 @@ import { apiClient } from './apiClient';
 import { isProfileNotReady } from './apiError';
 import { categoriesKey, loadForecastCache, saveForecastCache } from './forecastCache';
 import type { ForecastSnapshot } from './forecastCache';
+import { logApiFailure } from './logApiFailure';
 import { useProfile } from './profileContext';
 import { useUnreadAlerts } from './unreadAlertsStore';
 import type { DemandAlert, EnsureForecastResult, Market, MarketsResponse } from '../types';
@@ -74,6 +75,8 @@ export interface ForecastEngine {
   isRefreshing: boolean;
   /** The full error panel: nothing to show, an unfinished profile, or a failed Refresh. */
   error: unknown | null;
+  /** Where `error` came from: the load (Retry re-reads) or a Refresh run (Retry re-runs it). */
+  errorSource: 'load' | 'refresh' | null;
   /** The last sync failed but the snapshot on screen is still good. */
   refreshError: unknown | null;
   isRead: (id: string) => boolean;
@@ -121,6 +124,19 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<unknown | null>(null);
   const [refreshError, setRefreshError] = useState<unknown | null>(null);
+  const [errorSource, setErrorSource] = useState<'load' | 'refresh' | null>(null);
+
+  // Every full-panel error goes through these two, so `error` and `errorSource`
+  // can never disagree, and each failure is logged exactly once.
+  const failWith = useCallback((err: unknown, source: 'load' | 'refresh') => {
+    logApiFailure(source === 'refresh' ? 'Forecast refresh' : 'Dashboard load', err);
+    setError(err);
+    setErrorSource(source);
+  }, []);
+  const clearError = useCallback(() => {
+    setError(null);
+    setErrorSource(null);
+  }, []);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -198,17 +214,17 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
       setStatus('ready');
 
       if (failure === null) {
-        setError(null);
+        clearError();
         setRefreshError(null);
       } else if (hadSnapshot) {
         // Keep showing what we have; just say it could not be refreshed.
         setRefreshError(failure);
       } else {
-        setError(failure);
+        failWith(failure, 'load');
       }
       return failure;
     },
-    [apply],
+    [apply, clearError, failWith],
   );
 
   const runEnsure = useCallback(async (): Promise<EnsureOutcome> => {
@@ -243,7 +259,7 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
       if (!mountedRef.current || mySeq !== seq.current) return;
 
       if (ensured.notReady !== null) {
-        setError(ensured.notReady);
+        failWith(ensured.notReady, 'load');
         setStatus('ready');
         return;
       }
@@ -264,7 +280,7 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
       });
     inFlight.current = tracked;
     return tracked;
-  }, [apply, readAndCommit, runEnsure]);
+  }, [apply, readAndCommit, runEnsure, failWith]);
 
   // Sync when the engine starts, and again when the operator's profile or categories change.
   // Another PROFILE's forecast is never shown: the snapshot is dropped (for that profile's own
@@ -283,13 +299,13 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
         snapshotRef.current = cached;
         setSnapshot(cached);
         setStatus(cached ? 'ready' : 'loading');
-        setError(null);
+        clearError();
         setRefreshError(null);
       }
     }
     keyRef.current = key;
     void sync();
-  }, [disabled, profileId, catKey, persist, sync]);
+  }, [disabled, profileId, catKey, persist, sync, clearError]);
 
   const reload = useCallback(async () => {
     await sync();
@@ -310,19 +326,25 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
     try {
       // The pipeline may already be running for `ensure`; let it finish rather than race it.
       await ensureRef.current;
-      const result = (await apiClient.forecast.analyze()) as MarketsResponse;
+      let result: MarketsResponse;
+      try {
+        result = (await apiClient.forecast.analyze()) as MarketsResponse;
+      } catch (err) {
+        // The pipeline itself failed: Try again re-runs it.
+        if (mountedRef.current) failWith(err, 'refresh');
+        return null;
+      }
       const mySeq = ++seq.current;
+      // The pipeline succeeded, so a failed re-read is a load failure. readAndCommit has
+      // already reported it once (a load error, or `refreshError` over the old snapshot).
       const failure = await readAndCommit(mySeq);
-      if (failure !== null) throw failure;
+      if (failure !== null) return null;
       apply((prev) => (prev ? { ...prev, generatedAt: new Date().toISOString() } : prev));
       return result;
-    } catch (err) {
-      if (mountedRef.current) setError(err);
-      return null;
     } finally {
       if (mountedRef.current) setIsRefreshing(false);
     }
-  }, [apply, readAndCommit]);
+  }, [apply, readAndCommit, failWith]);
 
   const loadCategory = useCallback(
     async (category: string) => {
@@ -335,10 +357,10 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
           return { ...base, marketsByCategory: { ...base.marketsByCategory, [category]: list } };
         });
       } catch (err) {
-        if (mountedRef.current) setError(err);
+        if (mountedRef.current) failWith(err, 'load');
       }
     },
-    [apply],
+    [apply, failWith],
   );
 
   const markRead = useCallback(
@@ -361,6 +383,7 @@ export function useForecastEngine({ persist, disabled = false }: EngineOptions):
     syncing,
     isRefreshing,
     error,
+    errorSource,
     refreshError,
     isRead,
     markRead,

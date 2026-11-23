@@ -43,6 +43,14 @@ whatever the API returns, not a separate endpoint.
 | `normal`, alerts present, none selected | default | single-column alert feed |
 | `normal`, alert selected | user clicked a card | two-column: alert feed (left) + markets reveal (right) |
 | `ai-down` | forecast service unreachable | amber banner ("AI Forecast Service Unavailable... reads from your last successful forecast run"), alerts still render from cache, refresh does not produce new predictions |
+| `error`, from Refresh | `POST /api/forecasting/analyze` failed (`errorSource: 'refresh'`) | `RetryNotice` "The forecast didn't update." — **Try again** re-runs the forecast pipeline |
+| `error`, from load | the initial read failed with nothing cached (`errorSource: 'load'`) | `RetryNotice` "Your dashboard didn't load." — **Try again** re-reads only, never runs the pipeline |
+| `error`, profile not ready | 409 / `MOD22_PROFILE_NOT_READY` | `ApiErrorPanel` "Complete onboarding first" (no retry) |
+
+Quota failures, such as the BiLSTM Space's "exceeded your ZeroGPU runs limit", which arrives as
+`MOD22_BILSTM_UNAVAILABLE` with the quota text only in `cause`, show "wait a while" copy instead of
+"try again". Details are logged to the console as `[CeView] Forecast refresh failed` /
+`[CeView] Dashboard load failed`.
 
 ## Interaction
 

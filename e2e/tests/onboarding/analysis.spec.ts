@@ -207,17 +207,17 @@ test.describe('Step 5 — uniqueness responds to the UVP', () => {
 test.describe('Step 5 — too-small cohort (classification and scoring replies stubbed)', () => {
   // A cohort below the comparison floor is a valid backend answer that the real corpus cannot be
   // made to produce on demand, so only the two AI replies are stubbed; everything else is real.
+  const CLASSIFICATION_REPLY = {
+    categories: [
+      { name: 'Adventure & Nature', percentage: 62 },
+      { name: 'Coastal & Island', percentage: 38 },
+      { name: 'Urban & City', percentage: 0 },
+    ],
+  };
+
   async function stubAi(page: Page) {
     await page.route('**/api/classification/analyze', (route) =>
-      route.fulfill({
-        json: {
-          categories: [
-            { name: 'Adventure & Nature', percentage: 62 },
-            { name: 'Coastal & Island', percentage: 38 },
-            { name: 'Urban & City', percentage: 0 },
-          ],
-        },
-      }),
+      route.fulfill({ json: CLASSIFICATION_REPLY }),
     );
     await page.route('**/api/classification/uniqueness', (route) =>
       route.fulfill({
@@ -253,17 +253,25 @@ test.describe('Step 5 — too-small cohort (classification and scoring replies s
     expect(saved.uniquenessScore).toBe(0);
   });
 
-  test('an AI outage shows the dependency error panel with no fake categories', async ({ page }) => {
+  test('an AI outage shows a retry notice with no fake categories, and Try again recovers', async ({ page }) => {
     const op = await provisionOperator('onb-ai-down', { stage: 'verified' });
+    let down = true;
     await page.route('**/api/classification/analyze', (route) =>
-      route.fulfill({ status: 503, json: { error: 'huggingface_space is unavailable' } }),
+      down
+        ? route.fulfill({ status: 503, json: { error: 'huggingface_space is unavailable' } })
+        : route.fulfill({ json: CLASSIFICATION_REPLY }),
     );
     await signIn(page, op, '/onboarding');
     await reachAnalysis(page);
-    await expect(page.getByRole('alert')).toBeVisible();
-    await expect(page.getByText('Business analysis')).toBeVisible();
+
+    await expect(page.getByRole('alert')).toContainText("The analysis didn't finish.");
     await expect(categoryChips(page)).toHaveCount(0);
     await expect(finish(page)).toBeDisabled();
+
+    down = false;
+    await page.getByRole('button', { name: 'Try again' }).click();
+    await expect(categoryChips(page).first()).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 });
 

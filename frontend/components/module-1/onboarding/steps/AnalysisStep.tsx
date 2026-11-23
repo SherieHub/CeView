@@ -41,12 +41,13 @@
  * ceview/components/module-1/1.2-uniqueness-scoring/components/
  * OverallScoreCard.tsx + ActionableScoreCard.tsx + ComputeUniquenessButton.tsx.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
 import { useObDraft } from '../obDraft';
 import { useToast } from '../../../shared/Toast';
-import { ApiErrorPanel } from '../../../shared/ApiErrorPanel';
+import { RetryNotice } from '../../../shared/RetryNotice';
 import { apiClient } from '../../../../services/apiClient';
+import { logApiFailure } from '../../../../services/logApiFailure';
 import type { CategoryAllocation, UniquenessResult } from '../../../../types';
 import CategoryPicker from './analysis/CategoryPicker';
 import ScoreTiles from './analysis/ScoreTiles';
@@ -84,12 +85,28 @@ export default function AnalysisStep({ onGoToStep }: Props) {
   const [categories, setCategories] = useState<CategoryAllocation[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [scores, setScores] = useState<UniquenessResult | null>(null);
-  const [error, setError] = useState<unknown | null>(null);
+  const [analyzeError, setAnalyzeError] = useState<unknown | null>(null);
+  const [scoreError, setScoreError] = useState<unknown | null>(null);
 
+  // A retry must never be overwritten by a slower, earlier attempt, or by an
+  // attempt that settles after the step unmounts.
+  const analyzeRequest = useRef(0);
+  // Same for scoring: the picker stays clickable while computing, and a result
+  // for the old selection must not land on the new one.
+  const scoreRequest = useRef(0);
+  const mounted = useRef(true);
   useEffect(() => {
-    let cancelled = false;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  function runAnalysis() {
+    const request = ++analyzeRequest.current;
+    const isStale = () => !mounted.current || request !== analyzeRequest.current;
+    setAnalyzeError(null);
     setPhase('analyzing');
-    setError(null);
 
     apiClient.classification
       .analyze({
@@ -99,7 +116,7 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         uvp: draft.uvp,
       })
       .then((allocations) => {
-        if (cancelled) return;
+        if (isStale()) return;
         // analyze() returns every category including zero-percentage ones —
         // only ones the model actually found evidence for are worth showing.
         const found = allocations
@@ -110,17 +127,18 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         setPhase('categories');
       })
       .catch((e) => {
-        if (cancelled) return;
-        setError(e);
+        if (isStale()) return;
+        logApiFailure('Business analysis', e);
+        setAnalyzeError(e);
         setPhase('idle');
       });
+  }
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    runAnalysis();
     // Intentionally run once on mount only — this step analyzes the draft as
     // it stood when the operator reached Step 5, not on every keystroke back
-    // on Steps 2/3.
+    // on Steps 2/3. Try again calls runAnalysis() directly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -132,6 +150,10 @@ export default function AnalysisStep({ onGoToStep }: Props) {
     }
     const next = isSelected ? selected.filter((n) => n !== name) : [...selected, name];
     setSelected(next);
+    // Whatever scoring is in flight (or failed) was for the old selection.
+    scoreRequest.current += 1;
+    setScoreError(null);
+    if (phase === 'computing') setPhase('categories');
     // A stale score no longer matches the current selection — discard it and
     // fall back to the picker rather than showing a number that lies.
     if (phase === 'scored') {
@@ -144,8 +166,10 @@ export default function AnalysisStep({ onGoToStep }: Props) {
   }
 
   function computeUniqueness() {
+    const request = ++scoreRequest.current;
+    const isStale = () => !mounted.current || request !== scoreRequest.current;
     setPhase('computing');
-    setError(null);
+    setScoreError(null);
 
     apiClient.classification
       .uniqueness({
@@ -156,6 +180,7 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         categories: selected,
       })
       .then((result) => {
+        if (isStale()) return;
         setScores(result);
         setPhase('scored');
         // Written into the draft immediately so OnboardingWizard's Finish button
@@ -170,26 +195,17 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         });
       })
       .catch((e) => {
-        setError(e);
+        if (isStale()) return;
+        logApiFailure('Uniqueness scoring', e);
+        // The picker and selection stay; the notice under Compute offers the retry.
+        setScoreError(e);
         setPhase('categories');
       });
   }
 
   // A VALID backend answer, not a failure: the cohort was too small to rank
-  // against. It must never reach ApiErrorPanel, and must never show a number.
+  // against. It must never reach RetryNotice, and must never show a number.
   const insufficientCohort = phase === 'scored' && scores != null && !scores.sufficientCohort;
-
-  if (error != null) {
-    return (
-      <div>
-        <p className="ob-step-eyebrow">Step 5 — Required</p>
-        <h2 className="heading-lg" style={{ margin: '6px 0 8px' }}>
-          Categories and uniqueness
-        </h2>
-        <ApiErrorPanel error={error} label="Business analysis" />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -201,6 +217,14 @@ export default function AnalysisStep({ onGoToStep }: Props) {
         The AI reads your description and UVP to infer which tourism categories fit your business,
         then scores how differentiated you are against the local cohort in those categories.
       </p>
+
+      {analyzeError != null && (
+        <RetryNotice
+          error={analyzeError}
+          title="The analysis didn't finish."
+          onRetry={runAnalysis}
+        />
+      )}
 
       {phase === 'analyzing' && (
         <div className="banner banner--info" role="status">
@@ -251,6 +275,15 @@ export default function AnalysisStep({ onGoToStep }: Props) {
               </>
             )}
           </button>
+
+          {scoreError != null && (
+            <RetryNotice
+              className="mt-4"
+              error={scoreError}
+              title="The score couldn't be computed."
+              onRetry={computeUniqueness}
+            />
+          )}
         </>
       )}
 

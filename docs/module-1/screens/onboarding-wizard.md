@@ -104,6 +104,16 @@ here):
    / Category, `StatTypography`), a pass banner at ≥70 ("Well differentiated") or a warning banner
    below 70 ("Room to sharpen") with a "Strengthen my UVP" link that jumps back to step 3 without
    losing step 1/2/4 data.
+
+**When a model call fails.** Neither call shows `ApiErrorPanel`. A failed `analyze` keeps the step
+heading and shows a `RetryNotice` ("The analysis didn't finish.") where the loader was; **Try again**
+re-runs the analysis. A failed `uniqueness` keeps the category picker and selection and shows the
+notice ("The score couldn't be computed.") under Compute; **Try again** re-scores the same selection,
+and changing the selection clears it. Quota failures (429, a `*QUOTA*`/`*RATE_LIMIT*` code, or quota
+wording in `cause` or `message`) ask the operator to wait a while instead. The request, status, code and cause go to
+the browser console as `[CeView] Business analysis failed` / `[CeView] Uniqueness scoring failed`.
+Components: `components/shared/RetryNotice.tsx`, `services/retryAdvice.ts`, `services/logApiFailure.ts`.
+
 **Gate to finish:** `obPhase === 'scored'`.
 
 ## Reused components (no changes needed)

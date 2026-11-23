@@ -2,8 +2,8 @@
  * CARD — Onboarding: Step 5 Analysis (Task 21)
  *
  * Covers the spec's phase machine (analyzing -> categories -> computing ->
- * scored), the >=1-category-selected toggle rule, the ApiErrorPanel surface
- * on a failed analyze(), and the pass/warn banner split at the 70 threshold
+ * scored), the >=1-category-selected toggle rule, the retry notice
+ * on a failed analyze() or uniqueness(), and the pass/warn banner split at the 70 threshold
  * (compared against the API's 0-100 scale, before any 0-1 conversion).
  *
  * The actual 0-1 persistence conversion (uniquenessScore: 0.72 from an API
@@ -14,13 +14,14 @@
  * the *raw* 0-100 score into the draft the moment it reaches 'scored', which
  * is what makes that wizard-level conversion possible.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AnalysisStep from './AnalysisStep';
 import { EMPTY_OB_DRAFT, ObDraftProvider, stepValid, useObDraft } from '../obDraft';
 import type { ObDraft } from '../obDraft';
 import { ToastProvider } from '../../../shared/Toast';
 import { ApiError } from '../../../../services/apiError';
+import { RETRY_COPY } from '../../../shared/RetryNotice';
 import type { UniquenessResult } from '../../../../types';
 
 const analyzeMock = vi.fn();
@@ -154,18 +155,163 @@ describe('AnalysisStep', () => {
     expect(await screen.findByText(/At least one category must stay selected/)).toBeInTheDocument();
   });
 
-  it('renders ApiErrorPanel naming the dependency when analyze() is rejected as a missing dependency', async () => {
-    analyzeMock.mockRejectedValue(
-      new ApiError({
-        status: 503,
-        method: 'POST',
-        path: '/api/classification/analyze',
-        body: { code: 'ai_service_unreachable', dependency: 'fastapi-sbert' },
-      })
-    );
-    renderStep();
+  describe('when the analysis model is unavailable', () => {
+    const ALLOCATIONS = [
+      { name: 'Coastal & Island', percentage: 90 },
+      { name: 'Adventure & Nature', percentage: 60 },
+    ];
+    const outage = new ApiError({
+      status: 503,
+      method: 'POST',
+      path: '/api/classification/analyze',
+      body: { code: 'ai_service_unreachable', dependency: 'fastapi-sbert' },
+    });
 
-    expect(await screen.findByText('fastapi-sbert is unavailable')).toBeInTheDocument();
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('shows a plain-language retry notice, not the technical panel', async () => {
+      analyzeMock.mockRejectedValue(outage);
+      renderStep();
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("The analysis didn't finish.");
+      expect(alert).toHaveTextContent(RETRY_COPY.retry);
+      expect(alert).not.toHaveTextContent('/api/classification/analyze');
+      expect(alert).not.toHaveTextContent('503');
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+      // The step's own heading stays — the notice replaces the loader, not the step.
+      expect(screen.getByText('Categories and uniqueness')).toBeInTheDocument();
+    });
+
+    it('re-runs the analysis on Try again and shows the categories', async () => {
+      analyzeMock.mockRejectedValueOnce(outage).mockResolvedValueOnce(ALLOCATIONS);
+      renderStep();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+
+      expect(await screen.findByRole('button', { name: /Compute uniqueness score/ })).toBeInTheDocument();
+      expect(analyzeMock).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('shows the notice again when the retry also fails', async () => {
+      analyzeMock.mockRejectedValue(outage);
+      renderStep();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+
+      await waitFor(() => expect(analyzeMock).toHaveBeenCalledTimes(2));
+      expect(await screen.findByRole('alert')).toHaveTextContent("The analysis didn't finish.");
+    });
+
+    it('logs the failure for developers', async () => {
+      analyzeMock.mockRejectedValue(outage);
+      renderStep();
+      await screen.findByRole('alert');
+      expect(console.error).toHaveBeenCalledWith(
+        '[CeView] Business analysis failed',
+        expect.objectContaining({ status: 503, path: '/api/classification/analyze' }),
+      );
+    });
+  });
+
+  describe('when the scoring model is unavailable', () => {
+    const outage = new ApiError({
+      status: 503,
+      method: 'POST',
+      path: '/api/classification/uniqueness',
+      body: { code: 'ai_service_unreachable', dependency: 'fastapi-sbert' },
+    });
+
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('keeps the category picker and shows the notice under Compute', async () => {
+      await reachCategories();
+      const pressedBefore = screen
+        .getAllByRole('button', { pressed: true })
+        .map((b) => b.textContent);
+      uniquenessMock.mockRejectedValue(outage);
+
+      fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent("The score couldn't be computed.");
+      expect(screen.getByRole('button', { name: /Compute uniqueness score/ })).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent)).toEqual(pressedBefore);
+    });
+
+    it('retries with the same categories and renders the score', async () => {
+      await reachCategories();
+      uniquenessMock.mockRejectedValueOnce(outage).mockResolvedValueOnce(SCORES);
+
+      fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+
+      expect(await screen.findByTestId('score-primary')).toBeInTheDocument();
+      expect(uniquenessMock).toHaveBeenCalledTimes(2);
+      expect(uniquenessMock.mock.calls[1][0].categories).toEqual(uniquenessMock.mock.calls[0][0].categories);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('clears the notice when the selection changes', async () => {
+      // Three non-zero categories: only the top two start selected, so one chip is free to toggle on.
+      await reachCategories([
+        { name: 'Coastal & Island', percentage: 90 },
+        { name: 'Adventure & Nature', percentage: 60 },
+        { name: 'Culinary & Gastronomy', percentage: 30 },
+      ]);
+      uniquenessMock.mockRejectedValue(outage);
+      fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+      await screen.findByRole('alert');
+
+      // Select a chip that is not yet selected, so the ≥1 rule cannot block it.
+      const unpressed = screen.getAllByRole('button', { pressed: false })[0];
+      fireEvent.click(unpressed);
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('ignores a failure that lands after the selection changed, and re-enables Compute', async () => {
+      await reachCategories([
+        { name: 'Coastal & Island', percentage: 90 },
+        { name: 'Adventure & Nature', percentage: 60 },
+        { name: 'Culinary & Gastronomy', percentage: 30 },
+      ]);
+      let rejectPending: (e: unknown) => void = () => {};
+      uniquenessMock.mockReturnValue(
+        new Promise((_, reject) => {
+          rejectPending = reject;
+        }),
+      );
+      fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+      expect(screen.getByRole('button', { name: /Computing/ })).toBeDisabled();
+
+      // The picker stays clickable while computing; this changes the selection.
+      fireEvent.click(screen.getAllByRole('button', { pressed: false })[0]);
+      await act(async () => {
+        rejectPending(outage);
+      });
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Compute uniqueness score/ })).toBeEnabled();
+    });
+
+    it('does not write a score into the draft', async () => {
+      await reachCategories();
+      uniquenessMock.mockRejectedValue(outage);
+      fireEvent.click(screen.getByRole('button', { name: /Compute uniqueness score/ }));
+      await screen.findByRole('alert');
+      expect(latestDraft?.uniquenessScore ?? null).toBeNull();
+    });
   });
 
   // Deliberately asserts PRESENCE, not copy. These used to pin the 70-threshold

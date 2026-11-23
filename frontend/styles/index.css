@@ -1529,7 +1529,7 @@
     font-size: 0.9375rem;
     line-height: 1.55;
   }
-  .banner svg {
+  .banner > svg {
     flex: none;
     width: 18px;
     height: 18px;
