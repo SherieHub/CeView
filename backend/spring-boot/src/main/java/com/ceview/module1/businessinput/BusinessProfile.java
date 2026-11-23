@@ -22,6 +22,22 @@ public class BusinessProfile {
     @Column(name = "business_description")     private String businessDescription;
     @Column(name = "uvp")                      private String uvp;
 
+    /*
+     * Structured Business Story / UVP answers (V57). business_description and uvp hold the
+     * paragraphs the frontend composes from them; see StructuredInputs.
+     */
+    @Column(name = "story_business_type", columnDefinition = "TEXT") private String storyBusinessType;
+    @Column(name = "story_location", columnDefinition = "TEXT")      private String storyLocation;
+    @Column(name = "story_experience", columnDefinition = "TEXT")    private String storyExperience;
+    @Column(name = "story_facilities", columnDefinition = "TEXT")    private String storyFacilities;
+    @Column(name = "uvp_distinguisher", columnDefinition = "TEXT")   private String uvpDistinguisher;
+    @Column(name = "uvp_supporting_fact", columnDefinition = "TEXT") private String uvpSupportingFact;
+    @Column(name = "uvp_guest_benefit", columnDefinition = "TEXT")   private String uvpGuestBenefit;
+
+    /** The operator hand-edited the composed paragraph, so the template no longer overwrites it. */
+    @Column(name = "description_edited", nullable = false) private boolean descriptionEdited = false;
+    @Column(name = "uvp_edited", nullable = false)         private boolean uvpEdited = false;
+
     /** Comma-joined list — portable across H2 + Postgres. */
     @Column(name = "core_services", columnDefinition = "TEXT")
     private String coreServices;

@@ -21,8 +21,10 @@ import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_OMCS } from '../../../services/fixtures/omcs';
 import { buildContentResponse } from './testFixtures';
 import type { BusinessProfile } from '../../../types';
+import { EMPTY_STRUCTURED } from '../../module-1/structured-profile/profileTemplates';
 
 const PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1', businessName: 'Sunset Cove', categories: ['Coastal & Island'],
   coreServices: [], description: 'Beachfront.', uvp: 'Eco-certified.', imagePreview: null,
   uniquenessScore: 0.82, slogan: '', industry: '', vibes: [], website: '', logo: null, socials: {},

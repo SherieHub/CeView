@@ -4,6 +4,7 @@
  * This file currently covers only what the Foundation cards need: auth,
  * business profile, and the Fixture Data Layer's new shapes.
  */
+import type { StoryInputs, UvpInputs } from './components/module-1/structured-profile/profileTemplates';
 
 export interface AuthUser {
   id: string;
@@ -43,13 +44,21 @@ export interface AuthSession {
   user: AuthUser;
 }
 
-export interface BusinessProfile {
+export interface BusinessProfile extends StoryInputs, UvpInputs {
   businessProfileId: string | null;
   businessName: string;
   categories: string[];
   coreServices: string[];
+  /**
+   * The composed Business Story — composeStory() over the story* answers,
+   * unless the operator hand-edited it (descriptionEdited). This is the text
+   * the AI services receive. See structured-profile/profileTemplates.ts.
+   */
   description: string;
+  /** The composed UVP — composeUvp() over the uvp* answers, unless uvpEdited. */
   uvp: string;
+  descriptionEdited: boolean;
+  uvpEdited: boolean;
   imagePreview: string | null;
   uniquenessScore: number | null;
   /** Onboarding — Step 2 Brand Identity fields (card 5, 02-module-1.md). */
@@ -71,7 +80,8 @@ export interface BusinessProfile {
  */
 export type BusinessProfileDto = Pick<
   BusinessProfile,
-  'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
+  | 'businessProfileId' | 'businessName' | 'categories' | 'coreServices' | 'description' | 'uvp' | 'imagePreview' | 'uniquenessScore'
+  | keyof StoryInputs | keyof UvpInputs | 'descriptionEdited' | 'uvpEdited'
 >;
 
 /** One category and its share of the classification — POST /api/classification/analyze. */

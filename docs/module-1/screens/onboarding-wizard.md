@@ -66,11 +66,23 @@ services (tag input — type + Enter to add, ✕ to remove).
 **Gate:** ≥1 vibe AND ≥1 core service.
 
 ### 3 — Structured Inputs (`steps/StructuredInputsStep.tsx`)
-Fields: full description (textarea, live word count), unique value proposition (textarea, live word
-count). These two fields are what gets embedded into the 768-dim vector Module 1.2 scores against the
-Cebu MSME corpus — say so in the copy, the prototype does (line 2081).
-**Gate:** description ≥50 words AND UVP ≥30 words. Word count updates on every keystroke; a green
-check replaces the counter once the threshold is met, red/amber below it.
+Short answers instead of free prose, composed into two template paragraphs
+(`components/module-1/structured-profile/`, shared with Settings):
+
+- **Business Story** — business name (read-only, from step 1), business type, location, the core
+  services from step 2 (shown, not re-asked), what guests experience, facilities. Composed as
+  "{name} is a/an {type} located in {location}. We offer {services}, where guests can {experience}.
+  Our facilities and services include {facilities}."
+- **Unique Value Proposition** — what distinguishes the business, the fact that supports it, the
+  guest benefit; one sentence each.
+
+Each paragraph appears under its form ("Generated Business Story" / "Combined UVP") with a Copy
+button. It is locked behind a placeholder until its answers are complete, then follows the answers.
+Once the operator edits it by hand it stops following them, and "Regenerate from fields" hands it
+back to the template. The paragraphs are what gets saved as `description`/`uvp` and embedded by
+Module 1.2 — the AI services are unchanged.
+**Gate:** type and location ≥3 characters, every other answer ≥20 characters (trimmed), ≥1 core
+service, and both paragraphs non-empty. Each answer shows a live character hint.
 
 ### 4 — Assets & Links (`steps/AssetsLinksStep.tsx`)
 Fields: four social handle inputs (Instagram/Facebook/TikTok/Naver — plain text, no OAuth here),
@@ -92,6 +104,16 @@ here):
    / Category, `StatTypography`), a pass banner at ≥70 ("Well differentiated") or a warning banner
    below 70 ("Room to sharpen") with a "Strengthen my UVP" link that jumps back to step 3 without
    losing step 1/2/4 data.
+
+**When a model call fails.** Neither call shows `ApiErrorPanel`. A failed `analyze` keeps the step
+heading and shows a `RetryNotice` ("The analysis didn't finish.") where the loader was; **Try again**
+re-runs the analysis. A failed `uniqueness` keeps the category picker and selection and shows the
+notice ("The score couldn't be computed.") under Compute; **Try again** re-scores the same selection,
+and changing the selection clears it. Quota failures (429, a `*QUOTA*`/`*RATE_LIMIT*` code, or quota
+wording in `cause` or `message`) ask the operator to wait a while instead. The request, status, code and cause go to
+the browser console as `[CeView] Business analysis failed` / `[CeView] Uniqueness scoring failed`.
+Components: `components/shared/RetryNotice.tsx`, `services/retryAdvice.ts`, `services/logApiFailure.ts`.
+
 **Gate to finish:** `obPhase === 'scored'`.
 
 ## Reused components (no changes needed)

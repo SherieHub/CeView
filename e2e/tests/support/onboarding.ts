@@ -1,14 +1,39 @@
 import { expect, type Page } from '@playwright/test';
-import { PROFILE_DESCRIPTION, PROFILE_UVP } from './operator';
+import { PROFILE_ANSWERS } from './operator';
 
 /** Placeholders / labels of the onboarding wizard (components/module-1/onboarding). */
 export const OB = {
   businessName: 'e.g. Sunset Cove Beach Resort',
   slogan: 'One line that captures what you offer',
   service: 'Type a service and press Enter…',
-  description: 'What is the property, where exactly is it, what does a guest actually experience?',
-  uvp: 'What can a guest get here that they genuinely cannot get from the business next door?',
 };
+
+/** Step 3's structured questions, by the label each field carries. */
+export const SI = {
+  storyBusinessType: 'Business type',
+  storyLocation: 'Location',
+  storyExperience: 'What can guests actually experience during a visit?',
+  storyFacilities: 'What facilities, resources, or notable features do you have?',
+  uvpDistinguisher: '1. What distinguishes your business from similar businesses?',
+  uvpSupportingFact: '2. What specific feature or fact supports that difference?',
+  uvpGuestBenefit: '3. How does this benefit your guests?',
+} as const;
+
+export type StructuredAnswers = typeof PROFILE_ANSWERS;
+
+/** The Business Story template filled with PROFILE_ANSWERS for the default business name. */
+export const expectedStory = (servicesPhrase: string) =>
+  `E2E Reef Expeditions is a family-run dive shop located in Panagsama Beach, Moalboal. We offer ${servicesPhrase}, ` +
+  'where guests can dive the house reef with local instructors who plan every trip around the tides and currents. ' +
+  'Our facilities and services include small-group boats, open water courses, and a shore entry onto the house reef.';
+
+/** The UVP template filled with PROFILE_ANSWERS. */
+export const EXPECTED_UVP =
+  'We cap every boat at four divers. Each group is paired with a marine biologist guide. ' +
+  'Guests learn to read the reef and leave with their own logged species list.';
+
+export const storyParagraph = (page: Page) => page.getByRole('textbox', { name: 'Generated Business Story' });
+export const uvpParagraph = (page: Page) => page.getByRole('textbox', { name: 'Combined UVP' });
 
 export const next = (page: Page) => page.getByRole('button', { name: /^Continue/ });
 export const back = (page: Page) => page.getByRole('button', { name: /^Back/ });
@@ -38,21 +63,23 @@ export async function fillBrandIdentity(
   }
 }
 
-export async function fillStructuredInputs(page: Page, v: { description?: string; uvp?: string } = {}) {
-  await page.getByPlaceholder(OB.description).fill(v.description ?? PROFILE_DESCRIPTION);
-  await page.getByPlaceholder(OB.uvp).fill(v.uvp ?? PROFILE_UVP);
+export async function fillStructuredInputs(page: Page, answers: Partial<StructuredAnswers> = {}) {
+  const all = { ...PROFILE_ANSWERS, ...answers };
+  for (const key of Object.keys(SI) as (keyof typeof SI)[]) {
+    await page.getByLabel(SI[key], { exact: true }).fill(all[key]);
+  }
 }
 
 /** Clicks Continue through steps 1–4 with valid answers, stopping on step 5 (Analysis). */
 export async function reachAnalysis(
   page: Page,
-  v: { name?: string; industry?: string; vibes?: string[]; services?: string[]; description?: string; uvp?: string } = {},
+  v: { name?: string; industry?: string; vibes?: string[]; services?: string[]; answers?: Partial<StructuredAnswers> } = {},
 ) {
   await fillBasicInfo(page, v);
   await next(page).click();
   await fillBrandIdentity(page, v);
   await next(page).click();
-  await fillStructuredInputs(page, v);
+  await fillStructuredInputs(page, v.answers);
   await next(page).click();
   await next(page).click(); // Assets & Links — every field optional
   await expect(page.getByRole('heading', { name: 'Categories and uniqueness' })).toBeVisible();

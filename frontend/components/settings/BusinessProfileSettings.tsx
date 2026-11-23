@@ -29,10 +29,28 @@ import ContactNumberSection from './ContactNumberSection';
 import { apiClient } from '../../services/apiClient';
 import { useProfile } from '../../services/profileContext';
 import type { BusinessProfile } from '../../types';
+import BusinessStoryForm from '../module-1/structured-profile/BusinessStoryForm';
+import UvpForm from '../module-1/structured-profile/UvpForm';
+import ComposedParagraph from '../module-1/structured-profile/ComposedParagraph';
+import {
+  pickStory, pickUvp, storyComplete, structuredValid, syncComposed, uvpComplete, withLegacyFlags,
+} from '../module-1/structured-profile/profileTemplates';
 import './business-profile.css';
 
-function wordCount(text: string): number {
-  return text.trim() ? text.trim().split(/\s+/).length : 0;
+/**
+ * Why Save is refused, if it is. Mirrors BusinessProfileController's check:
+ * the structured answers are all-or-nothing — all blank (a profile from before
+ * structured inputs) or all meeting their minimums — and both paragraphs, the
+ * text the AI services actually read, must have something in them.
+ */
+function saveError(p: BusinessProfile): string | null {
+  if (!structuredValid(pickStory(p), pickUvp(p))) {
+    return 'Answer every Business Story and UVP question, or leave them all blank.';
+  }
+  if (!p.description.trim() || !p.uvp.trim()) {
+    return "The Business Story and UVP can't be empty.";
+  }
+  return null;
 }
 
 function initials(name: string): string {
@@ -51,8 +69,9 @@ function checklist(p: BusinessProfile): Array<{ label: string; done: boolean }> 
     { label: 'Core services', done: p.coreServices.length > 0 },
     { label: 'Slogan', done: Boolean(p.slogan.trim()) },
     { label: 'Tourism categories', done: p.categories.length > 0 },
-    { label: 'Business description', done: Boolean(p.description.trim()) },
-    { label: 'Unique value proposition', done: Boolean(p.uvp.trim()) },
+    // Complete means answered through the structured form, not just prose.
+    { label: 'Business story', done: storyComplete(pickStory(p), p.coreServices) && Boolean(p.description.trim()) },
+    { label: 'Unique value proposition', done: uvpComplete(pickUvp(p)) && Boolean(p.uvp.trim()) },
     { label: 'Website', done: Boolean(p.website.trim()) },
   ];
 }
@@ -179,7 +198,16 @@ function AvatarEditor({ name, photo, unsaved, onChange }: {
 export default function BusinessProfileSettings() {
   const { profile, setProfile } = useProfile();
   const { showToast } = useToast();
-  const [form, setForm] = useState<BusinessProfile>(profile);
+  // withLegacyFlags: prose with no answers behind it is the operator's own
+  // writing, so the template must never overwrite it.
+  const [form, setForm] = useState<BusinessProfile>(() => withLegacyFlags(profile));
+  const [error, setError] = useState<string | null>(null);
+  /**
+   * For changes that feed the Business Story / UVP templates (answers, name):
+   * any paragraph not hand-edited is rebuilt. Not applied on load, so a saved
+   * paragraph is shown exactly as stored.
+   */
+  const updateComposed = (next: BusinessProfile) => setForm(syncComposed(next));
   const [tip, setTip] = useState(0);
   const cover = useCoverPhoto(profile.businessProfileId);
   const websiteRef = useRef<HTMLInputElement>(null);
@@ -201,6 +229,10 @@ export default function BusinessProfileSettings() {
   }
 
   async function handleSave() {
+    // Shown inline beside Save (not as a toast) so it stays up while fixing.
+    const problem = saveError(form);
+    setError(problem);
+    if (problem) return;
     // KNOWN GAP (card + screen doc, flagged not resolved): saving here does not
     // recompute the uniqueness score, though the copy under Save says it does.
     // Either Save should run step 5's analyze -> uniqueness round-trip, or the
@@ -238,7 +270,7 @@ export default function BusinessProfileSettings() {
                 <input
                   className="bp-input"
                   value={form.businessName}
-                  onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+                  onChange={(e) => updateComposed({ ...form, businessName: e.target.value })}
                 />
               </label>
               <label className="bp-field">
@@ -295,37 +327,49 @@ export default function BusinessProfileSettings() {
             )}
           </Section>
 
-          {/* Word counts are shown for reference; unlike onboarding step 3 they gate nothing here. */}
           <Section
             id="bp-story"
             icon={<FileText size={18} />}
-            title="Brand Story"
-            sub="Tell travellers about your business, what you offer, and what makes it special."
-            aside={<><span className="num">{wordCount(form.description)}</span> words</>}
+            title="Business Story"
+            sub="Answer a few short questions. Your answers become the paragraph travellers and the AI read."
           >
-            <textarea
-              className="bp-input bp-textarea"
-              aria-labelledby="bp-story"
-              rows={4}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
+            <div className="bp-structured">
+              <BusinessStoryForm
+                businessName={form.businessName}
+                coreServices={form.coreServices}
+                value={form}
+                onChange={(story) => updateComposed({ ...form, ...story })}
+              />
+              <ComposedParagraph
+                title="Generated Business Story"
+                value={form.description}
+                edited={form.descriptionEdited}
+                complete={storyComplete(pickStory(form), form.coreServices)}
+                placeholder="Fill in every field above to generate your story"
+                onChange={(text) => setForm({ ...form, description: text, descriptionEdited: true })}
+                onRegenerate={() => updateComposed({ ...form, descriptionEdited: false })}
+              />
+            </div>
           </Section>
 
           <Section
             id="bp-uvp"
             icon={<Star size={18} />}
             title="Unique Value Proposition"
-            sub="What makes your business unique? Keep it concise and specific."
-            aside={<><span className="num">{wordCount(form.uvp)}</span> words</>}
+            sub="What sets you apart, in three short answers."
           >
-            <textarea
-              className="bp-input bp-textarea bp-textarea--short"
-              aria-labelledby="bp-uvp"
-              rows={2}
-              value={form.uvp}
-              onChange={(e) => setForm({ ...form, uvp: e.target.value })}
-            />
+            <div className="bp-structured">
+              <UvpForm value={form} onChange={(uvp) => updateComposed({ ...form, ...uvp })} />
+              <ComposedParagraph
+                title="Combined UVP"
+                value={form.uvp}
+                edited={form.uvpEdited}
+                complete={uvpComplete(pickUvp(form))}
+                placeholder="Fill in every field above to generate your UVP"
+                onChange={(text) => setForm({ ...form, uvp: text, uvpEdited: true })}
+                onRegenerate={() => updateComposed({ ...form, uvpEdited: false })}
+              />
+            </div>
           </Section>
 
           <section className="bp-sec bp-sec--inline">
@@ -358,6 +402,7 @@ export default function BusinessProfileSettings() {
             <button type="button" className="bp-save" onClick={handleSave}>
               <Save size={16} aria-hidden="true" /> Save changes
             </button>
+            {error && <p className="bp-foot-error" role="alert">{error}</p>}
             <p className="bp-foot-note">
               Saving re-embeds your profile, which changes your uniqueness score against the current Cebu
               MSME corpus.

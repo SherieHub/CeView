@@ -6,7 +6,7 @@
  * ui-ux-prototype.html, each of which is easy to lose in a rewrite and silent
  * when lost.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import { marketsForCategory, CATEGORY_MARKET_SCORES } from '../../../services/fixtures/markets';
@@ -29,6 +29,14 @@ vi.mock('../../../services/apiClient', () => ({
 
 import { apiClient } from '../../../services/apiClient';
 import { useDashboardState } from './useDashboardState';
+
+beforeEach(() => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const listMock = apiClient.notifications.list as unknown as ReturnType<typeof vi.fn>;
 const markReadMock = apiClient.notifications.markRead as unknown as ReturnType<typeof vi.fn>;
@@ -411,6 +419,31 @@ describe('useDashboardState — refresh', () => {
     expect(outcome).toBeNull();
     expect(result.current.error).toBe(failure);
     expect(result.current.isRefreshing).toBe(false);
+    expect(result.current.errorSource).toBe('refresh');
+  });
+
+  // analyze() succeeded, so the failure is the re-read's: a load error, logged
+  // once, whose Try again only re-reads instead of re-running the pipeline.
+  it('treats a failed re-read after a successful analyze as a load error, logged once', async () => {
+    setup(DEMO_CATEGORIES);
+    listMock.mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => useDashboardState());
+    // No snapshot ever loaded, so the failed re-read has nothing to fall back on.
+    await waitFor(() => expect(result.current.errorSource).toBe('load'));
+    const errorSpy = console.error as unknown as ReturnType<typeof vi.fn>;
+    errorSpy.mockClear();
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.refresh();
+    });
+
+    expect(analyzeMock).toHaveBeenCalled();
+    expect(outcome).toBeNull();
+    expect(result.current.errorSource).toBe('load');
+    expect(result.current.isRefreshing).toBe(false);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0][0]).toBe('[CeView] Dashboard load failed');
   });
 });
 
@@ -445,6 +478,31 @@ describe('useDashboardState — retry', () => {
     });
 
     expect(result.current.error).toBeNull();
+  });
+
+  it('marks a failed load as a load error', async () => {
+    setup(DEMO_CATEGORIES);
+    listMock.mockRejectedValueOnce(new Error('offline'));
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+
+    expect(result.current.errorSource).toBe('load');
+  });
+
+  it('clears errorSource once a retry succeeds', async () => {
+    setup(DEMO_CATEGORIES);
+    listMock.mockRejectedValueOnce(new Error('offline'));
+
+    const { result } = renderHook(() => useDashboardState());
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+
+    listMock.mockResolvedValue(alerts());
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(result.current.errorSource).toBeNull();
   });
 });
 

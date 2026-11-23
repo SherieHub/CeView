@@ -5,7 +5,7 @@
  * regression this guards is the drawer looking marketId up in an empty
  * rankedMarkets list and silently staying closed.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -14,6 +14,8 @@ import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import { OverlayStackProvider } from '../../shared/useOverlayStack';
 import { TargetSelectionProvider, useTargetSelection } from '../../../services/targetSelectionStore';
 import { ToastProvider } from '../../shared/Toast';
+import { ApiError } from '../../../services/apiError';
+import { RETRY_COPY } from '../../shared/RetryNotice';
 
 const mockProfile = {
   businessName: 'Cold Dashboard Test',
@@ -41,6 +43,7 @@ const keywordTrendsMock = apiClient.notifications.keywordTrends as unknown as Re
 const statusMock = apiClient.forecast.status as unknown as ReturnType<typeof vi.fn>;
 const ensureMock = apiClient.forecast.ensure as unknown as ReturnType<typeof vi.fn>;
 const forCategoryMock = apiClient.markets.forCategory as unknown as ReturnType<typeof vi.fn>;
+const analyzeMock = apiClient.forecast.analyze as unknown as ReturnType<typeof vi.fn>;
 
 function renderDashboard() {
   return render(
@@ -157,5 +160,78 @@ describe('DashboardView — stale banner (Step 18, C-21/C-22/C-23; H-11)', () =>
 
     expect(screen.queryByText(/Latest attempt failed/)).not.toBeInTheDocument();
     expect(screen.queryByText(/days old/)).not.toBeInTheDocument();
+  });
+});
+
+describe('DashboardView — model unavailable', () => {
+  const zeroGpu = new ApiError({
+    status: 503,
+    method: 'POST',
+    path: '/api/forecasting/analyze',
+    body: {
+      code: 'MOD22_BILSTM_UNAVAILABLE',
+      message: 'The BiLSTM + Transformer demand model is unavailable.',
+      dependency: 'bilstm',
+      cause: 'inference failed for KR/coastal_island: You have exceeded your ZeroGPU runs limit.',
+    },
+  });
+
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('a failed Refresh shows the forecast notice, and Try again re-runs the forecast', async () => {
+    const user = userEvent.setup();
+    analyzeMock.mockRejectedValueOnce(new ApiError({ status: 503, method: 'POST', path: '/api/forecasting/analyze' }));
+    renderDashboard();
+
+    await user.click(await screen.findByRole('button', { name: /Refresh forecast/ }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("The forecast didn't update.");
+    expect(alert).toHaveTextContent(RETRY_COPY.retry);
+    expect(alert).not.toHaveTextContent('/api/forecasting/analyze');
+
+    analyzeMock.mockResolvedValueOnce({ markets: [] });
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(analyzeMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('a quota failure asks the operator to wait', async () => {
+    const user = userEvent.setup();
+    analyzeMock.mockRejectedValueOnce(zeroGpu);
+    renderDashboard();
+
+    await user.click(await screen.findByRole('button', { name: /Refresh forecast/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(RETRY_COPY.wait);
+  });
+
+  it('a failed load shows the load notice, and Try again re-reads without running the forecast', async () => {
+    const user = userEvent.setup();
+    listMock.mockRejectedValueOnce(new Error('offline'));
+    renderDashboard();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("Your dashboard didn't load.");
+    const listCalls = listMock.mock.calls.length;
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    await waitFor(() => expect(listMock.mock.calls.length).toBeGreaterThan(listCalls));
+    expect(analyzeMock).not.toHaveBeenCalled();
+  });
+
+  it('an unfinished profile keeps the "Complete onboarding first" guidance', async () => {
+    ensureMock.mockRejectedValueOnce(
+      new ApiError({ status: 409, method: 'POST', path: '/api/forecasting/ensure', body: { code: 'MOD22_PROFILE_NOT_READY' } }),
+    );
+    renderDashboard();
+
+    expect(await screen.findByText('Complete onboarding first')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 });

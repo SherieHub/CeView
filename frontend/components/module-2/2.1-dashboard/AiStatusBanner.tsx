@@ -15,7 +15,7 @@ export default function AiStatusBanner({ visible }: AiStatusBannerSlotProps) {
   if (!visible) return null;
 
   return (
-    <div className="banner banner--warn mb-4" role="status">
+    <div className="banner banner--warn dash-notice" role="status">
       <CloudOff aria-hidden="true" />
       <div>
         <b>AI Forecast Service Unavailable.</b> The alerts and rankings below are read from your last

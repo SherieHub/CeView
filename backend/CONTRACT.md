@@ -21,7 +21,7 @@ The frontend can be pointed at `http://localhost:8080` and continue to work.
 | POST | `/api/classification/analyze` | UniquenessCalibrationForm "Analyze" | `{ categories: CategoryAllocation[] }` |
 | POST | `/api/classification/uniqueness` | Onboarding Step 5 "Compute uniqueness score" | `UniquenessResponse` — see [Uniqueness response](#uniqueness-response) |
 | GET  | `/api/business-profile?operatorId=` | BusinessProfile load | `BusinessProfileDto` (matches `ProfileData`) |
-| PUT  | `/api/business-profile?operatorId=` | BusinessProfile save | `BusinessProfileDto` |
+| PUT  | `/api/business-profile?operatorId=` | BusinessProfile save | `BusinessProfileDto` — see [Business profile: structured inputs](#business-profile-structured-inputs); 400 when the structured answers are partly filled or below their minimums |
 | POST | `/api/business-profile/keywords` | BusinessProfile "Recalibrate" | `string[]` (replaces `generateOptimizedKeywords`) |
 | GET  | `/api/notifications` | `DashboardView` initial feed | `{ notifications: NotificationDto[] }` |
 | GET  | `/api/forecasting/markets?category=` | `DashboardView` ranking and drawer | `{ markets: MarketDto[] }` |
@@ -217,3 +217,22 @@ Every account must prove it owns its email with a 6-digit code before it can use
 - **Metrics are computed Spring-side** — SDD §4.1 specifies the math, no model needed.
 - **`ml_stubs.py` is gone** — Module 1's deterministic input-hashed mocks were deleted along with the dead local Keras path that was their only caller (classification now goes to the hosted HF Space; the local E5 encoder is used only for embeddings). Nothing substitutes canned classification or uniqueness values any more; an unavailable dependency raises. See `docs/superpowers/plans/2026-08-30-remove-synthetic-fallbacks/`.
 - **Gemini is opt-in** — set `ENABLE_GEMINI=true` + `GEMINI_API_KEY=…` in `.env` to activate live calls. Without it, prompts return the same hand-crafted mocks that match the frontend's existing strings.
+
+## Business profile: structured inputs
+
+`BusinessProfileDto` carries the composed paragraphs and the structured answers they are built from
+(onboarding step 3 and Settings → Business Profile; templates in
+`frontend/components/module-1/structured-profile/profileTemplates.ts`):
+
+| Field | Type | Notes |
+|---|---|---|
+| `description` | string | Composed Business Story: `{name} is a/an {storyBusinessType} located in {storyLocation}. We offer {coreServices as "a, b, and c"}, where guests can {storyExperience}. Our facilities and services include {storyFacilities}.` — or the operator's hand edit. This is what the AI services read. |
+| `uvp` | string | Composed UVP: `{uvpDistinguisher} {uvpSupportingFact} {uvpGuestBenefit}`, one sentence each — or the operator's hand edit. |
+| `storyBusinessType`, `storyLocation` | string | At least 3 characters, trimmed. |
+| `storyExperience`, `storyFacilities`, `uvpDistinguisher`, `uvpSupportingFact`, `uvpGuestBenefit` | string | At least 20 characters, trimmed. |
+| `descriptionEdited`, `uvpEdited` | boolean, nullable on input | The paragraph was hand-edited, so the template no longer overwrites it. A non-blank paragraph with all its answers blank is stored as edited regardless (pre-structured-inputs prose). |
+
+**PUT rule (all-or-nothing):** the seven answers are either all blank — a profile from before
+structured inputs — or all meet their minimums, in which case `description` and `uvp` must be
+non-blank. Anything else is `400 request_failed` with a `message` naming the first offending field.
+

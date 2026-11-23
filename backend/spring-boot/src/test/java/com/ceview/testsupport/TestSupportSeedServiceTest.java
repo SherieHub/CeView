@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,6 +207,19 @@ class TestSupportSeedServiceTest {
         assertEquals(List.of("Coastal & Island"), saved.categoriesList());
         assertEquals(List.of("Dives"), saved.coreServicesList());
         assertEquals(0.62f, saved.getUniquenessScore());
+    }
+
+    @Test
+    void seededProseHasNoAnswersBehindItSoItIsMarkedHandEdited() {
+        // Otherwise the Settings screen would rebuild it from the blank answers and wipe it.
+        when(profiles.findFirstByUserId(operatorId)).thenReturn(Optional.empty());
+        when(profiles.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        BusinessProfile saved = service.seedBusinessProfile(new TestSupportSeedService.BusinessProfileRequest(
+                "e2e@ceview.local", "Reef Co", List.of(), List.of(), "Prose.", "  ", null, null));
+
+        assertTrue(saved.isDescriptionEdited());
+        assertFalse(saved.isUvpEdited(), "a blank UVP has nothing to protect");
     }
 
     @Test

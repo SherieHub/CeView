@@ -12,28 +12,31 @@
  * fixtures/profile.ts — with three different descriptions and UVPs for the same
  * fictional resort. Those two other definitions now re-export this one.
  *
- * The description and UVP lengths are load-bearing: stepValid() gates step 3 on
- * >= 50 and >= 30 words respectively, and the wizard tests walk through that
- * gate. Current copy is 78 and 40 words — shortening it will fail those tests.
+ * Step 3's structured answers are the ones in the Business Story / UVP
+ * mockups, and the description/UVP are composed from them (syncComposed), so
+ * this draft passes stepValid()'s step 3 gate — the wizard tests rely on it.
  */
 import type { ObDraft } from '../../components/module-1/onboarding/obDraft';
+import { syncComposed } from '../../components/module-1/structured-profile/profileTemplates';
 
-export const DEMO_BUSINESS: ObDraft = {
+export const DEMO_BUSINESS: ObDraft = syncComposed({
   businessName: 'Sunset Cove Beach Resort',
   industry: 'Accommodation & Staycation',
   slogan: 'Rest, thirty metres from the sardine run.',
   vibes: ['Serene & Restorative', 'Eco-Conscious'],
   coreServices: ['Scuba Diving', 'Island Hopping', 'Snorkeling', 'Beachfront Villas'],
-  description:
-    'Sunset Cove Beach Resort sits on the quiet southern stretch of Moalboal, a short walk from ' +
-    'the sardine run that draws divers from across the world. We run a small beachfront property ' +
-    'of twelve villas, a dive shop staffed entirely by local guides, and a kitchen that sources ' +
-    'its fish and produce from the municipality every morning. Guests come for the reef and stay ' +
-    'for the pace: no crowds, no scheduled entertainment, just clear water and long evenings.',
-  uvp:
-    'The only Moalboal resort where every dive guide is a Moalboal native, house reef access is ' +
-    'thirty metres from the villa door, and the entire kitchen is sourced within the municipality ' +
-    'each morning rather than trucked in from Cebu City.',
+  storyBusinessType: 'beachfront resort',
+  storyLocation: 'Moalboal, Cebu',
+  storyExperience: 'stay near the sardine run and explore the reef with local guides',
+  storyFacilities: 'twelve villas, a dive shop, and a kitchen using locally sourced ingredients',
+  uvpDistinguisher: 'Our diving activities are guided by local Moalboal residents.',
+  uvpSupportingFact: 'Our house reef is approximately 30 metres from the villas.',
+  uvpGuestBenefit: 'Guests can access the reef conveniently and learn about the area from local guides.',
+  // Filled in by syncComposed from the answers above.
+  description: '',
+  uvp: '',
+  descriptionEdited: false,
+  uvpEdited: false,
   socials: {
     instagram: '@sunsetcove.ph',
     tiktok: '@sunsetcove',
@@ -45,4 +48,4 @@ export const DEMO_BUSINESS: ObDraft = {
   uniquenessScore: null,
   // Step 5 has not run for this draft, so there is no cohort verdict either.
   cohortInsufficient: false,
-};
+});

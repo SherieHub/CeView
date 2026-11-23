@@ -22,9 +22,10 @@ Identity header (avatar initials, business name, industry, and — once computed
 chips: Uniqueness / Semantics / Category) followed by a flat form: business name, slogan, tourism
 categories (toggle chip grid, ≥1 must remain selected — same rule as onboarding step 5, enforced with
 the same toast), core services (read-only chip display in this screen; editing services is not
-exposed here in the prototype and is out of scope unless product asks for it), full description
-(word count shown, no hard minimum enforced post-onboarding), UVP (same), website. A single "Save
-changes" button at the bottom.
+exposed here in the prototype and is out of scope unless product asks for it), Business Story and
+Unique Value Proposition (the same structured forms and composed paragraphs as onboarding step 3 —
+see [onboarding-wizard.md](onboarding-wizard.md#3--structured-inputs-stepsstructuredinputssteptsx)),
+website. A single "Save changes" button at the bottom.
 
 ## Behavior
 
@@ -32,6 +33,11 @@ changes" button at the bottom.
   toast, not silently prevented.
 - Save calls `apiClient.saveProfile` (`PUT /api/business-profile`) and re-syncs the sidebar
   identity (avatar initials, business name).
+- Structured answers are all-or-nothing, as on the server: Save is refused inline unless they are
+  all blank or all meet their minimums, and both paragraphs have text. A profile from before
+  structured inputs has prose but no answers; its prose is shown as hand-edited and is never
+  overwritten until the operator fills in the answers and clicks "Regenerate from fields".
+- Changing the business name rebuilds any paragraph that is not hand-edited.
 - **Known gap, carried from the prototype as-is:** saving here does **not** recompute the uniqueness
   score. The prototype only ever computes `uniquenessScore`/`semanticsScore`/`categoryScore` during
   onboarding (`obCompute`), so editing the description or UVP afterward strands a score that no

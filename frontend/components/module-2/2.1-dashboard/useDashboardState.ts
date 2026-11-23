@@ -68,6 +68,8 @@ export interface DashboardState {
   refreshError: unknown | null;
   /** Non-null when there is nothing to show; render <ApiErrorPanel error={error} />. */
   error: unknown | null;
+  /** 'refresh' when the error came from the Refresh button's pipeline run, 'load' otherwise. */
+  errorSource: 'load' | 'refresh' | null;
   selectAlert: (id: string) => void;
   /** Loads rankedMarkets for this category with no alert selected — what
    *  "Top market now" calls before navigating so the drawer opens populated
@@ -290,6 +292,7 @@ export function useDashboardState({ forceMode }: Options = {}): DashboardState {
     fetchedAt: snapshot && snapshot.fetchedAt > 0 ? snapshot.fetchedAt : null,
     refreshError: engine.refreshError,
     error: engine.error,
+    errorSource: engine.errorSource,
     selectAlert,
     pinCategory,
     setFeedFilter,

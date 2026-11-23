@@ -27,6 +27,8 @@ import { useProfile } from '../../../services/profileContext';
 import { useTargetSelection } from '../../../services/targetSelectionStore';
 import { isSurge } from '../../../types';
 import { ApiErrorPanel } from '../../shared/ApiErrorPanel';
+import { RetryNotice } from '../../shared/RetryNotice';
+import { isProfileNotReady } from '../../../services/apiError';
 import { StaleDataBanner } from '../../shared/StaleDataBanner';
 import { useDashboardState } from './useDashboardState';
 import type { DashMode } from './useDashboardState';
@@ -164,11 +166,33 @@ export default function DashboardView({ forceMode }: DashboardViewProps) {
       />
       </div>
 
-      {/* Step 17 (C-19/C-20): Retry re-runs only the initial load — never the
-          forecast pipeline. Only the Refresh button above (state.refresh)
-          runs analyze(); conflating the two meant a stuck "no data yet"
-          error silently kicked off a full pipeline run on every retry. */}
-      {state.error != null && <ApiErrorPanel error={state.error} label="Dashboard" onRetry={state.retry} />}
+      {/* Load errors retry the load only — never the forecast pipeline (Step 17,
+          C-19/C-20: a stuck "no data yet" error used to start a full pipeline run
+          on every retry). A failed Refresh is different: the operator asked for
+          that run, so Try again re-runs it. An unfinished profile keeps the
+          panel's onboarding guidance; retrying cannot fix it. */}
+      {state.error != null &&
+        (isProfileNotReady(state.error) ? (
+          <div className="dash-notice">
+            <ApiErrorPanel error={state.error} label="Dashboard" />
+          </div>
+        ) : state.errorSource === 'refresh' ? (
+          <RetryNotice
+            className="dash-notice"
+            error={state.error}
+            title="The forecast didn't update."
+            onRetry={() => void state.refresh()}
+            busy={state.isRefreshing}
+          />
+        ) : (
+          <RetryNotice
+            className="dash-notice"
+            error={state.error}
+            title="Your dashboard didn't load."
+            onRetry={() => void state.retry()}
+            busy={state.syncing}
+          />
+        ))}
 
       <AiStatusBanner visible={degraded} />
 

@@ -32,7 +32,7 @@ test.describe.skip('Step 2 Brand Identity', () => {
 });
 
 test.describe.skip('Step 3 Structured Inputs', () => {
-  test('description and UVP word counts gate Continue independently at 50 and 30 words', async ({ page }) => {
+  test('every Business Story and UVP answer must meet its minimum before Continue', async ({ page }) => {
     test.fixme();
   });
 });

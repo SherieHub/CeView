@@ -9,8 +9,10 @@ import ContentTargetPicker from './ContentTargetPicker';
 import { MOCK_MARKETS } from '../../../services/fixtures/markets';
 import { MOCK_NOTIFICATIONS } from '../../../services/fixtures/notifications';
 import type { BusinessProfile } from '../../../types';
+import { EMPTY_STRUCTURED } from '../../module-1/structured-profile/profileTemplates';
 
 const PROFILE: BusinessProfile = {
+  ...EMPTY_STRUCTURED,
   businessProfileId: 'bp-1',
   businessName: 'Sunset Cove Beach Resort',
   categories: ['Coastal & Island', 'Accommodation & Staycation'],

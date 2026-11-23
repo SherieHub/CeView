@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { latestEmailCode, requireBackend, requireTestSupport } from './support/stack';
+import { SI, fillStructuredInputs } from './support/onboarding';
 
 test.describe('Step 5 Analysis', () => {
   test.beforeEach(async () => {
@@ -42,22 +43,15 @@ test.describe('Step 5 Analysis', () => {
     await service.press('Enter');
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    await page
-      .getByPlaceholder('What is the property, where exactly is it, what does a guest actually experience?')
-      .fill(
-        'A small freediving and snorkelling outfit on the Moalboal shoreline in Cebu, running two '
-        + 'daily boat trips out to the resident sardine ball and the turtle sanctuary just south of '
-        + 'Panagsama Beach. Groups are capped at six guests so every diver gets individual attention '
-        + 'from an instructor, and every booking includes full gear rental, a shore briefing, and an '
-        + 'underwater photo review back at the shop afterwards over coffee.',
-      );
-    await page
-      .getByPlaceholder('What can a guest get here that they genuinely cannot get from the business next door?')
-      .fill(
-        'We are the only operator on this stretch of coast that logs the sardine ball position every '
-        + 'morning before any group leaves the shore, so guests are taken to where the shoal actually '
-        + 'is that day rather than to where it usually sits.',
-      );
+    await fillStructuredInputs(page, {
+      storyBusinessType: 'freediving and snorkelling outfit',
+      storyLocation: 'the Moalboal shoreline in Cebu',
+      storyExperience: 'join a six-guest boat trip out to the resident sardine ball and the turtle sanctuary',
+      storyFacilities: 'full gear rental, a shore briefing, and an underwater photo review over coffee',
+      uvpDistinguisher: 'We are the only operator on this stretch of coast that logs the sardine ball position every morning.',
+      uvpSupportingFact: 'The position is checked before any group leaves the shore.',
+      uvpGuestBenefit: 'Guests are taken to where the shoal actually is that day, not where it usually sits.',
+    });
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('heading', { name: 'Categories and uniqueness' })).toBeVisible();
@@ -91,13 +85,11 @@ test.describe('Step 5 Analysis', () => {
     await page.getByRole('button', { name: 'Back' }).click();
     await page.getByRole('button', { name: 'Back' }).click();
 
-    await page
-      .getByPlaceholder('What can a guest get here that they genuinely cannot get from the business next door?')
-      .fill(
-        'We are the only PADI five-star centre in Moalboal with a resident marine biologist on staff, '
-        + 'running dawn sardine-run dives from a private shore entry thirty metres from the reef wall, '
-        + 'with every dive logged against a twelve-year record of shoal movement along this coast.',
-      );
+    // The Combined UVP is untouched, so it recomposes from the new first answer.
+    await page.getByLabel(SI.uvpDistinguisher, { exact: true }).fill(
+      'We are the only PADI five-star centre in Moalboal with a resident marine biologist on staff, '
+      + 'running dawn sardine-run dives from a private shore entry thirty metres from the reef wall.',
+    );
 
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();

@@ -1,0 +1,35 @@
+/* Structured Business Story & UVP forms — shared by onboarding step 3 and
+   Settings. Field chrome (.field-label, .input, .textarea, .field-hint,
+   .btn-outline--sm) comes from styles/index.css; this file only lays out. */
+@layer components {
+  .sp-form { display: flex; flex-direction: column; gap: 20px; }
+  .sp-form-title { font-family: var(--font-body); font-size: 1rem; font-weight: 700; color: var(--color-text-heading); margin: 0; }
+  .sp-field { display: block; }
+  .sp-field .input,
+  .sp-field .textarea { width: 100%; }
+  .sp-field .textarea { min-height: 84px; }
+  .sp-field .field-hint { margin-top: 6px; }
+  .sp-readonly { margin: 0; display: flex; align-items: center; min-height: 48px; background: var(--color-sand-light, #f5f7f8); cursor: default; }
+  .sp-two { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 640px) {
+    .sp-two { grid-template-columns: 1fr 1fr; }
+  }
+  .sp-chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .sp-chip {
+    font-size: 0.8125rem; font-weight: 600; padding: 4px 12px; border-radius: var(--radius-pill);
+    background: var(--color-mint-light, #e3f6ef); color: var(--color-text-heading);
+  }
+
+  .sp-output { display: flex; flex-direction: column; gap: 10px; padding-top: 20px; border-top: 1px solid var(--color-gray-light, #e2e8ec); }
+  .sp-output-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .sp-output-title { font-family: var(--font-body); font-size: 0.9375rem; font-weight: 700; color: var(--color-text-heading); }
+  .sp-output-edited { font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); }
+  .sp-output-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+  .sp-output-text { min-height: 168px; }
+  .sp-output-text:disabled { cursor: not-allowed; opacity: 0.75; }
+}
+
+@layer components {
+  .sp-section { display: flex; flex-direction: column; gap: 20px; }
+  .sp-section + .sp-section { margin-top: 40px; }
+}

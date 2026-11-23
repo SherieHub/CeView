@@ -1,113 +1,81 @@
 /**
- * CARD — Onboarding: Step 3 Structured Inputs
- * Depends on: Card 4 (Wizard Shell & Step 1)
- * Prototype reference: obStepStructured() + obCount() — ui-ux-prototype.html:2074–2107
- * Plan: docs/superpowers/plans/2026-08-10-ui-ux-overhaul-frontend/02-module-1.md
- * Pseudocode: pseudocode/module-1/structured-inputs-step-3.ts
+ * Onboarding Step 3 — Structured Inputs: Business Story & UVP.
  *
- * wordCount/MIN_WORDS/StructuredField now live in obDraft.tsx (single source
- * of truth, since stepValid's case 2 needs them too) — imported here rather
- * than redefined.
+ * The operator answers short questions instead of writing free prose. The
+ * answers are composed into fixed template paragraphs (structured-profile/
+ * profileTemplates.ts), and those paragraphs are what get saved as the
+ * profile's description/uvp and sent to the AI services. A paragraph follows
+ * its answers until the operator edits it by hand; "Regenerate from fields"
+ * hands it back to the template.
  *
- * The intro block uses the shared .ob-step-intro / .ob-step-eyebrow pattern
- * (same as Step 4) instead of inline margins. The previous markup reached for
- * two names that do not exist in styles/index.css — .h-xl (removed when the
- * heading classes were renamed to .heading-*, see the note at index.css:107)
- * and var(--sp-8) — so the title rendered at body size and the lede had no
- * space beneath it. .ob-step-intro carries the brand form rhythm: 10px
- * eyebrow->heading, 12px heading->lede, 40px intro->first field group.
+ * The step's Continue gate is stepValid() case 2 in obDraft.tsx.
  */
-import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
-import { useObDraft, wordCount, MIN_WORDS } from '../obDraft';
-import type { ObDraft, StructuredField } from '../obDraft';
-
-interface WordCountHintProps {
-  field: StructuredField;
-  count: number;
-}
-
-function WordCountHint({ field, count }: WordCountHintProps) {
-  const min = MIN_WORDS[field];
-
-  if (count === 0) {
-    return (
-      <div className="field-hint" data-testid={`hint-${field}`}>
-        <Info size={14} />
-        <span>Min {min} words</span>
-      </div>
-    );
-  }
-
-  if (count < min) {
-    return (
-      <div className="field-hint bad" data-testid={`hint-${field}`}>
-        <AlertCircle size={14} />
-        <span>
-          {count} / {min} words — {min - count} more needed
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="field-hint good" data-testid={`hint-${field}`}>
-      <CheckCircle2 size={14} />
-      <span>{count} words — threshold met</span>
-    </div>
-  );
-}
+import { useEffect } from 'react';
+import { useObDraft } from '../obDraft';
+import type { ObDraft } from '../obDraft';
+import BusinessStoryForm from '../../structured-profile/BusinessStoryForm';
+import UvpForm from '../../structured-profile/UvpForm';
+import ComposedParagraph from '../../structured-profile/ComposedParagraph';
+import {
+  pickStory, pickUvp, storyComplete, syncComposed, uvpComplete,
+} from '../../structured-profile/profileTemplates';
 
 export default function StructuredInputsStep() {
   const { draft, setDraft } = useObDraft();
+  const update = (next: ObDraft) => setDraft(syncComposed(next));
 
-  const descCount = wordCount(draft.description);
-  const uvpCount = wordCount(draft.uvp);
-
-  function handleChange(field: StructuredField, value: string) {
-    const next: ObDraft = { ...draft, [field]: value };
-    setDraft(next);
-  }
+  // The business name and core services feed the story but are edited in
+  // steps 1–2, so an untouched paragraph is refreshed on entry.
+  useEffect(() => {
+    const synced = syncComposed(draft);
+    if (synced.description !== draft.description || synced.uvp !== draft.uvp) setDraft(synced);
+    // Entry only — every later change goes through update().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>
       <div className="ob-step-intro">
         <p className="ob-step-eyebrow">Step 3 · Required</p>
-        <h2 className="heading-lg">The two fields the AI leans on hardest</h2>
+        <h2 className="heading-lg">Tell your story in a few short answers</h2>
         <p className="body-sm" style={{ maxWidth: '56ch' }}>
-          These are embedded into a 768-dimension vector and compared against every other
-          Cebu MSME in the corpus. Thin answers produce a thin uniqueness score — the
-          thresholds below are enforced, not advisory.
+          Your answers are combined into a Business Story and a Unique Value Proposition. The AI
+          uses these two paragraphs to score your uniqueness and write your posts, so be specific.
         </p>
       </div>
 
-      <div className="ob-field-grid ob-field-grid--2">
-        <div className="field">
-          <span className="field-label">
-            Full description <span className="opt">Minimum {MIN_WORDS.description} words</span>
-          </span>
-          <textarea
-            className="textarea"
-            style={{ minHeight: 170 }}
-            placeholder="What is the property, where exactly is it, what does a guest actually experience?"
-            value={draft.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-          />
-          <WordCountHint field="description" count={descCount} />
-        </div>
+      <section className="sp-section" aria-labelledby="ob-story-title">
+        <h3 className="sp-form-title" id="ob-story-title">Business Story</h3>
+        <BusinessStoryForm
+          businessName={draft.businessName}
+          coreServices={draft.coreServices}
+          value={draft}
+          onChange={(story) => update({ ...draft, ...story })}
+        />
+        <ComposedParagraph
+          title="Generated Business Story"
+          value={draft.description}
+          edited={draft.descriptionEdited}
+          complete={storyComplete(pickStory(draft), draft.coreServices)}
+          placeholder="Fill in every field above to generate your story"
+          onChange={(text) => setDraft({ ...draft, description: text, descriptionEdited: true })}
+          onRegenerate={() => update({ ...draft, descriptionEdited: false })}
+        />
+      </section>
 
-        <div className="field">
-          <span className="field-label">
-            Unique value proposition <span className="opt">Minimum {MIN_WORDS.uvp} words</span>
-          </span>
-          <textarea
-            className="textarea"
-            placeholder="What can a guest get here that they genuinely cannot get from the business next door?"
-            value={draft.uvp}
-            onChange={(e) => handleChange('uvp', e.target.value)}
-          />
-          <WordCountHint field="uvp" count={uvpCount} />
-        </div>
-      </div>
+      <section className="sp-section" aria-labelledby="ob-uvp-title">
+        <h3 className="sp-form-title" id="ob-uvp-title">Unique Value Proposition</h3>
+        <UvpForm value={draft} onChange={(uvp) => update({ ...draft, ...uvp })} />
+        <ComposedParagraph
+          title="Combined UVP"
+          value={draft.uvp}
+          edited={draft.uvpEdited}
+          complete={uvpComplete(pickUvp(draft))}
+          placeholder="Fill in every field above to generate your UVP"
+          onChange={(text) => setDraft({ ...draft, uvp: text, uvpEdited: true })}
+          onRegenerate={() => update({ ...draft, uvpEdited: false })}
+        />
+      </section>
     </div>
   );
 }
