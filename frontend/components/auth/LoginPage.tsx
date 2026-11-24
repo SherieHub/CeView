@@ -33,6 +33,26 @@ function GoogleMark() {
   );
 }
 
+/**
+ * Words a failed "Continue with Google" for the operator. Backend rejections
+ * carry their own message; Firebase popup failures carry an `auth/...` code.
+ */
+function describeGoogleSignInError(err: unknown): string {
+  if (err instanceof ApiError && err.message) return err.message;
+  const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : undefined;
+  switch (code) {
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+      return 'The Google sign-in window closed before sign-in finished. Please try again.';
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.';
+    case 'auth/network-request-failed':
+      return "Couldn't reach Google. Check your connection and try again.";
+    default:
+      return 'Something went wrong signing in with Google. Please try again.';
+  }
+}
+
 export default function LoginPage() {
   const { login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -77,11 +97,10 @@ export default function LoginPage() {
       await loginWithGoogle(idToken, intent);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : 'Something went wrong signing in with Google. Please try again.',
-      );
+      // The on-screen message is deliberately short; the console keeps the
+      // real cause (e.g. a Firebase auth/... code) for diagnosing deployments.
+      console.error('Google sign-in failed:', err);
+      setError(describeGoogleSignInError(err));
     } finally {
       setGoogleSubmitting(false);
     }

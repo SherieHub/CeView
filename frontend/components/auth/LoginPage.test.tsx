@@ -71,6 +71,38 @@ describe('LoginPage — Continue with Google', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it('logs the underlying Google sign-in error to the console', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = Object.assign(new Error('Firebase: Error (auth/internal-error).'), { code: 'auth/internal-error' });
+    (signInWithGooglePopup as ReturnType<typeof vi.fn>).mockRejectedValue(failure);
+    renderLoginPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    await waitFor(() => expect(screen.getByText(/something went wrong/i)).toBeInTheDocument());
+    expect(consoleError).toHaveBeenCalledWith('Google sign-in failed:', failure);
+    consoleError.mockRestore();
+  });
+
+  it.each([
+    ['auth/popup-closed-by-user', /sign-in window closed before sign-in finished/i],
+    ['auth/cancelled-popup-request', /sign-in window closed before sign-in finished/i],
+    ['auth/popup-blocked', /blocked the google sign-in window/i],
+    ['auth/network-request-failed', /couldn.t reach google/i],
+  ])('explains the Firebase %s error', async (code, message) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    (signInWithGooglePopup as ReturnType<typeof vi.fn>).mockRejectedValue(
+      Object.assign(new Error(`Firebase: Error (${code}).`), { code }),
+    );
+    renderLoginPage();
+
+    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    await waitFor(() => expect(screen.getByText(message)).toBeInTheDocument());
+    expect(fetch).not.toHaveBeenCalled();
+    vi.mocked(console.error).mockRestore();
+  });
+
   it('sends intent "login" from the Sign in tab', async () => {
     (signInWithGooglePopup as ReturnType<typeof vi.fn>).mockResolvedValue('the-id-token');
     (fetch as ReturnType<typeof vi.fn>).mockReturnValue(
