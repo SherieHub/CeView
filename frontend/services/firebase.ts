@@ -7,11 +7,14 @@
  */
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import {
-  getAuth,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
+  inMemoryPersistence,
+  initializeAuth,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   signInWithPopup,
+  type Auth,
   type ConfirmationResult,
 } from 'firebase/auth';
 
@@ -27,6 +30,20 @@ function getFirebaseApp(): FirebaseApp {
 }
 
 /**
+ * Firebase only hands us a one-off ID token; CeView keeps its own session, so
+ * the Firebase user is held in memory rather than getAuth()'s default
+ * IndexedDB, whose write failed in production Chrome ("Database is
+ * closing/hidden") after an otherwise successful Google sign-in. Calling
+ * initializeAuth again with the same options returns the existing instance.
+ */
+function getFirebaseAuth(): Auth {
+  return initializeAuth(getFirebaseApp(), {
+    persistence: inMemoryPersistence,
+    popupRedirectResolver: browserPopupRedirectResolver,
+  });
+}
+
+/**
  * Opens the Google account picker in a popup and resolves with the signed-in
  * user's Firebase ID token, ready to send to POST /api/auth/google.
  * Rejects (e.g. popup closed by the user, blocked popup) exactly as the
@@ -35,7 +52,7 @@ function getFirebaseApp(): FirebaseApp {
  * password login/register failures.
  */
 export async function signInWithGooglePopup(): Promise<string> {
-  const auth = getAuth(getFirebaseApp());
+  const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
   // Without this, Google silently reuses the browser's existing Google
   // session instead of showing the account chooser — so a user could never
@@ -79,7 +96,7 @@ let recaptcha: RecaptchaVerifier | null = null;
  * `recaptchaContainerId` and asks Firebase to text a 6-digit code to `e164`.
  */
 export async function sendPhoneCode(e164: string, recaptchaContainerId: string): Promise<ConfirmationResult> {
-  const auth = getAuth(getFirebaseApp());
+  const auth = getFirebaseAuth();
   recaptcha?.clear();
   recaptcha = new RecaptchaVerifier(auth, recaptchaContainerId, { size: 'invisible' });
   try {

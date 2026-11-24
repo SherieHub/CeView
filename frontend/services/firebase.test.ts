@@ -8,6 +8,9 @@ const mockInitializeApp = vi.fn().mockReturnValue({ name: 'test-app' });
 const mockGetApps = vi.fn().mockReturnValue([]);
 const mockGetApp = vi.fn().mockReturnValue({ name: 'test-app' });
 const mockGetAuth = vi.fn().mockReturnValue({ name: 'test-auth' });
+const mockInitializeAuth = vi.fn().mockReturnValue({ name: 'test-auth' });
+const IN_MEMORY = { type: 'NONE' };
+const POPUP_RESOLVER = { name: 'browserPopupRedirectResolver' };
 /** Shared across provider instances so tests can assert what was requested. */
 const mockSetCustomParameters = vi.fn();
 
@@ -19,6 +22,9 @@ vi.mock('firebase/app', () => ({
 
 vi.mock('firebase/auth', () => ({
   getAuth: (...args: unknown[]) => mockGetAuth(...args),
+  initializeAuth: (...args: unknown[]) => mockInitializeAuth(...args),
+  inMemoryPersistence: IN_MEMORY,
+  browserPopupRedirectResolver: POPUP_RESOLVER,
   // setCustomParameters is part of the real GoogleAuthProvider surface and
   // signInWithGooglePopup calls it, so the double has to carry it — without it
   // every test here fails with "setCustomParameters is not a function" rather
@@ -72,6 +78,21 @@ describe('signInWithGooglePopup', () => {
     await signInWithGooglePopup();
 
     expect(mockInitializeApp).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the Firebase user in memory instead of IndexedDB', async () => {
+    // Firebase only hands us an ID token; CeView keeps its own session. Its
+    // default IndexedDB persistence failed in production Chrome with
+    // "Database is closing/hidden" after a successful Google sign-in.
+    const { signInWithGooglePopup } = await import('./firebase');
+
+    await signInWithGooglePopup();
+
+    expect(mockInitializeAuth).toHaveBeenCalledWith(
+      { name: 'test-app' },
+      { persistence: IN_MEMORY, popupRedirectResolver: POPUP_RESOLVER },
+    );
+    expect(mockGetAuth).not.toHaveBeenCalled();
   });
 
   it('propagates a popup failure (e.g. user closed the popup) to the caller', async () => {
